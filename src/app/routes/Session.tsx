@@ -31,6 +31,8 @@ import { useToast } from '@/app/providers/ToastProvider'
 import { closePip, openPip, registerAutoPip } from '@/features/pip/pipController'
 import { usePipStore } from '@/features/pip/pipStore'
 import { MiniPostureWidget } from '@/components/session/MiniPostureWidget'
+import { DeadlineAlertPanel } from '@/components/deadline/DeadlineAlertPanel'
+import { useDeadlineAlerts } from '@/features/deadline/useDeadlineAlerts'
 
 /**
  * S-09 집중 세션 — 사이드바를 숨기고 대시보드보다 단순하게 (docs/04 §3, docs/05 S-09)
@@ -67,6 +69,9 @@ export function Session() {
 
   // 회복 수명주기를 굴리는 상태 머신 티커 (카메라·QA 공통)
   usePostureTicker(true)
+
+  // 마감순경 삐약 — 시간 알림만. 측정·타이머·친구 방을 중단시키지 않습니다.
+  useDeadlineAlerts(session.status === 'running')
 
   // 세션이 시작되면 카메라를 켜고, 화면을 떠나면 트랙을 정지합니다.
   useEffect(() => {
@@ -276,6 +281,9 @@ export function Session() {
 
         {/* 오른쪽 — 남은 시간 · 이번 세션 · 제어 */}
         <div className="flex flex-col gap-3">
+          {/* 마감순경 삐약 — 기존 콘텐츠를 가리지 않는 작은 패널 */}
+          <DeadlineAlertPanel />
+
           <Card className="p-5">
             <SessionTimer remaining={remaining} />
           </Card>

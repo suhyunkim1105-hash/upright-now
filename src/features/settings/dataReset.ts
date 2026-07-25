@@ -9,6 +9,7 @@ import { usePostureStore } from '@/features/posture-engine/postureStore'
 import { useDemoStore } from '@/features/demo/demoMode'
 import { resetRewardsForTest } from '@/features/game/rewards'
 import { resetFinalizedForTest } from '@/features/sessions/finalizeSession'
+import { useDeadlineStore } from '@/features/deadline/deadlineStore'
 
 /**
  * 전체 로컬 데이터 초기화 — 첫 방문 상태로 돌아갑니다.
@@ -29,6 +30,7 @@ export function resetAllData(): void {
   usePostureStore.getState().reset()
   resetRewardsForTest()
   resetFinalizedForTest()
+  useDeadlineStore.getState().reset()
 
   // 스토어 reset 이 구독자를 통해 0 값을 다시 저장할 수 있으므로 한 번 더 비웁니다.
   clearLocal()

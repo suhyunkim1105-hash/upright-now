@@ -8,6 +8,8 @@ import { FRIEND_ROOM } from '@/constants/copy'
 import { featureFlags } from '@/lib/feature-flags/flags'
 import { useToast } from '@/app/providers/ToastProvider'
 import { openPip } from '@/features/pip/pipController'
+import { useDeadlineStore } from '@/features/deadline/deadlineStore'
+import { useState } from 'react'
 import { LEARNING_PROFILES } from '@/constants/profiles'
 import { ROUTES } from '@/constants/routes'
 import { useSessionStore } from '@/features/sessions/sessionStore'
@@ -24,11 +26,27 @@ export function SessionSetup() {
   const { subject, goal, lengthId, mode, configure, start } = useSessionStore()
   const resetGame = useGameStore((s) => s.reset)
   const { push } = useToast()
+  const [deadlineChoice, setDeadlineChoice] = useState('none')
+  const [deadlineTime, setDeadlineTime] = useState('')
+
+  const resolveDeadline = (): number | null => {
+    if (deadlineChoice === 'none') return null
+    if (deadlineChoice === 'at') {
+      if (!deadlineTime) return null
+      const [hh, mm] = deadlineTime.split(':').map(Number)
+      const at = new Date()
+      at.setHours(hh, mm, 0, 0)
+      return at.getTime()
+    }
+    return Date.now() + Number(deadlineChoice) * 60_000
+  }
 
   const startSession = () => {
     resetGame()
     const id = `s-${Date.now()}`
     start(id)
+    // 마감은 선택 사항 — 없어도 세션은 동일하게 동작합니다. (자세 데이터와 무관)
+    useDeadlineStore.getState().configure(id, resolveDeadline())
     // PiP 는 사용자 제스처가 필요 — 같은 click handler 안에서 요청합니다.
     if (useUserStore.getState().pipAutoOpen) {
       void openPip().then((result) => {
@@ -106,6 +124,46 @@ export function SessionSetup() {
                   sublabel: p.sound,
                 }))}
               />
+            </div>
+          </Card>
+
+          <Card>
+            <CardTitle>과제 마감 시각 (선택)</CardTitle>
+            <p className="mt-1 text-xs text-ink-soft">
+              마감을 정하면 마감순경 삐약이가 시간만 조용히 알려줘요. 벌점은
+              없어요.
+            </p>
+            <div className="mt-4">
+              <SegmentedControl
+                ariaLabel="과제 마감 시각"
+                columns={3}
+                value={deadlineChoice}
+                onChange={setDeadlineChoice}
+                options={[
+                  { id: 'none', label: '마감 없음', sublabel: '기존과 동일' },
+                  { id: 'at', label: '오늘 특정 시각', sublabel: '직접 선택' },
+                  { id: '15', label: '15분 뒤', sublabel: '지금부터' },
+                  { id: '30', label: '30분 뒤', sublabel: '지금부터' },
+                  { id: '60', label: '1시간 뒤', sublabel: '지금부터' },
+                ]}
+              />
+              {deadlineChoice === 'at' && (
+                <div className="mt-3">
+                  <label
+                    htmlFor="deadline-time"
+                    className="text-sm font-semibold text-ink"
+                  >
+                    마감 시각
+                  </label>
+                  <input
+                    id="deadline-time"
+                    type="time"
+                    value={deadlineTime}
+                    onChange={(e) => setDeadlineTime(e.target.value)}
+                    className="mt-1.5 block h-11 rounded-2xl border border-line bg-surface px-4 text-[15px] text-ink"
+                  />
+                </div>
+              )}
             </div>
           </Card>
 

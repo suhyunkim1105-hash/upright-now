@@ -167,6 +167,114 @@
     }
   }
 
+  /* 보스 피격 — 180ms 좌우 흔들림 */
+  @keyframes un-boss-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-4px);
+    }
+    50% {
+      transform: translateX(4px);
+    }
+    75% {
+      transform: translateX(-2px);
+    }
+  }
+
+  .anim-boss-shake {
+    animation: un-boss-shake 180ms ease-in-out;
+  }
+
+  /* 코랄 충격 링 */
+  @keyframes un-impact-ring {
+    0% {
+      opacity: 0.9;
+      box-shadow: 0 0 0 0 rgb(255 100 100 / 0.6);
+    }
+    100% {
+      opacity: 0;
+      box-shadow: 0 0 0 14px rgb(255 100 100 / 0);
+    }
+  }
+
+  .boss-impact-ring {
+    animation: un-impact-ring 450ms ease-out forwards;
+  }
+
+  /* 종이 조각 파티클 */
+  @keyframes un-paper {
+    0% {
+      opacity: 1;
+      transform: translate(0, 0) rotate(0deg);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(var(--paper-x), var(--paper-y)) rotate(var(--paper-r));
+    }
+  }
+
+  .boss-paper {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 7px;
+    height: 9px;
+    background: #fffdf5;
+    border: 1px solid #e7e0d4;
+    animation: un-paper 650ms ease-out forwards;
+  }
+
+  .boss-paper-1 {
+    --paper-x: -26px;
+    --paper-y: -22px;
+    --paper-r: -80deg;
+  }
+  .boss-paper-2 {
+    --paper-x: 24px;
+    --paper-y: -18px;
+    --paper-r: 70deg;
+  }
+  .boss-paper-3 {
+    --paper-x: -18px;
+    --paper-y: 20px;
+    --paper-r: 50deg;
+  }
+  .boss-paper-4 {
+    --paper-x: 22px;
+    --paper-y: 16px;
+    --paper-r: -60deg;
+  }
+
+  /* 피해량 숫자 */
+  @keyframes un-damage-float {
+    0% {
+      opacity: 0;
+      transform: translate(-50%, 4px) scale(0.9);
+    }
+    25% {
+      opacity: 1;
+      transform: translate(-50%, -6px) scale(1.05);
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-50%, -20px) scale(1);
+    }
+  }
+
+  .boss-damage-number {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    font-size: 14px;
+    font-weight: 800;
+    color: #ff6464;
+    text-shadow: 0 1px 0 #fff;
+    animation: un-damage-float 850ms ease-out forwards;
+  }
+
   @keyframes un-toast-in {
     from {
       opacity: 0;

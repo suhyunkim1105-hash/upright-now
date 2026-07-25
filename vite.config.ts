@@ -17,5 +17,7 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**', 'dist/**'],
+    // 병렬 워커 부하에서 컴포넌트 테스트가 5초를 넘겨 플레이크되는 것 방지
+    testTimeout: 15000,
   },
 })

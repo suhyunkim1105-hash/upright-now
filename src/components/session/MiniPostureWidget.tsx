@@ -6,6 +6,7 @@ import { useSessionStore } from '@/features/sessions/sessionStore'
 import { usePostureStore } from '@/features/posture-engine/postureStore'
 import { useGameStore } from '@/features/game/gameStore'
 import { useCharacterStage } from '@/features/progression/progressionStore'
+import { DeadlineAlertPanel } from '@/components/deadline/DeadlineAlertPanel'
 
 /**
  * 화면 안 미니 위젯 — PiP 미지원·차단 시 오른쪽 아래에 표시하는 대체 UI.
@@ -42,6 +43,11 @@ export function MiniPostureWidget() {
         <span className="tabular font-bold text-ink">{combo}</span>
         {`회`}
       </p>
+      {/* 마감순경 삐약 — PIP 미지원 시에도 같은 알림 패널 표시 */}
+      <div className="mt-2">
+        <DeadlineAlertPanel compact />
+      </div>
+
       <button
         type="button"
         className="mt-2 h-7 w-full rounded-lg border border-line bg-canvas text-[11px] font-semibold text-ink-soft"

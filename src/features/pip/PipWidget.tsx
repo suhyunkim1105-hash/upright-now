@@ -5,6 +5,7 @@ import { useSessionStore } from '@/features/sessions/sessionStore'
 import { usePostureStore } from '@/features/posture-engine/postureStore'
 import { useGameStore } from '@/features/game/gameStore'
 import { useCharacterStage } from '@/features/progression/progressionStore'
+import { DeadlineAlertPanel } from '@/components/deadline/DeadlineAlertPanel'
 
 /**
  * PIP 창 내용 — 기존 store(posture/session/progression/game)를 그대로 공유합니다.
@@ -36,6 +37,11 @@ export function PipWidget({ onClose }: { onClose: () => void }) {
         <span className="tabular font-bold text-ink">{combo}</span>
         {`회`}
       </p>
+
+      {/* 마감순경 삐약 — 기존 콘텐츠를 가리지 않는 작은 패널 (같은 store 동기화) */}
+      <div className="w-full">
+        <DeadlineAlertPanel compact />
+      </div>
 
       <div className="mt-auto flex w-full flex-col gap-1.5">
         {session.status === 'running' ? (

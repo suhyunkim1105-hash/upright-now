@@ -6,10 +6,24 @@
 - **Production**: https://upright-now.vercel.app
 - **GitHub**: https://github.com/suhyunkim1105-hash/upright-now
 - **릴리스 태그**: `v1.0.0-mvp` (이전 안정점 `stable-posture-mvp`)
-- **문서 기준일**: 2026-07-26 · 기준 커밋 `44f4a92`
 
-> 이 README와 `docs/` 안의 **현재 단일 기준** 문서가 저장소의 최신 기준입니다.
-> 문서 분류는 [docs/DOCS_INDEX.md](docs/DOCS_INDEX.md)를 보세요.
+> ## 📌 이 문서의 기준
+>
+> **이 README 를 포함한 `docs/` 의 모든 "현재 기준" 문서는 `main` 브랜치의 커밋 `44f4a92` 하나만을 기준으로 작성했습니다.**
+>
+> | 항목 | 값 |
+> |---|---|
+> | 기준 브랜치 | `main` |
+> | 기준 커밋 | `44f4a92` (`chore: finalize UpRight Now MVP release`, 2026-07-25) |
+> | 기준 태그 | `v1.0.0-mvp` |
+> | 문서 작성일 | 2026-07-26 |
+> | 검증 범위 | `main` 에서 실제로 실행한 lint · typecheck · unit · e2e · build 결과만 |
+>
+> - **`main` 에 병합되지 않은 브랜치의 기능은 여기에 "구현됨"으로 적지 않습니다.**
+>   미병합 브랜치 현황은 [docs/PREVIEW_BRANCHES.md](docs/PREVIEW_BRANCHES.md) 에 따로 정리했습니다.
+> - 문서 분류(무엇이 현재 기준이고 무엇이 오래된 문서인지)는 [docs/DOCS_INDEX.md](docs/DOCS_INDEX.md) 를 보세요.
+> - 이전 기획인 `기린이 되자!` · `Zarafa` · `거부기탈출` 문서는 **현재 구현 기준이 아닙니다.**
+>   이 README 의 어떤 내용도 그 문서들에서 가져오지 않았습니다.
 
 ---
 
@@ -270,7 +284,8 @@ npx playwright test e2e/room-live.spec.ts
 |---|---|
 | [docs/DOCS_INDEX.md](docs/DOCS_INDEX.md) | 전체 문서 분류 — 어떤 문서가 현재 기준인지 |
 | [docs/CURRENT_PRODUCT_SPEC.md](docs/CURRENT_PRODUCT_SPEC.md) | 현재 구현된 제품 전체 명세 |
-| [docs/FEATURE_STATUS.md](docs/FEATURE_STATUS.md) | 기능별 상태 · 화면 · 테스트 · 알려진 오류 |
+| [docs/FEATURE_STATUS.md](docs/FEATURE_STATUS.md) | 기능별 상태 · 화면 · 테스트 · 알려진 오류 (main 기준) |
+| [docs/PREVIEW_BRANCHES.md](docs/PREVIEW_BRANCHES.md) | **main 미병합 브랜치** — Preview 구현으로 분리 기록 |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Now / Next / Later / Experimental |
 | [docs/QA_CHECKLIST.md](docs/QA_CHECKLIST.md) | 사용자가 직접 확인하는 체크리스트 |
 | [docs/NOTION_PROJECT_PAGE.md](docs/NOTION_PROJECT_PAGE.md) | Notion 붙여넣기용 프로젝트 페이지 |

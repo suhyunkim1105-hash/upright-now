@@ -7,10 +7,18 @@
 | 기준일 | 2026-07-26 |
 | 기준 커밋 | `44f4a92` · 태그 `v1.0.0-mvp` |
 | 기준 브랜치 | `main` (문서 작업은 `docs/overnight-cleanup`) |
+| 미병합 브랜치 | 4개 존재 → [`PREVIEW_BRANCHES.md`](./PREVIEW_BRANCHES.md) |
+
+> ## 📌 기준 고정
+>
+> **`현재 단일 기준` 으로 분류된 모든 문서는 `main` 브랜치 커밋 `44f4a92` 만을 설명합니다.**
+> `main` 에 병합되지 않은 브랜치의 기능은 그 문서들에 **들어 있지 않습니다.**
+> 미병합 브랜치는 [`PREVIEW_BRANCHES.md`](./PREVIEW_BRANCHES.md) 에서 **"Preview 구현, main 미병합"** 으로 따로 관리합니다.
 
 ## 읽는 규칙
 
 1. **코드와 테스트가 최종 기준입니다.** 문서와 코드가 다르면 코드가 맞습니다.
+   단, "어느 코드인가"는 항상 **`main`** 입니다. 브랜치 코드는 `main` 문서의 근거가 되지 않습니다.
 2. 문서끼리 충돌하면 아래 순서로 우선합니다.
    `README.md` → `docs/CURRENT_PRODUCT_SPEC.md` → `AGENTS.md` → `docs/06~15` 기술 명세 → 나머지
 3. **오래된 구현 기준**으로 분류된 문서는 삭제하지 않습니다. 역사·의도 기록으로 남기되,
@@ -30,6 +38,7 @@
 | [`docs/FEATURE_STATUS.md`](./FEATURE_STATUS.md) | 기능별 완료/부분/Preview/미구현 · 화면 경로 · 테스트 · 알려진 오류 | 신규 |
 | [`docs/ROADMAP.md`](./ROADMAP.md) | Now / Next / Later / Experimental | 신규 |
 | [`docs/QA_CHECKLIST.md`](./QA_CHECKLIST.md) | 사용자가 직접 손으로 확인하는 체크리스트 | 신규 |
+| [`docs/PREVIEW_BRANCHES.md`](./PREVIEW_BRANCHES.md) | **main 미병합 브랜치** 현황 — Preview 구현으로 분리 기록 | 신규 |
 | [`docs/NOTION_PROJECT_PAGE.md`](./NOTION_PROJECT_PAGE.md) | Notion 붙여넣기용 프로젝트 소개 페이지 | 신규 |
 | [`docs/DOCS_INDEX.md`](./DOCS_INDEX.md) | 이 문서 | 신규 |
 | [`docs/AI_HANDOFF.md`](./AI_HANDOFF.md) | 다음 작업자·AI 에이전트 인수인계 (파이프라인·보상·플래그 요약) | 유지 |

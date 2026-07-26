@@ -20,11 +20,14 @@ npm run lint       ✅ 통과 (0 warning)
 npm run typecheck  ✅ 통과
 npm run build      ✅ 통과 (7.47s, dist 375kB / gzip 117kB)
 npm run test:e2e   ✅ 67 passed · 1 skipped (room-live: Supabase env 없음 → 자동 skip)
-npm run test       ⚠️ 168 passed · 5 failed  → ISSUE-16 참조
-                      (QaLab.spec.tsx 5건, 전부 "Test timed out in 5000ms".
-                       `--testTimeout=60000` 로 재실행하면 7/7 통과 → 로직 결함이 아니라
-                       기본 타임아웃이 이 머신의 렌더 속도를 못 견디는 것)
+npm run test       ⚠️ 168 passed · 5 failed  (QaLab.spec.tsx, 전부 "timed out in 5000ms")
+   ↳ 순차 재실행  ✅ 173 passed (173) — 실패 0건
+      npx vitest run --no-file-parallelism --testTimeout=15000
 ```
+
+> **위 5건은 제품 오류가 아니라 테스트 환경 플레이크입니다.** 판정 근거는 ISSUE-16 참조.
+> 제품 결함으로 확인된 항목은 아래 §1의 ISSUE-01~15·17~22 이며, 그중 P0 3건은
+> 모두 Production에서 직접 재현했습니다.
 
 ### Production 실측 요약
 
@@ -38,6 +41,9 @@ npm run test       ⚠️ 168 passed · 5 failed  → ISSUE-16 참조
 ## 1. 발견한 문제
 
 전체 22건 · **P0 3건 · P1 8건 · P2 11건**
+
+그중 **ISSUE-16은 제품 오류가 아니라 테스트 환경 플레이크**입니다(순차 실행 시 173/173 통과로 확정).
+따라서 **제품 결함은 21건**이며, ISSUE-16은 테스트 설정 개선 항목으로 분류해 주세요.
 
 ---
 
@@ -582,24 +588,55 @@ TODO / FIXME / HACK / XXX : 0건
 
 ---
 
-### ISSUE-16 · P2 · `npm run test` 가 기본 설정에서 5건 실패 (AI_HANDOFF 의 "173/173" 과 불일치)
+### ISSUE-16 · P2 · `npm run test` 5건 실패 — **제품 오류 아님 / 테스트 환경 플레이크로 확정**
+
+> ⚠️ 이 항목은 **제품 결함이 아닙니다.** 다른 21건과 성격이 완전히 달라 별도로 구분해 기록합니다.
+> 제품 코드에는 아무 문제가 없고, 고쳐야 할 대상은 **테스트 설정**입니다.
+
+#### 관측된 실패
 
 ```
-Test Files  1 failed | 23 passed (24)
-     Tests  5 failed | 168 passed (173)
-FAIL src/app/routes/QaLab.spec.tsx  — 5건 전부 "Test timed out in 5000ms"
+npm run test  (기본 설정: 파일 병렬 실행 + testTimeout 5000)
+  Test Files  1 failed | 23 passed (24)
+       Tests  5 failed | 168 passed (173)
+  FAIL src/app/routes/QaLab.spec.tsx — 5건 전부 "Test timed out in 5000ms"
 ```
 
-동일 파일을 `npx vitest run src/app/routes/QaLab.spec.tsx --testTimeout=60000` 로 재실행하면 **7/7 통과**합니다. 따라서 **로직 결함이 아니라 테스트 견고성 문제**입니다. `renderAt('/')` 가 App 전체(캐릭터 SVG·라우터·Provider)를 렌더하는데 vitest 기본 5초 안에 끝나지 못합니다. 이번 실행에서 environment 준비에만 1,120초가 소요됐습니다.
+#### 제품 오류 / 환경 플레이크 판별
 
-`docs/AI_HANDOFF.md` L13·L86 은 "unit 173/173"을 조건 없이 단언하지만, **다른 성능의 머신·CI에서는 재현되지 않습니다.** docs/16 §3 "출시 차단 조건"에 "테스트 실패"가 포함되어 있어 기록해 둡니다.
+3회 실행으로 교차 검증했습니다.
 
-**권장 수정**: `vite.config.ts` 의 vitest 설정에 `testTimeout: 20000` 명시, 또는 `QaLab.spec.tsx` 를 App 전체 렌더가 아닌 라우트 단위 렌더로 축소.
-**회귀 위험**: 없음(테스트 설정만 변경).
+| 실행 조건 | 결과 | 판정 |
+|---|---|---|
+| `npm run test` (병렬 · timeout 5s) | 168 / 173 · **5 failed** | 실패 재현 |
+| `npx vitest run src/app/routes/QaLab.spec.tsx --testTimeout=60000` | **7 / 7 passed** | 같은 코드가 통과 |
+| **`npx vitest run --no-file-parallelism --testTimeout=15000`** | **173 / 173 passed · 실패 0건** | **전체 통과** |
+
+**환경 플레이크로 판정한 근거**
+
+1. **제품 코드를 한 줄도 바꾸지 않고** 실행 옵션만 바꿔 173/173이 통과했습니다. 로직 결함이면 조건과 무관하게 실패합니다.
+2. 실패 메시지가 전부 `Test timed out in 5000ms` 뿐입니다. **단언(assertion) 실패가 0건**입니다 — 기대값과 실제값이 다른 사례가 없습니다.
+3. 실패한 5건 중 2건(`기본 세션 길이는 25분이다`, `실제 사용자는 Lv.1 뽀각 거북에서 시작한다`)은 `await` 이 없는 **동기 테스트**입니다. 동기 테스트가 타임아웃한다는 것은 테스트 로직이 아니라 렌더 소요 시간 문제임을 뜻합니다.
+4. 병목이 실행 환경에 있습니다. 병렬 실행 시 `environment` 준비에 1,120초, 순차 실행에서도 233초가 소요됐습니다. 실제 테스트 실행 시간(`tests`)은 순차 실행 기준 **10.88초에 불과**합니다. 즉 jsdom 환경 구성이 CPU를 점유해 `renderAt('/')`(App 전체 — 라우터·Provider·캐릭터 SVG 렌더)가 5초 예산을 넘긴 것입니다.
+
+#### 그럼에도 기록하는 이유 (P2)
+
+- `docs/AI_HANDOFF.md` L13·L86 이 **"unit 173/173 통과"를 조건 없이 단언**하지만, 기본 명령(`npm run test`)으로는 이 머신에서 재현되지 않습니다. 사양이 다른 머신이나 CI 러너에서 **동일한 위양성(false alarm) 실패가 발생할 수 있습니다.**
+- `docs/16_ACCEPTANCE_TESTS.md` §3 "출시 차단 조건"에 "빌드·타입·테스트 실패"가 포함되어 있습니다. 실제로는 통과하는 테스트가 환경 때문에 붉게 뜨면 **출시 판단을 잘못 막을 수 있습니다.**
+
+**의심 파일**: `vite.config.ts`(vitest 설정), `src/app/routes/QaLab.spec.tsx`(App 전체 렌더 5건)
+
+**권장 수정**
+
+1. `vite.config.ts` 의 vitest 설정에 `testTimeout: 15000` 명시 (가장 간단하고 확실)
+2. 또는 `QaLab.spec.tsx` 의 `renderAt('/')` 를 App 전체가 아닌 라우트 컴포넌트 단위 렌더로 축소해 렌더 비용을 낮춤
+3. `AI_HANDOFF.md` 의 "173/173" 단언에 실행 조건(옵션)을 함께 명시
+
+**회귀 위험**: 없음. 제품 코드 변경 없이 테스트 설정만 바꾸면 됩니다.
 
 ---
 
-### ISSUE-17 · P2 · Profiles 화면 문구와 실제 기능 불일치 2건
+### ISSUE-17 · P2 · Profiles 화면 문구와 실제 기능 불일치 3건
 
 - **URL**: <https://upright-now.vercel.app/profiles>
 
@@ -783,7 +820,7 @@ Production 실측 결과 **두 해상도 모두 가로 스크롤 0px, `main` 내
 
 | 문서 | 문서 내용 | 코드 실제 |
 |---|---|---|
-| `AI_HANDOFF.md` L13·86 | "unit 173/173 통과" | 기본 설정 실행 시 168/173 (타임아웃 5건, ISSUE-16) |
+| `AI_HANDOFF.md` L13·86 | "unit 173/173 통과" | 기본 명령(`npm run test`)으로는 168/173. 순차 실행(`--no-file-parallelism --testTimeout=15000`)에서는 173/173 통과 → **제품 오류 아님**, 단언에 실행 조건 명시 필요 (ISSUE-16) |
 | `docs/08` §12 | "응원 3종을 세션 중 화면 구석에 표시" | 세션 중 전송·표시 경로 없음 (ISSUE-08) |
 | `docs/08` §9 | "방장 이탈 → 방장 이전", "방 종료 → ended_at 기록" | 미구현 (ISSUE-13) |
 | `docs/08` §10 | "클라이언트가 임의로 HP를 덮어쓰지 않음" | RLS가 방장의 직접 UPDATE 허용 (ISSUE-14) |
@@ -871,6 +908,20 @@ OS          Windows 11 Home 26200
 브라우저    Playwright Chromium (headless)
 Production  https://upright-now.vercel.app  (VITE_ENABLE_CAMERA=on, friendRoom=on, QA Lab=off 로 관측)
 로컬 e2e    자체 서버 포트 5273, room-live 는 Supabase env 부재로 skip
+```
+
+실행한 검증 명령 (제품 코드는 한 줄도 수정하지 않았습니다):
+
+```bash
+npm install
+npm run lint
+npm run typecheck
+npm run build
+npm run test                                              # 168/173 (환경 플레이크 5건)
+npx vitest run src/app/routes/QaLab.spec.tsx --testTimeout=60000   # 7/7
+npx vitest run --no-file-parallelism --testTimeout=15000  # 173/173 ← 최종 확인
+npx playwright test --project=chromium                    # 67 passed / 1 skipped
+# + Production 대상 Playwright 스크립트 (라우트·레이아웃·localStorage·네트워크 실측)
 ```
 
 실제 키·토큰·환경변수 **값**은 이 문서에 기록하지 않았습니다. 변수 **이름**만 언급합니다.

@@ -13,7 +13,10 @@ interface SessionHistoryState {
   update: (
     sessionId: string,
     patch: Partial<
-      Pick<SessionSummary, 'targetProgress' | 'targetProgressLabel' | 'nextAction'>
+      Pick<
+        SessionSummary,
+        'targetProgress' | 'targetProgressLabel' | 'nextAction' | 'aiReport'
+      >
     >,
   ) => void
   clear: () => void

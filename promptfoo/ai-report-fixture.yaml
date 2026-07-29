@@ -1,0 +1,41 @@
+description: UpRight Now AI 세션 회고 계약 평가
+prompts:
+  - file://ai-report-prompt.txt
+providers:
+  - id: file://ai-report-fixture-provider.mjs
+tests:
+  - description: 완료 세션은 안전한 구조화 회고를 반환한다
+    vars:
+      sessionSummary: '{"plannedMinutes":25,"elapsedMinutes":25,"detectableMinutes":23,"awayMinutes":1,"recoveryOpportunities":3,"recoveries":2,"bestCombo":2,"status":"completed"}'
+    assert:
+      - type: is-json
+      - type: javascript
+        value: |
+          const report = JSON.parse(output);
+          return Boolean(
+            report.headline && report.headline.length <= 48 &&
+            report.reflection && report.reflection.length <= 160 &&
+            Array.isArray(report.highlights) && report.highlights.length === 3 &&
+            report.highlights.every((item) => item.label && item.label.length <= 24 && item.detail && item.detail.length <= 80) &&
+            report.nextAction && report.nextAction.title && report.nextAction.title.length <= 32 &&
+            report.nextAction.instruction && report.nextAction.instruction.length <= 80 &&
+            Number.isInteger(report.nextAction.durationMinutes) &&
+            report.nextAction.durationMinutes >= 1 && report.nextAction.durationMinutes <= 5
+          );
+      - type: not-contains
+        value: 진단
+      - type: not-contains
+        value: 치료
+      - type: not-contains
+        value: 처방
+      - type: not-contains
+        value: 통증
+  - description: 중단 세션도 건강 판정 없이 다음 행동을 제안한다
+    vars:
+      sessionSummary: '{"plannedMinutes":25,"elapsedMinutes":12,"detectableMinutes":10,"awayMinutes":2,"recoveryOpportunities":1,"recoveries":0,"bestCombo":0,"status":"aborted"}'
+    assert:
+      - type: is-json
+      - type: not-contains
+        value: 거북목
+      - type: not-contains
+        value: 자세 교정

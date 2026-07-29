@@ -29,6 +29,9 @@ v1.1.0 은 main 에 병합·배포됐지만, **기능 노출은 Vercel Productio
 - **미설정: `VITE_ENABLE_PIP`** → PIP 미니 위젯 자동 열기가 운영에서
   비활성입니다. 켜려면 Vercel Production 에 `VITE_ENABLE_PIP=true` 를
   추가하고 재배포하세요.
+- **미설정: `VITE_ENABLE_AI_REPORT`** → 결과 화면의 사용자 요청형 AI 회고는
+  기본 비노출입니다. `AI_REPORT_ENABLED=true`와 서버 전용 `GEMINI_API_KEY`를
+  함께 설정한 Preview에서 먼저 검증한 뒤 Production에 켜세요.
 
 환경변수를 바꾼 뒤에는 반드시 클라우드 빌드(`npx vercel deploy --prod`)로
 재배포해야 번들에 반영됩니다.
@@ -93,6 +96,7 @@ npm run lint
 npm run typecheck
 npm run test       # Vitest 단위 테스트
 npm run test:e2e   # Playwright (자체 서버, 포트 5273)
+npm run ai:eval:fixtures # Gemini 키 없이 AI 회고 스키마·안전 문구 회귀 평가
 npm run build
 ```
 
@@ -102,12 +106,22 @@ npm run build
 npx playwright test e2e/room-live.spec.ts
 ```
 
+Gemini 키를 설정한 Preview 또는 로컬 서버에서는 실제 모델 회귀 평가도 실행합니다.
+
+```bash
+npm run ai:eval
+```
+
 ## 환경 변수 (이름만 — 값은 Vercel·.env.local 에)
 
 | 이름 | 용도 |
 |---|---|
 | `VITE_ENABLE_CAMERA` | 실제 웹캠 자세 감지 on/off |
 | `VITE_ENABLE_PIP` | PIP 미니 위젯 자동 열기 on/off (현재 Production 미설정 = off) |
+| `VITE_ENABLE_AI_REPORT` | 결과 화면의 사용자 요청형 AI 세션 회고 on/off |
+| `AI_REPORT_ENABLED` | Vercel 서버 함수의 Gemini 호출 on/off (클라이언트 노출 금지) |
+| `GEMINI_API_KEY` | Gemini 서버 전용 API 키 (`VITE_` 접두어 금지) |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | 선택: 원문 없는 AI 운영 관찰용 서버 키 |
 | `VITE_ENABLE_FRIEND_ROOM` | 2인 친구 방 on/off |
 | `VITE_ENABLE_REALTIME` | Supabase Realtime 구독 on/off |
 | `VITE_ENABLE_CAMPUS_THEME` | 캠퍼스 학교 테마 on/off (v1.1) |
@@ -116,6 +130,8 @@ npx playwright test e2e/room-live.spec.ts
 | `VITE_SUPABASE_URL` | Supabase 프로젝트 URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase publishable key |
 | `VITE_ENABLE_QA_LAB` | 개발용 QA Lab (운영 기본 off) |
+
+AI 회고는 결과 화면에서 사용자가 직접 동의하고 요청할 때만 세션 집계 8개를 서버로 보냅니다. 영상·사진·좌표·자세 상태·목표 문구·세션 식별자는 전송하지 않습니다. 자세한 기준은 [docs/14_DATA_PRIVACY_SECURITY.md](docs/14_DATA_PRIVACY_SECURITY.md)를 따릅니다.
 
 친구 방 백엔드는 `supabase/schema.sql` 로 구성합니다
 (RLS + RPC 원자적 보스 HP, Anonymous Sign-Ins 필요).

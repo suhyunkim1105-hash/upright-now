@@ -69,13 +69,16 @@ cp .env.example .env.local
 | `VITE_ENABLE_FRIEND_ROOM` | `true` | 2인 친구 방 |
 | `VITE_ENABLE_REALTIME` | `true` | 실시간 동기화 (친구 방이 켜져 있어야 의미 있음) |
 | `VITE_ENABLE_PIP` | `true` | PIP 미니 위젯 자동 열기 |
+| `VITE_ENABLE_AI_REPORT` | `false` | 결과 화면의 사용자 요청형 AI 세션 회고 노출 |
+| `AI_REPORT_ENABLED` | `false` | Vercel 서버 함수의 AI 회고 호출 허용 (VITE_ 금지) |
+| `GEMINI_API_KEY` | 팀의 Vercel 관리자에게 요청 | Gemini 서버 전용 키 (절대 프론트에 넣지 않음) |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | 선택 | 원문 없는 AI 성공·지연 관찰용 서버 키 |
 | `VITE_ENABLE_CAMPUS_THEME` | `true` | 학교 테마 색 |
 | `VITE_ENABLE_CAMPUS_TERRITORY` | `true` | 캠퍼스 영토전 화면 |
 | `VITE_ENABLE_CAMPUS_SUPABASE` | `true` (서버 연결) / `false` (혼자 테스트) | `false` 면 가짜 데이터로 동작해 서버 없이도 화면을 볼 수 있습니다 |
 | `VITE_ENABLE_QA_LAB` | `true` | `/lab` 개발자용 테스트 화면 |
 
-**정리하면:** Supabase 주소와 키 2개만 수현에게 받고, 나머지 기능 스위치는
-전부 `true` 로 두면 됩니다. 값을 바꾼 뒤에는 `npm run dev` 를 껐다 켜야 반영됩니다.
+**정리하면:** Supabase 주소와 키 2개만 수현에게 받고, 일반 기능 스위치는 테스트 목적에 맞게 켭니다. AI 회고는 `VITE_ENABLE_AI_REPORT=true`, `AI_REPORT_ENABLED=true`, `GEMINI_API_KEY`가 모두 있어야 하므로 팀의 Vercel 관리자와 합의하기 전에는 `false`로 둡니다. 값을 바꾼 뒤에는 `npm run dev`를 껐다 켜야 반영됩니다.
 
 ### 운영(Production) 환경은 다릅니다
 
@@ -453,6 +456,7 @@ npm run test
 | 항목 | 상태 |
 |---|---|
 | 운영 `VITE_ENABLE_PIP` | 미설정 — 운영에서 PIP 자동 열기가 꺼져 있음 |
+| 운영 AI 세션 회고 | Vercel 서버 키·비용 한도·Preview 검증 전까지 비활성 |
 | 실카메라 자세 판정 임계값 | **미검증** — 합성 데이터 기준으로만 맞춰 둔 값. 실제 사람·카메라로 확인 필요 |
 | 온보딩 튜토리얼 | 미구현 — 처음 온 사용자에게 사용법을 알려주는 안내가 없음 |
 | 캐릭터 Lv.2/4/5/6 자세별 이미지 | 미보유 — 해당 단계는 기본 이미지로 대체 중 |

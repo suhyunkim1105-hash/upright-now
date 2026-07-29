@@ -165,4 +165,13 @@
 - 자세 점수 건강 표현
 - 스트레칭 강제
 - 데이터 초기화 미작동
+
+## 12. 사용자 요청형 AI 세션 회고
+
+- 결과 화면에서 사용자가 체크박스로 동의하고 `AI 회고 만들기`를 누를 때만 호출한다.
+- Gemini 요청은 `plannedMinutes`, `elapsedMinutes`, `detectableMinutes`, `awayMinutes`, `recoveryOpportunities`, `recoveries`, `bestCombo`, `status`의 8개 집계만 허용한다.
+- 세션 ID, 닉네임, 과목, 목표 문구, 카메라 영상·사진·스냅샷, 랜드마크·좌표, 원본 자세 상태, 나쁜 자세 지속 시간, 건강 정보는 요청에 포함하지 않는다.
+- Gemini Interaction은 `store: false`로 호출하고, 서버의 Zod 스키마 검증과 의료 표현 금지 검사를 통과한 JSON만 화면·로컬 기록에 남긴다.
+- Langfuse를 설정해도 프롬프트, 요청 집계값, 리포트 원문, 사용자·세션 식별자는 보내지 않는다. 모델명, 스키마 버전, 성공·실패, 지연 시간만 관찰한다.
+- `GEMINI_API_KEY`, `LANGFUSE_SECRET_KEY`는 Vercel 서버 환경 변수로만 둔다. `VITE_` 접두어를 붙이지 않는다.
 - 닉네임 XSS 가능

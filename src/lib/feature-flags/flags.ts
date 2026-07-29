@@ -9,6 +9,7 @@ export interface FeatureFlags {
   friendRoom: boolean
   realtimeRoom: boolean
   pictureInPicture: boolean
+  aiReport: boolean
   qaLab: boolean
   optionalSlouchCalibration: boolean
   /** 캠퍼스 테마(학교 선택 → 색·배지·배너·배경) */
@@ -36,6 +37,7 @@ export function readFeatureFlags(env: ImportMetaEnv): FeatureFlags {
     // 친구 방이 꺼져 있으면 Realtime 도 켜지 않습니다.
     realtimeRoom: friendRoom && parseFlag(env.VITE_ENABLE_REALTIME, false),
     pictureInPicture: parseFlag(env.VITE_ENABLE_PIP, false),
+    aiReport: parseFlag(env.VITE_ENABLE_AI_REPORT, false),
     // 개발 환경에서는 QA Lab을 기본으로 켭니다. 운영은 명시적으로 켜야 합니다.
     qaLab: parseFlag(env.VITE_ENABLE_QA_LAB, import.meta.env.DEV),
     optionalSlouchCalibration: false,

@@ -1,0 +1,148 @@
+import {
+  AiReportInputSchema,
+  AiSessionReportSchema,
+  isSafeAiSessionReport,
+  type AiReportInput,
+} from '../src/features/ai-report/contract'
+import type { AiSessionReport } from '../src/types'
+import {
+  AiReportConfigurationError,
+  generateAiSessionReport,
+  recordAiReportObservation,
+} from './ai-report-service'
+
+const MAX_BODY_BYTES = 12_000
+const RATE_LIMIT_WINDOW_MS = 10 * 60_000
+const RATE_LIMIT_MAX_REQUESTS = 3
+
+type RateLimitEntry = { count: number; resetAt: number }
+
+const rateLimits = new Map<string, RateLimitEntry>()
+
+export interface AiReportHandlerDependencies {
+  enabled?: boolean
+  generate?: (input: AiReportInput) => Promise<AiSessionReport>
+  observe?: (input: { outcome: 'success' | 'failed'; durationMs: number }) => Promise<void>
+}
+
+class RequestBodyError extends Error {}
+
+function jsonResponse(status: number, body: Record<string, unknown>): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  })
+}
+
+function isSameOrigin(request: Request): boolean {
+  const origin = request.headers.get('origin')
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+  if (!origin || !host) return true
+
+  try {
+    return new URL(origin).host === host
+  } catch {
+    return false
+  }
+}
+
+function requestKey(request: Request): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+}
+
+function withinRateLimit(key: string, now: number): boolean {
+  const current = rateLimits.get(key)
+  if (!current || current.resetAt <= now) {
+    rateLimits.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+
+  if (current.count >= RATE_LIMIT_MAX_REQUESTS) return false
+  current.count += 1
+  return true
+}
+
+async function readJsonBody(request: Request): Promise<unknown> {
+  const contentLength = Number(request.headers.get('content-length') ?? '0')
+  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
+    throw new RequestBodyError('Request body is too large.')
+  }
+
+  const reader = request.body?.getReader()
+  if (!reader) throw new RequestBodyError('Request body is required.')
+
+  const chunks: Uint8Array[] = []
+  let size = 0
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > MAX_BODY_BYTES) {
+      await reader.cancel()
+      throw new RequestBodyError('Request body is too large.')
+    }
+    chunks.push(value)
+  }
+
+  const bytes = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes))
+  } catch {
+    throw new RequestBodyError('Request body must be JSON.')
+  }
+}
+
+export async function handleAiReport(
+  request: Request,
+  dependencies: AiReportHandlerDependencies = {},
+): Promise<Response> {
+  if (request.method !== 'POST') return jsonResponse(405, { code: 'METHOD_NOT_ALLOWED' })
+  if (!isSameOrigin(request)) return jsonResponse(403, { code: 'ORIGIN_NOT_ALLOWED' })
+  const enabled = dependencies.enabled ?? process.env.AI_REPORT_ENABLED === 'true'
+  if (!enabled) {
+    return jsonResponse(503, { code: 'AI_REPORT_UNAVAILABLE' })
+  }
+
+  let input: AiReportInput
+  try {
+    input = AiReportInputSchema.parse(await readJsonBody(request))
+  } catch (error) {
+    const code = error instanceof RequestBodyError ? 'INVALID_REQUEST_BODY' : 'INVALID_REPORT_INPUT'
+    return jsonResponse(400, { code })
+  }
+
+  if (!withinRateLimit(requestKey(request), Date.now())) {
+    return jsonResponse(429, { code: 'AI_REPORT_RATE_LIMITED' })
+  }
+
+  const startedAt = Date.now()
+  const generate = dependencies.generate ?? generateAiSessionReport
+  const observe = dependencies.observe ?? recordAiReportObservation
+
+  try {
+    const report = AiSessionReportSchema.parse(await generate(input))
+    if (!isSafeAiSessionReport(report)) throw new Error('Unsafe AI report.')
+    await observe({ outcome: 'success', durationMs: Date.now() - startedAt })
+    return new Response(JSON.stringify(report), {
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    })
+  } catch (error) {
+    await observe({ outcome: 'failed', durationMs: Date.now() - startedAt })
+    const code =
+      error instanceof AiReportConfigurationError
+        ? 'AI_REPORT_UNAVAILABLE'
+        : 'AI_REPORT_GENERATION_FAILED'
+    return jsonResponse(503, { code })
+  }
+}
+
+export function resetAiReportRateLimitsForTest(): void {
+  rateLimits.clear()
+}

@@ -54,6 +54,20 @@ export interface SessionConfig {
   mode: SessionMode
 }
 
+export interface AiSessionReport {
+  headline: string
+  reflection: string
+  highlights: Array<{
+    label: string
+    detail: string
+  }>
+  nextAction: {
+    title: string
+    instruction: string
+    durationMinutes: number
+  }
+}
+
 export interface SessionSummary {
   id: string
   /** 원본 세션 id — 같은 세션이 두 번 저장돼도 집계는 1회만 (구버전 기록엔 없음) */
@@ -80,6 +94,8 @@ export interface SessionSummary {
   targetProgressLabel?: string
   /** 다음 할 일 한 줄 (최대 80자, HTML·제어문자 제거) */
   nextAction?: string
+  /** 사용자가 직접 요청해 만든 세션 집계 기반 AI 회고 (원본 카메라 데이터 없음) */
+  aiReport?: AiSessionReport
   /** 1분 빠른 점검 — 보상·출석·캠퍼스·집계 대상 아님 */
   isTest?: boolean
   /** 완료/중단 인정 사유 */

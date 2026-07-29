@@ -8,6 +8,7 @@ import { Badge, Button, Card, CardTitle, StatTile } from '@/components/ui'
 import { TARGET_PROGRESS_OPTIONS } from '@/constants/copy'
 import { ROUTES } from '@/constants/routes'
 import { formatDuration } from '@/features/sessions/sessionMachine'
+import { buildSessionSummary } from '@/features/sessions/buildSummary'
 import { useSessionStore } from '@/features/sessions/sessionStore'
 import { selectDamageDealt, useGameStore } from '@/features/game/gameStore'
 import {
@@ -20,6 +21,8 @@ import { useSessionHistoryStore } from '@/features/sessions/sessionHistoryStore'
 import { useDemoStore } from '@/features/demo/demoMode'
 import { MONSTER_THEMES, useActiveModeConfig } from '@/features/modes/modeStore'
 import { sanitizeNextAction } from '@/features/sessions/sessionHistoryStore'
+import { AiReportCard } from '@/features/ai-report/AiReportCard'
+import { featureFlags } from '@/lib/feature-flags/flags'
 import type { SessionSummary } from '@/types'
 import {
   CampusProfileBadge,
@@ -130,6 +133,14 @@ export function Result() {
             </dl>
           </Card>
         )}
+        {featureFlags.aiReport && (
+          <div className="mt-4">
+            <AiReportCard
+              summary={past}
+              onSave={(aiReport) => updateSummary(past.sessionId ?? past.id, { aiReport })}
+            />
+          </div>
+        )}
         <div className="mt-4 flex gap-2">
           <Button variant="secondary" onClick={() => navigate(ROUTES.history)}>
             기록 보기
@@ -159,6 +170,9 @@ export function Result() {
   }
 
   const completed = session.status === 'completed'
+  const aiReportSummary =
+    storedSummary ??
+    buildSessionSummary(session, game, completed ? 'completed' : 'aborted')
 
   const selectProgress = (id: string) => {
     setProgress(id)
@@ -249,6 +263,15 @@ export function Result() {
           <Card tone="blue">
             <GrowthTimeline xp={xp} compact />
           </Card>
+          {featureFlags.aiReport && (
+            <AiReportCard
+              summary={aiReportSummary}
+              onSave={(aiReport) => {
+                if (!storedSummary) return
+                updateSummary(storedSummary.sessionId ?? storedSummary.id, { aiReport })
+              }}
+            />
+          )}
         </div>
 
         <div className="flex flex-col gap-4">

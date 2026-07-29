@@ -55,6 +55,10 @@ export default defineConfig({
       timeout: 120_000,
       stdout: 'ignore',
       stderr: 'pipe',
+      env: {
+        VITE_ENABLE_AI_REPORT: 'true',
+        AI_REPORT_MOCK: 'true',
+      },
     },
     {
       command: 'npm run dev -- --port 5284 --strictPort',
@@ -69,6 +73,8 @@ export default defineConfig({
         // Supabase 저장소는 켜지 않습니다. Preview·E2E 는 mock 으로 확인합니다.
         VITE_ENABLE_CAMPUS_SUPABASE: 'false',
         VITE_ENABLE_QA_LAB: 'true',
+        VITE_ENABLE_AI_REPORT: 'true',
+        AI_REPORT_MOCK: 'true',
       },
     },
   ],

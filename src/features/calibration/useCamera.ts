@@ -103,5 +103,5 @@ export function useCamera(videoRef: React.RefObject<HTMLVideoElement | null>) {
   // 언마운트 시 항상 정지합니다.
   useEffect(() => stop, [stop])
 
-  return { state, start, stop }
+  return { state, stream: streamRef.current, start, stop }
 }

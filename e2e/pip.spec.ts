@@ -86,6 +86,43 @@ test('새로고침 후에도 토글 상태가 유지된다', async ({ page }) =>
   ).toBeVisible()
 })
 
+test('카메라 세션의 펫 크기 자기 모습 PiP는 토글·드래그·위치 초기화를 지원한다', async ({
+  page,
+}) => {
+  test.skip(process.env.VITE_ENABLE_CAMERA !== 'true', '가짜 카메라를 켠 검증 환경에서만 실행')
+
+  await page.goto('/')
+  await dev(page, 'injectTestCalibration')
+  await dev(page, 'startSession', 'e2e-camera-preview')
+  await page.evaluate(() => {
+    window.history.pushState({}, '', '/session/e2e-camera-preview')
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  })
+
+  const preview = page.getByTestId('session-camera-preview')
+  await expect(preview).toBeVisible()
+
+  await preview.getByRole('button', { name: '내 모습 보기' }).click()
+  await expect(preview.getByTestId('session-camera-preview-video')).toBeVisible()
+
+  const handle = preview.getByRole('button', { name: '미리보기 위치 이동' })
+  const box = await handle.boundingBox()
+  if (!box) throw new Error('미리보기 이동 핸들을 찾을 수 없습니다.')
+  await page.mouse.move(box.x + 12, box.y + 12)
+  await page.mouse.down()
+  await page.mouse.move(box.x - 28, box.y - 28)
+  await page.mouse.up()
+
+  await expect
+    .poll(() => preview.evaluate((element) => element.style.transform))
+    .not.toBe('translate3d(0px, 0px, 0px)')
+
+  await preview.getByRole('button', { name: '위치 초기화' }).click()
+  await expect
+    .poll(() => preview.evaluate((element) => element.style.transform))
+    .toBe('translate3d(0px, 0px, 0px)')
+})
+
 test('지원 브라우저에서 세션 시작 → PiP 창 열림 (API 있으면 실검증)', async ({ page }) => {
   await page.goto('/settings')
   const supported = await page.evaluate(

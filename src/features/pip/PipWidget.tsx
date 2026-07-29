@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { CharacterViewport } from '@/components/character/CharacterViewport'
+import { CameraStreamVideo } from '@/components/session/CameraStreamPreview'
 import { POSTURE_COPY } from '@/constants/copy'
 import { remainingMs, formatClock } from '@/features/sessions/sessionMachine'
 import { useSessionStore } from '@/features/sessions/sessionStore'
@@ -8,14 +10,22 @@ import { useCharacterStage } from '@/features/progression/progressionStore'
 
 /**
  * PIP 창 내용 — 기존 store(posture/session/progression/game)를 그대로 공유합니다.
- * 별도 타이머·자세 엔진 없음. 카메라 원본 영상은 절대 넣지 않습니다.
+ * 별도 타이머·자세 엔진 없음. 사용자가 선택하면 현재 세션의 기존 스트림만 미리보기로
+ * 연결하며, 새 권한 요청·캡처·저장·전송은 하지 않습니다.
  */
-export function PipWidget({ onClose }: { onClose: () => void }) {
+export function PipWidget({
+  onClose,
+  cameraStream = null,
+}: {
+  onClose: () => void
+  cameraStream?: MediaStream | null
+}) {
   const stage = useCharacterStage()
   const snapshot = usePostureStore((s) => s.snapshot)
   const session = useSessionStore()
   const combo = useGameStore((s) => s.combo)
   const attackTick = useGameStore((s) => s.attackTick)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   const copy = POSTURE_COPY[snapshot.state]
   const remaining = remainingMs(session)
@@ -37,6 +47,32 @@ export function PipWidget({ onClose }: { onClose: () => void }) {
         <span className="tabular font-bold text-ink">{combo}</span>
         {`회`}
       </p>
+
+      {cameraStream ? (
+        <div className="w-full overflow-hidden rounded-xl border border-line bg-canvas text-left">
+          <button
+            type="button"
+            aria-expanded={previewOpen}
+            aria-controls="pip-camera-preview"
+            className="flex h-8 w-full items-center justify-between px-2 text-xs font-semibold text-ink"
+            onClick={() => setPreviewOpen((open) => !open)}
+          >
+            <span>{previewOpen ? '내 모습 숨기기' : '내 모습 보기'}</span>
+            <span aria-hidden="true">{previewOpen ? '⌃' : '⌄'}</span>
+          </button>
+          <div id="pip-camera-preview" hidden={!previewOpen}>
+            <CameraStreamVideo
+              stream={cameraStream}
+              testId="pip-camera-preview"
+              className="aspect-[4/3] w-full -scale-x-100 bg-ink/5 object-cover"
+            />
+          </div>
+        </div>
+      ) : (
+        <p className="w-full text-left text-[11px] leading-snug text-ink-soft">
+          카메라를 연결하면 여기에서 내 모습을 확인할 수 있어요.
+        </p>
+      )}
 
       <div className="mt-auto flex w-full flex-col gap-1.5">
         {session.status === 'running' ? (

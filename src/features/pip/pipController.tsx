@@ -9,7 +9,8 @@ import { usePipStore } from './pipStore'
  *   click handler 안에서 openPip() 을 직접 호출해야 합니다.
  * - PiP 창은 오프너와 같은 JS 컨텍스트를 공유하므로 기존 zustand store 를
  *   그대로 구독합니다. 별도 타이머·엔진 없음.
- * - 카메라 원본 영상은 PiP 에 절대 넣지 않습니다. (PipWidget 에 video 요소 없음)
+ * - 사용자가 선택하면 현재 세션에서 이미 허용된 스트림만 미리보기로 연결합니다.
+ *   새 getUserMedia 호출·캡처·저장·네트워크 전송은 하지 않습니다.
  * - PiP 가 닫혀도 세션은 계속됩니다. 새로고침 시 자동 복원하지 않습니다.
  */
 interface DocumentPictureInPictureApi {
@@ -25,6 +26,7 @@ declare global {
 
 let pipWindow: Window | null = null
 let pipRoot: Root | null = null
+let cameraStream: MediaStream | null = null
 
 export function isDocumentPipSupported(): boolean {
   return typeof window !== 'undefined' && 'documentPictureInPicture' in window
@@ -56,6 +58,7 @@ function cleanup(): void {
   const root = pipRoot
   pipRoot = null
   pipWindow = null
+  cameraStream = null
   // React 렌더 사이클 중 동기 unmount 를 피하기 위해 다음 틱으로 미룹니다.
   if (root) {
     setTimeout(() => {
@@ -71,18 +74,37 @@ function cleanup(): void {
 
 export type OpenPipResult = 'opened' | 'unsupported' | 'blocked'
 
+function renderPipWidget(): void {
+  if (!pipRoot || !pipWindow) return
+  pipRoot.render(
+    <PipWidget
+      cameraStream={cameraStream}
+      onClose={() => pipWindow?.close()}
+    />,
+  )
+}
+
+export function setPipCameraStream(stream: MediaStream | null): void {
+  cameraStream = stream
+  renderPipWidget()
+}
+
 /**
  * PiP 창을 엽니다 — 반드시 사용자 click handler 체인 안에서 호출하세요.
  * 실패해도 세션은 계속됩니다.
  */
-export async function openPip(): Promise<OpenPipResult> {
+export async function openPip(stream: MediaStream | null = null): Promise<OpenPipResult> {
+  cameraStream = stream
   if (!isDocumentPipSupported() || !window.documentPictureInPicture) {
     usePipStore.getState().patch({ fallbackActive: true })
     return 'unsupported'
   }
 
   // 이미 열려 있으면 그대로 사용
-  if (pipWindow && !pipWindow.closed) return 'opened'
+  if (pipWindow && !pipWindow.closed) {
+    renderPipWidget()
+    return 'opened'
+  }
 
   try {
     const win = await window.documentPictureInPicture.requestWindow({
@@ -99,7 +121,7 @@ export async function openPip(): Promise<OpenPipResult> {
     win.document.body.append(container)
 
     pipRoot = createRoot(container)
-    pipRoot.render(<PipWidget onClose={() => win.close()} />)
+    renderPipWidget()
 
     // 사용자가 PiP 를 닫아도 세션은 종료하지 않습니다.
     win.addEventListener('pagehide', cleanup, { once: true })
@@ -126,14 +148,14 @@ export function closePip(): void {
  * Media Session 에 enterpictureinpicture 핸들러를 등록합니다.
  * 미지원 브라우저에서는 조용히 무시되며, 클릭 기반 PiP 와 무관하게 동작합니다.
  */
-export function registerAutoPip(): void {
+export function registerAutoPip(stream: MediaStream | null = null): void {
   try {
     if (!('mediaSession' in navigator)) return
     // 'enterpictureinpicture' 는 최신 Chrome 에서만 유효한 액션입니다.
     navigator.mediaSession.setActionHandler(
       'enterpictureinpicture' as MediaSessionAction,
       () => {
-        void openPip()
+        void openPip(stream)
       },
     )
   } catch {

@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { PipWidget } from './PipWidget'
 import { MiniPostureWidget } from '@/components/session/MiniPostureWidget'
+import { SessionCameraPreview } from '@/components/session/CameraStreamPreview'
 import { closePip, isDocumentPipSupported, openPip } from './pipController'
 import { usePipStore } from './pipStore'
 import { usePostureStore } from '@/features/posture-engine/postureStore'
@@ -19,6 +20,10 @@ const MESSAGES: Record<PostureState, string> = {
 
 describe('PIP 미니 위젯 (멘토 피드백)', () => {
   beforeEach(() => {
+    Object.defineProperty(HTMLMediaElement.prototype, 'play', {
+      configurable: true,
+      value: vi.fn().mockResolvedValue(undefined),
+    })
     usePipStore.getState().reset()
     usePostureStore.getState().reset()
     useSessionStore.getState().reset()
@@ -55,9 +60,42 @@ describe('PIP 미니 위젯 (멘토 피드백)', () => {
     },
   )
 
-  it('PipWidget 안에 카메라 video 요소가 없다', () => {
-    const { container } = render(<PipWidget onClose={() => {}} />)
-    expect(container.querySelector('video')).toBeNull()
+  it('PipWidget은 현재 세션 스트림을 사용자가 열었을 때만 미리보기로 보여준다', () => {
+    const stream = new EventTarget() as MediaStream
+    render(<PipWidget onClose={() => {}} cameraStream={stream} />)
+
+    expect(screen.getByRole('button', { name: '내 모습 보기' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    fireEvent.click(screen.getByRole('button', { name: '내 모습 보기' }))
+
+    const video = screen.getByTestId('pip-camera-preview') as HTMLVideoElement
+    expect(video).toBeVisible()
+    expect(video.muted).toBe(true)
+    expect(video.playsInline).toBe(true)
+    expect(video.srcObject).toBe(stream)
+  })
+
+  it('세션 화면의 자기 모습 PiP는 기본 우측 하단의 펫 크기에서 열고 드래그할 수 있다', () => {
+    const stream = new EventTarget() as MediaStream
+    render(<SessionCameraPreview stream={stream} />)
+
+    const open = screen.getByRole('button', { name: '내 모습 보기' })
+    expect(open).toHaveAttribute('aria-expanded', 'false')
+    fireEvent.click(open)
+
+    const preview = screen.getByTestId('session-camera-preview')
+    expect(screen.getByTestId('session-camera-preview-video')).toHaveProperty('srcObject', stream)
+
+    const handle = screen.getByRole('button', { name: '미리보기 위치 이동' })
+    fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientX: 100, clientY: 100 })
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 80, clientY: 80 })
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 80, clientY: 80 })
+    expect(preview).toHaveStyle({ transform: 'translate3d(-20px, -20px, 0)' })
+
+    fireEvent.keyDown(handle, { key: 'ArrowLeft' })
+    expect(preview).toHaveStyle({ transform: 'translate3d(-36px, -20px, 0)' })
   })
 
   it('MiniPostureWidget 도 video 없이 상태·시간·콤보만 보여준다', () => {

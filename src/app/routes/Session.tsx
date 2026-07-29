@@ -30,9 +30,15 @@ import { featureFlags } from '@/lib/feature-flags/flags'
 import { useRoomStore } from '@/features/rooms/roomStore'
 import { leaveRoom } from '@/features/rooms/roomService'
 import { useToast } from '@/app/providers/ToastProvider'
-import { closePip, openPip, registerAutoPip } from '@/features/pip/pipController'
+import {
+  closePip,
+  openPip,
+  registerAutoPip,
+  setPipCameraStream,
+} from '@/features/pip/pipController'
 import { usePipStore } from '@/features/pip/pipStore'
 import { MiniPostureWidget } from '@/components/session/MiniPostureWidget'
+import { SessionCameraPreview } from '@/components/session/CameraStreamPreview'
 import { CoopArena } from '@/components/game/CoopArena'
 import { useAttackSequence } from '@/features/game/useAttackSequence'
 import { MONSTER_THEMES, useActiveModeConfig } from '@/features/modes/modeStore'
@@ -90,7 +96,7 @@ export function Session() {
 
   // 비데모 세션은 자세 기준 없이는 시작할 수 없습니다. (3분 데모만 예외)
   const calibrationRequired = featureFlags.camera && !isDemo && !hasProfile
-  const { state: camera, start: startCamera, stop: stopCamera } =
+  const { state: camera, stream: cameraStream, start: startCamera, stop: stopCamera } =
     useCamera(videoRef)
   useLiveClassifier(videoRef, camera)
 
@@ -219,8 +225,12 @@ export function Session() {
   // PiP 폴백 상태 + 자동 PiP(선택 확장, 카메라 사용 중일 때만 의미)
   const pipFallback = usePipStore((s) => s.fallbackActive)
   useEffect(() => {
-    if (useRealCamera && session.status === 'running') registerAutoPip()
-  }, [useRealCamera, session.status])
+    setPipCameraStream(cameraStream)
+  }, [cameraStream])
+
+  useEffect(() => {
+    if (useRealCamera && session.status === 'running') registerAutoPip(cameraStream)
+  }, [useRealCamera, session.status, cameraStream])
 
   // 친구 방 세션 — 공동 보스 표시 + 친구 성공 이벤트·기린 싱크 알림
   const roomPhase = useRoomStore((s) => s.phase)
@@ -328,13 +338,17 @@ export function Session() {
       {/* PiP 미지원·차단 시 화면 안 미니 위젯 (카메라 영상 미포함) */}
       {pipFallback && session.status !== 'idle' && <MiniPostureWidget />}
 
-      {/* 자세 분석용 비디오. 화면에 크게 노출하지 않습니다. (docs/05 S-09) */}
+      {useRealCamera && session.status !== 'idle' && (
+        <SessionCameraPreview stream={cameraStream} />
+      )}
+
       {useRealCamera && (
         <video
           ref={videoRef}
           playsInline
           muted
-          className="pointer-events-none fixed bottom-3 right-3 h-24 w-32 -scale-x-100 rounded-xl border border-line object-cover opacity-80"
+          aria-hidden="true"
+          className="pointer-events-none fixed h-px w-px opacity-0"
         />
       )}
 
@@ -393,7 +407,7 @@ export function Session() {
                 session.start(sessionId)
                 // PiP 는 사용자 제스처 필요 — 같은 click handler 에서 요청
                 if (useUserStore.getState().pipAutoOpen) {
-                  void openPip().then((result) => {
+                  void openPip(cameraStream).then((result) => {
                     if (result !== 'opened') {
                       push({
                         title:
@@ -597,7 +611,7 @@ export function Session() {
                 variant="secondary"
                 onClick={() => {
                   // 사용자 클릭(제스처) 기반 PiP 열기 — 실패 시 화면 안 위젯
-                  void openPip().then((result) => {
+                  void openPip(cameraStream).then((result) => {
                     if (result !== 'opened') {
                       push({
                         title:

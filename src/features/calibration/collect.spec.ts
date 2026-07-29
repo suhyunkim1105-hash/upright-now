@@ -87,6 +87,23 @@ describe('캘리브레이션 v3 타이밍 (MODE+CALIBRATION 스프린트)', () =
     expect(r.state.samplingStartedAt).toBeNull()
   })
 
+  it('어두움·저대비·카메라 흔들림 프레임은 표본으로 쓰지 않는다', () => {
+    for (const [frameQuality, expected] of [
+      ['dim', 'dim'],
+      ['low-contrast', 'low-contrast'],
+      ['motion', 'camera-motion'],
+    ] as const) {
+      const result = collectStep(createCollectState(), {
+        analysis: goodFrame(),
+        now: 0,
+        frameQuality,
+      })
+      expect(result.quality).toBe(expected)
+      expect(result.validCount).toBe(0)
+      expect(result.state.framingSince).toBeNull()
+    }
+  })
+
   it('원본 좌표·프레임은 프로필에 저장되지 않는다', () => {
     const { profile } = feed(createCollectState(), 0, FRAMING_MS + TARGET_MS + 300)
     const json = JSON.stringify(profile)

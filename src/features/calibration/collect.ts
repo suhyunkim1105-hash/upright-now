@@ -2,6 +2,7 @@ import { mad, median, MIN_SHOULDER_WIDTH, PRIMARY_FEATURES, AUXILIARY_FEATURES }
 import type { FeatureKey, LandmarkAnalysis } from '@/features/posture-engine/features'
 import type { CalibrationProfile, FeatureStat } from './calibrationStore'
 import { checkCalibrationFraming } from './framingGate'
+import type { CameraFrameQuality } from './frameQuality'
 
 /**
  * 캘리브레이션 표본 수집 v3 — 순수 로직. 시간은 호출자가 넘깁니다.
@@ -12,7 +13,7 @@ import { checkCalibrationFraming } from './framingGate'
  * 3) 유효 표본 40개 이상
  * 4) 5개의 1초 구간마다 유효 표본 1개 이상
  *
- * 움직임 과다·얼굴 미감지·한쪽 어깨 없음 → 해당 프레임 제외(진행 일시정지).
+ * 움직임 과다·어두움·저대비·카메라 흔들림·얼굴 미감지·한쪽 어깨 없음 → 해당 프레임 제외(진행 일시정지).
  * 귀·엉덩이 없음 → limited 로 계속 진행.
  * 원본 프레임·랜드마크 시계열은 저장하지 않습니다.
  */
@@ -32,6 +33,9 @@ export type CalibrationQuality =
   | 'no-person'
   | 'low-visibility'
   | 'moving'
+  | 'dim'
+  | 'low-contrast'
+  | 'camera-motion'
   | 'rotated'
   | 'tilted'
   | 'timeout'
@@ -94,9 +98,16 @@ export function collectStep(
     now: number
     deviceIdHash?: string | null
     profileName?: string
+    frameQuality?: Exclude<CameraFrameQuality, 'pending'>
   },
 ): CollectResult {
-  const { analysis, now, deviceIdHash = null, profileName = '기준 자세' } = input
+  const {
+    analysis,
+    now,
+    deviceIdHash = null,
+    profileName = '기준 자세',
+    frameQuality,
+  } = input
 
   const startedAt = state.startedAt ?? now
   const sampling = state.samplingStartedAt !== null
@@ -136,6 +147,9 @@ export function collectStep(
     quality,
   })
 
+  if (frameQuality === 'dim') return invalid('dim')
+  if (frameQuality === 'low-contrast') return invalid('low-contrast')
+  if (frameQuality === 'motion') return invalid('camera-motion')
   if (!analysis) return invalid('no-person')
   if (!analysis.faceCoreOk || !analysis.bothShouldersOk)
     return invalid('low-visibility')

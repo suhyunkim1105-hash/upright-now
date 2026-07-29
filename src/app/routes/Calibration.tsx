@@ -7,7 +7,9 @@ import { ROUTES } from '@/constants/routes'
 import { PRIVACY } from '@/constants/copy'
 import { featureFlags } from '@/lib/feature-flags/flags'
 import { useCamera } from '@/features/calibration/useCamera'
+import { useFrameQuality } from '@/features/calibration/useFrameQuality'
 import { usePoseDetection, type PoseFrame } from '@/features/posture-engine/usePoseDetection'
+import type { MoveNetBenchmarkResult } from '@/features/posture-engine/tfjsMoveNetBenchmark'
 import {
   collectStep,
   createCollectState,
@@ -30,6 +32,9 @@ const QUALITY_COPY: Record<CalibrationQuality, string> = {
   'no-person': '화면 중앙에 앉아 얼굴이 보이도록 해 주세요.',
   'low-visibility': '얼굴과 양쪽 어깨가 보이게 앉고 주변을 조금 밝혀 주세요.',
   moving: '잠깐 편안한 자세를 유지해 주세요.',
+  dim: '주변을 조금 밝혀 주세요. 프레임 품질을 확인한 뒤 기준을 등록할게요.',
+  'low-contrast': '얼굴과 어깨가 배경과 구분되도록 주변을 조금 밝혀 주세요.',
+  'camera-motion': '카메라가 흔들리지 않도록 잠깐 고정해 주세요.',
   rotated: '화면 정면을 바라봐 주세요.',
   tilted: '선에 정확히 맞출 필요는 없어요. 얼굴과 양쪽 어깨가 모두 보이도록 편안하게 앉아 주세요.',
   timeout: '표본을 충분히 모으지 못했어요. 자세를 잡고 다시 시작할게요.',
@@ -162,6 +167,12 @@ export function Calibration() {
       : null
   const [modelError, setModelError] = useState(false)
   const [lastAnalysis, setLastAnalysis] = useState<LandmarkAnalysis | null>(null)
+  const [benchmark, setBenchmark] = useState<MoveNetBenchmarkResult | null>(null)
+  const [benchmarkLoading, setBenchmarkLoading] = useState(false)
+  const frameQuality = useFrameQuality(
+    videoRef,
+    featureFlags.camera && camera.status === 'ready' && !saved,
+  )
 
   useEffect(() => {
     if (!featureFlags.camera) return
@@ -179,6 +190,8 @@ export function Calibration() {
         analysis: frame.multiPerson ? null : frame.analysis,
         now: performance.now(),
         deviceIdHash: hashDeviceId(camera.deviceId),
+        frameQuality:
+          frameQuality.quality === 'pending' ? undefined : frameQuality.quality,
       })
       collectRef.current = step.state
       setQuality(step.quality)
@@ -206,6 +219,23 @@ export function Calibration() {
   useEffect(() => {
     if (modelStatus === 'error') setModelError(true)
   }, [modelStatus])
+
+  const runMoveNetBenchmark = async () => {
+    const video = videoRef.current
+    if (!video || camera.status !== 'ready') return
+
+    setBenchmarkLoading(true)
+    try {
+      const { benchmarkMoveNet } = await import(
+        '@/features/posture-engine/tfjsMoveNetBenchmark'
+      )
+      setBenchmark(await benchmarkMoveNet(video))
+    } catch {
+      setBenchmark({ status: 'error', message: 'MoveNet/WASM 진단을 준비하지 못했어요.' })
+    } finally {
+      setBenchmarkLoading(false)
+    }
+  }
 
   if (!featureFlags.camera) {
     return (
@@ -324,6 +354,18 @@ export function Calibration() {
               <p className="mt-2 text-xs text-ink-soft tabular">
                 {`유효 표본 ${validCount} / ${MIN_VALID_SAMPLES}`}
               </p>
+              {frameQuality.quality !== 'pending' && (
+                <p className="mt-1 text-xs text-ink-soft">
+                  {`카메라 환경: ${
+                    frameQuality.quality === 'good'
+                      ? '캘리브레이션에 쓸 수 있는 프레임이에요.'
+                      : QUALITY_COPY[
+                          frameQuality.quality === 'motion'
+                            ? 'camera-motion'
+                            : frameQuality.quality
+                        ]}`}
+                </p>
+              )}
               <ol className="mt-4 flex flex-col gap-1.5 text-xs">
                 {['얼굴과 양쪽 어깨 확인', '편안한 자세로 5초 유지', '기준 저장 완료'].map((label, i) => (
                   <li key={label} className={'flex items-center gap-2 ' + (uiStep === i + 1 ? 'font-bold text-ink' : 'text-ink-soft')}>
@@ -331,6 +373,31 @@ export function Calibration() {
                   </li>
                 ))}
               </ol>
+              {debugOverlay && (
+                <div className="mt-5 border-t border-line pt-4">
+                  <p className="text-xs font-bold text-ink">개발용 보조 엔진 진단</p>
+                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+                    MoveNet/WASM을 10프레임만 측정해 MediaPipe와의 성능 비교 근거로 씁니다.
+                    이 결과와 프레임은 저장하거나 전송하지 않아요.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    className="mt-3"
+                    disabled={benchmarkLoading || camera.status !== 'ready'}
+                    onClick={() => void runMoveNetBenchmark()}
+                  >
+                    {benchmarkLoading ? 'MoveNet/WASM 측정 중…' : 'MoveNet/WASM 10프레임 측정'}
+                  </Button>
+                  {benchmark && (
+                    <p className="mt-2 text-xs text-ink-soft" aria-live="polite">
+                      {benchmark.status === 'ready'
+                        ? `WASM · 로드 ${benchmark.loadMs}ms · 중앙 추론 ${benchmark.medianInferenceMs}ms · 약 ${benchmark.estimatedFps}fps · 감지 ${benchmark.detectedFrames}/${benchmark.sampleCount}`
+                        : benchmark.message}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </Card>

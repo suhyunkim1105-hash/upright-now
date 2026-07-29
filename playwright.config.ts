@@ -30,8 +30,21 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: '**/camera-diagnostics.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+        },
+        viewport: { width: 1440, height: 1000 },
+      },
+    },
+    {
+      name: 'chromium-camera',
+      testMatch: '**/camera-diagnostics.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:5285',
         launchOptions: {
           args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
         },
@@ -73,6 +86,19 @@ export default defineConfig({
         // Supabase 저장소는 켜지 않습니다. Preview·E2E 는 mock 으로 확인합니다.
         VITE_ENABLE_CAMPUS_SUPABASE: 'false',
         VITE_ENABLE_QA_LAB: 'true',
+        VITE_ENABLE_AI_REPORT: 'true',
+        AI_REPORT_MOCK: 'true',
+      },
+    },
+    {
+      command: 'npm run dev -- --port 5285 --strictPort',
+      url: 'http://localhost:5285',
+      reuseExistingServer: false,
+      timeout: 120_000,
+      stdout: 'ignore',
+      stderr: 'pipe',
+      env: {
+        VITE_ENABLE_CAMERA: 'true',
         VITE_ENABLE_AI_REPORT: 'true',
         AI_REPORT_MOCK: 'true',
       },

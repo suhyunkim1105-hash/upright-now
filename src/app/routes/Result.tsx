@@ -219,12 +219,18 @@ export function Result() {
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="flex flex-col gap-4">
-          <Card tone="pink">
-            <CardTitle>보스 전투 결과</CardTitle>
-            <div className="mt-4">
+          <Card tone="pink" className="overflow-hidden">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold tracking-wide text-[#b8285a]">오늘의 회복 흐름</p>
+                <CardTitle>보스 전투 결과</CardTitle>
+              </div>
+              <Badge tone="coral">회복 행동 반영</Badge>
+            </div>
+            <div className="mt-5 rounded-2xl bg-surface/80 p-4">
               <BossHealthBar hp={game.boss.hp} maxHp={game.boss.maxHp} name={monsterName} />
             </div>
-            <div className="mt-4">
+            <div className="mt-3 max-w-[220px]">
               <StatTile
                 label="몬스터 피해량"
                 value={String(selectDamageDealt(game))}
@@ -234,7 +240,13 @@ export function Result() {
           </Card>
 
           <Card>
-            <CardTitle>자세 요약</CardTitle>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-bold tracking-wide text-[#2b52a8]">세션 기록</p>
+                <CardTitle>자세 요약</CardTitle>
+              </div>
+              <Badge tone="muted">점수 대신 흐름</Badge>
+            </div>
             <p className="mt-1 text-xs text-ink-soft">
               세션 시간과 자세를 안정적으로 측정할 수 있었던 시간은 따로 표시해요.
             </p>
@@ -260,9 +272,6 @@ export function Result() {
             </div>
           </Card>
 
-          <Card tone="blue">
-            <GrowthTimeline xp={xp} compact />
-          </Card>
           {featureFlags.aiReport && (
             <AiReportCard
               summary={aiReportSummary}
@@ -272,6 +281,9 @@ export function Result() {
               }}
             />
           )}
+          <Card tone="blue">
+            <GrowthTimeline xp={xp} />
+          </Card>
         </div>
 
         <div className="flex flex-col gap-4">
@@ -296,7 +308,11 @@ export function Result() {
           </CampusShareCardFrame>
 
           <Card>
+            <p className="text-xs font-bold tracking-wide text-[#b8285a]">마무리 한 가지</p>
             <CardTitle>이번 목표를 얼마나 진행했나요?</CardTitle>
+            <p className="mt-1 text-xs leading-5 text-ink-soft">
+              숫자보다 다음 행동을 남기면, 다음 세션을 다시 시작하기 쉬워져요.
+            </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {TARGET_PROGRESS_OPTIONS.map((option) => (
                 <Button

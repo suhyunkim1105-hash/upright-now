@@ -352,21 +352,22 @@ export function Session() {
         />
       )}
 
-      {/* 상단 — 과목·목표만 간결하게 */}
       <BackButton
         fallback={ROUTES.home}
         onClick={isActive ? () => setLeaveConfirmOpen(true) : undefined}
       />
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold text-ink-soft">
+          <p className="text-xs font-bold tracking-wide text-ink-soft">
             {session.subject || '집중 세션'}
           </p>
-          <h1 className="truncate text-2xl font-bold text-ink">
+          <h1 className="truncate text-3xl font-bold tracking-tight text-ink">
             {session.goal || '오늘의 목표를 끝내는 시간'}
           </h1>
         </div>
-        <PostureStatusBadge state={snapshot.state} quality={snapshot.quality} />
+        <p className="rounded-full bg-surface px-3 py-1.5 text-xs font-semibold text-ink-soft shadow-card">
+          처음 등록한 기준과 비교 중
+        </p>
       </header>
 
       {session.status === 'idle' && calibrationRequired && (
@@ -535,7 +536,7 @@ export function Session() {
                 </div>
                 <div className="min-w-0 flex-1 text-center sm:text-left">
                   <PostureMessage state={snapshot.state} />
-                  <p className="mt-2 text-sm text-ink-soft">
+                  <p className="mt-2 text-sm text-ink">
                     처음 등록한 개인 기준과 비교한 변화만 알려드려요.
                   </p>
                   <div className="mt-5 flex justify-center sm:justify-start">
@@ -570,14 +571,44 @@ export function Session() {
           )}
         </Card>
 
-        {/* 오른쪽 — 남은 시간 · 이번 세션 · 제어 */}
         <div className="flex flex-col gap-3">
-          <Card className="p-5">
-            <SessionTimer remaining={remaining} />
+          <Card tone="canvas" className={isBad ? 'border-coral p-5' : 'border-pink/30 p-5'}>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold tracking-wide text-ink-soft">
+                  {session.status === 'running'
+                    ? '집중 중'
+                    : session.status === 'paused'
+                      ? '잠시 멈춤'
+                      : session.status === 'completed'
+                        ? '집중 완료'
+                        : '세션 준비'}
+                </p>
+                <div className="mt-1">
+                  <SessionTimer remaining={remaining} />
+                </div>
+              </div>
+              <PostureStatusBadge state={snapshot.state} quality={snapshot.quality} />
+            </div>
+
+            {(session.status === 'running' || session.status === 'paused') && (
+              <Button
+                fullWidth
+                className="mt-5 bg-[#b8285a] hover:bg-[#9f204b]"
+                onClick={() =>
+                  session.status === 'running' ? session.pause() : session.resume()
+                }
+              >
+                {session.status === 'running' ? '잠깐 멈추기' : '집중 이어서 하기'}
+              </Button>
+            )}
           </Card>
 
           <Card className="p-5">
-            <CardTitle>이번 세션</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>이번 세션 흐름</CardTitle>
+              <span className="text-xs font-semibold text-ink-soft">실시간 집계</span>
+            </div>
             <div className="mt-3 grid grid-cols-2 gap-2">
               <StatTile
                 label="회복 성공"
@@ -601,45 +632,49 @@ export function Session() {
             </div>
           </Card>
 
-          <Card className="p-5">
-            <div className="flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={toggleSound}>
-                {soundEnabled ? '소리 끄기' : '소리 켜기'}
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => {
-                  // 사용자 클릭(제스처) 기반 PiP 열기 — 실패 시 화면 안 위젯
-                  void openPip(cameraStream).then((result) => {
-                    if (result !== 'opened') {
-                      push({
-                        title:
-                          '작은 별도 창을 열지 못해 화면 안 미니 위젯으로 표시해요.',
-                        tone: 'info',
+          <Card className="overflow-hidden p-0">
+            <details>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-sm font-bold text-ink marker:content-none [&::-webkit-details-marker]:hidden">
+                <span>집중 도구와 종료</span>
+                <span aria-hidden="true" className="rounded-lg bg-canvas px-2 py-1 text-xs text-ink-soft">
+                  열기
+                </span>
+              </summary>
+              <div className="border-t border-line px-5 pt-4 pb-5">
+                <p className="text-xs leading-5 text-ink-soft">
+                  소리, 미니 위젯, 스트레칭은 필요할 때만 열어 집중 화면을 가볍게 유지해요.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button size="sm" variant="secondary" onClick={toggleSound}>
+                    {soundEnabled ? '소리 끄기' : '소리 켜기'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      // 사용자 클릭(제스처) 기반 PiP 열기 — 실패 시 화면 안 위젯
+                      void openPip(cameraStream).then((result) => {
+                        if (result !== 'opened') {
+                          push({
+                            title:
+                              '작은 별도 창을 열지 못해 화면 안 미니 위젯으로 표시해요.',
+                            tone: 'info',
+                          })
+                        }
                       })
-                    }
-                  })
-                }}
-              >
-                미니 위젯 열기
-              </Button>
-              <Button size="sm" variant="secondary" onClick={goStretch}>
-                잠깐 스트레칭
-              </Button>
-              {session.status === 'running' ? (
-                <Button size="sm" variant="ghost" onClick={() => session.pause()}>
-                  일시정지
-                </Button>
-              ) : session.status === 'paused' ? (
-                <Button size="sm" variant="ghost" onClick={() => session.resume()}>
-                  이어서 하기
-                </Button>
-              ) : null}
-              <Button size="sm" variant="secondary" onClick={endSession}>
-                세션 종료
-              </Button>
-            </div>
+                    }}
+                  >
+                    미니 위젯 열기
+                  </Button>
+                  <Button size="sm" variant="secondary" onClick={goStretch}>
+                    잠깐 스트레칭
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={endSession}>
+                    세션 종료
+                  </Button>
+                </div>
+              </div>
+            </details>
           </Card>
 
           {session.status === 'completed' && (

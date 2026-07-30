@@ -10,11 +10,11 @@
   --color-canvas: #fbf7ec;
   --color-surface: #ffffff;
   --color-ink: #171717;
-  --color-ink-soft: #6f6a62;
+  --color-ink-soft: #5e594f;
   --color-line: #e7e0d4;
 
   /* 역할 컬러 — 핑크: 세션·회복·CTA */
-  --color-pink: #f45b8d;
+  --color-pink: #c83b67;
   --color-pink-soft: #fce1ea;
 
   /* 노랑: 포인트·출석·보상 */
@@ -32,7 +32,7 @@
   /* 강조·경계·중립 */
   --color-coral: #ff6464;
   --color-warning: #d7a62a;
-  --color-muted: #85817b;
+  --color-muted: #68645e;
 
   /* 타이포 */
   --font-sans: Pretendard, Inter, system-ui, -apple-system, 'Segoe UI',
@@ -81,6 +81,321 @@
  * role="progressbar" 를 붙인 div 대신 실제 progress 요소를 쓰기 위한 최소 스타일입니다.
  */
 @layer components {
+  .dashboard-heading {
+    margin-bottom: 1.75rem;
+  }
+
+  .dashboard-kicker {
+    color: var(--color-green);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .dashboard-ritual,
+  .dashboard-focus-card {
+    overflow: hidden;
+    border-color: rgb(244 91 141 / 0.18);
+    box-shadow: 0 1px 2px rgb(23 23 23 / 0.03), 0 16px 36px rgb(244 91 141 / 0.1);
+  }
+
+  .dashboard-ritual {
+    background-image: linear-gradient(118deg, rgb(252 225 234) 0%, rgb(252 225 234) 68%, rgb(255 240 184) 68%, rgb(255 240 184) 100%);
+  }
+
+  .dashboard-ritual__steps {
+    display: grid;
+    gap: 0.5rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dashboard-ritual__steps li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.625rem;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    font-weight: 650;
+    line-height: 1.5;
+  }
+
+  .dashboard-ritual__steps span {
+    color: var(--color-pink);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
+  }
+
+  .dashboard-ritual__character,
+  .dashboard-focus-card__character {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 15.5rem;
+  }
+
+  .dashboard-ritual__character::before,
+  .dashboard-focus-card__character::before {
+    position: absolute;
+    inset: 1.1rem 0.35rem 1.65rem;
+    z-index: 0;
+    content: '';
+    border: 2px dashed rgb(49 94 67 / 0.25);
+    border-radius: 48% 52% 44% 56% / 51% 44% 56% 49%;
+  }
+
+  .dashboard-ritual__character figure,
+  .dashboard-ritual__character > div,
+  .dashboard-focus-card__character > div {
+    position: relative;
+    z-index: 1;
+  }
+
+  .dashboard-ritual__character p {
+    position: relative;
+    z-index: 1;
+    margin: 0.25rem 0 0;
+    color: var(--color-green);
+    font-size: 0.75rem;
+    font-weight: 750;
+  }
+
+  .dashboard-focus-card {
+    background-image: linear-gradient(115deg, rgb(252 225 234) 0%, rgb(252 225 234) 62%, rgb(228 238 219) 62%, rgb(228 238 219) 100%);
+  }
+
+  .dashboard-focus-card__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 0.38fr);
+    align-items: end;
+    gap: 1.25rem;
+    padding: 1.25rem 1.5rem 1.5rem;
+    border-top: 1px solid rgb(23 23 23 / 0.09);
+    background: rgb(255 255 255 / 0.62);
+  }
+
+  .dashboard-session-options label {
+    padding: 0.625rem 0.75rem;
+    border-radius: 1rem;
+  }
+
+  .dashboard-session-options label span:first-of-type {
+    font-size: 0.8125rem;
+  }
+
+  .dashboard-session-options label span:last-of-type {
+    font-size: 0.6875rem;
+  }
+
+  .dashboard-focus-card__start {
+    min-width: 13.5rem;
+  }
+
+  .dashboard-growth {
+    position: relative;
+    overflow: hidden;
+    border-color: rgb(95 143 247 / 0.22);
+    box-shadow: none;
+  }
+
+  .dashboard-growth::before {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 0.375rem;
+    content: '';
+    background: var(--color-blue);
+  }
+
+  .dashboard-history-summary {
+    box-shadow: none;
+  }
+
+  .dashboard-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .dashboard-rail__summary {
+    padding: 1.25rem;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+
+  .dashboard-rail__metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 1.25rem 0;
+  }
+
+  .dashboard-rail__metrics div {
+    min-width: 0;
+  }
+
+  .dashboard-rail__metrics dt {
+    color: var(--color-ink-soft);
+    font-size: 0.6875rem;
+    font-weight: 650;
+  }
+
+  .dashboard-rail__metrics dd {
+    margin: 0.25rem 0 0;
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .dashboard-rail__link {
+    padding: 0;
+    color: var(--color-green);
+    font-size: 0.8125rem;
+    font-weight: 750;
+  }
+
+  .dashboard-rail__link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .growth-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.375rem;
+  }
+
+  .growth-timeline__header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .growth-timeline__level {
+    margin: 0;
+    color: var(--color-blue);
+    font-size: 0.9375rem;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .growth-timeline__level span {
+    margin-right: 0.25rem;
+    color: var(--color-ink-soft);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .growth-timeline__stages {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .growth-timeline__stages::before {
+    position: absolute;
+    top: 1rem;
+    right: 8.333%;
+    left: 8.333%;
+    z-index: 0;
+    height: 2px;
+    content: '';
+    background: var(--color-line);
+  }
+
+  .growth-timeline__stage {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 0;
+    color: var(--color-muted);
+    text-align: center;
+  }
+
+  .growth-timeline__node {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    border: 2px solid var(--color-line);
+    border-radius: 999px;
+    background: var(--color-surface);
+    color: var(--color-ink-soft);
+    font-size: 0.75rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .growth-timeline__stage--reached .growth-timeline__node {
+    border-color: var(--color-blue);
+    background: var(--color-blue);
+    color: white;
+  }
+
+  .growth-timeline__stage--current .growth-timeline__node {
+    outline: 5px solid rgb(95 143 247 / 0.17);
+    outline-offset: 2px;
+  }
+
+  .growth-timeline__name {
+    max-width: 6.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  .growth-timeline__stage--current .growth-timeline__name {
+    color: var(--color-ink);
+  }
+
+  .growth-timeline__progress {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  @media (max-width: 47.99rem) {
+    .dashboard-ritual,
+    .dashboard-focus-card {
+      background-image: none;
+    }
+
+    .dashboard-ritual__character,
+    .dashboard-focus-card__character {
+      min-height: 12rem;
+    }
+
+    .dashboard-focus-card__actions {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-focus-card__start {
+      width: 100%;
+    }
+
+    .growth-timeline__name {
+      display: none;
+    }
+  }
+
   .un-progress {
     appearance: none;
     display: block;

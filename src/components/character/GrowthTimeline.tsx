@@ -1,13 +1,9 @@
-import { CharacterViewport } from './CharacterViewport'
 import { CHARACTER_STAGES } from '@/constants/game'
 import { getStageProgress } from '@/features/progression/growth'
 import { Progress } from '@/components/ui'
-import type { CharacterStage } from '@/types'
 
-/** 6단계 성장 타임라인 — docs/05 S-14, docs/12 §11 */
 export function GrowthTimeline({
   xp,
-  compact = false,
 }: {
   xp: number
   compact?: boolean
@@ -15,15 +11,21 @@ export function GrowthTimeline({
   const progress = getStageProgress(xp)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-lg font-bold text-ink">성장 진행도</h2>
-        <p className="text-sm font-bold text-blue">
-          {`Lv.${progress.stage} ${progress.meta.name}`}
+    <section className="growth-timeline" aria-labelledby="growth-timeline-title">
+      <div className="growth-timeline__header">
+        <div>
+          <p className="dashboard-kicker">자세를 회복할 때마다</p>
+          <h2 id="growth-timeline-title" className="mt-1 text-xl font-bold text-ink">
+            조금씩 길어지는 여정
+          </h2>
+        </div>
+        <p className="growth-timeline__level">
+          <span>지금</span>
+          {` Lv.${progress.stage} ${progress.meta.name}`}
         </p>
       </div>
 
-      <ol className="grid grid-cols-6 gap-2" aria-label="캐릭터 6단계 성장">
+      <ol className="growth-timeline__stages" aria-label="캐릭터 6단계 성장">
         {CHARACTER_STAGES.map((meta) => {
           const reached = meta.stage <= progress.stage
           const current = meta.stage === progress.stage
@@ -32,30 +34,19 @@ export function GrowthTimeline({
               key={meta.stage}
               aria-current={current ? 'step' : undefined}
               className={[
-                'flex flex-col items-center gap-1 rounded-2xl border bg-surface px-1 py-2 text-center',
-                current
-                  ? 'border-blue ring-2 ring-blue/35'
-                  : 'border-line',
-                reached ? '' : 'opacity-45 grayscale',
+                'growth-timeline__stage',
+                reached ? 'growth-timeline__stage--reached' : '',
+                current ? 'growth-timeline__stage--current' : '',
               ].join(' ')}
             >
-              <span className="text-[11px] font-bold text-ink-soft">
-                {meta.stage}
-              </span>
-              <CharacterViewport
-                stage={meta.stage as CharacterStage}
-                size={compact ? 52 : 72}
-                decorative
-              />
-              <span className="text-[11px] leading-tight font-semibold text-ink">
-                {meta.name}
-              </span>
+              <span className="growth-timeline__node" aria-hidden="true">{meta.stage}</span>
+              <span className="growth-timeline__name">{meta.name}</span>
             </li>
           )
         })}
       </ol>
 
-      <div className="flex flex-col gap-1.5">
+      <div className="growth-timeline__progress">
         <Progress
           value={progress.ratio}
           tone="blue"
@@ -74,6 +65,6 @@ export function GrowthTimeline({
           </span>
         </div>
       </div>
-    </div>
+    </section>
   )
 }

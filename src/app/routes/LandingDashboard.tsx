@@ -8,19 +8,14 @@ import { AttendanceCalendar } from '@/components/dashboard/AttendanceCalendar'
 import { PostureStatusBadge } from '@/components/posture/PostureStatusBadge'
 import { RecoveryCombo } from '@/components/session/SessionBits'
 import {
-  Badge,
   Button,
   Card,
-  CardTitle,
   EmptyState,
   SegmentedControl,
-  StatTile,
 } from '@/components/ui'
 import { Icon } from '@/components/ui/Icon'
 import { SESSION_LENGTHS } from '@/constants/session'
-import { BRAND, FRIEND_ROOM, POSTURE_COPY, PRIVACY } from '@/constants/copy'
-import { featureFlags } from '@/lib/feature-flags/flags'
-import { useToast } from '@/app/providers/ToastProvider'
+import { POSTURE_COPY } from '@/constants/copy'
 import { ROUTES } from '@/constants/routes'
 import { useUserStore } from '@/features/onboarding/userStore'
 import {
@@ -30,8 +25,6 @@ import {
 import { useGameStore } from '@/features/game/gameStore'
 import { usePostureStore } from '@/features/posture-engine/postureStore'
 import { useSessionStore } from '@/features/sessions/sessionStore'
-import { useDemoStore } from '@/features/demo/demoMode'
-import { MONSTER_THEMES, useActiveModeConfig } from '@/features/modes/modeStore'
 import { formatDuration } from '@/features/sessions/sessionMachine'
 import { useSessionHistoryStore } from '@/features/sessions/sessionHistoryStore'
 import {
@@ -47,14 +40,12 @@ import { kstDateKey } from '@/lib/time/kst'
 export function LandingDashboard() {
   const navigate = useNavigate()
   const { nickname, hasOnboarded, hasCalibration } = useUserStore()
-  const modeConfig = useActiveModeConfig()
   const stage = useCharacterStage()
   const { xp, points, attendance } = useProgressionStore()
   const { combo, bestCombo } = useGameStore()
   const snapshot = usePostureStore((s) => s.snapshot)
   const { lengthId, configure, status } = useSessionStore()
   const isMonitoring = status === 'running'
-  const { push } = useToast()
 
   // 세션 요약 저장(finalizeSession) 직후 zustand 구독으로 즉시 갱신됩니다.
   const summaries = useSessionHistoryStore((s) => s.summaries)
@@ -69,254 +60,172 @@ export function LandingDashboard() {
   return (
     <AppShell
       rail={
-        <>
+        <div className="dashboard-rail">
           <div>
             <AttendanceCalendar attendance={attendance} />
-            <p className="mt-1.5 px-1 text-xs text-ink-soft">
-              {`연속 출석 ${streak.current}일 · 최고 ${streak.best}일`}
-              {streak.next && ` · 다음 보너스(+${streak.next.points}P)까지 ${streak.next.remaining}일`}
+            <p className="mt-2 px-1 text-xs leading-relaxed text-ink-soft">
+              {`연속 ${streak.current}일 · 가장 길게 ${streak.best}일`}
+              {streak.next && ` · 다음 보너스까지 ${streak.next.remaining}일`}
             </p>
           </div>
 
+          <section className="dashboard-rail__summary" aria-labelledby="dashboard-rhythm-title">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="dashboard-kicker">오늘의 리듬</p>
+                <h2 id="dashboard-rhythm-title" className="mt-1 text-lg font-bold text-ink">
+                  작지만 이어진 기록
+                </h2>
+              </div>
+              <Icon name="leaf" size={22} className="text-green" />
+            </div>
+            <dl className="dashboard-rail__metrics">
+              <div>
+                <dt>집중</dt>
+                <dd className="tabular">{formatFocusClock(todayFocus.focusedMs)}</dd>
+              </div>
+              <div>
+                <dt>회복</dt>
+                <dd className="tabular">{combo}회</dd>
+              </div>
+              <div>
+                <dt>잎사귀</dt>
+                <dd className="tabular">{points}P</dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              className="dashboard-rail__link"
+              onClick={() => navigate(ROUTES.history)}
+            >
+              기록 자세히 보기 <span aria-hidden="true">→</span>
+            </button>
+          </section>
+
           {/* 캠퍼스 카드 — 플래그가 꺼져 있으면 렌더되지 않습니다. */}
           <CampusDashboardCard />
-
-          <Card tone="yellow" className="p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <CardTitle>오늘의 기록</CardTitle>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <StatTile
-                label="집중"
-                value={formatFocusClock(todayFocus.focusedMs)}
-                tone="surface"
-              />
-              <StatTile label="콤보" value={String(combo)} unit="회" tone="surface" />
-              <StatTile label="포인트" value={String(points)} unit="P" tone="surface" />
-            </div>
-          </Card>
-
-          <Card tone="blue" className="p-5">
-            <p className="text-base leading-snug font-bold text-ink">
-              친구와 함께하면
-              <br />
-              기린 모먼트가 2배로!
-            </p>
-            <Button
-              size="sm"
-              variant="secondary"
-              className="mt-3"
-              onClick={() => {
-                if (!featureFlags.friendRoom) {
-                  push({ title: FRIEND_ROOM.toast, tone: 'info' })
-                  return
-                }
-                navigate(ROUTES.roomNew)
-              }}
-            >
-              {featureFlags.friendRoom ? '친구 방 만들기' : FRIEND_ROOM.ctaLabel}
-            </Button>
-          </Card>
-
-          <Card className="p-4">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle>현재 모드</CardTitle>
-              <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.profiles)}>
-                모드 변경
-              </Button>
-            </div>
-            <p className="mt-2 text-sm font-bold text-ink">
-              {`${modeConfig.emoji} ${modeConfig.name}`}
-            </p>
-            <p className="mt-0.5 text-xs text-ink-soft">
-              {`괴물 · ${MONSTER_THEMES[modeConfig.monsterTheme].name}`}
-            </p>
-          </Card>
-
-          <Card className="p-4">
-            <CardTitle>최근 세션</CardTitle>
-            {stats.recentSessions.length === 0 ? (
-              <p className="mt-2 text-xs text-ink-soft">아직 세션 기록이 없어요.</p>
-            ) : (
-              <ul className="mt-2 flex flex-col gap-1.5">
-                {stats.recentSessions.map((s) => (
-                  <li key={s.id}>
-                    <button
-                      type="button"
-                      onClick={() => navigate(ROUTES.result(s.sessionId ?? s.id))}
-                      className="w-full rounded-xl bg-canvas px-3 py-2 text-left text-xs hover:bg-line/40"
-                    >
-                      <span className="font-bold text-ink">{s.subject || '집중 세션'}</span>
-                      <span className="ml-1.5 text-ink-soft">
-                        {s.status === 'completed' ? '완료' : '중도 종료'}
-                        {' · '}
-                        {formatDuration(s.elapsedMs)}
-                        {` · 회복 ${s.recoveries}회`}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-
-          <Card className="p-4">
-            <CardTitle>빠른 메뉴</CardTitle>
-            <div className="mt-3 grid grid-cols-4 gap-2">
-              {[
-                { icon: 'stretch', label: '스트레칭', to: ROUTES.stretch() },
-                { icon: 'bag', label: '상점', to: ROUTES.shop },
-                { icon: 'chart', label: '기록', to: ROUTES.history },
-                { icon: 'settings', label: '설정', to: ROUTES.settings },
-              ].map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => navigate(item.to)}
-                  className="flex flex-col items-center gap-1 rounded-2xl border border-line bg-surface py-3 text-[11px] font-semibold text-ink-soft hover:bg-canvas"
-                >
-                  <Icon name={item.icon} />
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </Card>
-        </>
+        </div>
       }
     >
-      <header className="mb-6">
+      <header className="dashboard-heading">
+        {isFirstVisit && <p className="dashboard-kicker">내 자세 루틴 · 첫 번째 장면</p>}
         <h1 className="text-3xl font-bold tracking-tight text-ink">
-          {isFirstVisit ? '오늘의 목표, 편안한 자세로 시작해 볼까요?' : `안녕하세요, ${nickname}님! 👋`}
+          {isFirstVisit
+            ? '오늘의 목표, 편안한 자세로 시작해 볼까요?'
+            : `${nickname}님, 오늘의 자리도 천천히 정돈해 볼까요?`}
         </h1>
         <p className="mt-1.5 text-[15px] text-ink-soft">
-          {isFirstVisit ? BRAND.oneLiner : '오늘도 편안한 자세로 목표를 끝내봐요.'}
+          {isFirstVisit
+            ? '처음 한 번만, 지금 편한 자세를 기준으로 남겨요.'
+            : '세션을 켜면 개인 기준에서의 변화를 조용히 살펴볼게요.'}
         </p>
       </header>
 
       {isFirstVisit ? (
-        <Card tone="pink" className="mb-5">
-          <div className="flex flex-col items-center gap-5 sm:flex-row">
-            <CharacterViewport stage={1} size={170} />
-            <div className="flex-1">
-              <div className="mb-3 flex flex-wrap gap-2">
-                {PRIVACY.badges.map((badge) => (
-                  <Badge key={badge} tone="green">
-                    <Icon name="shield" size={14} />
-                    {badge}
-                  </Badge>
-                ))}
-              </div>
-              <p className="text-lg font-bold text-ink">
-                먼저 이름과 공부 장소를 알려주세요.
+        <Card tone="pink" className="dashboard-ritual mb-6 p-0">
+          <div className="grid items-center gap-7 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_minmax(250px,0.7fr)] md:gap-4">
+            <div className="min-w-0">
+              <p className="dashboard-kicker">첫 루틴 · 약 1분</p>
+              <h2 className="mt-3 max-w-xl text-[30px] leading-[1.22] font-bold tracking-tight text-ink sm:text-[36px]">
+                편안했던 순간을
+                <br />
+                오늘의 기준으로 남겨요.
+              </h2>
+              <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-ink-soft">
+                이름과 공부 환경을 고른 뒤 카메라 위치를 확인하면, 그다음부터는 내 변화만 비교해요.
               </p>
-              <p className="mt-1 text-sm text-ink-soft">
-                닉네임 → 학습 프로필 → 카메라 안내까지 1분이면 끝나요.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <ol className="dashboard-ritual__steps" aria-label="첫 사용 준비 순서">
+                <li><span>01</span> 내 이름과 공부 자리 고르기</li>
+                <li><span>02</span> 지금 편한 자세를 기준으로 등록하기</li>
+                <li><span>03</span> 첫 집중을 가볍게 시작하기</li>
+              </ol>
+              <div className="mt-7">
                 <Button size="lg" onClick={() => navigate(ROUTES.onboardingName)}>
-                  자세 관리 시작하기
+                  내 기준 만들기
+                  <Icon name="camera" size={18} />
                 </Button>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  onClick={() => {
-                    // 데모 값은 이 버튼처럼 명시적으로 들어올 때만 채웁니다.
-                    useDemoStore.getState().enableDemo()
-                    configure({ lengthId: 'demo' })
-                    navigate(ROUTES.sessionSetup)
-                  }}
-                >
-                  3분 데모 보기
-                </Button>
+                <p className="mt-3 flex items-center gap-1.5 text-xs leading-relaxed text-ink-soft">
+                  <Icon name="shield" size={15} className="shrink-0 text-green" />
+                  카메라 영상은 기기 안에서만 처리하고 저장하지 않아요.
+                </p>
               </div>
+            </div>
+            <div className="dashboard-ritual__character">
+              <CharacterViewport stage={1} size={242} decorative />
+              <p aria-hidden="true">오늘의 동료 · 뽀각 거북</p>
             </div>
           </div>
         </Card>
       ) : (
-        <Card tone="pink" className="mb-5">
-          {/*
-            히어로 3열: 캐릭터 42 · 제목 30 · 세션 선택 28 (넓은 화면 기준 비율).
-            제목 영역은 최소 300px 을 보장해 단어 단위 세로 줄바꿈을 막습니다.
-          */}
-          <div className="grid items-center gap-6 @[700px]:grid-cols-[minmax(190px,42fr)_minmax(300px,30fr)_minmax(230px,28fr)] @[700px]:gap-4">
-            <div className="flex justify-center">
-              <CharacterWithGear
-                stage={stage}
-                postureState={isMonitoring ? snapshot.state : 'good'}
-                size={210}
-              />
-            </div>
-
+        <Card tone="pink" className="dashboard-focus-card mb-6 p-0">
+          <div className="grid items-center gap-4 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_260px]">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-ink-soft">현재 상태</p>
-              <h2 className="mt-1 text-[28px] leading-[1.3] font-bold text-ink @[700px]:text-[32px]">
-                {/*
-                  세션이 돌지 않을 때는 자세 문구를 그대로 보여주지 않습니다.
-                  측정하지 않는 상태에서 "측정하기 어려워요"가 큰 제목으로 뜨면
-                  잘못된 인상을 줍니다. 줄바꿈은 keep-all 로 단어 단위 유지.
-                */}
+              <p className="dashboard-kicker">오늘의 집중</p>
+              <h2 className="mt-3 max-w-2xl text-[30px] leading-[1.24] font-bold tracking-tight text-ink sm:text-[36px]">
                 {isMonitoring
                   ? POSTURE_COPY[snapshot.state].message
-                  : '오늘도 편안한 자세로 시작해 볼까요?'}
+                  : '목표 하나를 정하고, 편안한 흐름을 이어가요.'}
               </h2>
               {isMonitoring ? (
-                <div className="mt-2">
-                  <PostureStatusBadge
-                    state={snapshot.state}
-                    quality={snapshot.quality}
-                  />
+                <div className="mt-3">
+                  <PostureStatusBadge state={snapshot.state} quality={snapshot.quality} />
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-ink-soft">
-                  세션을 시작하면 자세를 살펴볼게요.
+                <p className="mt-3 text-[15px] text-ink-soft">
+                  세션 중에는 처음 등록한 기준에서의 변화를 알려드려요.
                 </p>
               )}
-              <div className="mt-5">
+              <div className="mt-5 max-w-sm">
                 <RecoveryCombo combo={combo} best={bestCombo} />
               </div>
             </div>
-
-            <div className="w-full">
-              <p className="mb-2 text-xs font-semibold text-ink-soft">이번 세션 길이</p>
-              {/*
-                문서(S-01)는 25분 + 15·50분 보조를 말하지만, 3분 데모도 함께 둡니다.
-                데모를 고른 상태에서 대시보드로 돌아왔을 때 아무것도 선택되지 않은
-                것처럼 보이지 않게 하려는 목적입니다.
-              */}
-              <SegmentedControl
-                ariaLabel="세션 길이 선택"
-                columns={2}
-                value={lengthId}
-                onChange={(id) => configure({ lengthId: id })}
-                options={SESSION_LENGTHS.map((o) => ({
-                  id: o.id,
-                  label: o.label,
-                  sublabel: o.restLabel,
-                }))}
+            <div className="dashboard-focus-card__character">
+              <CharacterWithGear
+                stage={stage}
+                postureState={isMonitoring ? snapshot.state : 'good'}
+                size={228}
               />
-              <Button
-                size="lg"
-                fullWidth
-                className="mt-3"
-                onClick={() =>
-                  navigate(hasCalibration ? ROUTES.sessionSetup : ROUTES.camera)
-                }
-              >
-                <Icon name="play" size={18} />
-                지금 집중 시작
-              </Button>
             </div>
+          </div>
+          <div className="dashboard-focus-card__actions">
+            <div>
+              <p className="dashboard-kicker">이번 집중 길이</p>
+              <div className="dashboard-session-options mt-3">
+                <SegmentedControl
+                  ariaLabel="세션 길이 선택"
+                  columns={2}
+                  value={lengthId}
+                  onChange={(id) => configure({ lengthId: id })}
+                  options={SESSION_LENGTHS.map((o) => ({
+                    id: o.id,
+                    label: o.label,
+                    sublabel: o.restLabel,
+                  }))}
+                />
+              </div>
+            </div>
+            <Button
+              size="lg"
+              className="dashboard-focus-card__start"
+              onClick={() => navigate(hasCalibration ? ROUTES.sessionSetup : ROUTES.camera)}
+            >
+              <Icon name="play" size={18} />
+              지금 집중 시작
+            </Button>
           </div>
         </Card>
       )}
 
-      <Card tone="blue" className="mb-5">
+      <Card className="dashboard-growth mb-6">
         <GrowthTimeline xp={xp} />
       </Card>
 
-      <section>
+      {!isFirstVisit && <section aria-labelledby="recent-session-title">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-ink">최근 세션</h2>
+          <div>
+            <p className="dashboard-kicker">돌아보기</p>
+            <h2 id="recent-session-title" className="mt-1 text-xl font-bold text-ink">최근 세션</h2>
+          </div>
         </div>
         {stats.completedCount === 0 && summaries.length === 0 ? (
           <EmptyState
@@ -329,13 +238,13 @@ export function LandingDashboard() {
             }
           />
         ) : (
-          <Card className="p-4">
+          <Card tone="canvas" className="dashboard-history-summary p-5">
             <p className="text-sm text-ink-soft">
               {`완료한 세션 ${stats.completedCount}회 · 누적 집중 ${formatDuration(totalFocusMs)}`}
             </p>
           </Card>
         )}
-      </section>
+      </section>}
     </AppShell>
   )
 }

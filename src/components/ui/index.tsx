@@ -101,7 +101,7 @@ type BadgeTone = 'green' | 'yellow' | 'coral' | 'muted' | 'blue' | 'pink'
 
 const BADGE_TONE: Record<BadgeTone, string> = {
   green: 'bg-green-soft text-green',
-  yellow: 'bg-yellow-soft text-[#8a6b12]',
+  yellow: 'bg-yellow-soft text-[#725500]',
   coral: 'bg-pink-soft text-[#b8285a]',
   muted: 'bg-canvas text-muted border border-line',
   blue: 'bg-blue-soft text-[#2b52a8]',

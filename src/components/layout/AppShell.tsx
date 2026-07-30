@@ -19,7 +19,7 @@ export function AppShell({
   if (chrome === 'focus') {
     return (
       <div className="min-h-dvh bg-canvas">
-        <main className="mx-auto w-full max-w-[1100px] px-6 py-8">{children}</main>
+        <main className="mx-auto w-full max-w-[1100px] px-5 py-7 sm:px-6 sm:py-8">{children}</main>
       </div>
     )
   }
@@ -27,16 +27,16 @@ export function AppShell({
   return (
     <div className="flex min-h-dvh bg-canvas">
       <SidebarNavigation />
-      <div className="mx-auto flex w-full max-w-[1600px] gap-6 px-6 py-7 xl:px-8">
+      <div className="mx-auto flex w-full max-w-[1560px] gap-8 px-5 py-6 lg:px-7 lg:py-8">
         {/*
           @container: 카드 내부 배치를 뷰포트가 아니라 "본문 실제 폭" 기준으로
           바꿉니다. 1280 처럼 오른쪽 레일이 함께 보이는 폭에서 카드가 넘치지 않습니다.
         */}
-        <main className="@container min-w-0 flex-1">{children}</main>
+        <main className="@container min-w-0 max-w-[980px] flex-1">{children}</main>
         {rail && (
-          <div className="hidden w-[300px] shrink-0 flex-col gap-4 xl:flex">
+          <aside className="hidden w-[280px] shrink-0 flex-col gap-5 2xl:flex" aria-label="오늘의 보조 정보">
             {rail}
-          </div>
+          </aside>
         )}
       </div>
     </div>

@@ -31,18 +31,36 @@ export function PipWidget({
   const remaining = remainingMs(session)
 
   return (
-    <div className="flex h-full flex-col items-center gap-2 bg-canvas p-3 text-center">
-      <CharacterViewport stage={stage} postureState={snapshot.state} size={120} attackTick={attackTick} attackDurationMs={1500} />
+    <div className="flex h-full min-h-0 flex-col items-center gap-2 overflow-auto bg-canvas p-3 text-center">
+      <div className="flex w-full items-center justify-between gap-2">
+        <span className="rounded-full bg-pink-soft px-2.5 py-1 text-[10px] font-black tracking-wide text-[#b8285a]">
+          UPRIGHT NOW
+        </span>
+        <span className="rounded-full bg-surface px-2 py-1 text-[10px] font-bold text-ink-soft">
+          집중 미니창
+        </span>
+      </div>
 
-      <p className="tabular text-3xl leading-none font-bold text-ink">
+      <div className="relative grid size-[112px] place-items-center rounded-2xl border border-line bg-surface shadow-card">
+        <span aria-hidden="true" className="absolute right-2 top-2 text-sm text-yellow">✦</span>
+        <CharacterViewport
+          stage={stage}
+          postureState={snapshot.state}
+          size={96}
+          attackTick={attackTick}
+          attackDurationMs={1500}
+        />
+      </div>
+
+      <p className="tabular text-3xl leading-none font-bold tracking-tight text-ink">
         {formatClock(remaining)}
       </p>
 
-      <p aria-live="polite" className="text-[13px] leading-snug font-semibold text-ink">
+      <p aria-live="polite" className="w-full rounded-xl bg-surface px-3 py-2 text-[13px] leading-snug font-semibold text-ink">
         <span aria-hidden="true">{copy.icon}</span> {copy.message}
       </p>
 
-      <p className="text-xs text-ink-soft">
+      <p className="rounded-full bg-green-soft px-3 py-1 text-xs text-ink">
         {`회복 콤보 `}
         <span className="tabular font-bold text-ink">{combo}</span>
         {`회`}
@@ -78,7 +96,7 @@ export function PipWidget({
         {session.status === 'running' ? (
           <button
             type="button"
-            className="h-9 rounded-xl bg-pink text-sm font-bold text-white"
+            className="h-9 rounded-xl bg-[#b8285a] text-sm font-bold text-white hover:bg-[#9f204b]"
             onClick={() => useSessionStore.getState().pause()}
           >
             일시정지
@@ -86,7 +104,7 @@ export function PipWidget({
         ) : session.status === 'paused' ? (
           <button
             type="button"
-            className="h-9 rounded-xl bg-pink text-sm font-bold text-white"
+            className="h-9 rounded-xl bg-[#b8285a] text-sm font-bold text-white hover:bg-[#9f204b]"
             onClick={() => useSessionStore.getState().resume()}
           >
             이어서 하기

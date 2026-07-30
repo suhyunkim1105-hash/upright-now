@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AppRoutes } from './router/AppRoutes'
 import { ToastProvider } from './providers/ToastProvider'
 import { PostureGameBridge } from './providers/PostureGameBridge'
@@ -13,6 +14,31 @@ import { CampusContributionBridge } from '@/features/campus/CampusContributionBr
 import { CampusFeedbackToaster } from '@/components/campus/CampusFeedbackToaster'
 import { installCampusDevApi } from '@/features/campus/campusDevApi'
 import { repairProgressionFromHistory } from '@/features/progression/repairProgression'
+import { consumeAuthCallback } from '@/lib/supabase/client'
+import { ROUTES } from '@/constants/routes'
+
+/**
+ * Supabase 메일 링크가 Site URL(`/`)로 돌아오는 경우도 캠퍼스 인증으로 연결합니다.
+ * 링크 콜백은 캠퍼스 화면이 아니라 앱 전체 진입점에서 먼저 소비해야 합니다.
+ */
+function CampusAuthCallbackBridge() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const pending = localStorage.getItem('upright-now:campus:verification-pending')
+    const hasCode = new URLSearchParams(window.location.search).has('code')
+    const hasToken = /(?:access_token|refresh_token|type=)/.test(window.location.hash)
+    if (!pending && !hasCode && !hasToken) return
+
+    void consumeAuthCallback().then((authenticated) => {
+      if (authenticated && window.location.pathname !== ROUTES.campus) {
+        navigate(ROUTES.campus, { replace: true })
+      }
+    })
+  }, [navigate])
+
+  return null
+}
 
 export function App() {
   // ?demo=1 또는 /lab 에서만 데모 값을 채웁니다.
@@ -45,6 +71,7 @@ export function App() {
       <CampusThemeRoot />
       <CampusContributionBridge />
       <CampusFeedbackToaster />
+      <CampusAuthCallbackBridge />
       <AppRoutes />
     </ToastProvider>
   )

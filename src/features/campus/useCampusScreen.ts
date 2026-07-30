@@ -21,6 +21,8 @@ export function useCampusScreen() {
   const pendingContributionCount = useCampusStore((s) => s.pendingContributionCount)
   const lastAcceptedAt = useCampusStore((s) => s.lastAcceptedAt)
   const lastSyncedAt = useCampusStore((s) => s.lastSyncedAt)
+  const verification = useCampusStore((s) => s.verification)
+  const recentBattleEvents = useCampusStore((s) => s.recentBattleEvents)
   const schoolId = useCampusThemeStore((s) => s.schoolId)
 
   useEffect(() => {
@@ -68,5 +70,7 @@ export function useCampusScreen() {
     pendingContributionCount,
     lastAcceptedAt,
     lastSyncedAt,
+    verification,
+    recentBattleEvents,
   }
 }

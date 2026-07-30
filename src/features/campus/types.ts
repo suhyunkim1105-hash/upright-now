@@ -172,6 +172,13 @@ export interface CampusSchoolDirectoryEntry {
   isCustom: boolean
 }
 
+/** Supabase Auth 이메일 OTP로 확인된 영토전 참여 자격. 원본 이메일은 포함하지 않습니다. */
+export interface CampusVerification {
+  schoolId: string
+  emailDomain: string
+  verifiedAt: number
+}
+
 /* ----------------------------- Realtime 상태 ----------------------------- */
 
 export type CampusRealtimeStatus =

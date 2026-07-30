@@ -15,6 +15,7 @@ import type {
   CampusSnapshot,
   CampusTile,
   CampusTileEvent,
+  CampusVerification,
 } from './types'
 
 /**
@@ -149,6 +150,47 @@ export class SupabaseCampusRepository implements CampusRepository {
 
   private emitStatus(status: CampusRealtimeStatus, meta?: { lastEventAt?: number }): void {
     for (const cb of this.statusListeners) cb(status, meta)
+  }
+
+  async fetchMyVerification(): Promise<CampusVerification | null> {
+    const supabase = await getSupabase()
+    if (!supabase) return null
+    const { data, error } = await supabase.rpc('campus_my_verification')
+    if (error) return null
+    const row = Array.isArray(data) ? data[0] : null
+    if (!row?.school_id || !row.email_domain || !row.verified_at) return null
+    return {
+      schoolId: row.school_id as string,
+      emailDomain: row.email_domain as string,
+      verifiedAt: new Date(row.verified_at as string).getTime(),
+    }
+  }
+
+  async requestSchoolVerification(
+    email: string,
+  ): Promise<'sent' | 'invalid_email' | 'network_error'> {
+    const supabase = await getSupabase()
+    if (!supabase) return 'network_error'
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
+    return error ? 'network_error' : 'sent'
+  }
+
+  async confirmSchoolVerification(
+    schoolId: string,
+    email: string,
+    token: string,
+  ): Promise<'verified' | 'otp_invalid' | 'otp_expired' | 'domain_mismatch' | 'network_error'> {
+    const supabase = await getSupabase()
+    if (!supabase) return 'network_error'
+    const { error: otpError } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
+    if (otpError) {
+      return /expired/i.test(otpError.message) ? 'otp_expired' : 'otp_invalid'
+    }
+    const { data, error } = await supabase.rpc('campus_verify_school', { p_school_id: schoolId })
+    if (error) return 'network_error'
+    const row = Array.isArray(data) ? data[0] : null
+    if (row?.verified === true) return 'verified'
+    return row?.reason === 'domain_mismatch' ? 'domain_mismatch' : 'network_error'
   }
 
   async load(): Promise<CampusSnapshot> {

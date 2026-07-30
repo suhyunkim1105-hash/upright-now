@@ -12,7 +12,7 @@ import { seasonAt } from './season'
 import { createSeasonMap } from './campusMap'
 import { outboxCount } from './outbox'
 import type { CampusRepository, CampusSubmitResult } from './repository'
-import type { CampusRealtimeStatus, CampusSnapshot } from './types'
+import type { CampusRealtimeStatus, CampusSnapshot, CampusTileEvent, CampusVerification } from './types'
 
 /**
  * 캠퍼스 영토전 화면 상태.
@@ -42,6 +42,19 @@ interface CampusStoreState {
   lastAcceptedAt: number | null
   /** 아직 서버에 반영되지 못한 기여 수 (outbox) */
   pendingContributionCount: number
+  verification: CampusVerification | null
+  recentBattleEvents: CampusTileEvent[]
+}
+
+const RECENT_BATTLE_EVENT_LIMIT = 12
+
+/** 서버가 보낸 이벤트만, 중복 없이 최신순으로 화면에 보관합니다. */
+export function newestCampusBattleEvents(events: CampusTileEvent[]): CampusTileEvent[] {
+  const seen = new Set<string>()
+  return [...events]
+    .sort((a, b) => b.at - a.at)
+    .filter((event) => !seen.has(event.id) && seen.add(event.id))
+    .slice(0, RECENT_BATTLE_EVENT_LIMIT)
 }
 
 const emptySnapshot = (now: number): CampusSnapshot => {
@@ -67,6 +80,8 @@ export const useCampusStore = create<CampusStoreState>(() => ({
   lastRealtimeEventAt: null,
   lastAcceptedAt: null,
   pendingContributionCount: 0,
+  verification: null,
+  recentBattleEvents: [],
 }))
 
 let repository: CampusRepository | null = null
@@ -124,6 +139,7 @@ function applySnapshot(next: CampusSnapshot): void {
   }
   useCampusStore.setState({
     snapshot: next,
+    recentBattleEvents: newestCampusBattleEvents(next.tileEvents),
     status: 'ready',
     errorMessage: null,
     lastSyncedAt: Date.now(),
@@ -256,6 +272,7 @@ export async function initCampus(): Promise<void> {
       .then((entries) => useCampusDirectoryStore.getState().setEntries(entries))
       .catch(() => {})
     void import('./membershipRestore').then((m) => m.restoreMembershipFromServer(repo))
+    void repo.fetchMyVerification?.().then((verification) => useCampusStore.setState({ verification }))
 
     try {
       applySnapshot(await repo.load())
@@ -357,6 +374,8 @@ export function disposeCampus(): void {
     lastRealtimeEventAt: null,
     lastAcceptedAt: null,
     pendingContributionCount: 0,
+    verification: null,
+    recentBattleEvents: [],
   })
 }
 

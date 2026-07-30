@@ -9,6 +9,7 @@ import { createSeasonMap } from './campusMap'
 import campusSql from '../../../supabase/migrations/20260727_campus_realtime_v2.sql?raw'
 import finalSql from '../../../supabase/migrations/20260727_campus_final_grid_realtime.sql?raw'
 import roomSql from '../../../supabase/migrations/20260727_room_presence_cleanup.sql?raw'
+import verificationSql from '../../../supabase/migrations/20260730_campus_school_verification.sql?raw'
 import repoSrc from './supabaseRepository.ts?raw'
 import roomServiceSrc from '../rooms/roomService.ts?raw'
 
@@ -74,6 +75,16 @@ describe('campus RC2 — 96(12×8) 단일 seed manifest', () => {
 
   it('CAMPUS_GRID_SEED(코드) 와 manifest(JSON) 는 같은 배열이다', () => {
     expect(CAMPUS_GRID_SEED).toEqual(manifest)
+  })
+})
+
+describe('campus school verification migration', () => {
+  it('creates private matching-school authorization for campus writes', () => {
+    expect(verificationSql).toContain('create table if not exists public.campus_school_domains')
+    expect(verificationSql).toContain('create table if not exists public.campus_verifications')
+    expect(verificationSql).toContain('create or replace function public.campus_verify_school')
+    expect(verificationSql).toContain("raise exception 'school_verification_required'")
+    expect(verificationSql).toContain('revoke insert, update, delete on public.campus_verifications')
   })
 })
 

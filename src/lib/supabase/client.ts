@@ -6,7 +6,6 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * 카메라 영상·프레임·랜드마크·자세 좌표는 절대 이 클라이언트로 보내지 않습니다.
  */
 let cached: SupabaseClient | null = null
-let attempted = false
 
 export function isRoomConfigured(): boolean {
   return Boolean(
@@ -40,8 +39,6 @@ export async function fetchRetryingClockSkew(
 
 export async function getSupabase(): Promise<SupabaseClient | null> {
   if (cached) return cached
-  if (attempted) return cached
-  attempted = true
 
   if (!isRoomConfigured()) return null
 

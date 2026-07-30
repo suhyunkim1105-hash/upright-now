@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * 카메라 영상·프레임·랜드마크·자세 좌표는 절대 이 클라이언트로 보내지 않습니다.
  */
 let cached: SupabaseClient | null = null
+let initializing: Promise<SupabaseClient | null> | null = null
 
 export function isRoomConfigured(): boolean {
   return Boolean(
@@ -42,17 +43,30 @@ export async function getSupabase(): Promise<SupabaseClient | null> {
 
   if (!isRoomConfigured()) return null
 
-  const { createClient } = await import('@supabase/supabase-js')
-  cached = createClient(
-    import.meta.env.VITE_SUPABASE_URL!,
-    (import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)!,
-    {
-      auth: { persistSession: true, detectSessionInUrl: true },
-      global: { fetch: fetchRetryingClockSkew },
-    },
-  )
-  return cached
+  // Several app bridges call this during the first render. Keep the dynamic
+  // import/client creation behind one promise so concurrent callers never
+  // create multiple GoTrue clients for the same storage key.
+  if (initializing) return initializing
+
+  initializing = import('@supabase/supabase-js')
+    .then(({ createClient }) => {
+      cached = createClient(
+        import.meta.env.VITE_SUPABASE_URL!,
+        (import.meta.env.VITE_SUPABASE_ANON_KEY ??
+          import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)!,
+        {
+          auth: { persistSession: true, detectSessionInUrl: true },
+          global: { fetch: fetchRetryingClockSkew },
+        },
+      )
+      return cached
+    })
+    .catch(() => null)
+    .finally(() => {
+      initializing = null
+    })
+
+  return initializing
 }
 
 /**

@@ -178,6 +178,11 @@ export class SupabaseCampusRepository implements CampusRepository {
       options: { shouldCreateUser: true, emailRedirectTo },
     })
     if (!error) return 'sent'
+    console.error('[campus verification] signInWithOtp failed', {
+      code: error.code,
+      message: error.message,
+      status: error.status,
+    })
     if (/redirect.*not.*allow|invalid.*redirect/i.test(error.message)) return 'redirect_not_allowed'
     if (/rate limit|too many|429|email.*limit/i.test(`${error.message} ${error.status ?? ''}`)) return 'rate_limited'
     return 'network_error'

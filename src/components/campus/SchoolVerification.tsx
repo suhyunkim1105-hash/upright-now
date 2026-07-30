@@ -11,6 +11,7 @@ const MESSAGE: Record<string, string> = {
   invalid_email: '학교 이메일 주소를 확인해 주세요.',
   network_error: '인증 요청에 실패했어요. 잠시 후 다시 시도해 주세요.',
   redirect_not_allowed: 'Supabase URL Configuration에 현재 주소를 Redirect URL로 추가해 주세요.',
+  rate_limited: '기본 메일 발송 한도를 초과했어요. 잠시 후 다시 시도하거나 Custom SMTP를 설정해 주세요.',
   domain_mismatch: '선택한 학교의 이메일 도메인이 아니에요.',
 }
 

@@ -168,7 +168,7 @@ export class SupabaseCampusRepository implements CampusRepository {
 
   async requestSchoolVerification(
     email: string,
-  ): Promise<'sent' | 'invalid_email' | 'network_error'> {
+  ): Promise<'sent' | 'invalid_email' | 'redirect_not_allowed' | 'network_error'> {
     const supabase = await getSupabase()
     if (!supabase) return 'network_error'
     const emailRedirectTo =
@@ -177,7 +177,10 @@ export class SupabaseCampusRepository implements CampusRepository {
       email,
       options: { shouldCreateUser: true, emailRedirectTo },
     })
-    return error ? 'network_error' : 'sent'
+    if (!error) return 'sent'
+    return /redirect.*not.*allow|invalid.*redirect/i.test(error.message)
+      ? 'redirect_not_allowed'
+      : 'network_error'
   }
 
   async confirmSchoolVerification(

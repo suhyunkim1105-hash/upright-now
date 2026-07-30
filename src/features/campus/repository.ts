@@ -61,7 +61,7 @@ export interface CampusRepository {
   fetchMyMembership?(): Promise<{ schoolId: string } | null>
   /** 현재 이메일 인증 학교 — 원본 이메일은 반환하지 않습니다. */
   fetchMyVerification?(): Promise<import('./types').CampusVerification | null>
-  requestSchoolVerification?(email: string): Promise<'sent' | 'invalid_email' | 'network_error' | 'unsupported'>
+  requestSchoolVerification?(email: string): Promise<'sent' | 'invalid_email' | 'redirect_not_allowed' | 'network_error' | 'unsupported'>
   confirmSchoolVerification?(
     schoolId: string,
   ): Promise<'verified' | 'domain_mismatch' | 'network_error' | 'unsupported'>

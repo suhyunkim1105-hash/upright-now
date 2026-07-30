@@ -64,9 +64,7 @@ export interface CampusRepository {
   requestSchoolVerification?(email: string): Promise<'sent' | 'invalid_email' | 'network_error' | 'unsupported'>
   confirmSchoolVerification?(
     schoolId: string,
-    email: string,
-    token: string,
-  ): Promise<'verified' | 'otp_invalid' | 'otp_expired' | 'domain_mismatch' | 'network_error' | 'unsupported'>
+  ): Promise<'verified' | 'domain_mismatch' | 'network_error' | 'unsupported'>
   /**
    * 서버 소속(membership) 동기화 — supabase 저장소에서만 의미가 있습니다.
    * mock 은 구현하지 않아도 됩니다(로컬 선택만 사용).

@@ -171,21 +171,22 @@ export class SupabaseCampusRepository implements CampusRepository {
   ): Promise<'sent' | 'invalid_email' | 'network_error'> {
     const supabase = await getSupabase()
     if (!supabase) return 'network_error'
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
+    const emailRedirectTo =
+      typeof window === 'undefined' ? undefined : `${window.location.origin}/campus`
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, emailRedirectTo },
+    })
     return error ? 'network_error' : 'sent'
   }
 
   async confirmSchoolVerification(
     schoolId: string,
-    email: string,
-    token: string,
-  ): Promise<'verified' | 'otp_invalid' | 'otp_expired' | 'domain_mismatch' | 'network_error'> {
+  ): Promise<'verified' | 'domain_mismatch' | 'network_error'> {
     const supabase = await getSupabase()
     if (!supabase) return 'network_error'
-    const { error: otpError } = await supabase.auth.verifyOtp({ email, token, type: 'email' })
-    if (otpError) {
-      return /expired/i.test(otpError.message) ? 'otp_expired' : 'otp_invalid'
-    }
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (!sessionData.session?.user) return 'network_error'
     const { data, error } = await supabase.rpc('campus_verify_school', { p_school_id: schoolId })
     if (error) return 'network_error'
     const row = Array.isArray(data) ? data[0] : null

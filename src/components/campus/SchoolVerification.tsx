@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Button, Card } from '@/components/ui'
 import {
   getCampusRepository,
@@ -21,7 +21,7 @@ export function SchoolVerification({ schoolId, schoolName }: { schoolId: string;
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const finishVerification = async () => {
+  const finishVerification = useCallback(async () => {
     const repository = getCampusRepository()
     if (!repository?.confirmSchoolVerification) return setMessage('서버 연결 후 인증할 수 있어요.')
     setBusy(true)
@@ -34,7 +34,7 @@ export function SchoolVerification({ schoolId, schoolName }: { schoolId: string;
       setMessage(null)
     } else setMessage(MESSAGE[result])
     setBusy(false)
-  }
+  }, [schoolId])
 
   useEffect(() => {
     try {
@@ -48,7 +48,7 @@ export function SchoolVerification({ schoolId, schoolName }: { schoolId: string;
     } catch {
       // 손상된 로컬 대기 상태는 무시하고 사용자가 다시 요청할 수 있게 합니다.
     }
-  }, [schoolId])
+  }, [finishVerification, schoolId])
 
   if (verification?.schoolId === schoolId) {
     return <p className="rounded-xl bg-green-soft px-3 py-2 text-xs font-bold text-ink">{`${schoolName} 이메일 인증이 완료됐어요. 영토전에 참여할 수 있어요.`}</p>

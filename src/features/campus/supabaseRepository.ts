@@ -1,5 +1,5 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
-import { ensureAnonymousUser, getSupabase } from '@/lib/supabase/client'
+import { consumeAuthCallback, ensureAnonymousUser, getSupabase } from '@/lib/supabase/client'
 import { CONTRIBUTION_POINTS, withNormalizedScore } from './contribution'
 import { countTilesBySchool } from './territory'
 import { CAMPUS_GRID_SEED } from './campusGridOverlay'
@@ -188,6 +188,7 @@ export class SupabaseCampusRepository implements CampusRepository {
   ): Promise<'verified' | 'domain_mismatch' | 'network_error'> {
     const supabase = await getSupabase()
     if (!supabase) return 'network_error'
+    await consumeAuthCallback()
     const { data: sessionData } = await supabase.auth.getSession()
     if (!sessionData.session?.user) return 'network_error'
     const { data, error } = await supabase.rpc('campus_verify_school', { p_school_id: schoolId })

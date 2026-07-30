@@ -48,11 +48,34 @@ export async function getSupabase(): Promise<SupabaseClient | null> {
     (import.meta.env.VITE_SUPABASE_ANON_KEY ??
       import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)!,
     {
-      auth: { persistSession: true },
+      auth: { persistSession: true, detectSessionInUrl: true },
       global: { fetch: fetchRetryingClockSkew },
     },
   )
   return cached
+}
+
+/**
+ * 메일 링크가 돌아온 뒤 PKCE `code`를 세션으로 교환합니다.
+ * Supabase 기본 템플릿은 6자리 토큰 대신 이 링크를 보내므로,
+ * 콜백을 앱 진입 시 명시적으로 소비해야 배포 환경에서도 인증이 확정됩니다.
+ */
+export async function consumeAuthCallback(): Promise<boolean> {
+  const supabase = await getSupabase()
+  if (!supabase || typeof window === 'undefined') return false
+
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) return false
+    url.searchParams.delete('code')
+    window.history.replaceState({}, document.title, url.toString())
+    return true
+  }
+
+  const { data } = await supabase.auth.getSession()
+  return Boolean(data.session?.user)
 }
 
 /** 익명 로그인 — 이메일·비밀번호를 요구하지 않습니다. */
@@ -60,6 +83,7 @@ export async function ensureAnonymousUser(): Promise<string | null> {
   const supabase = await getSupabase()
   if (!supabase) return null
 
+  await consumeAuthCallback()
   const { data: sessionData } = await supabase.auth.getSession()
   if (sessionData.session?.user) return sessionData.session.user.id
 

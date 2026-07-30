@@ -400,7 +400,7 @@ export async function syncSchoolSelection(
   schoolId: string,
 ): Promise<
   | 'selected' | 'changed' | 'unchanged' | 'change_limit' | 'change_cooldown'
-  | 'ownership_conflict' | 'name_conflict' | 'not_ready'
+  | 'ownership_conflict' | 'name_conflict' | 'verification_required' | 'not_ready'
 > {
   if (!repository || repository.kind !== 'supabase') return 'unchanged'
   // 데모 모드의 임시 선택은 서버 membership 에 기록하지 않습니다.

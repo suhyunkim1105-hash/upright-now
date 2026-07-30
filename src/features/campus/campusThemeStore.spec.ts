@@ -80,6 +80,15 @@ describe('커스텀 학교 — 라디오 선택만으로는 아무 일도 없다
     expect(useCampusThemeStore.getState().schoolId).toBe('knu')
     expect(syncSchoolSelection).toHaveBeenCalledWith('knu')
   })
+
+  it('이메일 인증이 필요한 학교는 선택을 유지해 인증 화면으로 이어진다', async () => {
+    syncSchoolSelection.mockResolvedValue('verification_required')
+    useCampusThemeStore.getState().selectSchool('snu', Date.now())
+    await flush()
+    expect(useCampusThemeStore.getState().schoolId).toBe('snu')
+    expect(useCampusThemeStore.getState().syncStatus).toBe('ok')
+    expect(useCampusThemeStore.getState().syncNotice).toContain('이메일 인증')
+  })
 })
 
 describe('saveCustomSchool — 유효성', () => {

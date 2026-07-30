@@ -570,7 +570,7 @@ export class SupabaseCampusRepository implements CampusRepository {
     schoolId: string,
   ): Promise<
     | 'selected' | 'changed' | 'unchanged'
-    | 'change_limit' | 'change_cooldown' | 'not_ready'
+    | 'change_limit' | 'change_cooldown' | 'verification_required' | 'not_ready'
   > {
     const supabase = await getSupabase()
     if (!supabase) return 'not_ready'
@@ -578,7 +578,14 @@ export class SupabaseCampusRepository implements CampusRepository {
     const { data, error } = await supabase.rpc('select_campus_school', {
       p_school_id: schoolId,
     })
-    if (error) return 'not_ready'
+    // 학교 선택은 이메일 인증 화면으로 진입하기 위한 로컬 테마 선택까지는
+    // 허용합니다. 서버가 인증 전 membership 을 막으면 그 이유를 보존해
+    // 호출부가 선택을 되돌리지 않고 인증 UI를 열 수 있게 합니다.
+    if (error) {
+      return /school_verification_required/i.test(error.message)
+        ? 'verification_required'
+        : 'not_ready'
+    }
     const result = (data as { result?: string } | null)?.result
     if (
       result === 'selected' || result === 'changed' ||

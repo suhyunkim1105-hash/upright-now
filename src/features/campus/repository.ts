@@ -75,7 +75,7 @@ export interface CampusRepository {
     schoolId: string,
   ): Promise<
     | 'selected' | 'changed' | 'unchanged'
-    | 'change_limit' | 'change_cooldown' | 'not_ready'
+    | 'change_limit' | 'change_cooldown' | 'verification_required' | 'not_ready'
   >
   dispose(): void
 }

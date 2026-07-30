@@ -257,6 +257,13 @@ export const useCampusThemeStore = create<CampusThemeState>((set, get) => ({
     const before = { ...prevSnapshot }
     void import('./campusStore').then(async (m) => {
       const result = await m.syncSchoolSelection(schoolId)
+      if (result === 'verification_required') {
+        set({
+          syncStatus: 'ok',
+          syncNotice: '학교 이메일 인증을 완료하면 영토전에 기여할 수 있어요.',
+        })
+        return
+      }
       if (
         result === 'change_limit' ||
         result === 'change_cooldown' ||

@@ -563,6 +563,11 @@
     overflow: visible;
   }
 
+  .campus-idle-character {
+    overflow: visible;
+    z-index: 2;
+  }
+
   .campus-battle-overlay > div {
     animation: un-campus-battle-pulse 2600ms ease-in-out;
   }

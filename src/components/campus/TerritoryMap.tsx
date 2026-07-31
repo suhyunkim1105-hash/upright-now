@@ -123,6 +123,7 @@ export function TerritoryMap({
           const battleDefender = battleScene
             ? identify(battleScene.defenderSchoolId)
             : null
+          const idleSchool = battleScene ? null : identify(tile.challengerSchoolId ?? tile.ownerSchoolId)
 
           const label = [
             tile.name || `${zone.label} ${tile.y + 1}행 ${tile.x + 1}열`,
@@ -140,7 +141,7 @@ export function TerritoryMap({
 
           return (
             <g key={tile.id}>
-              <polygon
+              <rect
                 data-testid="territory-tile"
                 data-tile-id={tile.id}
                 data-tile-status={status}
@@ -158,7 +159,10 @@ export function TerritoryMap({
                     onSelectTile?.(tile)
                   }
                 }}
-                points={cell.points}
+                x={cell.cx - 37}
+                y={cell.cy - 37}
+                width="74"
+                height="74"
                 fill={challenger?.color ?? owner?.color ?? '#FFFFFF'}
                 fillOpacity={
                   challenger
@@ -231,6 +235,15 @@ export function TerritoryMap({
                 defender={
                   battleDefender
                     ? { name: battleDefender.displayName, color: battleDefender.color }
+                    : null
+                }
+                idle={
+                  idleSchool
+                    ? {
+                        name: idleSchool.displayName,
+                        color: idleSchool.color,
+                        role: tile.challengerSchoolId ? 'challenger' : 'owner',
+                      }
                     : null
                 }
               />

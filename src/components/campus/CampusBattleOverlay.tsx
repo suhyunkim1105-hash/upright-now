@@ -7,11 +7,16 @@ interface SchoolBattleIdentity {
   color: string
 }
 
+interface IdleBattleIdentity extends SchoolBattleIdentity {
+  role: 'owner' | 'challenger'
+}
+
 export interface CampusBattleOverlayProps {
   scene: CampusBattleScene | null
   cell: CampusGridCell
   attacker: SchoolBattleIdentity | null
   defender: SchoolBattleIdentity | null
+  idle?: IdleBattleIdentity | null
 }
 
 /** 지도 크기를 건드리지 않고 타일 위에만 짧게 표시하는 전투 연출입니다. */
@@ -20,8 +25,37 @@ export function CampusBattleOverlay({
   cell,
   attacker,
   defender,
+  idle = null,
 }: CampusBattleOverlayProps) {
-  if (!scene) return null
+  if (!scene && !idle) return null
+
+  if (!scene && idle) {
+    return (
+      <foreignObject
+        data-testid="campus-idle-character"
+        className="campus-idle-character"
+        x={cell.cx - 30}
+        y={cell.cy - 30}
+        width="60"
+        height="60"
+        pointerEvents="none"
+        aria-label={`${idle.name} 캐릭터`}
+      >
+        <div
+          className="flex h-full w-full items-center justify-center rounded-full border-2 bg-white/70 p-0.5"
+          style={{ borderColor: idle.color }}
+        >
+          <CharacterViewport
+            stage={idle.role === 'challenger' ? 6 : 1}
+            postureState="good"
+            visualState="idle"
+            size={52}
+            decorative
+          />
+        </div>
+      </foreignObject>
+    )
+  }
 
   const attackerName = attacker?.name ?? '미확인 학교'
   const defenderName = defender?.name ?? '중립'

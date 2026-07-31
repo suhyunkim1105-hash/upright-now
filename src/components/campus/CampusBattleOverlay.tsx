@@ -34,10 +34,10 @@ export function CampusBattleOverlay({
       <foreignObject
         data-testid="campus-idle-character"
         className="campus-idle-character"
-        x={cell.cx - 30}
-        y={cell.cy - 30}
-        width="60"
-        height="60"
+        x={cell.cx - (idle.role === 'owner' ? 50 : 30)}
+        y={cell.cy - (idle.role === 'owner' ? 50 : 30)}
+        width={idle.role === 'owner' ? 100 : 60}
+        height={idle.role === 'owner' ? 100 : 60}
         pointerEvents="none"
         aria-label={`${idle.name} 캐릭터`}
       >
@@ -49,7 +49,7 @@ export function CampusBattleOverlay({
             stage={idle.role === 'challenger' ? 6 : 1}
             postureState="good"
             visualState="idle"
-            size={52}
+            size={idle.role === 'owner' ? 92 : 52}
             decorative
           />
         </div>
@@ -66,10 +66,10 @@ export function CampusBattleOverlay({
     <foreignObject
       data-testid="campus-battle-overlay"
       className="campus-battle-overlay"
-      x={cell.cx - 110}
-      y={cell.cy - 70}
-      width="220"
-      height="140"
+      x={cell.cx - 130}
+      y={cell.cy - 80}
+      width="260"
+      height="160"
       pointerEvents="none"
       aria-label={`${attackerName} 공격, ${defenderName} 방어`}
     >
@@ -90,14 +90,14 @@ export function CampusBattleOverlay({
           <span className="sr-only">{`${attackerName} 공격`}</span>
         </div>
         <div
-          className="campus-battle-fighter campus-battle-defender relative h-[100px] w-[100px] rounded-full border-2 bg-white/75 p-0.5"
+          className="campus-battle-fighter campus-battle-defender relative h-[132px] w-[132px] rounded-full border-2 bg-white/75 p-0.5"
           style={{ borderColor: defenderColor }}
         >
           <CharacterViewport
             stage={1}
             postureState="good"
             visualState="idle"
-            size={94}
+            size={124}
             decorative
           />
           <span className="sr-only">{`${defenderName} 방어`}</span>

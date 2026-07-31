@@ -30,6 +30,8 @@ describe('CampusBattleOverlay', () => {
     expect(screen.getByText('한양대 방어')).toBeInTheDocument()
     expect(document.querySelector('.char-stage-6')).toBeInTheDocument()
     expect(document.querySelector('.char-stage-1')).toBeInTheDocument()
+    expect(document.querySelector('.campus-battle-attacker')).toBeInTheDocument()
+    expect(document.querySelector('.campus-battle-defender')).toBeInTheDocument()
   })
 
   it('renders no overlay when there is no scene', () => {

@@ -45,4 +45,8 @@ describe('campus battle event diff', () => {
   it('does not create a second scene when the same event is replayed', () => {
     expect(newBattleScenes(events, events, true, 1000)).toEqual([])
   })
+
+  it('deduplicates repeated new event rows in one snapshot', () => {
+    expect(newBattleScenes([], [events[1], events[1]], true, 1000)).toHaveLength(1)
+  })
 })

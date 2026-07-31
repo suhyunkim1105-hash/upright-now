@@ -17,10 +17,13 @@ export function newBattleScenes(
   const previousIds = new Set(previous.map((event) => event.id))
   const seen = new Set<string>()
   return next
-    .filter((event) => !previousIds.has(event.id) && !seen.has(event.id))
+    .filter((event) => {
+      if (previousIds.has(event.id) || seen.has(event.id)) return false
+      seen.add(event.id)
+      return true
+    })
     .sort((a, b) => a.at - b.at)
     .map((event) => {
-      seen.add(event.id)
       return {
         eventId: event.id,
         tileId: event.tileId,

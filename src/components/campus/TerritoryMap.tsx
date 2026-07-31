@@ -6,6 +6,7 @@ import { useCampusStore } from '@/features/campus/campusStore'
 import { useCampusThemeStore } from '@/features/campus/campusThemeStore'
 import { useSchoolIdentity, resolveSchoolIdentityNow } from '@/features/campus/schoolDirectory'
 import type { CampusTile } from '@/features/campus/types'
+import { CampusBattleOverlay } from './CampusBattleOverlay'
 
 /**
  * 캠퍼스 배경 이미지의 실측 12×8 = 96칸 오버레이 지도.
@@ -39,6 +40,7 @@ export function TerritoryMap({
   onSelectTile?: (tile: CampusTile) => void
 }) {
   const flashTileIds = useCampusStore((s) => s.flashTileIds)
+  const activeBattleScenes = useCampusStore((s) => s.activeBattleScenes)
   const identify = useSchoolIdentity()
   const mySchoolId = useCampusThemeStore((s) => s.schoolId)
 
@@ -112,6 +114,13 @@ export function TerritoryMap({
           const isMine = Boolean(mySchoolId) && tile.ownerSchoolId === mySchoolId
           const selected = tile.id === selectedTileId
           const flashing = flashTileIds.includes(tile.id)
+          const battleScene = activeBattleScenes.find((scene) => scene.tileId === tile.id) ?? null
+          const battleAttacker = battleScene
+            ? identify(battleScene.attackerSchoolId)
+            : null
+          const battleDefender = battleScene
+            ? identify(battleScene.defenderSchoolId)
+            : null
 
           const label = [
             tile.name || `${zone.label} ${tile.y + 1}행 ${tile.x + 1}열`,
@@ -203,6 +212,20 @@ export function TerritoryMap({
                   />
                 </g>
               )}
+              <CampusBattleOverlay
+                scene={battleScene}
+                cell={cell}
+                attacker={
+                  battleAttacker
+                    ? { name: battleAttacker.displayName, color: battleAttacker.color }
+                    : null
+                }
+                defender={
+                  battleDefender
+                    ? { name: battleDefender.displayName, color: battleDefender.color }
+                    : null
+                }
+              />
             </g>
           )
         })}

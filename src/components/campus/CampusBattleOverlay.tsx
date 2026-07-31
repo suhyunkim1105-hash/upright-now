@@ -32,16 +32,16 @@ export function CampusBattleOverlay({
     <foreignObject
       data-testid="campus-battle-overlay"
       className="campus-battle-overlay"
-      x={cell.cx - 90}
-      y={cell.cy - 55}
-      width="180"
-      height="110"
+      x={cell.cx - 110}
+      y={cell.cy - 70}
+      width="220"
+      height="140"
       pointerEvents="none"
       aria-label={`${attackerName} 공격, ${defenderName} 방어`}
     >
-      <div className="flex h-full w-full items-center justify-center gap-1 overflow-hidden rounded-xl">
+      <div className="flex h-full w-full items-center justify-center gap-2 overflow-hidden rounded-xl">
         <div
-          className="campus-battle-fighter campus-battle-attacker relative h-[78px] w-[78px] rounded-full border-2 bg-white/75 p-0.5"
+          className="campus-battle-fighter campus-battle-attacker relative h-[100px] w-[100px] rounded-full border-2 bg-white/75 p-0.5"
           style={{ borderColor: attackerColor }}
         >
           <CharacterViewport
@@ -50,20 +50,20 @@ export function CampusBattleOverlay({
             visualState="attack"
             attackTick={1}
             attackDurationMs={2600}
-            size={72}
+            size={94}
             decorative
           />
           <span className="sr-only">{`${attackerName} 공격`}</span>
         </div>
         <div
-          className="campus-battle-fighter campus-battle-defender relative h-[78px] w-[78px] rounded-full border-2 bg-white/75 p-0.5"
+          className="campus-battle-fighter campus-battle-defender relative h-[100px] w-[100px] rounded-full border-2 bg-white/75 p-0.5"
           style={{ borderColor: defenderColor }}
         >
           <CharacterViewport
             stage={1}
             postureState="good"
             visualState="idle"
-            size={72}
+            size={94}
             decorative
           />
           <span className="sr-only">{`${defenderName} 방어`}</span>

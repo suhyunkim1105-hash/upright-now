@@ -124,6 +124,7 @@ export function CampusMap() {
               tiles={snapshot.tiles}
               selectedTileId={selectedId}
               onSelectTile={(tile) => setSelectedId(tile.id)}
+              large
             />
           </div>
           <div className="mt-3">

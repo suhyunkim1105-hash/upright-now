@@ -34,10 +34,12 @@ export function TerritoryMap({
   tiles,
   selectedTileId,
   onSelectTile,
+  large = false,
 }: {
   tiles: CampusTile[]
   selectedTileId?: string | null
   onSelectTile?: (tile: CampusTile) => void
+  large?: boolean
 }) {
   const flashTileIds = useCampusStore((s) => s.flashTileIds)
   const activeBattleScenes = useCampusStore((s) => s.activeBattleScenes)
@@ -86,7 +88,7 @@ export function TerritoryMap({
       <p className="sr-only">{`가상 캠퍼스 지도 (영토 ${CAMPUS_GRID_CELL_COUNT}곳)`}</p>
       <svg
         viewBox="0 0 1536 1024"
-        className="h-auto w-full"
+        className={large ? 'h-auto min-w-[1100px] md:min-w-[1400px]' : 'h-auto w-full'}
         aria-label="가상 캠퍼스 지도 — 12×8 격자 96개 영토"
       >
         {!bgBroken ? (
@@ -157,8 +159,14 @@ export function TerritoryMap({
                   }
                 }}
                 points={cell.points}
-                fill={owner ? owner.color : '#FFFFFF'}
-                fillOpacity={owner ? (isMine ? 0.45 : 0.3) : 0.06}
+                fill={challenger?.color ?? owner?.color ?? '#FFFFFF'}
+                fillOpacity={
+                  challenger
+                    ? Math.max(0.12, 0.16 + progress * 0.42)
+                    : owner
+                      ? (isMine ? 0.45 : 0.3)
+                      : 0
+                }
                 stroke={
                   selected
                     ? '#171717'

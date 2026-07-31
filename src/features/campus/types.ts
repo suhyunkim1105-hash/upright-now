@@ -104,6 +104,16 @@ export interface CampusTileEvent {
   at: number
 }
 
+/** 클라이언트에서만 잠깐 표시하는 영토전 전투 장면입니다. */
+export interface CampusBattleScene {
+  eventId: string
+  tileId: string
+  attackerSchoolId: string | null
+  defenderSchoolId: string | null
+  startedAt: number
+  expiresAt: number
+}
+
 /* -------------------------------- 기여도 --------------------------------- */
 
 /**

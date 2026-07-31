@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 import { CAMPUS_COPY } from '@/constants/campus'
 import { ROUTES } from '@/constants/routes'
 import { useCampusScreen } from '@/features/campus/useCampusScreen'
+import { previewCampusBattleScene } from '@/features/campus/campusStore'
 import { useCampusTheme } from '@/features/campus/campusThemeStore'
 import {
   CampusBackdrop,
@@ -127,9 +128,21 @@ export function Campus() {
             <Card>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>실시간 지도</CardTitle>
-                <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.campusMap)}>
-                  크게 보기
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {import.meta.env.DEV && (
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      data-testid="campus-battle-preview"
+                      onClick={() => previewCampusBattleScene(snapshot.tiles[0]?.id)}
+                    >
+                      전투 연출 미리보기
+                    </Button>
+                  )}
+                  <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.campusMap)}>
+                    크게 보기
+                  </Button>
+                </div>
               </div>
               <p className="mt-1 text-xs text-ink-soft">
                 자체 제작한 12×8 가상 캠퍼스예요. 실제 지도나 학교 부지를 옮겨 놓은 것이 아니에요.

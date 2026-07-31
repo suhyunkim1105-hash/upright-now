@@ -160,6 +160,32 @@ function scheduleBattleScene(scene: CampusBattleScene): void {
   battleTimers.set(scene.eventId, timer)
 }
 
+/** 개발 중 한 명만 접속해도 전투 연출을 확인할 수 있는 로컬 미리보기입니다. */
+export function previewCampusBattleScene(tileId?: string): void {
+  const state = useCampusStore.getState()
+  const targetTileId = tileId ?? state.snapshot?.tiles[0]?.id
+  if (!targetTileId) return
+  const currentSchoolId = useCampusThemeStore.getState().schoolId
+  const attackerSchoolId = currentSchoolId || 'yonsei'
+  const defenderSchoolId = attackerSchoolId === 'hanyang' ? 'yonsei' : 'hanyang'
+  const now = Date.now()
+  const scene: CampusBattleScene = {
+    eventId: `demo-battle-${now}`,
+    tileId: targetTileId,
+    attackerSchoolId,
+    defenderSchoolId,
+    startedAt: now,
+    expiresAt: now + 3000,
+  }
+  useCampusStore.setState((current) => ({
+    activeBattleScenes: [
+      ...current.activeBattleScenes.filter((item) => item.expiresAt > now && item.tileId !== targetTileId),
+      scene,
+    ],
+  }))
+  scheduleBattleScene(scene)
+}
+
 function applySnapshot(next: CampusSnapshot): void {
   const state = useCampusStore.getState()
   const previous = state.snapshot

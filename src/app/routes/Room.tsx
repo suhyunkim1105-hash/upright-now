@@ -21,11 +21,8 @@ import { useUserStore } from '@/features/onboarding/userStore'
 import { useCalibrationStore, hasValidActiveProfile } from '@/features/calibration/calibrationStore'
 import { DetectionPreflight } from '@/components/room/DetectionPreflight'
 import { TextField } from '@/components/ui'
-import {
-  REACTION_EMOJI,
-  REACTION_KINDS,
-  REACTION_LABEL,
-} from '@/features/rooms/roomEvents'
+import { REACTION_KINDS, REACTION_LABEL } from '@/features/rooms/roomEvents'
+import { ReactionIcon } from '@/components/room/ReactionIcon'
 import { useSessionStore } from '@/features/sessions/sessionStore'
 import { useToast } from '@/app/providers/ToastProvider'
 import { CampusRoomBanner } from '@/components/campus/CampusBits'
@@ -52,7 +49,8 @@ export function Room() {
   const startSession = useSessionStore((s) => s.start)
 
   // 링크 진입: 닉네임 확인 → 기존 참가자 재접속 우선 → 신규 입장.
-  // running 방의 신규 입장은 서버가 거부하고, 재접속만 통과합니다.
+  // running 방도 정원이 남아 있으면 신규 입장(중간 합류)이 됩니다.
+  // 완료·만료된 방만 서버가 거부합니다.
   useEffect(() => {
     if (!featureFlags.friendRoom || needNickname) return
     if (room.phase === 'idle' && roomCode.length === 6) {
@@ -66,6 +64,10 @@ export function Room() {
   // 세션이 시작되면 개인 세션 화면으로 이동 (각자 기기에서 독립 분석)
   useEffect(() => {
     if (room.phase !== 'running') return
+    // 중간 합류(또는 새로고침 복귀)면 방의 남은 시간만 계획합니다.
+    // 개인 타이머를 새로 만들지 않고 방과 함께 끝나게 하기 위해서예요.
+    const elapsedMs = room.startedAt ? Date.now() - room.startedAt : 0
+    const midJoin = room.startedAt !== null && elapsedMs > 10_000
     configureSession({
       subject: room.subject,
       goal: room.goal,
@@ -80,11 +82,20 @@ export function Room() {
               : 'custom',
       customFocusMin: Math.round(room.durationSec / 60),
       customRestMin: room.durationSec >= 3000 ? 5 : room.durationSec >= 1500 ? 2 : 1,
+      ...(midJoin
+        ? { plannedMsOverride: Math.max(0, room.durationSec * 1000 - elapsedMs) }
+        : {}),
     })
+    // 자세 기준이 없는 합류자는 자동 시작하지 않습니다. 세션 화면의 기존
+    // 등록 안내(판정·보상 없는 관전 상태)를 그대로 거쳐 직접 시작합니다.
+    if (featureFlags.camera && !validActiveProfile) {
+      navigate(ROUTES.session(`room-${room.code}`))
+      return
+    }
     startSession(`room-${room.code}`)
     void setMyState('focusing')
     navigate(ROUTES.session(`room-${room.code}`))
-  }, [room.phase, room.code, room.subject, room.goal, room.durationSec, configureSession, startSession, navigate])
+  }, [room.phase, room.code, room.subject, room.goal, room.durationSec, room.startedAt, validActiveProfile, configureSession, startSession, navigate])
 
   if (!featureFlags.friendRoom) {
     return (
@@ -394,7 +405,7 @@ export function Room() {
                     variant="secondary"
                     onClick={() => void sendReaction(kind)}
                   >
-                    <span aria-hidden="true">{REACTION_EMOJI[kind]}</span>
+                    <ReactionIcon kind={kind} size={32} />
                     {REACTION_LABEL[kind]}
                   </Button>
                 ))}

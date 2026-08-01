@@ -138,3 +138,4 @@ npx playwright test e2e/room-live.spec.ts
 - 팀 시작 안내: [docs/TEAM_START.md](docs/TEAM_START.md)
 - 인수인계: [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md)
 - 기획·스펙 원문(초기 기록): [docs/archive/](docs/archive/)
+

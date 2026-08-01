@@ -4,11 +4,8 @@ import { Icon } from '@/components/ui/Icon'
 import { Progress } from '@/components/ui'
 import { getShopItem } from '@/constants/storeItems'
 import { MONSTER_THEMES } from '@/features/modes/modeStore'
-import {
-  REACTION_EMOJI,
-  REACTION_KINDS,
-  REACTION_LABEL,
-} from '@/features/rooms/roomEvents'
+import { REACTION_KINDS, REACTION_LABEL } from '@/features/rooms/roomEvents'
+import { ReactionIcon } from '@/components/room/ReactionIcon'
 import { sendReaction } from '@/features/rooms/roomService'
 import { useRoomStore } from '@/features/rooms/roomStore'
 import { usePostureStore } from '@/features/posture-engine/postureStore'
@@ -67,7 +64,7 @@ function ReactionBubble({ participantId }: { participantId: string | null }) {
       data-testid="reaction-bubble"
       className="anim-toast-in absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-line bg-surface px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-ink shadow-card"
     >
-      <span aria-hidden="true">{REACTION_EMOJI[latest.reaction]}</span>
+      <ReactionIcon kind={latest.reaction} size={44} />
       {latest.reactionText ?? REACTION_LABEL[latest.reaction]}
     </span>
   )
@@ -175,22 +172,27 @@ export function CoopArena({ bossHitTick }: { bossHitTick: number }) {
       </div>
 
       {/* 정해진 반응만 보냅니다 — 5초에 1회, 자유 채팅 없음 */}
+      {/*
+        버튼의 inline-flex 는 필수 — 전역 리셋이 img 를 display:block 으로
+        만들어, 일반 버튼에서는 이미지가 한 줄을 차지하고 라벨이 아래로
+        밀립니다.
+      */}
       <div className="mt-3 flex flex-wrap justify-center gap-1.5">
         {REACTION_KINDS.map((kind) => (
           <button
             key={kind}
             type="button"
-            className="h-8 rounded-xl border border-line bg-surface px-2.5 text-xs font-semibold text-ink hover:bg-canvas"
+            className="inline-flex h-8 items-center gap-1 rounded-xl border border-line bg-surface px-2.5 text-xs font-semibold whitespace-nowrap text-ink hover:bg-canvas"
             onClick={() => void sendReaction(kind)}
           >
-            <span aria-hidden="true">{REACTION_EMOJI[kind]}</span> {REACTION_LABEL[kind]}
+            <ReactionIcon kind={kind} size={28} /> {REACTION_LABEL[kind]}
           </button>
         ))}
         {customReactions.map((text) => (
           <button
             key={text}
             type="button"
-            className="campus-soft-bg h-8 rounded-xl border border-[color:var(--campus-primary,var(--color-pink))]/40 px-2.5 text-xs font-semibold text-ink hover:bg-canvas"
+            className="campus-soft-bg inline-flex h-8 items-center gap-1 rounded-xl border border-[color:var(--campus-primary,var(--color-pink))]/40 px-2.5 text-xs font-semibold whitespace-nowrap text-ink hover:bg-canvas"
             onClick={() => void sendReaction('cheer', text)}
           >
             {text}

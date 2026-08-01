@@ -28,7 +28,7 @@ import { useDemoStore } from '@/features/demo/demoMode'
 import { finalizeSession } from '@/features/sessions/finalizeSession'
 import { featureFlags } from '@/lib/feature-flags/flags'
 import { useRoomStore } from '@/features/rooms/roomStore'
-import { leaveRoom } from '@/features/rooms/roomService'
+import { leaveRoom, setMyState } from '@/features/rooms/roomService'
 import { useToast } from '@/app/providers/ToastProvider'
 import { closePip, openPip, registerAutoPip } from '@/features/pip/pipController'
 import { usePipStore } from '@/features/pip/pipStore'
@@ -133,10 +133,17 @@ export function Session() {
 
   // 유효하지 않은 세션 URL — 데모가 아니고, 이 화면이 아는 세션도 아니면
   // (직접 주소 입력·새로고침) 가짜 세션을 만들지 않고 설정 화면으로 복구합니다.
+  // 예외: 진행 중인 친구 방의 내 세션 — 자세 기준이 없는 중간 합류자는
+  // 시작 전(idle) 상태로 이 화면에 와서 기준 등록 안내를 봐야 합니다.
   useEffect(() => {
     if (isDemo || sessionId === 'demo') return
     const s = useSessionStore.getState()
-    if (s.status === 'idle' && s.sessionId !== sessionId) {
+    const room = useRoomStore.getState()
+    const isMyRoomSession =
+      s.mode === 'room' &&
+      room.phase === 'running' &&
+      sessionId === `room-${room.code}`
+    if (s.status === 'idle' && s.sessionId !== sessionId && !isMyRoomSession) {
       navigate(ROUTES.sessionSetup, { replace: true })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -151,7 +158,9 @@ export function Session() {
         const cur = useSessionStore.getState()
         const room = useRoomStore.getState()
         if (cur.status === 'completed' && cur.mode === 'room' && room.phase !== 'idle') {
-          void leaveRoom()
+          // 상시 방은 서버가 대기실로 되돌리므로 방을 나가지 않습니다.
+          // 참가 상태를 유지해야 같은 방에서 다음 라운드를 이어갈 수 있어요.
+          if (!room.isPersistent) void leaveRoom()
           cur.configure({ mode: 'solo' })
         }
       }, 150)
@@ -391,6 +400,9 @@ export function Session() {
                 if (calibrationRequired) return
                 useGameStore.getState().reset()
                 session.start(sessionId)
+                // 중간 합류자가 기준 등록 후 직접 시작하는 경우 —
+                // 친구들에게도 집중 중으로 보이게 합니다.
+                if (session.mode === 'room') void setMyState('focusing')
                 // PiP 는 사용자 제스처 필요 — 같은 click handler 에서 요청
                 if (useUserStore.getState().pipAutoOpen) {
                   void openPip().then((result) => {

@@ -48,6 +48,15 @@ for (const itemId of ['backpack-freshman', 'backpack-library', 'backpack-team'])
     required.push(`store/layers/backpacks/${itemId}/stage-${st}-front.webp`)
   }
 }
+// 친구 방 반응 이모티콘 10종 × 2크기 (scripts/convert-reactions.mjs 산출물)
+for (const id of [
+  'cheer', 'reset', 'done', 'fighting', 'same',
+  'almost', 'congrats', 'coffee', 'back', 'goodnight',
+]) {
+  for (const size of [64, 128]) {
+    required.push(`reactions/${id}-${size}.webp`)
+  }
+}
 for (const id of [
   'shoulder-roll',
   'scapular-squeeze',

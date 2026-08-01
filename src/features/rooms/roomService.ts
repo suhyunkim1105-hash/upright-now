@@ -9,7 +9,7 @@ import {
   type ReactionKind,
   type RoomEvent,
 } from './roomEvents'
-import { MAX_ROOM_MEMBERS } from '@/constants/rooms'
+import { MAX_PERSISTENT_ROOMS, MAX_ROOM_MEMBERS } from '@/constants/rooms'
 import { createGiraffeSync, deriveSyncEventId, registerRecovery } from './giraffeSync'
 import { useRoomStore, type MemberState } from './roomStore'
 import { useUserStore } from '@/features/onboarding/userStore'
@@ -60,9 +60,11 @@ function myPresence(state: MemberState) {
 async function refreshRoomRow(roomId: string): Promise<void> {
   const supabase = await getSupabase()
   if (!supabase) return
+  // '*' 로 읽어 is_persistent 컬럼이 아직 없는(마이그레이션 전) DB 에서도
+  // 조회가 깨지지 않게 합니다.
   const { data } = await supabase
     .from('rooms')
-    .select('status, boss_hp, boss_max_hp, shield, started_at, duration_seconds')
+    .select('*')
     .eq('id', roomId)
     .single()
   if (!data) return
@@ -71,6 +73,9 @@ async function refreshRoomRow(roomId: string): Promise<void> {
     bossMaxHp: data.boss_max_hp,
     shield: data.shield ?? 0,
     durationSec: data.duration_seconds,
+    isPersistent: Boolean(
+      (data as { is_persistent?: boolean }).is_persistent,
+    ),
     startedAt: data.started_at ? new Date(data.started_at).getTime() : null,
     phase:
       data.status === 'running'
@@ -311,6 +316,8 @@ export async function createRoom(input: {
   subject: string
   goal: string
   durationSec: number
+  /** 상시 방 — 전원 완주 후에도 닫히지 않고 대기실로 돌아옵니다 */
+  isPersistent?: boolean
 }): Promise<{ ok: boolean; code?: string; message?: string }> {
   const s = store()
   s.patch({ phase: 'connecting', errorMessage: null })
@@ -332,10 +339,19 @@ export async function createRoom(input: {
     p_goal: input.goal || null,
     p_duration_seconds: input.durationSec,
     p_capacity: MAX_ROOM_MEMBERS,
+    // 일반 방이면 인자를 아예 빼서, 마이그레이션 전 서버(6인자 create_room)
+    // 에서도 그대로 동작하게 합니다.
+    ...(input.isPersistent ? { p_is_persistent: true } : {}),
   })
 
   if (error || !data) {
-    s.patch({ phase: 'error', errorMessage: '방을 만들지 못했어요. 다시 시도해 주세요.' })
+    const message = error?.message ?? ''
+    const friendly = message.includes('persistent room limit')
+      ? `상시 방은 1인당 ${MAX_PERSISTENT_ROOMS}개까지 만들 수 있어요. 안 쓰는 상시 방을 닫고 다시 시도해 주세요.`
+      : input.isPersistent && error?.code === 'PGRST202'
+        ? '상시 방 기능이 아직 서버에 준비되지 않았어요. 일반 방으로 만들어 주세요.'
+        : '방을 만들지 못했어요. 다시 시도해 주세요.'
+    s.patch({ phase: 'error', errorMessage: friendly })
     return { ok: false, message: error?.message }
   }
 
@@ -348,12 +364,47 @@ export async function createRoom(input: {
     subject: input.subject,
     goal: input.goal,
     durationSec: input.durationSec,
+    isPersistent: Boolean(input.isPersistent),
     myId: userId,
     isHost: true,
   })
   subscribeChannel(data as string, code)
   saveRejoin()
   return { ok: true, code }
+}
+
+export interface MyPersistentRoom {
+  code: string
+  subject: string | null
+  status: string
+}
+
+/**
+ * 내가 만든(방장) 상시 방 목록 — "코드로 입장" 옆 재입장 진입점용.
+ * 마이그레이션 전(컬럼 없음)이나 오프라인이면 조용히 빈 목록을 돌려줍니다.
+ */
+export async function listMyPersistentRooms(): Promise<MyPersistentRoom[]> {
+  try {
+    const userId = await ensureAnonymousUser()
+    const supabase = await getSupabase()
+    if (!userId || !supabase) return []
+    const { data, error } = await supabase
+      .from('rooms')
+      .select('code, subject, status')
+      .eq('host_user_id', userId)
+      .eq('is_persistent', true)
+      .neq('status', 'closed')
+      .order('created_at', { ascending: true })
+      .limit(MAX_PERSISTENT_ROOMS)
+    if (error || !data) return []
+    return data.map((r) => ({
+      code: r.code as string,
+      subject: (r.subject as string | null) ?? null,
+      status: r.status as string,
+    }))
+  } catch {
+    return []
+  }
 }
 
 export async function joinRoom(
@@ -378,13 +429,17 @@ export async function joinRoom(
 
   if (error || !data) {
     const message = error?.message ?? ''
+    // 'not open' = 새 서버(중간 합류 허용) · 'waiting' = 마이그레이션 전 서버.
+    // 두 메시지를 모두 다뤄 SQL 실행 전에도 안내가 깨지지 않게 합니다.
     const friendly = message.includes('not found')
       ? '방을 찾지 못했어요. 코드를 다시 확인해 주세요.'
       : message.includes('full')
         ? `이 방은 정원(${MAX_ROOM_MEMBERS}명)이 찼어요.`
-        : message.includes('waiting')
-          ? '이미 시작되었거나 종료된 방이에요.'
-          : '입장하지 못했어요. 다시 시도해 주세요.'
+        : message.includes('not open')
+          ? '이미 끝난 방이에요. 새 방을 만들어 보세요.'
+          : message.includes('waiting')
+            ? '이미 시작되었거나 종료된 방이에요.'
+            : '입장하지 못했어요. 다시 시도해 주세요.'
     s.patch({ phase: 'error', errorMessage: friendly })
     return { ok: false, message: friendly }
   }

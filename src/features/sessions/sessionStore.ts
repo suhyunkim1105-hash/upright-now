@@ -30,6 +30,11 @@ interface SessionStoreState extends SessionTimeState {
     customRestMin?: number
     profileId?: LearningProfileKind
     mode?: SessionMode
+    /**
+     * 친구 방 중간 합류 전용 — 방의 남은 시간(ms)만큼만 계획합니다.
+     * 길이 프리셋보다 늘릴 수는 없고, 최소 1분은 보장합니다.
+     */
+    plannedMsOverride?: number
   }) => void
   start: (sessionId: string) => void
   tick: (deltaMs: number, posture: PostureState) => void
@@ -63,7 +68,7 @@ const initialState = {
 export const useSessionStore = create<SessionStoreState>((set) => ({
   ...initialState,
 
-  configure: ({ subject, goal, lengthId, profileId, mode, customFocusMin, customRestMin }) =>
+  configure: ({ subject, goal, lengthId, profileId, mode, customFocusMin, customRestMin, plannedMsOverride }) =>
     set((s) => {
       // 1분 빠른 점검 — 카메라·연출 확인 전용, 보상·출석·집계 없음
       if (lengthId === 'test') {
@@ -87,11 +92,16 @@ export const useSessionStore = create<SessionStoreState>((set) => ({
       const restSec = custom
         ? clampCustomRestMin(customRestMin ?? s.restSec / 60) * 60
         : getSessionLength(nextLengthId).restSec
+      // 중간 합류 — 방의 남은 시간만 계획합니다. 줄이기만 가능, 최소 1분.
+      const plannedMs =
+        plannedMsOverride && plannedMsOverride > 0
+          ? Math.max(60_000, Math.min(plannedMsOverride, focusSec * 1000))
+          : focusSec * 1000
       return {
         subject: subject ?? s.subject,
         goal: goal ?? s.goal,
         lengthId: nextLengthId,
-        plannedMs: focusSec * 1000,
+        plannedMs,
         restSec,
         profileId: profileId ?? s.profileId,
         mode: mode ?? s.mode,

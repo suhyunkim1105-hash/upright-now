@@ -86,6 +86,11 @@ export const ROOM_DAMAGE = {
   recovery: 40,
   sessionCompleted: 100,
   giraffeSync: 60,
+  /**
+   * 전원 완주 보너스 — 서버 complete_room_if_done 이 completed 전환 시 1회 적용.
+   * 서버(20260731_room_hp_recalc.sql)의 150 과 같은 값을 유지해야 합니다.
+   */
+  bothCompleted: 150,
 } as const
 export const ROOM_SHIELD_PER_STRETCH = 15
 

@@ -14,6 +14,13 @@ export const MIN_ROOM_MEMBERS = 2
 export const ROOM_BOSS_HP_PER_MEMBER = 1000
 
 /**
+ * 한 사람이 만들 수 있는 상시 방 개수.
+ * 서버(supabase/migrations/20260731_persistent_room.sql)의 제한(3)과
+ * 같은 값을 유지해야 합니다.
+ */
+export const MAX_PERSISTENT_ROOMS = 3
+
+/**
  * 시작 시점 인원으로 확정되는 공동 괴물 체력.
  * 서버 start_room_session 이 최종 기준이고, 이 함수는 화면 예측·테스트용입니다.
  * 2명이면 2000 으로 기존과 같습니다.

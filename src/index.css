@@ -49,6 +49,25 @@
   --shadow-glow-green: 0 0 0 6px rgb(49 94 67 / 0.12);
 }
 
+/* 선택한 캠퍼스가 있으면 기본 핑크 포인트를 학교 색으로 교체합니다.
+ * CampusThemeRoot 가 변수를 주입하지 않은 화면에서는 기존 색을 유지합니다. */
+.campus-primary-bg {
+  background-color: var(--campus-primary, var(--color-pink));
+  color: var(--campus-on-primary, #fff);
+}
+
+.campus-soft-bg {
+  background-color: var(--campus-soft, var(--color-pink-soft));
+}
+
+.campus-selected-border {
+  border-color: var(--campus-primary, var(--color-pink));
+}
+
+.campus-selected-ring {
+  --tw-ring-color: color-mix(in srgb, var(--campus-primary, var(--color-pink)) 40%, transparent);
+}
+
 @layer base {
   html {
     background-color: var(--color-canvas);

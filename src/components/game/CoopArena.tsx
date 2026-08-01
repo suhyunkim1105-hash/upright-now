@@ -109,7 +109,7 @@ export function CoopArena({ bossHitTick }: { bossHitTick: number }) {
           <div
             className={[
               'flex h-[132px] w-[132px] items-center justify-center rounded-2xl border-2',
-              ratio <= 0 ? 'border-line bg-canvas' : 'border-coral bg-pink-soft',
+              ratio <= 0 ? 'border-line bg-canvas' : 'border-coral campus-soft-bg',
             ].join(' ')}
             aria-hidden="true"
           >
@@ -190,7 +190,7 @@ export function CoopArena({ bossHitTick }: { bossHitTick: number }) {
           <button
             key={text}
             type="button"
-            className="h-8 rounded-xl border border-pink/40 bg-pink-soft px-2.5 text-xs font-semibold text-ink hover:bg-canvas"
+            className="campus-soft-bg h-8 rounded-xl border border-[color:var(--campus-primary,var(--color-pink))]/40 px-2.5 text-xs font-semibold text-ink hover:bg-canvas"
             onClick={() => void sendReaction('cheer', text)}
           >
             {text}

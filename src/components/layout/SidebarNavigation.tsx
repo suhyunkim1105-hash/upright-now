@@ -80,7 +80,7 @@ export function SidebarNavigation() {
               [
                 'flex items-center gap-3 rounded-2xl px-3 py-2.5 text-[15px] font-semibold transition',
                 isActive
-                  ? 'bg-pink-soft text-[#b8285a]'
+                  ? 'campus-soft-bg text-[color:var(--campus-deep,#b8285a)]'
                   : 'text-ink-soft hover:bg-surface hover:text-ink',
               ].join(' ')
             }

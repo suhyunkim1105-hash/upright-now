@@ -6,9 +6,9 @@ import { Landing } from './Landing'
 
 function renderLanding() {
   return render(
-    <MemoryRouter initialEntries={['/landing']}>
+    <MemoryRouter initialEntries={['/upright-now']}>
       <Routes>
-        <Route path="/landing" element={<Landing />} />
+        <Route path="/upright-now" element={<Landing />} />
         <Route path="/onboarding/name" element={<p>기준 설정 화면</p>} />
       </Routes>
     </MemoryRouter>,

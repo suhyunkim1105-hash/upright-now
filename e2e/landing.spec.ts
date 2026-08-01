@@ -4,7 +4,7 @@ test.describe('랜딩 페이지', () => {
   test.use({ viewport: { width: 1280, height: 768 } })
 
   test('첫 화면과 스크롤 흐름이 데스크톱에서 읽힌다', async ({ page }) => {
-    await page.goto('/landing')
+    await page.goto('/upright-now')
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('PC 앞 집중을가벼운 자세로')
     await expect(page.getByRole('button', { name: /내 기준 만들기/ }).first()).toBeVisible()
@@ -30,7 +30,7 @@ test.describe('랜딩 페이지', () => {
 
   test('작은 화면에서도 제목과 3D 장면이 잘리지 않는다', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 })
-    await page.goto('/landing')
+    await page.goto('/upright-now')
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('PC 앞 집중을가벼운 자세로')
     await expect(page.getByTestId('landing-hero-3d')).toBeVisible()

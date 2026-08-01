@@ -16,13 +16,15 @@ test.describe('랜딩 페이지', () => {
     await page.getByRole('link', { name: '어떻게 쓰는지 보기' }).click()
     await expect(page.getByRole('heading', { name: /네 번의 자연스러운 흐름으로/ })).toBeInViewport()
     await expect(page.locator('.landing-routine__steps .landing-reveal--visible').first()).toBeVisible()
-    await page.waitForTimeout(1_350)
+    const revealDuration = await page.locator('.landing-routine__steps .landing-reveal').first().evaluate((element) => Number.parseFloat(getComputedStyle(element).transitionDuration))
+    expect(revealDuration).toBeGreaterThanOrEqual(1.2)
+    await page.waitForTimeout(1_900)
     await page.screenshot({ path: 'test-results/landing-routine-1280.png' })
 
     await page.locator('#trust').scrollIntoViewIfNeeded()
     await expect(page.getByRole('heading', { name: /원본 영상과 스냅샷은/ })).toBeInViewport()
     await expect(page.locator('.landing-trust__diagram')).toBeVisible()
-    await page.waitForTimeout(1_250)
+    await page.waitForTimeout(1_600)
     await page.screenshot({ path: 'test-results/landing-trust-1280.png' })
   })
 

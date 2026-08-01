@@ -105,7 +105,7 @@ function Reveal({
         setVisible(true)
         observer.unobserve(entry.target)
       },
-      { threshold: 0.16, rootMargin: '0px 0px -8% 0px' },
+      { threshold: 0.22, rootMargin: '0px 0px -14% 0px' },
     )
     observer.observe(element)
     return () => observer.disconnect()
@@ -130,7 +130,7 @@ function Statement() {
         <p className="landing-kicker">집중을 방해하지 않는 자세 루틴</p>
         <h2>
           {words.map((word, index) => (
-            <span key={`${word}-${index}`} style={{ transitionDelay: `${index * 105}ms` }}>
+            <span key={`${word}-${index}`} style={{ transitionDelay: `${index * 145}ms` }}>
               {word}{' '}
             </span>
           ))}
@@ -223,7 +223,7 @@ export function Landing() {
             </div>
             <ol className="landing-routine__steps">
               {steps.map((step, index) => (
-                <Reveal key={step.number} delay={index * 115}>
+                <Reveal key={step.number} delay={index * 180}>
                   <li>
                     <span className="landing-step__number">{step.number}</span>
                     <div>
@@ -272,7 +272,7 @@ export function Landing() {
               <p>15분, 25분, 50분, 직접 설정과 3분 데모까지. 시작에 필요한 선택만 남겼어요.</p>
               <div className="landing-session-card__pills"><span>15분</span><span className="is-active">25분</span><span>50분</span><span>직접 설정</span></div>
             </Reveal>
-            <Reveal delay={140} className="landing-session-card landing-session-card--feedback">
+            <Reveal delay={220} className="landing-session-card landing-session-card--feedback">
               <HeartPulse size={31} strokeWidth={1.55} aria-hidden="true" />
               <span className="landing-session-card__eyebrow">단계적 자세 피드백</span>
               <p className="landing-session-card__lead">잔소리나 점수 대신, 상태에 맞는 짧은 안내로 강도를 조절해요.</p>
@@ -306,7 +306,7 @@ export function Landing() {
             <h2 id="environment-title">방해는 줄이고,<br />회복만 곁에 남겨요.</h2>
           </Reveal>
           <div className="landing-environment__grid">
-            {environmentTools.map(([Icon, title, body], index) => <Reveal key={title} delay={index * 105}><article className="landing-environment-card"><span><Icon size={25} strokeWidth={1.55} aria-hidden="true" /></span><h3>{title}</h3><p>{body}</p></article></Reveal>)}
+            {environmentTools.map(([Icon, title, body], index) => <Reveal key={title} delay={index * 180}><article className="landing-environment-card"><span><Icon size={25} strokeWidth={1.55} aria-hidden="true" /></span><h3>{title}</h3><p>{body}</p></article></Reveal>)}
           </div>
         </section>
 
@@ -316,7 +316,7 @@ export function Landing() {
             <h2 id="reflection-title">숫자를 보여주는 데서<br />끝나지 않아요.</h2>
             <p>집중 시간, 감지 가능 시간, 회복 기록, 출석을 한눈에 보고 다음 세션에서 할 한 가지를 정해요. 동의한 경우 Gemini 기반 AI 회고가 세션 요약을 짧은 행동 제안으로 바꿔드려요.</p>
           </Reveal>
-          <Reveal delay={160} className="landing-reflection__report" aria-label="세션 리포트 예시">
+          <Reveal delay={220} className="landing-reflection__report" aria-label="세션 리포트 예시">
             <header><span>오늘의 리포트</span><span>25분 집중</span></header>
             <div className="landing-reflection__numbers"><div><small>집중 시간</small><strong>24분</strong></div><div><small>회복 성공</small><strong>4회</strong></div><div><small>감지 가능</small><strong>21분</strong></div></div>
             <div className="landing-reflection__ai"><BotMessageSquare size={22} aria-hidden="true" /><p>다음 세션에는 시작 전 어깨 힘을 한 번만 빼 볼까요?</p></div>
@@ -330,17 +330,17 @@ export function Landing() {
             <h2 id="together-title">친구와 같은 괴물을 만나고,<br />학교에서 쌓은 회복도 볼 수 있어요.</h2>
             <p>2인 방의 공동 괴물과 기린 싱크, 학교 테마와 시즌 기여는 집중을 계속할 수 있는 작은 이유가 돼요.</p>
           </Reveal>
-          <Reveal delay={170} className="landing-together__people" aria-hidden="true"><UsersRound size={54} strokeWidth={1.3} /><span>기린 싱크</span><div><i /><i /><i /></div></Reveal>
+          <Reveal delay={240} className="landing-together__people" aria-hidden="true"><UsersRound size={54} strokeWidth={1.3} /><span>기린 싱크</span><div><i /><i /><i /></div></Reveal>
         </section>
 
         <section className="landing-section landing-more" aria-labelledby="more-title">
           <Reveal className="landing-more__heading"><p className="landing-kicker">더 깊이 쓰고 싶다면</p><h2 id="more-title">확장 기능은<br />필요할 때만 열어 보세요.</h2></Reveal>
-          <Reveal delay={120}><details className="landing-more__details"><summary><span><GraduationCap size={22} aria-hidden="true" /> 캠퍼스, 꾸미기, 개발 검증까지</span><ChevronDown size={22} aria-hidden="true" /></summary><div><article><strong>친구와 캠퍼스</strong><p>2인 방, 공동 괴물, 기린 싱크, 학교 테마, 96영토와 시즌 기여로 연결되는 집중 경험이에요.</p></article><article><strong>성장과 꾸미기</strong><p>XP와 포인트로 과잠과 백팩을 꾸미며 거북이에서 기린까지의 변화를 이어가요.</p></article><article><strong>내 데이터와 품질</strong><p>로컬 데이터 초기화, QA Lab, TF.js MoveNet 성능 진단은 제품을 안전하게 확인하기 위한 보조 도구예요.</p></article></div></details></Reveal>
+          <Reveal delay={180}><details className="landing-more__details"><summary><span><GraduationCap size={22} aria-hidden="true" /> 캠퍼스, 꾸미기, 개발 검증까지</span><ChevronDown size={22} aria-hidden="true" /></summary><div><article><strong>친구와 캠퍼스</strong><p>2인 방, 공동 괴물, 기린 싱크, 학교 테마, 96영토와 시즌 기여로 연결되는 집중 경험이에요.</p></article><article><strong>성장과 꾸미기</strong><p>XP와 포인트로 과잠과 백팩을 꾸미며 거북이에서 기린까지의 변화를 이어가요.</p></article><article><strong>내 데이터와 품질</strong><p>로컬 데이터 초기화, QA Lab, TF.js MoveNet 성능 진단은 제품을 안전하게 확인하기 위한 보조 도구예요.</p></article></div></details></Reveal>
         </section>
 
         <section className="landing-section landing-faq" aria-labelledby="faq-title">
           <Reveal className="landing-section__heading"><p className="landing-kicker">시작하기 전 자주 묻는 질문</p><h2 id="faq-title">가볍게 시작해도,<br />알아야 할 건 분명하게.</h2></Reveal>
-          <div className="landing-faq__list">{faq.map(([question, answer], index) => <Reveal key={question} delay={index * 70}><details><summary>{question}<span>+</span></summary><p>{answer}</p></details></Reveal>)}</div>
+          <div className="landing-faq__list">{faq.map(([question, answer], index) => <Reveal key={question} delay={index * 120}><details><summary>{question}<span>+</span></summary><p>{answer}</p></details></Reveal>)}</div>
         </section>
 
         <section className="landing-final" aria-labelledby="final-title">

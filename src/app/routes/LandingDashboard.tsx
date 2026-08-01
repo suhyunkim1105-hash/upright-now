@@ -108,13 +108,17 @@ export function LandingDashboard() {
       }
     >
       <header className="dashboard-heading">
-        {isFirstVisit && <p className="dashboard-kicker">내 자세 루틴 · 첫 번째 장면</p>}
-        <h1 className="text-3xl font-bold tracking-tight text-ink">
+        <div className="dashboard-heading__index" aria-hidden="true">
+          <span>UPRIGHT NOW</span>
+          <span>{isFirstVisit ? '01 / 시작' : '오늘의 자리'}</span>
+        </div>
+        {isFirstVisit && <p className="dashboard-kicker mt-4">내 자세 루틴 · 첫 번째 장면</p>}
+        <h1 className="dashboard-heading__title">
           {isFirstVisit
             ? '오늘의 목표, 편안한 자세로 시작해 볼까요?'
             : `${nickname}님, 오늘의 자리도 천천히 정돈해 볼까요?`}
         </h1>
-        <p className="mt-1.5 text-[15px] text-ink-soft">
+        <p className="dashboard-heading__description">
           {isFirstVisit
             ? '처음 한 번만, 지금 편한 자세를 기준으로 남겨요.'
             : '세션을 켜면 개인 기준에서의 변화를 조용히 살펴볼게요.'}
@@ -123,28 +127,28 @@ export function LandingDashboard() {
 
       {isFirstVisit ? (
         <Card tone="pink" className="dashboard-ritual mb-6 p-0">
-          <div className="grid items-center gap-7 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_minmax(250px,0.7fr)] md:gap-4">
-            <div className="min-w-0">
+          <div className="dashboard-ritual__layout">
+            <div className="dashboard-ritual__copy">
               <p className="dashboard-kicker">첫 루틴 · 약 1분</p>
-              <h2 className="mt-3 max-w-xl text-[30px] leading-[1.22] font-bold tracking-tight text-ink sm:text-[36px]">
+              <h2 className="dashboard-ritual__title">
                 편안했던 순간을
                 <br />
                 오늘의 기준으로 남겨요.
               </h2>
-              <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-ink-soft">
+              <p className="dashboard-ritual__description">
                 이름과 공부 환경을 고른 뒤 카메라 위치를 확인하면, 그다음부터는 내 변화만 비교해요.
               </p>
               <ol className="dashboard-ritual__steps" aria-label="첫 사용 준비 순서">
-                <li><span>01</span> 내 이름과 공부 자리 고르기</li>
-                <li><span>02</span> 지금 편한 자세를 기준으로 등록하기</li>
-                <li><span>03</span> 첫 집중을 가볍게 시작하기</li>
+                <li><span>01</span><div><strong>내 공부 자리 고르기</strong><small>집중하는 환경을 한 번만 알려주세요.</small></div></li>
+                <li><span>02</span><div><strong>편한 자세를 기준으로 등록</strong><small>이후에는 내 변화만 비교합니다.</small></div></li>
+                <li><span>03</span><div><strong>첫 집중을 가볍게 시작</strong><small>카메라 영상은 저장하지 않아요.</small></div></li>
               </ol>
-              <div className="mt-7">
+              <div className="dashboard-ritual__cta">
                 <Button size="lg" onClick={() => navigate(ROUTES.onboardingName)}>
                   내 기준 만들기
                   <Icon name="camera" size={18} />
                 </Button>
-                <p className="mt-3 flex items-center gap-1.5 text-xs leading-relaxed text-ink-soft">
+                <p>
                   <Icon name="shield" size={15} className="shrink-0 text-green" />
                   카메라 영상은 기기 안에서만 처리하고 저장하지 않아요.
                 </p>
@@ -160,30 +164,34 @@ export function LandingDashboard() {
                   <CharacterViewport stage={1} size={242} decorative />
                 </div>
               </div>
-              <p aria-hidden="true">오늘의 동료 · 뽀각 거북</p>
+              <div className="dashboard-ritual__character-note" aria-hidden="true">
+                <span>오늘의 동료</span>
+                <strong>뽀각 거북</strong>
+                <small>나와 함께 천천히 자라요</small>
+              </div>
             </div>
           </div>
         </Card>
       ) : (
         <Card tone="pink" className="dashboard-focus-card mb-6 p-0">
-          <div className="grid items-center gap-4 p-6 sm:p-8 md:grid-cols-[minmax(0,1fr)_260px]">
-            <div className="min-w-0">
+          <div className="dashboard-focus-card__top">
+            <div className="dashboard-focus-card__copy">
               <p className="dashboard-kicker">오늘의 집중</p>
-              <h2 className="mt-3 max-w-2xl text-[30px] leading-[1.24] font-bold tracking-tight text-ink sm:text-[36px]">
+              <h2 className="dashboard-focus-card__title">
                 {isMonitoring
                   ? POSTURE_COPY[snapshot.state].message
                   : '목표 하나를 정하고, 편안한 흐름을 이어가요.'}
               </h2>
               {isMonitoring ? (
-                <div className="mt-3">
+                <div className="dashboard-focus-card__posture">
                   <PostureStatusBadge state={snapshot.state} quality={snapshot.quality} />
                 </div>
               ) : (
-                <p className="mt-3 text-[15px] text-ink-soft">
+                <p className="dashboard-focus-card__description">
                   세션 중에는 처음 등록한 기준에서의 변화를 알려드려요.
                 </p>
               )}
-              <div className="mt-5 max-w-sm">
+              <div className="dashboard-focus-card__combo">
                 <RecoveryCombo combo={combo} best={bestCombo} />
               </div>
             </div>
@@ -219,6 +227,9 @@ export function LandingDashboard() {
                   }))}
                 />
               </div>
+              <p className="dashboard-focus-card__privacy">
+                <Icon name="shield" size={14} /> 개인 기준만 기기 안에서 사용해요.
+              </p>
             </div>
             <Button
               size="lg"

@@ -960,6 +960,307 @@
   }
 }
 
+@layer components {
+  .dashboard-heading {
+    max-width: 42rem;
+    margin-bottom: 2rem;
+  }
+
+  .dashboard-heading__index {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgb(23 23 23 / 0.16);
+    color: var(--color-ink-soft);
+    font-size: 0.6875rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    line-height: 1.2;
+  }
+
+  .dashboard-heading__title {
+    max-width: 39rem;
+    margin: 1rem 0 0;
+    color: var(--color-ink);
+    font-size: clamp(2rem, 3.2vw, 3rem);
+    font-weight: 760;
+    letter-spacing: -0.045em;
+    line-height: 1.13;
+  }
+
+  .dashboard-heading__description {
+    max-width: 35rem;
+    margin: 0.875rem 0 0;
+    color: var(--color-ink-soft);
+    font-size: 0.9375rem;
+    line-height: 1.7;
+  }
+
+  .dashboard-ritual,
+  .dashboard-focus-card {
+    border: 1px solid rgb(23 23 23 / 0.15);
+    border-radius: 1.5rem;
+    box-shadow: 4px 5px 0 rgb(23 23 23 / 0.08);
+  }
+
+  .dashboard-ritual {
+    position: relative;
+    background: var(--color-pink-soft);
+  }
+
+  .dashboard-ritual::after {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: min(35%, 18rem);
+    height: 100%;
+    content: '';
+    border-left: 1px solid rgb(23 23 23 / 0.13);
+    background: var(--color-yellow-soft);
+  }
+
+  .dashboard-ritual__layout {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(15rem, 0.7fr);
+    align-items: stretch;
+    min-height: 30rem;
+  }
+
+  .dashboard-ritual__copy {
+    padding: 2.25rem 2.5rem 2.4rem;
+  }
+
+  .dashboard-ritual__title,
+  .dashboard-focus-card__title {
+    margin: 0.875rem 0 0;
+    color: var(--color-ink);
+    font-size: clamp(2rem, 3.2vw, 3rem);
+    font-weight: 760;
+    letter-spacing: -0.05em;
+    line-height: 1.13;
+  }
+
+  .dashboard-ritual__description,
+  .dashboard-focus-card__description {
+    max-width: 34rem;
+    margin: 1rem 0 0;
+    color: var(--color-ink-soft);
+    font-size: 0.9375rem;
+    line-height: 1.7;
+  }
+
+  .dashboard-ritual__steps {
+    gap: 0;
+    margin: 1.75rem 0 0;
+    border-top: 1px solid rgb(23 23 23 / 0.14);
+  }
+
+  .dashboard-ritual__steps li {
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgb(23 23 23 / 0.12);
+    font-weight: 500;
+  }
+
+  .dashboard-ritual__steps span {
+    min-width: 1.3rem;
+    padding-top: 0.1rem;
+    color: var(--color-pink);
+    font-size: 0.6875rem;
+  }
+
+  .dashboard-ritual__steps div {
+    display: grid;
+    gap: 0.1rem;
+  }
+
+  .dashboard-ritual__steps strong {
+    color: var(--color-ink);
+    font-size: 0.875rem;
+    font-weight: 750;
+    line-height: 1.45;
+  }
+
+  .dashboard-ritual__steps small {
+    color: var(--color-ink-soft);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.45;
+  }
+
+  .dashboard-ritual__cta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .dashboard-ritual__cta p,
+  .dashboard-focus-card__privacy {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    color: var(--color-ink-soft);
+    font-size: 0.75rem;
+    line-height: 1.45;
+  }
+
+  .dashboard-ritual__character {
+    min-height: auto;
+    padding: 2rem 1.5rem 1.5rem;
+  }
+
+  .dashboard-ritual__character::before,
+  .dashboard-focus-card__character::before {
+    inset: 1.5rem 1rem 3.3rem;
+    border: 1px solid rgb(23 23 23 / 0.2);
+    border-radius: 50% 50% 44% 56% / 54% 44% 56% 46%;
+  }
+
+  .character-stage {
+    width: min(100%, 15.5rem);
+  }
+
+  .character-stage::before {
+    inset: 13%;
+    background: rgb(255 255 255 / 0.58);
+    box-shadow: 0 14px 0 rgb(23 23 23 / 0.06);
+  }
+
+  .character-stage__orbit--outer {
+    box-shadow: none;
+  }
+
+  .character-stage__figure {
+    transition: transform 180ms ease-out;
+  }
+
+  .dashboard-ritual__character-note {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 0.05rem;
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid rgb(23 23 23 / 0.15);
+    border-radius: 0.75rem;
+    background: rgb(255 255 255 / 0.68);
+    color: var(--color-ink);
+    text-align: left;
+  }
+
+  .dashboard-ritual__character-note span {
+    color: var(--color-ink-soft);
+    font-size: 0.625rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .dashboard-ritual__character-note strong {
+    font-size: 0.875rem;
+    font-weight: 800;
+  }
+
+  .dashboard-ritual__character-note small {
+    color: var(--color-ink-soft);
+    font-size: 0.6875rem;
+  }
+
+  .dashboard-focus-card {
+    background: var(--color-green-soft);
+  }
+
+  .dashboard-focus-card__top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.62fr);
+    align-items: stretch;
+  }
+
+  .dashboard-focus-card__copy {
+    padding: 2.25rem 2.5rem 1.6rem;
+  }
+
+  .dashboard-focus-card__character {
+    min-height: 17.5rem;
+    padding: 1.5rem;
+    border-left: 1px solid rgb(23 23 23 / 0.15);
+    background: var(--color-yellow-soft);
+  }
+
+  .dashboard-focus-card__posture {
+    margin-top: 1rem;
+  }
+
+  .dashboard-focus-card__combo {
+    max-width: 21rem;
+    margin-top: 1.5rem;
+  }
+
+  .dashboard-focus-card__actions {
+    gap: 1.5rem;
+    padding: 1.25rem 2.5rem 1.5rem;
+    border-top: 1px solid rgb(23 23 23 / 0.15);
+    background: rgb(255 255 255 / 0.68);
+  }
+
+  .dashboard-focus-card__privacy {
+    margin-top: 0.625rem;
+  }
+
+  .dashboard-focus-card__start {
+    min-height: 3.25rem;
+    border: 1px solid rgb(23 23 23 / 0.22);
+    box-shadow: 3px 3px 0 rgb(23 23 23 / 0.13);
+  }
+
+  .dashboard-rail__summary {
+    border-color: rgb(23 23 23 / 0.14);
+    border-radius: 1rem;
+    box-shadow: 3px 3px 0 rgb(23 23 23 / 0.06);
+  }
+
+  @media (max-width: 780px) {
+    .dashboard-ritual__layout,
+    .dashboard-focus-card__top,
+    .dashboard-focus-card__actions {
+      grid-template-columns: 1fr;
+    }
+
+    .dashboard-ritual::after {
+      top: auto;
+      bottom: 0;
+      width: 100%;
+      height: 36%;
+      border-top: 1px solid rgb(23 23 23 / 0.13);
+      border-left: 0;
+    }
+
+    .dashboard-ritual__copy,
+    .dashboard-focus-card__copy,
+    .dashboard-focus-card__actions {
+      padding-right: 1.5rem;
+      padding-left: 1.5rem;
+    }
+
+    .dashboard-focus-card__character {
+      border-top: 1px solid rgb(23 23 23 / 0.15);
+      border-left: 0;
+    }
+
+    .dashboard-focus-card__start {
+      width: 100%;
+    }
+  }
+}
+
 /* 감소된 모션 — opacity 중심으로만 (docs/12 §13) */
 @media (prefers-reduced-motion: reduce) {
   *,

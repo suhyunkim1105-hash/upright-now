@@ -65,6 +65,28 @@ function addLine(parent: THREE.Object3D, points: Point3[], color: number, opacit
   return line
 }
 
+function addRing(parent: THREE.Object3D, radius: number, position: Point3, color: number, opacity = 0.4, scale: Point3 = [1, 1, 1]) {
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(radius, 0.018, 8, 64),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false }),
+  )
+  ring.rotation.x = Math.PI / 2
+  ring.position.set(...position)
+  ring.scale.set(...scale)
+  parent.add(ring)
+  return ring
+}
+
+function addFlatOrb(parent: THREE.Object3D, radius: number, position: Point3, color: number, opacity = 0.35) {
+  const orb = new THREE.Mesh(
+    new THREE.CircleGeometry(radius, 32),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false }),
+  )
+  orb.position.set(...position)
+  parent.add(orb)
+  return orb
+}
+
 function addLabel(parent: THREE.Object3D, text: string, position: Point3, color: string, background: string) {
   const canvas = document.createElement('canvas')
   canvas.width = 512
@@ -148,11 +170,26 @@ function createScene() {
   const root = new THREE.Group()
   const floating: THREE.Object3D[] = []
 
-  addRoundedBox(root, [8.8, 0.22, 4.8], COLORS.pink, [0, -1.76, 0.1], [0, 0.02, 0], 0.2)
-  addRoundedBox(root, [8.25, 0.08, 4.28], COLORS.yellow, [0, -1.61, 0.1], [0, 0.02, 0], 0.18)
+  const art = new THREE.Group()
+  const leftObjects = new THREE.Group()
+  const rightObjects = new THREE.Group()
+  root.add(art, leftObjects, rightObjects)
+
+  addRoundedBox(root, [10.6, 0.18, 3.5], COLORS.surface, [0, -2.02, -1.1], [0, 0.02, 0], 0.16)
+  addRoundedBox(root, [10.1, 0.07, 3.08], COLORS.blue, [0, -1.9, -1.08], [0, 0.02, 0], 0.13, 4, glowMaterial(COLORS.blue, 0.1))
+  addRing(art, 1.62, [-3.65, 0.22, -1.15], COLORS.blue, 0.34, [1.35, 0.58, 1])
+  addRing(art, 1.12, [3.7, 0.45, -1.08], COLORS.pink, 0.38, [1.4, 0.72, 1])
+  addRing(art, 0.74, [0, -1.18, -1.02], COLORS.yellow, 0.26, [1.8, 0.42, 1])
+  addFlatOrb(art, 0.54, [-4.65, -0.64, -1.04], COLORS.mint, 0.48)
+  addFlatOrb(art, 0.42, [4.82, -0.98, -1.03], COLORS.yellow, 0.5)
+  addLine(art, [[-5.2, 1.02, -1.03], [-4.18, 1.02, -1.03], [-3.68, 1.36, -1.03]], COLORS.mint, 0.56)
+  addLine(art, [[3.58, 1.35, -1.03], [4.2, 1.05, -1.03], [5.25, 1.05, -1.03]], COLORS.blue, 0.56)
+  addLabel(art, 'RESET', [-4.3, 1.56, -0.9], '#173332', '#c6dfc5')
+  addLabel(art, '25 MIN', [4.4, 1.64, -0.9], '#173332', '#f5d26a')
 
   const monitor = new THREE.Group()
-  monitor.position.set(1.78, 0.05, -0.75)
+  monitor.position.set(3.25, -0.42, -0.25)
+  monitor.scale.setScalar(0.74)
   addRoundedBox(monitor, [4.45, 2.72, 0.2], COLORS.surface, [0, 0, 0], [0, -0.06, 0], 0.16)
   addRoundedBox(monitor, [4.12, 2.38, 0.06], COLORS.blue, [0, 0, 0.14], [0, -0.06, 0], 0.09, 4, glowMaterial(COLORS.blue, 0.16))
   addRoundedBox(monitor, [3.74, 1.92, 0.03], COLORS.mint, [0, -0.02, 0.19], [0, -0.06, 0], 0.08)
@@ -165,15 +202,16 @@ function createScene() {
   const shoulderDot = new THREE.Mesh(new THREE.SphereGeometry(0.08, 14, 10), glowMaterial(COLORS.coral, 0.85))
   shoulderDot.position.set(0, -0.21, 0.25)
   monitor.add(shoulderDot)
-  addLabel(monitor, 'POSTURE CHECK', [-1.12, -0.92, 0.26], '#173332', '#fffdf8')
-  addLabel(monitor, '25 MIN FOCUS', [1.1, -0.92, 0.26], '#173332', '#f5d26a')
+  addLabel(monitor, 'POSTURE', [-1.12, -0.92, 0.26], '#173332', '#fffdf8')
+  addLabel(monitor, 'FOCUS 25', [1.1, -0.92, 0.26], '#173332', '#f5d26a')
 
   addRoundedBox(monitor, [0.22, 0.52, 0.22], COLORS.ink, [0, -1.58, 0], [0, 0, 0], 0.07)
   addRoundedBox(monitor, [1.18, 0.12, 0.76], COLORS.ink, [0, -1.82, 0], [0, 0, 0], 0.08)
-  root.add(monitor)
+  rightObjects.add(monitor)
 
   const webcam = new THREE.Group()
-  webcam.position.set(1.78, 1.48, -0.72)
+  webcam.position.set(3.25, 1.25, -0.22)
+  webcam.scale.setScalar(0.74)
   addRoundedBox(webcam, [0.66, 0.26, 0.28], COLORS.ink, [0, 0, 0], [0, 0, 0], 0.09)
   const cameraRing = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.028, 10, 24), glowMaterial(COLORS.pink, 0.95))
   cameraRing.position.z = 0.16
@@ -181,46 +219,47 @@ function createScene() {
   const cameraDot = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), glowMaterial(COLORS.mint, 1.1))
   cameraDot.position.set(0.23, 0.06, 0.16)
   webcam.add(cameraDot)
-  root.add(webcam)
+  rightObjects.add(webcam)
 
-  addRoundedBox(root, [2.18, 0.12, 0.68], COLORS.surface, [1.78, -1.36, 0.36], [0, -0.05, 0], 0.08)
+  addRoundedBox(rightObjects, [2.18, 0.12, 0.68], COLORS.surface, [3.25, -1.42, 0.36], [0, -0.05, 0], 0.08)
   for (let index = 0; index < 5; index += 1) {
-    addRoundedBox(root, [1.58, 0.025, 0.035], index === 4 ? COLORS.pink : COLORS.ink, [1.3, -1.285, 0.18 + index * 0.1], [0, -0.05, 0], 0.015)
+    addRoundedBox(rightObjects, [1.58, 0.025, 0.035], index === 4 ? COLORS.pink : COLORS.ink, [2.78, -1.345, 0.18 + index * 0.1], [0, -0.05, 0], 0.015)
   }
 
   const books = new THREE.Group()
-  books.position.set(-2.72, -1.18, 0.5)
+  books.position.set(-3.62, -1.16, 0.5)
   addRoundedBox(books, [1.42, 0.2, 0.92], COLORS.blue, [0, 0, 0], [0, 0.1, -0.04], 0.08)
   addRoundedBox(books, [1.28, 0.18, 0.84], COLORS.yellow, [0.08, 0.18, 0.02], [0, -0.08, 0.03], 0.08)
   addRoundedBox(books, [1.08, 0.16, 0.74], COLORS.mint, [-0.02, 0.34, 0.03], [0, 0.06, -0.02], 0.08)
-  root.add(books)
+  leftObjects.add(books)
 
   const turtle = createTurtle()
-  turtle.position.set(-2.02, -0.7, 0.92)
+  turtle.position.set(-3.78, -0.78, 0.92)
   turtle.rotation.y = -0.2
-  turtle.scale.setScalar(0.96)
-  root.add(turtle)
+  turtle.scale.setScalar(0.82)
+  leftObjects.add(turtle)
 
   const turtleHalo = new THREE.Mesh(
     new THREE.TorusGeometry(0.95, 0.025, 10, 48),
     glowMaterial(COLORS.yellow, 0.75),
   )
   turtleHalo.rotation.x = Math.PI / 2
-  turtleHalo.position.set(-2.02, -0.7, 0.92)
-  root.add(turtleHalo)
+  turtleHalo.position.set(-3.78, -0.78, 0.92)
+  turtleHalo.scale.setScalar(0.88)
+  leftObjects.add(turtleHalo)
 
-  const timerCard = addRoundedBox(root, [1.76, 0.82, 0.12], COLORS.surface, [-2.78, 0.62, -0.12], [0, 0.08, -0.05], 0.13)
+  const timerCard = addRoundedBox(leftObjects, [1.76, 0.82, 0.12], COLORS.surface, [-4.72, 0.76, -0.12], [0, 0.08, -0.05], 0.13)
   addLabel(timerCard, 'FOCUS 25', [0, 0, 0.08], '#173332', '#c6dfc5')
   timerCard.userData.baseY = timerCard.position.y
   floating.push(timerCard)
-  const postureCard = addRoundedBox(root, [1.75, 0.84, 0.12], COLORS.pink, [2.78, 0.68, -0.3], [0, -0.12, 0.04], 0.13)
+  const postureCard = addRoundedBox(rightObjects, [1.75, 0.84, 0.12], COLORS.pink, [4.58, 0.72, -0.3], [0, -0.12, 0.04], 0.13)
   addLabel(postureCard, 'COME BACK', [0, 0, 0.08], '#173332', '#f3a7bc')
   postureCard.userData.baseY = postureCard.position.y
   floating.push(postureCard)
 
   const spark = new THREE.Mesh(new THREE.IcosahedronGeometry(0.12, 0), glowMaterial(COLORS.yellow, 1.1))
-  spark.position.set(3.42, -0.16, 0.3)
-  root.add(spark)
+  spark.position.set(4.62, -0.12, 0.3)
+  rightObjects.add(spark)
 
   return { root, turtle, turtleHalo, cameraRing, floating }
 }
@@ -253,7 +292,7 @@ export function LandingHeroScene() {
     scene.background = new THREE.Color(COLORS.canvas)
     const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100)
     camera.position.set(0.25, 0.68, 10.4)
-    camera.lookAt(0.25, -0.46, 0)
+    camera.lookAt(0, -0.22, 0)
 
     scene.add(new THREE.HemisphereLight(0xfffdf8, 0x6f8b63, 2.5))
     const keyLight = new THREE.DirectionalLight(0xfffdf8, 3.7)
@@ -266,8 +305,8 @@ export function LandingHeroScene() {
     scene.add(fillLight)
 
     const { root, turtle, turtleHalo, cameraRing, floating } = createScene()
-    root.position.set(0.78, -0.44, 0)
-    root.scale.setScalar(0.92)
+    root.position.set(0, -0.2, 0)
+    root.scale.setScalar(0.9)
     scene.add(root)
 
     const composer = new EffectComposer(renderer)
@@ -283,9 +322,9 @@ export function LandingHeroScene() {
       camera.aspect = width / height
       camera.position.z = narrow ? 14.2 : 10.4
       camera.updateProjectionMatrix()
-      root.position.x = narrow ? 0 : 0.78
-      root.position.y = narrow ? -0.72 : -0.44
-      root.scale.setScalar(narrow ? 0.68 : 0.92)
+      root.position.x = 0
+      root.position.y = narrow ? -0.52 : -0.2
+      root.scale.setScalar(narrow ? 0.54 : 0.9)
       renderer.setSize(width, height, false)
       composer.setSize(width, height)
     }

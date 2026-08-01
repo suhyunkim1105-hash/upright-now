@@ -16,19 +16,19 @@ function renderLanding() {
 }
 
 describe('Landing', () => {
-  it('핵심 가치와 개인정보 안내를 보여준다', () => {
+  it('서비스 약속과 개인정보 원칙을 보여준다', () => {
     renderLanding()
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('앉아 있는 시간은 그대로.')
-    expect(screen.getByRole('heading', { name: /원본 영상은/ })).toBeInTheDocument()
-    expect(screen.getByText('나만의 기준선')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('집중은 이어가고,자세는 가볍게 돌아와요.')
+    expect(screen.getByRole('heading', { name: /원본 영상과 스냅샷은/ })).toBeInTheDocument()
+    expect(screen.getByText('카메라 프레임 외부 전송 없음')).toBeInTheDocument()
   })
 
-  it('주 CTA가 기준 설정으로 이동한다', async () => {
+  it('첫 화면 CTA가 기준 설정으로 이동시킨다', async () => {
     const user = userEvent.setup()
     renderLanding()
 
-    await user.click(screen.getAllByRole('button', { name: /내 기준 자세 만들기/ })[0])
+    await user.click(screen.getAllByRole('button', { name: /내 기준 만들기/ })[0])
 
     expect(screen.getByText('기준 설정 화면')).toBeInTheDocument()
   })

@@ -1,6 +1,7 @@
 /** 라우트 주소 — docs/04_IA.md §1 */
 export const ROUTES = {
   home: '/',
+  landing: '/landing',
   onboardingName: '/onboarding/name',
   profiles: '/profiles',
   camera: '/camera',

@@ -94,7 +94,7 @@ export function SessionSetup() {
     const id = `s-${Date.now()}`
     start(id)
     // PiP 는 사용자 제스처가 필요 — 같은 click handler 안에서 요청합니다.
-    if (useUserStore.getState().pipAutoOpen) {
+    if (useUserStore.getState().pipAutoOpen && document.hidden) {
       void openPip().then((result) => {
         if (result !== 'opened') {
           push({

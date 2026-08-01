@@ -178,11 +178,11 @@ export function Settings() {
           <CardTitle>미니 위젯</CardTitle>
           <div className="mt-3 flex items-center justify-between gap-3">
             <div>
-              <p className="text-sm text-ink">세션 시작 시 미니 위젯 자동 열기</p>
+              <p className="text-sm text-ink">다른 탭으로 전환할 때 PiP 동행</p>
               <p className="mt-0.5 text-xs text-ink-soft">
-                집중 세션을 시작하면 캐릭터·남은 시간을 보여주는 작은 별도
-                창을 자동으로 열어요. 지원하지 않는 브라우저에서는 화면 안
-                미니 위젯으로 대신 보여드려요.
+                집중 중 다른 탭으로 이동하면 아기 거북이 PiP가 동행해요.
+                거북이를 누르면 카메라를 열 수 있고, 지원하지 않는 브라우저에서는
+                원래 세션 화면에서 카메라를 계속 확인할 수 있어요.
               </p>
             </div>
             <Button

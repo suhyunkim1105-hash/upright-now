@@ -38,7 +38,7 @@ import {
 } from '@/features/pip/pipController'
 import { usePipStore } from '@/features/pip/pipStore'
 import { MiniPostureWidget } from '@/components/session/MiniPostureWidget'
-import { SessionCameraPreview } from '@/components/session/CameraStreamPreview'
+import { SessionCameraPanel } from '@/components/session/CameraStreamPreview'
 import { CoopArena } from '@/components/game/CoopArena'
 import { useAttackSequence } from '@/features/game/useAttackSequence'
 import { MONSTER_THEMES, useActiveModeConfig } from '@/features/modes/modeStore'
@@ -69,6 +69,7 @@ export function Session() {
   const soundEnabled = useUserStore((s) => s.soundEnabled)
   const toggleSound = useUserStore((s) => s.toggleSound)
   const hasCalibration = useUserStore((s) => s.hasCalibration)
+  const pipAutoOpen = useUserStore((s) => s.pipAutoOpen)
   const isDemo = useDemoStore((s) => s.isDemo)
   const snapshot = usePostureStore((s) => s.snapshot)
   const notice = usePostureStore((s) => s.notice)
@@ -228,8 +229,10 @@ export function Session() {
   }, [cameraStream])
 
   useEffect(() => {
-    if (useRealCamera && session.status === 'running') registerAutoPip(cameraStream)
-  }, [useRealCamera, session.status, cameraStream])
+    if (useRealCamera && session.status === 'running' && pipAutoOpen) {
+      registerAutoPip(cameraStream)
+    }
+  }, [useRealCamera, session.status, cameraStream, pipAutoOpen])
 
   // 친구 방 세션 — 공동 보스 표시 + 친구 성공 이벤트·기린 싱크 알림
   const roomPhase = useRoomStore((s) => s.phase)
@@ -337,10 +340,6 @@ export function Session() {
       {/* PiP 미지원·차단 시 화면 안 미니 위젯 (카메라 영상 미포함) */}
       {pipFallback && session.status !== 'idle' && <MiniPostureWidget />}
 
-      {useRealCamera && session.status !== 'idle' && (
-        <SessionCameraPreview stream={cameraStream} />
-      )}
-
       {useRealCamera && (
         <video
           ref={videoRef}
@@ -406,7 +405,7 @@ export function Session() {
                 useGameStore.getState().reset()
                 session.start(sessionId)
                 // PiP 는 사용자 제스처 필요 — 같은 click handler 에서 요청
-                if (useUserStore.getState().pipAutoOpen) {
+                if (useUserStore.getState().pipAutoOpen && document.hidden) {
                   void openPip(cameraStream).then((result) => {
                     if (result !== 'opened') {
                       push({
@@ -543,6 +542,16 @@ export function Session() {
                   </div>
                 </div>
               </div>
+
+              {useRealCamera && (
+                <div className="mt-5 max-w-[280px] sm:ml-auto">
+                  <SessionCameraPanel
+                    stream={cameraStream}
+                    status={camera.status}
+                    onRetry={() => void startCamera(camera.deviceId ?? undefined)}
+                  />
+                </div>
+              )}
 
               <div className="mt-4 rounded-2xl bg-surface/80 p-4">
                 {/* 1.4~2.5초: 피격·흔들림·피해 숫자 (bossHitTick 지연 틱) */}

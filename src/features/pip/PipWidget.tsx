@@ -6,7 +6,6 @@ import { remainingMs, formatClock } from '@/features/sessions/sessionMachine'
 import { useSessionStore } from '@/features/sessions/sessionStore'
 import { usePostureStore } from '@/features/posture-engine/postureStore'
 import { useGameStore } from '@/features/game/gameStore'
-import { useCharacterStage } from '@/features/progression/progressionStore'
 
 /**
  * PIP 창 내용 — 기존 store(posture/session/progression/game)를 그대로 공유합니다.
@@ -15,12 +14,13 @@ import { useCharacterStage } from '@/features/progression/progressionStore'
  */
 export function PipWidget({
   onClose,
+  onFocusMain,
   cameraStream = null,
 }: {
   onClose: () => void
+  onFocusMain: () => void
   cameraStream?: MediaStream | null
 }) {
-  const stage = useCharacterStage()
   const snapshot = usePostureStore((s) => s.snapshot)
   const session = useSessionStore()
   const combo = useGameStore((s) => s.combo)
@@ -44,7 +44,7 @@ export function PipWidget({
       <div className="relative grid size-[112px] place-items-center rounded-2xl border border-line bg-surface shadow-card">
         <span aria-hidden="true" className="absolute right-2 top-2 text-sm text-yellow">✦</span>
         <CharacterViewport
-          stage={stage}
+          stage={1}
           postureState={snapshot.state}
           size={96}
           attackTick={attackTick}
@@ -78,13 +78,15 @@ export function PipWidget({
             <span>{previewOpen ? '내 모습 숨기기' : '내 모습 보기'}</span>
             <span aria-hidden="true">{previewOpen ? '⌃' : '⌄'}</span>
           </button>
-          <div id="pip-camera-preview" hidden={!previewOpen}>
-            <CameraStreamVideo
-              stream={cameraStream}
-              testId="pip-camera-preview"
-              className="aspect-[4/3] w-full -scale-x-100 bg-ink/5 object-cover"
-            />
-          </div>
+          {previewOpen && (
+            <div id="pip-camera-preview">
+              <CameraStreamVideo
+                stream={cameraStream}
+                testId="pip-camera-preview"
+                className="aspect-[4/3] w-full -scale-x-100 bg-ink/5 object-cover"
+              />
+            </div>
+          )}
         </div>
       ) : (
         <p className="w-full text-left text-[11px] leading-snug text-ink-soft">
@@ -117,10 +119,10 @@ export function PipWidget({
             className="h-9 flex-1 rounded-xl border border-line bg-surface text-sm font-semibold text-ink"
             onClick={() => {
               // 원래 화면(오프너 탭)으로 포커스를 되돌립니다.
-              window.focus()
+              onFocusMain()
             }}
           >
-            원래 화면
+            전체 보기
           </button>
           <button
             type="button"

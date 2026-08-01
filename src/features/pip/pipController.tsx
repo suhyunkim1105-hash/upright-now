@@ -14,7 +14,12 @@ import { usePipStore } from './pipStore'
  * - PiP 가 닫혀도 세션은 계속됩니다. 새로고침 시 자동 복원하지 않습니다.
  */
 interface DocumentPictureInPictureApi {
-  requestWindow(options?: { width?: number; height?: number }): Promise<Window>
+  requestWindow(options?: {
+    width?: number
+    height?: number
+    disallowReturnToOpener?: boolean
+    preferInitialWindowPlacement?: boolean
+  }): Promise<Window>
   window: Window | null
 }
 
@@ -80,6 +85,12 @@ function renderPipWidget(): void {
     <PipWidget
       cameraStream={cameraStream}
       onClose={() => pipWindow?.close()}
+      onFocusMain={() => {
+        const opener = pipWindow?.opener
+        if (opener && !opener.closed) opener.focus()
+        else window.focus()
+        pipWindow?.close()
+      }}
     />,
   )
 }
@@ -109,7 +120,9 @@ export async function openPip(stream: MediaStream | null = null): Promise<OpenPi
   try {
     const win = await window.documentPictureInPicture.requestWindow({
       width: 300,
-      height: 380,
+      height: 420,
+      disallowReturnToOpener: true,
+      preferInitialWindowPlacement: true,
     })
     pipWindow = win
     copyStyles(win)
@@ -154,7 +167,9 @@ export function registerAutoPip(stream: MediaStream | null = null): void {
     // 'enterpictureinpicture' 는 최신 Chrome 에서만 유효한 액션입니다.
     navigator.mediaSession.setActionHandler(
       'enterpictureinpicture' as MediaSessionAction,
-      () => {
+      (details) => {
+        const reason = (details as MediaSessionActionDetails & { reason?: string }).reason
+        if (reason && reason !== 'contentoccluded') return
         void openPip(stream)
       },
     )

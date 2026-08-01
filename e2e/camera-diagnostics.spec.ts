@@ -38,9 +38,8 @@ test('calibration stream is reused by the session route', async ({
     window.dispatchEvent(new PopStateEvent('popstate'))
   })
 
-  await expect(page.getByTestId('session-camera-preview')).toBeVisible()
-  await page.getByTestId('session-camera-preview').locator('button[aria-expanded="false"]').click()
-  await expect(page.getByTestId('session-camera-preview-video')).toBeVisible()
+  await expect(page.getByTestId('session-camera-panel')).toBeVisible()
+  await expect(page.getByTestId('session-camera-panel-video')).toBeVisible()
   await expect
     .poll(() => page.evaluate(() => (window as unknown as { cameraCallCount: number }).cameraCallCount))
     .toBe(1)

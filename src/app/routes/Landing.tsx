@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDown,
@@ -23,6 +23,8 @@ import {
 import { CharacterViewport } from '@/components/character/CharacterViewport'
 import { ROUTES } from '@/constants/routes'
 import './landing.css'
+
+const LandingHero3D = lazy(() => import('@/components/landing/LandingHero3D').then((module) => ({ default: module.LandingHero3D })))
 
 const steps = [
   {
@@ -173,16 +175,19 @@ export function Landing() {
         <section id="top" className="landing-hero" aria-labelledby="landing-title">
           <Reveal className="landing-hero__copy">
             <p className="landing-kicker"><Sparkles size={15} aria-hidden="true" /> 오래 앉아 있는 오늘을 위한 루틴</p>
-            <h1 id="landing-title">집중은 이어가고,<br />자세는 가볍게 돌아와요.</h1>
+            <h1 id="landing-title"><span>PC 앞 집중을</span><span className="landing-hero__title-line--accent">가벼운 자세로</span></h1>
             <p className="landing-hero__description">
               개인 기준을 한 번 등록하면, Upright Now가 집중을 끊지 않는 선에서
-              자세 변화를 알아차리도록 도와드려요.
+              자세 변화를 알아차리고 회복할 순간을 알려드려요.
             </p>
-            <button type="button" className="landing-button landing-button--primary" onClick={begin}>
+            <button type="button" className="landing-button landing-button--bright" onClick={begin}>
               내 기준 만들기 <ArrowUpRight size={19} aria-hidden="true" />
             </button>
             <p className="landing-hero__proof"><ShieldCheck size={16} aria-hidden="true" /> 카메라 영상은 저장하거나 전송하지 않아요</p>
           </Reveal>
+          <Suspense fallback={<div className="landing-hero-3d__fallback">오늘의 집중 장면을 준비하고 있어요.</div>}>
+            <LandingHero3D />
+          </Suspense>
           <a className="landing-hero__scroll" href="#routine">
             어떻게 쓰는지 보기 <ArrowDown size={16} aria-hidden="true" />
           </a>

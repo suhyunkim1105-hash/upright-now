@@ -19,7 +19,7 @@ describe('Landing', () => {
   it('서비스 약속과 개인정보 원칙을 보여준다', () => {
     renderLanding()
 
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('집중은 이어가고,자세는 가볍게 돌아와요.')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('PC 앞 집중을가벼운 자세로')
     expect(screen.getByRole('heading', { name: /원본 영상과 스냅샷은/ })).toBeInTheDocument()
     expect(screen.getByText('카메라 프레임 외부 전송 없음')).toBeInTheDocument()
   })

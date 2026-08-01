@@ -8,7 +8,12 @@ test.describe('랜딩 페이지', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('PC 앞 집중을가벼운 자세로')
     await expect(page.getByRole('button', { name: /내 기준 만들기/ }).first()).toBeVisible()
-    await expect(page.getByTestId('landing-hero-3d')).toBeVisible()
+    await expect(page.locator('.landing-hero__visual')).toBeVisible()
+    await expect(page.locator('.landing-hero__visual-image')).toHaveAttribute('src', '/assets/landing-upright-hero-scene.png')
+    await expect(page.locator('.landing-hero-3d')).toHaveCount(0)
+    await expect(page.locator('.landing-hero__photo')).toHaveCount(0)
+    await expect(page.locator('.landing-problem')).toHaveCount(0)
+    await expect(page.locator('.landing-statement h2')).toContainText('집중하면서 거북목을 교정합니다.')
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true)
     await page.waitForTimeout(1_100)
     await page.screenshot({ path: 'test-results/landing-top-1280.png' })
@@ -33,7 +38,8 @@ test.describe('랜딩 페이지', () => {
     await page.goto('/upright-now')
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('PC 앞 집중을가벼운 자세로')
-    await expect(page.getByTestId('landing-hero-3d')).toBeVisible()
+    await expect(page.locator('.landing-hero__visual')).toBeVisible()
+    await expect(page.locator('.landing-hero-3d')).toHaveCount(0)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true)
   })
 })

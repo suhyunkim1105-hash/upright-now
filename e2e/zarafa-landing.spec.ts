@@ -14,7 +14,8 @@ test('기존 Zarafa 랜딩은 /landing 경로에서 복구된다', async ({ page
 test('Upright Now 랜딩은 /upright-now 경로에서 독립적으로 열린다', async ({ page }) => {
   await page.goto('/upright-now')
 
-  await expect(page.getByTestId('landing-hero-3d')).toBeVisible()
+  await expect(page.locator('.landing-hero__visual')).toBeVisible()
+  await expect(page.locator('.landing-hero-3d')).toHaveCount(0)
   await expect(page.getByRole('heading', { level: 1 })).toContainText('PC 앞 집중을')
 })
 

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDown,
@@ -23,8 +23,6 @@ import {
 import { CharacterViewport } from '@/components/character/CharacterViewport'
 import { ROUTES } from '@/constants/routes'
 import './landing.css'
-
-const LandingHero3D = lazy(() => import('@/components/landing/LandingHeroScene').then((module) => ({ default: module.LandingHeroScene })))
 
 const steps = [
   {
@@ -123,7 +121,7 @@ function Reveal({
 }
 
 function Statement() {
-  const words = ['자세가', '흐트러져도', '집중은', '끊기지', '않도록', 'Upright', 'Now가', '조용히', '곁에', '있을게요']
+  const words = ['집중하면서', '거북목을', '교정합니다.']
   return (
     <section className="landing-statement" aria-label="서비스 약속">
       <Reveal>
@@ -185,24 +183,14 @@ export function Landing() {
             </button>
             <p className="landing-hero__proof"><ShieldCheck size={16} aria-hidden="true" /> 카메라 영상은 저장하거나 전송하지 않아요</p>
           </Reveal>
-          <Suspense fallback={<div className="landing-hero-3d__fallback">오늘의 집중 장면을 준비하고 있어요</div>}>
-            <LandingHero3D />
-          </Suspense>
+          <figure className="landing-hero__visual">
+            <img className="landing-hero__visual-image" src="/assets/landing-upright-hero-scene.png" alt="아기 거북이와 노트북 자세 가이드가 함께 놓인 집중 세션 장면" />
+            <span className="landing-hero__visual-tag landing-hero__visual-tag--left" aria-hidden="true">개인 기준</span>
+            <span className="landing-hero__visual-tag landing-hero__visual-tag--right" aria-hidden="true">25분 집중</span>
+          </figure>
           <a className="landing-hero__scroll" href="#routine">
             어떻게 쓰는지 보기 <ArrowDown size={16} aria-hidden="true" />
           </a>
-        </section>
-
-        <section className="landing-problem" aria-labelledby="problem-title">
-          <Reveal className="landing-problem__question">
-            <p className="landing-kicker">오래 앉아 공부할 때</p>
-            <h2 id="problem-title">자세가 흐트러진 건 알겠는데<br />집중까지 끊고 싶지는 않아요</h2>
-          </Reveal>
-          <Reveal delay={150} className="landing-problem__answer">
-            <span className="landing-problem__orb" aria-hidden="true" />
-            <p>그래서 정답 자세를 채점하지 않아요 오늘의 편안한 자세와 비교해 필요한 변화만 조용히 알려드려요</p>
-            <div><Camera size={20} aria-hidden="true" /><span>내 기기 안에서 분석</span></div>
-          </Reveal>
         </section>
 
         <Statement />

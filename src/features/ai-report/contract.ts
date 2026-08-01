@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { AiSessionReport, SessionSummary } from '../../types'
+import type { AiSessionReport, SessionSummary } from '../../types/index.js'
 
 export const AI_REPORT_SCHEMA_VERSION = '2026-07-30'
 

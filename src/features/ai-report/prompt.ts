@@ -1,4 +1,4 @@
-import type { AiReportInput } from './contract'
+import type { AiReportInput } from './contract.js'
 
 export function buildAiReportPrompt(input: AiReportInput): string {
   return `당신은 UpRight Now의 세션 회고 도우미입니다.

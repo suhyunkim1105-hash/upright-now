@@ -3,13 +3,13 @@ import {
   AiSessionReportSchema,
   isSafeAiSessionReport,
   type AiReportInput,
-} from '../src/features/ai-report/contract'
-import type { AiSessionReport } from '../src/types'
+} from '../src/features/ai-report/contract.js'
+import type { AiSessionReport } from '../src/types/index.js'
 import {
   AiReportConfigurationError,
   generateAiSessionReport,
   recordAiReportObservation,
-} from './ai-report-service'
+} from './ai-report-service.js'
 
 const MAX_BODY_BYTES = 12_000
 const RATE_LIMIT_WINDOW_MS = 10 * 60_000

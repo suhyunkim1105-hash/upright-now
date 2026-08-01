@@ -151,7 +151,15 @@ export function LandingDashboard() {
               </div>
             </div>
             <div className="dashboard-ritual__character">
-              <CharacterViewport stage={1} size={242} decorative />
+              <div className="character-stage" aria-hidden="true">
+                <span className="character-stage__orbit character-stage__orbit--outer" />
+                <span className="character-stage__orbit character-stage__orbit--inner" />
+                <span className="character-stage__spark character-stage__spark--one">✦</span>
+                <span className="character-stage__spark character-stage__spark--two">·</span>
+                <div className="character-stage__figure">
+                  <CharacterViewport stage={1} size={242} decorative />
+                </div>
+              </div>
               <p aria-hidden="true">오늘의 동료 · 뽀각 거북</p>
             </div>
           </div>
@@ -180,11 +188,19 @@ export function LandingDashboard() {
               </div>
             </div>
             <div className="dashboard-focus-card__character">
-              <CharacterWithGear
-                stage={stage}
-                postureState={isMonitoring ? snapshot.state : 'good'}
-                size={228}
-              />
+              <div className="character-stage" aria-hidden="true">
+                <span className="character-stage__orbit character-stage__orbit--outer" />
+                <span className="character-stage__orbit character-stage__orbit--inner" />
+                <span className="character-stage__spark character-stage__spark--one">✦</span>
+                <span className="character-stage__spark character-stage__spark--two">·</span>
+                <div className="character-stage__figure">
+                  <CharacterWithGear
+                    stage={stage}
+                    postureState={isMonitoring ? snapshot.state : 'good'}
+                    size={228}
+                  />
+                </div>
+              </div>
             </div>
           </div>
           <div className="dashboard-focus-card__actions">

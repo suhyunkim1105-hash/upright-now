@@ -4,7 +4,11 @@ import { useRef } from 'react'
 import { useCamera } from './useCamera'
 
 function makeTrack() {
-  return { stop: vi.fn(), getSettings: () => ({ deviceId: 'cam-1' }) }
+  return {
+    stop: vi.fn(),
+    getSettings: () => ({ deviceId: 'cam-1' }),
+    readyState: 'live' as const,
+  }
 }
 
 function mockMediaDevices(getUserMedia: () => Promise<MediaStream>) {
@@ -16,10 +20,10 @@ function mockMediaDevices(getUserMedia: () => Promise<MediaStream>) {
   }
 }
 
-function harness() {
+function harness(options?: { keepStreamOnUnmount?: boolean }) {
   return renderHook(() => {
     const ref = useRef<HTMLVideoElement>(document.createElement('video'))
-    return useCamera(ref)
+    return useCamera(ref, options)
   })
 }
 
@@ -86,5 +90,28 @@ describe('useCamera — 권한과 트랙 정지 (docs/14 §3)', () => {
 
     expect(track.stop).toHaveBeenCalled()
     expect(result.current.state.status).toBe('idle')
+  })
+
+  it('reuses the calibration stream in the session without a second getUserMedia call', async () => {
+    const track = makeTrack()
+    const stream = { getTracks: () => [track], getVideoTracks: () => [track] }
+    const getUserMedia = vi.fn(async () => stream as unknown as MediaStream)
+    mockMediaDevices(getUserMedia)
+
+    const calibration = harness({ keepStreamOnUnmount: true })
+    await act(async () => {
+      await calibration.result.current.start()
+    })
+    calibration.unmount()
+
+    const session = harness()
+    await act(async () => {
+      await session.result.current.start()
+    })
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1)
+    expect(session.result.current.stream).toBe(stream)
+    act(() => session.result.current.stop())
+    expect(track.stop).toHaveBeenCalled()
   })
 })

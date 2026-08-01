@@ -55,7 +55,7 @@ const CAMERA_ERROR_COPY: Record<string, string> = {
  * 허용 범위(roll ≤ ROLL_LIMIT_DEG)는 초록, 과도한 기울임은 코랄.
  * 판정은 픽셀 위치가 아니라 shoulder width ratio·face scale·safe area 기반입니다.
  */
-function DynamicFramingGuide({ analysis }: { analysis: LandmarkAnalysis | null }) {
+function LegacyDynamicFramingGuide({ analysis }: { analysis: LandmarkAnalysis | null }) {
   const seg = (a: PointName, b: PointName) => {
     if (!analysis) return null
     const p = analysis.points[a]
@@ -69,7 +69,7 @@ function DynamicFramingGuide({ analysis }: { analysis: LandmarkAnalysis | null }
         y1={p.y * 100}
         x2={q.x * 100}
         y2={q.y * 100}
-        stroke={ok ? '#4ade80' : '#ff6464'}
+        stroke={ok ? '#5F8FF7' : '#F45B8D'}
         strokeWidth={1.1}
         strokeLinecap="round"
       />
@@ -86,6 +86,116 @@ function DynamicFramingGuide({ analysis }: { analysis: LandmarkAnalysis | null }
       >
         {seg('leftEyeOuter', 'rightEyeOuter')}
         {seg('leftShoulder', 'rightShoulder')}
+      </svg>
+    </div>
+  )
+}
+
+function DynamicFramingGuide({ analysis }: { analysis: LandmarkAnalysis | null }) {
+  return (
+    <>
+      <EnhancedFramingGuide analysis={analysis} />
+      <div hidden>
+        <LegacyDynamicFramingGuide analysis={analysis} />
+      </div>
+    </>
+  )
+}
+
+function EnhancedFramingGuide({ analysis }: { analysis: LandmarkAnalysis | null }) {
+  const earY = analysis?.earsOk
+    ? ((analysis.points.leftEar.y + analysis.points.rightEar.y) / 2) * 100
+    : 34
+  const shoulderY = analysis?.bothShouldersOk
+    ? ((analysis.points.leftShoulder.y + analysis.points.rightShoulder.y) / 2) * 100
+    : 76
+  const ready = Boolean(
+    analysis?.faceCoreOk && analysis.bothShouldersOk && analysis.inFrame,
+  )
+  const guidePoint = (name: PointName, fallbackX: number, fallbackY: number) => {
+    const point = analysis?.points[name]
+    return point?.present ? { x: point.x * 100, y: point.y * 100 } : { x: fallbackX, y: fallbackY }
+  }
+  const leftEar = guidePoint('leftEar', 30, earY)
+  const rightEar = guidePoint('rightEar', 70, earY)
+
+  return (
+    <div
+      aria-hidden="true"
+      data-testid="calibration-guide"
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+    >
+      <div className="absolute inset-x-[8%] inset-y-[7%] rounded-[1.5rem] border border-white/70 shadow-[inset_0_0_0_1px_rgba(14,40,54,0.08)]" />
+      <div
+        data-testid="calibration-ear-guide"
+        className="absolute inset-x-[8%] flex items-center"
+        style={{ top: `${earY}%` }}
+      >
+        <div className="h-px flex-1 border-t border-dashed border-yellow" />
+        <span className="mx-2 rounded-full bg-ink/80 px-2.5 py-1 text-[10px] font-bold tracking-tight text-white">
+          귀 높이
+        </span>
+        <div className="h-px flex-1 border-t border-dashed border-yellow" />
+      </div>
+      <div
+        data-testid="calibration-shoulder-guide"
+        className="absolute inset-x-[8%] flex items-center"
+        style={{ top: `${shoulderY}%` }}
+      >
+        <div className="h-2 flex-1 rounded-full border border-dashed border-blue/80 bg-blue/10" />
+        <span className="mx-2 rounded-full border border-blue/40 bg-canvas/90 px-2.5 py-1 text-[10px] font-bold tracking-tight text-blue">
+          어깨 폭
+        </span>
+        <div className="h-2 flex-1 rounded-full border border-dashed border-blue/80 bg-blue/10" />
+      </div>
+      <div className="absolute left-[8%] top-[7%] rounded-full border border-white/60 bg-ink/75 px-3 py-1.5 text-[10px] font-bold text-white">
+        {ready ? '측정 가능' : '얼굴과 어깨를 맞춰 주세요'}
+      </div>
+      <div className="absolute inset-x-3 bottom-3 rounded-xl border border-white/20 bg-ink/85 px-3 py-2 text-center text-[10px] font-semibold tracking-tight text-white/90">
+        기준점은 이 화면에서만 확인하고, 영상은 저장하지 않아요
+      </div>
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="absolute inset-0 h-full w-full -scale-x-100"
+      >
+        <line
+          x1={leftEar.x}
+          y1={leftEar.y}
+          x2={rightEar.x}
+          y2={rightEar.y}
+          stroke="#F2C94C"
+          strokeWidth={0.7}
+          strokeDasharray="1.5 1.5"
+        />
+        <line
+          x1={
+            analysis?.points.leftShoulder.present
+              ? analysis.points.leftShoulder.x * 100
+              : 20
+          }
+          y1={shoulderY}
+          x2={
+            analysis?.points.rightShoulder.present
+              ? analysis.points.rightShoulder.x * 100
+              : 80
+          }
+          y2={shoulderY}
+          stroke="#5F8FF7"
+          strokeWidth={0.8}
+          strokeDasharray="1 1"
+        />
+        {[leftEar, rightEar].map((point, index) => (
+          <circle
+            key={index}
+            cx={point.x}
+            cy={point.y}
+            r={2.1}
+            fill="#F2C94C"
+            stroke="#0E2836"
+            strokeWidth={0.7}
+          />
+        ))}
       </svg>
     </div>
   )
@@ -146,7 +256,11 @@ export function Calibration() {
   const location = useLocation()
   const videoRef = useRef<HTMLVideoElement>(null)
   const collectRef = useRef(createCollectState())
-  const { state: camera, start, stop } = useCamera(videoRef)
+  const keepStreamOnUnmount =
+    new URLSearchParams(location.search).get('return')?.startsWith('/session/') ?? false
+  const { state: camera, start, stop } = useCamera(videoRef, {
+    keepStreamOnUnmount,
+  })
   const addProfile = useCalibrationStore((s) => s.addProfile)
   const setCalibrated = useUserStore((s) => s.setCalibrated)
 
@@ -177,7 +291,9 @@ export function Calibration() {
   useEffect(() => {
     if (!featureFlags.camera) return
     start()
-    return stop
+    return () => {
+      if (!keepStreamOnUnmount) stop()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -334,7 +450,7 @@ export function Calibration() {
               <Button
                 className="mt-4"
                 onClick={() => {
-                  stop()
+                  if (!keepStreamOnUnmount) stop()
                   navigate(returnTo ?? ROUTES.sessionSetup)
                 }}
               >

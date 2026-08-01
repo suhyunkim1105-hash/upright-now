@@ -97,7 +97,7 @@ export function Session() {
   // 비데모 세션은 자세 기준 없이는 시작할 수 없습니다. (3분 데모만 예외)
   const calibrationRequired = featureFlags.camera && !isDemo && !hasProfile
   const { state: camera, stream: cameraStream, start: startCamera, stop: stopCamera } =
-    useCamera(videoRef)
+    useCamera(videoRef, { keepStreamOnUnmount: true })
   useLiveClassifier(videoRef, camera)
 
   // 회복 수명주기를 굴리는 상태 머신 티커 (카메라·QA 공통)
@@ -108,8 +108,6 @@ export function Session() {
     if (useRealCamera && session.status === 'running') startCamera()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [useRealCamera, session.status === 'running'])
-
-  useEffect(() => stopCamera, [stopCamera])
 
   // 1초 틱. 자세로 집중 여부를 추론하지 않고, 시작 시점부터 시간만 잽니다.
   useEffect(() => {
@@ -215,12 +213,13 @@ export function Session() {
       pendingUnmountFinalize = window.setTimeout(() => {
         const current = useSessionStore.getState()
         if (current.status === 'running' || current.status === 'paused') {
+          stopCamera()
           finalizeSession('manual')
           closePip()
         }
       }, 0)
     }
-  }, [])
+  }, [stopCamera])
 
   // PiP 폴백 상태 + 자동 PiP(선택 확장, 카메라 사용 중일 때만 의미)
   const pipFallback = usePipStore((s) => s.fallbackActive)

@@ -104,6 +104,16 @@ export interface CampusTileEvent {
   at: number
 }
 
+/** 클라이언트에서만 잠깐 표시하는 영토전 전투 장면입니다. */
+export interface CampusBattleScene {
+  eventId: string
+  tileId: string
+  attackerSchoolId: string | null
+  defenderSchoolId: string | null
+  startedAt: number
+  expiresAt: number
+}
+
 /* -------------------------------- 기여도 --------------------------------- */
 
 /**
@@ -170,6 +180,13 @@ export interface CampusSchoolDirectoryEntry {
   shortName: string
   color: string
   isCustom: boolean
+}
+
+/** Supabase Auth 이메일 OTP로 확인된 영토전 참여 자격. 원본 이메일은 포함하지 않습니다. */
+export interface CampusVerification {
+  schoolId: string
+  emailDomain: string
+  verifiedAt: number
 }
 
 /* ----------------------------- Realtime 상태 ----------------------------- */

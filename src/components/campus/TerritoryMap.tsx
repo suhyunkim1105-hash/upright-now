@@ -6,6 +6,7 @@ import { useCampusStore } from '@/features/campus/campusStore'
 import { useCampusThemeStore } from '@/features/campus/campusThemeStore'
 import { useSchoolIdentity, resolveSchoolIdentityNow } from '@/features/campus/schoolDirectory'
 import type { CampusTile } from '@/features/campus/types'
+import { CampusBattleOverlay } from './CampusBattleOverlay'
 
 /**
  * 캠퍼스 배경 이미지의 실측 12×8 = 96칸 오버레이 지도.
@@ -33,12 +34,15 @@ export function TerritoryMap({
   tiles,
   selectedTileId,
   onSelectTile,
+  large = false,
 }: {
   tiles: CampusTile[]
   selectedTileId?: string | null
   onSelectTile?: (tile: CampusTile) => void
+  large?: boolean
 }) {
   const flashTileIds = useCampusStore((s) => s.flashTileIds)
+  const activeBattleScenes = useCampusStore((s) => s.activeBattleScenes)
   const identify = useSchoolIdentity()
   const mySchoolId = useCampusThemeStore((s) => s.schoolId)
 
@@ -84,7 +88,7 @@ export function TerritoryMap({
       <p className="sr-only">{`가상 캠퍼스 지도 (영토 ${CAMPUS_GRID_CELL_COUNT}곳)`}</p>
       <svg
         viewBox="0 0 1536 1024"
-        className="h-auto w-full"
+        className={large ? 'h-auto min-w-[1100px] md:min-w-[1400px]' : 'h-auto w-full'}
         aria-label="가상 캠퍼스 지도 — 12×8 격자 96개 영토"
       >
         {!bgBroken ? (
@@ -112,6 +116,14 @@ export function TerritoryMap({
           const isMine = Boolean(mySchoolId) && tile.ownerSchoolId === mySchoolId
           const selected = tile.id === selectedTileId
           const flashing = flashTileIds.includes(tile.id)
+          const battleScene = activeBattleScenes.find((scene) => scene.tileId === tile.id) ?? null
+          const battleAttacker = battleScene
+            ? identify(battleScene.attackerSchoolId)
+            : null
+          const battleDefender = battleScene
+            ? identify(battleScene.defenderSchoolId)
+            : null
+          const idleSchool = battleScene ? null : identify(tile.challengerSchoolId ?? tile.ownerSchoolId)
 
           const label = [
             tile.name || `${zone.label} ${tile.y + 1}행 ${tile.x + 1}열`,
@@ -129,7 +141,7 @@ export function TerritoryMap({
 
           return (
             <g key={tile.id}>
-              <polygon
+              <rect
                 data-testid="territory-tile"
                 data-tile-id={tile.id}
                 data-tile-status={status}
@@ -147,9 +159,18 @@ export function TerritoryMap({
                     onSelectTile?.(tile)
                   }
                 }}
-                points={cell.points}
-                fill={owner ? owner.color : '#FFFFFF'}
-                fillOpacity={owner ? (isMine ? 0.45 : 0.3) : 0.06}
+                x={cell.cx - 37}
+                y={cell.cy - 37}
+                width="74"
+                height="74"
+                fill={challenger?.color ?? owner?.color ?? '#FFFFFF'}
+                fillOpacity={
+                  challenger
+                    ? Math.max(0.12, 0.16 + progress * 0.42)
+                    : owner
+                      ? (isMine ? 0.45 : 0.3)
+                      : 0
+                }
                 stroke={
                   selected
                     ? '#171717'
@@ -203,6 +224,29 @@ export function TerritoryMap({
                   />
                 </g>
               )}
+              <CampusBattleOverlay
+                scene={battleScene}
+                cell={cell}
+                attacker={
+                  battleAttacker
+                    ? { name: battleAttacker.displayName, color: battleAttacker.color }
+                    : null
+                }
+                defender={
+                  battleDefender
+                    ? { name: battleDefender.displayName, color: battleDefender.color }
+                    : null
+                }
+                idle={
+                  idleSchool
+                    ? {
+                        name: idleSchool.displayName,
+                        color: idleSchool.color,
+                        role: tile.challengerSchoolId ? 'challenger' : 'owner',
+                      }
+                    : null
+                }
+              />
             </g>
           )
         })}

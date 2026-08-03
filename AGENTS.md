@@ -79,6 +79,13 @@
 
 ## 3. 구현 순서
 
+> **Phase 1~5 는 v1.1.0 (2026-07-28) 기준으로 모두 완료됐습니다.**
+> 아래 목록은 초기에 어떤 순서로 만들었는지 남긴 **기록**이며,
+> 지금은 기능 추가·개선 단계입니다. 새 작업을 Phase 로 나눌 필요는 없습니다.
+>
+> 지금 무엇이 되어 있고 무엇이 안 되어 있는지는
+> `docs/TEAM_START.md` §9 "지금 안 되는 것 / 미완료" 를 보세요.
+
 ### Phase 1 — 흐름과 디자인
 
 - React·Vite·TypeScript 골격
@@ -121,7 +128,9 @@
 - E2E QA
 - Production build
 
-한 Phase의 핵심 테스트가 실패한 상태에서 다음 Phase로 넘어가지 않습니다.
+(당시 원칙: 한 Phase의 핵심 테스트가 실패한 상태에서 다음 Phase로 넘어가지
+않는다.) 지금은 Phase 구분이 끝났으므로, **작업을 합치기 전에
+`npm run lint` · `typecheck` · `test` 가 통과해야 한다**는 규칙으로 이어집니다.
 
 ## 4. 권장 타입
 
@@ -146,39 +155,62 @@ type RoomMemberState = "ready" | "focusing" | "resting" | "away" | "completed";
 
 ## 5. 코드 구조
 
+아래는 **실제 폴더 구조**입니다(v1.1.0 기준). 더 자세한 설명은
+`docs/TEAM_START.md` §3 폴더 지도를 보세요.
+
 ```text
 src/
-├─ app/
+├─ app/               라우팅·앱 껍데기
+│  ├─ routes/         화면 23개 (Shop.tsx·Campus.tsx 등)
 │  ├─ router/
-│  └─ providers/
-├─ components/
-│  ├─ ui/
-│  ├─ character/
-│  ├─ posture/
-│  ├─ session/
-│  ├─ game/
-│  ├─ stretch/
-│  └─ room/
-├─ features/
-│  ├─ onboarding/
-│  ├─ learning-profile/
-│  ├─ calibration/
-│  ├─ posture-engine/
-│  ├─ focus-session/
-│  ├─ progression/
-│  ├─ store/
-│  ├─ social-room/
-│  └─ settings/
+│  ├─ providers/      ToastProvider 등
+│  └─ App.tsx
+├─ components/        화면 조각
+│  ├─ ui/             버튼·카드·배지 등 공통 요소
+│  ├─ layout/         AppShell·사이드바
+│  ├─ dashboard/      대시보드 카드
+│  ├─ character/      캐릭터·장착 아이템 렌더
+│  ├─ posture/        자세 상태 배지
+│  ├─ session/        세션 화면 조각
+│  ├─ game/           괴물·보스 체력바·협동 아레나
+│  ├─ stretch/        스트레칭 카드
+│  ├─ room/           친구 방 조각
+│  └─ campus/         학교 선택·지도·범례 (연우)
+├─ features/          기능별 로직
+│  ├─ posture-engine/ 랜드마크 → 자세 상태 판정 (민철)
+│  ├─ calibration/    5초 개인 기준 등록 (민철)
+│  ├─ pip/            PIP 미니 위젯 (민철)
+│  ├─ rooms/          2인 친구 방·실시간 동기화 (수현)
+│  ├─ campus/         학교 테마·96 영토전 (연우)
+│  ├─ sessions/       집중 세션 타이머·완주 판정
+│  ├─ game/           회복 공격·괴물 진행도·보상 지급
+│  ├─ progression/    XP·포인트·캐릭터 단계·상점 보유/장착
+│  ├─ modes/          도서관·내 공간·팀플·내 모드
+│  ├─ stretch/        스트레칭 6종 추천
+│  ├─ sound/          Web Audio 합성음·사운드 팩
+│  ├─ onboarding/     닉네임·첫 방문 흐름
+│  ├─ settings/       설정·전체 데이터 초기화
+│  ├─ demo/           카메라 없이 보는 데모 모드
+│  ├─ persistence/    브라우저 저장소 관리
+│  └─ qa-lab/         /lab 개발자 테스트 화면
 ├─ lib/
-│  ├─ mediapipe/
-│  ├─ storage/
-│  ├─ supabase/
-│  └─ validation/
+│  ├─ mediapipe/      Pose Landmarker 로더
+│  ├─ storage/        localStorage 래퍼·마이그레이션
+│  ├─ supabase/       클라이언트·익명 인증
+│  ├─ feature-flags/  환경 변수 → 기능 스위치
+│  ├─ a11y/           감소된 모션 등 접근성 훅
+│  ├─ time/           시간 포맷·KST 처리
+│  └─ validation/     입력 검증
+├─ constants/         숫자·문구 단일 출처 (posture·game·session·storeItems 등)
 ├─ assets/
-├─ constants/
 ├─ types/
 └─ test/
 ```
+
+- **상점 전용 features 폴더는 없습니다.** 화면은 `app/routes/Shop.tsx`,
+  아이템 목록은 `constants/storeItems.ts` 입니다.
+- 담당 표기가 없는 폴더는 공용입니다. 남의 담당 폴더를 고쳐야 하면
+  먼저 이야기해 주세요(`docs/TEAM_START.md` §7).
 
 ## 6. 구현 규칙
 

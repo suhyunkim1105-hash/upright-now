@@ -261,7 +261,7 @@ rollback SQL 은 파일 하단 주석). 실행 전까지 라이브 방은 15/25/
 - **배포**: Vercel env 가 sensitive 라 `vercel pull` 은 [SENSITIVE]
   플레이스홀더만 받음 → 로컬 prebuilt 금지, 항상 `npx vercel deploy`
   (클라우드 빌드). `.vercelignore` 가 로컬 개인 파일 업로드를 차단.
-- **미해결(사용자 몫)**: Production env 에 캠퍼스·Realtime 플래그 미설정
-  (INTEGRATION_STATUS 참조), 실카메라 임계값 실기기 미검증, 스모크 테스트
-  데이터 정리 SQL 실행(완료 보고의 FINAL_SMOKE_CLEANUP_SQL).
+- **당시 미해결 항목**: Production env 에 캠퍼스·Realtime 플래그 미설정,
+  실카메라 임계값 실기기 미검증, 스모크 테스트 데이터 정리 SQL 실행.
+  (이후 진행 상황은 `docs/TEAM_START.md` §9 가 최신 기준입니다.)
 - main 병합·Production 배포는 v1.1.0-rc.1 수동 검증 승인 후.

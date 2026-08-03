@@ -10,7 +10,23 @@ export type RoomEventType =
   | 'session_completed'
   | 'reaction_sent'
 
-export type ReactionKind = 'cheer' | 'reset' | 'done'
+/**
+ * 반응 종류.
+ * 앞의 3개(cheer·reset·done)는 v1.0 부터 있던 값으로 동작·문구를 바꾸지
+ * 않습니다. 뒤는 대학생 공부 맥락에 맞춰 추가한 값입니다.
+ * 여기에 없는 값은 sanitizeRoomEvent 가 전송·수신 양쪽에서 막습니다.
+ */
+export type ReactionKind =
+  | 'cheer'
+  | 'reset'
+  | 'done'
+  | 'fighting'
+  | 'same'
+  | 'almost'
+  | 'congrats'
+  | 'coffee'
+  | 'back'
+  | 'goodnight'
 
 export interface RoomEvent {
   id: string
@@ -27,7 +43,42 @@ export const REACTION_LABEL: Record<ReactionKind, string> = {
   cheer: '조금만 더',
   reset: '같이 리셋하자',
   done: '나도 완료했어',
+  fighting: '화이팅',
+  same: '나도 그래',
+  almost: '거의 다 왔어',
+  congrats: '축하해',
+  coffee: '커피 한 잔',
+  back: '다시 왔어',
+  goodnight: '오늘은 여기까지',
 }
+
+/** 버튼에 함께 보여 줄 이모지 — 라벨과 짝을 이룹니다. */
+export const REACTION_EMOJI: Record<ReactionKind, string> = {
+  cheer: '💪',
+  reset: '🔄',
+  done: '✅',
+  fighting: '🔥',
+  same: '🫠',
+  almost: '🏁',
+  congrats: '🎉',
+  coffee: '☕',
+  back: '👋',
+  goodnight: '🌙',
+}
+
+/** 화면에 보여 줄 순서 — 기존 3종을 앞에 둡니다. */
+export const REACTION_KINDS: ReactionKind[] = [
+  'cheer',
+  'reset',
+  'done',
+  'fighting',
+  'same',
+  'almost',
+  'congrats',
+  'coffee',
+  'back',
+  'goodnight',
+]
 
 /** 공동 보스 수치 — docs Gate2 */
 export const ROOM_BOSS_MAX_HP = 2000
@@ -35,6 +86,11 @@ export const ROOM_DAMAGE = {
   recovery: 40,
   sessionCompleted: 100,
   giraffeSync: 60,
+  /**
+   * 전원 완주 보너스 — 서버 complete_room_if_done 이 completed 전환 시 1회 적용.
+   * 서버(20260731_room_hp_recalc.sql)의 150 과 같은 값을 유지해야 합니다.
+   */
+  bothCompleted: 150,
 } as const
 export const ROOM_SHIELD_PER_STRETCH = 15
 
@@ -76,7 +132,8 @@ export function sanitizeRoomEvent(raw: unknown): RoomEvent | null {
     typeof obj.nickname === 'string' ? obj.nickname.slice(0, 12) : ''
 
   if (obj.type === 'reaction_sent') {
-    if (!['cheer', 'reset', 'done'].includes(obj.reaction as string)) return null
+    // 허용 목록(REACTION_KINDS) 밖의 값은 전송·수신 양쪽에서 막습니다.
+    if (!REACTION_KINDS.includes(obj.reaction as ReactionKind)) return null
   }
 
   const reactionText =

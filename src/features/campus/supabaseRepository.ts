@@ -1,5 +1,5 @@
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js'
-import { ensureAnonymousUser, getSupabase } from '@/lib/supabase/client'
+import { consumeAuthCallback, ensureAnonymousUser, getSupabase } from '@/lib/supabase/client'
 import { CONTRIBUTION_POINTS, withNormalizedScore } from './contribution'
 import { countTilesBySchool } from './territory'
 import { CAMPUS_GRID_SEED } from './campusGridOverlay'
@@ -15,6 +15,7 @@ import type {
   CampusSnapshot,
   CampusTile,
   CampusTileEvent,
+  CampusVerification,
 } from './types'
 
 /**
@@ -149,6 +150,55 @@ export class SupabaseCampusRepository implements CampusRepository {
 
   private emitStatus(status: CampusRealtimeStatus, meta?: { lastEventAt?: number }): void {
     for (const cb of this.statusListeners) cb(status, meta)
+  }
+
+  async fetchMyVerification(): Promise<CampusVerification | null> {
+    const supabase = await getSupabase()
+    if (!supabase) return null
+    const { data, error } = await supabase.rpc('campus_my_verification')
+    if (error) return null
+    const row = Array.isArray(data) ? data[0] : null
+    if (!row?.school_id || !row.email_domain || !row.verified_at) return null
+    return {
+      schoolId: row.school_id as string,
+      emailDomain: row.email_domain as string,
+      verifiedAt: new Date(row.verified_at as string).getTime(),
+    }
+  }
+
+  async requestSchoolVerification(
+    email: string,
+  ): Promise<'sent' | 'invalid_email' | 'redirect_not_allowed' | 'rate_limited' | 'network_error'> {
+    const supabase = await getSupabase()
+    if (!supabase) return 'network_error'
+    const emailRedirectTo =
+      typeof window === 'undefined' ? undefined : `${window.location.origin}/campus`
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true, emailRedirectTo },
+    })
+    if (!error) return 'sent'
+    console.error(
+      `[campus verification] signInWithOtp failed code=${error.code ?? 'unknown'} status=${error.status ?? 'unknown'} message=${error.message}`,
+    )
+    if (/redirect.*not.*allow|invalid.*redirect/i.test(error.message)) return 'redirect_not_allowed'
+    if (/rate limit|too many|429|email.*limit/i.test(`${error.message} ${error.status ?? ''}`)) return 'rate_limited'
+    return 'network_error'
+  }
+
+  async confirmSchoolVerification(
+    schoolId: string,
+  ): Promise<'verified' | 'domain_mismatch' | 'network_error'> {
+    const supabase = await getSupabase()
+    if (!supabase) return 'network_error'
+    await consumeAuthCallback()
+    const { data: sessionData } = await supabase.auth.getSession()
+    if (!sessionData.session?.user) return 'network_error'
+    const { data, error } = await supabase.rpc('campus_verify_school', { p_school_id: schoolId })
+    if (error) return 'network_error'
+    const row = Array.isArray(data) ? data[0] : null
+    if (row?.verified === true) return 'verified'
+    return row?.reason === 'domain_mismatch' ? 'domain_mismatch' : 'network_error'
   }
 
   async load(): Promise<CampusSnapshot> {
@@ -528,7 +578,7 @@ export class SupabaseCampusRepository implements CampusRepository {
     schoolId: string,
   ): Promise<
     | 'selected' | 'changed' | 'unchanged'
-    | 'change_limit' | 'change_cooldown' | 'not_ready'
+    | 'change_limit' | 'change_cooldown' | 'verification_required' | 'not_ready'
   > {
     const supabase = await getSupabase()
     if (!supabase) return 'not_ready'
@@ -536,7 +586,14 @@ export class SupabaseCampusRepository implements CampusRepository {
     const { data, error } = await supabase.rpc('select_campus_school', {
       p_school_id: schoolId,
     })
-    if (error) return 'not_ready'
+    // 학교 선택은 이메일 인증 화면으로 진입하기 위한 로컬 테마 선택까지는
+    // 허용합니다. 서버가 인증 전 membership 을 막으면 그 이유를 보존해
+    // 호출부가 선택을 되돌리지 않고 인증 UI를 열 수 있게 합니다.
+    if (error) {
+      return /school_verification_required/i.test(error.message)
+        ? 'verification_required'
+        : 'not_ready'
+    }
     const result = (data as { result?: string } | null)?.result
     if (
       result === 'selected' || result === 'changed' ||

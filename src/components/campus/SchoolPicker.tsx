@@ -324,7 +324,7 @@ export function SchoolPicker({
               setMessage(null)
               onChanged?.(useCampusThemeStore.getState().schoolId ?? '')
             }}
-            className="mt-3 h-10 w-full rounded-xl bg-pink text-sm font-bold text-white disabled:opacity-40"
+            className="campus-primary-bg mt-3 h-10 w-full rounded-xl text-sm font-bold disabled:opacity-40"
           >
             {syncStatus === 'saving' ? '저장하는 중…' : '학교 정보 저장하고 선택'}
           </button>

@@ -53,6 +53,8 @@ interface RoomStoreState {
   goal: string
   durationSec: number
   startedAt: number | null
+  /** 상시 방 — 전원 완주 후 닫히지 않고 대기실로 돌아오는 방 */
+  isPersistent: boolean
   myId: string | null
   isHost: boolean
   members: RoomMember[]
@@ -87,6 +89,7 @@ const initialState = {
   goal: '',
   durationSec: 1500,
   startedAt: null,
+  isPersistent: false,
   myId: null,
   isHost: false,
   members: [] as RoomMember[],

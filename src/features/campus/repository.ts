@@ -59,6 +59,12 @@ export interface CampusRepository {
   loadDirectory?(): Promise<CampusSchoolDirectoryEntry[]>
   /** 서버 membership 조회 — 다른 기기 복원용 */
   fetchMyMembership?(): Promise<{ schoolId: string } | null>
+  /** 현재 이메일 인증 학교 — 원본 이메일은 반환하지 않습니다. */
+  fetchMyVerification?(): Promise<import('./types').CampusVerification | null>
+  requestSchoolVerification?(email: string): Promise<'sent' | 'invalid_email' | 'redirect_not_allowed' | 'rate_limited' | 'network_error' | 'unsupported'>
+  confirmSchoolVerification?(
+    schoolId: string,
+  ): Promise<'verified' | 'domain_mismatch' | 'network_error' | 'unsupported'>
   /**
    * 서버 소속(membership) 동기화 — supabase 저장소에서만 의미가 있습니다.
    * mock 은 구현하지 않아도 됩니다(로컬 선택만 사용).
@@ -67,7 +73,7 @@ export interface CampusRepository {
     schoolId: string,
   ): Promise<
     | 'selected' | 'changed' | 'unchanged'
-    | 'change_limit' | 'change_cooldown' | 'not_ready'
+    | 'change_limit' | 'change_cooldown' | 'verification_required' | 'not_ready'
   >
   dispose(): void
 }

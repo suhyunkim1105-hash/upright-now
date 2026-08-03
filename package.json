@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "lint": "oxlint",
     "typecheck": "tsc -b --force",
-    "test": "vitest run",
+    "test": "node scripts/run-tests.mjs",
     "test:watch": "vitest",
     "test:e2e": "playwright test --project=chromium",
     "e2e": "playwright test --project=chromium",
@@ -19,7 +19,8 @@
     "ai:eval:fixtures": "promptfoo eval -c promptfoo/ai-report-fixture.yaml --no-write --no-table",
     "assets:build": "node scripts/convert-characters.mjs",
     "assets:import": "node tools/import-approved-assets.mjs",
-    "assets:verify": "node tools/verify-approved-assets.mjs"
+    "assets:verify": "node tools/verify-approved-assets.mjs",
+    "assets:reactions": "node scripts/convert-reactions.mjs"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.44",

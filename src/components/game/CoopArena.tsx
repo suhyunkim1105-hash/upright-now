@@ -4,7 +4,8 @@ import { Icon } from '@/components/ui/Icon'
 import { Progress } from '@/components/ui'
 import { getShopItem } from '@/constants/storeItems'
 import { MONSTER_THEMES } from '@/features/modes/modeStore'
-import { REACTION_LABEL } from '@/features/rooms/roomEvents'
+import { REACTION_KINDS, REACTION_LABEL } from '@/features/rooms/roomEvents'
+import { ReactionIcon } from '@/components/room/ReactionIcon'
 import { sendReaction } from '@/features/rooms/roomService'
 import { useRoomStore } from '@/features/rooms/roomStore'
 import { usePostureStore } from '@/features/posture-engine/postureStore'
@@ -61,8 +62,9 @@ function ReactionBubble({ participantId }: { participantId: string | null }) {
   return (
     <span
       data-testid="reaction-bubble"
-      className="anim-toast-in absolute -top-2 left-1/2 z-10 -translate-x-1/2 rounded-2xl border border-line bg-surface px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-ink shadow-card"
+      className="anim-toast-in absolute -top-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-2xl border border-line bg-surface px-2.5 py-1 text-[11px] font-bold whitespace-nowrap text-ink shadow-card"
     >
+      <ReactionIcon kind={latest.reaction} size={44} />
       {latest.reactionText ?? REACTION_LABEL[latest.reaction]}
     </span>
   )
@@ -77,7 +79,8 @@ export function CoopArena({ bossHitTick }: { bossHitTick: number }) {
   const snapshot = usePostureStore((s) => s.snapshot)
   const game = useGameStore()
 
-  const friend = room.members.find((m) => m.participantId !== room.myId)
+  // 나를 제외한 참가자 전원 (2인 방이면 1명 — 기존과 동일)
+  const friends = room.members.filter((m) => m.participantId !== room.myId)
   const theme = MONSTER_THEMES.komong
   const ratio = Math.max(0, room.bossHp / room.bossMaxHp)
 
@@ -103,7 +106,7 @@ export function CoopArena({ bossHitTick }: { bossHitTick: number }) {
           <div
             className={[
               'flex h-[132px] w-[132px] items-center justify-center rounded-2xl border-2',
-              ratio <= 0 ? 'border-line bg-canvas' : 'border-coral bg-pink-soft',
+              ratio <= 0 ? 'border-line bg-canvas' : 'border-coral campus-soft-bg',
             ].join(' ')}
             aria-hidden="true"
           >
@@ -127,55 +130,69 @@ export function CoopArena({ bossHitTick }: { bossHitTick: number }) {
           </p>
         </div>
 
-        {/* 친구 캐릭터 — 자세 상태 없이 idle + 공격 연출만 */}
-        <div className="relative flex flex-col items-center">
-          {friend ? (
-            <>
-              <ReactionBubble participantId={friend.participantId} />
-              <CharacterViewport
-                stage={Math.min(6, Math.max(1, friend.stage)) as CharacterStage}
-                attackTick={room.friendAttackTick}
-                attackDurationMs={2200}
-                size={150}
-                decorative
-              />
-              <p className="text-xs font-bold text-ink">{friend.nickname}</p>
-              <GearBadges jacketId={friend.jacketId} backpackId={friend.backpackId} />
-              <p className="text-[10px] text-ink-soft">
-                {friend.state === 'away'
-                  ? '자리 비움'
-                  : friend.state === 'completed'
-                    ? '완주!'
-                    : friend.state === 'resting'
-                      ? '회복 휴식'
-                      : '집중 중'}
-              </p>
-            </>
+        {/*
+          함께하는 참가자 — 자세 상태 없이 idle + 공격 연출만.
+          인원이 늘어나면 캐릭터를 작게 줄여 한 줄에 담습니다.
+        */}
+        <div className="relative flex flex-wrap items-end justify-center gap-x-3 gap-y-2">
+          {friends.length > 0 ? (
+            friends.map((friend) => (
+              <div key={friend.participantId} className="relative flex flex-col items-center">
+                <ReactionBubble participantId={friend.participantId} />
+                <CharacterViewport
+                  stage={Math.min(6, Math.max(1, friend.stage)) as CharacterStage}
+                  attackTick={room.friendAttackTick}
+                  attackDurationMs={2200}
+                  size={friends.length > 3 ? 74 : friends.length > 1 ? 104 : 150}
+                  decorative
+                />
+                <p className="max-w-[92px] truncate text-xs font-bold text-ink">
+                  {friend.nickname}
+                </p>
+                {friends.length <= 3 && (
+                  <GearBadges jacketId={friend.jacketId} backpackId={friend.backpackId} />
+                )}
+                <p className="text-[10px] text-ink-soft">
+                  {friend.state === 'away'
+                    ? '자리 비움'
+                    : friend.state === 'completed'
+                      ? '완주!'
+                      : friend.state === 'resting'
+                        ? '회복 휴식'
+                        : '집중 중'}
+                </p>
+              </div>
+            ))
           ) : (
             <p className="pb-8 text-xs font-bold text-coral">
-              친구 연결이 끊겼어요. 다시 접속을 기다리고 있어요.
+              함께하던 참가자의 연결이 끊겼어요. 다시 접속을 기다리고 있어요.
             </p>
           )}
         </div>
       </div>
 
-      {/* 반응 3종 — 5초에 1회, 자유 채팅 없음 */}
+      {/* 정해진 반응만 보냅니다 — 5초에 1회, 자유 채팅 없음 */}
+      {/*
+        버튼의 inline-flex 는 필수 — 전역 리셋이 img 를 display:block 으로
+        만들어, 일반 버튼에서는 이미지가 한 줄을 차지하고 라벨이 아래로
+        밀립니다.
+      */}
       <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-        {(['cheer', 'reset', 'done'] as const).map((kind) => (
+        {REACTION_KINDS.map((kind) => (
           <button
             key={kind}
             type="button"
-            className="h-8 rounded-xl border border-line bg-surface px-2.5 text-xs font-semibold text-ink hover:bg-canvas"
+            className="inline-flex h-8 items-center gap-1 rounded-xl border border-line bg-surface px-2.5 text-xs font-semibold whitespace-nowrap text-ink hover:bg-canvas"
             onClick={() => void sendReaction(kind)}
           >
-            {REACTION_LABEL[kind]}
+            <ReactionIcon kind={kind} size={28} /> {REACTION_LABEL[kind]}
           </button>
         ))}
         {customReactions.map((text) => (
           <button
             key={text}
             type="button"
-            className="h-8 rounded-xl border border-pink/40 bg-pink-soft px-2.5 text-xs font-semibold text-ink hover:bg-canvas"
+            className="campus-soft-bg inline-flex h-8 items-center gap-1 rounded-xl border border-[color:var(--campus-primary,var(--color-pink))]/40 px-2.5 text-xs font-semibold whitespace-nowrap text-ink hover:bg-canvas"
             onClick={() => void sendReaction('cheer', text)}
           >
             {text}

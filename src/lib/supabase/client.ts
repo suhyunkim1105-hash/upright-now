@@ -6,7 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
  * 카메라 영상·프레임·랜드마크·자세 좌표는 절대 이 클라이언트로 보내지 않습니다.
  */
 let cached: SupabaseClient | null = null
-let attempted = false
+let initializing: Promise<SupabaseClient | null> | null = null
 
 export function isRoomConfigured(): boolean {
   return Boolean(
@@ -40,22 +40,56 @@ export async function fetchRetryingClockSkew(
 
 export async function getSupabase(): Promise<SupabaseClient | null> {
   if (cached) return cached
-  if (attempted) return cached
-  attempted = true
 
   if (!isRoomConfigured()) return null
 
-  const { createClient } = await import('@supabase/supabase-js')
-  cached = createClient(
-    import.meta.env.VITE_SUPABASE_URL!,
-    (import.meta.env.VITE_SUPABASE_ANON_KEY ??
-      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)!,
-    {
-      auth: { persistSession: true },
-      global: { fetch: fetchRetryingClockSkew },
-    },
-  )
-  return cached
+  // Several app bridges call this during the first render. Keep the dynamic
+  // import/client creation behind one promise so concurrent callers never
+  // create multiple GoTrue clients for the same storage key.
+  if (initializing) return initializing
+
+  initializing = import('@supabase/supabase-js')
+    .then(({ createClient }) => {
+      cached = createClient(
+        import.meta.env.VITE_SUPABASE_URL!,
+        (import.meta.env.VITE_SUPABASE_ANON_KEY ??
+          import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)!,
+        {
+          auth: { persistSession: true, detectSessionInUrl: true },
+          global: { fetch: fetchRetryingClockSkew },
+        },
+      )
+      return cached
+    })
+    .catch(() => null)
+    .finally(() => {
+      initializing = null
+    })
+
+  return initializing
+}
+
+/**
+ * 메일 링크가 돌아온 뒤 PKCE `code`를 세션으로 교환합니다.
+ * Supabase 기본 템플릿은 6자리 토큰 대신 이 링크를 보내므로,
+ * 콜백을 앱 진입 시 명시적으로 소비해야 배포 환경에서도 인증이 확정됩니다.
+ */
+export async function consumeAuthCallback(): Promise<boolean> {
+  const supabase = await getSupabase()
+  if (!supabase || typeof window === 'undefined') return false
+
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) return false
+    url.searchParams.delete('code')
+    window.history.replaceState({}, document.title, url.toString())
+    return true
+  }
+
+  const { data } = await supabase.auth.getSession()
+  return Boolean(data.session?.user)
 }
 
 /** 익명 로그인 — 이메일·비밀번호를 요구하지 않습니다. */
@@ -63,6 +97,7 @@ export async function ensureAnonymousUser(): Promise<string | null> {
   const supabase = await getSupabase()
   if (!supabase) return null
 
+  await consumeAuthCallback()
   const { data: sessionData } = await supabase.auth.getSession()
   if (sessionData.session?.user) return sessionData.session.user.id
 

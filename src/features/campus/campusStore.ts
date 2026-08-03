@@ -11,8 +11,15 @@ import { rankStandings } from './contribution'
 import { seasonAt } from './season'
 import { createSeasonMap } from './campusMap'
 import { outboxCount } from './outbox'
+import { newBattleScenes } from './battle'
 import type { CampusRepository, CampusSubmitResult } from './repository'
-import type { CampusRealtimeStatus, CampusSnapshot } from './types'
+import type {
+  CampusBattleScene,
+  CampusRealtimeStatus,
+  CampusSnapshot,
+  CampusTileEvent,
+  CampusVerification,
+} from './types'
 
 /**
  * 캠퍼스 영토전 화면 상태.
@@ -42,6 +49,20 @@ interface CampusStoreState {
   lastAcceptedAt: number | null
   /** 아직 서버에 반영되지 못한 기여 수 (outbox) */
   pendingContributionCount: number
+  verification: CampusVerification | null
+  recentBattleEvents: CampusTileEvent[]
+  activeBattleScenes: CampusBattleScene[]
+}
+
+const RECENT_BATTLE_EVENT_LIMIT = 12
+
+/** 서버가 보낸 이벤트만, 중복 없이 최신순으로 화면에 보관합니다. */
+export function newestCampusBattleEvents(events: CampusTileEvent[]): CampusTileEvent[] {
+  const seen = new Set<string>()
+  return [...events]
+    .sort((a, b) => b.at - a.at)
+    .filter((event) => !seen.has(event.id) && seen.add(event.id))
+    .slice(0, RECENT_BATTLE_EVENT_LIMIT)
 }
 
 const emptySnapshot = (now: number): CampusSnapshot => {
@@ -67,6 +88,9 @@ export const useCampusStore = create<CampusStoreState>(() => ({
   lastRealtimeEventAt: null,
   lastAcceptedAt: null,
   pendingContributionCount: 0,
+  verification: null,
+  recentBattleEvents: [],
+  activeBattleScenes: [],
 }))
 
 let repository: CampusRepository | null = null
@@ -74,6 +98,8 @@ let unsubscribe: (() => void) | null = null
 let flashTimer: number | null = null
 let pollTimer: number | null = null
 let browserListenersOn = false
+let battleScenesInitialized = false
+const battleTimers = new Map<string, number>()
 /** 캠퍼스 화면이 열려 있는 동안만 폴백 polling 을 합니다. */
 let campusScreenOpen = false
 
@@ -111,8 +137,66 @@ function flash(tileIds: string[]): void {
   }, 1200)
 }
 
+export function battleScenesForSnapshots(
+  previous: CampusTileEvent[],
+  next: CampusTileEvent[],
+  initialized: boolean,
+  connected: boolean,
+  now: number,
+): CampusBattleScene[] {
+  return connected ? newBattleScenes(previous, next, initialized, now) : []
+}
+
+function removeBattleScene(eventId: string): void {
+  useCampusStore.setState((state) => ({
+    activeBattleScenes: state.activeBattleScenes.filter((scene) => scene.eventId !== eventId),
+  }))
+  battleTimers.delete(eventId)
+}
+
+function scheduleBattleScene(scene: CampusBattleScene): void {
+  const delay = Math.max(0, scene.expiresAt - Date.now())
+  const timer = window.setTimeout(() => removeBattleScene(scene.eventId), delay)
+  battleTimers.set(scene.eventId, timer)
+}
+
+/** 개발 중 한 명만 접속해도 전투 연출을 확인할 수 있는 로컬 미리보기입니다. */
+export function previewCampusBattleScene(tileId?: string): void {
+  const state = useCampusStore.getState()
+  const targetTileId = tileId ?? state.snapshot?.tiles[0]?.id
+  if (!targetTileId) return
+  const currentSchoolId = useCampusThemeStore.getState().schoolId
+  const attackerSchoolId = currentSchoolId || 'yonsei'
+  const defenderSchoolId = attackerSchoolId === 'hanyang' ? 'yonsei' : 'hanyang'
+  const now = Date.now()
+  const scene: CampusBattleScene = {
+    eventId: `demo-battle-${now}`,
+    tileId: targetTileId,
+    attackerSchoolId,
+    defenderSchoolId,
+    startedAt: now,
+    expiresAt: now + 3000,
+  }
+  useCampusStore.setState((current) => ({
+    activeBattleScenes: [
+      ...current.activeBattleScenes.filter((item) => item.expiresAt > now && item.tileId !== targetTileId),
+      scene,
+    ],
+  }))
+  scheduleBattleScene(scene)
+}
+
 function applySnapshot(next: CampusSnapshot): void {
-  const previous = useCampusStore.getState().snapshot
+  const state = useCampusStore.getState()
+  const previous = state.snapshot
+  const now = Date.now()
+  const scenes = battleScenesForSnapshots(
+    previous?.tileEvents ?? [],
+    next.tileEvents,
+    battleScenesInitialized,
+    state.realtimeStatus === 'connected',
+    now,
+  )
   const changed: string[] = []
   if (previous && previous.season.id === next.season.id) {
     const before = new Map(previous.tiles.map((t) => [t.id, t.ownerSchoolId]))
@@ -124,10 +208,17 @@ function applySnapshot(next: CampusSnapshot): void {
   }
   useCampusStore.setState({
     snapshot: next,
+    recentBattleEvents: newestCampusBattleEvents(next.tileEvents),
+    activeBattleScenes: [
+      ...state.activeBattleScenes.filter((scene) => scene.expiresAt > now),
+      ...scenes,
+    ],
     status: 'ready',
     errorMessage: null,
     lastSyncedAt: Date.now(),
   })
+  battleScenesInitialized = true
+  for (const scene of scenes) scheduleBattleScene(scene)
   flash(changed)
 }
 
@@ -256,6 +347,7 @@ export async function initCampus(): Promise<void> {
       .then((entries) => useCampusDirectoryStore.getState().setEntries(entries))
       .catch(() => {})
     void import('./membershipRestore').then((m) => m.restoreMembershipFromServer(repo))
+    void repo.fetchMyVerification?.().then((verification) => useCampusStore.setState({ verification }))
 
     try {
       applySnapshot(await repo.load())
@@ -346,6 +438,9 @@ export function disposeCampus(): void {
     window.clearInterval(pollTimer)
     pollTimer = null
   }
+  for (const timer of battleTimers.values()) window.clearTimeout(timer)
+  battleTimers.clear()
+  battleScenesInitialized = false
   useCampusStore.setState({
     status: 'idle',
     source: null,
@@ -357,6 +452,9 @@ export function disposeCampus(): void {
     lastRealtimeEventAt: null,
     lastAcceptedAt: null,
     pendingContributionCount: 0,
+    verification: null,
+    recentBattleEvents: [],
+    activeBattleScenes: [],
   })
 }
 
@@ -381,7 +479,7 @@ export async function syncSchoolSelection(
   schoolId: string,
 ): Promise<
   | 'selected' | 'changed' | 'unchanged' | 'change_limit' | 'change_cooldown'
-  | 'ownership_conflict' | 'name_conflict' | 'not_ready'
+  | 'ownership_conflict' | 'name_conflict' | 'verification_required' | 'not_ready'
 > {
   if (!repository || repository.kind !== 'supabase') return 'unchanged'
   // 데모 모드의 임시 선택은 서버 membership 에 기록하지 않습니다.

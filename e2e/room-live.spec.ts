@@ -76,14 +76,14 @@ test.describe('실제 2인 친구 방', () => {
     await pageB.getByRole('button', { name: '입장' }).click()
     await expect(pageB.getByText('참가자')).toBeVisible({ timeout: 20_000 })
 
-    // 양쪽에 2명 표시
-    await expect(pageA.getByText('2 / 2')).toBeVisible({ timeout: 20_000 })
-    await expect(pageB.getByText('2 / 2')).toBeVisible({ timeout: 20_000 })
+    // 양쪽에 참가자 2명 / 정원 10명 표시
+    await expect(pageA.getByText('2 / 10')).toBeVisible({ timeout: 20_000 })
+    await expect(pageB.getByText('2 / 10')).toBeVisible({ timeout: 20_000 })
 
-    // 준비 게이트: 한 명만 준비된 동안 방장 버튼은 '두 명 모두 준비되면 시작' + 비활성
+    // 준비 게이트: 한 명만 준비된 동안 방장 버튼은 '모두 준비되면 시작' + 비활성
     await pageA.getByRole('button', { name: '준비 완료' }).click()
     await expect(
-      pageA.getByRole('button', { name: '두 명 모두 준비되면 시작' }),
+      pageA.getByRole('button', { name: '모두 준비되면 시작' }),
     ).toBeDisabled()
 
     await pageB.getByRole('button', { name: '준비 완료' }).click()

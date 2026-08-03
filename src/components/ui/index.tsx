@@ -12,16 +12,18 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'soft'
 type Size = 'sm' | 'md' | 'lg'
 
 const VARIANT_CLASS: Record<Variant, string> = {
-  primary: 'bg-pink text-white hover:brightness-105 shadow-card',
+  primary: 'campus-primary-bg text-white hover:brightness-105 shadow-card',
   secondary: 'bg-surface text-ink border border-line hover:bg-canvas',
   ghost: 'bg-transparent text-ink-soft hover:bg-surface',
   soft: 'bg-blue-soft text-ink hover:brightness-[0.98]',
 }
 
+// min-h — 아이콘 이미지가 기준 높이보다 크면 버튼이 자연스럽게 늘어나,
+// 내용이 버튼 밖으로 밀려나지 않습니다.
 const SIZE_CLASS: Record<Size, string> = {
-  sm: 'h-9 px-3 text-sm rounded-xl',
-  md: 'h-11 px-5 text-[15px] rounded-2xl',
-  lg: 'h-14 px-7 text-lg rounded-2xl',
+  sm: 'min-h-9 px-3 text-sm rounded-xl',
+  md: 'min-h-11 px-5 text-[15px] rounded-2xl',
+  lg: 'min-h-14 px-7 text-lg rounded-2xl',
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -41,7 +43,8 @@ export function Button({
     <button
       type="button"
       className={[
-        'inline-flex items-center justify-center gap-2 font-semibold transition',
+        // whitespace-nowrap — 아이콘+라벨이 세로로 쌓이지 않고 항상 한 줄.
+        'inline-flex items-center justify-center gap-2 font-semibold whitespace-nowrap transition',
         'disabled:opacity-45 disabled:cursor-not-allowed',
         VARIANT_CLASS[variant],
         SIZE_CLASS[size],
@@ -64,7 +67,7 @@ type CardTone =
 
 const CARD_TONE: Record<CardTone, string> = {
   surface: 'bg-surface border-line',
-  pink: 'bg-pink-soft border-transparent',
+  pink: 'campus-soft-bg border-transparent',
   /** bad 상태처럼 "가볍게 돌아와 볼까요?" 를 알릴 때만 씁니다. */
   coral: 'bg-[#FBDCDC] border-coral',
   yellow: 'bg-yellow-soft border-transparent',
@@ -105,7 +108,7 @@ const BADGE_TONE: Record<BadgeTone, string> = {
   coral: 'bg-pink-soft text-[#b8285a]',
   muted: 'bg-canvas text-muted border border-line',
   blue: 'bg-blue-soft text-[#2b52a8]',
-  pink: 'bg-pink text-white',
+  pink: 'campus-primary-bg text-white',
 }
 
 export function Badge({
@@ -207,7 +210,7 @@ export function SegmentedControl({
               className={[
                 'un-radio-card block cursor-pointer rounded-2xl border px-4 py-3 text-left transition',
                 selected
-                  ? 'border-pink bg-surface shadow-card ring-2 ring-pink/40'
+                  ? 'campus-selected-border campus-selected-ring bg-surface shadow-card ring-2'
                   : 'border-line bg-surface hover:bg-canvas',
               ].join(' ')}
             >

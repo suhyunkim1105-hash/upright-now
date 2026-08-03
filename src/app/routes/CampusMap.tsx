@@ -113,7 +113,7 @@ export function CampusMap() {
         </div>
       </Card>
 
-      <CampusBackdrop kind={isExamPeriod ? 'exam' : 'library'} className="mb-4 rounded-card">
+      <CampusBackdrop kind="plain" className="mb-4 rounded-card">
         <Card>
           <CardTitle>영토 지도</CardTitle>
           <p className="mt-1 text-xs text-ink-soft">
@@ -124,6 +124,7 @@ export function CampusMap() {
               tiles={snapshot.tiles}
               selectedTileId={selectedId}
               onSelectTile={(tile) => setSelectedId(tile.id)}
+              large
             />
           </div>
           <div className="mt-3">

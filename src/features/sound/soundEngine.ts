@@ -1,5 +1,6 @@
 import { useUserStore } from '@/features/onboarding/userStore'
 import { getActiveModeConfig } from '@/features/modes/modeStore'
+import { isRoomSessionActive } from '@/features/rooms/roomStore'
 
 /**
  * Web Audio 기반 짧은 효과음 엔진 — 외부 음원·저작권 파일 없음.
@@ -150,7 +151,13 @@ export function resolvePlayback(input: {
   ctxRunning: boolean
   now: number
   lastAt?: number
+  /**
+   * 친구 방 안에서 소리를 잠시 끈 상태.
+   * 모드별 soundPack 설정을 바꾸지 않고 그 위에 덮습니다.
+   */
+  roomMuted?: boolean
 }): boolean {
+  if (input.roomMuted) return false
   if (!input.globalSoundOn) return false
   if (!PACK_EVENTS[input.pack].includes(input.event)) return false
   if (!input.ctxRunning) return false
@@ -168,6 +175,8 @@ export function playSound(event: SoundEventId): void {
     ctxRunning: ctx !== null && ctx.state === 'running',
     now: Date.now(),
     lastAt: lastPlayedAt[event],
+    // 친구 방 세션 중에만 방 음소거를 적용합니다(개인 세션은 영향 없음).
+    roomMuted: isRoomSessionActive() && useUserStore.getState().roomSoundMuted,
   })
   if (!allowed || !ctx) return
   lastPlayedAt[event] = Date.now()

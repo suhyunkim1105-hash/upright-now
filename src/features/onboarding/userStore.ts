@@ -19,6 +19,12 @@ interface UserStoreState {
   customReactions: string[]
   /** 세션 시작 시 PiP 미니 위젯 자동 열기 */
   pipAutoOpen: boolean
+  /**
+   * 친구 방 안에서만 소리를 잠시 끄기.
+   * 모드별 소리 설정(soundPack)을 지우지 않고 방에 있는 동안만 덮습니다.
+   * 방을 나가도 값은 남아 다음 방에서도 같은 선택이 이어집니다.
+   */
+  roomSoundMuted: boolean
   setNickname: (value: string) => void
   setProfile: (id: LearningProfileKind) => void
   setCalibrated: (value: boolean) => void
@@ -26,6 +32,7 @@ interface UserStoreState {
   toggleReactionSound: () => void
   setCustomReactions: (list: string[]) => void
   togglePipAutoOpen: () => void
+  toggleRoomSoundMuted: () => void
   reset: () => void
 }
 
@@ -52,6 +59,7 @@ const initialState = {
   reactionSoundEnabled: true,
   customReactions: [] as string[],
   pipAutoOpen: false,
+  roomSoundMuted: false,
 }
 
 const persisted = loadLocal(STORAGE_KEYS.user, initialState)
@@ -63,6 +71,8 @@ export const useUserStore = create<UserStoreState>((set) => ({
   customReactions: (persisted as { customReactions?: string[] }).customReactions ?? [],
   reactionSoundEnabled:
     (persisted as { reactionSoundEnabled?: boolean }).reactionSoundEnabled ?? true,
+  roomSoundMuted:
+    (persisted as { roomSoundMuted?: boolean }).roomSoundMuted ?? false,
 
   setNickname: (value) =>
     set({ nickname: normalizeNickname(value), hasOnboarded: true }),
@@ -79,6 +89,9 @@ export const useUserStore = create<UserStoreState>((set) => ({
 
   togglePipAutoOpen: () =>
     set((s) => ({ pipAutoOpen: !s.pipAutoOpen })),
+
+  toggleRoomSoundMuted: () =>
+    set((s) => ({ roomSoundMuted: !s.roomSoundMuted })),
 
   reset: () => set(initialState),
 }))

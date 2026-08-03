@@ -46,6 +46,19 @@ npm run dev
 | `npm run preview` | 빌드 결과를 로컬에서 확인 |
 | `npm run assets:verify` | 이미지 파일이 다 있는지 검사 |
 
+### e2e 테스트를 처음 돌리기 전에 한 번만
+
+`npm install` 만으로는 `npm run test:e2e` 가 실패합니다.
+Playwright 가 쓸 브라우저를 따로 받아야 합니다. **한 번만** 실행하면 됩니다.
+
+```bash
+npx playwright install chromium
+```
+
+이걸 건너뛰면 "browser executable doesn't exist" 같은 브라우저를 찾을 수 없다는
+오류가 납니다. 이 저장소는 chromium 프로젝트 하나만 쓰기 때문에
+(`playwright.config.ts`) chromium 만 받으면 충분합니다.
+
 ---
 
 ## 2. 환경 변수 (.env.local)
@@ -59,12 +72,13 @@ npm run dev
 cp .env.example .env.local
 ```
 
-그다음 아래 표를 보고 값을 채우세요.
+**복사한 `.env.local` 은 기능 스위치가 이미 전부 `true` 로 채워져 있습니다.**
+Supabase 두 줄만 채우면 바로 개발을 시작할 수 있습니다.
 
 | 변수 이름 | 로컬에서 넣을 값 | 설명 |
 |---|---|---|
-| `VITE_SUPABASE_URL` | **수현에게 개인 메시지로 요청** | Supabase 프로젝트 주소 |
-| `VITE_SUPABASE_ANON_KEY` | **수현에게 개인 메시지로 요청** | Supabase 공개 키 (`VITE_SUPABASE_PUBLISHABLE_KEY` 도 같은 뜻으로 인식됩니다) |
+| `VITE_SUPABASE_URL` | **수현에게 개인 메시지로 요청** (비어 있음) | Supabase 프로젝트 주소 |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | **수현에게 개인 메시지로 요청** (비어 있음) | Supabase 공개 키 (`VITE_SUPABASE_ANON_KEY` 라는 이름으로 넣어도 똑같이 인식됩니다 — Vercel 운영 환경은 이 이름을 씁니다) |
 | `VITE_ENABLE_CAMERA` | `true` | 실제 웹캠으로 자세 감지 |
 | `VITE_ENABLE_FRIEND_ROOM` | `true` | 2인 친구 방 |
 | `VITE_ENABLE_REALTIME` | `true` | 실시간 동기화 (친구 방이 켜져 있어야 의미 있음) |
@@ -78,7 +92,17 @@ cp .env.example .env.local
 | `VITE_ENABLE_CAMPUS_SUPABASE` | `true` (서버 연결) / `false` (혼자 테스트) | `false` 면 가짜 데이터로 동작해 서버 없이도 화면을 볼 수 있습니다 |
 | `VITE_ENABLE_QA_LAB` | `true` | `/lab` 개발자용 테스트 화면 |
 
-**정리하면:** Supabase 주소와 키 2개만 수현에게 받고, 일반 기능 스위치는 테스트 목적에 맞게 켭니다. AI 회고는 `VITE_ENABLE_AI_REPORT=true`, `AI_REPORT_ENABLED=true`, `GEMINI_API_KEY`가 모두 있어야 하므로 팀의 Vercel 관리자와 합의하기 전에는 `false`로 둡니다. 값을 바꾼 뒤에는 `npm run dev`를 껐다 켜야 반영됩니다.
+**정리하면:** Supabase 주소와 키 2개만 수현에게 받아 채우면 끝입니다.
+나머지는 손대지 않아도 됩니다. 값을 바꾼 뒤에는 `npm run dev` 를 껐다 켜야 반영됩니다.
+
+Supabase 값이 없어도 혼자 모드(자세 감지·세션·성장·상점·스트레칭)는 정상 동작합니다.
+친구 방과 캠퍼스 라이브 저장소만 동작하지 않습니다.
+캠퍼스 화면을 서버 없이 보고 싶다면 `VITE_ENABLE_CAMPUS_SUPABASE=false` 로 바꾸면
+가짜 데이터로 확인할 수 있습니다.
+
+AI 세션 회고만 예외입니다. `VITE_ENABLE_AI_REPORT`, `AI_REPORT_ENABLED`,
+`GEMINI_API_KEY` 가 모두 있어야 동작하고 서버 비용이 나가므로, 팀의 Vercel
+관리자와 합의하기 전에는 `false` 로 둡니다.
 
 ### 운영(Production) 환경은 다릅니다
 
@@ -468,9 +492,12 @@ npm run test
 
 | 문서 | 내용 |
 |---|---|
+| [AGENTS.md](../AGENTS.md) | 제품 불변조건·구현 규칙·금지 사항 (AI 도구도 이 문서를 따릅니다) |
+| [CLAUDE.md](../CLAUDE.md) | AI 코딩 도구용 짧은 안내 — 읽을 순서·금지 5줄·담당 표 |
 | [docs/AI_HANDOFF.md](AI_HANDOFF.md) | 기술 상세 인수인계 — 자세 판정 파이프라인, 데이터 흐름 |
 | [docs/14_DATA_PRIVACY_SECURITY.md](14_DATA_PRIVACY_SECURITY.md) | 개인정보 처리 원칙 — **꼭 읽어 주세요** |
 | [docs/20_DECISION_LOG.md](20_DECISION_LOG.md) | 왜 이렇게 결정했는지 기록 |
+| [docs/21_RESEARCH_BASIS.md](21_RESEARCH_BASIS.md) | 자세 판정 근거 조사 — CVA 지표를 쓰지 않는 이유, 개인 기준 방식을 택한 배경 (자세 작업 시 참고) |
 | [docs/archive/](archive/) | 초기 기획 문서 (숫자는 현재와 다름) |
 
 ### 이것만은 지켜 주세요 — 개인정보

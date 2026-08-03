@@ -5,6 +5,7 @@ import { Icon } from '@/components/ui/Icon'
 import { CAMPUS_COPY } from '@/constants/campus'
 import { ROUTES } from '@/constants/routes'
 import { useCampusScreen } from '@/features/campus/useCampusScreen'
+import { previewCampusBattleScene } from '@/features/campus/campusStore'
 import { useCampusTheme } from '@/features/campus/campusThemeStore'
 import {
   CampusBackdrop,
@@ -21,6 +22,7 @@ import {
 } from '@/components/campus/CampusPanels'
 import { TerritoryLegend, TerritoryMap } from '@/components/campus/TerritoryMap'
 import { SchoolPicker } from '@/components/campus/SchoolPicker'
+import { SchoolVerification } from '@/components/campus/SchoolVerification'
 
 /**
  * S-C1 캠퍼스 — 내 학교 · 이번 시즌 · 점령 타일 수 · 내 기여도 · 실시간 지도 ·
@@ -39,6 +41,8 @@ export function Campus() {
     source,
     pendingContributionCount,
     lastAcceptedAt,
+    verification,
+    recentBattleEvents,
   } = useCampusScreen()
   const now = Date.now()
 
@@ -99,6 +103,9 @@ export function Campus() {
         </Card>
       ) : (
         <>
+          {source === 'supabase' && schoolId && !schoolId.startsWith('custom-') && verification?.schoolId !== schoolId && theme && (
+            <SchoolVerification schoolId={schoolId} schoolName={theme.schoolName} />
+          )}
           <Card className="mb-4">
             <CampusStatsRow snapshot={snapshot} myTiles={myTiles} now={now} />
             <div className="mt-4">
@@ -121,9 +128,21 @@ export function Campus() {
             <Card>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle>실시간 지도</CardTitle>
-                <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.campusMap)}>
-                  크게 보기
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {import.meta.env.DEV && (
+                    <Button
+                      size="sm"
+                      variant="soft"
+                      data-testid="campus-battle-preview"
+                      onClick={() => previewCampusBattleScene(snapshot.tiles[0]?.id)}
+                    >
+                      전투 연출 미리보기
+                    </Button>
+                  )}
+                  <Button size="sm" variant="secondary" onClick={() => navigate(ROUTES.campusMap)}>
+                    크게 보기
+                  </Button>
+                </div>
               </div>
               <p className="mt-1 text-xs text-ink-soft">
                 자체 제작한 12×8 가상 캠퍼스예요. 실제 지도나 학교 부지를 옮겨 놓은 것이 아니에요.
@@ -140,7 +159,7 @@ export function Campus() {
           <div className="grid grid-cols-1 gap-4 @[900px]:grid-cols-2">
             <Card>
               <div className="flex items-center justify-between gap-2">
-                <CardTitle>최근 점령 로그</CardTitle>
+                <CardTitle>실시간 영토전 소식</CardTitle>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -152,10 +171,9 @@ export function Campus() {
               <div className="mt-3">
                 {/* 점령·경합만 — 방어 보강은 전체 기록(/campus/history)에서 봅니다. */}
                 <CampusCaptureLog
-                  events={snapshot.tileEvents}
+                  events={recentBattleEvents}
                   tiles={snapshot.tiles}
-                  kinds={['captured', 'contested']}
-                  emptyDescription="아직 점령이나 경합이 없어요. 세션을 정상 완료하면 지도가 움직여요."
+                  emptyDescription="아직 영토 변화가 없어요. 인증된 학교 이메일로 참여하면 실시간으로 표시돼요."
                 />
               </div>
             </Card>

@@ -498,6 +498,7 @@ npm run test
 | [docs/14_DATA_PRIVACY_SECURITY.md](14_DATA_PRIVACY_SECURITY.md) | 개인정보 처리 원칙 — **꼭 읽어 주세요** |
 | [docs/20_DECISION_LOG.md](20_DECISION_LOG.md) | 왜 이렇게 결정했는지 기록 |
 | [docs/21_RESEARCH_BASIS.md](21_RESEARCH_BASIS.md) | 자세 판정 근거 조사 — CVA 지표를 쓰지 않는 이유, 개인 기준 방식을 택한 배경 (자세 작업 시 참고) |
+| [docs/22_PRODUCT_SPEC_V2.md](22_PRODUCT_SPEC_V2.md) | **다음 개정 방향** — 2026-08-04 기획 회의 정리. 현재 코드와의 차이, 불변조건 충돌 4건, 미결 10건 |
 | [docs/archive/](archive/) | 초기 기획 문서 (숫자는 현재와 다름) |
 
 ### 이것만은 지켜 주세요 — 개인정보

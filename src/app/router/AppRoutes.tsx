@@ -1,7 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LandingDashboard } from '@/app/routes/LandingDashboard'
 import { Landing } from '@/app/routes/Landing'
-import { ZarafaLanding } from '@/app/routes/ZarafaLanding'
 import { OnboardingName } from '@/app/routes/OnboardingName'
 import { Profiles } from '@/app/routes/Profiles'
 import { CameraIntro } from '@/app/routes/CameraIntro'
@@ -27,8 +26,6 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<LandingDashboard />} />
-      <Route path="/landing" element={<ZarafaLanding />} />
-      <Route path="/zarafa" element={<ZarafaLanding />} />
       <Route path="/upright-now" element={<Landing />} />
       <Route path="/upright-now/landing" element={<Landing />} />
       <Route path="/onboarding/name" element={<OnboardingName />} />

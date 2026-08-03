@@ -3,7 +3,6 @@ export const ROUTES = {
   home: '/',
   landing: '/upright-now',
   uprightLanding: '/upright-now',
-  zarafaLanding: '/landing',
   onboardingName: '/onboarding/name',
   profiles: '/profiles',
   camera: '/camera',

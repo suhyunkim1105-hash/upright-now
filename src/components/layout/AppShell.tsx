@@ -34,7 +34,7 @@ export function AppShell({
         */}
         <main className="@container min-w-0 max-w-[980px] flex-1">{children}</main>
         {rail && (
-          <aside className="hidden w-[280px] shrink-0 flex-col gap-5 2xl:flex" aria-label="오늘의 보조 정보">
+          <aside className="hidden w-[280px] shrink-0 flex-col gap-5 xl:flex" aria-label="오늘의 보조 정보">
             {rail}
           </aside>
         )}

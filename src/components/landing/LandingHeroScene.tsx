@@ -174,6 +174,8 @@ function createScene() {
   const leftObjects = new THREE.Group()
   const rightObjects = new THREE.Group()
   root.add(art, leftObjects, rightObjects)
+  leftObjects.position.x = -0.48
+  rightObjects.position.x = 0.78
 
   addRoundedBox(root, [10.6, 0.18, 3.5], COLORS.surface, [0, -2.02, -1.1], [0, 0.02, 0], 0.16)
   addRoundedBox(root, [10.1, 0.07, 3.08], COLORS.blue, [0, -1.9, -1.08], [0, 0.02, 0], 0.13, 4, glowMaterial(COLORS.blue, 0.1))
@@ -320,11 +322,11 @@ export function LandingHeroScene() {
       if (width === 0 || height === 0) return
       const narrow = width / height < 0.8
       camera.aspect = width / height
-      camera.position.z = narrow ? 14.2 : 10.4
+      camera.position.z = narrow ? 14.8 : 11.35
       camera.updateProjectionMatrix()
       root.position.x = 0
       root.position.y = narrow ? -0.52 : -0.2
-      root.scale.setScalar(narrow ? 0.54 : 0.9)
+      root.scale.setScalar(narrow ? 0.54 : 0.82)
       renderer.setSize(width, height, false)
       composer.setSize(width, height)
     }

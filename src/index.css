@@ -441,6 +441,18 @@
     outline-offset: 2px;
   }
 
+  /* 승인된 6단계 캐릭터 이미지 — 아직 도달하지 않은 단계는 흐리게 둡니다. */
+  .growth-timeline__figure {
+    opacity: 0.45;
+    filter: grayscale(1);
+    transition: opacity 220ms ease-out, filter 220ms ease-out;
+  }
+
+  .growth-timeline__stage--reached .growth-timeline__figure {
+    opacity: 1;
+    filter: none;
+  }
+
   .growth-timeline__name {
     max-width: 6.25rem;
     font-size: 0.6875rem;

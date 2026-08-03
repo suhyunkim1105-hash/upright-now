@@ -1,9 +1,12 @@
+import { CharacterViewport } from './CharacterViewport'
 import { CHARACTER_STAGES } from '@/constants/game'
 import { getStageProgress } from '@/features/progression/growth'
 import { Progress } from '@/components/ui'
+import type { CharacterStage } from '@/types'
 
 export function GrowthTimeline({
   xp,
+  compact = false,
 }: {
   xp: number
   compact?: boolean
@@ -40,6 +43,12 @@ export function GrowthTimeline({
               ].join(' ')}
             >
               <span className="growth-timeline__node" aria-hidden="true">{meta.stage}</span>
+              <CharacterViewport
+                stage={meta.stage as CharacterStage}
+                size={compact ? 44 : 60}
+                className="growth-timeline__figure"
+                decorative
+              />
               <span className="growth-timeline__name">{meta.name}</span>
             </li>
           )

@@ -97,7 +97,7 @@ function addLabel(parent: THREE.Object3D, text: string, position: Point3, color:
   context.roundRect(8, 8, 496, 144, 32)
   context.fill()
   context.fillStyle = color
-  context.font = '700 54px Pretendard, Arial, sans-serif'
+  context.font = "700 54px 'Wanted Sans Variable', Pretendard, Arial, sans-serif"
   context.textAlign = 'center'
   context.textBaseline = 'middle'
   context.fillText(text, 256, 80)

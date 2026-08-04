@@ -1,0 +1,2120 @@
+<title>UpRight Now — Zoom 톤 프로토타입</title>
+
+<style>
+  /* ============================================================
+     UpRight Now — Zoom 톤 전환 프로토타입
+     ------------------------------------------------------------
+     색·간격·모서리·모션은 Zoom 디자인 토큰을 그대로 가져왔습니다.
+     의미 매핑만 이 제품의 것입니다:
+       참가자 마이크 상태 → 자세 상태 5종
+       갤러리뷰 그리드   → 방 참가자 + 캠퍼스 영토
+       End(빨강)         → 세션 종료
+     ============================================================ */
+
+  :root {
+    /* Zoom Blue */
+    --primary-50:  #E5F0FF;
+    --primary-100: #CCE0FF;
+    --primary-400: #2B7AF7;
+    --primary-500: #0B5CFF;
+    --primary-600: #0048D9;
+    --primary-700: #0036A8;
+
+    /* Neutral — 파랑 쪽으로 살짝 기운 회색 */
+    --n-0:    #FFFFFF;
+    --n-50:   #F8F9FB;
+    --n-100:  #ECEEF2;
+    --n-200:  #DDE0E5;
+    --n-300:  #C5C9D0;
+    --n-500:  #8C9199;
+    --n-700:  #5C6168;
+    --n-800:  #3D434A;
+    --n-900:  #1F2329;
+    --n-1000: #0E1014;
+
+    /* 자세 상태 — 강조색과 분리된 의미색 */
+    --good-fg:    #1AAD5C;
+    --good-bg:    #DCF7E5;
+    --warn-fg:    #D9890C;
+    --warn-bg:    #FFF4D6;
+    --bad-fg:     #E02D49;
+    --bad-bg:     #FCE4E4;
+    --idle-fg:    #8C9199;
+    --idle-bg:    #ECEEF2;
+
+    /* Surface */
+    --bg-base:     #FFFFFF;
+    --bg-subtle:   #F8F9FB;
+    --bg-elevated: #FFFFFF;
+    --bg-rail:     #FFFFFF;
+    --overlay:     rgba(14,16,20,0.5);
+
+    /* Text */
+    --fg:        #1F2329;
+    --fg-2:      #5C6168;
+    --fg-3:      #8C9199;
+    --fg-on-primary: #FFFFFF;
+
+    /* Border */
+    --line:        #DDE0E5;
+    --line-subtle: #ECEEF2;
+    --line-strong: #C5C9D0;
+
+    /* Space */
+    --s-xs: 4px;  --s-sm: 8px;  --s-md: 12px;
+    --s-lg: 16px; --s-xl: 24px; --s-2xl: 40px; --s-3xl: 64px;
+
+    /* Radius */
+    --r-sm: 4px; --r-md: 6px; --r-lg: 10px; --r-xl: 16px; --r-full: 9999px;
+
+    /* Elevation */
+    --sh-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --sh-md: 0 4px 12px rgba(0,0,0,0.12);
+    --sh-lg: 0 8px 24px rgba(0,0,0,0.18);
+
+    /* Motion */
+    --t-fast: 100ms;
+    --t-base: 200ms;
+    --t-slow: 350ms;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /*
+      실제 앱은 Wanted Sans Variable 을 자체 호스팅합니다.
+      이 프로토타입은 외부 폰트를 불러올 수 없어 시스템 스택으로 대체합니다.
+      굵기 위계와 자간은 실제 값과 같습니다.
+    */
+    --font: 'Wanted Sans Variable', 'Wanted Sans', Pretendard, Inter,
+            -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-base:     #1F2329;
+      --bg-subtle:   #2D3138;
+      --bg-elevated: #2D3138;
+      --bg-rail:     #181B20;
+      --fg:    #FFFFFF;
+      --fg-2:  #A4ABB7;
+      --fg-3:  #8C9199;
+      --line:        #3D434A;
+      --line-subtle: #2D3138;
+      --line-strong: #4D535C;
+      --good-bg: #14361F;
+      --warn-bg: #3A2C08;
+      --bad-bg:  #3D1119;
+      --idle-bg: #2D3138;
+      --primary-50: #16233D;
+      --sh-sm: 0 1px 3px rgba(0,0,0,0.4);
+      --sh-md: 0 4px 12px rgba(0,0,0,0.5);
+      --sh-lg: 0 8px 24px rgba(0,0,0,0.6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg-base:     #1F2329;
+    --bg-subtle:   #2D3138;
+    --bg-elevated: #2D3138;
+    --bg-rail:     #181B20;
+    --fg:    #FFFFFF;
+    --fg-2:  #A4ABB7;
+    --fg-3:  #8C9199;
+    --line:        #3D434A;
+    --line-subtle: #2D3138;
+    --line-strong: #4D535C;
+    --good-bg: #14361F;
+    --warn-bg: #3A2C08;
+    --bad-bg:  #3D1119;
+    --idle-bg: #2D3138;
+    --primary-50: #16233D;
+    --sh-sm: 0 1px 3px rgba(0,0,0,0.4);
+    --sh-md: 0 4px 12px rgba(0,0,0,0.5);
+    --sh-lg: 0 8px 24px rgba(0,0,0,0.6);
+  }
+
+  :root[data-theme="light"] {
+    --bg-base:     #FFFFFF;
+    --bg-subtle:   #F8F9FB;
+    --bg-elevated: #FFFFFF;
+    --bg-rail:     #FFFFFF;
+    --fg:    #1F2329;
+    --fg-2:  #5C6168;
+    --fg-3:  #8C9199;
+    --line:        #DDE0E5;
+    --line-subtle: #ECEEF2;
+    --line-strong: #C5C9D0;
+    --good-bg: #DCF7E5;
+    --warn-bg: #FFF4D6;
+    --bad-bg:  #FCE4E4;
+    --idle-bg: #ECEEF2;
+    --primary-50: #E5F0FF;
+    --sh-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --sh-md: 0 4px 12px rgba(0,0,0,0.12);
+    --sh-lg: 0 8px 24px rgba(0,0,0,0.18);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg-subtle);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.43;
+    -webkit-font-smoothing: antialiased;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primary-500);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
+  }
+
+  button, input { font-family: inherit; }
+  button { cursor: pointer; }
+  input { color: inherit; background: var(--bg-base); }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  /* ---------------------------------------------------------- 문서 껍데기 */
+
+  .doc {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: var(--s-2xl) var(--s-xl) var(--s-3xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2xl);
+  }
+
+  .doc-head { display: flex; flex-direction: column; gap: var(--s-md); }
+
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--primary-500);
+  }
+
+  .doc-head h1 {
+    margin: 0;
+    font-size: clamp(30px, 4.4vw, 44px);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .doc-head p {
+    margin: 0;
+    max-width: 62ch;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--fg-2);
+  }
+
+  .doc-note {
+    display: flex;
+    gap: var(--s-md);
+    padding: var(--s-lg);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--primary-500);
+    border-radius: var(--r-md);
+    background: var(--bg-elevated);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--fg-2);
+  }
+  .doc-note strong { color: var(--fg); }
+
+  .section-label {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-md);
+    padding-bottom: var(--s-md);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: var(--s-lg);
+  }
+  .section-label h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .section-label span {
+    font-size: 12px;
+    color: var(--fg-3);
+  }
+
+  /* ------------------------------------------------------- 앱 프레임 */
+
+  .app {
+    display: grid;
+    grid-template-columns: 236px minmax(0, 1fr);
+    min-height: 660px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    background: var(--bg-base);
+    box-shadow: var(--sh-md);
+  }
+
+  /* 세션이 켜지면 프레임 전체가 회의 화면처럼 어두워집니다. */
+  .app.in-session {
+    --bg-base:     #1F2329;
+    --bg-subtle:   #15181D;
+    --bg-elevated: #2D3138;
+    --bg-rail:     #15181D;
+    --fg:    #FFFFFF;
+    --fg-2:  #A4ABB7;
+    --fg-3:  #8C9199;
+    --line:        #3D434A;
+    --line-subtle: #2D3138;
+    --line-strong: #4D535C;
+    --good-bg: #14361F;
+    --warn-bg: #3A2C08;
+    --bad-bg:  #3D1119;
+    --idle-bg: #2D3138;
+    --primary-50: #16233D;
+    background: #1F2329;
+  }
+
+  /* --------------------------------------------------------- 좌측 레일 */
+
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-xl);
+    padding: var(--s-lg) var(--s-md);
+    border-right: 1px solid var(--line);
+    background: var(--bg-rail);
+    transition: background var(--t-base) var(--ease);
+  }
+
+  .rail-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-sm);
+    padding: var(--s-xs) var(--s-sm);
+  }
+  .rail-mark {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--primary-500);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .rail-brand b {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .rail-me {
+    display: flex;
+    align-items: center;
+    gap: var(--s-sm);
+    padding: var(--s-sm);
+    border-radius: var(--r-lg);
+    background: var(--bg-subtle);
+    border: 1px solid var(--line-subtle);
+  }
+  .rail-me-text { min-width: 0; }
+  .rail-me-text b {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rail-me-text span {
+    display: block;
+    font-size: 11px;
+    color: var(--fg-2);
+  }
+  .school-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 3px;
+    padding: 1px 6px;
+    border-radius: var(--r-sm);
+    background: var(--primary-50);
+    color: var(--primary-700);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  @media (prefers-color-scheme: dark) { .school-chip { color: #7FA8FF; } }
+  :root[data-theme="dark"] .school-chip { color: #7FA8FF; }
+  .school-chip::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 2px;
+    background: #2B4C7E;
+  }
+
+  .rail-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .rail-nav-label {
+    padding: 0 var(--s-sm) var(--s-xs);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+
+  .navitem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px var(--s-sm);
+    border: 0;
+    border-radius: var(--r-md);
+    background: transparent;
+    color: var(--fg-2);
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .navitem:hover { background: var(--bg-subtle); color: var(--fg); }
+  .navitem[aria-current="page"] {
+    background: var(--primary-500);
+    color: #fff;
+  }
+  .navitem[aria-current="page"] svg { color: #fff; }
+  .navitem svg { flex-shrink: 0; color: var(--fg-3); }
+  .navitem:hover svg { color: var(--fg); }
+
+  .rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--s-sm); }
+
+  .privacy-note {
+    display: flex;
+    gap: var(--s-sm);
+    padding: 10px;
+    border-radius: var(--r-md);
+    background: var(--good-bg);
+    color: var(--good-fg);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .privacy-note svg { flex-shrink: 0; margin-top: 1px; }
+
+  /* ------------------------------------------------------------ 본문 */
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg-subtle);
+    transition: background var(--t-base) var(--ease);
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-md);
+    padding: 10px var(--s-lg);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-base);
+    min-height: 52px;
+  }
+  .topbar h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .topbar-meta {
+    font-size: 12px;
+    color: var(--fg-2);
+  }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: var(--s-sm); }
+
+  .iconbtn {
+    width: 32px; height: 32px;
+    display: grid; place-items: center;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-base);
+    color: var(--fg-2);
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .iconbtn:hover { background: var(--bg-subtle); color: var(--fg); }
+
+  .screen {
+    flex: 1;
+    min-height: 0;
+    padding: var(--s-xl);
+    overflow-y: auto;
+  }
+  .screen[hidden] { display: none; }
+
+  /* 인디게임식 스텝 전환 */
+  .step { animation: stepin var(--t-slow) var(--ease) both; }
+  @keyframes stepin {
+    from { opacity: 0; transform: translateX(18px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .step.back { animation-name: stepback; }
+  @keyframes stepback {
+    from { opacity: 0; transform: translateX(-18px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step, .step.back { animation: none; }
+    * { transition-duration: 1ms !important; }
+    .rec-dot { animation: none !important; }
+  }
+
+  /* ------------------------------------------------------ 공통 조각 */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--r-md);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+    transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  }
+  .btn-lg { height: 44px; padding: 0 22px; font-size: 15px; }
+  .btn-primary { background: var(--primary-500); color: #fff; }
+  .btn-primary:hover { background: var(--primary-600); }
+  .btn-primary:active { background: var(--primary-700); }
+  .btn-secondary {
+    background: var(--bg-base);
+    color: var(--fg);
+    border: 1px solid var(--line-strong);
+  }
+  .btn-secondary:hover { background: var(--bg-subtle); }
+  .btn-ghost { background: transparent; color: var(--primary-500); }
+  .btn-ghost:hover { background: var(--primary-50); }
+  .btn-danger { background: var(--bad-fg); color: #fff; font-weight: 700; }
+  .btn-danger:hover { background: #B72338; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+  .tag-solid   { background: var(--primary-500); color: #fff; }
+  .tag-subtle  { background: var(--primary-50); color: var(--primary-700); }
+  .tag-outline { border: 1px solid var(--line); color: var(--fg-2); }
+  .tag-good { background: var(--good-bg); color: var(--good-fg); }
+  .tag-warn { background: var(--warn-bg); color: var(--warn-fg); }
+  .tag-bad  { background: var(--bad-bg);  color: var(--bad-fg); }
+  .tag-idle { background: var(--idle-bg); color: var(--idle-fg); }
+  @media (prefers-color-scheme: dark) { .tag-subtle { color: #7FA8FF; } }
+  :root[data-theme="dark"] .tag-subtle { color: #7FA8FF; }
+
+  .tag-rec { background: rgba(0,0,0,0.6); color: #fff; }
+  .rec-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--bad-fg);
+    animation: pulse 1.8s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .card {
+    padding: var(--s-lg);
+    border-radius: var(--r-lg);
+    background: var(--bg-base);
+    box-shadow: var(--sh-sm);
+  }
+  .card-outlined { box-shadow: none; border: 1px solid var(--line); }
+
+  /* -------------------------------------------------- 스텝 헤더 & 진행 바 */
+
+  .stepwrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--s-xl); }
+
+  .progress {
+    display: flex;
+    align-items: center;
+    gap: var(--s-md);
+  }
+  .progress-track {
+    flex: 1;
+    height: 4px;
+    border-radius: var(--r-full);
+    background: var(--line-subtle);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: var(--r-full);
+    background: var(--primary-500);
+    transition: width var(--t-slow) var(--ease);
+  }
+  .progress-count {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--fg-3);
+  }
+
+  .step-head { display: flex; flex-direction: column; gap: 6px; }
+  .step-head h3 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .step-head p { margin: 0; font-size: 14px; color: var(--fg-2); }
+
+  .step-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--s-sm);
+    padding-top: var(--s-sm);
+  }
+  .step-actions .spacer { flex: 1; }
+
+  /* 큰 선택 카드 — 프라이빗 / 공개 */
+  .choice-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--s-md);
+  }
+  .choice {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: var(--s-lg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-base);
+    text-align: left;
+    transition: border-color var(--t-fast) var(--ease),
+                box-shadow var(--t-fast) var(--ease),
+                transform var(--t-fast) var(--ease);
+  }
+  .choice:hover { border-color: var(--primary-400); transform: translateY(-2px); box-shadow: var(--sh-md); }
+  .choice[aria-pressed="true"] {
+    border-color: var(--primary-500);
+    box-shadow: 0 0 0 2px rgba(11,92,255,0.2);
+  }
+  .choice-icon {
+    width: 40px; height: 40px;
+    display: grid; place-items: center;
+    border-radius: var(--r-md);
+    background: var(--primary-50);
+    color: var(--primary-500);
+  }
+  .choice b { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .choice span { font-size: 13px; color: var(--fg-2); line-height: 1.5; }
+  .choice-meta {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-top: 2px;
+  }
+
+  /* 스크롤 피커 — 세션 길이 */
+  .picker {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-lg);
+  }
+  .picker-col { display: flex; flex-direction: column; gap: 6px; }
+  .picker-col > label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+  }
+  .wheel {
+    position: relative;
+    height: 168px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-base);
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scrollbar-width: thin;
+  }
+  .wheel::before {
+    content: "";
+    position: sticky;
+    top: 64px;
+    display: block;
+    height: 40px;
+    margin-bottom: -40px;
+    background: var(--primary-50);
+    border-block: 1px solid var(--primary-500);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .wheel-list { padding: 64px 0; margin: 0; list-style: none; }
+  .wheel-list li {
+    position: relative;
+    z-index: 1;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    scroll-snap-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--fg-3);
+    transition: color var(--t-fast) var(--ease);
+  }
+  .wheel-list li[data-on="true"] {
+    color: var(--primary-500);
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  /* 모드 선택 */
+  .mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-sm); }
+  .mode {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: var(--s-md);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-base);
+    text-align: left;
+    transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  }
+  .mode:hover { border-color: var(--primary-400); }
+  .mode[aria-pressed="true"] { border-color: var(--primary-500); background: var(--primary-50); }
+  .mode b { font-size: 14px; font-weight: 700; }
+  .mode span { font-size: 12px; color: var(--fg-2); }
+  .mode-flags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+
+  .switchrow {
+    display: flex; align-items: center; gap: var(--s-md);
+    padding: var(--s-md) var(--s-lg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-base);
+  }
+  .switchrow-text { flex: 1; }
+  .switchrow-text b { display: block; font-size: 14px; font-weight: 700; }
+  .switchrow-text span { display: block; font-size: 12px; color: var(--fg-2); margin-top: 2px; }
+  .switch {
+    width: 44px; height: 24px;
+    padding: 2px;
+    border: 0;
+    border-radius: var(--r-full);
+    background: var(--line-strong);
+    display: flex;
+    transition: background var(--t-base) var(--ease);
+  }
+  .switch span {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--sh-sm);
+    transition: transform var(--t-base) var(--ease);
+  }
+  .switch[aria-checked="true"] { background: var(--primary-500); }
+  .switch[aria-checked="true"] span { transform: translateX(20px); }
+
+  /* ------------------------------------------------------ 갤러리 그리드 */
+
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px;
+  }
+
+  .tile {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    background: var(--n-800);
+    display: grid;
+    place-items: center;
+  }
+  .tile.self { box-shadow: 0 0 0 3px var(--primary-500); }
+  .tile.speaking { box-shadow: 0 0 0 3px var(--good-fg); }
+  .tile.alerting { box-shadow: 0 0 0 3px var(--bad-fg); }
+  .tile.off { background: var(--bg-elevated); }
+
+  .tile-name {
+    position: absolute;
+    left: 8px; bottom: 8px;
+    padding: 2px 8px;
+    border-radius: var(--r-sm);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    max-width: calc(100% - 52px);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tile-state {
+    position: absolute;
+    right: 8px; bottom: 8px;
+    height: 24px;
+    padding: 0 7px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border-radius: var(--r-full);
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .tile-state.is-good { background: var(--good-fg); }
+  .tile-state.is-warn { background: var(--warn-fg); color: #1F2329; }
+  .tile-state.is-bad  { background: var(--bad-fg); }
+  .tile-state.is-idle { background: rgba(0,0,0,0.55); color: #C5C9D0; }
+
+  .tile-lv {
+    position: absolute;
+    left: 8px; top: 8px;
+    padding: 1px 7px;
+    border-radius: var(--r-sm);
+    background: rgba(0,0,0,0.5);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* 캐릭터 — 단계별 그라데이션과 실루엣 */
+  .avatar { width: 62%; height: 62%; display: block; }
+  .g-1 { background: linear-gradient(140deg, #1AAD5C, #0E7A47); }
+  .g-2 { background: linear-gradient(140deg, #2BAAFB, #0B5CFF); }
+  .g-3 { background: linear-gradient(140deg, #FF9E5E, #F65177); }
+  .g-4 { background: linear-gradient(140deg, #B07CFF, #0B5CFF); }
+  .g-5 { background: linear-gradient(140deg, #F2C94C, #D9890C); }
+
+  /* ------------------------------------------------------ 회의 컨트롤 바 */
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-sm);
+    padding: var(--s-md) var(--s-lg);
+    border-top: 1px solid var(--line);
+    background: var(--bg-elevated);
+    flex-wrap: wrap;
+  }
+  .ctl {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 66px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: var(--r-md);
+    background: transparent;
+    color: var(--fg-2);
+    font-size: 11px;
+    font-weight: 600;
+    transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+  }
+  .ctl:hover { background: var(--bg-subtle); color: var(--fg); }
+  .ctl[aria-pressed="true"] { color: var(--primary-500); }
+  .ctl.end {
+    flex-direction: row;
+    gap: 6px;
+    margin-left: var(--s-md);
+    padding: 0 16px;
+    height: 38px;
+    background: var(--bad-fg);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .ctl.end:hover { background: #B72338; }
+
+  /* ------------------------------------------------------ 세션 헤더 */
+
+  .session-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-md);
+    padding: var(--s-md) var(--s-lg);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-elevated);
+    flex-wrap: wrap;
+  }
+  .session-clock {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .session-head-meta { display: flex; flex-direction: column; gap: 3px; }
+  .session-head-meta b { font-size: 13px; font-weight: 700; }
+  .session-head-meta span { font-size: 11px; color: var(--fg-2); }
+  .session-head-right { margin-left: auto; display: flex; align-items: center; gap: var(--s-sm); }
+
+  .session-progress {
+    width: 100%;
+    height: 3px;
+    border-radius: var(--r-full);
+    background: var(--line-subtle);
+    overflow: hidden;
+  }
+  .session-progress i {
+    display: block;
+    height: 100%;
+    width: 46%;
+    border-radius: var(--r-full);
+    background: var(--primary-500);
+  }
+
+  /* ------------------------------------------------- 스트레칭 게이트 */
+
+  .stretch-list { display: flex; flex-direction: column; gap: var(--s-sm); }
+  .stretch-item {
+    display: flex;
+    align-items: center;
+    gap: var(--s-md);
+    padding: var(--s-md);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-base);
+    text-align: left;
+    width: 100%;
+    transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+  }
+  .stretch-item:hover { border-color: var(--primary-400); background: var(--bg-subtle); }
+  .stretch-item[aria-pressed="true"] { border-color: var(--primary-500); background: var(--primary-50); }
+  .stretch-fig {
+    width: 42px; height: 42px;
+    flex-shrink: 0;
+    border-radius: var(--r-md);
+    background: var(--primary-50);
+    color: var(--primary-500);
+    display: grid; place-items: center;
+  }
+  .stretch-text { flex: 1; min-width: 0; }
+  .stretch-text b { display: block; font-size: 14px; font-weight: 700; }
+  .stretch-text span { display: block; font-size: 12px; color: var(--fg-2); margin-top: 1px; }
+  .stretch-dur { font-size: 12px; font-weight: 700; color: var(--fg-2); }
+
+  /* ------------------------------------------------------- 성장 화면 */
+
+  .grow-grid {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: var(--s-lg);
+  }
+  .lvcard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-md);
+    padding: var(--s-xl) var(--s-lg);
+    border-radius: var(--r-lg);
+    background: linear-gradient(160deg, var(--primary-500), #0036A8);
+    color: #fff;
+    text-align: center;
+  }
+  .lvcard .lvfig {
+    width: 128px; height: 128px;
+    border-radius: var(--r-xl);
+    background: linear-gradient(140deg, #2BAAFB, #0B5CFF);
+    display: grid; place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+  }
+  .lvcard b { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  .lvcard .lvsub { font-size: 12px; opacity: 0.82; }
+  .lvbar {
+    width: 100%;
+    height: 6px;
+    border-radius: var(--r-full);
+    background: rgba(255,255,255,0.28);
+    overflow: hidden;
+  }
+  .lvbar i { display: block; height: 100%; width: 62%; background: #fff; border-radius: var(--r-full); }
+
+  .ladder {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    gap: 3px;
+    margin: 0; padding: 0;
+    list-style: none;
+  }
+  .ladder li {
+    height: 34px;
+    border-radius: var(--r-sm);
+    background: var(--line-subtle);
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--fg-3);
+  }
+  .ladder li.done { background: var(--primary-100); color: var(--primary-700); }
+  .ladder li.now  { background: var(--primary-500); color: #fff; }
+  @media (prefers-color-scheme: dark) {
+    .ladder li.done { background: #16233D; color: #7FA8FF; }
+  }
+  :root[data-theme="dark"] .ladder li.done { background: #16233D; color: #7FA8FF; }
+
+  .statrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-sm); }
+  .stat {
+    padding: var(--s-md);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-base);
+  }
+  .stat dt { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; color: var(--fg-3); text-transform: uppercase; }
+  .stat dd { margin: 6px 0 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .stat .trend { font-size: 11px; font-weight: 700; }
+  .trend-up { color: var(--good-fg); }
+  .trend-flat { color: var(--fg-3); }
+
+  .xplist { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .xplist li {
+    display: flex;
+    align-items: center;
+    gap: var(--s-sm);
+    padding: 8px 10px;
+    border-radius: var(--r-sm);
+    font-size: 13px;
+  }
+  .xplist li:nth-child(odd) { background: var(--bg-subtle); }
+  .xplist .when { margin-left: auto; font-size: 11px; color: var(--fg-3); }
+  .xplist .amt { font-weight: 700; color: var(--good-fg); }
+
+  /* ------------------------------------------------------ 캠퍼스 화면 */
+
+  .campus-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: var(--s-lg);
+  }
+  .territory {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 3px;
+    padding: var(--s-md);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-base);
+  }
+  .territory i {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    background: var(--line-subtle);
+    display: block;
+  }
+  .territory i.a { background: #2B4C7E; }
+  .territory i.b { background: #8E2438; }
+  .territory i.c { background: #1E6B5E; }
+  .territory i.mine { background: #2B4C7E; box-shadow: 0 0 0 2px var(--primary-500); }
+
+  .legend { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .legend li { display: flex; align-items: center; gap: var(--s-sm); font-size: 13px; }
+  .legend .sw { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .legend .pct { margin-left: auto; font-weight: 700; }
+
+  /* ------------------------------------------------------ 마이페이지 */
+
+  .my-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-lg); }
+  .report {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-sm);
+    padding: var(--s-md);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-base);
+  }
+  .report-head { display: flex; align-items: baseline; gap: var(--s-sm); }
+  .report-head b { font-size: 13px; font-weight: 700; }
+  .report-head span { margin-left: auto; font-size: 11px; color: var(--fg-3); }
+  .report p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--fg-2); }
+
+  .settings-list { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .settings-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--s-sm);
+    padding: 11px 10px;
+    border-radius: var(--r-sm);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .settings-list li:nth-child(odd) { background: var(--bg-subtle); }
+  .settings-list li .val { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--fg-2); }
+
+  /* ------------------------------------------------------- 안내 표 */
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--bg-base); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+  thead th {
+    text-align: left;
+    padding: 10px var(--s-md);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-subtle);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--fg-3);
+    white-space: nowrap;
+  }
+  tbody td { padding: 10px var(--s-md); border-bottom: 1px solid var(--line-subtle); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody td:first-child { font-weight: 600; white-space: nowrap; }
+
+  .flowmap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-xs);
+    align-items: center;
+    padding: var(--s-lg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-base);
+  }
+  .flowmap b {
+    padding: 5px 10px;
+    border-radius: var(--r-sm);
+    background: var(--primary-50);
+    color: var(--primary-700);
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .flowmap b.alt { background: var(--bg-subtle); color: var(--fg-2); }
+  .flowmap i { color: var(--fg-3); font-style: normal; font-size: 12px; }
+  @media (prefers-color-scheme: dark) { .flowmap b { color: #7FA8FF; } }
+  :root[data-theme="dark"] .flowmap b { color: #7FA8FF; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .rail { flex-direction: row; align-items: center; gap: var(--s-md); overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .rail-brand, .rail-me, .rail-foot { display: none; }
+    .rail-nav { flex-direction: row; }
+    .rail-nav-label { display: none; }
+    .grow-grid, .campus-grid, .picker { grid-template-columns: 1fr; }
+    .ladder { grid-template-columns: repeat(8, 1fr); }
+  }
+</style>
+
+<div class="doc">
+
+  <header class="doc-head">
+    <p class="eyebrow">디자인 톤 검토 · 2026-08-04</p>
+    <h1>UpRight Now — Zoom 톤으로</h1>
+    <p>
+      좌측 레일 4탭, <b>방 만들기</b> 하나로 합친 진입, 그리고 Zoom 디자인 토큰을 입힌
+      화면들입니다. 아래 프레임은 실제로 눌러 볼 수 있습니다. 방 만들기를 누르면
+      프라이빗·공개 선택부터 세션 종료까지 열 단계가 이어집니다.
+    </p>
+  </header>
+
+  <div class="doc-note">
+    <div>
+      <strong>왜 Zoom 톤이 이 제품에 맞는가.</strong>
+      친구 방은 사실상 화상회의입니다. 참가자 격자, 마이크 상태 배지, 하단 컨트롤 바,
+      빨간 종료 버튼 — 사람들이 이미 아는 조작 은유를 그대로 쓸 수 있습니다.
+      그래서 <b>자세 상태 5종을 Zoom 의 마이크 상태 자리에</b> 놓았습니다.
+      좋음은 초록, 변화 감지는 노랑, 회복 기회는 빨간 테두리로 타일 전체가 반응합니다.
+      색만으로 알리지 않도록 아이콘과 짧은 라벨을 같이 붙였습니다.
+    </div>
+  </div>
+
+  <section>
+    <div class="section-label">
+      <h2>1. 앱 프레임</h2>
+      <span>좌측 레일 4탭 · 방 만들기 흐름 10단계</span>
+    </div>
+
+    <div class="app" id="app">
+
+      <!-- ============================ 좌측 레일 ============================ -->
+      <nav class="rail" aria-label="주 메뉴">
+        <div class="rail-brand">
+          <span class="rail-mark" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 20V8" /><path d="m7 12 5-5 5 5" /><path d="M5 4h14" />
+            </svg>
+          </span>
+          <b>UpRight Now</b>
+        </div>
+
+        <div class="rail-me">
+          <span class="rail-mark g-2" aria-hidden="true" style="width:34px;height:34px;border-radius:9px;">
+            <svg class="avatar" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <path d="M13 27c0-5 3-8 7-8s7 3 7 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+              <path d="M20 19V9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+              <circle cx="20" cy="7" r="2.6" fill="#fff"/>
+            </svg>
+          </span>
+          <span class="rail-me-text">
+            <b>민철</b>
+            <span>Lv.7 빼꼼 거부기린</span>
+            <span class="school-chip">명지대</span>
+          </span>
+        </div>
+
+        <div class="rail-nav">
+          <p class="rail-nav-label">메뉴</p>
+          <button class="navitem" type="button" data-nav="room" aria-current="page">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+            방 만들기
+          </button>
+          <button class="navitem" type="button" data-nav="growth">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M7 20V11"/><path d="M12 20V5"/><path d="M17 20v-6"/></svg>
+            성장
+          </button>
+          <button class="navitem" type="button" data-nav="campus">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>
+            캠퍼스
+          </button>
+          <button class="navitem" type="button" data-nav="my">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            마이페이지
+          </button>
+        </div>
+
+        <div class="rail-foot">
+          <p class="privacy-note">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+            영상은 이 브라우저를 벗어나지 않아요
+          </p>
+        </div>
+      </nav>
+
+      <!-- ============================== 본문 ============================== -->
+      <div class="main">
+
+        <div class="topbar" id="topbar">
+          <h2 id="topbar-title">방 만들기</h2>
+          <span class="topbar-meta" id="topbar-meta">혼자 앉든 같이 앉든, 여기서 시작해요</span>
+          <span class="topbar-right">
+            <button class="iconbtn" type="button" title="설정" aria-label="설정">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.68 1.1 1.32 1.1H21a2 2 0 1 1 0 4h-.09c-.64 0-1.18.47-1.32 1.1Z"/></svg>
+            </button>
+          </span>
+        </div>
+
+        <!-- ------------------------ 방 만들기 (스텝) ------------------------ -->
+        <div class="screen" id="screen-room">
+          <div class="stepwrap" id="stepwrap">
+
+            <div class="progress" id="progress-wrap">
+              <span class="progress-count tabular" id="progress-count">1 / 5</span>
+              <span class="progress-track"><span class="progress-fill" id="progress-fill" style="width:20%"></span></span>
+            </div>
+
+            <div id="step-body"></div>
+          </div>
+        </div>
+
+        <!-- ---------------------------- 세션 ---------------------------- -->
+        <div class="screen" id="screen-session" hidden style="padding:0; display:flex; flex-direction:column;">
+          <div class="session-head">
+            <span class="session-clock tabular">18:42</span>
+            <span class="session-head-meta">
+              <b>자료구조 3장</b>
+              <span>25분 집중 · 도서관 모드 · 북몽이</span>
+            </span>
+            <span class="session-head-right">
+              <span class="tag tag-rec"><i class="rec-dot"></i> 측정 중</span>
+              <span class="tag tag-outline">코드 <b class="tabular">4F2K9A</b></span>
+            </span>
+            <span class="session-progress" aria-hidden="true"><i></i></span>
+          </div>
+
+          <div style="flex:1; padding:var(--s-lg); overflow-y:auto;">
+            <div class="gallery">
+
+              <div class="tile self g-2">
+                <svg class="avatar" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path d="M11 29c0-6 4-10 9-10s9 4 9 10" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M20 19V8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <circle cx="20" cy="6" r="3" fill="#fff"/>
+                </svg>
+                <span class="tile-lv">Lv.7</span>
+                <span class="tile-name">민철 (나)</span>
+                <span class="tile-state is-good">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                  편안함
+                </span>
+              </div>
+
+              <div class="tile alerting g-3">
+                <svg class="avatar" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path d="M11 30c0-6 4-9 9-9s9 3 9 9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M20 21c-1-3-4-4-6-4" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <circle cx="13" cy="16" r="3" fill="#fff"/>
+                </svg>
+                <span class="tile-lv">Lv.4</span>
+                <span class="tile-name">수현</span>
+                <span class="tile-state is-bad">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
+                  회복 기회
+                </span>
+              </div>
+
+              <div class="tile g-5">
+                <svg class="avatar" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path d="M12 30c0-6 4-9 8-9s8 3 8 9" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M20 21V10" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <circle cx="20" cy="8" r="2.8" fill="#fff"/>
+                </svg>
+                <span class="tile-lv">Lv.11</span>
+                <span class="tile-name">연우</span>
+                <span class="tile-state is-warn">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4"/><path d="m5.6 6.6 2.8 2.8"/><path d="M3 13h4"/></svg>
+                  변화 감지
+                </span>
+              </div>
+
+              <div class="tile off">
+                <span class="tile-lv" style="background:var(--line-subtle); color:var(--fg-3);">Lv.2</span>
+                <span style="color:var(--fg-3); font-size:12px; font-weight:600;">자리 비움</span>
+                <span class="tile-name" style="background:var(--idle-bg); color:var(--fg-2);">도윤</span>
+                <span class="tile-state is-idle">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                  60초째
+                </span>
+              </div>
+            </div>
+
+            <div class="card card-outlined" style="margin-top:var(--s-lg); display:flex; align-items:center; gap:var(--s-md); flex-wrap:wrap;">
+              <span class="tag tag-solid">북몽이 3단계</span>
+              <span style="flex:1; min-width:180px;">
+                <span class="session-progress" style="height:8px;" aria-hidden="true"><i style="width:64%; background:var(--bad-fg);"></i></span>
+              </span>
+              <span class="tabular" style="font-size:13px; font-weight:700;">832 / 1300</span>
+              <span style="font-size:12px; color:var(--fg-2);">회복 한 번에 −40</span>
+            </div>
+          </div>
+
+          <div class="toolbar">
+            <button class="ctl" type="button" aria-pressed="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+              카메라
+            </button>
+            <button class="ctl" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="10" height="8" rx="2"/><path d="M21 12v6a2 2 0 0 1-2 2h-6"/></svg>
+              미니 창
+            </button>
+            <button class="ctl" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0-8-8"/><path d="M4 4v8h8"/></svg>
+              스트레칭
+            </button>
+            <button class="ctl" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+              채팅
+            </button>
+            <button class="ctl" type="button">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 12 5 5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/></svg>
+              응원
+            </button>
+            <button class="ctl end" type="button" data-goto="9">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 14.7 4 21"/><path d="M21 3 3 21"/><path d="M14 4h6v6"/></svg>
+              세션 종료
+            </button>
+          </div>
+        </div>
+
+        <!-- ---------------------------- 성장 ---------------------------- -->
+        <div class="screen" id="screen-growth" hidden>
+          <div class="grow-grid">
+            <div class="lvcard">
+              <span class="lvfig" aria-hidden="true">
+                <svg width="76" height="76" viewBox="0 0 40 40" fill="none">
+                  <path d="M10 30c0-7 4.5-11 10-11s10 4 10 11" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <path d="M20 19V7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                  <circle cx="20" cy="5.4" r="3.2" fill="#fff"/>
+                </svg>
+              </span>
+              <span>
+                <b>Lv.7 빼꼼 거부기린</b>
+                <p class="lvsub" style="margin:4px 0 0;">기린의 모습이 빼꼼</p>
+              </span>
+              <span class="lvbar" aria-hidden="true"><i></i></span>
+              <span class="lvsub tabular">2,040 / 2,250 XP · 다음 단계까지 210</span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:var(--s-lg); min-width:0;">
+              <div class="card card-outlined">
+                <p class="rail-nav-label" style="padding:0 0 var(--s-sm);">15단계 여정</p>
+                <ol class="ladder">
+                  <li class="done">1</li><li class="done">2</li><li class="done">3</li>
+                  <li class="done">4</li><li class="done">5</li><li class="done">6</li>
+                  <li class="now">7</li><li>8</li><li>9</li><li>10</li>
+                  <li>11</li><li>12</li><li>13</li><li>14</li><li>15</li>
+                </ol>
+              </div>
+
+              <dl class="statrow" style="margin:0;">
+                <div class="stat">
+                  <dt>이번 주 집중</dt>
+                  <dd class="tabular">6시간 20분</dd>
+                  <span class="trend trend-up">지난주보다 1시간 10분 길어요</span>
+                </div>
+                <div class="stat">
+                  <dt>회복 성공</dt>
+                  <dd class="tabular">31회</dd>
+                  <span class="trend trend-up">지난주보다 자주 돌아왔어요</span>
+                </div>
+                <div class="stat">
+                  <dt>연속 출석</dt>
+                  <dd class="tabular">9일</dd>
+                  <span class="trend trend-flat">14일까지 5일 남았어요</span>
+                </div>
+              </dl>
+
+              <div class="card card-outlined">
+                <p class="rail-nav-label" style="padding:0 0 var(--s-sm);">최근 획득</p>
+                <ul class="xplist">
+                  <li><span class="tag tag-good">회복</span> 기준 자세로 돌아왔어요 <b class="amt">+25</b> <span class="when">방금</span></li>
+                  <li><span class="tag tag-subtle">완주</span> 25분 세션을 끝냈어요 <b class="amt">+60</b> <span class="when">1시간 전</span></li>
+                  <li><span class="tag tag-subtle">스트레칭</span> 세션 후 스트레칭 <b class="amt">+10</b> <span class="when">1시간 전</span></li>
+                  <li><span class="tag tag-outline">출석</span> 7일 연속 <b class="amt">+100</b> <span class="when">어제</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- --------------------------- 캠퍼스 --------------------------- -->
+        <div class="screen" id="screen-campus" hidden>
+          <div class="campus-grid">
+            <div style="display:flex; flex-direction:column; gap:var(--s-md); min-width:0;">
+              <div style="display:flex; align-items:center; gap:var(--s-sm); flex-wrap:wrap;">
+                <span class="tag tag-solid">시즌 3</span>
+                <span class="tag tag-outline">3분기 · 42일 남음</span>
+                <span class="tag tag-subtle">비공식 테마</span>
+              </div>
+              <div class="territory" aria-label="영토 지도 96칸">
+                <i class="a"></i><i class="a"></i><i></i><i class="b"></i><i class="b"></i><i></i><i class="c"></i><i></i><i class="a"></i><i></i><i class="b"></i><i></i>
+                <i class="a"></i><i class="mine"></i><i class="a"></i><i class="b"></i><i></i><i class="c"></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i>
+                <i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i class="c"></i><i></i><i class="a"></i><i></i><i class="b"></i><i class="b"></i><i></i>
+                <i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i class="a"></i><i class="a"></i><i class="c"></i><i></i><i></i><i class="b"></i>
+                <i></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i></i><i class="a"></i><i class="c"></i><i class="c"></i><i></i>
+                <i class="b"></i><i></i><i class="a"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="c"></i><i></i><i class="b"></i><i></i><i class="a"></i>
+                <i></i><i class="b"></i><i class="b"></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i></i><i class="a"></i><i></i>
+                <i class="a"></i><i></i><i></i><i class="b"></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="c"></i><i class="b"></i><i></i>
+              </div>
+              <p style="margin:0; font-size:12px; color:var(--fg-2);">
+                지금은 자체 격자입니다. 서울 위성지도로 바꿔도 이 기여도·영토 계산은 그대로 씁니다.
+              </p>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:var(--s-md);">
+              <div class="card card-outlined">
+                <p class="rail-nav-label" style="padding:0 0 var(--s-sm);">점유율</p>
+                <ul class="legend">
+                  <li><span class="sw" style="background:#2B4C7E;"></span> 명지대 <span class="pct tabular">31%</span></li>
+                  <li><span class="sw" style="background:#8E2438;"></span> 고려대 <span class="pct tabular">24%</span></li>
+                  <li><span class="sw" style="background:#1E6B5E;"></span> 성균관대 <span class="pct tabular">14%</span></li>
+                  <li><span class="sw" style="background:var(--line-subtle);"></span> 중립 <span class="pct tabular">31%</span></li>
+                </ul>
+              </div>
+              <div class="card card-outlined">
+                <p class="rail-nav-label" style="padding:0 0 var(--s-sm);">내 기여</p>
+                <dl class="statrow" style="grid-template-columns:1fr; margin:0; gap:var(--s-sm);">
+                  <div class="stat" style="border:0; padding:0;">
+                    <dt>이번 시즌</dt>
+                    <dd class="tabular">1,240점</dd>
+                  </div>
+                </dl>
+                <p style="margin:var(--s-md) 0 0; font-size:12px; color:var(--fg-2);">
+                  정상 완료·회복 성공·스트레칭 완주만 반영해요. 자세 점수는 쓰지 않아요.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ------------------------- 마이페이지 ------------------------- -->
+        <div class="screen" id="screen-my" hidden>
+          <div class="my-grid">
+            <div style="display:flex; flex-direction:column; gap:var(--s-md);">
+              <div class="card card-outlined">
+                <p class="rail-nav-label" style="padding:0 0 var(--s-sm);">AI 세션 회고</p>
+                <div style="display:flex; flex-direction:column; gap:var(--s-sm);">
+                  <div class="report">
+                    <div class="report-head"><b>자료구조 3장</b><span>오늘 14:20</span></div>
+                    <p>25분 중 21분이 측정 가능했고, 회복은 네 번 모두 30초 안에 끝났어요. 시작 15분 뒤부터 어깨가 조금씩 앞으로 나왔어요.</p>
+                    <div><span class="tag tag-good">회복 4회</span> <span class="tag tag-subtle">완주</span></div>
+                  </div>
+                  <div class="report">
+                    <div class="report-head"><b>알고리즘 과제</b><span>어제 21:05</span></div>
+                    <p>50분 세션을 완주했어요. 후반 10분에 회복 기회가 몰렸으니, 다음엔 25분씩 두 번으로 나눠 보는 것도 좋아요.</p>
+                    <div><span class="tag tag-good">회복 6회</span> <span class="tag tag-subtle">완주</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:var(--s-md);">
+              <div class="card card-outlined">
+                <p class="rail-nav-label" style="padding:0 0 var(--s-sm);">내 정보</p>
+                <ul class="settings-list">
+                  <li>닉네임 <span class="val">민철</span></li>
+                  <li>학교 <span class="val">명지대학교</span></li>
+                  <li>자세 기준 <span class="val">3개 · 도서관 사용 중</span></li>
+                  <li>모드 <span class="val">기본 3 + 내 모드 1</span></li>
+                  <li>응원 문구 <span class="val">3개</span></li>
+                </ul>
+              </div>
+              <div class="card card-outlined">
+                <p class="rail-nav-label" style="padding:0 0 var(--s-sm);">이번 주 회복</p>
+                <p style="margin:0; font-size:15px; font-weight:600; line-height:1.5;">
+                  지난주보다 <b style="color:var(--good-fg);">자주 돌아왔어요.</b>
+                </p>
+                <p style="margin:var(--s-sm) 0 0; font-size:12px; color:var(--fg-2);">
+                  회복 31회 · 완주 9회 중 8회 · 스트레칭 7회. 점수로 매기지 않아요.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 흐름 설명 ===================== -->
+
+  <section>
+    <div class="section-label">
+      <h2>2. 방 만들기 흐름</h2>
+      <span>홈 · 집중 세션 · 친구 방을 하나로</span>
+    </div>
+
+    <div class="flowmap">
+      <b>프라이빗 / 공개</b><i>→</i>
+      <b>방 이름 · 인원</b><i>→</i>
+      <b>세션 길이</b><i>→</i>
+      <b>모드</b><i>→</i>
+      <b>상시방</b><i>→</i>
+      <b class="alt">대기실</b><i>→</i>
+      <b class="alt">시작 전 스트레칭</b><i>→</i>
+      <b class="alt">집중 세션</b><i>→</i>
+      <b class="alt">종료 후 스트레칭</b><i>→</i>
+      <b class="alt">결과</b>
+    </div>
+
+    <p style="max-width:70ch; margin:var(--s-lg) 0 0; color:var(--fg-2); line-height:1.65;">
+      진행 바가 세는 것은 <b>앞의 다섯 단계</b>뿐입니다. 대기실부터는 사용자가 방을 다 만든
+      뒤라 "몇 단계 남았는지"가 의미를 잃습니다. 그때부터는 세션 타이머가 진행 감각을
+      대신합니다. 스트레칭 두 번은 모두 건너뛸 수 있고, 목록은 모드가 정합니다 —
+      도서관은 앉아서 하는 것만, 내 공간은 일어나서 하는 것까지 보여 줍니다.
+    </p>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <h2>3. 탭이 줄면서 생긴 변화</h2>
+      <span>9개 → 4개</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>기존 메뉴</th><th>어디로</th><th>이유</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>홈</td><td>방 만들기</td><td>대시보드를 따로 두면 "그래서 뭘 눌러야 하지"가 한 번 더 생깁니다</td></tr>
+          <tr><td>집중 세션</td><td>방 만들기</td><td>혼자 하는 세션도 프라이빗 방 안에서 시작합니다</td></tr>
+          <tr><td>친구 방</td><td>방 만들기</td><td>혼자와 함께의 차이는 방 종류일 뿐, 진입은 하나입니다</td></tr>
+          <tr><td>기록</td><td>마이페이지</td><td>내 기록은 내 페이지에서 봅니다</td></tr>
+          <tr><td>스트레칭</td><td>세션 앞뒤 게이트</td><td>단독으로 열 이유가 없습니다. 세션의 일부입니다</td></tr>
+          <tr><td>상점</td><td>비활성화</td><td>플래그로 끕니다. 코드와 보유 데이터는 남깁니다</td></tr>
+          <tr><td>설정</td><td>우측 상단 톱니</td><td>자주 안 여는 것이 탭 자리를 차지하지 않습니다</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-label">
+      <h2>4. 톤이 바뀌면서 따라오는 것</h2>
+      <span>확인이 필요한 항목</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>항목</th><th>지금</th><th>Zoom 톤에서</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>배색</td><td>아이보리 60 / 중립 30 / 파스텔 10</td><td>흰색·회색 바탕 + Blue 액션 + 의미색 3종</td></tr>
+          <tr><td>강조색</td><td>핑크 (세션·회복·CTA)</td><td>Blue 하나. 빨강은 종료에만</td></tr>
+          <tr><td>모서리</td><td>20~28px 둥근 카드</td><td>6~10px. 회의 도구의 각</td></tr>
+          <tr><td>세션 화면</td><td>밝은 배경</td><td>다크. 회의 중이라는 신호</td></tr>
+          <tr><td>캐릭터</td><td>따뜻한 파스텔 3D 렌더</td><td><b>부딪힙니다.</b> 아래 참고</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="doc-note" style="margin-top:var(--s-lg); border-left-color:var(--warn-fg);">
+      <div>
+        <strong>결정 기록 D-006 과 충돌합니다.</strong>
+        지금 제품의 디자인 방향은 <i>Playful Pastel Dashboard × Cozy Campus Island</i> 로
+        적혀 있고, 승인된 캐릭터·괴물 에셋 112건이 그 톤에 맞춰 제작됐습니다.
+        Zoom 톤은 신뢰·명료·회의 우선이라 정반대 축입니다.
+        <br><br>
+        <b>제안 — 갈라 놓습니다.</b> 화면 껍데기(레일·툴바·버튼·표·카드)는 Zoom 톤으로 가고,
+        캐릭터가 서는 자리만 따뜻한 톤을 유지합니다. 위 프레임에서 캐릭터 타일에
+        그라데이션을 남긴 것이 그 자리입니다. 에셋을 다시 만들지 않아도 되고,
+        회의 은유와 캐릭터의 온기가 서로를 지웁니다 대신 대비를 만듭니다.
+        <br><br>
+        전면 교체를 택한다면 <code>D-006</code> 을 개정하고 에셋 112건 재제작 일정이 필요합니다.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  (function () {
+    'use strict';
+
+    /* ---------------------------------------------------- 방 만들기 상태 */
+
+    const state = {
+      visibility: null,   // 'private' | 'public'
+      roomName: '자료구조 3장',
+      capacity: 4,
+      focusMin: 25,
+      restMin: 5,
+      mode: 'library',
+      persistent: false,
+    };
+
+    const MODES = {
+      library: { name: '도서관', desc: '무음 · 앉아서 하는 스트레칭', monster: '북몽이', tts: false },
+      home:    { name: '내 공간', desc: '부드러운 알림 · 일어나서', monster: '늘몽이', tts: true },
+      team:    { name: '팀플',    desc: '협동 알림 · 혼합',          monster: '꼬몽이', tts: true },
+      custom:  { name: '내 모드', desc: '직접 정한 설정',            monster: '북몽이', tts: false },
+    };
+
+    const STRETCH = {
+      seated: [
+        { name: '목 옆으로 늘이기', hint: '앉은 채로 · 소리 없이', sec: 40 },
+        { name: '어깨 으쓱하기',   hint: '앉은 채로 · 소리 없이', sec: 30 },
+        { name: '날개뼈 모으기',   hint: '앉은 채로 · 소리 없이', sec: 45 },
+      ],
+      full: [
+        { name: '가슴 열기',       hint: '일어나서 · 음성 안내',  sec: 50 },
+        { name: '상체 비틀기',     hint: '일어나서 · 음성 안내',  sec: 45 },
+        { name: '종아리 들기',     hint: '일어나서 · 음성 안내',  sec: 40 },
+      ],
+    };
+
+    function stretchesFor(modeId) {
+      return modeId === 'library' ? STRETCH.seated : STRETCH.full;
+    }
+
+    /* ------------------------------------------------------- 스텝 정의 */
+
+    const TOTAL_SETUP_STEPS = 5;
+    let stepIndex = 0;
+    let goingBack = false;
+
+    const body = document.getElementById('step-body');
+    const progressWrap = document.getElementById('progress-wrap');
+    const progressFill = document.getElementById('progress-fill');
+    const progressCount = document.getElementById('progress-count');
+    const topTitle = document.getElementById('topbar-title');
+    const topMeta = document.getElementById('topbar-meta');
+    const app = document.getElementById('app');
+
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => (
+      { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
+    ));
+
+    function icon(path, size) {
+      return '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" '
+        + 'stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + path + '</svg>';
+    }
+
+    const ICON = {
+      lock:   '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+      globe:  '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
+      users:  '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
+      clock:  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+      book:   '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
+      pin:    '<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/>',
+      wave:   '<path d="M12 20a8 8 0 1 0-8-8"/><path d="M4 4v8h8"/>',
+      check:  '<path d="m5 13 4 4L19 7"/>',
+      camera: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/>',
+    };
+
+    /* ----------------------------------------------------- 스텝 렌더러 */
+
+    const steps = [
+      // 0 — 프라이빗 / 공개
+      function () {
+        return {
+          title: '방 만들기',
+          meta: '혼자 앉든 같이 앉든, 여기서 시작해요',
+          html:
+            '<div class="step-head">'
+            + '<h3>어떤 방으로 만들까요?</h3>'
+            + '<p>방을 만들면 초대 코드가 나와요. 혼자 시작해도 나중에 사람을 부를 수 있어요.</p>'
+            + '</div>'
+            + '<div class="choice-grid" style="margin-top:var(--s-lg);">'
+            + choiceBtn('private', ICON.lock, '프라이빗 방',
+                '초대 코드를 아는 사람만 들어와요. 혼자 시작해도 돼요.',
+                ['코드로만 입장', '자유 채팅 가능'])
+            + choiceBtn('public', ICON.globe, '공개 방',
+                '같은 시간에 앉은 사람 누구나 들어올 수 있어요.',
+                ['공개 목록에 표시', '응원 문구만'])
+            + '</div>'
+            + '<div class="step-actions">'
+            + '<span class="spacer"></span>'
+            + '<button class="btn btn-ghost" type="button" data-act="join">코드로 참여하기</button>'
+            + '<button class="btn btn-primary btn-lg" type="button" data-act="next" ' + (state.visibility ? '' : 'disabled') + '>다음</button>'
+            + '</div>',
+        };
+      },
+
+      // 1 — 방 이름 · 인원
+      function () {
+        const pub = state.visibility === 'public';
+        return {
+          title: '방 만들기',
+          meta: pub ? '공개 방' : '프라이빗 방',
+          html:
+            '<div class="step-head">'
+            + '<h3>' + (pub ? '어떤 방으로 보일까요?' : '이 방을 뭐라고 부를까요?') + '</h3>'
+            + '<p>' + (pub
+                ? '공개 목록에 이 이름이 그대로 보여요. 실명이나 학번은 쓰지 마세요.'
+                : '초대 코드를 받은 사람에게만 보여요.') + '</p>'
+            + '</div>'
+            + '<label style="display:flex; flex-direction:column; gap:6px; margin-top:var(--s-lg);">'
+            + '<span class="rail-nav-label" style="padding:0;">방 이름</span>'
+            + '<input id="roomname" class="btn-secondary" style="height:44px; padding:0 14px; font-size:15px; font-weight:600; border-radius:var(--r-md);" value="' + esc(state.roomName) + '" maxlength="20" />'
+            + '</label>'
+            + '<div style="margin-top:var(--s-lg);">'
+            + '<p class="rail-nav-label" style="padding:0 0 var(--s-sm);">최대 인원</p>'
+            + '<div class="mode-grid">'
+            + [1, 2, 4, 6, 10].map(function (n) {
+                return '<button class="mode" type="button" data-cap="' + n + '" aria-pressed="' + (state.capacity === n) + '">'
+                  + '<b>' + (n === 1 ? '혼자' : n + '명') + '</b>'
+                  + '<span>' + (n === 1 ? '나만 들어와요' : '괴물 체력 ' + (n * 1000).toLocaleString() + '') + '</span>'
+                  + '</button>';
+              }).join('')
+            + '</div></div>'
+            + navRow(),
+        };
+      },
+
+      // 2 — 세션 길이
+      function () {
+        return {
+          title: '방 만들기',
+          meta: state.visibility === 'public' ? '공개 방' : '프라이빗 방',
+          html:
+            '<div class="step-head">'
+            + '<h3>얼마나 앉아 있을까요?</h3>'
+            + '<p>계획한 시간의 80% 를 넘기면 완주로 인정해요. 10분을 넘기면 출석이 남아요.</p>'
+            + '</div>'
+            + '<div class="picker" style="margin-top:var(--s-lg);">'
+            + wheelCol('집중', 'focus', focusOptions(), state.focusMin)
+            + wheelCol('회복 휴식', 'rest', [5, 10], state.restMin)
+            + '</div>'
+            + '<p style="margin:var(--s-md) 0 0; font-size:12px; color:var(--fg-2);">'
+            + '회복 휴식은 5분과 10분 둘 중 하나예요.</p>'
+            + navRow(),
+        };
+      },
+
+      // 3 — 모드
+      function () {
+        return {
+          title: '방 만들기',
+          meta: state.focusMin + '분 집중 · ' + state.restMin + '분 회복',
+          html:
+            '<div class="step-head">'
+            + '<h3>어디에서 하나요?</h3>'
+            + '<p>소리·연출·스트레칭 종류·괴물이 달라져요. 자세 판정 기준과 경험치는 모드와 상관없이 같아요.</p>'
+            + '</div>'
+            + '<div class="mode-grid" style="margin-top:var(--s-lg);">'
+            + Object.keys(MODES).map(function (id) {
+                const m = MODES[id];
+                return '<button class="mode" type="button" data-mode="' + id + '" aria-pressed="' + (state.mode === id) + '">'
+                  + '<b>' + m.name + '</b><span>' + m.desc + '</span>'
+                  + '<span class="mode-flags">'
+                  + '<span class="tag tag-outline">' + m.monster + '</span>'
+                  + '<span class="tag ' + (m.tts ? 'tag-good' : 'tag-idle') + '">' + (m.tts ? '음성 안내' : '무음') + '</span>'
+                  + '</span></button>';
+              }).join('')
+            + '</div>'
+            + navRow(),
+        };
+      },
+
+      // 4 — 상시방
+      function () {
+        return {
+          title: '방 만들기',
+          meta: MODES[state.mode].name + ' · ' + state.focusMin + '분',
+          html:
+            '<div class="step-head">'
+            + '<h3>이 방을 계속 남겨 둘까요?</h3>'
+            + '<p>상시방은 세션이 끝나도 사라지지 않아요. 같은 코드로 다음에 또 모일 수 있어요.</p>'
+            + '</div>'
+            + '<div class="switchrow" style="margin-top:var(--s-lg);">'
+            + '<span class="stretch-fig">' + icon(ICON.pin) + '</span>'
+            + '<span class="switchrow-text">'
+            + '<b>상시방으로 만들기</b>'
+            + '<span>한 사람이 최대 3개까지 가질 수 있어요. 지금 ' + (state.persistent ? '1' : '0') + ' / 3 개.</span>'
+            + '</span>'
+            + '<button class="switch" type="button" role="switch" data-act="persist" aria-checked="' + state.persistent + '" aria-label="상시방으로 만들기"><span></span></button>'
+            + '</div>'
+            + '<div class="card card-outlined" style="margin-top:var(--s-lg);">'
+            + '<p class="rail-nav-label" style="padding:0 0 var(--s-sm);">확인</p>'
+            + '<ul class="settings-list">'
+            + '<li>방 종류 <span class="val">' + (state.visibility === 'public' ? '공개 방' : '프라이빗 방') + '</span></li>'
+            + '<li>이름 <span class="val">' + esc(state.roomName) + '</span></li>'
+            + '<li>인원 <span class="val">' + (state.capacity === 1 ? '혼자' : '최대 ' + state.capacity + '명') + '</span></li>'
+            + '<li>시간 <span class="val tabular">' + state.focusMin + '분 + ' + state.restMin + '분</span></li>'
+            + '<li>모드 <span class="val">' + MODES[state.mode].name + '</span></li>'
+            + '</ul></div>'
+            + navRow('방 만들기'),
+        };
+      },
+
+      // 5 — 대기실
+      function () {
+        const cap = state.capacity;
+        const joined = Math.min(cap, 3);
+        let tiles = '';
+        const people = [
+          { n: '민철 (나)', lv: 7, g: 'g-2', ready: true },
+          { n: '수현', lv: 4, g: 'g-3', ready: true },
+          { n: '연우', lv: 11, g: 'g-5', ready: false },
+        ];
+        for (let i = 0; i < joined; i++) {
+          const p = people[i];
+          tiles += '<div class="tile ' + p.g + (i === 0 ? ' self' : '') + '">'
+            + '<svg class="avatar" viewBox="0 0 40 40" fill="none" aria-hidden="true">'
+            + '<path d="M11 29c0-6 4-10 9-10s9 4 9 10" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>'
+            + '<path d="M20 19V8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>'
+            + '<circle cx="20" cy="6" r="3" fill="#fff"/></svg>'
+            + '<span class="tile-lv">Lv.' + p.lv + '</span>'
+            + '<span class="tile-name">' + p.n + '</span>'
+            + '<span class="tile-state ' + (p.ready ? 'is-good' : 'is-idle') + '">'
+            + (p.ready ? '준비 완료' : '기준 확인 중') + '</span></div>';
+        }
+        for (let i = joined; i < Math.min(cap, 6); i++) {
+          tiles += '<div class="tile off"><span style="color:var(--fg-3); font-size:12px; font-weight:600;">빈 자리</span></div>';
+        }
+
+        return {
+          title: '대기실',
+          meta: esc(state.roomName),
+          html:
+            '<div class="step-head">'
+            + '<h3>시작하기 전에</h3>'
+            + '<p>모두 자세 기준을 확인하면 시작할 수 있어요.</p>'
+            + '</div>'
+            + '<div class="card card-outlined" style="margin-top:var(--s-lg); display:flex; align-items:center; gap:var(--s-md); flex-wrap:wrap;">'
+            + '<span class="stretch-fig">' + icon(ICON.lock) + '</span>'
+            + '<span class="switchrow-text"><b>초대 코드</b><span>세션 중에도 상단에 계속 보여요</span></span>'
+            + '<span class="tag tag-solid tabular" style="font-size:18px; padding:8px 14px; letter-spacing:0.1em;">4F2K9A</span>'
+            + '<button class="btn btn-secondary" type="button">복사</button>'
+            + '</div>'
+            + '<div class="gallery" style="margin-top:var(--s-lg);">' + tiles + '</div>'
+            + '<div class="card card-outlined" style="margin-top:var(--s-lg); display:flex; align-items:center; gap:var(--s-md);">'
+            + '<span class="stretch-fig">' + icon(ICON.camera) + '</span>'
+            + '<span class="switchrow-text"><b>내 자세 기준</b><span>도서관 기준 · 5초 전 확인함</span></span>'
+            + '<span class="tag tag-good">' + '확인됨' + '</span>'
+            + '<button class="btn btn-secondary" type="button">다시 등록</button>'
+            + '</div>'
+            + navRow('스트레칭으로'),
+        };
+      },
+
+      // 6 — 시작 전 스트레칭
+      function () {
+        return stretchGate('pre');
+      },
+
+      // 7 — 세션 (별도 화면으로 전환)
+      null,
+
+      // 8 — (자리 채움)
+      null,
+
+      // 9 — 종료 후 스트레칭
+      function () {
+        return stretchGate('post');
+      },
+
+      // 10 — 결과
+      function () {
+        return {
+          title: '결과',
+          meta: esc(state.roomName),
+          html:
+            '<div class="step-head">'
+            + '<h3>25분, 끝까지 앉아 있었어요</h3>'
+            + '<p>회복 네 번이 모두 30초 안에 끝났어요.</p>'
+            + '</div>'
+            + '<dl class="statrow" style="margin:var(--s-lg) 0 0;">'
+            + '<div class="stat"><dt>측정 가능 시간</dt><dd class="tabular">21분</dd><span class="trend trend-up">전체의 84%</span></div>'
+            + '<div class="stat"><dt>회복 성공</dt><dd class="tabular">4회</dd><span class="trend trend-up">평균 22초</span></div>'
+            + '<div class="stat"><dt>얻은 경험치</dt><dd class="tabular">+160</dd><span class="trend trend-flat">완주 60 · 회복 100</span></div>'
+            + '</dl>'
+            + '<div class="card card-outlined" style="margin-top:var(--s-lg);">'
+            + '<div class="report-head" style="margin-bottom:var(--s-sm);"><b>AI 세션 회고</b><span>마이페이지에 저장돼요</span></div>'
+            + '<p style="margin:0; font-size:14px; line-height:1.6; color:var(--fg-2);">'
+            + '시작 15분 뒤부터 어깨가 조금씩 앞으로 나왔어요. 다음 세션에서는 15분쯤에 한 번 기지개를 켜 보세요.</p>'
+            + '</div>'
+            + '<div class="step-actions">'
+            + '<button class="btn btn-secondary" type="button" data-act="reset">처음으로</button>'
+            + '<span class="spacer"></span>'
+            + '<button class="btn btn-primary btn-lg" type="button" data-act="reset">한 번 더</button>'
+            + '</div>',
+        };
+      },
+    ];
+
+    function focusOptions() {
+      const out = [];
+      for (let m = 5; m <= 120; m += 5) out.push(m);
+      return out;
+    }
+
+    function choiceBtn(id, iconPath, label, desc, metas) {
+      return '<button class="choice" type="button" data-vis="' + id + '" aria-pressed="' + (state.visibility === id) + '">'
+        + '<span class="choice-icon">' + icon(iconPath, 22) + '</span>'
+        + '<b>' + label + '</b>'
+        + '<span>' + desc + '</span>'
+        + '<span class="choice-meta">' + metas.map(function (m) {
+            return '<span class="tag tag-outline">' + m + '</span>';
+          }).join('') + '</span>'
+        + '</button>';
+    }
+
+    function wheelCol(label, key, options, current) {
+      return '<div class="picker-col">'
+        + '<label for="wheel-' + key + '">' + label + '</label>'
+        + '<div class="wheel" id="wheel-' + key + '" data-wheel="' + key + '" tabindex="0" role="listbox" aria-label="' + label + ' 선택">'
+        + '<ul class="wheel-list">'
+        + options.map(function (o) {
+            return '<li role="option" data-val="' + o + '" data-on="' + (o === current) + '" aria-selected="' + (o === current) + '">' + o + '분</li>';
+          }).join('')
+        + '</ul></div></div>';
+    }
+
+    function stretchGate(phase) {
+      const list = stretchesFor(state.mode);
+      const m = MODES[state.mode];
+      return {
+        title: phase === 'pre' ? '시작 전 스트레칭' : '마무리 스트레칭',
+        meta: m.name + ' 모드',
+        html:
+          '<div class="step-head">'
+          + '<h3>' + (phase === 'pre'
+              ? '앉기 전에 한 번 풀고 갈까요?'
+              : '25분 앉아 있었어요. 한 번 풀어 볼까요?') + '</h3>'
+          + '<p>' + m.name + ' 모드라 ' + (m.tts ? '음성 안내가 나오는 일어나서 하는 동작' : '소리 없이 앉아서 하는 동작')
+          + '만 보여 드려요. 건너뛰어도 괜찮아요.</p>'
+          + '</div>'
+          + '<div class="stretch-list" style="margin-top:var(--s-lg);">'
+          + list.map(function (s, i) {
+              return '<button class="stretch-item" type="button" aria-pressed="' + (i === 0) + '">'
+                + '<span class="stretch-fig">' + icon(ICON.wave) + '</span>'
+                + '<span class="stretch-text"><b>' + s.name + '</b><span>' + s.hint + '</span></span>'
+                + '<span class="stretch-dur tabular">' + s.sec + '초</span></button>';
+            }).join('')
+          + '</div>'
+          + '<div class="step-actions">'
+          + '<button class="btn btn-ghost" type="button" data-act="' + (phase === 'pre' ? 'skip-pre' : 'skip-post') + '">건너뛰기</button>'
+          + '<span class="spacer"></span>'
+          + '<button class="btn btn-primary btn-lg" type="button" data-act="' + (phase === 'pre' ? 'skip-pre' : 'skip-post') + '">'
+          + (phase === 'pre' ? '스트레칭 시작하기' : '스트레칭 시작하기') + '</button>'
+          + '</div>',
+      };
+    }
+
+    function navRow(nextLabel) {
+      return '<div class="step-actions">'
+        + '<button class="btn btn-secondary" type="button" data-act="prev">이전</button>'
+        + '<span class="spacer"></span>'
+        + '<button class="btn btn-primary btn-lg" type="button" data-act="next">' + (nextLabel || '다음') + '</button>'
+        + '</div>';
+    }
+
+    /* --------------------------------------------------------- 렌더 */
+
+    function render() {
+      const inSetup = stepIndex < TOTAL_SETUP_STEPS;
+      progressWrap.style.display = inSetup ? 'flex' : 'none';
+      if (inSetup) {
+        const pct = ((stepIndex + 1) / TOTAL_SETUP_STEPS) * 100;
+        progressFill.style.width = pct + '%';
+        progressCount.textContent = (stepIndex + 1) + ' / ' + TOTAL_SETUP_STEPS;
+      }
+
+      const fn = steps[stepIndex];
+      if (!fn) return;
+      const view = fn();
+
+      topTitle.textContent = view.title;
+      topMeta.textContent = view.meta;
+
+      body.innerHTML = '<div class="step' + (goingBack ? ' back' : '') + '">' + view.html + '</div>';
+      goingBack = false;
+
+      bindWheels();
+    }
+
+    function bindWheels() {
+      document.querySelectorAll('[data-wheel]').forEach(function (wheel) {
+        const key = wheel.getAttribute('data-wheel');
+        const active = wheel.querySelector('[data-on="true"]');
+        if (active) wheel.scrollTop = active.offsetTop - wheel.clientHeight / 2 + active.clientHeight / 2;
+
+        let raf = 0;
+        wheel.addEventListener('scroll', function () {
+          if (raf) return;
+          raf = requestAnimationFrame(function () {
+            raf = 0;
+            const mid = wheel.scrollTop + wheel.clientHeight / 2;
+            let best = null, bestDist = Infinity;
+            wheel.querySelectorAll('li').forEach(function (li) {
+              const c = li.offsetTop + li.clientHeight / 2;
+              const d = Math.abs(c - mid);
+              if (d < bestDist) { bestDist = d; best = li; }
+            });
+            if (!best) return;
+            wheel.querySelectorAll('li').forEach(function (li) {
+              const on = li === best;
+              li.setAttribute('data-on', String(on));
+              li.setAttribute('aria-selected', String(on));
+            });
+            const val = Number(best.getAttribute('data-val'));
+            if (key === 'focus') state.focusMin = val;
+            else state.restMin = val;
+          });
+        }, { passive: true });
+      });
+    }
+
+    /* ------------------------------------------------------ 화면 전환 */
+
+    const screens = {
+      room:    document.getElementById('screen-room'),
+      session: document.getElementById('screen-session'),
+      growth:  document.getElementById('screen-growth'),
+      campus:  document.getElementById('screen-campus'),
+      my:      document.getElementById('screen-my'),
+    };
+
+    const TAB_META = {
+      room:   ['방 만들기', '혼자 앉든 같이 앉든, 여기서 시작해요'],
+      growth: ['성장', '거북이에서 기린까지 15단계'],
+      campus: ['캠퍼스', '시즌 3 · 42일 남음'],
+      my:     ['마이페이지', 'AI 회고 · 기록 · 내 정보'],
+    };
+
+    function showScreen(key) {
+      Object.keys(screens).forEach(function (k) { screens[k].hidden = k !== key; });
+      app.classList.toggle('in-session', key === 'session');
+      if (TAB_META[key]) {
+        topTitle.textContent = TAB_META[key][0];
+        topMeta.textContent = TAB_META[key][1];
+      }
+    }
+
+    document.querySelectorAll('[data-nav]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const key = btn.getAttribute('data-nav');
+        document.querySelectorAll('[data-nav]').forEach(function (b) { b.removeAttribute('aria-current'); });
+        btn.setAttribute('aria-current', 'page');
+        if (key === 'room') { stepIndex = 0; state.visibility = null; showScreen('room'); render(); }
+        else showScreen(key);
+      });
+    });
+
+    /* -------------------------------------------------------- 이벤트 */
+
+    function goTo(i) {
+      goingBack = i < stepIndex;
+      stepIndex = i;
+      if (stepIndex === 7) { showScreen('session'); return; }
+      showScreen('room');
+      render();
+    }
+
+    document.addEventListener('click', function (e) {
+      const t = e.target.closest('[data-act], [data-vis], [data-cap], [data-mode], [data-goto]');
+      if (!t) return;
+
+      if (t.hasAttribute('data-vis')) {
+        state.visibility = t.getAttribute('data-vis');
+        render();
+        return;
+      }
+      if (t.hasAttribute('data-cap')) {
+        state.capacity = Number(t.getAttribute('data-cap'));
+        render();
+        return;
+      }
+      if (t.hasAttribute('data-mode')) {
+        state.mode = t.getAttribute('data-mode');
+        render();
+        return;
+      }
+      if (t.hasAttribute('data-goto')) {
+        goTo(Number(t.getAttribute('data-goto')));
+        return;
+      }
+
+      const act = t.getAttribute('data-act');
+      if (act === 'next') {
+        if (stepIndex === 4) { goTo(5); return; }
+        if (stepIndex === 5) { goTo(6); return; }
+        goTo(Math.min(stepIndex + 1, steps.length - 1));
+      } else if (act === 'prev') {
+        goTo(Math.max(stepIndex - 1, 0));
+      } else if (act === 'skip-pre') {
+        goTo(7);
+      } else if (act === 'skip-post') {
+        goTo(10);
+      } else if (act === 'persist') {
+        state.persistent = !state.persistent;
+        render();
+      } else if (act === 'reset') {
+        state.visibility = null;
+        goTo(0);
+      } else if (act === 'join') {
+        state.visibility = 'private';
+        goTo(5);
+      }
+    });
+
+    document.addEventListener('input', function (e) {
+      if (e.target && e.target.id === 'roomname') state.roomName = e.target.value;
+    });
+
+    render();
+  })();
+</script>

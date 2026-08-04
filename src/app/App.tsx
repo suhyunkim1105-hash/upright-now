@@ -14,6 +14,7 @@ import { CampusContributionBridge } from '@/features/campus/CampusContributionBr
 import { CampusFeedbackToaster } from '@/components/campus/CampusFeedbackToaster'
 import { installCampusDevApi } from '@/features/campus/campusDevApi'
 import { repairProgressionFromHistory } from '@/features/progression/repairProgression'
+import { hydrateProgressionFromServer } from '@/features/progression/progressionRepository'
 import { consumeAuthCallback } from '@/lib/supabase/client'
 import { ROUTES } from '@/constants/routes'
 
@@ -51,6 +52,7 @@ export function App() {
     installCampusDevApi()
     // 완료 기록 대비 상점 잠금·완료 수가 뒤처졌으면 자동 복구합니다.
     repairProgressionFromHistory()
+    void hydrateProgressionFromServer()
     // 효과음: 사용자 제스처 후에만 AudioContext 시작 (자동 재생 금지)
     window.addEventListener('pointerdown', unlockAudio)
     const uninstallSound = installSoundTriggers()

@@ -53,3 +53,27 @@ npm run build
 
 남의 담당 폴더를 고쳐야 하면 먼저 이야기해 주세요.
 공용 폴더(`game/`, `modes/`, `sessions/`, `constants/`)는 특히 충돌하기 쉽습니다.
+
+## `src/` 밖에도 코드가 있습니다
+
+| 폴더 | 무엇 |
+|---|---|
+| `api/` | Vercel 서버 함수. **AI 세션 회고가 여기서만 돕니다** — 키가 프론트에 없어야 하므로 |
+| `supabase/migrations/` | 방·캠퍼스 테이블과 RLS. 실행은 되돌리기 어려우니 확인받고 |
+| `prototypes/room-flow/` | 화면·흐름 프로토타입. 빌드에 안 들어가고 `src/` 와 서체만 공유 |
+| `public/fonts/wanted-sans/` | Wanted Sans Variable, 유니코드 구간별 92 subset |
+| `e2e/` | Playwright. dev 서버 3대(5283/5284/5285)를 자동으로 띄웁니다 |
+
+## 알아 두면 시간 아끼는 것
+
+**세션 기록은 기기를 떠나지 않습니다.** `SessionSummary` 는 결과 화면과 AI
+회고에서만 쓰이고 어디에도 저장되지 않습니다. 게임 진행도만 `localStorage`
+에 남습니다. 그래서 **지금은 리텐션·코호트를 계산할 수 없습니다.**
+
+**AI 회고는 켜져 있지 않습니다.** `VITE_ENABLE_AI_REPORT`, `AI_REPORT_ENABLED`,
+`GEMINI_API_KEY` 셋이 모두 있어야 돕니다. 키는 Vercel 대시보드에만 넣습니다.
+로컬·E2E 는 `AI_REPORT_MOCK=true` 로 고정 응답을 씁니다.
+
+**단위 테스트가 통과해도 화면이 깨질 수 있습니다.** 레일이 사라지고 캐릭터가
+안 뜬 회귀가 단위 테스트를 전부 통과하고 E2E 에서만 잡힌 적이 있습니다.
+화면·흐름을 바꿨으면 `npm run test:e2e` 까지 돌립니다.

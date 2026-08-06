@@ -1,4 +1,9 @@
-# AI_HANDOFF — UpRight Now 작업 인수인계
+# AI_HANDOFF — 자세 판정·보상 기술 인수인계
+
+> **작업 상태·남은 일·다음 단계는 [`CODEX_HANDOFF.md`](CODEX_HANDOFF.md) 로 옮겼습니다.**
+> 이 문서는 **자세 판정 파이프라인과 보상 경로의 기술 상세**를 다룹니다.
+> 시스템 구조·환경변수·배포는 [`ARCHITECTURE.md`](ARCHITECTURE.md) 를 보세요.
+> 아래 "현재 상태 요약"은 v1.1.0 시점 기록이며, 최신 상태는 `CODEX_HANDOFF.md` §1 입니다.
 
 > 마지막 갱신: 2026-07-28 · v1.1.0 릴리스 (main · 태그 `v1.1.0` · 커밋 `adc9c9b`)
 >

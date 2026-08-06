@@ -515,7 +515,9 @@ npm run test
 | [CLAUDE.md](../CLAUDE.md) | AI 코딩 도구용 짧은 안내 — 읽을 순서·금지 5줄·담당 표 |
 | [docs/AI_HANDOFF.md](AI_HANDOFF.md) | 기술 상세 인수인계 — 자세 판정 파이프라인, 데이터 흐름 |
 | [docs/14_DATA_PRIVACY_SECURITY.md](14_DATA_PRIVACY_SECURITY.md) | 개인정보 처리 원칙 — **꼭 읽어 주세요** |
-| [docs/20_DECISION_LOG.md](20_DECISION_LOG.md) | 왜 이렇게 결정했는지 기록 |
+| [docs/DECISIONS.md](DECISIONS.md) | 왜 이렇게 결정했는지 — 검토한 대안과 재검토 조건까지 |
+| [docs/ARCHITECTURE.md](ARCHITECTURE.md) | 시스템 구조·데이터 흐름·환경변수·배포 |
+| [docs/CODEX_HANDOFF.md](CODEX_HANDOFF.md) | 작업 인수인계 — 지금 상태, 남은 일, 바로 시작할 다음 단계 |
 | [docs/21_RESEARCH_BASIS.md](21_RESEARCH_BASIS.md) | 자세 판정 근거 조사 — CVA 지표를 쓰지 않는 이유, 개인 기준 방식을 택한 배경 (자세 작업 시 참고) |
 | [docs/22_PRODUCT_SPEC_V2.md](22_PRODUCT_SPEC_V2.md) | **다음 개정 방향** — 2026-08-04 기획 회의 정리. 현재 코드와의 차이, 불변조건 충돌 4건, 미결 10건 |
 | [docs/archive/](archive/) | 초기 기획 문서 (숫자는 현재와 다름) |

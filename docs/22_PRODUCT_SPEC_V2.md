@@ -677,7 +677,7 @@ V2는 보상의 종착지를 상점이 아니라 **캐릭터 성장과 학교 �
 
 #### D-006 과 충돌합니다
 
-`docs/20_DECISION_LOG.md` 의 `D-006` 은 **Playful Pastel Dashboard × Cozy Campus
+`docs/DECISIONS.md` 의 `D-006` 은 **Playful Pastel Dashboard × Cozy Campus
 Island** 이고, 승인된 캐릭터·괴물·상점 에셋 112건이 그 톤에 맞춰 제작됐습니다.
 Zoom 톤은 신뢰·명료·회의 우선이라 정반대 축입니다.
 

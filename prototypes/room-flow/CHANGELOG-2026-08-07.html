@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>UpRight 프로토타입 작업 기록 — 2026-08-07</title>
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css" />
+<style>
+  :root {
+    --tint: #EBFF7A;
+    --on-tint: #0F1621;
+    --tint-line: #7A8C00;
+    --tint-ink: #525F00;
+    --tint-wash: #F8FFE4;
+
+    --white-0: #FFFFFF;
+    --white-1: #FCFDFF;
+    --white-2: #F6F8FC;
+    --white-3: #EDF1F8;
+    --white-4: #E1E8F2;
+
+    --label: #0F1621;
+    --label-2: #525C70;
+    --label-3: #646E85;
+    --label-4: #B4BDCB;
+
+    --sep: rgba(15, 22, 33, 0.10);
+    --fill-4: rgba(96, 116, 148, 0.06);
+    --fill-3: rgba(96, 116, 148, 0.09);
+
+    --green-wash: #E4F8E9;
+    --green-ink: #127033;
+    --red-wash: #FFE9E7;
+    --red-ink: #C42317;
+    --orange-wash: #FFF3E0;
+    --orange-ink: #9C5D00;
+
+    --font: "Wanted Sans Variable", "WantedSansLocal", -apple-system,
+            BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+
+    --sh-1: 0 0.5px 1px rgba(15,22,33,.04), 0 1px 2px rgba(15,22,33,.04);
+    --sh-2: 0 2px 6px rgba(15,22,33,.05), 0 8px 20px rgba(15,22,33,.06);
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--white-2);
+    color: var(--label);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .num { font-variant-numeric: tabular-nums; }
+
+  .wrap { max-width: 940px; margin: 0 auto; padding: 56px 24px 120px; }
+
+  /* ---------- 머리말 ---------- */
+  header { margin-bottom: 56px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 12px; border-radius: 999px;
+    background: var(--tint);
+    box-shadow: inset 0 0 0 1px var(--tint-line);
+    color: var(--on-tint);
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em;
+  }
+  h1 {
+    margin: 20px 0 0;
+    font-size: clamp(32px, 4.6vw, 46px);
+    font-weight: 800; letter-spacing: -0.035em; line-height: 1.12;
+  }
+  .lede { margin: 16px 0 0; max-width: 62ch; font-size: 17px; color: var(--label-2); }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px; margin-top: 32px;
+  }
+  .stat {
+    padding: 16px 18px; border-radius: 14px;
+    background: var(--white-0); box-shadow: var(--sh-1);
+  }
+  .stat b { display: block; font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+  .stat span { display: block; margin-top: 2px; font-size: 12.5px; color: var(--label-2); }
+
+  /* ---------- 목차 ---------- */
+  nav.toc {
+    margin: 40px 0 0; padding: 20px 22px;
+    border-radius: 16px; background: var(--white-0); box-shadow: var(--sh-1);
+  }
+  nav.toc p { margin: 0 0 12px; font-size: 11.5px; font-weight: 700;
+              letter-spacing: 0.12em; text-transform: uppercase; color: var(--label-3); }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  @media (max-width: 640px) { nav.toc ol { columns: 1; } }
+  nav.toc li { margin-bottom: 5px; font-size: 14.5px; break-inside: avoid; }
+  nav.toc a { color: var(--label); text-decoration: none; border-bottom: 1px solid var(--sep); }
+  nav.toc a:hover { border-bottom-color: var(--tint-line); }
+
+  /* ---------- 섹션 ---------- */
+  section { margin-top: 64px; scroll-margin-top: 24px; }
+  h2 {
+    margin: 0 0 6px; font-size: 25px; font-weight: 800; letter-spacing: -0.028em;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  h2 .n {
+    font-size: 13px; font-weight: 700; color: var(--tint-ink);
+    font-variant-numeric: tabular-nums;
+  }
+  h2 + .sub { margin: 0 0 24px; color: var(--label-2); font-size: 15px; max-width: 66ch; }
+
+  h3 { margin: 32px 0 8px; font-size: 17.5px; font-weight: 750; letter-spacing: -0.018em; }
+  p { margin: 0 0 14px; max-width: 70ch; }
+
+  .card {
+    padding: 22px 24px; border-radius: 16px;
+    background: var(--white-0); box-shadow: var(--sh-1);
+    margin-bottom: 14px;
+  }
+  .card > :last-child { margin-bottom: 0; }
+
+  /* 문제 → 원인 → 조치 */
+  .fix { border-left: 3px solid var(--tint-line); padding-left: 18px; margin: 20px 0 26px; }
+  .fix dt {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--label-3); margin-top: 12px;
+  }
+  .fix dt:first-child { margin-top: 0; }
+  .fix dd { margin: 3px 0 0; max-width: 68ch; }
+
+  table { border-collapse: collapse; width: 100%; margin: 16px 0 20px; font-size: 14.5px; }
+  .tablewrap { overflow-x: auto; border-radius: 14px; background: var(--white-0); box-shadow: var(--sh-1); }
+  .tablewrap table { margin: 0; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--sep); vertical-align: top; }
+  th { font-size: 11.5px; font-weight: 700; letter-spacing: 0.08em;
+       text-transform: uppercase; color: var(--label-3); white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  td b { font-weight: 650; }
+
+  /* 색을 물려받으면 흐린 글 안에서 코드가 배경보다 흐려집니다.
+     칩은 제 색을 가집니다. */
+  code {
+    padding: 1.5px 6px; border-radius: 5px;
+    background: var(--fill-3); color: var(--label);
+    font-family: var(--font);
+    font-size: 0.92em; font-weight: 600; font-variant-numeric: tabular-nums;
+  }
+
+  .tag {
+    display: inline-block; padding: 2px 9px; border-radius: 7px;
+    font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  }
+  .t-fix  { background: var(--red-wash);   color: var(--red-ink); }
+  .t-new  { background: var(--tint);       color: var(--on-tint); box-shadow: inset 0 0 0 1px var(--tint-line); }
+  .t-mod  { background: var(--green-wash); color: var(--green-ink); }
+  .t-open { background: var(--orange-wash);color: var(--orange-ink); }
+
+  .swatches { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 20px; }
+  .sw {
+    display: flex; flex-direction: column; gap: 6px;
+    padding: 12px; border-radius: 12px; background: var(--white-0);
+    box-shadow: var(--sh-1); min-width: 132px;
+  }
+  .sw i { display: block; height: 34px; border-radius: 8px;
+          box-shadow: inset 0 0 0 1px rgba(15,22,33,.1); }
+  .sw b { font-size: 12.5px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sw span { font-size: 11.5px; color: var(--label-2); }
+
+  .callout {
+    padding: 16px 20px; border-radius: 14px;
+    background: var(--tint-wash); box-shadow: inset 0 0 0 1px var(--tint-line);
+    margin: 20px 0;
+  }
+  .callout p { margin: 0; }
+  .callout p + p { margin-top: 10px; }
+
+  .warn { background: var(--orange-wash); box-shadow: inset 0 0 0 1px rgba(156,93,0,.3); }
+
+  ul.plain { margin: 0 0 14px; padding-left: 20px; }
+  ul.plain li { margin-bottom: 6px; max-width: 68ch; }
+
+  footer {
+    margin-top: 80px; padding-top: 28px; border-top: 1px solid var(--sep);
+    font-size: 13.5px; color: var(--label-3);
+  }
+  footer b { color: var(--label-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <span class="eyebrow">2026-08-07 · 프로토타입 작업 기록</span>
+  <h1>방 만들기 흐름 프로토타입,<br />하루 동안 바뀐 것 전부</h1>
+  <p class="lede">
+    <code>prototypes/room-flow/</code> 한 파일에서 벌어진 일입니다. 홈 재구성부터
+    강조색 교체, 설정 화면 신설, 세션 시계 연결, AI 회고 연동까지 커밋 15개로
+    나뉘어 있습니다. 아래는 무엇을 왜 바꿨는지의 기록이고, 각 항목은 실제 커밋과
+    대응합니다.
+  </p>
+
+  <div class="stats">
+    <div class="stat"><b class="num">15</b><span>커밋</span></div>
+    <div class="stat"><b class="num">+5,709</b><span>추가된 줄</span></div>
+    <div class="stat"><b class="num">−1,482</b><span>지운 줄</span></div>
+    <div class="stat"><b class="num">10</b><span>화면</span></div>
+    <div class="stat"><b class="num">223</b><span>대비 검사한 텍스트</span></div>
+  </div>
+
+  <nav class="toc">
+    <p>목차</p>
+    <ol>
+      <li><a href="#s1">홈 재구성</a></li>
+      <li><a href="#s2">흰색 사다리</a></li>
+      <li><a href="#s3">결과 화면과 공유 카드</a></li>
+      <li><a href="#s4">읽히지 않던 글자 고치기</a></li>
+      <li><a href="#s5">강조색 교체 — 라임</a></li>
+      <li><a href="#s6">설정 화면 신설</a></li>
+      <li><a href="#s7">마이페이지와 설정의 경계</a></li>
+      <li><a href="#s8">세션 시계와 PiP</a></li>
+      <li><a href="#s9">AI 세션 회고 연결</a></li>
+      <li><a href="#s10">서체 정리</a></li>
+      <li><a href="#s11">모드 손보기</a></li>
+      <li><a href="#s12">잡은 버그 모음</a></li>
+      <li><a href="#s13">남은 결정</a></li>
+    </ol>
+  </nav>
+</header>
+
+<!-- ===================================================== -->
+<section id="s1">
+  <h2><span class="n">01</span> 홈 재구성</h2>
+  <p class="sub">카드 세 장이 각자 제목을 달고 있었는데, 셋 다 같은 행동이었습니다.</p>
+
+  <dl class="fix">
+    <dt>문제</dt>
+    <dd>
+      코드로 참여 / 내 상시방 / 우리 학교 방 — 카드 셋이 세로로 서 있었습니다.
+      제목이 셋, 눈이 훑을 곳이 셋이었습니다.
+    </dd>
+    <dt>원인</dt>
+    <dd>
+      셋 다 <b>이미 있는 방에 들어간다</b>는 같은 행동입니다. 다른 건 출처뿐인데,
+      출처는 카드가 아니라 필터입니다.
+    </dd>
+    <dt>조치</dt>
+    <dd>
+      목록 하나 + 세그먼트(<code>내 방 / 명지대 / 전체</code>)로 합쳤습니다.
+      학교가 40곳이 되어도 같은 구조로 버팁니다. 코드로 참여는 방 만들기 상자
+      우측 하단으로 옮겼습니다 — 만들기와 들어가기는 같은 결정의 양면이라
+      한자리에 있어야 합니다.
+    </dd>
+  </dl>
+
+  <div class="callout">
+    <p>
+      <b>중간에 잡은 것</b> — 방 만들기 상자의 발판에 <code>position: relative</code>가
+      걸려 있어, 상자 전체를 덮어야 할 확장 링크가 아래 띠 안에만 갇혀 있었습니다.
+      제목을 눌러도 아무 일이 없었습니다. 코드만 봐서는 안 보이고, 렌더된 화면을
+      실제로 눌러 봐야 나오는 종류입니다.
+    </p>
+  </div>
+
+  <p>
+    이어서 두 열을 세로로 쌓았습니다. 1400px 화면에서 두 열로 두면 파란 상자가
+    좁은 칸에 갇히고 목록도 답답했는데, 쌓으니 상자는 필요한 만큼만 쓰고 목록이
+    남는 높이를 전부 가져갑니다. 목록은 1440에서 3열, 1280에서 2열입니다.
+  </p>
+  <p>
+    <b>들어가기 → 방 찾기</b>로 바꿨습니다. 만들기와 찾기는 같은 모양의 세 글자라
+    화면의 두 반쪽이 서로를 이름 짓습니다. 스트릭 띠는 마이페이지로 옮기고,
+    비운 높이는 방 만들기 상자가 가져갔습니다.
+  </p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s2">
+  <h2><span class="n">02</span> 흰색 사다리</h2>
+  <p class="sub">무채색 회색은 "고르지 않은 색"으로 읽힙니다.</p>
+
+  <p>
+    배경·구분선·채움을 전부 강조색의 색상각(220°)을 아주 옅게 머금은 흰색으로
+    바꿨습니다. 인접 단계 대비를 1.02~1.09로 잡아 면이 나뉜 것은 보이되 선처럼
+    도드라지지는 않게 했습니다.
+  </p>
+
+  <div class="swatches">
+    <div class="sw"><i style="background:#FFFFFF"></i><b>#FFFFFF</b><span>순백 · 버튼 안쪽</span></div>
+    <div class="sw"><i style="background:#FCFDFF"></i><b>#FCFDFF</b><span>카드</span></div>
+    <div class="sw"><i style="background:#F6F8FC"></i><b>#F6F8FC</b><span>바탕</span></div>
+    <div class="sw"><i style="background:#EDF1F8"></i><b>#EDF1F8</b><span>가라앉은 면</span></div>
+    <div class="sw"><i style="background:#E1E8F2"></i><b>#E1E8F2</b><span>경계에 가까운 면</span></div>
+  </div>
+
+  <p>
+    채움도 회색이 아니라 같은 220°를 머금은 반투명입니다
+    (<code>rgba(96,116,148,α)</code>). 어느 흰색 위에 올려도 그 흰색의 성격을
+    유지합니다. 다크 모드는 아직 만들지 않았습니다.
+  </p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s3">
+  <h2><span class="n">03</span> 결과 화면과 공유 카드</h2>
+  <p class="sub">카드를 여러 장 늘어놓으면 무엇을 볼지 매번 고르게 됩니다.</p>
+
+  <p>
+    한 화면에 한 가지로 줄였습니다. 가장 큰 것은 앉아 있던 시간 하나이고,
+    측정·회복·경험치는 그 아래 한 줄로 붙습니다. 공유 카드는 1080×1350
+    캔버스에 직접 그려, 화면에 보이는 것과 저장되는 그림이 같습니다.
+    웹폰트가 붙은 뒤에 그려야 캔버스에도 같은 서체가 나오므로
+    <code>document.fonts.ready</code>를 기다립니다.
+  </p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s4">
+  <h2><span class="n">04</span> 읽히지 않던 글자 고치기</h2>
+  <p class="sub">측정기를 두 번 고치고 나서야 진짜 결함이 보였습니다.</p>
+
+  <div class="callout warn">
+    <p>
+      <b>측정기부터 틀렸습니다.</b> 처음엔 반투명 채움을 흰 배경 위로 합성하지 않고
+      불투명 원색으로 읽어 89건이 나왔고, 다음엔 <code>color(srgb …)</code> 문법의
+      0~1 값을 0~255로 읽어 밝은 툴바를 거의 검정으로 봤습니다. 둘을 고치니 실제
+      결함은 6건이었습니다.
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>대상</th><th>고치기 전</th><th>지금</th><th>왜</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>의미색(초록·주황)</b></td>
+          <td class="num">2.00</td><td class="num">4.81~5.57</td>
+          <td>면(링·막대)용 색을 글자로도 쓰고 있었습니다. 글자용 <code>-ink</code> 짝을 분리</td>
+        </tr>
+        <tr>
+          <td><b>타일 상태 배지</b></td>
+          <td class="num">2.22 / 3.55</td><td class="num">7.66 / 4.80</td>
+          <td>밝은 채움 위 흰 글자 11px. 셋 다 먹글자로</td>
+        </tr>
+        <tr>
+          <td><b><code>--label-3</code></b></td>
+          <td class="num">3.20</td><td class="num">5.02</td>
+          <td>3:1 기준으로 골랐는데 11~13px 캡션에 쓰여 4.5가 필요했습니다</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>대비 점검이 딸려 끌어낸 것</h3>
+  <ul class="plain">
+    <li><span class="tag t-fix">버그</span> <code>:root[data-theme="light"]</code>가 <b>흰색 사다리 이전 회색 팔레트</b> 그대로였습니다. 토글이 없어 아무도 안 밟았지만 다크모드를 켜는 순간 디자인이 통째로 되돌아갔을 자리입니다.</li>
+    <li><span class="tag t-fix">버그</span> 마이페이지에 <b>"이번 주 회복"이 두 번</b> 있었습니다. 새 섹션을 넣으면서 옛 카드를 안 지웠고, 옛 쪽이 새 쪽의 부분집합이었습니다.</li>
+    <li><span class="tag t-fix">버그</span> <b>모션 가드가 두 개</b>였습니다. 둘 다 <code>*, ::before, ::after</code> + <code>!important</code>라 나중 것만 이기고 140ms짜리는 적용된 적이 없었습니다.</li>
+  </ul>
+</section>
+
+<!-- ===================================================== -->
+<section id="s5">
+  <h2><span class="n">05</span> 강조색 교체 — 라임 <span class="tag t-new">신규</span></h2>
+  <p class="sub">Zoom Blue <code>#0B5CFF</code> → 라임 <code>#EBFF7A</code>. 와이어프레임은 그대로, 규칙 둘이 뒤집혔습니다.</p>
+
+  <div class="swatches">
+    <div class="sw"><i style="background:#EBFF7A"></i><b>#EBFF7A</b><span>--tint · 면</span></div>
+    <div class="sw"><i style="background:#0F1621"></i><b>#0F1621</b><span>--on-tint · 면 위 글자</span></div>
+    <div class="sw"><i style="background:#7A8C00"></i><b>#7A8C00</b><span>--tint-line · 가장자리</span></div>
+    <div class="sw"><i style="background:#525F00"></i><b>#525F00</b><span>--tint-ink · 선·글자</span></div>
+    <div class="sw"><i style="background:#F8FFE4"></i><b>#F8FFE4</b><span>--tint-wash</span></div>
+  </div>
+
+  <h3>규칙 1 — 채움 위 글자색이 흰색에서 먹색으로</h3>
+  <p>
+    파랑은 흰 글자를 얹는 색이었습니다. 라임 위 흰 글자는 <b class="num">1.10</b>,
+    먹글자는 <b class="num">16.52</b>입니다. 강조색이 어두울 때만 맞았던
+    <code>color: #fff</code> 11곳을 <code>--on-tint</code>로 바꿨습니다.
+  </p>
+
+  <h3>규칙 2 — 라임은 면, 올리브는 선</h3>
+  <p>
+    라임은 흰 바탕과 <b class="num">1.03</b>입니다. 면으로는 쓸 수 있지만
+    2px 선택 링, 4px 진행 막대, 포커스 테두리, 13px 링크로 그리면 흰 화면에서
+    그냥 없습니다. 그 30여 곳을 올리브 <code>--tint-ink</code>(흰 카드 위
+    <span class="num">6.89</span>)로 옮겼습니다.
+  </p>
+
+  <h3>다시 그린 면 셋</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>면</th><th>왜</th></tr></thead>
+      <tbody>
+        <tr><td><b>방 만들기 상자</b></td><td>라임→올리브 그러데이션은 어느 쪽에 글자색을 맞춰도 반대편이 깨집니다. <b>라임 한 색 + 먹글자 + 먹버튼</b>으로. 흰 버튼은 라임과 1.08이라 면에 녹습니다</td></tr>
+        <tr><td><b>레벨 카드</b></td><td>라임으로 두면 홈의 방 만들기와 같은 무게의 면이 둘이 되어 서로를 깎습니다. 어두운 면으로 두고 라임은 숫자에만</td></tr>
+        <tr><td><b>공유 카드</b></td><td>방 만들기 상자를 닮게 만든 것이라 같은 규칙으로 뒤집음</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p>
+      <b>가장자리가 필요했습니다.</b> <code>--tint-line</code>은 <code>#7A8C00</code>입니다 —
+      라임 계열로 흰 바탕과 3:1을 넘기는 가장 밝은 값입니다. 처음 고른
+      <code>#C9E01F</code>는 1.39라 "테두리처럼 보이지만 테두리가 아닌" 것이었습니다.
+    </p>
+    <p>
+      특히 <b>15단계 사다리</b>가 문제였습니다. 라임(지난 칸)과 회색(미래 칸)이
+      <b class="num">1.01</b> — 밝기가 같고 색상만 다릅니다. 그 색상 구분이 안 되는
+      사람에게는 진행도가 통째로 사라집니다. 지난 칸에 테두리를 두르고 현재 칸을
+      먹색 칩으로 찍어 색에 기대지 않게 했습니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="s6">
+  <h2><span class="n">06</span> 설정 화면 신설 <span class="tag t-new">신규</span></h2>
+  <p class="sub">레퍼런스에서 가져온 건 "행의 해부"입니다 — 제목 / 보조 설명 / 오른쪽 컨트롤.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>오른쪽에 오는 것</th><th>조건</th><th>예</th></tr></thead>
+      <tbody>
+        <tr><td><b>토글</b></td><td>되돌리는 비용 0</td><td>음성 안내, 미니 창</td></tr>
+        <tr><td><b>값 + 화살표</b></td><td>다음 단계 필요</td><td>자세 기준, 닉네임</td></tr>
+        <tr><td><b>상태(읽기 전용)</b></td><td>앱이 못 바꿈</td><td>카메라 권한</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p>
+      <b>카메라 권한은 컨트롤이 아닙니다.</b> 웹앱이 권한을 되돌릴 수 없어서,
+      토글로 그리면 껐다 켤 때 안 켜집니다. 그건 화면이 거짓말한 것입니다.
+      상태만 보여주고 바꾸는 곳을 문장으로 안내합니다.
+    </p>
+  </div>
+
+  <p>
+    <b>종속 행</b>도 가져왔습니다. <code>미니 창에 카메라 보이기</code>는 미니 창이
+    꺼지면 <b>아예 사라집니다</b>. 형제로 나란히 두면 꺼진 상태에서도 만질 수 있는
+    죽은 행이 남습니다.
+  </p>
+
+  <h3>데스크톱 스케일</h3>
+  <p>
+    처음엔 폭만 680px로 묶었더니 모바일 목록을 넓은 화면에 붙여 놓은 꼴이었습니다 —
+    제목은 왼쪽 끝, 컨트롤은 오른쪽 끝, 가운데 600px이 비고, 행 높이는 손가락 기준.
+    그룹 이름을 왼쪽 여백으로 빼 두 단으로 나누고, 행 높이를 마우스 기준(70→60px)으로
+    줄였습니다. 스위치는 전부 같은 세로선에 섭니다.
+  </p>
+
+  <h3>바꾸는 흐름</h3>
+  <p style="font-weight:650">행 → 가운데 모달 → 검증 → 완료 → 바뀐 행 옆 토스트</p>
+  <p>
+    레퍼런스는 바텀시트지만 그건 엄지가 닿는 자리이고 키보드가 밀어 올려주는 자리라
+    모바일에서 옳은 것입니다. 데스크톱에서는 둘 다 의미가 없습니다. 대신 시트가 주던
+    "위쪽 맥락이 보인다"가 필요한 <b>읽기</b>는 우측 패널로 갈랐습니다.
+  </p>
+  <p>
+    <b>토스트에 버튼을 안 달았습니다.</b> 레퍼런스는 화면 맨 위에 확인 버튼 달린 띠를
+    띄우는데, 모바일 상단이라 놓치기 쉬워서 붙인 것이고 버튼이 붙는 순간 그건
+    작은 모달입니다. 방금 만진 자리에 뜨면 누를 게 없습니다.
+  </p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s7">
+  <h2><span class="n">07</span> 마이페이지와 설정의 경계</h2>
+  <p class="sub">두 화면이 같은 내용으로 흘러가고 있었습니다.</p>
+
+  <div class="callout">
+    <p style="font-weight:700; font-size:17px;">
+      마이페이지 = 내 데이터와 내 기준 &nbsp;/&nbsp; 설정 = 이 기기에서 앱이 도는 방식
+    </p>
+  </div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>마이페이지</th><th>설정</th></tr></thead>
+      <tbody>
+        <tr><td>요약 띠 (연속 · 오늘 · 이번 주 회복)</td><td>알림 — 음성 안내</td></tr>
+        <tr><td>AI 세션 회고 → 우측 패널</td><td>미니 창 — 사용 + (종속) 카메라 표시</td></tr>
+        <tr><td>내 정보 — 닉네임 / 학교 / 응원 문구</td><td>카메라 — 권한 상태</td></tr>
+        <tr><td>모드별 자세 기준</td><td>데이터 — 의견 보내기 / 지우기</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    전에는 <b>닉네임·학교가 양쪽에 다 있었고, 자세 기준이 설정의 "카메라" 아래</b>
+    있었습니다. 자세 기준은 앱 동작이 아니라 "내 기준"이라 마이페이지 몫입니다.
+  </p>
+
+  <h3>마이페이지를 여덟 덩이에서 셋으로</h3>
+  <p>
+    375px 레퍼런스에서 블록 여덟 개가 괜찮았던 건 <b>스크롤이 순서를 만들어줬기</b>
+    때문입니다. 한 번에 두세 개만 보이고 위에서 아래로 읽힙니다. 1440px에서 같은
+    여덟 개는 <b>동시에</b> 보이고, 스크롤이 주던 순서가 사라져 눈이 들어갈 입구가
+    없어집니다.
+  </p>
+  <p>
+    넓은 화면의 대응은 열을 늘리는 게 아니라 <b>첫 화면 덩이를 줄이는 것</b>입니다.
+    스트릭과 회복은 같은 질문에 답하므로 한 띠로 합쳤습니다 — 위는 숫자, 아래는 문장.
+  </p>
+
+  <h3>학교는 텍스트 입력이 아닙니다</h3>
+  <p>
+    가입할 때 학교 메일로 인증한 소속이라, 여기서 아무 이름이나 적을 수 있으면
+    인증이 의미를 잃고 "같은 학교 방"이 성립하지 않습니다. <b>다시 인증</b>으로만
+    열어 뒀습니다.
+  </p>
+
+  <h3>자세 기준을 모드에 매달았습니다</h3>
+  <p>
+    "자세 기준"과 "모드별 기준"을 따로 두면 같은 것을 두 번 묻는 셈입니다. 기준은
+    언제나 <b>어떤 모드의</b> 기준이고, 따로 두면 "방을 도서관 모드로 열었는데
+    자세 기준에는 도서관이 없는" 상태가 생깁니다. 방 만들기가 이미 쓰는
+    <code>MODES</code>에 기준을 매달았습니다.
+  </p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s8">
+  <h2><span class="n">08</span> 세션 시계와 PiP <span class="tag t-fix">중요</span></h2>
+  <p class="sub">시계가 아예 없었습니다.</p>
+
+  <dl class="fix">
+    <dt>문제</dt>
+    <dd>
+      <code>18:42</code>는 마크업에 박힌 <b>문자열</b>이었고 세는 코드가 없었습니다.
+      3초 만에 끝내도 25분으로 적혔습니다.
+    </dd>
+    <dt>원인</dt>
+    <dd>
+      뒤 화면들이 전부 <b>계획 시간</b>을 읽고 있었습니다. 스트레칭 문구, 결과 숫자,
+      경험치, 공유 카드가 각자 <code>state.focusMin</code>을 베껴 썼습니다.
+    </dd>
+    <dt>조치</dt>
+    <dd>
+      시작 시각 하나를 찍고, <code>Date.now()</code> 기준으로 틱을 그리고,
+      <code>endSession()</code> 한 곳에서 결과를 굳힙니다. 뒤 화면은 그 기록만 읽습니다.
+      완주 기준은 마법사에 적어 둔 그대로 <b>계획한 시간의 80%</b>입니다.
+    </dd>
+  </dl>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>31초 세션</th><th>고치기 전</th><th>지금</th></tr></thead>
+      <tbody>
+        <tr><td>큰 숫자</td><td class="num">25분</td><td class="num">31초</td></tr>
+        <tr><td>문장</td><td>끝까지 앉아 있었어요</td><td>1분이 되기 전에 일어났어요</td></tr>
+        <tr><td>경험치</td><td class="num">+160</td><td class="num">+4</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>세션은 화면을 떠나도 계속 돕니다</h3>
+  <p>
+    앉아 있는 걸 재는 기능인데 마이페이지 한 번 열었다고 시계가 멈추면 그때부터
+    숫자가 거짓이 됩니다. 끝내는 건 <b>세션 종료 버튼 하나뿐</b>입니다.
+  </p>
+  <p>
+    이게 PiP이 작동하는 조건이기도 합니다. PiP은 버튼이 아니라
+    <code>visibilitychange</code>에 겁니다 — 다른 탭으로 넘어가는 순간 뜹니다.
+    툴바의 "미니 창" 버튼은 없앴습니다. 설정 토글과 같은 걸 두 군데서 켜면 언젠가
+    둘이 어긋납니다.
+  </p>
+  <p>
+    카메라 버튼은 이제 <b>트랙을 실제로 멈춥니다</b>. 영상만 숨기면 브라우저
+    표시등이 켜진 채라 끈 줄 알고 찍히게 됩니다.
+  </p>
+
+  <div class="callout warn">
+    <p>
+      <b>PiP은 아직 실기 검증이 안 됐습니다.</b> 프리뷰 창이 카메라를 막아
+      확인할 수 없었습니다. 크롬에서 세션을 켜고 다른 탭으로 넘어가 확인이
+      필요합니다. 브라우저가 사용자 제스처 없는 PiP을 막는 경우가 있어, 안 뜨면
+      그 때문일 가능성이 큽니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="s9">
+  <h2><span class="n">09</span> AI 세션 회고 연결 <span class="tag t-new">신규</span></h2>
+  <p class="sub">결과 화면 세 문장이 마크업에 박혀 있어, 세션이 뭘 했든 같은 말을 했습니다.</p>
+
+  <h3>파이프라인은 이미 있습니다</h3>
+  <p>
+    <code>upright-now</code>를 뒤져 보니 완성 상태였습니다. 테스트 8건도 통과합니다.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>파일</th><th>하는 일</th></tr></thead>
+      <tbody>
+        <tr><td><code>api/ai-report.ts</code></td><td>Vercel 함수 진입점</td></tr>
+        <tr><td><code>api/ai-report-handler.ts</code></td><td>동일 출처 검사 · 본문 12KB 제한 · 10분에 3회 제한</td></tr>
+        <tr><td><code>api/ai-report-service.ts</code></td><td><code>gemini-3.5-flash</code> 호출</td></tr>
+        <tr><td><code>src/features/ai-report/contract.ts</code></td><td>Zod 스키마 + <b>의료 표현 차단</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    보내는 것은 <b>집계 숫자 여덟 개뿐</b>입니다. 영상·프레임·랜드마크·자세
+    지속시간은 보내지 않습니다. 차단 정규식이
+    <code>진단|치료|처방|질환|통증|거북목|정상 자세|자세 교정</code>을 걸러냅니다.
+  </p>
+
+  <h3>제미나이 연동 — 가능합니다</h3>
+  <p>
+    무료 등급으로 충분합니다. Flash 계열이 <b>10 RPM / 250 RPD</b>라 세션 하나당
+    1회 호출이면 하루 250세션까지 무료입니다. 필요한 건 셋뿐이고,
+    <b>전부 Vercel 대시보드에만</b> 넣습니다.
+  </p>
+  <div class="card">
+    <p style="margin:0; font-weight:600;">
+      <code>GEMINI_API_KEY</code> · <code>AI_REPORT_ENABLED=true</code> ·
+      <code>VITE_ENABLE_AI_REPORT=true</code>
+    </p>
+  </div>
+
+  <div class="callout warn">
+    <p>
+      <b>확인이 필요한 것</b> — 무료 등급은 구글이 데이터를 모델 개선에 쓸 수
+      있습니다. 여기서 보내는 건 숫자 여덟 개라 개인정보는 아니지만,
+      <code>docs/14_DATA_PRIVACY_SECURITY.md</code> 기준에 맞는지 팀에서 한 번
+      확인하는 게 맞습니다.
+    </p>
+  </div>
+
+  <h3>프로토타입에서는</h3>
+  <p>
+    이 파일은 링크로 여는 정적 문서라 키를 넣을 자리가 없습니다. 그래서 같은
+    계약(<code>AiReportInput</code> → <code>AiSessionReport</code>)을 그대로 쓰되
+    문장만 이 자리에서 만듭니다. <code>composeReport</code> 바로 위에 갈아 끼울
+    fetch 코드를 주석으로 적어 뒀습니다. 화면이 읽는 모양이 서버 응답과 같아서
+    다른 곳은 안 건드려도 됩니다.
+  </p>
+  <p>끝난 세션은 회고 목록 맨 위로도 쌓입니다.</p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s10">
+  <h2><span class="n">10</span> 서체 정리</h2>
+  <p class="sub">세 벌에서 한 벌로.</p>
+
+  <p>
+    Wanted Sans · Pretendard · IBM Plex Mono 셋을 쓰고 있었습니다. 지금은
+    <b>Wanted Sans 한 벌</b>입니다. 공유 카드 캔버스까지 같습니다. 숫자는 서체를
+    바꾸는 대신 <code>font-variant-numeric: tabular-nums</code>로 폭만 고정합니다 —
+    <code>25:00 → 24:59</code>로 바뀌어도 자리가 흔들리지 않고, 한글 UI와 숫자의
+    질감이 끊기지 않습니다.
+  </p>
+
+  <div class="callout">
+    <p>
+      <b>Geist Mono는 넣지 않았습니다.</b> 모노 서체를 쓰는 진짜 이유는
+      <code>0/O</code>, <code>1/l/I</code> 구별인데, 방 코드 알파벳이 이미 그 넷을
+      빼고 만들어집니다 — <code>ABCDEFGHJKLMNPQRSTUVWXYZ23456789</code>.
+      헷갈릴 글자가 애초에 나오지 않으므로 여섯 글자를 위해 서체를 한 벌 더 싣는
+      값이 없습니다. <code>--font-code</code> 토큰은 만들어 뒀으니, 개발자용
+      ID·디버그 값을 화면에 내놓게 되면 그 한 줄만 바꾸면 됩니다.
+    </p>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="s11">
+  <h2><span class="n">11</span> 모드 손보기 <span class="tag t-new">신규</span></h2>
+  <p class="sub">모드를 고르는 것과 모드를 손보는 것은 다른 일입니다.</p>
+
+  <p>
+    방 만들기 4단계의 모드 카드 우측 상단에 연필이 생겼습니다. 카드를 누르면 고르고,
+    연필을 누르면 그 모드가 어떻게 동작하는지 바꿉니다. 카드 자체가
+    <code>&lt;button&gt;</code>이라 안에 연필을 넣으면 <b>버튼 중첩</b>이 됩니다 —
+    마크업이 깨지고 키보드로 안쪽에 닿지도 않습니다. 한 칸을 감싸 둘을 형제로 뒀습니다.
+  </p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>항목</th><th>형태</th><th>이유</th></tr></thead>
+      <tbody>
+        <tr><td>음성 안내</td><td>토글</td><td>되돌리는 비용 0 → 누르는 즉시 반영</td></tr>
+        <tr><td>스트레칭 자세</td><td>앉아서 / 일어나서 / 섞어서</td><td>같음</td></tr>
+        <tr><td>이 모드가 보는 것</td><td><b>읽기 전용</b></td><td>카메라로 기준 맞출 때 정해짐 → 마이페이지 몫</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    닫을 때 <b>모드 격자만</b> 다시 그립니다. 무대를 통째로 다시 그리면 카드가 다시
+    날아 들어와서, 연필 한 번 열었다 닫았을 뿐인데 화면이 새로 뜬 것처럼 보입니다.
+  </p>
+
+  <h3>모드별 차별성 — 제안 (미확정)</h3>
+  <p>
+    모드는 민감도 슬라이더의 대체물입니다(C-04에서 슬라이더를 없앤 결정).
+    그러니 모드끼리 달라야 할 건 "얼마나 예민한가"가 아니라
+    <b>"무엇을 정상으로 보는가"</b>입니다.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th></th><th>도서관</th><th>내 공간</th><th>팀플</th><th>내 모드</th></tr></thead>
+      <tbody>
+        <tr><td><b>보는 항목</b></td><td>목 전방 · 어깨 높이차 · 숙임각</td><td>등 젖힘 · 목 전방</td><td>목 전방 · 좌우 기울기</td><td>직접</td></tr>
+        <tr><td><b>판정 지연</b></td><td>길게</td><td>보통</td><td>짧게</td><td>직접</td></tr>
+        <tr><td><b>자리 비움</b></td><td>엄격</td><td>관대</td><td>매우 관대</td><td>직접</td></tr>
+        <tr><td><b>알림</b></td><td>무음</td><td>음성</td><td>시각만</td><td>직접</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="plain">
+    <li>도서관에서 고개 숙임은 <b>정상</b>입니다 → 숙임각을 아예 다르게 봅니다</li>
+    <li>팀플에서 자리 비움은 <b>정상</b>입니다 → 복귀 후 몇 초는 재지 않습니다</li>
+    <li>내 공간에서 등받이 기댐은 <b>정상</b>입니다 → 목이 따라 나올 때만 잡습니다</li>
+  </ul>
+  <p>
+    이렇게 하면 "어느 모드가 더 빡세냐"가 아니라 "내 상황이 어디냐"로 고르게 됩니다.
+    <b>값은 아직 확정 전입니다.</b>
+  </p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s12">
+  <h2><span class="n">12</span> 잡은 버그 모음</h2>
+  <p class="sub">화면을 실제로 눌러 봐야 나온 것들입니다.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>증상</th><th>진짜 원인</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>프라이빗 방을 만들었는데 <b>수현·연우가 이미 앉아 있음</b></td>
+          <td>자리 수만큼 시연용 참가자를 채우고 있었습니다. 자리 수는 <b>한도</b>지 참석자 수가 아닙니다</td>
+        </tr>
+        <tr>
+          <td>"방 만들기"를 누르면 <b>버튼이 계속 눌림</b></td>
+          <td>코드 발급 중에도 버튼이 살아 있었습니다. 성격 급한 사람은 반응 없는 1초 사이에 두세 번 누릅니다. 누르는 즉시 잠그고 재진입도 막았습니다</td>
+        </tr>
+        <tr>
+          <td>대기실 <b>복사 버튼이 아무 일도 안 함</b></td>
+          <td>핸들러가 아예 없었습니다. 지금은 아이콘이고, <code>file://</code>에서 클립보드 API가 거절되는 경우를 위한 예비 경로도 뒀습니다</td>
+        </tr>
+        <tr>
+          <td>대기실 <b>프로필이 화면 절반</b>을 차지</td>
+          <td><code>auto-fit 1fr</code>이라 자리가 하나면 그 하나가 폭을 다 먹었습니다. 900px 본문에서 4:3이면 세로 675px. 300px 상한을 뒀습니다</td>
+        </tr>
+        <tr>
+          <td>1분 미만 세션이 <b>"1분"과 "0분"을 동시에</b> 표시</td>
+          <td>큰 숫자와 문장이 각자 반올림했습니다. 1분 미만은 초로 말합니다</td>
+        </tr>
+        <tr>
+          <td>우측 상단 <b>톱니바퀴가 반응 없음</b></td>
+          <td>핸들러가 없었습니다</td>
+        </tr>
+        <tr>
+          <td>라임 배경 위 <b>로고 아이콘이 안 보임</b></td>
+          <td>흰 획이 라임 위에서 1.10. 텍스트 대비 검사기가 SVG stroke는 못 잡습니다</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>제가 만들었다가 고친 것</h3>
+  <ul class="plain">
+    <li><code>--red-ink</code>를 세션 종료 버튼의 <b>채움</b>으로 썼습니다. 그 토큰은 옅은 바탕 위 <b>글자</b>용이라 다크에서 밝은 쪽으로 뒤집히고, 흰 글자가 2.52가 됩니다.</li>
+    <li>모션 가드를 추가하면서 <b>기존 것을 못 봤습니다</b>. 담요가 둘이 되어 하나는 죽은 규칙이 됐습니다.</li>
+    <li>빈 상태 문구에 레퍼런스 앱의 캐릭터 이름이 들어갔습니다. 가져오면 안 되는 것이라 걷어냈습니다.</li>
+  </ul>
+
+  <h3>정리한 것</h3>
+  <p>
+    앱을 감싸던 <b>디자인 설명 문서를 통째로 걷어냈습니다</b>(-3,820자). 오른쪽 아래
+    "설명 보기" 버튼도 없앴습니다 — 제품이 자기 레이아웃을 설명하겠다고 하지
+    않습니다. 앱이 곧 페이지입니다. 바탕은 흰색으로 못 박았습니다
+    (<code>data-theme="light"</code>) — 기기가 다크면 반쯤 만든 다크 테마가
+    나오던 것을 막았습니다.
+  </p>
+</section>
+
+<!-- ===================================================== -->
+<section id="s13">
+  <h2><span class="n">13</span> 남은 결정 <span class="tag t-open">미정</span></h2>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>항목</th><th>상태</th></tr></thead>
+      <tbody>
+        <tr><td><b>모드별 차별성 값</b></td><td>구조는 완성, 수치 미정 (§11)</td></tr>
+        <tr><td><b>Gemini API 키</b></td><td>Vercel 대시보드에 등록 필요. 프론트 금지</td></tr>
+        <tr><td><b>PiP 실기 검증</b></td><td>크롬에서 확인 필요</td></tr>
+        <tr><td><b>다크 모드</b></td><td>토큰은 준비, 화면 미검증. 지금은 라이트 고정</td></tr>
+        <tr><td><b>로고</b></td><td>Ideogram(탐색) → Recraft(SVG) 추천. 현재 레일 마크를 다듬는 쪽도 유효</td></tr>
+        <tr><td><b>AGENTS.md §10</b></td><td>C-02 자유 채팅 결정이 아직 문서에 미반영</td></tr>
+        <tr><td><b>최대 레벨 XP · 잎 포인트 · 지도 서비스 · 존 단위</b></td><td>담당 분리 (성장 · 캠퍼스)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  <p>
+    <b>파일</b> · <code>prototypes/room-flow/index.html</code> (6,688줄)<br />
+    <b>시연본</b> · <code>node build-standalone.mjs</code> → <code>standalone.html</code>
+    (폰트를 파일 안에 넣어 외부 요청 0)<br />
+    <b>검증</b> · 1280×768 · 10개 화면 + 레일 + 마법사 · 텍스트 223개 대비 실패 0 ·
+    버튼 중첩 0 · 중복 id 0
+  </p>
+  <p>2026-08-07 작성 · 커밋 <code>55f53b8</code> ~ <code>165493e</code></p>
+</footer>
+
+</div>
+</body>
+</html>

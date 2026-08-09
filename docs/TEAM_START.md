@@ -80,7 +80,7 @@ Supabase 두 줄만 채우면 바로 개발을 시작할 수 있습니다.
 | `VITE_SUPABASE_URL` | **수현에게 개인 메시지로 요청** (비어 있음) | Supabase 프로젝트 주소 |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | **수현에게 개인 메시지로 요청** (비어 있음) | Supabase 공개 키 (`VITE_SUPABASE_ANON_KEY` 라는 이름으로 넣어도 똑같이 인식됩니다 — Vercel 운영 환경은 이 이름을 씁니다) |
 | `VITE_ENABLE_CAMERA` | `true` | 실제 웹캠으로 자세 감지 |
-| `VITE_ENABLE_FRIEND_ROOM` | `true` | 2인 친구 방 |
+| `VITE_ENABLE_FRIEND_ROOM` | `true` | 친구 방(최대 10인) |
 | `VITE_ENABLE_REALTIME` | `true` | 실시간 동기화 (친구 방이 켜져 있어야 의미 있음) |
 | `VITE_ENABLE_PIP` | `true` | PIP 미니 위젯 자동 열기 |
 | `VITE_ENABLE_AI_REPORT` | `false` | 결과 화면의 사용자 요청형 AI 세션 회고 노출 |
@@ -152,7 +152,7 @@ AI 세션 회고만 예외입니다. `VITE_ENABLE_AI_REPORT`, `AI_REPORT_ENABLED
 | `progression/` | XP·포인트·캐릭터 단계·상점 보유/장착 | 공통 |
 | `stretch/` | 스트레칭 6종 추천 | 공통 |
 | `sound/` | 소리(Web Audio 합성음) | 공통 |
-| `rooms/` | 2인 친구 방 (실시간 동기화·공동 괴물) | 수현 |
+| `rooms/` | 친구 방(최대 10인, 실시간 동기화·공동 괴물) | 수현 |
 | `campus/` | 캠퍼스 학교 테마·96 영토전 | 연우 |
 | `onboarding/` | 닉네임·첫 방문 흐름 | 공통 |
 | `settings/` | 설정 화면·전체 데이터 초기화 | 공통 |
@@ -441,7 +441,7 @@ npm run test
 
 | 담당 | 영역 | 주요 폴더 |
 |---|---|---|
-| 수현 | 친구 방 (2인 실시간) | `src/features/rooms/` |
+| 수현 | 친구 방 (최대 10인 실시간) | `src/features/rooms/` |
 | 연우 | 캠퍼스 (학교 테마·영토전) | `src/features/campus/` |
 | 민철 | 자세 판정·PIP·TTS·리포트 | `src/features/posture-engine/`, `calibration/`, `pip/` |
 

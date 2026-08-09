@@ -301,16 +301,16 @@ npx vercel deploy
 
 ### 빌드 산출물에서 확인이 필요한 것
 
-현재 `dist` 는 **약 67MB** 입니다. 그중 대부분이 코드에서 쓰이지 않습니다.
+`public/fonts/` 의 Zarafa 시절 잔재(Gowun·IBMPlex·Pretendard, 4.2MB)는
+참조 없음을 확인하고 삭제했습니다(2026-08-09). 아래는 남은 것입니다.
 
 | 경로 | 크기 | 상태 |
 |---|---|---|
 | `public/mediapipe/` | **41.3 MB** | 코드가 CDN 을 쓰므로 **참조되지 않음** |
-| `public/fonts/*.woff2` (Gowun·IBMPlex·Pretendard) | **4.2 MB** | Zarafa 시절 잔재. **참조되지 않음** |
 | `public/assets/` | 16.9 MB | 캐릭터·괴물·상점·스트레칭 — 실제 사용 |
 | `public/fonts/wanted-sans/` | 2.2 MB | 실제 사용 (subset 이라 실제 전송은 100~300KB) |
 
-`public/` 은 그대로 `dist/` 로 복사되므로, 위 45.5MB 가 배포마다 함께 나갑니다.
+`public/` 은 그대로 `dist/` 로 복사되므로, 위 41.3MB 가 배포마다 함께 나갑니다.
 **지우기 전에 결정이 필요합니다** — MediaPipe 로컬 사본은 CDN 장애 대비
 폴백으로 쓸 수 있습니다. 쓸 거면 `lib/mediapipe/loader.ts` 를 로컬 우선으로 바꾸고,
 안 쓸 거면 지웁니다. 지금은 **둘 다 아닌 상태**입니다.

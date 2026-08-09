@@ -47,7 +47,7 @@ npm run build
 
 | 담당 | 영역 | 주요 폴더 |
 |---|---|---|
-| 수현 | 2인 친구 방 | `src/features/rooms/` |
+| 수현 | 친구 방(최대 10인) | `src/features/rooms/` |
 | 연우 | 캠퍼스 (학교 테마·영토전) | `src/features/campus/` |
 | 민철 | 자세 판정·캘리브레이션·PIP | `src/features/posture-engine/`, `calibration/`, `pip/` |
 

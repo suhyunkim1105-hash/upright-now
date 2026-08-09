@@ -1,4 +1,4 @@
-<title>UpRight Now — 방 만들기 흐름</title>
+<title>UpRight — 방 만들기 흐름 프로토타입</title>
 
 <!--
   저장소에 담긴 Wanted Sans Variable 을 직접 불러옵니다.
@@ -748,8 +748,26 @@
   .btn-lg { height: 50px; padding: 0 26px; font-size: 16px; border-radius: 13px; }
   .btn:active { transform: scale(0.965); }
 
-  .btn-primary { background: var(--tint); color: var(--on-tint); box-shadow: inset 0 0 0 1px var(--tint-line); }
+  /* ---- 게임 문법 -------------------------------------------------
+     지금까지는 1px inset 테두리였습니다. 그건 모던 SaaS 의 버튼입니다.
+     게임 버튼은 두께로 눌림을 표현합니다 — 같은 계열 진한 선(올리브)을
+     아래로 깔아 두고, 누르면 그 두께만큼 버튼이 내려앉습니다.
+
+     라임은 흰 바탕과 1.08 이라 그림자가 없으면 면이 떠오르지 않습니다.
+     여기서 --tint-line 이 두 가지 일을 합니다: 가장자리이자 바닥.
+     ---------------------------------------------------------------- */
+  .btn-primary {
+    background: var(--tint);
+    color: var(--on-tint);
+    box-shadow: inset 0 0 0 1px var(--tint-line), 0 3px 0 0 var(--tint-line);
+    transform: translateY(-2px);
+  }
   .btn-primary:hover { background: var(--tint-press); }
+  .btn-primary:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 0 0 1px var(--tint-line), 0 0 0 0 var(--tint-line);
+  }
+  .btn-primary:disabled { transform: none; }
   /* 비활성 컨트롤은 대비 기준의 예외지만, 이 글자는 "아직 못 보낸다" 를
      말하는 글자라 읽혀야 합니다. 4단계(1.61)로는 안 읽혀서 3단계로 올립니다.
      테두리를 지워 눌리는 버튼과는 여전히 다르게 보입니다. */
@@ -941,17 +959,45 @@
     gap: var(--s4);
   }
 
+  /* ==========================================================
+     결과 — 라임을 큰 면으로 쓰는 유일한 자리
+
+     보상의 순간에만 색이 화면을 덮어야 특별해집니다. 세션 중에는
+     아레나가 옅은 라임이었고, 끝나는 순간 여기서 진한 라임이 됩니다.
+     같은 색의 농도 차이가 "끝났다" 를 말합니다.
+     ========================================================== */
   .result-hero {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0;
     padding: var(--s6) var(--s5) var(--s5);
     border-radius: var(--r-sheet);
-    background: var(--bg-raised);
-    box-shadow: var(--sh-1);
+    background:
+      repeating-linear-gradient(0deg,
+        transparent 0 31px, rgba(122, 140, 0, 0.06) 31px 32px),
+      repeating-linear-gradient(90deg,
+        transparent 0 31px, rgba(122, 140, 0, 0.06) 31px 32px),
+      linear-gradient(168deg, var(--tint), var(--tint-wash-2) 78%);
+    box-shadow: inset 0 0 0 1px var(--tint-line), 0 3px 0 0 var(--tint-line);
     text-align: center;
+    overflow: hidden;
   }
+  /* 위에서 아래로 쓸고 지나가는 빛. 한 번만 재생됩니다. */
+  @media (prefers-reduced-motion: no-preference) {
+    .result-hero::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(105deg,
+        transparent 38%, rgba(255, 255, 255, 0.62) 50%, transparent 62%);
+      transform: translateX(-100%);
+      animation: result-sheen 900ms var(--ease) 240ms 1 forwards;
+      pointer-events: none;
+    }
+  }
+  @keyframes result-sheen { to { transform: translateX(100%); } }
+  .result-hero > * { position: relative; z-index: 1; }
   .result-fig {
     width: 96px; height: 96px;
     border-radius: 28px;
@@ -1014,6 +1060,16 @@
     color: var(--label-3);
   }
   .result-line b { font-size: 19px; font-weight: 750; letter-spacing: -0.02em; }
+
+  /* 라임 면 위로 뒤집힌 글자들. 라임 위 흰 글자는 1.10 이라 전부 먹색입니다. */
+  .result-hero .result-big { color: var(--on-tint); font-size: 30px; }
+  .result-hero .result-big b { font-size: 58px; font-weight: 800; letter-spacing: -0.04em; }
+  .result-hero .result-say { color: var(--on-tint); }
+  .result-hero .result-sub { color: rgba(15, 22, 33, 0.72); }
+  .result-hero .result-line li { color: rgba(15, 22, 33, 0.7); }
+  .result-hero .result-line li + li { border-left-color: rgba(15, 22, 33, 0.16); }
+  .result-hero .result-line b { color: var(--on-tint); }
+  .result-hero .caps { color: rgba(15, 22, 33, 0.6); }
 
   .result-ai {
     margin: 0;
@@ -1147,6 +1203,14 @@
   }
   .streak-trail li[data-on="true"] i { background: var(--tint); }
   .streak-trail li[data-on="true"] { color: var(--label-2); }
+  /* 보호권으로 지켜진 날. 라임과 다른 계열이라야 "이건 내가 채운 게 아니다" 가 읽힙니다. */
+  .streak-trail li[data-freeze="true"] i {
+    background: #DCEEF7;
+    box-shadow: inset 0 0 0 1px #3E7FA6;
+    color: #2B6684;
+    font-size: 11px;
+  }
+  .streak-trail li[data-freeze="true"] { color: var(--label-2); }
   .streak-trail li[data-today="true"] i {
     box-shadow: 0 0 0 2px var(--bg-raised), 0 0 0 4px var(--tint-ink);
   }
@@ -1274,6 +1338,17 @@
   }
   .makeroom-go svg { transition: transform var(--spring-bounce-t) var(--spring-bounce); }
   .makeroom:hover .makeroom-go svg { transform: translateX(5px); }
+  /* 게임 문법 — 두께로 눌림을 표현합니다. 이 버튼은 라임 면 위의 먹 버튼이라
+     바닥도 먹 계열(#000 40%)로 깔아야 같은 물체로 읽힙니다. */
+  .makeroom-go {
+    box-shadow: 0 5px 0 0 rgba(15, 22, 33, 0.42);
+    transform: translateY(-2px);
+    transition: transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease);
+  }
+  .makeroom-go:active {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 0 rgba(15, 22, 33, 0.42);
+  }
 
   /* 코드로 참여 — 우측 하단, 조용하게 */
   .makeroom-code {
@@ -1525,8 +1600,23 @@
     transition: background var(--t-press) var(--ease),
                 transform var(--t-press) var(--ease);
   }
-  .roomrow:hover { background: var(--fill-3); }
-  .roomrow:active { transform: scale(0.985); background: var(--fill-2); }
+  /* 회색 행이 세로로 쌓이면 관리자 화면이 됩니다. 게임 로비의 방 목록은
+     "들어갈 수 있는 자리" 로 읽혀야 하므로, 행을 카드로 세우고 바닥을
+     깔아 누를 수 있는 물체로 만듭니다. */
+  .roomrow {
+    background: var(--bg-raised);
+    box-shadow: inset 0 0 0 1px var(--sep), 0 2px 0 0 rgba(15, 22, 33, 0.10);
+  }
+  .roomrow:hover {
+    background: var(--tint-wash);
+    box-shadow: inset 0 0 0 1px var(--tint-line), 0 3px 0 0 var(--tint-line);
+    transform: translateY(-1px);
+  }
+  .roomrow:active {
+    transform: translateY(2px);
+    box-shadow: inset 0 0 0 1px var(--tint-line), 0 0 0 0 var(--tint-line);
+    background: var(--tint-wash-2);
+  }
   .roomrow-fig {
     width: 36px; height: 36px;
     flex-shrink: 0;
@@ -2434,6 +2524,43 @@
 
   .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 
+  /* ==========================================================
+     세션 아레나 — Zoom 격자에서 게임 로비로
+
+     지금까지 이 화면은 회색 타일 + 흰 바탕 + 하단 툴바였습니다.
+     그건 화상회의의 구조 그대로입니다. 우리 타일에 들어가는 건
+     얼굴이 아니라 캐릭터인데, 배경이 회의실이면 캐릭터가 회의
+     참석자로 읽힙니다.
+
+     그래서 무대에 라임을 깝니다. 25분 동안 보는 화면이라 고채도
+     원색을 그대로 덮으면 피로하므로, 라임 계열의 가장 옅은 단계
+     (--tint-wash #F8FFE4)를 바탕으로 두고 그 위에 격자 무늬를
+     얹어 "판" 이라는 감각을 만듭니다. 면적은 크되 채도는 낮게.
+     ========================================================== */
+  .arena {
+    flex: 1;
+    min-height: 0;
+    padding: var(--s4);
+    overflow-y: auto;
+    position: relative;
+    background:
+      /* 라임 격자 — 아레나 바닥 */
+      repeating-linear-gradient(0deg,
+        transparent 0 31px, rgba(122, 140, 0, 0.07) 31px 32px),
+      repeating-linear-gradient(90deg,
+        transparent 0 31px, rgba(122, 140, 0, 0.07) 31px 32px),
+      radial-gradient(120% 80% at 50% 0%, var(--tint-wash-2), var(--tint-wash) 62%);
+  }
+  /* 무대 위쪽에서 라임이 한 번 더 진해집니다 — 시선이 위(시계·목표)로 갑니다. */
+  .arena::before {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; top: 0; height: 118px;
+    background: linear-gradient(180deg, rgba(235, 255, 122, 0.55), transparent);
+    pointer-events: none;
+  }
+  .arena > * { position: relative; }
+
   /*
     대기실은 세션 화면과 다릅니다.
     auto-fit 1fr 은 자리가 하나면 그 하나가 폭을 다 먹습니다. 900px 짜리
@@ -2441,9 +2568,21 @@
     차지하고, 정작 확인할 것들은 접혀서 안 보입니다.
     자리 수만큼만 늘어나고 한 칸이 300px 을 넘지 않게 묶습니다.
   */
+  /* 대기실도 같은 판 위에 서야 세션으로 넘어갈 때 장소가 이어집니다.
+     다만 여기는 준비 단계라 아레나보다 옅게 — 세션에 들어가는 순간
+     같은 격자가 진해지면서 "시작됐다" 가 배경으로 전달됩니다. */
   #lobby-gallery {
     grid-template-columns: repeat(auto-fit, minmax(0, 300px));
     justify-content: start;
+    padding: var(--s4);
+    border-radius: var(--r-sheet);
+    background:
+      repeating-linear-gradient(0deg,
+        transparent 0 31px, rgba(122, 140, 0, 0.05) 31px 32px),
+      repeating-linear-gradient(90deg,
+        transparent 0 31px, rgba(122, 140, 0, 0.05) 31px 32px),
+      var(--tint-wash);
+    box-shadow: inset 0 0 0 1px var(--tint-line);
   }
 
   /* 시작 전에 확인할 두 줄. 사이를 1px 로 붙여 한 덩이로 읽히게 합니다. */
@@ -2452,6 +2591,8 @@
   .checklist .codecard:first-child { border-radius: var(--r-card) var(--r-card) 0 0; }
   .checklist .codecard:last-child  { border-radius: 0 0 var(--r-card) var(--r-card); }
 
+  /* 타일은 회의 참석자 칸이 아니라 카드입니다. 흰 카드에 두툼한 바닥을
+     깔아 판 위에 놓인 물체로 만듭니다 — 격자 배경과 분리되는 것도 이 그림자가 합니다. */
   .tile {
     position: relative;
     aspect-ratio: 4 / 3;
@@ -2459,16 +2600,34 @@
     overflow: hidden;
     display: grid;
     place-items: center;
-    background: var(--fill-4);
+    background: var(--bg-raised);
+    box-shadow: 0 2px 0 0 rgba(15, 22, 33, 0.12);
+    transition: transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease);
   }
+  .tile:not(.empty):hover { transform: translateY(-2px); box-shadow: 0 4px 0 0 rgba(15, 22, 33, 0.14); }
   .tile.c1 { background: var(--char-1); }
   .tile.c2 { background: var(--char-2); }
   .tile.c3 { background: var(--char-3); }
   .tile.c4 { background: var(--char-4); }
   .tile.c5 { background: var(--char-5); }
-  .tile.self     { box-shadow: inset 0 0 0 3px var(--tint); }
-  .tile.is-good  { box-shadow: inset 0 0 0 3px var(--green); }
-  .tile.is-alert { box-shadow: inset 0 0 0 3px var(--red); }
+  /* "나" 는 라임이 맡습니다. 자세 상태(초록·노랑·코랄·회색)는 그대로 두되,
+     라임 링은 상태가 아니라 소유를 말하므로 서로 자리를 다투지 않습니다.
+     라임은 흰 바탕과 1.08 이라 링만으로는 안 보입니다 — 올리브 가장자리를
+     한 겹 더 둘러 형태를 잡습니다. */
+  .tile.self {
+    box-shadow: inset 0 0 0 2px var(--tint), inset 0 0 0 3px var(--tint-line),
+                0 2px 0 0 var(--tint-line);
+  }
+  .tile.self::after {
+    content: "나";
+    position: absolute; right: 9px; top: 9px;
+    padding: 2px 9px; border-radius: var(--r-chip);
+    background: var(--tint); color: var(--on-tint);
+    box-shadow: inset 0 0 0 1px var(--tint-line);
+    font-size: 10.5px; font-weight: 800; letter-spacing: -0.01em;
+  }
+  .tile.is-good  { box-shadow: inset 0 0 0 2px var(--green), 0 2px 0 0 rgba(15,22,33,.12); }
+  .tile.is-alert { box-shadow: inset 0 0 0 2px var(--red),   0 2px 0 0 rgba(15,22,33,.12); }
   .tile.empty { color: var(--label-3); font-size: 13px; font-weight: 600; }
   .tile .avatar { width: 56%; height: 56%; }
 
@@ -2487,19 +2646,20 @@
     max-width: calc(100% - 64px);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  /* 레벨은 이 제품이 자랑하는 값입니다. 검정 반투명 칩은 화상회의의
+     이름표 문법이라, 라임 칩으로 바꿔 "성장" 쪽으로 읽히게 합니다. */
   .tile-lv {
     position: absolute;
     left: 9px; top: 9px;
-    padding: 2px 8px;
+    padding: 3px 9px;
     border-radius: var(--r-chip);
-    background: rgba(0, 0, 0, 0.34);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    color: #fff;
+    background: var(--tint);
+    box-shadow: inset 0 0 0 1px var(--tint-line);
+    color: var(--on-tint);
     font-family: var(--font-num);
     font-variant-numeric: tabular-nums;
-    font-size: 10px;
-    font-weight: 500;
+    font-size: 10.5px;
+    font-weight: 800;
   }
   .tile-state {
     position: absolute;
@@ -2528,24 +2688,33 @@
   .tile-state.s-warn  { background: var(--orange); }
   .tile-state.s-alert { background: var(--red); }
 
+  /* 머리띠를 먹색으로 뒤집습니다. 아레나가 옅은 라임이라 흰 머리띠는
+     그 위에 얹힌 또 하나의 흰 면이 되어 경계가 사라집니다.
+     먹 바탕 위에서 라임은 15.49 라 시계가 가장 강한 요소가 됩니다. */
   .session-head {
     display: flex;
     align-items: center;
     gap: var(--s3);
     padding: var(--s3) var(--s4);
-    background: var(--bg);
+    background: linear-gradient(180deg, #16202B, #0F1621);
+    color: #fff;
     flex-wrap: wrap;
     flex-shrink: 0;
-    border-bottom: 1px solid var(--sep);
+    border-bottom: 1.5px solid var(--tint-line);
   }
+  .session-head .session-head-meta b { color: #fff; }
+  .session-head .session-head-meta span { color: rgba(255, 255, 255, 0.66); }
+  .session-head .tag-outline { color: rgba(255,255,255,.82); box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); }
+  .session-head .tag-outline b { color: var(--tint); }
   .session-clock {
     font-family: var(--font-num);
     font-variant-numeric: tabular-nums;
-    font-variant-numeric: tabular-nums;
-    font-size: 30px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.028em;
     line-height: 1;
+    color: var(--tint);
+    text-shadow: 0 0 18px rgba(235, 255, 122, 0.35);
   }
   .session-head-meta { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
   .session-head-meta b {
@@ -2576,8 +2745,22 @@
   }
   @keyframes live-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 
-  .session-line { width: 100%; height: 4px; border-radius: 2px; background: var(--fill-3); overflow: hidden; }
-  .session-line i { display: block; height: 100%; width: 46%; border-radius: 2px; background: var(--tint-ink); }
+  /* 세션은 25분 동안 보는 화면입니다. 그 시간 내내 강조색이 4px 올리브
+     실선 하나뿐이면 브랜드가 각인될 기회를 버리는 셈입니다.
+     막대를 게이지로 올리고 채움을 라임 면으로 바꿉니다 — 얇은 선이
+     아니라 면이 되었으므로 라임을 쓸 수 있습니다(라임은 면, 올리브는 선). */
+  .session-line {
+    width: 100%; height: 12px; border-radius: 999px;
+    background: var(--fill-3);
+    box-shadow: inset 0 0 0 1.5px var(--tint-line);
+    overflow: hidden;
+  }
+  .session-line i {
+    display: block; height: 100%; width: 46%; border-radius: 999px;
+    background: var(--tint);
+    box-shadow: 0 0 10px rgba(235, 255, 122, 0.5);
+    transition: width 1s linear;
+  }
 
   .roomgoal {
     display: flex;
@@ -2598,8 +2781,21 @@
     letter-spacing: -0.012em;
   }
   .roomgoal-text span { font-size: 12px; color: var(--label-2); }
-  .roomgoal-bar { flex: 1; min-width: 190px; height: 8px; border-radius: 4px; background: var(--fill-3); overflow: hidden; }
-  .roomgoal-bar i { display: block; height: 100%; width: 64%; border-radius: 4px; background: var(--green); }
+  /* 초록은 자세 "편안함" 상태색입니다. 방 목표 진행에 같은 초록을 쓰면
+     "우리 방이 잘 가고 있다" 와 "내 자세가 좋다" 가 한 색이 됩니다.
+     진행은 브랜드색인 라임이 맡고, 초록은 자세에만 남깁니다. */
+  .roomgoal-bar {
+    flex: 1; min-width: 190px; height: 13px; border-radius: 999px;
+    background: var(--fill-3);
+    box-shadow: inset 0 0 0 1.5px var(--tint-line);
+    overflow: hidden;
+  }
+  .roomgoal-bar i {
+    display: block; height: 100%; width: 64%; border-radius: 999px;
+    background: var(--tint);
+    box-shadow: 0 0 10px rgba(235, 255, 122, 0.55);
+    transition: width 600ms var(--ease);
+  }
   .roomgoal-num {
     font-family: var(--font-num);
     font-variant-numeric: tabular-nums;
@@ -2608,19 +2804,31 @@
     font-weight: 600;
   }
 
+  /* 하단 툴바가 반투명 블러이면 그건 화상회의 컨트롤 바입니다.
+     불투명 먹 바탕에 라임 윗선을 얹어 게임 HUD 로 바꿉니다. */
   .toolbar {
     display: flex;
     align-items: center;
     justify-content: center;
     gap: var(--s2);
     padding: var(--s3) var(--s4);
-    background: color-mix(in srgb, var(--bg) 76%, transparent);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    background: linear-gradient(180deg, #16202B, #0F1621);
     flex-wrap: wrap;
     flex-shrink: 0;
-    border-top: 1px solid var(--sep);
+    border-top: 1.5px solid var(--tint-line);
   }
+  .toolbar .ctl { color: rgba(255, 255, 255, 0.72); }
+  .toolbar .ctl:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+  .toolbar .ctl:active { background: rgba(255, 255, 255, 0.16); }
+  /* 켜진 컨트롤은 라임 칩이 됩니다 — 어두운 바탕이라 라임을 면으로 쓸 수 있습니다. */
+  .toolbar .ctl[aria-pressed="true"],
+  .toolbar .ctl[aria-expanded="true"] {
+    background: var(--tint);
+    color: var(--on-tint);
+    box-shadow: inset 0 0 0 1px var(--tint-line);
+  }
+  .toolbar .ctl[aria-pressed="true"] svg,
+  .toolbar .ctl[aria-expanded="true"] svg { color: var(--on-tint); }
   .ctl {
     display: inline-flex;
     flex-direction: column;
@@ -2638,7 +2846,8 @@
   }
   .ctl:hover { background: var(--fill-4); color: var(--label); }
   .ctl:active { transform: scale(0.93); background: var(--fill-3); }
-  .ctl[aria-pressed="true"] { color: var(--tint-ink); }
+  .ctl[aria-pressed="true"],
+  .ctl[aria-expanded="true"] { color: var(--tint-ink); }
   .ctl.stop {
     flex-direction: row;
     gap: 7px;
@@ -2764,8 +2973,23 @@
     color: var(--tint);          /* 어두운 면 위 라임 15.49 */
   }
   .lvcard .lvsub { font-size: 13px; opacity: 0.84; }
-  .lvbar { width: 100%; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, 0.24); overflow: hidden; }
-  .lvbar i { display: block; height: 100%; width: 62%; background: var(--tint); border-radius: 3px; }
+  /* XP 막대는 "앞으로 나아가는 것" 입니다. 6px 은 진행을 보여주기엔 얇아서
+     눈이 머물지 않습니다. 두께를 올리고 트랙에 테두리를 둘러 게이지처럼
+     읽히게 합니다. 채움은 ease-out — 스프링 오버슈트를 걸면 진행률이
+     넘쳤다 되돌아와 데이터를 거짓말하게 됩니다. */
+  .lvbar {
+    width: 100%; height: 14px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.28);
+    overflow: hidden;
+    position: relative;
+  }
+  .lvbar i {
+    display: block; height: 100%; width: 62%;
+    background: var(--tint); border-radius: 999px;
+    box-shadow: 0 0 12px rgba(235, 255, 122, 0.55);
+    transition: width 600ms var(--ease);
+  }
 
   .ladder { display: grid; grid-template-columns: repeat(15, 1fr); gap: 4px; margin: 0; padding: 0; list-style: none; }
   .ladder li {
@@ -2811,20 +3035,94 @@
   }
 
   .campus-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s4); }
+  /* ---- 3D 영토 지도 ------------------------------------------------
+     12×8 가상 격자를 실제 서울 행정동 423 개로 바꿨습니다.
+     경계 데이터 출처: github.com/southkorea/seoul-maps (KOSTAT 2013),
+     Douglas-Peucker(45m) 로 단순화해 파일 안에 넣었습니다.
+
+     색상 = 학교, 높이 = 활동 밀도, 사선 = 경합 중.
+     세 축을 한 채널에 태우지 않습니다. 서울 24 개 대학 중 14 개가
+     남색이라 실제 상징색을 그대로 칠하면 지도가 읽히지 않습니다 —
+     명도를 끌어올린 변환값을 씁니다.
+     ------------------------------------------------------------------ */
   .territory {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 4px;
-    padding: var(--s3);
+    position: relative;
     border-radius: var(--r-card);
-    background: var(--bg);
-    box-shadow: var(--sh-1);
+    background: linear-gradient(168deg, #16202B, #0D141C);
+    box-shadow: var(--sh-2);
+    overflow: hidden;
   }
-  .territory i { aspect-ratio: 1; border-radius: 4px; background: var(--fill-4); display: block; }
-  .territory i.a { background: #2B4C7E; }
-  .territory i.b { background: #8E2438; }
-  .territory i.c { background: #1E6B5E; }
-  .territory i.mine { background: #2B4C7E; box-shadow: 0 0 0 2px var(--tint); }
+  .territory canvas { display: block; width: 100%; cursor: grab; }
+  .territory canvas:active { cursor: grabbing; }
+
+  .terr-ctl {
+    position: absolute; left: 12px; top: 12px; z-index: 3;
+    display: flex; flex-direction: column; gap: 7px;
+    padding: 11px 13px;
+    border-radius: var(--r-ctl);
+    background: rgba(9, 15, 21, 0.86);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  }
+  .terr-ctl label {
+    display: flex; align-items: center; gap: 7px;
+    font-size: 12px; color: #DCE4EC; cursor: pointer; white-space: nowrap;
+  }
+  .terr-ctl input[type="checkbox"] { accent-color: var(--tint); }
+
+  /* 지금 어디를 보고 있는지 + 빠져나가는 길. 드릴다운의 절반은 되돌아오는 길입니다. */
+  .terr-top {
+    position: absolute; left: 12px; top: 12px; z-index: 3;
+    display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+  }
+  .terr-where {
+    padding: 7px 12px; border-radius: var(--r-chip);
+    background: rgba(9, 15, 21, 0.82);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    color: rgba(237, 242, 247, 0.86);
+    font-size: 11.5px; letter-spacing: -0.004em;
+  }
+  .terr-btn {
+    padding: 7px 13px; border: 0; border-radius: var(--r-chip);
+    background: rgba(9, 15, 21, 0.86);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16), 0 2px 0 0 rgba(0, 0, 0, 0.4);
+    color: #EDF2F7;
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 650; cursor: pointer; white-space: nowrap;
+    transition: transform var(--t-press) var(--ease), box-shadow var(--t-press) var(--ease),
+                background var(--t-press) var(--ease);
+  }
+  .terr-btn:hover { background: rgba(20, 30, 40, 0.94); }
+  .terr-btn:active { transform: translateY(2px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.16), 0 0 0 0 rgba(0,0,0,.4); }
+  .terr-btn-key {
+    background: var(--tint); color: var(--on-tint);
+    box-shadow: inset 0 0 0 1px var(--tint-line), 0 2px 0 0 var(--tint-line);
+  }
+  .terr-btn-key:hover { background: var(--tint-press); }
+  .terr-btn-key:active { box-shadow: inset 0 0 0 1px var(--tint-line), 0 0 0 0 var(--tint-line); }
+  .terr-zoom { display: flex; gap: 6px; }
+  .terr-zoom .terr-btn { min-width: 34px; font-size: 15px; font-weight: 700; padding: 5px 0; }
+  .terr-ctl { left: auto; right: 12px; top: 12px; align-items: stretch; }
+  .terr-ctl .cap {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: rgba(220, 228, 236, 0.55);
+  }
+
+  .terr-tip {
+    position: absolute; left: 12px; bottom: 12px; z-index: 3;
+    min-width: 208px; padding: 12px 15px;
+    border-radius: var(--r-ctl);
+    background: rgba(9, 15, 21, 0.94);
+    box-shadow: inset 0 0 0 1px var(--tint-line);
+    color: #EDF2F7;
+  }
+  .terr-tip .dn { font-family: var(--font-display); font-size: 17px; font-weight: 750; color: var(--tint); }
+  .terr-tip .gu { font-size: 11px; color: rgba(237, 242, 247, 0.6); margin-top: 1px; }
+  .terr-tip dl {
+    display: grid; grid-template-columns: auto 1fr; gap: 4px 12px;
+    margin: 10px 0 0; font-size: 12px;
+  }
+  .terr-tip dt { color: rgba(237, 242, 247, 0.6); }
+  .terr-tip dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 
   .legend { display: flex; flex-direction: column; gap: 9px; margin: 0; padding: 0; list-style: none; }
   .legend li { display: flex; align-items: center; gap: var(--s2); font-size: 14px; }
@@ -3257,6 +3555,72 @@
     font-weight: 750;
     letter-spacing: -0.022em;
   }
+
+  /* ==========================================================
+     레벨업
+
+     모든 레벨업에 화면을 덮지 않습니다. 15 레벨 중 종(種)이 바뀌는
+     단계 전환(Lv 3·5·8·11·14)에서만 전체화면이고, 나머지는 토스트입니다.
+     그리고 이 화면이 뜨는 순간은 사용자가 방금 25분간 자세가 나빴다는
+     사실을 확인한 직후일 수 있습니다 — 그래서 문구는 성취를 말하되
+     자랑하지 않고, "계속" 은 파티클이 떨어지는 중에도 누를 수 있습니다.
+     ========================================================== */
+  .levelup {
+    position: fixed; inset: 0; z-index: 120;
+    display: grid; place-items: center;
+    background: rgba(15, 22, 33, 0.93);
+    animation: modal-veil var(--t-quick) var(--ease) both;
+  }
+  .levelup[hidden] { display: none; }
+  .levelup canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .levelup-in { position: relative; z-index: 2; text-align: center; padding: var(--s5); }
+  .levelup-k {
+    font-size: 12px; font-weight: 800; letter-spacing: 0.34em;
+    color: var(--tint); text-transform: uppercase;
+  }
+  .levelup-fig {
+    width: 132px; height: 132px; margin: var(--s4) auto 0;
+    border-radius: var(--r-sheet);
+    display: grid; place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 0 44px rgba(235, 255, 122, 0.34);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .levelup-fig { animation: lvpop 780ms cubic-bezier(.34, 1.4, .5, 1) both; }
+  }
+  @keyframes lvpop { from { opacity: 0; transform: scale(.46); } to { opacity: 1; transform: none; } }
+  .levelup-name {
+    margin: var(--s4) 0 0;
+    font-family: var(--font-display);
+    font-size: 27px; font-weight: 800; letter-spacing: -0.03em; color: #fff;
+  }
+  .levelup-sub { margin: 7px 0 0; font-size: 14px; color: rgba(255, 255, 255, 0.7); }
+  /* 좌우에 이전·다음 단계를 흐리게 둡니다 — 축하가 곧 다음 목표 제시가 됩니다. */
+  .levelup-trio {
+    display: flex; align-items: center; justify-content: center;
+    gap: var(--s5); margin: var(--s5) 0 0;
+  }
+  .levelup-trio figure { margin: 0; opacity: 0.3; }
+  .levelup-trio .mini {
+    width: 54px; height: 54px; border-radius: var(--r-card);
+    display: grid; place-items: center;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  }
+  .levelup-trio figcaption {
+    margin-top: 5px; font-size: 10.5px; letter-spacing: 0.08em;
+    color: rgba(255, 255, 255, 0.6);
+  }
+  .levelup-trio .gap { width: 132px; }
+  .levelup-btn { margin-top: var(--s5); opacity: 0; transition: opacity var(--t-quick) var(--ease); }
+  .levelup-btn[data-ready] { opacity: 1; }
+  .levelup .avatar { width: 58%; height: 58%; }
+  .levelup-trio .avatar { width: 60%; height: 60%; }
+  /* 캐릭터 그러데이션은 .tile 하위에만 정의돼 있어 여기서는 안 걸립니다.
+     같은 토큰을 오버레이에서도 쓸 수 있게 규칙을 따로 둡니다. */
+  .levelup-fig.c1, .levelup-trio .mini.c1 { background: var(--char-1); }
+  .levelup-fig.c2, .levelup-trio .mini.c2 { background: var(--char-2); }
+  .levelup-fig.c3, .levelup-trio .mini.c3 { background: var(--char-3); }
+  .levelup-fig.c4, .levelup-trio .mini.c4 { background: var(--char-4); }
+  .levelup-fig.c5, .levelup-trio .mini.c5 { background: var(--char-5); }
   /* 되돌릴 수 있다는 약속이 완료율을 올립니다. 자세 기준·모드처럼
      "잘못 정하면 어쩌지" 가 실제로 있는 항목에서 특히 그렇습니다. */
   .modal-help {
@@ -3620,7 +3984,7 @@
           <button class="rail-brand" type="button" data-home aria-label="UpRight 홈으로">
             <span class="rail-mark" aria-hidden="true">
               <!-- 라임 위에서는 흰 획이 1.10 이라 사라집니다. 면의 글자색을 따릅니다. -->
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 20V8"/><path d="m7 12 5-5 5 5"/><path d="M5 4h14"/>
               </svg>
             </span>
@@ -3629,7 +3993,7 @@
 
           <div class="rail-me">
             <span class="rail-me-fig" aria-hidden="true">
-              <svg class="avatar" width="25" height="25" viewBox="0 0 40 40" fill="none">
+              <svg aria-hidden="true" class="avatar" width="25" height="25" viewBox="0 0 40 40" fill="none">
                 <path d="M13 27c0-5 3-8 7-8s7 3 7 8" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
                 <path d="M20 19V9" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
                 <circle cx="20" cy="7" r="2.6" fill="#fff"/>
@@ -3644,19 +4008,19 @@
 
           <div class="rail-nav">
             <button class="navitem" type="button" data-nav="room" aria-current="page">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+              <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
               방 만들기
             </button>
             <button class="navitem" type="button" data-nav="growth">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M7 20V11"/><path d="M12 20V5"/><path d="M17 20v-6"/></svg>
+              <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18"/><path d="M7 20V11"/><path d="M12 20V5"/><path d="M17 20v-6"/></svg>
               성장
             </button>
             <button class="navitem" type="button" data-nav="campus">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>
+              <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>
               캠퍼스
             </button>
             <button class="navitem" type="button" data-nav="my">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               마이페이지
             </button>
           </div>
@@ -3669,7 +4033,7 @@
               무슨 일이 일어나는지로 바꿉니다 — 기기 안에서 끝난다.
             -->
             <p class="privacy-note">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
+              <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
               카메라는 내 기기에서만 돌아가요
             </p>
           </div>
@@ -3685,7 +4049,7 @@
               <!-- 어느 화면에서든 설정으로 갑니다. 마이페이지를 거쳐야만
                    닿을 수 있으면 설정이 마이페이지의 하위처럼 보입니다. -->
               <button class="iconbtn" type="button" aria-label="설정" data-go="settings">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.68 1.1 1.32 1.1H21a2 2 0 1 1 0 4h-.09c-.64 0-1.18.47-1.32 1.1Z"/></svg>
+                <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.68 1.1 1.32 1.1H21a2 2 0 1 1 0 4h-.09c-.64 0-1.18.47-1.32 1.1Z"/></svg>
               </button>
             </span>
           </div>
@@ -3705,7 +4069,7 @@
                 <section class="makeroom">
                   <div class="makeroom-say">
                     <span class="makeroom-mark" aria-hidden="true">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+                      <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="m22 8-6 4 6 4V8Z"/></svg>
                     </span>
                     <h3>방 만들기</h3>
                   </div>
@@ -3713,13 +4077,13 @@
                   <div class="makeroom-foot">
                     <button class="makeroom-go" type="button" id="open-wizard">
                       시작하기
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
+                      <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
                     </button>
 
                     <!-- 코드로 참여 — 만들기의 반대 행동이라 같은 상자 안에 둡니다.
                          작고 조용하게, 주 버튼 바로 아래. Lucide key-round -->
                     <button class="makeroom-code" type="button" id="open-join">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+                      <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
                       코드로 참여
                     </button>
 
@@ -3807,7 +4171,7 @@
               <div class="checklist">
                 <div class="codecard">
                   <span class="codecard-fig" aria-hidden="true">
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                    <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
                   </span>
                   <span class="switchrow-text">
                     <b>초대 코드</b>
@@ -3817,13 +4181,13 @@
                   <!-- 복사는 글자보다 아이콘이 빠릅니다. 어느 앱에서나 같은 모양이라
                        읽지 않아도 압니다. Lucide copy -->
                   <button class="iconbtn" type="button" id="lobby-copy" aria-label="초대 코드 복사">
-                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                    <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
                   </button>
                 </div>
 
                 <div class="codecard">
                   <span class="codecard-fig" aria-hidden="true">
-                    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
+                    <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg>
                   </span>
                   <span class="switchrow-text">
                     <b>내 자세 기준</b>
@@ -3831,7 +4195,7 @@
                   </span>
                   <span class="tag tag-good">확인됨</span>
                   <button class="btn btn-quiet" type="button" data-go="my">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+                    <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
                     다시 등록
                   </button>
                 </div>
@@ -3888,7 +4252,7 @@
               <span class="session-line" aria-hidden="true"><i></i></span>
             </div>
 
-            <div style="flex:1; min-height:0; padding:var(--s4); overflow-y:auto;">
+            <div class="arena">
               <div class="gallery">
 
                 <!--
@@ -3906,7 +4270,7 @@
                   <span class="tile-lv">Lv.7</span>
                   <span class="tile-name">민철 (나)</span>
                   <span class="tile-state s-good">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
+                    <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>
                     편안함
                   </span>
                 </div>
@@ -3920,7 +4284,7 @@
                   <span class="tile-lv">Lv.4</span>
                   <span class="tile-name">수현</span>
                   <span class="tile-state s-alert">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
+                    <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5"/><path d="M12 17h.01"/></svg>
                     회복 기회
                   </span>
                 </div>
@@ -3934,7 +4298,7 @@
                   <span class="tile-lv">Lv.11</span>
                   <span class="tile-name">연우</span>
                   <span class="tile-state s-warn">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4"/><path d="m5.6 6.6 2.8 2.8"/><path d="M3 13h4"/></svg>
+                    <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4"/><path d="m5.6 6.6 2.8 2.8"/><path d="M3 13h4"/></svg>
                     변화 감지
                   </span>
                 </div>
@@ -3944,7 +4308,7 @@
                   <span class="tile-lv" style="background:var(--fill-3); color:var(--label-2);">Lv.2</span>
                   <span class="tile-name" style="background:var(--fill-2); color:var(--label-2); backdrop-filter:none;">도윤</span>
                   <span class="tile-state" style="background:var(--fill-2); color:var(--label-2); backdrop-filter:none;">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                    <svg aria-hidden="true" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
                     60초째
                   </span>
                 </div>
@@ -3971,16 +4335,16 @@
                 <span id="ctl-cam-label">카메라</span>
               </button>
               <button class="ctl" type="button" data-go="stretch-pre">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0-8-8"/><path d="M4 4v8h8"/></svg>
+                <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20a8 8 0 1 0-8-8"/><path d="M4 4v8h8"/></svg>
                 스트레칭
               </button>
-              <button class="ctl" type="button" id="ctl-chat" aria-pressed="false" aria-controls="chat">
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
+              <button class="ctl" type="button" id="ctl-chat" aria-expanded="false" aria-controls="chat">
+                <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg>
                 채팅
                 <span class="ctl-dot" id="chat-dot" hidden></span>
               </button>
               <button class="ctl stop" type="button" id="ctl-stop">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 14.7 4 21"/><path d="M21 3 3 21"/><path d="M14 4h6v6"/></svg>
+                <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 14.7 4 21"/><path d="M21 3 3 21"/><path d="M14 4h6v6"/></svg>
                 세션 종료
               </button>
             </div>
@@ -3995,7 +4359,7 @@
                 <b>채팅</b>
                 <span class="chat-note" id="chat-note"></span>
                 <button class="iconbtn" type="button" id="chat-close" aria-label="채팅 닫기">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
               </div>
               <ol class="chat-log" id="chat-log" aria-live="polite"></ol>
@@ -4034,7 +4398,7 @@
             <div class="result">
               <div class="result-hero">
                 <span class="result-fig c2" aria-hidden="true">
-                  <svg class="avatar" viewBox="0 0 40 40" fill="none">
+                  <svg aria-hidden="true" class="avatar" viewBox="0 0 40 40" fill="none">
                     <path d="M10 30c0-7 4.5-11 10-11s10 4 10 11" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
                     <path d="M20 19V7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
                     <circle cx="20" cy="5.4" r="3.2" fill="#fff"/>
@@ -4061,13 +4425,13 @@
               <div class="result-foot">
                 <!-- Lucide house -->
                 <button class="btn btn-quiet" type="button" data-go="hub">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
                   홈으로
                 </button>
                 <span style="flex:1"></span>
                 <!-- Lucide share -->
                 <button class="btn btn-quiet" type="button" id="open-share">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
                   공유 카드
                 </button>
                 <!--
@@ -4077,7 +4441,7 @@
                   Lucide play
                 -->
                 <button class="btn btn-primary btn-lg" type="button" data-go="lobby">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+                  <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
                   계속하기
                 </button>
               </div>
@@ -4095,7 +4459,7 @@
               <header class="sharesheet-head">
                 <b>공유 카드</b>
                 <button class="iconbtn" type="button" id="share-close" aria-label="닫기">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  <svg aria-hidden="true" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
               </header>
 
@@ -4115,7 +4479,7 @@
             <div class="grow-grid">
               <div class="lvcard">
                 <span class="lvfig" aria-hidden="true">
-                  <svg width="76" height="76" viewBox="0 0 40 40" fill="none">
+                  <svg aria-hidden="true" width="76" height="76" viewBox="0 0 40 40" fill="none">
                     <path d="M10 30c0-7 4.5-11 10-11s10 4 10 11" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
                     <path d="M20 19V7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
                     <circle cx="20" cy="5.4" r="3.2" fill="#fff"/>
@@ -4180,18 +4544,43 @@
                   <span class="tag tag-outline">3분기 · 42일 남음</span>
                   <span class="tag tag-soft">비공식 테마</span>
                 </div>
-                <div class="territory" aria-label="영토 지도 96칸">
-                  <i class="a"></i><i class="a"></i><i></i><i class="b"></i><i class="b"></i><i></i><i class="c"></i><i></i><i class="a"></i><i></i><i class="b"></i><i></i>
-                  <i class="a"></i><i class="mine"></i><i class="a"></i><i class="b"></i><i></i><i class="c"></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i>
-                  <i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i class="c"></i><i></i><i class="a"></i><i></i><i class="b"></i><i class="b"></i><i></i>
-                  <i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i class="a"></i><i class="a"></i><i class="c"></i><i></i><i></i><i class="b"></i>
-                  <i></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i></i><i class="a"></i><i class="c"></i><i class="c"></i><i></i>
-                  <i class="b"></i><i></i><i class="a"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="c"></i><i></i><i class="b"></i><i></i><i class="a"></i>
-                  <i></i><i class="b"></i><i class="b"></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="b"></i><i></i><i class="a"></i><i></i>
-                  <i class="a"></i><i></i><i></i><i class="b"></i><i class="c"></i><i></i><i class="a"></i><i class="a"></i><i></i><i class="c"></i><i class="b"></i><i></i>
+                <div class="territory">
+                  <canvas id="terr-canvas" width="1200" height="560"
+                          role="img" aria-label="서울 행정동 423개 영토 지도"></canvas>
+
+                  <div class="terr-top">
+                    <button class="terr-btn" type="button" id="terr-back" hidden>← 서울 전체</button>
+                    <span class="terr-where" id="terr-where">서울 25개 구</span>
+                  </div>
+
+                  <div class="terr-ctl">
+                    <button class="terr-btn terr-btn-key" type="button" id="terr-gomine">
+                      우리 학교로
+                    </button>
+                    <div class="terr-zoom">
+                      <button class="terr-btn" type="button" id="terr-zout" aria-label="축소">−</button>
+                      <button class="terr-btn" type="button" id="terr-zin" aria-label="확대">+</button>
+                    </div>
+                    <p class="cap" style="margin:2px 0 0;">
+                      휠 확대 · 드래그 이동<br />더블클릭 처음으로
+                    </p>
+                  </div>
+
+                  <div class="terr-tip" id="terr-tip" hidden>
+                    <div class="dn" id="terr-name">—</div>
+                    <div class="gu" id="terr-gu">—</div>
+                    <dl>
+                      <dt>소유</dt><dd id="terr-own">—</dd>
+                      <dt>7일 세션</dt><dd id="terr-sess">—</dd>
+                      <dt>상태</dt><dd id="terr-state">—</dd>
+                    </dl>
+                  </div>
                 </div>
                 <p style="margin:0; font-size:13px; color:var(--label-2);">
-                  지금은 자체 격자입니다. 서울 위성지도로 바꿔도 이 기여도와 영토 계산은 그대로 씁니다.
+                  서울 행정동 423개 · 25개 구. 경계는 실제 좌표이고
+                  <b>소유권은 최근 7일 활동으로만</b> 계산합니다 — 롤링 창 자체가 감쇠라
+                  선점자가 계속 갈립니다. 아래 점유율은 총점이 아니라
+                  <b>1위인 구의 개수</b>로 겨룹니다.
                 </p>
               </div>
 
@@ -4299,7 +4688,7 @@
                       <button class="setrow" type="button" data-edit="nick">
                         <span class="setrow-text"><b>닉네임</b></span>
                         <span class="setrow-val" data-val="nick">민철</span>
-                        <svg class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
+                        <svg aria-hidden="true" class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
                       </button>
                     </li>
                     <!--
@@ -4315,14 +4704,14 @@
                           <span data-val="schoolsub">2026년 3월 인증됨</span>
                         </span>
                         <span class="setrow-val" data-val="school">명지대학교</span>
-                        <svg class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
+                        <svg aria-hidden="true" class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
                       </button>
                     </li>
                     <li>
                       <button class="setrow" type="button" data-edit="cheer">
                         <span class="setrow-text"><b>응원 문구</b></span>
                         <span class="setrow-val" data-val="cheer">3개</span>
-                        <svg class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
+                        <svg aria-hidden="true" class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
                       </button>
                     </li>
                   </ul>
@@ -4345,7 +4734,7 @@
                 <button class="btn btn-quiet" type="button" data-go="settings"
                         style="width:100%; justify-content:space-between;">
                   설정
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
+                  <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
                 </button>
               </div>
             </div>
@@ -4360,7 +4749,7 @@
               <div class="panel-head">
                 <b id="retro-panel-title">세션 회고</b>
                 <button class="iconbtn" type="button" id="retro-panel-close" aria-label="닫기">
-                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                 </button>
               </div>
               <div class="panel-body" id="retro-panel-body"></div>
@@ -4450,7 +4839,7 @@
                         <b>의견 보내기</b>
                         <span>불편한 점이나 바라는 것을 알려주세요</span>
                       </span>
-                      <svg class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
+                      <svg aria-hidden="true" class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
                     </button>
                   </li>
                   <!-- 위험한 것은 맨 아래, 색도 아이콘도 없이. -->
@@ -4460,7 +4849,7 @@
                         <b>내 데이터 지우기</b>
                         <span>되돌릴 수 없어요</span>
                       </span>
-                      <svg class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
+                      <svg aria-hidden="true" class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 6 6 6-6 6"/></svg>
                     </button>
                   </li>
                 </ul>
@@ -4469,6 +4858,24 @@
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- 레벨업. 단계가 바뀔 때만 뜹니다. -->
+      <div class="levelup" id="levelup" role="dialog" aria-modal="true"
+           aria-labelledby="levelup-name" hidden>
+        <canvas id="levelup-confetti" aria-hidden="true"></canvas>
+        <div class="levelup-in">
+          <p class="levelup-k">Level up</p>
+          <span class="levelup-fig" id="levelup-fig" aria-hidden="true"></span>
+          <h3 class="levelup-name" id="levelup-name">Lv.8 반듯 거부기린</h3>
+          <p class="levelup-sub" id="levelup-sub">목이 한 단계 더 펴졌어요</p>
+          <div class="levelup-trio" aria-hidden="true">
+            <figure><span class="mini" id="levelup-prev"></span><figcaption>이전</figcaption></figure>
+            <span class="gap"></span>
+            <figure><span class="mini" id="levelup-next"></span><figcaption>다음</figcaption></figure>
+          </div>
+          <button class="btn btn-primary btn-lg levelup-btn" type="button" id="levelup-close">계속</button>
         </div>
       </div>
 
@@ -4545,14 +4952,14 @@
 
         <nav class="wiz-nav">
           <button class="wiz-back" type="button" id="wiz-back" data-hidden="true">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
+            <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
             이전
           </button>
           <span class="wiz-track" id="wiz-track" role="progressbar"
                 aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-label="방 만들기 진행"></span>
           <span class="wiz-nav-right">
             <button class="iconbtn" type="button" id="wiz-close" aria-label="방 만들기 그만두기">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
             </button>
           </span>
         </nav>
@@ -4572,7 +4979,7 @@
             <button class="btn btn-primary btn-lg" type="button" id="wiz-go" data-act="next">
               <span class="wiz-go-label" id="wiz-go-label">다음</span>
               <span class="wiz-go-arrow" id="wiz-go-arrow" hidden aria-hidden="true">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                      stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>
                 </svg>
@@ -4761,6 +5168,7 @@
     if (key === 'stretch-post') { renderStretch('post'); renderStretchPost(); }
     if (key === 'result')       renderResult();
     if (key === 'session')      renderSession();
+    if (key === 'campus')       renderTerritory();
 
     /*
       세션은 화면을 떠나도 계속 돕니다. 앉아 있는 걸 재는 기능인데
@@ -4773,7 +5181,7 @@
     if (key === 'session') { startCam(); closePip(); }
     else if (sessionRunning()) openPip();
     else { stopCam(); closePip(); }
-    paintCamBtn();
+  paintCamBtn();
   }
 
   var NAV_TO_SCREEN = { room: 'hub', growth: 'growth', campus: 'campus', my: 'my' };
@@ -5050,7 +5458,7 @@
      짧고, 눈이 이미 그 자리를 보고 있습니다. */
   function toastAt(row, text) {
     rowtoast.innerHTML =
-      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
       'stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg>' +
       text;
     rowtoast.classList.remove('is-out');
@@ -5794,7 +6202,7 @@
     wizStage.innerHTML =
       '<div class="minting">'
       + '<span class="mint-ring" aria-hidden="true">'
-      + '<svg viewBox="0 0 104 104"><circle class="track" cx="52" cy="52" r="46" fill="none" stroke-width="4"/>'
+      + '<svg aria-hidden="true" viewBox="0 0 104 104"><circle class="track" cx="52" cy="52" r="46" fill="none" stroke-width="4"/>'
       + '<circle class="head" cx="52" cy="52" r="46" fill="none" stroke-width="4"/></svg>'
       + '<span class="mint-core">' + icon(ICON.check, 24, 3) + '</span>'
       + '</span>'
@@ -6145,21 +6553,57 @@
   var homeSrc = 'mine';
   var homeTimer = 0;
 
+  /* 보호권. 상한이 핵심입니다 — 무제한으로 주면 매일의 약속이 무의미해지고,
+     하나도 없으면 한 번 놓친 사람이 그대로 떠납니다. */
+  var streakFreeze = 2, streakFreezeMax = 2;
+
   function renderStreak() {
     var trail = document.getElementById('streak-trail');
     if (!trail) return;
     var days = ['월', '화', '수', '목', '금', '토', '일'];
     /* 최근 7일. 마지막 칸이 오늘이고, 오늘은 아직 안 앉은 상태로 둡니다 —
-       "오늘만 채우면 이어진다"가 스트릭의 전부입니다. */
-    var done = [true, true, true, true, true, true, false];
+       "오늘만 채우면 이어진다"가 스트릭의 전부입니다.
+       'freeze' 는 보호권으로 지켜진 날입니다. 쓸 때 묻지 않고 조용히 덮은 뒤,
+       나중에 여기서 발견하게 합니다 — 물어보는 순간 그 화면이 실패의 통지가 됩니다. */
+    var done = [true, true, 'freeze', true, true, true, false];
     var html = '';
     for (var i = 0; i < 7; i++) {
       var today = i === 6;
-      html += '<li data-on="' + done[i] + '" data-today="' + today + '">'
-        + '<i>' + (done[i] ? icon(ICON.check, 12, 3.2) : '') + '</i>'
+      var st = done[i];
+      html += '<li data-on="' + (st === true) + '" data-today="' + today + '"'
+        + (st === 'freeze' ? ' data-freeze="true" title="보호권으로 지켜진 날"' : '') + '>'
+        + '<i>' + (st === true ? icon(ICON.check, 12, 3.2) : (st === 'freeze' ? '❄' : '')) + '</i>'
         + days[i] + '</li>';
     }
     trail.innerHTML = html;
+
+    /* "0일" 은 절대 렌더링하지 않습니다. 0 은 시작점이 아니라 실패 기록으로 읽힙니다. */
+    var numEl = document.getElementById('streak-num');
+    var unitEl = numEl && numEl.parentElement.querySelector('.streak-unit b');
+    var subEl = document.getElementById('streak-sub');
+    var n = parseInt(numEl && numEl.textContent, 10) || 0;
+    if (numEl && n === 0) {
+      numEl.textContent = '';
+      numEl.style.display = 'none';
+      if (unitEl) unitEl.textContent = '오늘 시작하면 1일차';
+      if (subEl) subEl.textContent = '세션을 한 번 시작하기만 하면 돼요';
+    } else if (numEl) {
+      numEl.style.display = '';
+    }
+
+    /* 보호권 보유 수량을 보여줍니다. 보호받는지 모르면 안심 효과가 0 입니다. */
+    var host = trail.parentElement;
+    var fz = document.getElementById('streak-freeze');
+    if (!fz && host) {
+      fz = document.createElement('p');
+      fz.id = 'streak-freeze';
+      fz.style.cssText = 'margin:9px 0 0;font-size:12px;color:var(--label-2);';
+      trail.insertAdjacentElement('afterend', fz);
+    }
+    if (fz) {
+      fz.innerHTML = '보호권 <b style="color:#3E7FA6">' + streakFreeze + '</b> / ' + streakFreezeMax
+        + ' · 세션을 <b style="color:var(--tint-ink)">1회만 시작</b>해도 유지돼요';
+    }
   }
 
   /* ==========================================================
@@ -6287,7 +6731,7 @@
         + '<span class="setrow-text"><b>' + esc(m.name) + '</b>'
         + '<span>' + esc(m.posture) + ' 하는 자세를 기준으로 봐요</span></span>'
         + right
-        + '<svg class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" '
+        + '<svg aria-hidden="true" class="setrow-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" '
         + 'stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
         + '<path d="m10 6 6 6-6 6"/></svg>'
         + '</button></li>';
@@ -6890,6 +7334,8 @@
     return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
 
+  var TITLE_IDLE = document.title;
+
   function tickSession() {
     if (!sessionStartedAt) return;
     var sec = Math.floor((Date.now() - sessionStartedAt) / 1000);
@@ -6897,6 +7343,14 @@
     if (clock) clock.textContent = mmss(sec);
     var bar = document.querySelector('.session-line i');
     if (bar) bar.style.width = Math.min(100, (sec / (state.focusMin * 60)) * 100) + '%';
+
+    /*
+      탭 제목이 남은 시간을 따라갑니다. 세션 중에 다른 탭으로 넘어가면
+      이 화면은 안 보이지만 브라우저 탭에는 남은 시간이 계속 보입니다.
+      데스크톱 웹에서 거의 공짜인데 대부분 빠뜨리는 자리입니다.
+    */
+    var left = Math.max(0, state.focusMin * 60 - sec);
+    document.title = mmss(left) + ' · 집중 중 — UpRight';
   }
 
   /* 세션 화면으로 돌아왔다고 다시 세면 안 됩니다. 이미 돌고 있으면
@@ -6910,6 +7364,7 @@
 
   function stopSessionClock() {
     if (sessionTicker) { clearInterval(sessionTicker); sessionTicker = 0; }
+    document.title = TITLE_IDLE;
   }
 
   /* 세션을 떠날 때 딱 한 번 부릅니다. 여기서 남긴 값만 뒤 화면이 씁니다. */
@@ -7072,6 +7527,26 @@
   }
 
   /* 결과·스트레칭 문구는 전부 LAST 에서 읽습니다. */
+  /* 숫자를 0 에서 굴려 올립니다. ease-out — 막대와 달리 숫자에는
+     오버슈트를 걸어도 되지만, 값이 목표를 넘었다 돌아오면 사용자가
+     그 순간 화면을 봤을 때 잘못된 수를 읽습니다. 그래서 여기도 ease-out 입니다.
+     모션 축소 설정이면 즉시 최종값을 씁니다. */
+  var prefersReduced = window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function countTo(el, to, ms, prefix) {
+    if (!el) return;
+    prefix = prefix || '';
+    if (prefersReduced) { el.textContent = prefix + to.toLocaleString(); return; }
+    var t0 = performance.now();
+    (function step(now) {
+      var p = Math.min(1, (now - t0) / ms);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.textContent = prefix + Math.round(to * e).toLocaleString();
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
   function renderResult() {
     var min = Math.round(LAST.sec / 60);
     var big = document.querySelector('.result-big');
@@ -7106,7 +7581,24 @@
       line[0].textContent = LAST.measured + '분';
       line[1].textContent = LAST.recoveries + '회';
       /* 경험치는 앉은 시간에서 나옵니다. 완주하면 한 번 더 얹습니다. */
-      line[2].textContent = '+' + (min * 4 + (LAST.done ? 60 : 0));
+      var gained = min * 4 + (LAST.done ? 60 : 0);
+      /* 바뀐 값을 그냥 찍지 않고 0 에서 굴려 올립니다. 리워드 구간의
+         카운트업 상한은 400~800ms 입니다 — 500ms 를 넘기면 성가셔집니다. */
+      countTo(line[2], gained, 520, '+');
+
+      /*
+        경험치가 다음 레벨을 넘기면 축하합니다. 숫자가 다 올라간 뒤에
+        띄워야 "얼마 받았는지" 를 읽고 나서 축하를 받습니다 — 동시에
+        띄우면 화면이 덮여 정작 받은 값을 못 봅니다.
+      */
+      if (typeof grantLevel === 'function' && gained > 0) {
+        var lvGain = Math.floor((LV_XP + gained) / LV_XP_PER) - Math.floor(LV_XP / LV_XP_PER);
+        LV_XP += gained;
+        if (lvGain > 0) {
+          var target = LV_NOW + lvGain;
+          setTimeout(function () { grantLevel(target); }, 900);
+        }
+      }
     }
 
     SHARE.minutes = min;
@@ -7136,7 +7628,7 @@
     btn.setAttribute('aria-pressed', String(on));
     btn.setAttribute('aria-label', on ? '카메라 끄기' : '카메라 켜기');
     document.getElementById('ctl-cam-icon').innerHTML =
-      '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+      '<svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
       + 'stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'
       + (on ? ICON_CAM_ON : ICON_CAM_OFF) + '</svg>';
     document.getElementById('ctl-cam-label').textContent = on ? '카메라' : '카메라 꺼짐';
@@ -7301,7 +7793,7 @@
   function openChat() {
     chatEl.hidden = false;
     document.getElementById('chat-dot').hidden = true;
-    document.getElementById('ctl-chat').setAttribute('aria-pressed', 'true');
+    document.getElementById('ctl-chat').setAttribute('aria-expanded', 'true');
     paintChatMode();
     if (!chatLog.children.length) {
       chatAdd('', chatFree()
@@ -7312,7 +7804,7 @@
   }
   function closeChat() {
     chatEl.hidden = true;
-    document.getElementById('ctl-chat').setAttribute('aria-pressed', 'false');
+    document.getElementById('ctl-chat').setAttribute('aria-expanded', 'false');
   }
 
   document.getElementById('ctl-chat').addEventListener('click', function () {
@@ -7373,6 +7865,595 @@
       }
     });
   })();
+
+    var DONG=[{"n":"길동","g":"강동구","c":[136,-27.1],"p":[[136.9,-23.5],[136.7,-24.1],[138.3,-23.6],[139.5,-24.4],[141.2,-26.9],[143.4,-25.9],[145.3,-26.5],[146.3,-27.7],[131.5,-35.5],[129,-35.3],[125.6,-34],[127.8,-28.5],[131,-28.3],[132.3,-24.2],[134.7,-24.9],[136.1,-23.3],[136.9,-23.5]]},{"n":"천호2동","g":"강동구","c":[117.4,-23.7],"p":[[120.2,-19.2],[125.8,-22.2],[122.6,-27.7],[120.5,-28.8],[119.3,-31.6],[113,-28.4],[106,-25.8],[108.2,-19.8],[116.9,-19.4],[116.5,-20.5],[119.6,-21.4],[120.2,-19.2]]},{"n":"암사1동","g":"강동구","c":[128.5,-17.3],"p":[[133.6,-14.5],[132.6,-14.7],[130.3,-18],[131,-18.5],[128,-19.4],[125.8,-22.2],[120.2,-19.2],[121.5,-14.5],[133.6,-14.5]]},{"n":"둔촌2동","g":"강동구","c":[136.7,-39],"p":[[146.3,-27.7],[140.8,-35.3],[140.5,-40.2],[137.7,-43.4],[136.2,-47.2],[134.7,-47.3],[134.9,-45.3],[133.8,-42.8],[127.4,-40.5],[129,-35.3],[132.5,-35],[146.3,-27.7]]},{"n":"둔촌1동","g":"강동구","c":[131,-45.7],"p":[[127.4,-40.5],[133.8,-42.8],[135,-45.7],[133.8,-49.9],[134.1,-52.4],[125.3,-47.8],[127.4,-40.5]]},{"n":"성내3동","g":"강동구","c":[125.3,-39.3],"p":[[125.6,-34],[129,-35.3],[125.3,-47.8],[121.2,-45.5],[125.6,-34]]},{"n":"성내2동","g":"강동구","c":[119.5,-35.3],"p":[[116.8,-30.8],[125.6,-34],[123.6,-39.2],[119.8,-37.8],[119.4,-36.3],[118.8,-37.5],[115.2,-36.2],[116.8,-30.8]]},{"n":"성내1동","g":"강동구","c":[118.3,-38.7],"p":[[115.2,-36.2],[118.8,-37.5],[119.4,-36.3],[119.8,-37.8],[123.6,-39.2],[121.2,-45.5],[113.5,-41.2],[115.2,-36.2]]},{"n":"천호3동","g":"강동구","c":[126.1,-28.6],"p":[[131.4,-27],[131,-28.3],[127.8,-28.5],[125.6,-34],[119.3,-31.6],[120.5,-28.8],[122,-28.3],[123.1,-26.9],[128.6,-25.9],[131.4,-27]]},{"n":"천호1동","g":"강동구","c":[128.1,-23.1],"p":[[125.8,-22.2],[128.5,-19],[133.2,-18.5],[131.4,-27],[128.6,-25.9],[123.1,-26.9],[125.8,-22.2]]},{"n":"암사3동","g":"강동구","c":[130.5,-6.6],"p":[[125.2,-0.9],[131.1,1],[133,-2.7],[134.2,-3.8],[134.3,-5.1],[136.1,-8.3],[133.3,-10.6],[133.9,-11.5],[133.6,-14.5],[121.5,-14.5],[124,-7.8],[125.2,-0.9]]},{"n":"암사2동","g":"강동구","c":[114.5,-12.4],"p":[[108.7,-9],[111.6,-9.3],[116,-5.1],[125.2,-0.9],[124,-7.8],[119.6,-21.4],[116.5,-20.5],[116.9,-19.4],[108.2,-19.8],[109.4,-16],[109.4,-10.7],[108.7,-9]]},{"n":"고덕2동","g":"강동구","c":[146.3,-2.4],"p":[[140.4,4.4],[147.2,8.5],[151.8,1.7],[149.9,-0.2],[150.7,-2.7],[150.3,-3.8],[154.3,-6.9],[155,-12],[143.2,-13.9],[143.5,-6.3],[142.5,-3.6],[143.1,-1.9],[142.2,-1.1],[140.7,-1.9],[140.4,4.4]]},{"n":"고덕1동","g":"강동구","c":[138.1,-5.1],"p":[[131.1,1],[140.4,4.4],[140.7,-1.9],[142.2,-1.1],[143.1,-1.9],[142.5,-3.6],[143.5,-6.3],[143.2,-13.9],[133.6,-14.5],[133.9,-11.5],[133.3,-10.6],[136.1,-8],[131.1,1]]},{"n":"명일2동","g":"강동구","c":[142.6,-22.7],"p":[[138.2,-14.6],[143.2,-13.9],[142.7,-23.1],[145.2,-23.8],[147.9,-23.4],[148.5,-24.3],[146.3,-27.7],[145.3,-26.5],[143.4,-25.9],[141.2,-26.9],[140.9,-25.7],[138.3,-23.6],[136.7,-24.1],[138.2,-14.6]]},{"n":"명일1동","g":"강동구","c":[134.1,-19.1],"p":[[133.6,-14.5],[138.2,-14.6],[136.9,-23.5],[136.1,-23.3],[134.7,-24.9],[132.3,-24.2],[133.2,-18.5],[130.3,-18],[132.6,-14.7],[133.6,-14.5]]},{"n":"상일동","g":"강동구","c":[149,-21.1],"p":[[143.2,-13.9],[155,-12],[157.1,-23.9],[153.5,-24.5],[151.6,-24],[150.8,-25],[148.5,-24.3],[147.9,-23.4],[145.2,-23.8],[142.7,-23.1],[143.2,-13.9]]},{"n":"강일동","g":"강동구","c":[156.3,-6.1],"p":[[147.2,8.5],[149.7,10.2],[157,10.3],[159.9,11.5],[158.1,8],[163.4,-8.4],[162.9,-16.4],[164.3,-17.6],[164.4,-23.9],[163,-24.1],[161,-22.7],[158.3,-24.1],[157.1,-23.9],[154.3,-6.9],[150.3,-3.8],[150.7,-2.7],[149.9,-0.2],[151.8,1.7],[147.2,8.5]]},{"n":"잠실3동","g":"송파구","c":[92.1,-54.4],"p":[[90.8,-43.3],[101.6,-60.6],[98.3,-62.6],[96.5,-62.8],[89.4,-61.4],[87.3,-59.3],[86.9,-57.7],[92.5,-57.4],[89.3,-46.1],[89.3,-43.8],[90.8,-43.3]]},{"n":"잠실2동","g":"송파구","c":[80.4,-49.3],"p":[[76.6,-45.5],[80.6,-45.7],[89.3,-43.8],[89.3,-46.1],[92.5,-57.4],[81.2,-57.4],[73.6,-59.3],[71.8,-48.4],[72.2,-44.2],[76.6,-45.5]]},{"n":"잠실7동","g":"송파구","c":[77,-61.7],"p":[[73.6,-59.3],[81.2,-57.4],[82.1,-62.6],[77.1,-67.2],[74.4,-64.3],[73.6,-59.3]]},{"n":"잠실6동","g":"송파구","c":[98.6,-48.6],"p":[[96.9,-41.7],[100.8,-47.3],[104.8,-57.3],[101.6,-60.6],[90.8,-43.3],[96.9,-41.7]]},{"n":"잠실4동","g":"송파구","c":[102.3,-46],"p":[[97.5,-41.3],[102.2,-45.4],[111.4,-45.3],[108.4,-51.7],[103.6,-53.8],[100.8,-47.3],[96.9,-41.7],[97.5,-41.3]]},{"n":"잠실본동","g":"송파구","c":[84.9,-61.9],"p":[[86.9,-57.7],[88.3,-60.7],[91,-61.8],[85.4,-70],[77.1,-67.2],[82.1,-62.6],[81.2,-57.4],[86.9,-57.7]]},{"n":"장지동","g":"송파구","c":[127.3,-89],"p":[[128.5,-75],[129.3,-75.3],[128.5,-78.5],[131.9,-79.6],[132.2,-80.3],[130.2,-85],[130.6,-86],[132.1,-87.5],[137.5,-89],[137.5,-90.9],[135.2,-92.7],[131.7,-92.8],[131.4,-94.8],[130.7,-94.6],[129.3,-95.9],[124.6,-93.6],[122.7,-93.9],[122.7,-97.9],[126.4,-100],[124.3,-101.4],[121.2,-101.4],[119.5,-100.5],[119.8,-92.9],[117.5,-86.9],[119.3,-86.5],[119.5,-83],[122,-82.1],[128.5,-75]]},{"n":"문정2동","g":"송파구","c":[114,-91.4],"p":[[113.3,-76.7],[119.8,-92.9],[119.5,-100.5],[118.2,-99.8],[118.3,-102.3],[116,-104.1],[115.4,-100.5],[107.1,-86.4],[108.1,-85.8],[104.8,-80],[113.3,-76.7]]},{"n":"문정1동","g":"송파구","c":[120.7,-81.6],"p":[[125,-78.8],[122,-82.1],[119.5,-83],[119.3,-86.5],[117.5,-86.9],[115.1,-80.3],[121.9,-76.1],[125,-78.8]]},{"n":"가락2동","g":"송파구","c":[124.4,-74.5],"p":[[129.5,-73.6],[128.2,-73.7],[128.5,-75],[125,-78.8],[121.9,-76.1],[119.2,-77.8],[116.9,-74.3],[120.7,-67.3],[129.5,-73.6]]},{"n":"가락1동","g":"송파구","c":[106,-72.6],"p":[[110.1,-71.1],[110,-72.1],[113.3,-76.7],[104.8,-80],[101.3,-76.6],[95.8,-73.5],[96.5,-71.9],[106.1,-68.3],[106.9,-69.4],[107.6,-68.9],[109.1,-71.1],[110.1,-71.1]]},{"n":"가락본동","g":"송파구","c":[116.1,-69.2],"p":[[117.3,-63.9],[117.2,-64.5],[120.7,-67.3],[116.9,-74.3],[119.2,-77.8],[115.1,-80.3],[110,-72.1],[110.1,-71.1],[116.2,-66.2],[116.8,-65.3],[116.2,-63.9],[117.3,-63.9]]},{"n":"삼전동","g":"송파구","c":[92.9,-66.2],"p":[[96.2,-62.8],[95.8,-73.5],[85.4,-70],[91,-61.8],[96.2,-62.8]]},{"n":"석촌동","g":"송파구","c":[101.1,-66.4],"p":[[101.6,-60.6],[107.6,-68.9],[106.9,-69.4],[106.1,-68.3],[96.3,-72.4],[95.7,-72.1],[96.2,-62.8],[98.3,-62.6],[101.6,-60.6]]},{"n":"송파2동","g":"송파구","c":[112.4,-66.3],"p":[[116.2,-63.9],[116.8,-65.3],[115.5,-67],[110.2,-71.1],[109.1,-71.1],[106.4,-67.3],[109.3,-65.5],[111.6,-61.5],[116.2,-63.9]]},{"n":"송파1동","g":"송파구","c":[105.9,-62.1],"p":[[101.6,-60.6],[104.8,-57.3],[111.6,-61.5],[109.3,-65.5],[106.4,-67.3],[101.6,-60.6]]},{"n":"오금동","g":"송파구","c":[128.2,-63.5],"p":[[130.3,-60.9],[131.1,-62.4],[131,-63.9],[133.6,-64.9],[129.9,-73.9],[117.2,-64.5],[120.6,-57.6],[129.8,-62.2],[130.3,-60.9]]},{"n":"오륜동","g":"송파구","c":[126,-52.6],"p":[[113.6,-41.2],[134.4,-52.8],[133.7,-53.7],[129.8,-53.8],[132.8,-55.6],[132.9,-56.6],[131,-57],[129.8,-62.2],[108.3,-51.8],[113.6,-41.2]]},{"n":"방이2동","g":"송파구","c":[107.8,-55.5],"p":[[103.6,-53.8],[108.3,-51.8],[115,-54.7],[111.6,-61.5],[104.8,-57.4],[103.6,-53.8]]},{"n":"방이1동","g":"송파구","c":[115.9,-58.5],"p":[[115,-54.7],[120.6,-57.6],[117.3,-63.9],[111.6,-61.5],[115,-54.7]]},{"n":"마천2동","g":"송파구","c":[138.6,-68.8],"p":[[131.6,-69.9],[133.6,-64.9],[134.2,-65.8],[136.2,-66],[138.1,-64.8],[139.5,-66.2],[143.1,-67.4],[144,-66.2],[147,-69.1],[146,-72.1],[143.2,-70.9],[140.4,-72.4],[137.9,-72.2],[137.2,-73],[133.9,-70.1],[131.6,-69.9]]},{"n":"마천1동","g":"송파구","c":[141.7,-74.3],"p":[[137.2,-73],[137.9,-72.2],[140.4,-72.4],[143.2,-70.9],[146,-72.1],[146,-74.9],[144.5,-78.8],[144.1,-79.1],[140,-76.3],[137.2,-73]]},{"n":"거여2동","g":"송파구","c":[137.4,-80.2],"p":[[135.3,-71.3],[140,-76.3],[144.1,-79.1],[142.9,-80.7],[139.5,-81.7],[137.5,-89],[132.1,-87.5],[130.2,-85],[135.3,-71.3]]},{"n":"거여1동","g":"송파구","c":[130.8,-74.2],"p":[[131.6,-69.9],[133.9,-70.1],[135.3,-71.3],[132.2,-80.3],[131.9,-79.6],[128.5,-78.5],[129.3,-75.3],[128.5,-75],[128.2,-73.8],[128.6,-73.4],[129.9,-73.9],[131.6,-69.9]]},{"n":"풍납2동","g":"송파구","c":[106.4,-38.4],"p":[[101.7,-33.3],[107,-33.3],[115.2,-36.2],[114.5,-39],[111.4,-45.3],[102.2,-45.4],[97.5,-41.3],[101.7,-33.3]]},{"n":"풍납1동","g":"송파구","c":[109.4,-30.5],"p":[[106,-25.8],[113,-28.4],[116.8,-30.8],[115.2,-36.2],[107,-33.3],[101.7,-33.3],[106,-25.8]]},{"n":"개포2동","g":"강남구","c":[74.1,-86.9],"p":[[76,-76.3],[76.7,-77.8],[79.5,-76.7],[81,-81.4],[80.9,-83.8],[76.9,-90.6],[78.1,-93],[80.3,-94.3],[77.7,-96.4],[76.7,-94.5],[74.4,-94.1],[74,-95.4],[72.8,-93.6],[71.9,-94],[71.3,-93.5],[70.8,-91.4],[69.7,-91.1],[70.4,-90.1],[65.1,-84.5],[63.9,-81.6],[65.7,-80.6],[72.4,-78.9],[75.9,-75.9],[76,-76.3]]},{"n":"대치2동","g":"강남구","c":[72.9,-69],"p":[[73.6,-59.3],[74.4,-64.3],[77.1,-67.2],[78.9,-68.1],[77.7,-69.7],[77.4,-74.6],[73.4,-78.3],[71.1,-79.2],[69.2,-74.9],[68.5,-75.1],[69.2,-74.7],[64,-62.4],[71.9,-59.4],[73.6,-59.3]]},{"n":"청담동","g":"강남구","c":[58.4,-43.1],"p":[[58,-36.7],[70.8,-43.7],[67.9,-47.6],[65.4,-48.8],[51.8,-52],[50.1,-46.3],[51.4,-41.5],[53.8,-42.2],[56.3,-35.1],[58,-36.7]]},{"n":"압구정동","g":"강남구","c":[44.5,-37.9],"p":[[41.5,-30.8],[42.8,-30.4],[55.5,-36.8],[53.8,-42.2],[51.4,-41.5],[50.2,-46.4],[41.4,-49.7],[41.7,-42],[39.1,-39.1],[36.2,-33.8],[38.8,-31.7],[41.5,-30.8]]},{"n":"세곡동","g":"강남구","c":[100,-99.6],"p":[[107.1,-86.4],[114.7,-98.9],[116,-101.9],[116,-104.1],[112.2,-107.1],[111.7,-110.7],[109.2,-109.6],[108.6,-108.8],[109,-108.2],[103.4,-106.8],[101.8,-107.1],[102.2,-108.2],[101.2,-109.7],[96.9,-110.6],[95.9,-109.7],[94.4,-105.7],[93.1,-104.9],[91.5,-102.2],[89.1,-101],[88.8,-99.6],[86.6,-97.7],[86.1,-96.4],[86.6,-94],[90.3,-93],[91.7,-91.7],[92.5,-92.1],[96.3,-91.2],[96.5,-87.5],[99.1,-86],[100.7,-83],[102.8,-86.6],[107.1,-86.4]]},{"n":"수서동","g":"강남구","c":[98,-84.3],"p":[[99.9,-75.7],[105.6,-80.8],[108.1,-85.8],[107.2,-86.4],[102.8,-86.6],[100.7,-83],[99.1,-86],[96.5,-87.5],[96.3,-91.2],[92.8,-92],[92.9,-89.8],[94.4,-86.5],[93.5,-84.5],[93.8,-82.1],[91.7,-80.9],[91,-78],[99.9,-75.7]]},{"n":"일원2동","g":"강남구","c":[80.3,-75.2],"p":[[78.9,-68.1],[90.8,-71.8],[82.2,-75.6],[83.9,-80.6],[80.5,-82.2],[81,-81.4],[79.5,-76.7],[76.7,-77.8],[76,-76.3],[77.6,-74.2],[77.7,-69.7],[78.9,-68.1]]},{"n":"일원1동","g":"강남구","c":[90,-75.5],"p":[[90.8,-71.8],[99.9,-75.7],[92.3,-77.5],[83.9,-80.6],[82.2,-75.6],[90.8,-71.8]]},{"n":"일원본동","g":"강남구","c":[87,-87],"p":[[83.9,-80.6],[91,-78],[91.7,-80.9],[93.8,-82.1],[93.5,-84.5],[94.4,-86.5],[92.9,-89.8],[92.8,-92],[91.7,-91.7],[89.4,-93.4],[82.8,-94.4],[80.3,-94.3],[78.1,-93],[76.9,-90.6],[80.9,-83.8],[80.5,-82.2],[83.9,-80.6]]},{"n":"개포4동","g":"강남구","c":[60.6,-94.2],"p":[[60.1,-84.5],[61.7,-88.2],[68.7,-96.5],[67.9,-100.3],[62.3,-100.8],[60,-99.2],[58.8,-99.2],[58.4,-98.8],[59.6,-97.8],[54.8,-92],[54.3,-89.1],[60.1,-84.5]]},{"n":"개포1동","g":"강남구","c":[68,-89.7],"p":[[63.9,-81.6],[65.1,-84.5],[70.4,-90.1],[69.7,-91.1],[70.8,-91.4],[71.3,-93.5],[71.9,-94],[72.8,-93.6],[74,-95.4],[68.7,-96.5],[61.8,-88.2],[60.1,-84.5],[63.9,-81.6]]},{"n":"도곡2동","g":"강남구","c":[58.3,-78.5],"p":[[61.1,-73],[63.9,-81.6],[53.9,-89.6],[51.9,-83.7],[55.2,-83.1],[58.6,-80.9],[56.1,-75],[60.9,-73],[60.7,-72.3],[61.1,-73]]},{"n":"도곡1동","g":"강남구","c":[52.7,-79.8],"p":[[56.1,-75],[58.6,-80.9],[55.2,-83.1],[46.1,-84.7],[44.2,-79.8],[56.1,-75]]},{"n":"역삼2동","g":"강남구","c":[56.7,-71.4],"p":[[60.7,-72.3],[60.9,-73],[51.5,-76.9],[48.5,-68.7],[58,-64.9],[60.7,-72.3]]},{"n":"역삼1동","g":"강남구","c":[51.1,-66.3],"p":[[54.2,-60.1],[57,-62.7],[57.9,-64.7],[48.5,-68.7],[51.5,-76.9],[44.2,-79.8],[38.5,-64.7],[53.8,-59],[54.2,-60.1]]},{"n":"대치4동","g":"강남구","c":[61.8,-66.4],"p":[[64,-62.4],[67.3,-70.4],[61.1,-73],[58,-64.9],[56.5,-65.2],[64,-62.4]]},{"n":"대치1동","g":"강남구","c":[66.4,-75.2],"p":[[61.1,-73],[67.3,-70.4],[69.2,-74.7],[68.5,-75.1],[69.2,-74.9],[71.1,-79.2],[63.9,-81.6],[61.1,-73]]},{"n":"삼성2동","g":"강남구","c":[56.1,-57],"p":[[52.5,-51.9],[59,-50.4],[64,-62.4],[57.9,-64.7],[57,-62.7],[54.2,-60.1],[51.9,-52.2],[52.5,-51.9]]},{"n":"삼성1동","g":"강남구","c":[68.8,-50],"p":[[72.2,-44.2],[71.8,-48.4],[73.4,-59],[64,-62.4],[59,-50.4],[67.1,-48.1],[70.8,-43.7],[72.2,-44.2]]},{"n":"논현2동","g":"강남구","c":[49.2,-53.7],"p":[[41.4,-49.7],[50.2,-46.4],[51.8,-52],[52.5,-51.9],[51.9,-52.2],[54.2,-60],[53.8,-59],[46,-62],[41.4,-49.7]]},{"n":"논현1동","g":"강남구","c":[38.6,-56.8],"p":[[41.4,-49.7],[46,-62],[38.5,-64.7],[36,-58.3],[35.3,-58.6],[36,-58.1],[34.4,-53.2],[41.4,-49.7]]},{"n":"신사동","g":"강남구","c":[36.4,-42.5],"p":[[36.2,-33.8],[39.1,-39.1],[41.7,-42],[41.4,-49.7],[34.6,-53.1],[33.1,-47.2],[28.5,-41.5],[36.2,-33.8]]},{"n":"내곡동","g":"서초구","c":[76.5,-115.2],"p":[[80.3,-94.3],[86.6,-94],[86.1,-96.4],[87.4,-98.9],[88.8,-99.6],[89.1,-101],[90.2,-101.9],[91.5,-102.2],[95.2,-106.8],[95.5,-107.9],[94.1,-110.5],[94.5,-112.8],[93.3,-113.2],[92.5,-115.6],[91.2,-116.3],[89.5,-119.2],[88.9,-124.2],[86.8,-124.4],[84.4,-128.1],[78.4,-126.9],[76.1,-127.2],[76.2,-129.3],[78.2,-130.5],[77.7,-132.2],[75.6,-133.6],[75.1,-136.7],[75.6,-138.7],[75.1,-139.4],[74.6,-138.5],[73.2,-138.7],[71.2,-140.3],[70.1,-140.1],[69.2,-139.6],[69.5,-131.4],[67.8,-128.7],[66.6,-128.1],[64.5,-123.3],[59.4,-117.3],[58.6,-113.8],[55.6,-110.4],[55.2,-108],[57.2,-107.1],[55.1,-105.8],[53.2,-103.7],[58.4,-98.8],[62.3,-100.8],[67.9,-100.3],[68.7,-96.5],[74,-95.4],[74.4,-94.1],[76.7,-94.5],[77.7,-96.4],[80.3,-94.3]]},{"n":"양재2동","g":"서초구","c":[53.6,-116.4],"p":[[53.9,-89.6],[54.8,-92],[59.6,-97.8],[53.2,-103.7],[55.1,-105.8],[57.2,-107.1],[55.2,-108],[55.6,-110.4],[58.6,-113.8],[59.4,-117.3],[64.5,-123.3],[66.6,-128.1],[67.8,-128.7],[69.5,-131.4],[69.2,-139.6],[65,-139.2],[60.5,-140.8],[58.6,-139],[56.8,-138.5],[55.8,-135.8],[51.6,-131.1],[48.7,-130.8],[47.5,-130],[47.2,-128.1],[48.3,-127.2],[49.5,-123.8],[48.7,-122.6],[49.1,-119.9],[47.8,-117.7],[48.5,-114],[48.2,-112.7],[46.8,-111.4],[46.8,-109.1],[45.8,-108.2],[46.6,-105.5],[43.9,-103.5],[42.8,-103.9],[42.1,-101.5],[45.9,-96.4],[50.3,-94.6],[53.9,-89.6]]},{"n":"양재1동","g":"서초구","c":[38.1,-95.3],"p":[[46.1,-84.7],[51.9,-83.7],[53.9,-89.6],[50.3,-94.6],[45.9,-96.4],[43.5,-98.9],[42.1,-101.5],[42.8,-105.9],[39.8,-110.8],[33.3,-113.7],[27.9,-113.9],[22.4,-104.5],[21.8,-102],[22.6,-100],[25.3,-98.3],[26.5,-98.3],[28.8,-96.2],[30.4,-96.1],[32.5,-93.3],[36.4,-91.8],[37.2,-90.3],[38.4,-89.8],[38.5,-88.7],[41.8,-88.3],[43.2,-89.1],[44.9,-88.3],[46.3,-86.5],[45.7,-85.1],[46.1,-84.7]]},{"n":"방배4동","g":"서초구","c":[13.2,-78.4],"p":[[15.5,-75.3],[19,-76.2],[19,-79.1],[19.7,-79.4],[12.5,-82.4],[4.9,-83.9],[5.4,-78.4],[7.6,-78.4],[13,-75.8],[15.5,-75.3]]},{"n":"방배3동","g":"서초구","c":[19.5,-95.3],"p":[[20.8,-87],[22.4,-90.8],[23.4,-90.3],[24.4,-91.1],[26.3,-94.5],[27.3,-97],[26.5,-98.3],[25.3,-98.3],[22.6,-100],[21.8,-102],[17.5,-101.9],[16.2,-102.6],[14.9,-100.5],[8.6,-98.1],[7.7,-94.7],[8.8,-91.9],[15.3,-88.6],[20.8,-87]]},{"n":"방배2동","g":"서초구","c":[10.7,-98.8],"p":[[10.9,-82.9],[14.1,-89.1],[8.5,-92.2],[8,-96.5],[8.6,-98.1],[14.9,-100.5],[16.9,-105.4],[16.6,-107.1],[13.7,-107.9],[13,-109.2],[12.2,-109.2],[10.1,-111.2],[9.2,-108.9],[9.7,-103.8],[5.8,-97.7],[4.5,-92.6],[4.9,-83.9],[10.9,-82.9]]},{"n":"방배1동","g":"서초구","c":[17.8,-83.4],"p":[[19.7,-79.4],[20,-82.3],[19.3,-83.7],[20.8,-87],[14.1,-89.1],[10.9,-82.9],[19.7,-79.4]]},{"n":"방배본동","g":"서초구","c":[10.5,-73.6],"p":[[11.7,-71.1],[14,-73.3],[15,-73.3],[15.5,-75.3],[13,-75.8],[7.6,-78.4],[5.4,-78.4],[5.6,-72.9],[7.1,-69.5],[8.7,-71],[11.7,-71.1]]},{"n":"반포4동","g":"서초구","c":[20,-70.7],"p":[[26.3,-61.9],[29,-70.3],[26.8,-70.9],[26.4,-72],[23.1,-72.5],[19.3,-77.4],[19,-76.2],[15.5,-75.3],[15,-73.3],[14,-73.3],[11.9,-71.8],[11.7,-71.1],[14.4,-70.9],[21.4,-67.4],[19.9,-64.3],[26.3,-61.9]]},{"n":"반포3동","g":"서초구","c":[23.9,-55.9],"p":[[22.6,-49],[26.2,-53.7],[24.5,-55.8],[24.9,-56.7],[25.9,-56],[28.6,-59.8],[28.4,-61.1],[19.9,-64.3],[15.9,-53.6],[22.6,-49]]},{"n":"반포2동","g":"서초구","c":[13.9,-64.5],"p":[[15.9,-53.6],[21.6,-67.2],[14.4,-70.9],[9.4,-71.1],[12.1,-69.8],[12.8,-68.3],[14.8,-67.8],[14.3,-66.4],[13.4,-66.7],[12.6,-63.9],[13.3,-62.1],[10.7,-56.6],[15.9,-53.6]]},{"n":"반포1동","g":"서초구","c":[33.4,-63.9],"p":[[35.2,-58.5],[36,-58.3],[38.5,-64.8],[33.9,-66.5],[34.7,-69],[31.8,-67.8],[28.9,-69.9],[26.3,-61.9],[35.2,-58.5]]},{"n":"반포본동","g":"서초구","c":[10.1,-62.7],"p":[[10.7,-56.6],[13.3,-62.1],[12.6,-63.9],[13.4,-66.7],[14.3,-66.4],[14.8,-67.8],[12.8,-68.3],[12.1,-69.8],[8.8,-70.7],[3.8,-66.6],[3.4,-57.2],[4.9,-57.3],[5.2,-55.8],[10.1,-55.2],[10.7,-56.6]]},{"n":"잠원동","g":"서초구","c":[27.8,-51.9],"p":[[28.5,-41.5],[33.1,-47.2],[36,-58.1],[28.4,-61.1],[28.6,-59.8],[25.9,-56],[24.9,-56.7],[24.5,-55.8],[26.2,-53.7],[22.6,-49],[26.7,-42.9],[28.5,-41.5]]},{"n":"서초4동","g":"서초구","c":[33.5,-69.3],"p":[[28.9,-69.9],[31.8,-67.8],[34.7,-69],[33.9,-66.5],[38.5,-64.8],[41,-71.3],[30.3,-75.3],[28.9,-69.9]]},{"n":"서초3동","g":"서초구","c":[26.6,-83],"p":[[29,-70.3],[29.8,-75],[31.7,-75.2],[30.1,-76],[30.7,-80.9],[34,-87.7],[34.4,-89.3],[33.8,-90.5],[34.4,-90.6],[34.8,-92.4],[32.5,-93.3],[30.4,-96.1],[27.3,-97],[24.4,-91.1],[23.4,-90.3],[22.4,-90.8],[21.2,-88.5],[21.5,-87.9],[19.8,-85.6],[19.3,-83.7],[20,-82.3],[19.9,-79.6],[18.8,-78.3],[21.4,-75.4],[22.1,-73.3],[23.5,-72.4],[26.4,-72],[26.8,-70.9],[29,-70.3]]},{"n":"서초2동","g":"서초구","c":[42.1,-82.9],"p":[[36,-73.3],[41,-71.3],[46.1,-84.7],[45.7,-85.1],[46.3,-86.5],[44.9,-88.3],[43.2,-89.1],[41.8,-88.3],[40.5,-88.8],[36,-73.3]]},{"n":"서초1동","g":"서초구","c":[35.1,-85.2],"p":[[36,-73.3],[40.5,-88.8],[38.5,-88.7],[38.3,-89.9],[34.8,-92.4],[34.4,-90.6],[33.8,-90.5],[34.4,-89.3],[34,-87.7],[30.9,-82.1],[30.1,-76],[36,-73.3]]},{"n":"미성동","g":"관악구","c":[-48.5,-94.4],"p":[[-43.1,-86.2],[-41,-92.1],[-44.6,-94.9],[-46.1,-95.3],[-46.1,-96.3],[-48.5,-97.8],[-48.8,-99.9],[-48.2,-103.2],[-48.5,-103.9],[-50.2,-103.7],[-53.6,-96.7],[-50.6,-94.5],[-51,-91.1],[-52.6,-91.1],[-53,-89.2],[-52.3,-89],[-52.4,-88.4],[-43.1,-86.2]]},{"n":"삼성동","g":"관악구","c":[-36.4,-103.9],"p":[[-36.9,-94.3],[-36.4,-94.9],[-35.4,-94.5],[-34.7,-95.5],[-33.9,-94.9],[-33.2,-95.6],[-33.1,-97.5],[-35.2,-103.5],[-33.7,-103.1],[-29.6,-110],[-29.8,-112.7],[-31,-113.9],[-31.7,-117.4],[-35.6,-121.5],[-37.3,-118.4],[-41.8,-114.9],[-42.4,-112.6],[-41.1,-109.6],[-42,-104.8],[-40.2,-101.8],[-39.4,-102],[-39.8,-98.6],[-38.9,-96.5],[-39.1,-94.8],[-36.9,-94.3]]},{"n":"난곡동","g":"관악구","c":[-43.1,-98.7],"p":[[-39.1,-94.8],[-38.9,-96.5],[-39.8,-98.6],[-39.4,-102],[-40.2,-101.8],[-41.6,-103.7],[-42,-105.8],[-45,-102.8],[-47.6,-102.2],[-48.2,-103.2],[-48.8,-99.9],[-48.5,-97.8],[-46.1,-96.3],[-46.1,-95.3],[-44.6,-94.9],[-41,-92.1],[-39.4,-93.5],[-39.1,-94.8]]},{"n":"청룡동","g":"관악구","c":[-26.1,-90.4],"p":[[-23.4,-87.3],[-18.3,-88],[-18.5,-98.2],[-23.3,-96.6],[-25.5,-93.7],[-25.9,-94.3],[-28.6,-91.9],[-28.9,-90.3],[-30.7,-89.9],[-31.9,-88.2],[-30.6,-87.2],[-30.2,-85.2],[-26.9,-86.9],[-23.4,-87.3]]},{"n":"성현동","g":"관악구","c":[-20,-78.8],"p":[[-22.6,-75.4],[-17.5,-78.3],[-15.7,-77.7],[-14.1,-80.9],[-15.5,-83.6],[-22.9,-82.4],[-23.6,-79.2],[-25.8,-76.7],[-22.6,-75.4]]},{"n":"은천동","g":"관악구","c":[-27.7,-81.7],"p":[[-25.8,-77.2],[-23.6,-79.2],[-22.9,-82.4],[-23.4,-87.3],[-26.8,-86.9],[-31.1,-84.6],[-33.1,-84.5],[-33.1,-82.9],[-29,-83.1],[-28.3,-81.6],[-29.5,-81.1],[-28.8,-78.4],[-27.2,-77.1],[-25.8,-77.2]]},{"n":"대학동","g":"관악구","c":[-22.2,-115.5],"p":[[-23.3,-96.6],[-17.8,-98.5],[-15.6,-103.4],[-16.2,-106.7],[-14.5,-110.8],[-12.2,-113.6],[-8.1,-114.3],[-4.9,-119.8],[-4.9,-121.4],[-6.9,-123.2],[-9.1,-123.7],[-9.4,-127.1],[-10.8,-128.7],[-13.1,-128.5],[-13.8,-129.8],[-15.9,-130.2],[-21.9,-130.2],[-24.3,-131.7],[-26.6,-131.7],[-28.9,-133.3],[-30.2,-130.7],[-29.7,-129],[-30.6,-127.4],[-35.6,-123.5],[-35.1,-120.5],[-31.7,-117.4],[-31,-113.9],[-29.8,-112.7],[-29.6,-110],[-33.7,-103.1],[-35.2,-103.5],[-35.2,-102.5],[-33.1,-97.5],[-29.1,-98.5],[-26.1,-98.3],[-24.1,-99.8],[-23.1,-99.3],[-23.3,-96.6]]},{"n":"조원동","g":"관악구","c":[-54.4,-85.6],"p":[[-49.6,-82.1],[-48.6,-87.5],[-59.6,-90],[-60.6,-89],[-57.6,-84.3],[-55.4,-84.3],[-49.6,-82.1]]},{"n":"난향동","g":"관악구","c":[-46.7,-106.3],"p":[[-49.3,-104],[-48.5,-103.9],[-47.6,-102.2],[-45.5,-102.6],[-42,-105.8],[-41.1,-109.6],[-42.6,-112.5],[-48.9,-111.2],[-48.8,-107.8],[-50,-105.3],[-49.3,-104]]},{"n":"신림동","g":"관악구","c":[-38.5,-81.6],"p":[[-40.9,-79.3],[-38,-79.9],[-32.5,-82.9],[-33.1,-82.9],[-33.1,-84.5],[-39.4,-85.5],[-43,-80.8],[-45.2,-79.7],[-40.9,-79.3]]},{"n":"신사동","g":"관악구","c":[-45.4,-82.2],"p":[[-45.2,-79.7],[-43,-80.8],[-39.4,-85.5],[-48.6,-87.5],[-49.6,-82.1],[-46.6,-79.9],[-45.2,-79.7]]},{"n":"서림동","g":"관악구","c":[-30.3,-95],"p":[[-28.9,-91.2],[-26,-94.2],[-25.5,-93.7],[-23.3,-96.6],[-23.1,-99.3],[-24.1,-99.8],[-26.1,-98.3],[-32.4,-97.9],[-33.5,-96.9],[-33.2,-95.6],[-33.9,-94.9],[-34.7,-95.5],[-35.4,-94.5],[-36.8,-94.7],[-35.3,-93.4],[-32.4,-93.3],[-32.5,-91.9],[-30.3,-92.1],[-28.9,-91.2]]},{"n":"신원동","g":"관악구","c":[-38.6,-90],"p":[[-39.4,-85.5],[-37.1,-87.4],[-34.9,-90.5],[-36,-91],[-36.2,-94],[-39,-94.9],[-39.4,-93.5],[-41.5,-91.6],[-43.1,-86.2],[-39.4,-85.5]]},{"n":"서원동","g":"관악구","c":[-32.6,-89.3],"p":[[-33.1,-84.5],[-30.2,-85.2],[-30.6,-87.2],[-31.9,-88.2],[-30.7,-89.9],[-28.9,-90.3],[-28.9,-91.2],[-30.3,-92.1],[-32.5,-91.9],[-32.4,-93.3],[-36.2,-94],[-36,-91],[-34.9,-90.5],[-39,-85.5],[-33.1,-84.5]]},{"n":"남현동","g":"관악구","c":[-0.2,-107.4],"p":[[4.5,-92.6],[5.8,-97.7],[9.7,-103.8],[9.2,-108.9],[10.1,-111.2],[5,-112.8],[5,-114.6],[3.9,-116.3],[0.3,-118.8],[-1.5,-121.7],[-5.7,-122.5],[-4.8,-120],[-8.1,-114.3],[-4.3,-108.2],[-8.1,-105],[-9,-101.8],[-8.1,-102.5],[-4.2,-100.7],[-3.4,-96.2],[-4.3,-93.9],[4.5,-92.6]]},{"n":"인헌동","g":"관악구","c":[-7.7,-96.6],"p":[[-4.3,-93.9],[-3.4,-96.2],[-3.8,-99.8],[-4.4,-100.9],[-8.1,-102.5],[-10.5,-99.6],[-9.9,-97.6],[-11.1,-96.7],[-10.6,-95.5],[-11.6,-93.4],[-10.8,-91.7],[-6.8,-93.7],[-4.3,-93.9]]},{"n":"중앙동","g":"관악구","c":[-20.6,-84.7],"p":[[-22.9,-82.4],[-15.5,-83.6],[-18.3,-88],[-23.4,-87.3],[-22.9,-82.4]]},{"n":"낙성대동","g":"관악구","c":[-11.8,-101.5],"p":[[-10.8,-91.7],[-11.6,-93.5],[-10.6,-95.5],[-11.1,-96.7],[-9.9,-97.6],[-10.5,-99.6],[-9,-101.8],[-8.1,-105],[-4.3,-108.2],[-7.5,-112.9],[-7.7,-114.3],[-11.8,-113.8],[-14,-111.5],[-16.2,-106.7],[-15.6,-103.4],[-17.8,-98.5],[-18.5,-98.2],[-18.3,-88],[-10.8,-91.7]]},{"n":"행운동","g":"관악구","c":[-11.1,-87.6],"p":[[-15.5,-83.6],[-15.1,-82.9],[-13.5,-82.9],[-10.9,-84.1],[-11.5,-85.8],[-5.6,-92.7],[-4.5,-92.7],[-4.3,-93.9],[-6.9,-93.7],[-18.3,-88],[-15.5,-83.6]]},{"n":"청림동","g":"관악구","c":[-12.8,-79.2],"p":[[-11.6,-76.7],[-12,-78.5],[-10.7,-82.1],[-11,-84.1],[-13.5,-82.9],[-15.1,-82.9],[-14.1,-80.9],[-15.7,-77.7],[-13.6,-76.7],[-13.3,-75.4],[-11.7,-75.9],[-11.6,-76.7]]},{"n":"보라매동","g":"관악구","c":[-33.4,-78.7],"p":[[-28.8,-78.4],[-29.5,-81.1],[-28.3,-81.6],[-29,-83.1],[-32.5,-82.9],[-38,-79.9],[-40.9,-79.3],[-39.9,-77.8],[-40,-76.3],[-38.2,-74.3],[-34.5,-76.4],[-32.7,-76.2],[-31.2,-77.2],[-29.1,-77.4],[-28.8,-78.4]]},{"n":"사당2동","g":"동작구","c":[-1.4,-70.5],"p":[[3.4,-57.2],[3.8,-66.6],[9.5,-70.7],[8.5,-70.9],[7.1,-69.5],[5.6,-72.9],[4.9,-83.9],[2.6,-84.9],[3.2,-82],[2.1,-82.5],[0.5,-82.1],[-2.6,-77.6],[-2.4,-76],[-6.4,-75.3],[-8.7,-76.1],[-10.2,-74.7],[-11.7,-71.5],[-11,-71.9],[-9.9,-69.7],[-7.4,-67.4],[-7.1,-65.4],[-5,-65.6],[-3.3,-65.1],[-2.8,-63.8],[-2,-64],[-1.3,-62.7],[-1.8,-60.9],[-0.2,-57],[3.4,-57.2]]},{"n":"노량진1동","g":"동작구","c":[-22.1,-58.8],"p":[[-20.2,-49.3],[-14.7,-54],[-10.7,-55.9],[-14.2,-58.1],[-15.2,-60.1],[-16.5,-60.2],[-17.1,-61.6],[-18.2,-60.4],[-19.3,-61.4],[-20.2,-61.2],[-20.7,-62.2],[-22.7,-62.6],[-24.6,-62.1],[-28.8,-63.8],[-27.7,-62.5],[-26.6,-62.5],[-26,-60.4],[-25.3,-60.4],[-26.2,-59.4],[-28.3,-61.1],[-27.9,-55.5],[-29.1,-55.5],[-29.7,-52.5],[-20.2,-49.3]]},{"n":"흑석동","g":"동작구","c":[-9.2,-63.3],"p":[[-0.2,-57],[-1.8,-60.9],[-1.3,-62.7],[-2,-64],[-2.8,-63.8],[-3.3,-65.1],[-5,-65.6],[-7.1,-65.4],[-7.4,-67.4],[-9.9,-69.7],[-11,-71.9],[-15.2,-70.1],[-16.4,-66.3],[-17.7,-64.8],[-17,-62.2],[-17.4,-61.6],[-16.5,-60.2],[-15.2,-60.1],[-14.2,-58.1],[-10.7,-55.9],[-0.2,-57]]},{"n":"신대방2동","g":"동작구","c":[-41.3,-74.2],"p":[[-37.5,-70.4],[-36.3,-71.5],[-36.5,-75.3],[-38.5,-74.4],[-40,-76.3],[-39.9,-77.8],[-40.9,-79.3],[-46.2,-79.8],[-47.5,-80.5],[-48.9,-72.7],[-44.6,-71.6],[-44.1,-70.8],[-42.6,-71.4],[-39.1,-70.1],[-37.5,-70.4]]},{"n":"신대방1동","g":"동작구","c":[-52,-78.3],"p":[[-52.7,-76.7],[-50.8,-73.4],[-48.9,-72.7],[-47.5,-80.5],[-54.1,-83.9],[-57.6,-84.3],[-52.7,-76.7]]},{"n":"대방동","g":"동작구","c":[-37.5,-61.6],"p":[[-39.5,-53.2],[-34,-53.5],[-34,-54.8],[-32.7,-55.2],[-32.2,-62.3],[-33.2,-64.1],[-34.2,-63.7],[-34.3,-65.2],[-37.7,-66],[-37.3,-68.5],[-36.3,-68.9],[-36.2,-69.7],[-42.7,-71.4],[-44.1,-70.8],[-44.1,-69.3],[-40,-56.6],[-38.7,-56.3],[-38.8,-54.8],[-40.2,-54.4],[-39.5,-53.2]]},{"n":"사당5동","g":"동작구","c":[-8.8,-82.8],"p":[[-10.8,-75.2],[-7.6,-81.3],[-3.8,-84.8],[-4.9,-87.2],[-7,-87.9],[-8.4,-89.7],[-11.5,-85.8],[-10.7,-82.2],[-12,-78.5],[-10.8,-75.2]]},{"n":"사당4동","g":"동작구","c":[-3.9,-88.3],"p":[[-0.2,-86],[-0.2,-87.8],[-4.5,-92.7],[-5.6,-92.7],[-8.4,-89.7],[-7,-87.9],[-4.9,-87.2],[-4,-84.5],[-0.2,-86]]},{"n":"사당3동","g":"동작구","c":[-4.5,-79.2],"p":[[-10.2,-74.7],[-8.6,-76.1],[-6.4,-75.3],[-2.4,-76],[-2.6,-77.6],[0.5,-82.1],[2.1,-82.5],[3.2,-82],[2.6,-84.9],[-1.4,-86],[-4.6,-84.2],[-7.6,-81.3],[-10.6,-76],[-10.8,-75.2],[-10.2,-74.7]]},{"n":"사당1동","g":"동작구","c":[0.7,-88.3],"p":[[2.6,-84.9],[4.9,-83.9],[4.5,-92.6],[-4.3,-93.9],[-4.5,-92.7],[-0.2,-87.8],[-0.2,-86],[2.6,-84.9]]},{"n":"상도4동","g":"동작구","c":[-25.9,-72],"p":[[-22.2,-70],[-21.9,-72.3],[-22.6,-75.4],[-25.8,-76.7],[-25.8,-77.2],[-27,-77.1],[-28.6,-76.5],[-34.8,-68.8],[-31.3,-66],[-29,-68.8],[-25,-69.9],[-24.4,-68.6],[-22.2,-70.6],[-22.2,-70]]},{"n":"상도3동","g":"동작구","c":[-33.4,-71.1],"p":[[-31.3,-66],[-34.8,-68.8],[-32.6,-72.3],[-28.6,-76.5],[-27.2,-77.1],[-28.8,-78.4],[-29.1,-77.4],[-35.3,-76.1],[-36.5,-75.3],[-36.8,-74],[-36.3,-71.5],[-37.5,-70.4],[-36.1,-69.6],[-37.3,-68.5],[-37.7,-66],[-34.3,-65.2],[-32.8,-66.4],[-31,-65.7],[-31.3,-66]]},{"n":"상도2동","g":"동작구","c":[-26.8,-65.4],"p":[[-28.8,-63.8],[-24.6,-62.1],[-22.7,-62.6],[-20.3,-61.5],[-20.7,-63.7],[-21.5,-63.9],[-21.1,-64.4],[-24,-66.3],[-22.2,-68.9],[-22.1,-70.6],[-24.4,-68.6],[-25,-69.9],[-29,-68.8],[-30.6,-67.5],[-31,-65.7],[-32.8,-66.4],[-34.3,-65.2],[-34.2,-63.7],[-33.2,-64.1],[-32.2,-62.3],[-28.8,-63.8]]},{"n":"상도1동","g":"동작구","c":[-17.6,-69.1],"p":[[-20.3,-61.5],[-17.9,-60.6],[-17,-62.2],[-17.7,-64.9],[-16.4,-66.3],[-15.2,-70],[-11.1,-72.1],[-10.2,-74.7],[-11.6,-76.7],[-11.7,-75.9],[-13.3,-75.4],[-14.7,-77.5],[-17.5,-78.3],[-22.6,-75.4],[-21.9,-70.6],[-22.2,-68.9],[-24,-66.3],[-21.1,-64.4],[-21.5,-63.9],[-20.7,-63.7],[-20.3,-61.5]]},{"n":"노량진2동","g":"동작구","c":[-29.2,-58.1],"p":[[-29.7,-52.5],[-29.1,-55.5],[-27.9,-55.5],[-28.3,-61.1],[-26.2,-59.4],[-25.3,-60.4],[-26,-60.4],[-26.6,-62.5],[-27.7,-62.5],[-29.1,-63.9],[-32.2,-62.3],[-32.7,-55.2],[-34,-54.8],[-34,-53.5],[-29.7,-52.5]]},{"n":"문래동","g":"영등포구","c":[-66.3,-52.7],"p":[[-66.3,-48.6],[-59.3,-50.3],[-58.3,-53.5],[-57,-54.7],[-61.9,-57.3],[-61.6,-57.8],[-66.5,-59.9],[-68.4,-57.2],[-76.4,-52.5],[-76.2,-47.9],[-72.1,-48.7],[-71.8,-47.5],[-66.3,-48.6]]},{"n":"도림동","g":"영등포구","c":[-56.8,-59],"p":[[-52,-58.6],[-61.6,-64],[-65.7,-59.8],[-59.7,-57],[-58.3,-59.7],[-56,-59.2],[-54.1,-56.9],[-52.1,-56.8],[-52,-58.6]]},{"n":"영등포동","g":"영등포구","c":[-52.5,-46.3],"p":[[-49.7,-44.9],[-47.5,-49],[-46.3,-49.9],[-47.5,-51.2],[-47,-51.8],[-53.9,-52.4],[-56.2,-54.3],[-57.9,-54],[-59.4,-48.9],[-55.8,-37.2],[-55.1,-37],[-54.7,-38.4],[-55.1,-41],[-54.6,-43.6],[-52,-43],[-50.3,-45.2],[-49.7,-44.9]]},{"n":"영등포본동","g":"영등포구","c":[-54.4,-56.5],"p":[[-57.1,-54.4],[-53.9,-52.4],[-47,-51.8],[-45.2,-55.1],[-46.6,-57.1],[-51.4,-58.5],[-52,-58.6],[-52.1,-56.8],[-54.1,-56.9],[-57.4,-59.8],[-58.6,-59.6],[-59.7,-57],[-61.6,-57.9],[-61.9,-57.3],[-57.1,-54.4]]},{"n":"대림3동","g":"영등포구","c":[-62.5,-67.9],"p":[[-64,-61.2],[-58.4,-67.9],[-59.4,-69.6],[-57.2,-72],[-63.8,-77.3],[-65.3,-72],[-65.5,-67.8],[-65,-61.8],[-64,-61.2]]},{"n":"대림2동","g":"영등포구","c":[-60,-79.8],"p":[[-63.8,-77.3],[-60.2,-74.5],[-57.4,-78.8],[-55.1,-80.4],[-57.6,-84.3],[-59.8,-83.7],[-62.1,-81.7],[-63.8,-77.3]]},{"n":"대림1동","g":"영등포구","c":[-55.7,-75.2],"p":[[-53.7,-71.9],[-52.7,-76.7],[-55.1,-80.4],[-57.4,-78.8],[-60.2,-74.5],[-57.2,-72],[-53.7,-71.9]]},{"n":"신길7동","g":"영등포구","c":[-43.5,-61.1],"p":[[-40.2,-54.4],[-38.8,-54.8],[-38.7,-56.3],[-40,-56.6],[-43.7,-67.9],[-46.2,-67.4],[-47.8,-69],[-50.8,-69.1],[-46.4,-62.9],[-46.2,-60.4],[-44.3,-60.3],[-44.3,-62.1],[-42.7,-61.3],[-42.6,-59.5],[-40.2,-54.4]]},{"n":"신길6동","g":"영등포구","c":[-48.7,-68.9],"p":[[-47.9,-65.1],[-50.8,-69.1],[-47.8,-69],[-46.2,-67.4],[-44.4,-67.6],[-43.7,-67.9],[-44.2,-71.1],[-50.2,-72.9],[-52.7,-76.7],[-53.7,-71.4],[-52,-67.3],[-52.1,-65.7],[-47.9,-65.1]]},{"n":"신길5동","g":"영등포구","c":[-55.5,-67.6],"p":[[-52.1,-65.7],[-52,-67.3],[-53.2,-69.1],[-53.9,-72],[-56.9,-72.2],[-59.2,-69.9],[-58.4,-67.9],[-59.4,-66],[-57.8,-65.1],[-57.1,-66.3],[-54.2,-64.5],[-52.1,-65.7]]},{"n":"신길4동","g":"영등포구","c":[-50.1,-61.4],"p":[[-52,-58.6],[-49.3,-57.9],[-48.5,-61.3],[-47.9,-61.3],[-47.5,-64.9],[-52.1,-65.7],[-51.4,-63.2],[-52,-58.6]]},{"n":"신길3동","g":"영등포구","c":[-56.4,-64.2],"p":[[-61.6,-64],[-52,-58.6],[-51.4,-63.2],[-52.1,-65.5],[-54.2,-64.5],[-57.1,-66.3],[-57.8,-65.1],[-59.8,-66.3],[-61.6,-64]]},{"n":"신길1동","g":"영등포구","c":[-45.1,-57],"p":[[-47,-51.8],[-47.5,-51.2],[-46.3,-49.9],[-39.5,-53.2],[-40.9,-56.4],[-41.4,-56.3],[-42.7,-61.3],[-44.3,-62.1],[-44.3,-60.3],[-46.2,-60.4],[-46.4,-62.9],[-47.4,-63.7],[-49.3,-57.9],[-46.6,-57.1],[-45.2,-55.1],[-47,-51.8]]},{"n":"양평2동","g":"영등포구","c":[-66.5,-28.6],"p":[[-62.7,-23],[-57,-26.5],[-64.8,-40.1],[-68.1,-38.9],[-66.9,-36.2],[-67.1,-33.5],[-70.2,-25.9],[-71.5,-25],[-71.8,-23],[-68.3,-19.1],[-62.7,-23]]},{"n":"양평1동","g":"영등포구","c":[-70.1,-43.5],"p":[[-68.1,-38.9],[-64.8,-40.1],[-66,-42.1],[-66.9,-46.5],[-66.3,-48.6],[-71.8,-47.5],[-72.1,-48.7],[-76.2,-47.9],[-75.6,-44.1],[-74.7,-43],[-71,-41.2],[-69.3,-38.6],[-68.1,-38.9]]},{"n":"당산2동","g":"영등포구","c":[-54.9,-37.3],"p":[[-54.1,-27.6],[-53.5,-31.7],[-49.7,-44.9],[-50.3,-45.2],[-52,-43],[-54.6,-43.6],[-55.1,-37],[-55.8,-37.2],[-57.9,-43.2],[-64.8,-40.1],[-57,-26.5],[-54.1,-27.6]]},{"n":"당산1동","g":"영등포구","c":[-63.3,-44],"p":[[-64.8,-40.1],[-57.9,-43.2],[-59.3,-50.3],[-66.7,-48.1],[-66,-42.1],[-64.8,-40.1]]},{"n":"여의동","g":"영등포구","c":[-39.4,-42.6],"p":[[-48.7,-29.1],[-32.7,-33.1],[-23.1,-42.3],[-20.2,-49.3],[-26.9,-51.9],[-34.5,-53.6],[-40.2,-53.1],[-45.7,-50.4],[-47.5,-49],[-50.7,-43],[-54.1,-27.6],[-48.7,-29.1]]},{"n":"시흥5동","g":"금천구","c":[-50.1,-120],"p":[[-49,-111.2],[-45.6,-112.1],[-45.8,-113.8],[-47.1,-115.5],[-49.3,-116.4],[-48.6,-117],[-49.7,-117.5],[-50.5,-119.6],[-50.2,-120.9],[-43.4,-125.2],[-44.4,-128],[-45.9,-129.4],[-47,-128.8],[-48.1,-129.3],[-49.5,-127.4],[-52.9,-125.4],[-54.9,-122.7],[-56.5,-122.8],[-57.9,-120.8],[-55.6,-119.5],[-55.3,-115.6],[-53.2,-116.1],[-51.9,-112.6],[-49,-111.2]]},{"n":"시흥4동","g":"금천구","c":[-51.6,-108.2],"p":[[-50.3,-103.6],[-49.3,-104],[-50,-105.3],[-48.8,-107.8],[-49,-111.2],[-51.9,-112.6],[-53.2,-116.1],[-55.3,-115.6],[-57,-106.6],[-52.5,-103.6],[-50.3,-103.6]]},{"n":"시흥3동","g":"금천구","c":[-56.4,-127.6],"p":[[-57.5,-121.9],[-56.8,-121.7],[-56.5,-122.8],[-54.9,-122.7],[-52.9,-125.4],[-49.5,-127.4],[-48.1,-129.3],[-50.5,-130.8],[-52,-134.1],[-53.7,-135.6],[-58,-135.2],[-58,-133.4],[-61.1,-130.5],[-60.9,-129.7],[-59.7,-129.4],[-60.9,-128.3],[-61.6,-124.7],[-59.6,-124.8],[-57.5,-122.6],[-57.5,-121.9]]},{"n":"시흥2동","g":"금천구","c":[-45.1,-117.2],"p":[[-45.6,-112.1],[-42.4,-112.1],[-41.8,-114.9],[-37.3,-118.4],[-37.7,-119.6],[-41.6,-122.7],[-43.4,-125.2],[-50.2,-120.9],[-50.5,-120],[-49.7,-117.5],[-48.6,-117],[-49.3,-116.4],[-47.1,-115.5],[-45.8,-113.8],[-45.6,-112.1]]},{"n":"시흥1동","g":"금천구","c":[-60.9,-115.5],"p":[[-61.2,-109.9],[-60.7,-111.3],[-60,-111.1],[-58.7,-109.9],[-58.1,-107.1],[-56.7,-107],[-55.3,-115.3],[-55.6,-119.5],[-57.9,-120.8],[-57.5,-122.6],[-60,-125],[-63.7,-123.6],[-64.2,-122.8],[-64.3,-121.2],[-63.3,-121],[-64.9,-116.7],[-63.9,-116.5],[-65.6,-111.9],[-63,-111.5],[-62.7,-110.5],[-61.2,-109.9]]},{"n":"독산4동","g":"금천구","c":[-56.3,-99.1],"p":[[-53.6,-96.7],[-50.3,-103.3],[-54.8,-101.9],[-62,-102.8],[-61.7,-97.9],[-57.8,-98.5],[-57.6,-96.9],[-55.2,-97.3],[-53.6,-96.7]]},{"n":"독산3동","g":"금천구","c":[-56.1,-92.8],"p":[[-60.6,-89],[-59.6,-90],[-52.5,-88.4],[-53.1,-90.2],[-52.6,-91.1],[-51,-91.1],[-50.6,-94.5],[-55.2,-97.3],[-57.6,-96.9],[-57.8,-98.5],[-61.7,-97.9],[-60.6,-89]]},{"n":"독산2동","g":"금천구","c":[-57.4,-105.7],"p":[[-62,-102.8],[-54.8,-101.9],[-50.3,-103.6],[-52.5,-103.6],[-55.3,-105.7],[-56,-105.5],[-56.7,-107],[-58.1,-107.1],[-58.7,-109.9],[-60.7,-111.3],[-62.2,-106.7],[-62,-102.8]]},{"n":"독산1동","g":"금천구","c":[-66,-105.4],"p":[[-63.2,-90.8],[-61,-90.4],[-62.3,-105.7],[-61.2,-109.9],[-62.7,-110.5],[-63,-111.5],[-65.6,-111.9],[-63.9,-116.5],[-65.4,-116.5],[-66,-117.4],[-68.4,-117],[-68.7,-114.4],[-71.1,-112.9],[-71,-110.4],[-71.8,-109.2],[-68.8,-107.9],[-70.7,-104.6],[-68.4,-103.4],[-70.4,-97.3],[-65,-97.1],[-64.4,-95.5],[-64.9,-94.8],[-62.8,-93.5],[-63.2,-90.8]]},{"n":"가산동","g":"금천구","c":[-71.8,-91.5],"p":[[-80.2,-83.9],[-77.1,-82.7],[-75.5,-83.3],[-71.3,-86.7],[-69.1,-89.5],[-63.4,-90.9],[-62.8,-93.5],[-64.9,-94.8],[-64.4,-95.5],[-65,-97.1],[-70.4,-97.3],[-68.4,-103.4],[-70.7,-104.6],[-76.1,-96.5],[-80.5,-86.9],[-81.2,-84.6],[-80.2,-83.9]]},{"n":"개봉1동","g":"구로구","c":[-101.4,-67.7],"p":[[-103.4,-61.8],[-99.7,-68],[-97.6,-69.8],[-96.1,-66.7],[-95,-67],[-95.4,-70],[-94.4,-70.7],[-94.6,-71.8],[-89.4,-72.5],[-88.6,-75.3],[-99.2,-73.6],[-104.4,-69.6],[-109,-69.2],[-109.5,-67.6],[-108.8,-67.1],[-109.3,-66.4],[-107.2,-65.3],[-107.7,-63.8],[-107.2,-62.9],[-105.7,-64.5],[-104.5,-64.2],[-103.4,-61.8]]},{"n":"구로2동","g":"구로구","c":[-75.9,-71.5],"p":[[-81.2,-60.8],[-78.8,-63.6],[-77.3,-64.4],[-76.3,-63.9],[-75,-65.3],[-76.2,-66.3],[-73.1,-69.8],[-71.2,-70.8],[-67.8,-76.1],[-68.7,-76.1],[-68.4,-77.2],[-69.9,-78.4],[-69.7,-79.4],[-72.8,-78.8],[-71.2,-84.5],[-72.7,-82.8],[-75.9,-82],[-76.4,-71.6],[-75.7,-68.8],[-83,-72.3],[-85.2,-72.9],[-85.5,-72.2],[-82.9,-63.7],[-82.2,-63.9],[-81.2,-60.8]]},{"n":"가리봉동","g":"구로구","c":[-70,-85.9],"p":[[-75.9,-82],[-72.7,-82.8],[-71.2,-84.5],[-66.9,-85.6],[-67.3,-86.2],[-66.4,-88.6],[-64.6,-89.1],[-63.2,-90.8],[-69.3,-89.4],[-71.3,-86.7],[-75.5,-83.3],[-75.9,-82]]},{"n":"수궁동","g":"구로구","c":[-118.4,-69.7],"p":[[-121.2,-63.5],[-121.5,-61.5],[-116.3,-61.1],[-116.2,-60.3],[-114.7,-60.6],[-115.1,-62.5],[-114,-64.1],[-110.8,-66.3],[-110.6,-68.7],[-112.4,-71],[-110.6,-72.6],[-111.1,-73.3],[-109.9,-73.4],[-109.3,-76.1],[-118.1,-76.1],[-117.6,-78.5],[-121.1,-80.8],[-121.5,-79.2],[-128,-76.2],[-129.4,-73.1],[-129.1,-71.3],[-127,-71.8],[-124.6,-70.6],[-123.6,-68],[-122.3,-67.2],[-121.2,-63.5]]},{"n":"오류2동","g":"구로구","c":[-110.7,-85],"p":[[-100.9,-74.1],[-101.4,-75.8],[-100.6,-77],[-100.7,-78.4],[-102.7,-80.2],[-104.1,-82.8],[-103,-84.6],[-99.9,-85.4],[-103,-88.3],[-103.5,-95.5],[-105.4,-94.4],[-107.6,-94.6],[-108.2,-93.6],[-111.3,-94],[-114.3,-91.6],[-116.6,-93.2],[-120,-92.9],[-122.3,-94],[-122.2,-93.1],[-123.8,-91.3],[-124,-83.8],[-121.7,-82.6],[-120.8,-81.5],[-121.1,-80.8],[-117.6,-78.5],[-118.2,-76.2],[-108.6,-76.1],[-104.5,-75.5],[-100.9,-74.1]]},{"n":"오류1동","g":"구로구","c":[-108.2,-72],"p":[[-109,-69.2],[-104.4,-69.6],[-99.2,-73.6],[-104.5,-75.5],[-109.3,-76.1],[-109.9,-73.4],[-111.1,-73.3],[-110.6,-72.6],[-112.4,-70.9],[-110.7,-68.7],[-109,-69.2]]},{"n":"개봉3동","g":"구로구","c":[-96.5,-82.3],"p":[[-89.4,-78.3],[-93.7,-83.4],[-95.8,-84.1],[-96.8,-86.4],[-98.3,-87.7],[-101.2,-87.2],[-99.9,-85.4],[-103,-84.6],[-104.1,-82.8],[-101.3,-78.8],[-99,-79.5],[-92.8,-79.1],[-92,-80.5],[-90.5,-78.5],[-89.4,-78.3]]},{"n":"개봉2동","g":"구로구","c":[-94.7,-76.8],"p":[[-100.9,-74.1],[-97.3,-73.4],[-89.8,-75.4],[-85.3,-74.2],[-86.1,-76.2],[-88.1,-78],[-90.5,-78.5],[-92,-80.5],[-92.8,-79.1],[-99,-79.5],[-101.3,-78.8],[-100.5,-77.3],[-101.4,-76.1],[-100.9,-74.1]]},{"n":"고척2동","g":"구로구","c":[-95.3,-63],"p":[[-93.3,-59.4],[-91.8,-62.6],[-88.8,-61.2],[-90.7,-65.1],[-94.5,-65.4],[-94.1,-67.1],[-96.1,-66.7],[-97.6,-69.8],[-101,-66.4],[-103.6,-61.3],[-97.5,-58.7],[-96,-59.3],[-95.3,-60.3],[-93.3,-59.4]]},{"n":"고척1동","g":"구로구","c":[-89.6,-67.6],"p":[[-82.9,-63.7],[-85.5,-72.2],[-85.3,-73.7],[-88.6,-75.3],[-89.4,-72.5],[-94.6,-71.8],[-94.4,-70.7],[-95.4,-70],[-95,-66.9],[-94.1,-67.1],[-93.9,-66.1],[-94.5,-65.4],[-91.2,-65.3],[-89.7,-63.3],[-89.1,-64.3],[-87.2,-63.7],[-84.7,-64.5],[-83.8,-63.5],[-82.9,-63.7]]},{"n":"구로5동","g":"구로구","c":[-69.8,-66.4],"p":[[-65,-61.8],[-65.3,-71.6],[-69,-74],[-71.2,-70.8],[-73.1,-69.8],[-76.2,-66.3],[-75,-65.3],[-73.7,-65.5],[-68.1,-61.1],[-66.3,-62.6],[-65,-61.8]]},{"n":"구로4동","g":"구로구","c":[-68.7,-77.4],"p":[[-69,-74],[-65.3,-71.6],[-63.8,-77.3],[-69,-81.5],[-71.2,-84.5],[-72.8,-78.8],[-69.7,-79.4],[-69.9,-78.4],[-68.4,-77.2],[-68.7,-76.1],[-67.8,-76.1],[-69,-74]]},{"n":"구로3동","g":"구로구","c":[-64.9,-85.2],"p":[[-71,-84.3],[-69,-81.5],[-63.8,-77.3],[-62.1,-81.7],[-59.8,-83.7],[-57.6,-84.3],[-61,-90.4],[-62.9,-90.8],[-64.6,-89.1],[-66.4,-88.6],[-67.3,-86.2],[-66.9,-85.6],[-71,-84.3]]},{"n":"구로1동","g":"구로구","c":[-80.9,-77.7],"p":[[-85.4,-73.8],[-85.5,-72.2],[-85.2,-72.9],[-83,-72.3],[-75.7,-68.8],[-76.4,-71.8],[-75.5,-83.3],[-77.1,-82.7],[-80.2,-83.9],[-79.9,-82.7],[-78.3,-81.4],[-79.2,-80.3],[-81.6,-81],[-81.8,-79.6],[-81.1,-79.1],[-80.8,-79.6],[-80.4,-78.2],[-81.9,-78.7],[-83.9,-77.4],[-85.4,-73.8]]},{"n":"신도림동","g":"구로구","c":[-73.2,-60],"p":[[-76.4,-52.5],[-68.4,-57.2],[-66.5,-59.9],[-64,-61.2],[-66.3,-62.6],[-68.1,-61.1],[-74.5,-65.7],[-76.3,-63.9],[-77.3,-64.4],[-78.8,-63.6],[-81.2,-60.8],[-77.2,-55],[-76.4,-52.5]]},{"n":"우장산동","g":"강서구","c":[-105.3,-18.1],"p":[[-103.2,-11.5],[-103.2,-15.2],[-104.4,-17],[-103.7,-18.3],[-102.5,-18.3],[-103.1,-19.2],[-102.1,-20.4],[-105.3,-25.8],[-107.4,-27.7],[-110.6,-22.6],[-110.6,-16.7],[-109.1,-10.7],[-103.2,-11.5]]},{"n":"화곡1동","g":"강서구","c":[-108.4,-34.3],"p":[[-107.4,-27.6],[-100.7,-41.4],[-107.3,-42.8],[-108.1,-41.2],[-112.1,-32.8],[-111.6,-31.7],[-112.7,-29.4],[-107.4,-27.6]]},{"n":"방화3동","g":"강서구","c":[-127.5,12.3],"p":[[-125.1,23.3],[-121.8,20.6],[-118.2,19.1],[-122.2,14],[-123.6,9.1],[-123,5.7],[-121.9,4],[-126.4,4.1],[-126.3,5.8],[-132.6,6],[-133.6,5],[-136.3,4.8],[-135.1,10],[-133.4,13.2],[-131.6,14.2],[-130.2,13.7],[-129.2,14.4],[-127.8,13.5],[-127.2,16.7],[-127.8,18.2],[-125.1,23.3]]},{"n":"방화2동","g":"강서구","c":[-136.9,13],"p":[[-135.5,34.7],[-125.1,23.3],[-127.8,18.2],[-127.2,16.7],[-127.8,13.5],[-129.2,14.4],[-130.2,13.7],[-131.6,14.2],[-132.8,13.7],[-135.1,10],[-136.3,4.8],[-137.3,5.3],[-136.6,3.3],[-131,4],[-129.3,0.7],[-129.7,-3.4],[-133.4,-7.6],[-138.1,-7],[-138.2,-5.6],[-139.7,-4.3],[-140.9,-5.2],[-141.2,-3.9],[-139.2,0.8],[-145,7.7],[-144.9,11.1],[-144.4,13.7],[-143.5,14],[-143.7,15.2],[-143,15.2],[-142.7,13.9],[-140.8,18.5],[-138.8,18.7],[-140.2,22.3],[-139.9,23.5],[-141.6,27.3],[-141.4,30.7],[-140.7,31.8],[-139.5,32],[-138.7,35],[-135.5,34.7]]},{"n":"방화1동","g":"강서구","c":[-129.8,1.9],"p":[[-136.3,4.8],[-133.6,5],[-132.6,6],[-126.3,5.8],[-126.4,4.1],[-121.9,4],[-121.1,-2.3],[-124.3,-2],[-124.4,-4.5],[-130.5,-5.4],[-129.5,-2.8],[-129.3,0.7],[-131,4],[-136.6,3.3],[-137.3,5.3],[-136.3,4.8]]},{"n":"공항동","g":"강서구","c":[-147,-12.3],"p":[[-130.7,-5.2],[-124.1,-4.4],[-121.1,-8],[-121.1,-11.9],[-127.9,-18.7],[-126.5,-20.1],[-128.3,-22.1],[-127.3,-24.5],[-128.9,-25.9],[-129.5,-28.4],[-131.2,-27.7],[-132.2,-26.1],[-137.2,-26.2],[-138.2,-26.8],[-137.9,-27.8],[-139.6,-28.9],[-140.5,-31.6],[-143.7,-33.5],[-144.4,-29.9],[-143.5,-27.8],[-145.9,-27.5],[-146,-25.5],[-148.1,-25.1],[-150,-23],[-155,-23.1],[-158.9,-20.4],[-162.3,-20.6],[-164.8,-16.6],[-165,-15.1],[-165.7,-15.4],[-165.8,-14.5],[-167.8,-14],[-164.3,-13.5],[-163.7,-12.2],[-161.1,-12.1],[-161.8,-10.6],[-159.8,-9.5],[-158.8,-7.5],[-156.9,-9.4],[-157.1,-7.3],[-157.9,-7.3],[-157.8,-5.1],[-159.5,-1.8],[-158.9,-1.1],[-157.9,-3.3],[-156.1,-1.9],[-156.1,-1.1],[-155.1,-2],[-153.8,-0.3],[-154.8,0.7],[-153.1,1.1],[-153.8,2.6],[-153.2,4.3],[-148.9,7.5],[-148.3,7.2],[-148.2,8.2],[-145.1,8],[-139.2,0.8],[-141.2,-3.9],[-140.8,-5.3],[-139.7,-4.3],[-138.2,-5.6],[-138.1,-7],[-133.4,-7.6],[-130.7,-5.2]]},{"n":"발산1동","g":"강서구","c":[-120.1,-20.5],"p":[[-109.1,-10.7],[-110.6,-16.7],[-110.7,-21.3],[-115.8,-22.2],[-115.7,-23.2],[-116.7,-23],[-118.2,-27.4],[-119.1,-28.2],[-127.8,-28.7],[-128.9,-25.9],[-127.7,-25.3],[-127.2,-23.7],[-128.3,-22.1],[-126.5,-20.1],[-127.9,-18.7],[-121.1,-11.9],[-120.8,-9.2],[-109.1,-10.7]]},{"n":"가양3동","g":"강서구","c":[-88.6,-6.9],"p":[[-84.5,-5.4],[-86,-9.5],[-89.5,-12.4],[-95.7,-8.2],[-91.6,-0.6],[-84.5,-5.4]]},{"n":"가양2동","g":"강서구","c":[-97,0.7],"p":[[-99.1,6.3],[-93.7,5.3],[-93.9,1.8],[-93.1,0.3],[-91.6,-0.6],[-95.7,-8.2],[-100.7,-4.9],[-99.1,-2],[-101.3,0],[-99.2,3.5],[-99.1,6.3]]},{"n":"가양1동","g":"강서구","c":[-112.1,1.6],"p":[[-118.2,19.1],[-99.1,6.3],[-99.2,3.5],[-101.3,0],[-99.1,-2],[-100.7,-4.9],[-101.7,-4.2],[-103,-4.6],[-105.6,-3.1],[-106.8,-1.3],[-109.1,-10.7],[-120.8,-9.2],[-124.1,-4.4],[-124.3,-2],[-121.1,-2.3],[-121.7,3.6],[-123,5.7],[-123.6,9.1],[-122.2,14],[-118.2,19.1]]},{"n":"화곡8동","g":"강서구","c":[-100.6,-33.5],"p":[[-98.4,-32.7],[-98.9,-33.7],[-98.2,-41],[-100.7,-41.4],[-104.8,-32.6],[-103.9,-32.1],[-103.9,-31.2],[-101,-30.4],[-100.1,-31.1],[-98.4,-29.8],[-98.4,-32.7]]},{"n":"화곡6동","g":"강서구","c":[-99.4,-18.5],"p":[[-98,-13.4],[-93.7,-15.2],[-93.5,-17.9],[-94.5,-20.8],[-96,-23.2],[-96.9,-23],[-97,-23.9],[-98.2,-23.6],[-100.5,-21],[-102.7,-20.1],[-103.1,-19.2],[-102.5,-18.3],[-103.7,-18.3],[-104.4,-17],[-103.2,-15.2],[-103.2,-11.5],[-98,-13.4]]},{"n":"화곡4동","g":"강서구","c":[-93.1,-32.4],"p":[[-95.1,-26.6],[-91.5,-27.7],[-91.1,-32.2],[-90.4,-33.8],[-89.1,-33.7],[-88.7,-39.5],[-93.1,-40.2],[-93.8,-35.9],[-97.9,-31.2],[-98,-29.2],[-95.1,-26.6]]},{"n":"화곡3동","g":"강서구","c":[-113,-25.1],"p":[[-115.7,-23.2],[-115.7,-22.1],[-110.7,-21.3],[-110.3,-23.8],[-107.4,-27.6],[-112.7,-29.4],[-113.2,-27.5],[-115.6,-27.6],[-115.7,-23.2]]},{"n":"화곡2동","g":"강서구","c":[-96.7,-34.9],"p":[[-97.1,-32.5],[-96.7,-32.2],[-93.8,-35.9],[-93.1,-40.2],[-98.2,-41],[-98.9,-33.7],[-98.4,-32.7],[-97.4,-33.1],[-97.1,-32.5]]},{"n":"화곡본동","g":"강서구","c":[-100.1,-27.2],"p":[[-102.1,-20.4],[-100.5,-21],[-98.2,-23.6],[-97,-23.9],[-96.9,-22.9],[-96,-23.2],[-96.2,-25.7],[-95.1,-27],[-98,-29.2],[-97.4,-33.1],[-98.4,-32.7],[-98.4,-29.8],[-100.1,-31.1],[-101,-30.4],[-103.9,-31.2],[-103.9,-32.1],[-104.8,-32.6],[-107.4,-27.7],[-105.3,-25.8],[-102.1,-20.4]]},{"n":"등촌3동","g":"강서구","c":[-102.3,-6.7],"p":[[-100.7,-4.9],[-95.7,-8.2],[-98,-13.4],[-102.2,-11.6],[-109.1,-10.7],[-106.8,-1.3],[-105.6,-3.1],[-103,-4.6],[-101.7,-4.2],[-100.7,-4.9]]},{"n":"등촌2동","g":"강서구","c":[-91.5,-24.2],"p":[[-88.5,-17.9],[-90.2,-24.8],[-88.9,-28.5],[-89.1,-33.7],[-90.4,-33.8],[-91.5,-27.7],[-96.2,-25.8],[-96,-23.3],[-93.5,-17.9],[-93.7,-15.2],[-88.5,-17.9]]},{"n":"등촌1동","g":"강서구","c":[-92.7,-12.6],"p":[[-95.7,-8.2],[-86.1,-15.1],[-87.9,-18.2],[-98,-13.4],[-95.7,-8.2]]},{"n":"염창동","g":"강서구","c":[-80.5,-17.8],"p":[[-89.5,-12.4],[-86,-9.5],[-84.5,-5.4],[-68.3,-19.1],[-71.8,-23],[-71.1,-25.7],[-71.9,-25.7],[-75.5,-21.4],[-80.8,-22.4],[-83.4,-21.6],[-87.9,-18.2],[-86.1,-15.1],[-89.5,-12.4]]},{"n":"신정4동","g":"양천구","c":[-93.5,-42.7],"p":[[-93.1,-40.2],[-88.7,-39.5],[-87.6,-46.7],[-98.1,-48],[-100.7,-41.4],[-93.1,-40.2]]},{"n":"목5동","g":"양천구","c":[-74.7,-31.7],"p":[[-71.1,-25.7],[-70.2,-25.9],[-67.1,-33.5],[-66.9,-36.2],[-68.1,-38.9],[-74.8,-37.4],[-86.2,-39.1],[-84.1,-36.3],[-83.8,-33.9],[-79.1,-28.2],[-75.1,-26.6],[-74,-25.1],[-71.1,-25.7]]},{"n":"신정7동","g":"양천구","c":[-87.8,-59.2],"p":[[-89.8,-52.4],[-89.2,-53.9],[-90,-54.2],[-88.7,-57.2],[-84.1,-55.2],[-81.2,-60.8],[-82.2,-63.9],[-83.8,-63.5],[-84.7,-64.5],[-87.2,-63.7],[-89.1,-64.3],[-89.9,-62.6],[-88.9,-61.1],[-91.8,-62.6],[-95.1,-55.6],[-89.8,-52.4]]},{"n":"신정6동","g":"양천구","c":[-83.9,-52.2],"p":[[-83,-46.2],[-83.9,-50.8],[-82.6,-53.4],[-80.7,-52.2],[-80.3,-52.7],[-79.8,-52.3],[-78.8,-54.6],[-77.2,-55],[-81.2,-60.8],[-84.1,-55.2],[-88.7,-57.2],[-90,-54.2],[-89.2,-53.9],[-89.8,-52.4],[-86.1,-50.8],[-87.6,-46.7],[-85.1,-45.3],[-83,-46.2]]},{"n":"신정3동","g":"양천구","c":[-107.8,-58.8],"p":[[-98.5,-47.6],[-93.3,-59.4],[-95.3,-60.3],[-96,-59.3],[-97.5,-58.7],[-99.7,-59.2],[-100.8,-60.5],[-103.6,-61.3],[-103.9,-63.6],[-105.7,-64.5],[-107.2,-62.9],[-107.7,-63.8],[-107.2,-65.3],[-109.3,-66.4],[-108.8,-67.4],[-109.5,-67.6],[-109,-69.2],[-109.7,-69.3],[-110.6,-68.7],[-110.8,-66.3],[-114,-64.1],[-115.1,-62.5],[-114.7,-60.6],[-116.2,-60.3],[-116.3,-61.1],[-119.7,-61.1],[-120.4,-58.7],[-120.1,-55],[-121.1,-53.3],[-119.3,-50.2],[-115.9,-50.8],[-112.6,-54.1],[-111.8,-53.7],[-109.6,-55.6],[-107.8,-55.1],[-105.9,-56.2],[-105,-55.1],[-103.9,-55.2],[-100.9,-53.3],[-100.9,-48.6],[-102.3,-47.2],[-100.3,-46.8],[-98.5,-47.6]]},{"n":"신정2동","g":"양천구","c":[-79.6,-51.3],"p":[[-76.2,-47.1],[-76.5,-53.1],[-77.2,-55],[-78.8,-54.6],[-79.8,-52.3],[-80.3,-52.7],[-80.7,-52.2],[-82.6,-53.4],[-83.9,-50.8],[-83,-46.2],[-76.2,-47.1]]},{"n":"신정1동","g":"양천구","c":[-92.8,-51.1],"p":[[-97.9,-48.1],[-87.6,-46.7],[-86.1,-50.8],[-92.5,-53.6],[-92.7,-54.6],[-95.1,-55.6],[-97.9,-48.1]]},{"n":"신월7동","g":"양천구","c":[-114.7,-48.3],"p":[[-111.8,-43.7],[-108.2,-52.2],[-112.6,-54.1],[-115.9,-50.8],[-119.3,-50.2],[-119.5,-46.3],[-118.9,-45.2],[-111.8,-43.7]]},{"n":"신월6동","g":"양천구","c":[-105.8,-53.2],"p":[[-104.2,-49.3],[-103.2,-51.3],[-101,-52.3],[-100.9,-53.3],[-103.9,-55.2],[-105,-55.1],[-105.9,-56.2],[-107.8,-55.1],[-109.6,-55.6],[-111.5,-54.3],[-111.8,-53.6],[-106.7,-51.6],[-104.2,-49.3]]},{"n":"신월5동","g":"양천구","c":[-116.4,-27.5],"p":[[-119.8,-28.3],[-118.2,-27.4],[-117.2,-23.9],[-116.2,-22.8],[-115.5,-23.6],[-115.6,-27.6],[-113.2,-27.5],[-111.6,-32.4],[-116.8,-33.4],[-119.8,-28.3]]},{"n":"신월4동","g":"양천구","c":[-107.8,-46.2],"p":[[-107.3,-42.8],[-104.2,-49.3],[-108.2,-52.2],[-111.8,-43.7],[-107.3,-42.8]]},{"n":"신월3동","g":"양천구","c":[-119.1,-35.9],"p":[[-121.9,-28.6],[-119.9,-28.2],[-119.4,-28.8],[-111.8,-43.7],[-118.9,-45.2],[-116.6,-42.8],[-117.2,-40.2],[-119.5,-39.1],[-120.8,-35.5],[-122.1,-34.5],[-121.9,-28.6]]},{"n":"신월2동","g":"양천구","c":[-102.4,-46.7],"p":[[-107.3,-42.8],[-100.7,-41.4],[-98.2,-47.4],[-100.8,-46.8],[-102.3,-47.2],[-100.9,-48.6],[-101,-52.3],[-103.2,-51.3],[-107.3,-42.8]]},{"n":"신월1동","g":"양천구","c":[-112.7,-36.4],"p":[[-116.8,-33.4],[-111.6,-32.4],[-112.1,-32.8],[-107.3,-42.8],[-111.8,-43.7],[-116.8,-33.4]]},{"n":"목4동","g":"양천구","c":[-85.5,-33.7],"p":[[-85.2,-29.5],[-81.8,-31.7],[-83.8,-33.9],[-84.1,-36.3],[-86.2,-39.1],[-88.7,-39.5],[-89,-30],[-85.2,-29.5]]},{"n":"목3동","g":"양천구","c":[-86.7,-23.3],"p":[[-87.9,-18.2],[-83.4,-21.6],[-83.9,-22.3],[-85,-21.8],[-86.9,-24.8],[-85.5,-26.9],[-85.2,-29.5],[-89,-30],[-90.2,-24.8],[-88.5,-17.9],[-87.9,-18.2]]},{"n":"목2동","g":"양천구","c":[-79.4,-25.8],"p":[[-71.9,-25.7],[-74,-25.1],[-75.1,-26.6],[-79.1,-28.2],[-81.8,-31.7],[-85.6,-29.1],[-85.5,-26.9],[-87,-25.2],[-85,-21.8],[-80.1,-22.3],[-75.5,-21.4],[-71.9,-25.7]]},{"n":"목1동","g":"양천구","c":[-80.1,-41.8],"p":[[-86.2,-39.1],[-74.9,-37.4],[-69.3,-38.6],[-71,-41.2],[-75.6,-44.1],[-76.2,-47.1],[-85.1,-45.3],[-87.6,-46.7],[-88.7,-39.5],[-86.2,-39.1]]},{"n":"아현동","g":"마포구","c":[-18.9,-17.3],"p":[[-13.6,-12.6],[-20,-25.9],[-22.8,-24.3],[-20.5,-21.7],[-21.1,-19.7],[-20.1,-17],[-20.3,-15],[-21.7,-12.7],[-14.9,-11.8],[-13.6,-12.6]]},{"n":"공덕동","g":"마포구","c":[-13.2,-20.1],"p":[[-11.4,-10.4],[-10.2,-11.1],[-11.3,-16],[-9.6,-20.4],[-11.1,-20.7],[-11,-21.5],[-12.1,-21.9],[-12.4,-23],[-14.3,-23.8],[-14.7,-26.2],[-13.9,-26.6],[-15.5,-28.7],[-20.2,-25.8],[-17.4,-21.4],[-14.2,-13.2],[-11.4,-10.4]]},{"n":"서강동","g":"마포구","c":[-38.6,-19.9],"p":[[-33.4,-16.2],[-34.9,-23.8],[-36.3,-24.6],[-40,-31.5],[-48.7,-29.1],[-44,-20.9],[-41,-18.4],[-41.1,-17.1],[-40.3,-16.1],[-37.5,-15.6],[-36.3,-14.5],[-35,-14.6],[-33.4,-16.2]]},{"n":"도화동","g":"마포구","c":[-21.7,-32.1],"p":[[-20,-25.9],[-15.4,-28.9],[-17.6,-31.1],[-18.2,-30.8],[-18.2,-31.9],[-19.5,-33],[-22.5,-33.5],[-22.6,-34.1],[-23.4,-33.6],[-24.4,-34.4],[-25.6,-39.9],[-30.8,-35],[-25.5,-31.3],[-20,-25.9]]},{"n":"상암동","g":"마포구","c":[-73.1,5.7],"p":[[-61.6,9],[-58.9,6.6],[-57.7,7.6],[-60.2,4.1],[-60.3,4.8],[-60.9,4],[-66.3,3.6],[-66.8,1.8],[-67.9,1.3],[-66.4,-0.4],[-66.6,-1.2],[-64.2,-2.8],[-64.3,-5.2],[-65.6,-8.4],[-64.7,-9.4],[-73.5,-14.8],[-86.9,-3.4],[-93.1,0.3],[-93.9,1.8],[-93.6,6.3],[-90.5,6.6],[-89.1,7.4],[-87.5,6.2],[-85.5,8.1],[-79.3,10.3],[-78.6,14],[-78,14.3],[-78.7,14.8],[-77.9,16.9],[-76.8,17.3],[-75.8,20.3],[-74.2,21.6],[-68.2,15.1],[-63.2,11.6],[-61.6,9]]},{"n":"성산2동","g":"마포구","c":[-60.9,-0.8],"p":[[-52.4,1.8],[-46.1,-1.9],[-57.3,-5.9],[-58.2,-4.9],[-57.5,-6],[-64.7,-9.4],[-65.6,-8.4],[-64.1,-4.1],[-64.2,-2.8],[-66.6,-1.2],[-66.4,-0.4],[-67.9,1.3],[-66.8,1.8],[-66.4,3.6],[-60.9,4],[-60.3,4.8],[-60.2,4.1],[-58.9,6.2],[-52.4,1.8]]},{"n":"성산1동","g":"마포구","c":[-51.2,-8.2],"p":[[-57.3,-5.9],[-47,-2],[-46,-10],[-47.3,-11],[-50.4,-10.8],[-53.2,-11.9],[-57.3,-5.9]]},{"n":"연남동","g":"마포구","c":[-43.3,-6.9],"p":[[-47,-2.4],[-46.1,-1.9],[-40.9,-3.5],[-37.8,-6],[-39.9,-8.9],[-40.9,-8.4],[-41.3,-9.4],[-41.7,-8.7],[-45.3,-11.8],[-46.2,-10.4],[-45.7,-8.4],[-47,-2.4]]},{"n":"망원2동","g":"마포구","c":[-62.9,-11.1],"p":[[-64.7,-9.4],[-57.5,-6],[-58.2,-4.9],[-53.7,-11.2],[-62.6,-13.6],[-68.3,-19.1],[-73.5,-14.8],[-64.7,-9.4]]},{"n":"망원1동","g":"마포구","c":[-58.6,-15.9],"p":[[-53.7,-11.2],[-50.9,-15.1],[-58,-17.9],[-62.7,-23],[-68.3,-19.1],[-62.6,-13.6],[-53.7,-11.2]]},{"n":"합정동","g":"마포구","c":[-51,-21.4],"p":[[-44.1,-21],[-48.7,-29.1],[-55.3,-27.3],[-62.7,-23],[-58,-17.9],[-50.9,-15.1],[-49.7,-20.3],[-48.8,-20.6],[-49.5,-20.1],[-48.8,-19.5],[-44.1,-21]]},{"n":"서교동","g":"마포구","c":[-43,-13.9],"p":[[-46.2,-10.5],[-45.3,-11.8],[-41.7,-8.7],[-41.3,-9.4],[-40.9,-8.4],[-39.9,-8.9],[-38.7,-7.5],[-39.1,-10.5],[-30.9,-14.2],[-33.2,-15.9],[-35,-14.6],[-36.3,-14.5],[-37.5,-15.6],[-40.3,-16.1],[-41.1,-17.1],[-41,-18.4],[-44.1,-21],[-48.8,-19.5],[-49.5,-20.1],[-49.1,-20.5],[-49.9,-20.1],[-50.9,-15],[-53.2,-11.9],[-50.6,-10.9],[-47.7,-11],[-46.2,-10.5]]},{"n":"신수동","g":"마포구","c":[-32.8,-24.4],"p":[[-27.9,-22.7],[-30.7,-26.9],[-33.2,-33],[-40,-31.5],[-36.3,-24.6],[-34.9,-23.8],[-33.4,-16.2],[-30.5,-18.6],[-27.9,-22.7]]},{"n":"염리동","g":"마포구","c":[-22,-18.8],"p":[[-21.4,-12.3],[-21.6,-13.7],[-20.9,-13.9],[-20,-16.3],[-21.1,-19.7],[-20.5,-21.7],[-22.8,-24.3],[-20.8,-25.5],[-21.1,-26],[-24.5,-24.5],[-25.5,-22.2],[-23.3,-18.5],[-23.3,-12.6],[-21.4,-12.3]]},{"n":"대흥동","g":"마포구","c":[-26.7,-17.7],"p":[[-23.1,-12.4],[-23.3,-18.5],[-25.5,-21.9],[-24.9,-24.2],[-28.4,-22.5],[-30.5,-18.6],[-33.5,-16],[-27.6,-12.9],[-23.1,-12.4]]},{"n":"용강동","g":"마포구","c":[-27.3,-27.9],"p":[[-27.9,-22.7],[-22.3,-25.9],[-20,-25.9],[-25.5,-31.3],[-30.8,-35],[-33.2,-33],[-30.7,-26.9],[-27.9,-22.7]]},{"n":"연희동","g":"서대문구","c":[-31.5,3],"p":[[-30.7,13.2],[-29,14.9],[-27,14.7],[-27,11.5],[-25.2,10.6],[-24.7,8.2],[-23.1,7.5],[-24.7,7.3],[-25.7,5.4],[-25.3,2.9],[-25.8,1.6],[-30.7,-1.1],[-31.6,-3.7],[-32.8,-3.1],[-33.5,-4.7],[-33.1,-5.7],[-35,-6.6],[-35.2,-8.1],[-37.6,-8.3],[-38.6,-7.5],[-37.8,-6],[-39.6,-4.1],[-46.8,-1.4],[-39.2,6.2],[-30.5,11.4],[-30.1,12.3],[-30.7,13.2]]},{"n":"신촌동","g":"서대문구","c":[-27.4,-3.4],"p":[[-23.1,7.5],[-21.3,6.4],[-21.3,4.9],[-22.4,3.5],[-20.3,-1.5],[-21.2,-4.1],[-20.3,-8.1],[-21,-8.7],[-21.1,-10.8],[-22,-10.8],[-21.5,-12.3],[-27.6,-12.9],[-30.9,-14.2],[-39.1,-10.5],[-38.6,-7.5],[-37.6,-8.3],[-35.5,-8.2],[-35,-6.6],[-33.1,-5.7],[-33.5,-4.7],[-32.8,-3.1],[-31.6,-3.7],[-30.7,-1.1],[-25.8,1.6],[-25.3,2.9],[-25.7,5.4],[-24.7,7.3],[-23.1,7.5]]},{"n":"북아현동","g":"서대문구","c":[-16.8,-10.3],"p":[[-11,-10],[-13.6,-12.6],[-14.9,-11.8],[-21.5,-12.3],[-22,-10.8],[-21.1,-10.8],[-21,-9.6],[-18.6,-8],[-13.2,-7.3],[-11,-10]]},{"n":"충현동","g":"서대문구","c":[-16,-4.9],"p":[[-20.8,-0.8],[-19,0.9],[-16.8,-0.3],[-16.2,-2],[-13.4,-3.8],[-11,-3.8],[-8,-2.6],[-5,-7.3],[-9.7,-10],[-11.7,-9.8],[-13.2,-7.3],[-18.6,-8],[-20.6,-9.5],[-21,-8.7],[-20.3,-8],[-21.2,-4.1],[-20.3,-1.5],[-20.8,-0.8]]},{"n":"북가좌2동","g":"서대문구","c":[-47.7,12.1],"p":[[-49.7,17.7],[-47.4,16.3],[-47.6,13.8],[-43.6,13.6],[-43.1,11.7],[-44.8,11.1],[-46.4,11.7],[-45.8,11.2],[-47.8,9.5],[-48.6,5.9],[-50,6.3],[-55.2,10.8],[-49.7,17.7]]},{"n":"북가좌1동","g":"서대문구","c":[-53.1,5.8],"p":[[-57.7,7.6],[-55.2,10.8],[-50,6.3],[-48.1,5.5],[-49.6,4.9],[-49.5,3.8],[-51.6,3.5],[-52.4,1.8],[-58.9,6.2],[-57.7,7.6]]},{"n":"남가좌2동","g":"서대문구","c":[-44.4,9.9],"p":[[-43.6,13.6],[-41.9,15.7],[-38.5,6.6],[-42.8,2.6],[-46,5.8],[-48.6,5.9],[-47.8,9.5],[-45.8,11.2],[-46.4,11.7],[-44.8,11.1],[-43.1,11.6],[-43.6,13.6]]},{"n":"남가좌1동","g":"서대문구","c":[-48.4,3.8],"p":[[-48.2,5.9],[-46,5.8],[-42.8,2.6],[-46.8,-1.4],[-52.4,1.8],[-51.6,3.5],[-49.5,3.8],[-49.6,4.9],[-48.5,5],[-48.2,5.9]]},{"n":"홍은2동","g":"서대문구","c":[-34.3,18.9],"p":[[-37.6,22.6],[-34,26.7],[-30.2,28.5],[-27.8,25],[-27.3,22.1],[-31,19.4],[-32,17.7],[-31.9,15.6],[-30.1,12.3],[-30.5,11.4],[-38.5,6.6],[-42.1,16.3],[-41.2,17.9],[-39.5,17.9],[-37.9,19.1],[-37.6,22.6]]},{"n":"홍은1동","g":"서대문구","c":[-22.9,30.4],"p":[[-18.1,36.3],[-18.4,31.1],[-17.3,29.3],[-14.9,29.3],[-15.5,26.4],[-17.8,27.4],[-19.5,26.4],[-20.7,28.8],[-22.6,29.2],[-23.3,27.4],[-22.8,25.4],[-24.8,22.5],[-27,21.6],[-27.8,25],[-29.6,28.3],[-27.7,29.8],[-27.5,31.6],[-28.7,32.6],[-28.6,33.6],[-27.3,33.8],[-26.5,35.5],[-24.6,35.5],[-22.8,38.6],[-19.5,39],[-18.1,36.3]]},{"n":"홍제2동","g":"서대문구","c":[-17.9,15.7],"p":[[-15.1,16.1],[-15.2,15.4],[-12.9,13.2],[-12.1,11.5],[-15,12.3],[-15.9,11.4],[-16.2,9.7],[-17.7,9.6],[-24.5,18.8],[-23.2,19.6],[-22.3,19.3],[-20.8,19.8],[-20.2,19],[-20.3,19.9],[-19.7,20],[-15.1,16.1]]},{"n":"홍제3동","g":"서대문구","c":[-20.5,22.9],"p":[[-15.5,26.4],[-13.8,21.2],[-15.1,16.1],[-19.4,19.9],[-20.3,19.9],[-20.2,19],[-20.8,19.8],[-22.3,19.3],[-23.2,19.6],[-24.5,18.8],[-27,21.6],[-24.8,22.5],[-22.8,25.4],[-23.3,27.4],[-22.6,29.2],[-20.7,28.8],[-19.5,26.4],[-17.8,27.4],[-15.5,26.4]]},{"n":"홍제1동","g":"서대문구","c":[-23.7,9.1],"p":[[-27,21.6],[-17.4,9.2],[-18.3,8.9],[-19.9,5.6],[-18.9,3.4],[-19.1,2.4],[-17,1.2],[-17.6,0],[-19,0.9],[-20.9,-0.7],[-21.4,0.1],[-20.9,0.7],[-22.4,3.5],[-21.3,4.9],[-21.3,6.4],[-24.7,8.2],[-25.2,10.6],[-27,11.5],[-27,14.7],[-29,14.9],[-30.7,13.2],[-31.7,15.2],[-32.1,17.1],[-31.5,18.8],[-27.7,21.9],[-27,21.6]]},{"n":"천연동","g":"서대문구","c":[-15.5,1.8],"p":[[-12.9,3.7],[-8,-2.6],[-8.4,-3],[-13.3,-3.8],[-16.2,-2],[-16.8,-0.3],[-17.6,0],[-17,1.2],[-19.1,2.4],[-18.9,3.4],[-19.9,4.6],[-18.3,8.9],[-17.4,9.2],[-12.9,3.7]]},{"n":"역촌동","g":"은평구","c":[-50.1,34.4],"p":[[-42,37],[-44.2,31.7],[-47.4,29.9],[-47.4,31.1],[-47.7,29.8],[-48.5,29.5],[-48.3,30.7],[-49.4,31.7],[-52,32.7],[-54.7,32],[-55.8,33.5],[-58.5,34.5],[-58.8,36.3],[-56.2,35.4],[-54.3,35.7],[-52.7,36.1],[-52.5,38.3],[-48.1,38.1],[-46.5,42],[-44.3,40.3],[-42,37]]},{"n":"응암3동","g":"은평구","c":[-45.7,19.9],"p":[[-45,26.7],[-46.5,20.9],[-42.2,19.5],[-41.9,15.7],[-43.7,13.6],[-47.6,13.8],[-47.4,16.3],[-49.7,17.7],[-47.7,27.8],[-45,26.7]]},{"n":"불광2동","g":"은평구","c":[-36.3,54.2],"p":[[-27.7,56.4],[-29.4,51.7],[-30.4,50.9],[-33.6,52.4],[-35.6,51.6],[-36.6,49.9],[-37.4,50.4],[-37.4,51.9],[-39.4,52.1],[-43.3,49.6],[-44.3,51.5],[-44.6,58.7],[-42.4,59.1],[-40.6,60.3],[-35.5,58.8],[-34.7,57.1],[-33.2,57.5],[-27.7,56.4]]},{"n":"진관동","g":"은평구","c":[-29.5,69.1],"p":[[-56,79.6],[-49.2,75.4],[-43.3,76.3],[-36.6,81.1],[-32.6,81.4],[-30.8,82.6],[-27.6,87.8],[-22.8,89.7],[-22.2,88],[-19.5,85.7],[-17.1,86],[-15,82.9],[-14.6,80],[-12.3,78.8],[-10.9,74.2],[-8.8,73.7],[-6.1,70.2],[-5.5,66.9],[-4,63.7],[-2.9,63.3],[-5.3,60.9],[-6.6,60.5],[-7.7,61.3],[-8.5,60.2],[-13,59.2],[-15.2,56.1],[-18.3,55.9],[-22,58.2],[-23.6,57.8],[-24.2,56.4],[-25.6,55.6],[-28.1,56.7],[-34.7,57.1],[-35.5,58.8],[-39.4,60.3],[-44.6,58.7],[-47.4,60.6],[-47.9,61.8],[-53.2,59.8],[-54.5,61.3],[-55,63.2],[-51.7,66.2],[-52.1,69.4],[-51.6,71.6],[-50.3,72.4],[-50.3,75],[-54.1,77],[-56,79.6]]},{"n":"수색동","g":"은평구","c":[-65.9,18.6],"p":[[-74.2,21.6],[-71.9,24.6],[-70.3,24.6],[-71.7,21.8],[-71.4,20.4],[-70.3,19.3],[-68.4,19.8],[-67,19.2],[-65.1,19.9],[-62.6,19.3],[-60.3,20.6],[-56.8,19],[-58.1,18],[-58.9,16.3],[-58.5,11.4],[-61.6,9],[-63.2,11.6],[-68.2,15.1],[-74.2,21.6]]},{"n":"증산동","g":"은평구","c":[-55.4,14.5],"p":[[-49.4,19.4],[-50.2,16.7],[-57.7,7.6],[-58.9,6.6],[-61.6,9],[-58.5,11.4],[-59,15.8],[-57.6,18.6],[-51.9,20.3],[-49.4,19.4]]},{"n":"신사2동","g":"은평구","c":[-54.8,23.6],"p":[[-48.7,23],[-49.4,19.4],[-51.9,20.3],[-56.5,19],[-59.9,20],[-61,23.4],[-58.7,25.8],[-59,29],[-56.6,29.2],[-52.7,27.1],[-48.7,23]]},{"n":"신사1동","g":"은평구","c":[-53.3,31.1],"p":[[-58.5,34.5],[-55.8,33.5],[-54.7,32],[-53.2,32.8],[-49.6,31.9],[-48.3,30.7],[-48.5,29.5],[-47.7,29.8],[-47.4,31.1],[-48.7,23],[-55.6,29],[-59,29],[-60,33.9],[-58.5,34.5]]},{"n":"응암2동","g":"은평구","c":[-41.1,21.7],"p":[[-37.6,22.6],[-37.9,19.1],[-39.5,17.9],[-41.2,17.9],[-42.1,16.3],[-42.2,19.5],[-46.5,20.9],[-45.7,25.5],[-44,28.4],[-39.3,26.3],[-39,23.6],[-37.6,22.6]]},{"n":"응암1동","g":"은평구","c":[-40.6,28.7],"p":[[-47.4,29.9],[-44.7,31.2],[-43.8,32.4],[-39.2,33.1],[-38.6,32.4],[-32,31.6],[-29.6,28.3],[-34,26.7],[-37.6,22.6],[-39,23.6],[-39.3,26.3],[-44,28.4],[-45,26.7],[-47.7,27.8],[-47.4,29.9]]},{"n":"대조동","g":"은평구","c":[-41.9,42.7],"p":[[-43.7,50.3],[-35.3,39.5],[-37.3,39.1],[-38.7,39.8],[-42,37],[-44.3,40.3],[-46.5,42],[-45.8,46],[-43.7,50.3]]},{"n":"구산동","g":"은평구","c":[-54.8,41.9],"p":[[-59.3,43.2],[-57.5,49.5],[-56,50.2],[-54.7,47.7],[-52.1,45],[-46.5,42],[-48.1,38.1],[-52.5,38.3],[-52.7,36.1],[-56.2,35.4],[-58.8,36.4],[-58.6,40.1],[-59.3,43.2]]},{"n":"갈현2동","g":"은평구","c":[-52,49.9],"p":[[-56,50.2],[-55.4,52],[-54.4,52.6],[-55.1,54.7],[-53.9,56.1],[-50.2,52.5],[-44.2,49.2],[-45.8,46],[-46.5,42],[-52.1,45],[-54.7,47.7],[-56,50.2]]},{"n":"갈현1동","g":"은평구","c":[-48.7,56.2],"p":[[-53.2,59.8],[-47.9,61.8],[-47.1,60.3],[-44.8,59.3],[-44.4,52.3],[-43.7,50.3],[-44.2,49.2],[-50.2,52.5],[-53.9,56.1],[-53.3,56.9],[-53.2,59.8]]},{"n":"불광1동","g":"은평구","c":[-28,50.1],"p":[[-27.7,56.4],[-25.6,55.6],[-24.2,56.4],[-23.6,57.8],[-22,58.2],[-18,55.9],[-19.2,55],[-19.7,52.6],[-19.1,52],[-21,48.4],[-20,46.1],[-19.8,42.8],[-20.5,40.4],[-23.8,41.4],[-25.5,40.8],[-28,41.5],[-35.3,39.5],[-39.1,45.1],[-43.3,49.6],[-39.4,52.1],[-37.4,51.9],[-37.4,50.4],[-36.6,49.9],[-35.6,51.6],[-33.6,52.4],[-30.4,50.9],[-29.4,51.7],[-27.7,56.4]]},{"n":"녹번동","g":"은평구","c":[-30.6,36],"p":[[-35.3,39.5],[-28,41.5],[-25.5,40.8],[-23.8,41.4],[-20.5,40.4],[-20.2,38.6],[-22.8,38.6],[-24.6,35.5],[-26.5,35.5],[-27.3,33.8],[-28.6,33.6],[-28.7,32.6],[-27.5,31.6],[-27.7,29.8],[-29.6,28.3],[-32,31.6],[-38.6,32.4],[-39.2,33.1],[-43.8,32.4],[-41.2,38.2],[-38.7,39.8],[-37.3,39.1],[-35.3,39.5]]},{"n":"공릉1동","g":"노원구","c":[76,56.7],"p":[[75.6,61.8],[79.5,58.2],[81.2,52],[83.8,49.9],[76,46.2],[74.6,54.5],[70.6,59.3],[70.1,61.5],[73.2,62.2],[75.6,61.8]]},{"n":"중계2·3동","g":"노원구","c":[72.5,73.9],"p":[[75.2,76],[76.1,73.8],[74.5,73],[74.8,71.7],[73.7,71.3],[74.1,70.1],[67.7,67.9],[66.8,70.2],[67.6,75.6],[71.2,80],[73.5,81.2],[75.2,76]]},{"n":"상계6·7동","g":"노원구","c":[66.9,79.7],"p":[[66.9,86.4],[67.2,85],[72.2,86.5],[73.5,81.2],[71.2,80],[67.7,75.8],[67.3,72.2],[65.8,68.3],[62.7,71.5],[63.4,76.7],[62.2,81.1],[62.1,85.2],[66.9,86.4]]},{"n":"상계3·4동","g":"노원구","c":[84.3,106.3],"p":[[86.4,121.6],[95,119.6],[95.4,116.5],[92.7,112.5],[91.9,109.9],[95,103],[94.6,98.3],[93.7,97],[94.6,94.4],[93.6,93.3],[89.5,94.4],[81.6,92.5],[79.2,93.3],[78.1,92.2],[75.2,96],[75.3,98.1],[71.3,101.7],[71.8,104.2],[75,105.1],[77.5,107.5],[77.3,109.2],[79.3,115.1],[79,116.2],[80.5,117],[81.9,119.2],[84.1,119.6],[86.4,121.6]]},{"n":"상계10동","g":"노원구","c":[67.5,91.4],"p":[[71.2,92.1],[70.8,90.1],[68.7,89.6],[68.7,90.4],[67.7,90.5],[68,86.7],[62.1,85.2],[59.9,92.5],[65.6,91.9],[65.1,95.3],[68.2,95.9],[69.4,95.5],[69,92.1],[71.2,92.1]]},{"n":"상계9동","g":"노원구","c":[68.6,98.4],"p":[[63.7,101.2],[66.3,103],[68.8,103.1],[71.9,104.5],[71.3,101.7],[74.7,98.7],[72,98.6],[71.2,92.1],[69,92.1],[69.4,95.5],[68.8,95.8],[65.1,95.3],[64.9,94.4],[63.7,101.2]]},{"n":"상계8동","g":"노원구","c":[60.4,97.6],"p":[[57.9,101.9],[63.7,101.2],[65.6,91.9],[59.9,92.5],[59.6,95.3],[58,98.8],[57.9,101.9]]},{"n":"상계5동","g":"노원구","c":[74.1,93.9],"p":[[71.2,92.3],[72,98.6],[74.7,98.7],[75.3,98.1],[75.2,96],[78.1,92.2],[75.9,89.1],[73.8,91.1],[73.4,90.7],[71.2,92.3]]},{"n":"상계2동","g":"노원구","c":[71,88.4],"p":[[71.2,92.3],[73.4,90.7],[73.8,91.1],[76.1,88.5],[76.1,84.8],[73.5,81.2],[72.2,86.5],[67.2,85],[66.9,86.4],[68,86.7],[67.7,90.5],[68.7,90.4],[68.7,89.6],[70.8,90.1],[71.2,92.3]]},{"n":"상계1동","g":"노원구","c":[73.9,116.4],"p":[[83.9,127.1],[85.9,124.7],[86.6,121.7],[84.1,119.6],[81.9,119.2],[80.5,117],[79,116.2],[79.3,115.1],[77.3,109.2],[77.5,107.5],[75.6,105.5],[68.8,103.1],[66.3,103],[63.7,101.2],[57.9,101.9],[60.3,114.5],[59.4,117.7],[62.6,120.1],[64.2,120.3],[67,119.4],[70.7,120.6],[74.1,125.1],[76.7,125.1],[80.4,127.1],[83.9,127.1]]},{"n":"중계4동","g":"노원구","c":[86.1,89.5],"p":[[93.6,93.3],[95.5,92.6],[95.8,91.6],[95,90.2],[86.8,86.1],[82.9,85.4],[82.9,84.9],[81.1,84.1],[81.1,85.3],[76.3,85.9],[76.1,89.9],[79.2,93.3],[81.6,92.5],[89.5,94.4],[93.6,93.3]]},{"n":"중계1동","g":"노원구","c":[77.5,80.8],"p":[[76.3,85.9],[81.1,85.3],[81,83.5],[79.9,81.8],[79.7,75.2],[78.6,75.2],[77.9,77],[75.2,76],[74.5,79.6],[73.5,80.9],[75.7,83.8],[76.3,85.9]]},{"n":"중계본동","g":"노원구","c":[86.8,79.3],"p":[[81.1,84.1],[82.9,84.9],[82.9,85.4],[87.1,86.6],[90.9,85.6],[91.9,86.7],[93.7,83.6],[92.3,80.7],[93.9,76.7],[93.7,73.3],[91.7,72.9],[90.8,71.7],[87,71.6],[84.9,70.8],[83.2,74.4],[81.1,75.1],[79.7,76.7],[79.9,81.8],[81.1,84.1]]},{"n":"하계2동","g":"노원구","c":[69.2,67.1],"p":[[66.8,70.2],[67.7,67.9],[72.2,69.4],[74.8,62.1],[70.1,61.5],[65.8,68.3],[66.8,70.2]]},{"n":"하계1동","g":"노원구","c":[77.9,70],"p":[[75.2,76],[77.9,77],[78.6,75.2],[79.7,75.2],[80.2,76.7],[81.1,75.1],[83.2,74.4],[85,71.4],[83.1,67.3],[80.1,66.4],[79.9,65.3],[80.9,65],[79.5,61.2],[77.5,61.7],[76.9,62.6],[75.6,61.8],[74.8,62.1],[72.2,69.4],[74.1,70.1],[73.7,71.3],[74.8,71.7],[74.5,73],[76.1,73.8],[75.2,76]]},{"n":"공릉2동","g":"노원구","c":[92.8,61.7],"p":[[94,76.5],[103.8,75.8],[106,73.3],[107.2,73.2],[107.9,71],[106.7,69.7],[108.1,67.2],[107.6,62.4],[104.7,59],[102.6,57.8],[102.5,55.9],[101.2,53.8],[101.6,52.4],[102.9,51.5],[99.6,50.5],[98.2,48.8],[97.3,48.9],[96.1,47.8],[92.9,48.8],[89.5,51],[87.2,51],[84.1,49.9],[82.2,50.9],[81.1,52.3],[79.5,58.2],[75.6,61.8],[76.9,62.6],[77.5,61.7],[79.7,61.3],[80.9,65],[79.9,65.3],[80.3,66.5],[83.1,67.3],[84.9,70.8],[87,71.6],[90.8,71.7],[91.7,72.9],[93.7,73.3],[94,76.5]]},{"n":"월계3동","g":"노원구","c":[69.4,59.5],"p":[[66.3,67.3],[69.7,62.8],[70.6,59.3],[74.1,55.4],[75.3,52.3],[75.5,47.1],[71.5,45],[65.9,60.9],[65.8,64.9],[66.5,65.3],[65.6,67],[66.3,67.3]]},{"n":"월계2동","g":"노원구","c":[60.3,67.8],"p":[[62.7,71.5],[66.3,67.3],[65.6,67],[66.5,65.3],[65.8,64.9],[65.9,60.9],[58.7,55.1],[56.6,58.1],[52,62],[54,64.3],[56,70.2],[55.9,72],[56.9,72],[59.2,74.6],[59,75.9],[59.7,75.9],[61.4,71.9],[62.7,71.5]]},{"n":"월계1동","g":"노원구","c":[64.4,52.3],"p":[[58.7,55.1],[65.9,60.9],[71.5,44.9],[67.4,45.7],[58.7,55.1]]},{"n":"도봉2동","g":"도봉구","c":[56.7,115.1],"p":[[54.8,123.2],[57.9,124.7],[58.9,118.6],[60.3,115.5],[57.8,99.8],[53.7,100.3],[55.6,115.7],[54.8,123.2]]},{"n":"도봉1동","g":"도봉구","c":[39.5,114.4],"p":[[31.7,131.7],[34.4,132.1],[36.6,130.3],[38.8,130.2],[41.3,131.3],[43.8,123.7],[44.9,122.4],[47.6,123],[52.1,126.1],[53.3,125.9],[53.1,124.6],[54.8,123.6],[55.6,115.7],[53.7,100.5],[50.5,100.7],[50.7,102.5],[48.6,102.2],[46.5,103.7],[46.2,105.1],[45.2,104.5],[43.9,105.6],[42.9,104.3],[40,104.1],[38.8,102.9],[37.3,102.7],[39.3,100.1],[36.9,100.4],[36.2,101.9],[34.3,101.9],[33.7,100.8],[30.1,106.1],[28.6,110],[25.8,110.6],[26.1,112.7],[25.4,114],[26.2,117.7],[25.5,121.3],[26.1,125.3],[28.6,129],[30.9,129.3],[31.7,131.7]]},{"n":"창5동","g":"도봉구","c":[53.6,87],"p":[[54.4,92.7],[54.8,89.8],[57.4,82.4],[55.4,81.8],[52.1,82.4],[47.9,82.1],[52.6,92.4],[54.4,92.7]]},{"n":"창4동","g":"도봉구","c":[59.9,83.1],"p":[[60,91.4],[62,86.5],[62.2,81.1],[63.4,76.7],[62.2,71.4],[60.8,72.8],[59.2,77.1],[54.8,89.8],[54.4,92.7],[60,91.4]]},{"n":"창3동","g":"도봉구","c":[53.5,68.4],"p":[[55.9,69.9],[53.9,64.1],[52,62],[48,67.6],[54.1,74.9],[54.8,70.4],[55.9,69.9]]},{"n":"창2동","g":"도봉구","c":[48.7,73.4],"p":[[53.7,74.6],[48,67.6],[46.6,68.3],[45.2,72],[43.5,73.6],[45.6,77.2],[50.6,77.4],[51.5,75.6],[53.7,74.6]]},{"n":"창1동","g":"도봉구","c":[54.1,76.7],"p":[[47.9,82.1],[52.1,82.4],[55.4,81.8],[57.4,82.4],[59.7,75.9],[59,75.9],[59.2,74.6],[57.9,73.1],[55.9,72],[55.9,69.9],[54.8,70.4],[54.1,74.9],[52.1,75.1],[50.6,77.4],[45.6,77.2],[47.9,82.1]]},{"n":"방학3동","g":"도봉구","c":[37.8,94.2],"p":[[33.7,100.8],[34.3,101.9],[36.2,101.9],[36.9,100.4],[40.6,99.4],[43.3,96.2],[43.5,93.4],[44.1,92.9],[46.6,93.3],[46.8,91],[41.1,89.5],[41.2,87.4],[39.8,87.4],[39.3,84.7],[35.4,85.6],[32.7,90.7],[33,92.4],[32.1,92.3],[31.4,94.2],[31.5,97.4],[33.5,99.5],[33.7,100.8]]},{"n":"방학2동","g":"도봉구","c":[44,100.4],"p":[[39.3,100.1],[37.3,102.7],[38.8,102.9],[40,104.1],[42.9,104.3],[43.6,105.6],[45.2,104.5],[46.2,105.1],[46.5,103.7],[48.6,102.2],[50.7,102.5],[50.1,97.7],[47,95],[46.6,93.3],[44.1,92.9],[43.3,94.1],[43.3,96.2],[39.3,100.1]]},{"n":"방학1동","g":"도봉구","c":[52.6,95.6],"p":[[50.5,100.7],[57.8,99.8],[59.7,94.7],[60,91.4],[55.2,92.8],[48.9,92.5],[46.8,91],[46.7,94.5],[50.1,97.7],[50.5,100.7]]},{"n":"쌍문4동","g":"도봉구","c":[43.3,86.5],"p":[[39.3,84.7],[39.8,87.4],[41.2,87.4],[41.1,89.5],[43,90.4],[46.2,90.5],[46.3,88.8],[45.2,88.7],[45.3,87.2],[46.4,87.4],[46.5,85.8],[45.3,83.9],[45.5,81.9],[41.8,81.4],[41.3,83.8],[39.3,84.7]]},{"n":"쌍문3동","g":"도봉구","c":[43.3,78.9],"p":[[47.9,82.1],[43.5,73.6],[39.4,76.6],[39,77.3],[41.8,81.4],[47.9,82.1]]},{"n":"쌍문2동","g":"도봉구","c":[46.9,88],"p":[[46.8,91],[48.9,92.5],[52.6,92.4],[47.9,82.1],[45.5,81.9],[45.3,83.9],[46.5,85.8],[46.4,87.4],[45.3,87.2],[45.2,88.7],[46.3,88.8],[45.8,91],[46.8,91]]},{"n":"쌍문1동","g":"도봉구","c":[34.3,85.5],"p":[[32.1,92.3],[33,92.4],[32.7,90.7],[35.7,85.3],[41.3,83.8],[41.8,81.4],[39,77.3],[36,79.7],[32.6,79.4],[29.6,81.2],[29.1,83.5],[30.6,92.6],[32.1,92.3]]},{"n":"인수동","g":"강북구","c":[24.1,68.8],"p":[[32.5,71.5],[32.7,68],[34.5,66.2],[37.8,66.8],[37.5,65.4],[25.4,63.7],[25.2,64.1],[21.2,63],[12.2,62.7],[6.9,67.4],[8.3,71.4],[12.4,69.4],[16.5,69.6],[19.4,71.2],[22.7,75.1],[24.9,75.7],[31.2,75.4],[32.5,71.5]]},{"n":"우이동","g":"강북구","c":[20.5,91.7],"p":[[12.6,110.2],[14.2,111],[17.5,114.5],[20.1,115.2],[20.7,114.4],[22.4,115.9],[25.7,115.4],[25.4,114],[26.1,112.6],[25.6,111],[28.6,110],[30.1,106.1],[33.8,100.7],[31.3,96.9],[31.4,94.2],[32.2,92.5],[30.6,92.6],[29.1,83.5],[29.6,81.2],[30.6,81.1],[31.5,79.8],[30.1,79.9],[31.7,75],[27.2,75.8],[26.7,75.2],[24.9,75.7],[22.7,75.1],[19.4,71.2],[15,69.4],[14.1,69.9],[12.4,69.4],[7.9,71.3],[6.5,72.6],[5.8,74.4],[7.2,76.5],[6.9,78.3],[2.8,86.5],[7.2,90],[9.8,94.5],[13.1,95.5],[14.5,97],[14.2,105.6],[12.6,110.2]]},{"n":"삼각산동","g":"강북구","c":[32.9,47.3],"p":[[35.8,50.2],[36.7,46.2],[36.6,43],[35.3,43.3],[33.1,45.3],[27.6,47.2],[25.9,49.3],[29.1,51],[35.8,50.2]]},{"n":"송천동","g":"강북구","c":[38.5,50.5],"p":[[40.4,55.2],[42.7,47.8],[43,43],[40,43.4],[36.7,42],[36.4,47.5],[35.3,52.3],[33.7,55.6],[36.5,55.9],[37.2,53.7],[39.9,54.2],[40.4,55.2]]},{"n":"송중동","g":"강북구","c":[45.6,50.9],"p":[[44.9,56.2],[46.4,51.8],[48.2,50.4],[49.9,50.2],[49.7,47.3],[50.7,46.3],[48.3,43.2],[43.2,39.8],[42.7,47.8],[40.4,55.2],[42.8,56.2],[43.2,55.4],[43.7,56.2],[44.9,56.2]]},{"n":"미아동","g":"강북구","c":[40.3,59.9],"p":[[40.9,65.7],[40.5,64.5],[42.1,64.5],[45.1,56.6],[43.2,55.4],[42.8,56.2],[39.9,55],[39.9,54.2],[37.2,53.7],[35.3,59.6],[38.4,61.6],[37.5,65.4],[40.9,65.7]]},{"n":"삼양동","g":"강북구","c":[31,55.8],"p":[[37,61],[35.3,59.6],[36.5,55.9],[33.7,55.6],[35.8,50.2],[29.1,51],[25.8,49.2],[24.9,52.2],[25.4,54.7],[22.7,55.1],[28.1,56.3],[29.7,57.6],[31.4,57.7],[33.2,60],[37,61]]},{"n":"수유3동","g":"강북구","c":[37.2,72.4],"p":[[39,77.3],[43.5,73.6],[37.8,66.8],[34.5,66.2],[32.7,68],[32.5,71.5],[35.4,72],[37.8,74.3],[38.8,74.4],[37.9,75.5],[39,77.3]]},{"n":"수유2동","g":"강북구","c":[35.2,76.8],"p":[[31.5,79.8],[33.2,79.3],[35.9,79.7],[38.6,78.1],[39,77.3],[37.9,75.5],[38.8,74.4],[37.8,74.3],[35.4,72],[32.5,71.5],[30.1,79.9],[31.5,79.8]]},{"n":"수유1동","g":"강북구","c":[24.4,60.2],"p":[[13.7,62.7],[21.2,63],[25.2,64.1],[25.4,63.7],[37.5,65.4],[38.4,61.6],[33.2,60],[31.4,57.7],[29.7,57.6],[28.1,56.3],[22.7,55.1],[21,56.3],[19.1,56.5],[16.4,59.8],[14.4,60.6],[13.7,62.7]]},{"n":"번3동","g":"강북구","c":[52.2,53.7],"p":[[52.4,61.7],[56.8,58],[58.7,55.1],[55.8,52.8],[54,49.4],[51,46.7],[49.7,47.3],[49.9,50.2],[48.2,50.4],[49,54],[48.2,57.1],[52.4,61.7]]},{"n":"번2동","g":"강북구","c":[46.2,60.4],"p":[[49.6,64.6],[52.4,61.7],[48.2,57.1],[49,54],[48.3,50.7],[46.4,51.8],[44.8,58.3],[42.7,61.7],[42.1,64.5],[40.5,64.6],[40.9,65.7],[45.9,66.1],[49.6,64.6]]},{"n":"번1동","g":"강북구","c":[44.3,68.6],"p":[[43.5,73.6],[45.2,72],[46.6,68.3],[48.9,67],[49.6,64.6],[46.1,66.1],[37.5,65.4],[37.7,66.7],[43.5,73.6]]},{"n":"석관동","g":"성북구","c":[68.6,37.9],"p":[[75.5,47.1],[76,37.5],[75,37.6],[75,40],[73.5,40],[73.6,37.6],[71.6,36.3],[68.5,36],[66.8,33.8],[67.1,32.6],[66,31.7],[62.8,32],[60.3,30.7],[59.8,32.3],[60.5,33.6],[60.5,35.4],[59.3,38.3],[69,45.1],[71.4,44.8],[73,46.3],[75.5,47.1]]},{"n":"종암동","g":"성북구","c":[45.1,26.9],"p":[[43.1,34.7],[49.6,33.2],[51.1,31.4],[51.4,26.5],[50.1,22],[47.9,21.9],[47.3,23.3],[44.5,21.9],[43.1,22],[40.7,23.8],[40.2,25.1],[38.9,24.8],[40.3,30.9],[43.1,34.7]]},{"n":"동선동","g":"성북구","c":[33.6,24.7],"p":[[34.7,28],[36.5,27.7],[37,26.3],[38.9,24.8],[38,23],[38.2,21],[36.6,19.8],[34.7,20.1],[34.1,19.5],[32.6,21.1],[32.2,23.3],[29.6,22.5],[28.3,24.7],[29.9,25.7],[29.1,27.4],[29.3,28.9],[31.4,29.2],[31.9,27.5],[34.7,28]]},{"n":"삼선동","g":"성북구","c":[28,17.4],"p":[[29.6,22.5],[32.2,23.3],[32.6,21.1],[34.1,19.5],[30.7,15.2],[30.8,12.9],[28.1,12.1],[26.9,10.9],[24.7,12.8],[24.3,16.8],[23.8,17.6],[22.5,17.8],[22.4,18.7],[29.6,22.5]]},{"n":"성북동","g":"성북구","c":[16.9,26.1],"p":[[9.4,31.9],[10.8,33.2],[14.3,33.5],[18.2,32.2],[19.6,32.4],[21.4,29.6],[21.3,28.3],[25.3,26.7],[25.8,23.8],[25,22.3],[26.7,22.8],[28.3,24.7],[29.6,22.5],[22.4,18.7],[20.3,20.9],[20.6,22],[19.7,23.2],[15.6,22.9],[14.6,22],[13.1,22.6],[10.6,21.9],[10.8,22.5],[6.3,24.6],[4.5,27.9],[4.5,29.9],[7.1,30.1],[9.4,31.9]]},{"n":"장위3동","g":"성북구","c":[59.9,49.8],"p":[[58.7,55.1],[62.1,50.9],[68.9,44.8],[65.3,43],[61,47.5],[59,48.2],[60.2,49.1],[58.2,51.2],[56.1,49.1],[54.6,50.3],[55.8,52.8],[58.7,55.1]]},{"n":"장위2동","g":"성북구","c":[59.3,42.8],"p":[[59,48.2],[61,47.5],[65.3,43],[67.2,43.5],[60.1,38.8],[60.7,39.8],[60,40.7],[58.7,39.2],[56.6,38.5],[55.1,40.2],[55.1,42.1],[57,42.1],[57.8,43],[57.5,46.5],[59,48.2]]},{"n":"장위1동","g":"성북구","c":[54.1,45.5],"p":[[54.6,50.3],[56.1,49.1],[58.2,51.2],[60.2,49.1],[57.5,46.6],[58,44.2],[57.1,42.2],[55.6,42.3],[54.5,41.4],[53.7,42.1],[51.5,41.7],[51.4,42.8],[50.2,42.5],[48.5,43.4],[50.7,46.3],[50.1,47],[51,46.7],[54.6,50.3]]},{"n":"월곡2동","g":"성북구","c":[54.4,35.4],"p":[[53.7,42.1],[54.5,41.4],[55.3,41.9],[55.1,40.3],[56.6,38.5],[60.2,40.4],[60.7,39.8],[59.2,37.6],[60.5,35.4],[60.5,33.6],[59,31.8],[56.9,27],[54,27],[53.4,27.9],[52.5,27.2],[52.4,27.6],[51.7,25.7],[51.3,31],[48.6,34.4],[48.3,36.7],[50.3,35.2],[50.8,35.6],[51.8,37.7],[53.1,38.3],[53.1,39.9],[52.6,39.9],[53.7,42.1]]},{"n":"월곡1동","g":"성북구","c":[50.3,38.8],"p":[[53.7,42.1],[52.6,39.9],[53.1,39.9],[53.1,38.3],[51.8,37.7],[50.8,35.6],[50.3,35.2],[48.3,36.7],[48.6,34.4],[49.6,33.2],[44.6,34.2],[43.2,39.8],[48.5,43.4],[50.2,42.5],[51.4,42.8],[51.2,41.8],[53.7,42.1]]},{"n":"길음2동","g":"성북구","c":[40.1,38.3],"p":[[36.7,42],[40,43.4],[43,43],[44.6,34.2],[41.5,35.2],[40.5,35.1],[39.7,33.9],[38.3,36.3],[36.7,42]]},{"n":"길음1동","g":"성북구","c":[34.2,38.6],"p":[[31.2,45.5],[33.1,45.3],[35.3,43.3],[36.6,43],[38.3,36.3],[39.7,33.9],[38.9,32.9],[36.7,31.9],[33.2,34.5],[33.1,35.4],[34.7,36.2],[34.2,37.3],[32.9,36.6],[32.6,37.7],[31.8,37.8],[32.3,39.2],[30.5,43.1],[31.2,45.5]]},{"n":"정릉4동","g":"성북구","c":[15.3,52.7],"p":[[6.9,67.3],[12.2,62.7],[13.5,63.1],[14.4,60.6],[16.4,59.8],[19.1,56.5],[25.4,54.7],[24.9,52.2],[25.8,49.2],[27.6,47.2],[30.8,46.3],[31.2,45.5],[29.4,41.7],[27.9,40.3],[28.3,39.1],[27.2,38.6],[26.2,39.4],[25.4,42.9],[23.8,44],[23.7,46],[21.4,47],[18.9,47.3],[15.5,44.1],[14.6,44],[12.9,48.1],[14,48.8],[12.4,50.4],[9.1,51.8],[9.9,53.5],[7.7,54.3],[7.4,55.6],[4.2,59.1],[3.4,59.1],[3.3,60],[1.8,59.1],[0,59.6],[0.3,61.7],[-0.7,62.1],[1.1,64.2],[4.5,65.4],[6.9,67.3]]},{"n":"정릉3동","g":"성북구","c":[14.4,44],"p":[[3.4,59.1],[4.2,59.1],[7.1,56],[7.7,54.3],[9.9,53.5],[9.1,51.8],[12.4,50.4],[14,48.8],[12.9,48.1],[14.6,44],[15.5,44.1],[18.9,47.3],[23.7,46],[23.8,44],[25.4,42.9],[26.5,36.9],[25.4,36.7],[22.4,39.4],[21.9,38.6],[23.3,36.5],[23.3,35.4],[21.5,35.9],[20.7,34.8],[19.7,34.9],[18.4,34],[18.8,32.3],[14.3,33.5],[10.8,33.2],[9.4,31.9],[7.9,37.8],[8.9,44.3],[8.6,45.4],[5.5,47.4],[4.3,52.4],[2.6,55.3],[3.4,59.1]]},{"n":"정릉2동","g":"성북구","c":[25.6,34.5],"p":[[26.2,39.4],[27.2,38.6],[28.3,39.1],[27.9,40.3],[29.6,42.3],[31.3,40.2],[31.7,38.4],[30.8,34.1],[29.7,34.1],[30.4,32],[30.3,31.5],[29.4,32.7],[28.1,31.8],[28.8,29.4],[27.6,29.2],[26.5,29.9],[24.4,29.4],[23.8,27.4],[22.6,27.4],[21.3,28.3],[21.4,29.6],[19.9,32.2],[18.8,32.3],[18.4,34],[20.7,34.8],[21.5,35.9],[23.3,35.4],[23.3,36.5],[21.9,38.6],[22.4,39.4],[25.4,36.7],[26.5,36.9],[26.2,39.4]]},{"n":"정릉1동","g":"성북구","c":[32.4,35.5],"p":[[29.7,42.3],[30.5,44.4],[31.1,41],[32.3,39.2],[31.8,37.8],[32.6,37.7],[32.9,36.6],[34.2,37.3],[34.7,36.2],[33.1,35.4],[33.2,34.5],[36.3,32.3],[36.1,30.8],[35.6,31],[34,29.2],[33.6,29.8],[32.7,29.5],[31.5,30.7],[30.3,30.9],[30.5,32.4],[29.7,34.1],[30.8,34.1],[31.7,38.4],[31.3,40.2],[29.7,42.3]]},{"n":"보문동","g":"성북구","c":[34.2,13],"p":[[34,19.4],[35.1,18.3],[38.5,9.9],[37.2,8.5],[36.4,9.6],[33.4,8.3],[33.6,9.8],[32.4,12.2],[30.8,12.9],[30.7,15.2],[34,19.4]]},{"n":"안암동","g":"성북구","c":[40.9,19.5],"p":[[47.9,21.9],[48,20.6],[42.5,13.4],[38.5,9.9],[38,10.2],[35.1,18.3],[34,19.4],[34.7,20.1],[36.6,19.8],[38.2,21],[38,23.2],[39.7,25.2],[43.1,22],[44.5,21.9],[47.3,23.3],[47.9,21.9]]},{"n":"돈암2동","g":"성북구","c":[29.1,28.7],"p":[[30.3,31.5],[30.3,30.9],[31.5,30.7],[32.7,29.5],[33.6,29.8],[34.7,28],[31.9,27.5],[31.4,29.2],[29.3,28.9],[29.1,27.4],[29.9,25.7],[26.7,22.8],[25,22.3],[25.8,25.3],[23.6,28.3],[24.4,29.4],[26.5,29.9],[27.6,29.2],[28.8,29.4],[28.1,31.8],[29.1,32.6],[30.3,31.5]]},{"n":"돈암1동","g":"성북구","c":[37.9,30.8],"p":[[39.7,33.9],[40.8,35.1],[43.1,34.7],[40.3,30.9],[38.9,24.8],[37,26.3],[36.5,27.7],[35,27.5],[33.8,28.9],[35.6,31],[36.1,30.8],[36.3,32.3],[36.7,31.9],[38.9,32.9],[39.7,33.9]]},{"n":"망우본동","g":"중랑구","c":[104.7,32.8],"p":[[111.5,39.5],[112.9,38.3],[112.7,35.3],[109.3,30.7],[110.3,28.6],[112.9,25.7],[112.5,24.7],[109,24],[108.2,22.6],[104.8,25.3],[99.2,25.2],[98.5,26.4],[93,24.9],[92.7,28.9],[98.7,31.3],[99,33.5],[100.9,36.6],[101.4,39.5],[101,40.4],[99.2,40],[99.4,43.9],[106.4,42.8],[108.8,40.2],[111.5,39.5]]},{"n":"면목3·8동","g":"중랑구","c":[98.1,15.4],"p":[[106.4,18.1],[105.8,15.4],[104.1,16],[103.6,15.3],[96.2,13.3],[98.3,13.4],[100.6,12.5],[100.5,9.6],[95.6,11.7],[90.5,11.2],[85.2,11.9],[85.3,15.1],[93.4,14.4],[94.3,16.6],[93.3,20.5],[96.4,21.3],[102.3,18.8],[104.9,19],[106.4,18.1]]},{"n":"면목본동","g":"중랑구","c":[90.4,19.8],"p":[[93,24.9],[94.3,16.6],[93.4,14.4],[85.3,15.1],[86.1,19.5],[87.9,23.5],[93,24.9]]},{"n":"신내2동","g":"중랑구","c":[91.5,40.4],"p":[[90.8,48.2],[95.1,45.9],[95.5,42.7],[94.5,38.2],[95.7,31.7],[94.8,31.2],[94.3,33.2],[93.6,33.4],[93.5,35.7],[88.8,40.6],[87.3,40.1],[86.5,41.2],[87,43.9],[86.2,45.7],[89.5,45.7],[90.8,48.2]]},{"n":"신내1동","g":"중랑구","c":[101.1,43.7],"p":[[102.9,51.5],[107.1,51.5],[109.4,50.1],[110.6,50.3],[111.8,48.7],[111.6,45.4],[112.3,42.4],[111.5,39.5],[108.8,40.2],[106.4,42.8],[99.4,43.9],[99.2,40],[101,40.4],[101.4,39.5],[100.9,36.6],[99,33.5],[98.7,31.3],[94.8,30.2],[95.7,31.7],[94.5,38.2],[95.5,42.7],[95.1,45.9],[90.8,48.2],[89.9,49.1],[90.1,50.4],[96.1,47.8],[97.3,48.9],[98.2,48.8],[99.6,50.5],[102.9,51.5]]},{"n":"망우3동","g":"중랑구","c":[100,22.5],"p":[[93,24.9],[98.5,26.4],[99.2,25.2],[104.8,25.3],[108.2,22.6],[106.4,18.1],[104.9,19],[102.3,18.8],[96.4,21.3],[93.3,20.5],[93,24.9]]},{"n":"묵2동","g":"중랑구","c":[77.7,42.5],"p":[[75.7,46.3],[79.2,47.8],[81.5,36.1],[76.2,35.8],[75.7,46.3]]},{"n":"묵1동","g":"중랑구","c":[86.1,44.1],"p":[[83.8,50],[89.5,51],[90.1,50.4],[89.9,49.1],[90.9,48.3],[89.5,45.7],[86.2,45.7],[87,43.9],[86.3,42.2],[87.3,40.3],[86.6,38.7],[85.1,37.3],[84,37.4],[82.9,36.3],[81.5,36.1],[79.2,47.8],[83.8,50]]},{"n":"중화2동","g":"중랑구","c":[77.5,30.7],"p":[[76.4,35.4],[81.5,36.1],[82.7,25.7],[74.9,23.2],[74.2,27.6],[76.5,31.8],[76.4,35.4]]},{"n":"중화1동","g":"중랑구","c":[85.6,33.8],"p":[[87.3,40.1],[88.1,35.5],[87.2,33.5],[88.1,32.7],[87.7,31.4],[86,29.3],[84.8,29.5],[85,27.1],[82.8,26.6],[81.5,36.1],[82.9,36.3],[84,37.4],[85.1,37.3],[87.3,40.1]]},{"n":"상봉2동","g":"중랑구","c":[84.1,24.3],"p":[[92.7,28.9],[93,24.9],[82.6,22],[82.6,22.9],[81.8,22.7],[81.5,23.7],[75.2,21.6],[74.9,23.2],[92.7,28.9]]},{"n":"상봉1동","g":"중랑구","c":[88.7,32.6],"p":[[87.7,40.1],[88.8,40.6],[93.5,35.7],[93.6,33.4],[94.3,33.2],[95,31.3],[94.6,29.4],[82.7,25.7],[82.8,26.6],[85,27.1],[84.8,29.5],[86,29.3],[87.7,31.4],[88.1,32.7],[87.2,33.5],[88.1,34.9],[87.7,40.1]]},{"n":"면목7동","g":"중랑구","c":[90.7,8.2],"p":[[85.2,11.9],[90.5,11.2],[95.6,11.7],[99.1,10.4],[100.5,9.6],[99.1,4.3],[95,1.8],[92,5.5],[89.1,6.2],[89.5,7.7],[83.1,7.1],[83,7.9],[82.3,7.4],[85.2,11.9]]},{"n":"면목5동","g":"중랑구","c":[81.6,13.1],"p":[[77.5,16.1],[85.8,18.3],[85.2,11.9],[84,9.8],[81.2,7.5],[80.3,11.7],[77.5,16.1]]},{"n":"면목4동","g":"중랑구","c":[86.4,5.2],"p":[[82.2,8.1],[82.3,7.4],[83,7.9],[83.1,7.1],[89.5,7.7],[89.1,6.2],[92,5.5],[95,1.8],[91,0.3],[89.2,0.8],[89,1.5],[81.4,2.6],[81.2,7.5],[82.2,8.1]]},{"n":"면목2동","g":"중랑구","c":[81.8,21.4],"p":[[87.9,23.5],[85.5,18.2],[77.5,16.1],[75.5,19.5],[75.2,21.6],[81.5,23.7],[81.8,22.7],[82.6,22.9],[82.6,22],[87.9,23.5]]},{"n":"이문2동","g":"동대문구","c":[72.4,34.2],"p":[[76,37.5],[76.7,32.4],[74.5,28.5],[73.2,28.6],[72.7,29.9],[70.6,29.9],[70.3,31.2],[68.2,31],[68.3,33.3],[67.3,34.3],[68.5,36],[71.6,36.3],[73.6,37.6],[73.5,40],[75,40],[75,37.6],[76,37.5]]},{"n":"이문1동","g":"동대문구","c":[67.3,28.3],"p":[[60.3,30.7],[62.8,32],[66,31.7],[67.1,32.6],[66.6,33],[67.3,34.3],[68.3,33.3],[68.2,31],[70.3,31.2],[70.6,29.9],[72.7,29.9],[73.2,28.6],[74.5,28.5],[74.3,25.6],[72.9,25.2],[70.6,26.1],[70.2,25.3],[69,25.9],[67.7,23.5],[65,23.5],[63.5,22],[64.1,22.9],[62.4,25],[62.4,26.4],[63.4,25.8],[63.2,28.3],[60.3,30.7]]},{"n":"장안2동","g":"동대문구","c":[76.6,4.8],"p":[[80.3,11.7],[81.4,2.6],[78.1,2.9],[76.5,-1.5],[73.6,-1.6],[75.7,2.5],[75.3,3.1],[71.7,3.5],[73.3,13.1],[80.3,11.7]]},{"n":"장안1동","g":"동대문구","c":[73.9,-0.4],"p":[[71.7,3.5],[75.3,3.1],[75.7,2.5],[73.6,-1.6],[76.5,-1.5],[78.1,2.9],[81.4,2.6],[76.3,-9.3],[64.9,-6.3],[67.5,-3.8],[71.7,3.5]]},{"n":"답십리2동","g":"동대문구","c":[68,0.9],"p":[[72.2,7.3],[72.7,7.1],[72.1,4.6],[70.8,1.6],[67.5,-3.8],[64.9,-6.3],[64.2,-5.5],[64.2,-3.6],[65.6,-2.3],[64.3,-1.3],[64.8,6.1],[72.2,7.3]]},{"n":"답십리1동","g":"동대문구","c":[59.2,2.9],"p":[[54.7,8.1],[55.4,7.5],[55,5.1],[56.5,3.5],[58.1,5.8],[62.1,4.2],[64.8,6.1],[64.3,-1.3],[65.6,-2.3],[64.2,-3.6],[64.2,-5.5],[57.1,1.1],[52.5,3.7],[54.7,8.1]]},{"n":"전농2동","g":"동대문구","c":[67.7,13.1],"p":[[73.6,13],[72.2,7.3],[65.1,6],[64.8,8.5],[61.6,14.2],[62.6,14.6],[63.8,17],[64.9,16.6],[64.9,15.8],[68.3,16.2],[69.9,15.6],[69.8,12.3],[73.2,13.4],[73.6,13]]},{"n":"전농1동","g":"동대문구","c":[59.9,10.6],"p":[[62.7,18.5],[62.6,14.6],[61.6,14.2],[64.8,8.5],[64.8,6.1],[62.1,4.2],[58.1,5.8],[56.5,3.5],[54.9,5.3],[55.4,7.5],[52.8,10.1],[57.9,13.8],[61.3,18.5],[62.7,18.5]]},{"n":"제기동","g":"동대문구","c":[49.3,16.1],"p":[[47.9,21.9],[51.1,22],[50.8,21.4],[51.6,21.1],[50.5,19.3],[51.1,17.4],[52.7,17.4],[54.1,12.1],[53.1,12],[53.6,10.4],[50.8,9.2],[45.1,8.8],[44.2,12.1],[42.7,11.9],[42.5,13.4],[48,20.6],[47.9,21.9]]},{"n":"용신동","g":"동대문구","c":[45.6,8],"p":[[38.5,9.9],[42.5,13.4],[42.7,11.9],[44.2,12.1],[45.1,8.8],[49.8,8.9],[52.8,10.1],[54.7,8.1],[54.7,7.2],[52.5,3.7],[49.2,3.6],[43.2,0.5],[37.6,2.4],[37.5,9],[38.5,9.9]]},{"n":"청량리동","g":"동대문구","c":[54,21.2],"p":[[51.4,26.5],[51.7,25.7],[52.4,27.6],[52.5,27.2],[53.4,27.9],[54,27],[56.9,27],[57.4,22.5],[56.6,22.3],[57.3,21.5],[56.4,19.4],[59.5,20],[61,18],[58.8,14.7],[53.6,10.5],[53.1,12],[54.1,12.1],[52.7,17.4],[51.1,17.4],[50.5,19.3],[51.6,21.1],[50.8,21.4],[51.1,22],[50.1,22],[51.4,26.5]]},{"n":"휘경2동","g":"동대문구","c":[69.7,16.9],"p":[[75.2,21.6],[75.9,18.7],[80.3,11.7],[73.4,13.4],[69.8,12.3],[70.2,15.3],[68.3,16.2],[64.9,15.8],[64.9,16.6],[63.8,17],[62.5,15.2],[63,16.3],[62.7,18.5],[74.9,23.2],[75.2,21.6]]},{"n":"휘경1동","g":"동대문구","c":[69.4,23.5],"p":[[74.9,23.2],[63,18.5],[61.3,18.5],[65,23.5],[67.7,23.5],[69,25.9],[70.2,25.3],[70.6,26.1],[72.9,25.2],[74.3,25.6],[74.9,23.2]]},{"n":"회기동","g":"동대문구","c":[60.2,25],"p":[[59.8,32.3],[60.5,30.4],[63.2,28.3],[63.4,25.8],[62.4,26.4],[62.4,25],[64.1,22.9],[63.5,22],[64.2,22.2],[61,18],[59.5,20],[56.4,19.4],[57.3,21.5],[56.6,22.3],[57.4,22.5],[56.7,25.3],[57,27.4],[59,31.8],[59.8,32.3]]},{"n":"자양4동","g":"광진구","c":[70.3,-34],"p":[[69.8,-27.1],[75.1,-29.4],[72.3,-36.8],[70.8,-43.7],[63.9,-40.2],[69.8,-27.1]]},{"n":"자양3동","g":"광진구","c":[76.1,-35.4],"p":[[78.7,-30.6],[80.3,-31.1],[76.6,-45.5],[70.8,-43.7],[72.3,-36.8],[75.1,-29.4],[78.7,-30.6]]},{"n":"자양2동","g":"광진구","c":[86,-38],"p":[[89.7,-31.4],[90.5,-35.9],[91.8,-36],[92.2,-42.5],[85.9,-44.9],[80.6,-45.7],[76.6,-45.5],[79.1,-36.1],[83.6,-37.8],[85.7,-37.5],[86.8,-36.8],[85.3,-32.7],[89.7,-31.4]]},{"n":"자양1동","g":"광진구","c":[82.6,-31.5],"p":[[83.6,-27.3],[85.4,-28.1],[85.3,-32.7],[86.8,-36.8],[84.6,-37.8],[79.1,-36.1],[80.3,-31.1],[78.7,-30.6],[78.8,-30],[82.4,-30.6],[82.3,-29.4],[83.6,-27.3]]},{"n":"광장동","g":"광진구","c":[101.3,-18],"p":[[101.7,-9.4],[108.7,-9],[109.4,-10.7],[109.4,-16],[107.5,-22.8],[100.9,-34.6],[93,-25.6],[95.8,-23.5],[96.6,-23.8],[97.5,-20],[97,-19],[97.3,-17.3],[101.5,-11.4],[101.7,-9.4]]},{"n":"구의3동","g":"광진구","c":[93.3,-33.1],"p":[[93,-25.6],[100.9,-34.6],[97.4,-41.7],[92.2,-42.5],[91.8,-36],[90.5,-35.9],[89.7,-31.4],[91,-24.6],[93,-25.6]]},{"n":"구의2동","g":"광진구","c":[94,-17.7],"p":[[99.3,-9.3],[101.7,-9.4],[101.5,-11.4],[97.3,-17.3],[97,-19],[97.5,-20],[96.6,-23.8],[95.8,-23.5],[93,-25.6],[91.3,-24.7],[86.5,-24.2],[87.2,-22.9],[86.8,-20.7],[87.3,-19.9],[88.5,-20],[89.8,-17.8],[90.5,-17.8],[90.2,-16.9],[95.7,-11.6],[96.3,-12.1],[97.9,-11.1],[99.3,-9.3]]},{"n":"구의1동","g":"광진구","c":[86.2,-26.7],"p":[[86.5,-24.2],[91,-24.6],[89.7,-31.4],[85.3,-32.7],[85.4,-28.1],[83.5,-27.1],[84.4,-24.3],[83.8,-24],[86.5,-24.2]]},{"n":"능동","g":"광진구","c":[86.5,-19.4],"p":[[89.4,-16],[90.5,-17.8],[89.8,-17.8],[88.5,-20],[87.3,-19.8],[86.9,-20.5],[87.2,-22.9],[86.5,-24.2],[82.1,-23.9],[77.9,-22],[82.1,-12.1],[89.4,-16]]},{"n":"중곡4동","g":"광진구","c":[95.3,-5.9],"p":[[99.1,4.3],[101.7,1.8],[99.3,-9.3],[97.9,-11.1],[96.3,-12.1],[95.7,-11.6],[90.2,-16.9],[89.4,-16],[87.4,1.5],[91.9,0.4],[99.1,4.3]]},{"n":"중곡3동","g":"광진구","c":[83.5,-0.4],"p":[[81.4,2.6],[87.4,1.5],[88,-5.8],[79.2,-2.7],[81.4,2.6]]},{"n":"중곡2동","g":"광진구","c":[86,-8.8],"p":[[85.2,-5.1],[88,-5.8],[89.4,-16],[82.1,-12.1],[85.2,-5.1]]},{"n":"중곡1동","g":"광진구","c":[80.4,-6.4],"p":[[79.2,-2.7],[85.2,-5.1],[82.1,-12.1],[76.3,-9.3],[79.2,-2.7]]},{"n":"군자동","g":"광진구","c":[77.9,-15.6],"p":[[77.5,-9.9],[82.1,-12.1],[79.5,-18.7],[77.9,-22],[72.6,-21],[77.5,-9.9]]},{"n":"화양동","g":"광진구","c":[78.3,-26.4],"p":[[72.6,-21],[76.2,-21.4],[80.4,-23.4],[84.4,-24.3],[83.7,-27.9],[82.3,-29.4],[82.4,-30.6],[78.8,-30],[78.7,-30.6],[78,-30.5],[69.8,-27.1],[72.6,-21]]},{"n":"옥수동","g":"성동구","c":[30.8,-25.1],"p":[[30.6,-21.2],[31.4,-23.9],[32.4,-23.4],[33.8,-24.3],[35.1,-24.1],[35.3,-25.5],[36.6,-26.1],[36.4,-26.8],[39.5,-31.4],[35.7,-34.2],[30.8,-30.4],[26.5,-29.6],[26.5,-28.2],[25.7,-27.4],[25.9,-25.4],[26.5,-24.5],[27.6,-24.7],[26.2,-23.5],[26.7,-21.3],[28.2,-20.9],[29.6,-19.4],[30.9,-20.2],[30.6,-21.2]]},{"n":"금호2·3가동","g":"성동구","c":[33.2,-18.1],"p":[[32,-16.3],[32.9,-13.3],[34.5,-12],[34.9,-14.6],[39.1,-17.2],[39.6,-21],[32.2,-20.7],[31.9,-22.1],[31.5,-21.1],[30.5,-21.2],[30.9,-20.2],[29.6,-19.3],[32,-16.3]]},{"n":"왕십리도선동","g":"성동구","c":[43.2,-1.7],"p":[[37.6,2.4],[42.9,0.6],[44.7,0.8],[45.7,-0.4],[45.3,-1.4],[46.6,-3.1],[48,-3.3],[47.2,-8],[42.2,-4.8],[37.8,-4.1],[37.6,2.4]]},{"n":"용답동","g":"성동구","c":[64.1,-8.2],"p":[[52.5,3.7],[57.1,1.1],[65.6,-6.8],[75.2,-8.7],[77.5,-9.9],[76,-9.8],[73.3,-12.9],[69.9,-18.5],[68.6,-19.5],[66.6,-19.6],[58.2,-16.7],[60.4,-11.5],[55.6,0.3],[53.1,2.2],[52.5,3.7]]},{"n":"송정동","g":"성동구","c":[68.4,-16.7],"p":[[60.5,-18.5],[60.7,-17.6],[66.6,-19.6],[69,-19.2],[74.2,-11.8],[76,-9.8],[77.5,-9.9],[72.6,-21],[66.7,-21],[60.5,-18.5]]},{"n":"성수2가3동","g":"성동구","c":[64.6,-22.2],"p":[[60.5,-18.5],[66.7,-21],[72.6,-21],[68.9,-29.1],[58.4,-25.1],[60.5,-18.5]]},{"n":"성수2가1동","g":"성동구","c":[60.9,-31],"p":[[60.2,-25.8],[68.9,-29.1],[63.9,-40.2],[58,-36.7],[59.1,-32.7],[60.3,-30.9],[59.5,-30.1],[60,-29.6],[59.1,-29.3],[60.2,-25.8]]},{"n":"성수1가2동","g":"성동구","c":[52.5,-19.8],"p":[[58.2,-16.7],[60.8,-17.3],[58.4,-25.1],[55.1,-23.2],[53.7,-23.3],[48.2,-21.7],[46.3,-23.9],[43.8,-23.2],[47.4,-19.8],[50.9,-18],[50.7,-16.4],[51.3,-16],[52.3,-16.6],[58.2,-16.7]]},{"n":"성수1가1동","g":"성동구","c":[51.7,-27.8],"p":[[43.9,-22.7],[43.8,-23.2],[46.3,-23.9],[48.2,-21.7],[53.7,-23.3],[55.1,-23.2],[60.2,-25.8],[59.1,-29.3],[60,-29.6],[59.5,-30.1],[60.3,-30.9],[59.1,-32.7],[58,-36.7],[56.3,-35.1],[55.5,-36.8],[42.8,-30.4],[41.5,-30.8],[43.8,-23.3],[43.2,-23],[43.9,-22.7]]},{"n":"금호4가동","g":"성동구","c":[36.6,-23.7],"p":[[42.1,-20.2],[42.5,-20],[43.6,-24],[41.5,-30.8],[39.5,-31.4],[36.4,-26.8],[36.6,-26.1],[35.3,-25.5],[35.1,-24.1],[33.8,-24.3],[32.4,-23.4],[31.4,-23.9],[30.6,-21.3],[31.5,-21.1],[31.9,-22.1],[32.1,-20.7],[39.6,-21.3],[42.1,-20.2]]},{"n":"금호1가동","g":"성동구","c":[38.9,-15.9],"p":[[38.4,-11.4],[39.5,-14.3],[42.5,-15.4],[42.1,-20.2],[40.1,-21.2],[39.6,-21.3],[39.1,-17.2],[34.9,-14.6],[34.5,-11.8],[38.4,-11.4]]},{"n":"응봉동","g":"성동구","c":[46.5,-17.7],"p":[[50,-15.4],[51.2,-16.8],[50.9,-18],[47.4,-19.8],[44.9,-22.6],[43,-23],[42.5,-20],[41.8,-19.8],[42.5,-15.4],[44,-16.4],[46.3,-14.4],[47.5,-14.5],[48.9,-15.9],[50,-15.4]]},{"n":"행당2동","g":"성동구","c":[42.5,-11.7],"p":[[43.7,-9],[43.5,-11.4],[46.1,-10.8],[46.3,-14.4],[44,-16.4],[39.5,-14.3],[38.4,-11.4],[39.2,-11.3],[40.6,-9.4],[43.7,-9]]},{"n":"행당1동","g":"성동구","c":[47.3,-10.1],"p":[[49.9,-6.4],[50.4,-14.1],[49.9,-15.7],[48.9,-15.9],[47.5,-14.5],[46.2,-14.8],[46.1,-10.8],[43.5,-11.4],[43.4,-10.8],[43.7,-9],[45.7,-6.8],[47.2,-8],[48,-3.3],[49,-3.4],[49.9,-6.4]]},{"n":"사근동","g":"성동구","c":[54.5,-9.5],"p":[[57.3,-3.9],[60.4,-11.5],[59.2,-15.3],[58.1,-16.7],[50.6,-16.4],[50,-15.4],[50.3,-8.9],[49.8,-6.4],[50.3,-7.4],[53.6,-6.7],[55,-7.1],[56.3,-4],[57.3,-3.9]]},{"n":"마장동","g":"성동구","c":[50.5,-1.8],"p":[[44.7,0.8],[48.1,3.2],[52.5,3.7],[53.1,2.2],[55.6,0.3],[57.3,-3.9],[56.3,-4],[55,-7.1],[53.6,-6.7],[50.3,-7.4],[49,-3.4],[46.6,-3.1],[45.3,-1.4],[45.7,-0.4],[44.7,0.8]]},{"n":"왕십리2동","g":"성동구","c":[40.5,-8],"p":[[40.3,-4.3],[44.7,-6.2],[45.5,-7.4],[43.5,-9],[40.6,-9.4],[39.2,-11.3],[37.2,-11.5],[36.9,-10.3],[37.9,-8.1],[39.9,-6.3],[40.3,-4.3]]},{"n":"한남동","g":"용산구","c":[22.2,-28.2],"p":[[22.5,-18.9],[22.8,-21],[23.8,-21.1],[22.9,-23.1],[24.9,-25.5],[25.9,-25.3],[25.7,-27.4],[26.5,-28.2],[26.5,-29.6],[30.8,-30.4],[35.7,-34.2],[25.4,-44.7],[21.4,-41.2],[22.1,-40],[21.7,-39.1],[16.8,-36.1],[16.7,-34.1],[14.8,-31.3],[17.4,-28],[16.3,-23.3],[15.4,-22.1],[16.2,-21.9],[17.9,-19.4],[21.2,-19.7],[22.5,-18.9]]},{"n":"한강로동","g":"용산구","c":[-6,-37],"p":[[2.5,-34.6],[2.7,-36.3],[0.3,-47.5],[-3,-46.3],[-8.5,-47.3],[-10.9,-46.9],[-14.6,-44.3],[-16.8,-41.2],[-16.9,-37.8],[-15.2,-36.9],[-12.9,-36],[-10.3,-36],[-10,-35.2],[-8.7,-34.8],[-7.2,-35.5],[-5.1,-35],[-4.1,-32.6],[-4,-29.3],[-2.1,-29],[-1.6,-31.6],[-0.8,-31.6],[-0.7,-33.9],[0.2,-34.7],[2.5,-34.6]]},{"n":"원효로1동","g":"용산구","c":[-8.4,-32.3],"p":[[-4.1,-27.7],[-4.1,-32.6],[-5.1,-35],[-7.2,-35.5],[-8.7,-34.8],[-11.3,-36.2],[-11.3,-35.6],[-12.3,-35.4],[-11.8,-35],[-12.6,-34.1],[-11,-32.2],[-9.8,-31.9],[-8.7,-27.8],[-6.2,-27.9],[-5.9,-27.2],[-4.1,-27.7]]},{"n":"청파동","g":"용산구","c":[-8.1,-23.1],"p":[[-5.4,-15.4],[-4,-20.8],[-3.9,-27.6],[-5.9,-27.2],[-6.2,-27.9],[-8.7,-27.8],[-9.2,-25.6],[-9.9,-25.6],[-10.3,-26.7],[-9,-26.7],[-10.9,-27.5],[-10.7,-25.6],[-9.6,-24.9],[-10.1,-20.6],[-9.5,-19.6],[-10.7,-17.8],[-5.9,-13.9],[-5.4,-15.4]]},{"n":"보광동","g":"용산구","c":[19.4,-43],"p":[[17.4,-36.7],[21.7,-39.1],[22.1,-40],[21.4,-41.2],[25.4,-44.7],[23.9,-47.7],[19.4,-51.4],[19.3,-46.6],[17.8,-46.1],[17.8,-44.9],[16.6,-44.3],[16.6,-41.5],[15,-40.6],[17.4,-36.7]]},{"n":"서빙고동","g":"용산구","c":[12,-45.4],"p":[[12.2,-39.8],[13.9,-41.2],[15.7,-40.5],[16.6,-41.5],[16.6,-44.3],[17.8,-44.9],[17.8,-46.1],[18.8,-46.2],[19.4,-47.2],[19.4,-51.4],[10.7,-56.6],[10.1,-55.2],[5.2,-55.8],[5.5,-49.7],[0.3,-47.5],[2.6,-36.5],[6.3,-38.1],[6.3,-39.9],[12.2,-39.8]]},{"n":"이태원2동","g":"용산구","c":[12.9,-26.5],"p":[[15.4,-22.1],[16.3,-23.3],[17.4,-28],[13.7,-31.9],[11.7,-32.2],[9.4,-35],[8.6,-31.1],[10,-26.2],[11.8,-24.1],[11.8,-22.1],[13.7,-20.2],[15.4,-22.1]]},{"n":"이태원1동","g":"용산구","c":[13.7,-35.2],"p":[[9.5,-34.9],[11.7,-32.2],[13.5,-32],[15.4,-30.3],[14.8,-31.3],[16.7,-34.1],[17.4,-36.8],[15.8,-39.9],[14,-41.2],[12.2,-39.8],[9.5,-34.9]]},{"n":"이촌2동","g":"용산구","c":[-16.8,-44.2],"p":[[-16.9,-37.8],[-16.4,-42.1],[-14.6,-44.3],[-11.2,-46.7],[-14.8,-53.9],[-20.2,-49.3],[-23.4,-42],[-16.9,-37.8]]},{"n":"이촌1동","g":"용산구","c":[-4.6,-50.8],"p":[[-11.2,-46.7],[-8.5,-47.3],[-3,-46.3],[5.3,-49.5],[5.7,-53],[4.9,-57.3],[-9,-56.5],[-14.7,-54],[-11.2,-46.7]]},{"n":"용문동","g":"용산구","c":[-14.4,-31.5],"p":[[-15.5,-28.7],[-9.5,-30.7],[-9.8,-31.9],[-11,-32.2],[-12.1,-33.8],[-14.1,-32.7],[-15.5,-33.1],[-16.6,-31.9],[-17.2,-32.2],[-18.2,-30.8],[-17.6,-31.1],[-15.5,-28.7]]},{"n":"효창동","g":"용산구","c":[-11.2,-25],"p":[[-10.1,-20.6],[-9.6,-24.9],[-10.7,-25.6],[-10.9,-27.5],[-9,-26.7],[-10.3,-26.7],[-10.1,-25.7],[-9.2,-25.6],[-8.7,-27.8],[-9.3,-30.8],[-15.4,-28.6],[-13.9,-26.6],[-14.7,-26.2],[-14.3,-23.8],[-12.4,-23],[-12.1,-21.9],[-11,-21.5],[-11.1,-20.7],[-10.1,-20.6]]},{"n":"원효로2동","g":"용산구","c":[-17.2,-34.5],"p":[[-18.1,-31.5],[-17.2,-32.2],[-16.6,-31.9],[-15.5,-33.1],[-14.1,-32.7],[-13.1,-33.7],[-12.1,-33.6],[-12.6,-34.1],[-11.8,-35],[-12.3,-35.4],[-11.3,-35.6],[-11.3,-36.2],[-14.7,-36.6],[-23.4,-42],[-25.6,-39.9],[-24.4,-34.4],[-23.4,-33.6],[-22.6,-34.1],[-22.5,-33.5],[-19.6,-33.1],[-18.1,-31.5]]},{"n":"남영동","g":"용산구","c":[-1.1,-24.7],"p":[[0.6,-16.6],[-0.5,-17.3],[-0.1,-19.1],[-2.1,-21.4],[-0.7,-22.3],[-0.6,-23.8],[-1.9,-24],[-1,-28.8],[0.4,-31.4],[2.5,-31.3],[2.5,-34.6],[0.2,-34.7],[-0.7,-33.9],[-0.8,-31.6],[-1.6,-31.6],[-2.1,-29],[-4.1,-29.3],[-4,-20.8],[-5.4,-15.4],[-3,-15.4],[-2.9,-14.9],[0.6,-16.6]]},{"n":"용산2가동","g":"용산구","c":[7.7,-27.5],"p":[[13,-19.2],[13.7,-20.2],[11.8,-22.1],[11.8,-24.1],[10,-26.2],[8.6,-31.1],[9.1,-34.9],[10.2,-35.7],[12.2,-39.8],[6.3,-39.9],[6.3,-38.1],[2.6,-36.5],[2.5,-31.3],[0.4,-31.4],[-1,-28.8],[-1.9,-24],[4.1,-22.6],[6.3,-22.8],[8.6,-21.6],[9.4,-17.8],[11.5,-17.9],[13,-19.2]]},{"n":"후암동","g":"용산구","c":[3.4,-18.7],"p":[[7.6,-15.6],[9.4,-17.8],[8.6,-21.6],[6.3,-22.8],[4.1,-22.6],[-0.6,-23.8],[-0.7,-22.3],[-2.1,-21.4],[-0.1,-19.1],[-0.6,-17.9],[0.6,-16.6],[0.6,-14.3],[3.1,-15.9],[4.4,-15.4],[6.2,-16.3],[7.6,-15.6]]},{"n":"동화동","g":"중구","c":[33.6,-9],"p":[[37.6,-8.6],[36.9,-10.3],[37.2,-11.4],[34.6,-11.8],[33.9,-9.5],[32.1,-10],[30.1,-9.1],[29.8,-9.7],[29.3,-8.8],[30,-8.9],[31.8,-5.2],[34.7,-5.9],[35.5,-7.8],[37.6,-8.6]]},{"n":"청구동","g":"중구","c":[31,-12.4],"p":[[29.7,-9.7],[30.1,-9.1],[32.1,-10],[33.2,-9.3],[34,-9.6],[34.5,-12],[32.9,-13.3],[32,-16.3],[30.6,-14.9],[29.8,-15.7],[29,-15.4],[28.8,-14.2],[27.9,-13.8],[29.7,-9.7]]},{"n":"약수동","g":"중구","c":[27.3,-18.3],"p":[[27.9,-13.8],[28.8,-14.2],[29,-15.4],[29.8,-15.7],[30.6,-14.9],[32,-16.3],[28.3,-20.8],[26.7,-21.3],[26.2,-23.5],[27.6,-24.7],[24.9,-25.5],[22.9,-23.1],[23.1,-22],[24.8,-21],[25.2,-18.4],[27.6,-14.7],[27.1,-14.1],[27.6,-14.4],[27.9,-13.8]]},{"n":"다산동","g":"중구","c":[25.9,-14.7],"p":[[29.3,-8.7],[29.7,-9.7],[27.6,-14.4],[27.1,-14.1],[27.1,-15.8],[25.6,-17.5],[24.8,-21],[23.3,-21.6],[23.8,-21.1],[22.8,-21],[22.1,-17.4],[22.7,-15.4],[25.7,-12.2],[26.9,-9],[26.5,-7.3],[29.3,-8.7]]},{"n":"신당동","g":"중구","c":[29.6,-2.7],"p":[[33,1],[33.4,-3.7],[32,-3.9],[30,-8.9],[26.5,-7.3],[27.4,-3.5],[28.6,-3.2],[28.4,-1.5],[26.8,-0.7],[26.7,0.5],[33,1]]},{"n":"중림동","g":"중구","c":[-7.4,-11.6],"p":[[-3.6,-9.7],[-5.2,-10.1],[-5.9,-13.9],[-10.7,-17.8],[-11.3,-14],[-10.1,-12.1],[-11.3,-10.2],[-5,-7.3],[-3.6,-9.7]]},{"n":"황학동","g":"중구","c":[35.8,0.1],"p":[[37.6,2.4],[37.8,-4.1],[33.4,-3.7],[33,1],[35.3,2.4],[37.6,2.4]]},{"n":"신당5동","g":"중구","c":[35.4,-5.4],"p":[[33.4,-3.7],[40.3,-4.3],[40.3,-5.4],[37.3,-8.6],[35.4,-7.6],[34.7,-5.9],[31.8,-5.2],[32,-3.9],[33.4,-3.7]]},{"n":"을지로동","g":"중구","c":[17.7,-2.9],"p":[[24.4,0.4],[23.1,-0.5],[22.4,-2.5],[27.1,-4.1],[22.3,-2.7],[21.7,-4],[20.3,-3.4],[16,-3.6],[14.7,-6.3],[10.2,-6.4],[10.1,-4],[12.3,-3.1],[11,-3],[11.8,-2.5],[11.9,-1.1],[24.4,0.4]]},{"n":"광희동","g":"중구","c":[22.8,-4],"p":[[26.7,0.5],[26.8,-0.7],[28.4,-1.4],[28.5,-2.5],[28.6,-3.2],[27.4,-3.5],[27,-6.3],[25.2,-6.7],[24.4,-5.5],[24.2,-7.3],[21.2,-6.9],[21.1,-5.7],[15.3,-7.8],[14.1,-7.6],[14,-6.2],[14.7,-6.3],[16,-3.6],[20.3,-3.4],[21.7,-4],[22.3,-2.7],[27.1,-4.1],[22.4,-2.5],[23.4,0],[26.7,0.5]]},{"n":"장충동","g":"중구","c":[20.5,-12.8],"p":[[26.7,-6.3],[26.9,-9],[25.4,-12.8],[22.7,-15.4],[22.1,-17.4],[22.5,-18.8],[21.2,-19.7],[17.9,-19.4],[16.2,-21.9],[15.4,-22.1],[13,-19.2],[13.2,-18.6],[14.7,-17],[16.6,-17.2],[17,-18],[18,-15],[21.9,-12.6],[21.9,-10.5],[20.8,-11.1],[19.1,-10.3],[19.6,-9.3],[19,-8.9],[19.9,-8.8],[20,-6.4],[21.1,-5.7],[21.2,-6.9],[24.2,-7.3],[24.4,-5.5],[25.2,-6.7],[26.7,-6.3]]},{"n":"필동","g":"중구","c":[15,-11.6],"p":[[11.4,-6.3],[13.6,-6.1],[14.1,-7.6],[15,-7.9],[20,-6.4],[19.9,-8.8],[19,-8.9],[19.6,-9.3],[19.1,-10.3],[20.8,-11.1],[21.9,-10.5],[22.2,-11.2],[21.1,-13.4],[18,-15],[17,-18],[16.6,-17.2],[14.7,-17],[13,-19.2],[11.5,-17.9],[9.3,-17.7],[7.6,-15.6],[7,-13.4],[8.7,-11.8],[10,-8.9],[9.6,-8.2],[11.6,-8.1],[11.4,-6.3]]},{"n":"명동","g":"중구","c":[7.4,-6.2],"p":[[-0.4,0],[11.9,-1.1],[11.8,-2.5],[11,-3],[12.3,-3.1],[11,-3.2],[10,-4.6],[10.2,-6.4],[11.4,-6.3],[11.6,-8.1],[9.6,-8.2],[10,-8.9],[8.7,-11.8],[7,-13.2],[7.5,-15.1],[6.1,-15.1],[5.7,-11.3],[4.1,-7.5],[5.3,-3.3],[3,-3.3],[2.7,-4.1],[1,-3.3],[-0.4,0]]},{"n":"회현동","g":"중구","c":[1.7,-13.8],"p":[[4.1,-7.5],[5.7,-11.3],[6.1,-15.1],[7.5,-15.1],[7.1,-16],[6.2,-16.3],[4.4,-15.4],[2.4,-15.7],[0.8,-14.2],[0.6,-16.6],[-2.9,-14.9],[-3,-15.4],[-5.4,-15.4],[-5.9,-13.9],[-5.2,-10.1],[4.1,-7.5]]},{"n":"소공동","g":"중구","c":[-0.6,-3.6],"p":[[-5.4,-1.1],[-0.4,0],[1,-3.3],[2.7,-4.1],[3,-3.3],[5.3,-3.3],[4.4,-7.1],[-3.6,-9.7],[-7.3,-3.4],[-5.4,-1.1]]},{"n":"혜화동","g":"종로구","c":[18.4,17.3],"p":[[10.5,22],[13.1,22.6],[14.6,22],[15.6,22.9],[19.9,23.1],[21,19.9],[22.4,18.7],[22.5,17.8],[23.8,17.6],[24.3,16.8],[24.9,13.9],[24.2,13.9],[23.4,15.9],[20.5,13.8],[20.6,12.5],[19,11.8],[17.1,12.6],[16.3,11.7],[16,14],[13.8,17.6],[9.8,18.2],[10.5,22]]},{"n":"청운효자동","g":"종로구","c":[-5.5,13.8],"p":[[-14.3,14.5],[-14.3,15.7],[-13.5,16.7],[-11.2,17.4],[-10.1,18.6],[-7.5,23.6],[-6.2,24.3],[-2.6,24.4],[-0.2,20.4],[2.4,17.9],[2.4,15.1],[3.5,11.7],[2.9,6.7],[-1.2,6.5],[-1.6,10.1],[-3.6,10.2],[-3.2,8.8],[-4.8,10],[-5.1,8.8],[-6.2,9],[-6,9.8],[-6.7,9.7],[-6.7,10.4],[-10.4,10.2],[-14.3,14.5]]},{"n":"숭인2동","g":"종로구","c":[34.6,5.2],"p":[[34,8.2],[36,9.5],[37.5,8.7],[37.6,2.4],[36,2.6],[34,1.7],[31.6,2],[31.5,3.7],[34.1,4.7],[34,8.2]]},{"n":"숭인1동","g":"종로구","c":[32.7,9.1],"p":[[31,12.8],[32.4,12.2],[33.6,9.8],[33.4,8.4],[34.3,8],[34.1,4.7],[31.5,3.7],[31,12.8]]},{"n":"창신3동","g":"종로구","c":[29.1,9.2],"p":[[30.8,12.9],[31.4,7.5],[29,6.1],[28.3,6.5],[28.7,7.4],[28.1,7.9],[28.7,7.8],[27.4,11],[28.1,12.1],[30.8,12.9]]},{"n":"창신2동","g":"종로구","c":[27.5,6.9],"p":[[26.1,11.2],[27.4,11],[28.7,7.8],[28.1,7.9],[28.7,7.4],[28.3,6.5],[29.2,5.3],[28,4.3],[29.1,2.8],[26.8,2.2],[26.1,3.4],[25.5,9.3],[26.1,11.2]]},{"n":"창신1동","g":"종로구","c":[29.8,3.6],"p":[[29.1,6.1],[31.4,7.5],[31.6,2],[34,1.7],[31.8,0.5],[26.7,0.5],[27.3,2.3],[29.1,2.8],[28,4.3],[29.2,5.3],[29.1,6.1]]},{"n":"이화동","g":"종로구","c":[21.2,10.9],"p":[[16.3,11.7],[17.1,12.6],[19,11.8],[20.6,12.5],[20.5,13.8],[23.8,16],[24.2,13.9],[24.9,13.9],[24.7,12.8],[26.1,11.2],[25.5,9.3],[25.9,7.4],[20.1,5.6],[20,6.8],[18.8,6.6],[16.9,7.6],[16.3,11.7]]},{"n":"종로5·6가동","g":"종로구","c":[22.2,4.4],"p":[[18.8,6.6],[20,6.8],[20.1,5.6],[25.9,7.4],[26.1,3.4],[27.3,2.3],[26.7,0.5],[20.4,0.3],[17.6,4.5],[18.8,6.6]]},{"n":"종로1·2·3·4가동","g":"종로구","c":[9.7,8.4],"p":[[9.8,18.2],[13.8,17.6],[15.8,14.2],[16.9,7.6],[18.8,6.6],[17.6,4.5],[20.4,0.3],[10.3,-1.2],[0.9,-0.1],[0.9,2.3],[1.5,2.4],[0.8,2.4],[0.8,6.4],[5.7,6.2],[8.5,7.9],[10.6,8.1],[11,13],[10.3,16.3],[9.6,16.3],[9.8,18.2]]},{"n":"가회동","g":"종로구","c":[8.4,15.1],"p":[[10.4,22.1],[10.6,20.6],[9.4,17.8],[11,13],[10.6,8.1],[7.6,7.4],[6.4,9.1],[6.4,12.2],[5.6,12.8],[5.5,14],[7.5,16.9],[8.2,19.7],[10.4,22.1]]},{"n":"교남동","g":"종로구","c":[-9.3,2.8],"p":[[-10.4,7.4],[-9.4,4.3],[-7.3,2],[-8.1,0.9],[-5.4,-1.1],[-7.3,-3.4],[-12.9,3.7],[-12.1,3.9],[-10.4,7.4]]},{"n":"무악동","g":"종로구","c":[-13.1,8.8],"p":[[-10.4,10.2],[-11.3,9.7],[-10.3,7.4],[-12.1,3.9],[-12.9,3.7],[-17.7,9.6],[-16.2,9.7],[-15.9,11.4],[-14,12.4],[-10.4,10.2]]},{"n":"평창동","g":"종로구","c":[-6.5,46],"p":[[-3.3,63],[0.3,61.7],[0,59.6],[1.8,59.1],[3.7,59.8],[2.6,55.3],[4.3,52.4],[5.5,47.4],[8.6,45.4],[8.9,44.3],[7.9,37.8],[9.4,31.9],[7.1,30.1],[4.5,29.9],[5.4,25.8],[-1.5,27.7],[-2.2,29.7],[-6.9,31],[-9.4,34.7],[-10,34.7],[-11.4,37.8],[-14.1,34.2],[-15,35.2],[-17.4,35.5],[-19.5,39],[-20.2,38.6],[-20.7,39.5],[-19.8,42.8],[-20,46.1],[-21,48.4],[-19.1,52],[-19.7,52.6],[-18.8,55.5],[-15.2,56.1],[-13,59.2],[-8.5,60.2],[-7.7,61.3],[-6.6,60.5],[-5.3,60.9],[-3.3,63]]},{"n":"부암동","g":"종로구","c":[-10.7,26],"p":[[-18.1,36.3],[-14,34.3],[-11.4,37.8],[-7.7,31.6],[-2.2,29.7],[-1.4,28.7],[-1.8,27.8],[0,27.3],[-1.8,24],[-4,24.6],[-7.5,23.6],[-10.1,18.6],[-11.2,17.4],[-13.5,16.7],[-14.3,15.7],[-14.3,14.5],[-15.2,15.4],[-13.8,21.2],[-15.5,25.9],[-14.9,29.1],[-17.3,29.3],[-18.4,31.1],[-18.1,36.3]]},{"n":"삼청동","g":"종로구","c":[4.5,16.8],"p":[[0,27.3],[5.4,25.8],[7.8,23.5],[10.8,22.5],[8.2,19.7],[7.5,16.9],[5.6,14.2],[5.6,12.8],[6.4,12.2],[6.4,9.1],[7.6,7.4],[5.7,6.2],[2.9,6.7],[3.5,11.7],[2.4,15.1],[2.4,17.9],[-0.2,20.4],[-1.8,23.3],[0,27.3]]},{"n":"사직동","g":"종로구","c":[-4.7,5.6],"p":[[-10.4,7.4],[-11.3,9.7],[-10.4,10.2],[-6.7,10.4],[-6.7,9.7],[-6,9.8],[-6.2,9],[-5.1,8.8],[-4.8,10],[-3.2,8.8],[-3.6,10.2],[-1.6,10.1],[-1.2,6.5],[0.8,6.4],[0.8,2.4],[1.5,2.4],[0.9,2.3],[0.9,-0.1],[-2.5,0],[-3.1,-1],[-3.8,-0.5],[-5.8,-0.9],[-8.1,0.9],[-7.3,2],[-9.4,4.3],[-10.4,7.4]]}];
+
+
+  /* ======================================================================
+     캠퍼스 영토 지도 v2
+
+     v1 이 읽히지 않은 이유는 렌더링 엔진이 아니라 정보 밀도였습니다.
+     행정동 423 개를 한 화면에 펼치면 한 칸이 중앙값 23px 입니다 —
+     25 개 학교색을 구분할 수도, 정확히 호버할 수도 없는 크기입니다.
+
+     그래서 두 단계로 나눕니다.
+       1) 구 25 개    — 한 칸 약 102px. 누가 어디를 가졌는지 한눈에
+       2) 동 드릴다운 — 구를 누르면 그 구의 동만 화면을 채움
+
+     그리고 v1 에 없던 것들:
+       · 휠 확대, 드래그 이동, 더블클릭 리셋
+       · "우리 학교" 버튼 — 내 영토로 카메라가 날아감
+       · 구 단위에서는 이름표가 항상 켜짐(25 개는 들어가고 423 개는 안 들어감)
+       · 자유 회전 제거. 낯선 도시 모양이 돌아가면 방향 감각이 사라집니다.
+         기울기만 고정해 두고 위치·배율만 사용자가 만집니다.
+       · 면마다 윗면/좌측면/우측면 밝기를 달리해 입체가 조명으로 읽히게
+
+     Three.js 는 쓰지 않았습니다. min 360KB + core 380KB 라 이 파일이
+     세 배가 되는데, 위 문제는 전부 밀도와 카메라 문제라 엔진을 바꿔도
+     그대로 남습니다. 원근이 면적을 왜곡하는 것도 영토 지도에서는 손해입니다.
+     ====================================================================== */
+  var TERR_UNIS = [
+    { n:'명지대',   gu:'서대문구', c:'#7DE0FF' }, { n:'연세대',   gu:'서대문구', c:'#6E9CFF' },
+    { n:'이화여대', gu:'서대문구', c:'#5BE49B' }, { n:'홍익대',   gu:'마포구',   c:'#95ACFF' },
+    { n:'서강대',   gu:'마포구',   c:'#FF8F8F' }, { n:'고려대',   gu:'성북구',   c:'#FF7183' },
+    { n:'국민대',   gu:'성북구',   c:'#7FA8FF' }, { n:'성신여대', gu:'성북구',   c:'#C9A2FF' },
+    { n:'경희대',   gu:'동대문구', c:'#FF8571' }, { n:'한국외대', gu:'동대문구', c:'#71ADFF' },
+    { n:'서울시립', gu:'동대문구', c:'#64CCEA' }, { n:'한양대',   gu:'성동구',   c:'#71A0FF' },
+    { n:'건국대',   gu:'광진구',   c:'#5FDCA6' }, { n:'세종대',   gu:'광진구',   c:'#FF9F71' },
+    { n:'동국대',   gu:'중구',     c:'#FFBA57' }, { n:'숙명여대', gu:'용산구',   c:'#8090FF' },
+    { n:'성균관대', gu:'종로구',   c:'#70CCDC' }, { n:'중앙대',   gu:'동작구',   c:'#7089FF' },
+    { n:'숭실대',   gu:'동작구',   c:'#57CCEA' }, { n:'서울대',   gu:'관악구',   c:'#8F9FFF' },
+    { n:'서울교대', gu:'서초구',   c:'#A0DC80' }, { n:'한국체대', gu:'송파구',   c:'#80DECC' },
+    { n:'광운대',   gu:'노원구',   c:'#FF9571' }, { n:'서울과기', gu:'노원구',   c:'#71B8FF' },
+    { n:'덕성여대', gu:'도봉구',   c:'#E490D0' }
+  ];
+  var TERR_MINE = '명지대';
+
+  function terrHash(s) {
+    var h = 2166136261, i;
+    for (i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return (h >>> 0) / 4294967296;
+  }
+
+  /* 동 단위 가상 데이터. 결정론적이라 새로고침해도 같은 판입니다. */
+  var TERR = DONG.map(function (d) {
+    var cand = TERR_UNIS.filter(function (u) { return u.gu === d.g; });
+    var r = terrHash(d.n + d.g), owner = null;
+    if (cand.length && r > 0.16) owner = cand[Math.floor(terrHash(d.n) * cand.length) % cand.length];
+    else if (r > 0.74) owner = TERR_UNIS[Math.floor(terrHash(d.g + d.n) * TERR_UNIS.length) % TERR_UNIS.length];
+    return {
+      d: d, owner: owner,
+      sess: owner ? Math.round(8 + terrHash(d.n + 'x') * 240) : Math.round(terrHash(d.n + 'y') * 10),
+      contested: !!owner && terrHash(d.n + 'c') > 0.79,
+      hit: null
+    };
+  });
+
+  /* 구를 하나의 도형으로 합칩니다. 경계를 정확히 union 하는 대신,
+     그 구에 속한 동 폴리곤을 전부 그려서 같은 색으로 칠합니다 —
+     시각적으로는 하나의 덩어리로 보이고 계산은 훨씬 쌉니다. */
+  var GU_LIST = [];
+  (function buildGu() {
+    var by = {};
+    TERR.forEach(function (t) {
+      if (!by[t.d.g]) by[t.d.g] = { g: t.d.g, parts: [], sess: 0, byUni: {}, cx: 0, cy: 0, n: 0 };
+      var o = by[t.d.g];
+      o.parts.push(t.d.p);
+      o.sess += t.sess;
+      o.cx += t.d.c[0]; o.cy += t.d.c[1]; o.n++;
+      if (t.owner) o.byUni[t.owner.n] = (o.byUni[t.owner.n] || 0) + t.sess;
+    });
+    Object.keys(by).forEach(function (g) {
+      var o = by[g];
+      o.cx /= o.n; o.cy /= o.n;
+      var best = null, bv = -1;
+      Object.keys(o.byUni).forEach(function (n) { if (o.byUni[n] > bv) { bv = o.byUni[n]; best = n; } });
+      o.winner = best ? TERR_UNIS.filter(function (u) { return u.n === best; })[0] : null;
+      /* 2위와의 격차가 작으면 경합 중입니다. 소유는 색, 상태는 패턴. */
+      var vals = Object.keys(o.byUni).map(function (n) { return o.byUni[n]; }).sort(function (a, b) { return b - a; });
+      o.contested = vals.length > 1 && vals[1] / vals[0] > 0.72;
+      o.dongCount = o.n;
+      GU_LIST.push(o);
+    });
+  })();
+
+  /* ---- 카메라 --------------------------------------------------------
+     회전은 뺐습니다. 낯선 도시 모양이 돌아가면 방향 감각이 사라지고,
+     원근이 면적을 왜곡해 "누가 얼마나 가졌나" 를 못 읽게 됩니다.
+     기울기는 고정, 사용자는 위치와 배율만 만집니다. */
+  var CAM = { x: 0, y: 0, zoom: 1, tilt: 52 };
+  var CAM_T = { x: 0, y: 0, zoom: 1 };          /* 목표값 — 부드럽게 따라갑니다 */
+  var terrLevel = 'gu';                          /* 'gu' | 'dong' */
+  var terrFocusGu = null;
+  var terrHover = null;
+  var terrCv, terrCtx, terrW, terrH, terrBase, terrRAF = null;
+
+  function terrShade(hex, amt) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    function f(v) { return Math.max(0, Math.min(255, Math.round(v * (1 + amt)))); }
+    return 'rgb(' + f(r) + ',' + f(g) + ',' + f(b) + ')';
+  }
+  function terrProj(x, y, z) {
+    var t = CAM.tilt * Math.PI / 180, s = terrBase * CAM.zoom;
+    return [ terrW / 2 + (x - CAM.x) * s,
+             terrH / 2 + 26 - (y - CAM.y) * Math.cos(t) * s - (z || 0) * Math.sin(t) * s ];
+  }
+  function terrInPoly(pt, poly) {
+    var hit = false, i, j;
+    for (i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if (((yi > pt[1]) !== (yj > pt[1])) &&
+          (pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi)) hit = !hit;
+    }
+    return hit;
+  }
+
+  function terrSize() {
+    if (!terrCv) return;
+    var w = terrCv.parentElement.clientWidth || 900;
+    var h = Math.max(430, Math.min(600, Math.round(w * 0.56)));
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    terrCv.width = w * dpr; terrCv.height = h * dpr;
+    terrCv.style.height = h + 'px';
+    terrCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    terrW = w; terrH = h;
+    terrBase = Math.min(w / 330, h / 235);
+  }
+
+  /* 폴리곤 하나를 압출해서 그립니다. 윗면·좌측면·우측면의 밝기를 달리해
+     입체가 "그림자" 가 아니라 "조명" 으로 읽히게 합니다. */
+  function drawPrism(ctx, ring, h, fill, opts) {
+    var top = [], bot = [], i, j;
+    for (i = 0; i < ring.length; i++) {
+      top.push(terrProj(ring[i][0], ring[i][1], h));
+      bot.push(terrProj(ring[i][0], ring[i][1], 0));
+    }
+    if (h > 0.5) {
+      for (i = 0; i < ring.length; i++) {
+        j = (i + 1) % ring.length;
+        /* 면의 방향으로 밝기 결정 — 왼쪽을 향한 면이 더 어둡습니다. */
+        var dx = top[j][0] - top[i][0];
+        var side = dx > 0 ? -0.52 : -0.30;
+        ctx.fillStyle = terrShade(fill, side);
+        ctx.beginPath();
+        ctx.moveTo(bot[i][0], bot[i][1]); ctx.lineTo(bot[j][0], bot[j][1]);
+        ctx.lineTo(top[j][0], top[j][1]); ctx.lineTo(top[i][0], top[i][1]);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+    ctx.beginPath(); ctx.moveTo(top[0][0], top[0][1]);
+    for (i = 1; i < top.length; i++) ctx.lineTo(top[i][0], top[i][1]);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    if (opts && opts.stroke) { ctx.strokeStyle = opts.stroke; ctx.lineWidth = opts.lw || 1; ctx.stroke(); }
+    if (opts && opts.hatch) {
+      ctx.save(); ctx.clip();
+      ctx.strokeStyle = 'rgba(10,16,22,.55)'; ctx.lineWidth = 2;
+      var b0 = 1e9, b1 = 1e9, b2 = -1e9, b3 = -1e9;
+      top.forEach(function (q) {
+        if (q[0] < b0) b0 = q[0]; if (q[0] > b2) b2 = q[0];
+        if (q[1] < b1) b1 = q[1]; if (q[1] > b3) b3 = q[1];
+      });
+      for (var x = b0 - 60; x < b2 + 60; x += 8) {
+        ctx.beginPath(); ctx.moveTo(x, b1 - 12); ctx.lineTo(x + 60, b3 + 12); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    return top;
+  }
+
+  function terrDraw() {
+    if (!terrCtx) return;
+    var c = terrCtx;
+    c.clearRect(0, 0, terrW, terrH);
+
+    /* 바닥 — 옅은 라임 격자. 판이라는 감각을 줍니다. */
+    var gsz = 20 * terrBase * CAM.zoom;
+    if (gsz > 9) {
+      c.strokeStyle = 'rgba(122,140,0,.12)'; c.lineWidth = 1;
+      for (var g = -200; g <= 220; g += 20) {
+        var p1 = terrProj(g, -160, 0), p2 = terrProj(g, 180, 0);
+        c.beginPath(); c.moveTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]); c.stroke();
+        p1 = terrProj(-200, g, 0); p2 = terrProj(220, g, 0);
+        c.beginPath(); c.moveTo(p1[0], p1[1]); c.lineTo(p2[0], p2[1]); c.stroke();
+      }
+    }
+
+    if (terrLevel === 'gu') drawGuLevel(c);
+    else drawDongLevel(c);
+  }
+
+  function drawGuLevel(c) {
+    var maxS = 1;
+    GU_LIST.forEach(function (o) { if (o.sess > maxS) maxS = o.sess; });
+    var order = GU_LIST.slice().sort(function (a, b) {
+      return terrProj(a.cx, a.cy, 0)[1] - terrProj(b.cx, b.cy, 0)[1];
+    });
+    order.forEach(function (o) {
+      var mine = o.winner && o.winner.n === TERR_MINE;
+      var fill = o.winner ? o.winner.c : '#26333F';
+      var h = 5 + (o.sess / maxS) * 16;
+      o.hit = [];
+      o.parts.forEach(function (ring) {
+        var top = drawPrism(c, ring, h, fill, {
+          stroke: mine ? '#EBFF7A' : 'rgba(10,16,22,.42)',
+          lw: mine ? 2 : 1,
+          hatch: o.contested
+        });
+        o.hit.push(top);
+      });
+      if (terrHover === o) {
+        o.hit.forEach(function (top) {
+          c.beginPath(); c.moveTo(top[0][0], top[0][1]);
+          for (var i = 1; i < top.length; i++) c.lineTo(top[i][0], top[i][1]);
+          c.closePath(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+        });
+      }
+    });
+    /* 구 이름표는 항상 켭니다 — 25 개는 화면에 들어갑니다. */
+    c.textAlign = 'center';
+    c.font = '700 11px ' + getComputedStyle(document.body).fontFamily;
+    GU_LIST.forEach(function (o) {
+      var h = 5 + (o.sess / Math.max.apply(null, GU_LIST.map(function (x) { return x.sess; }))) * 16;
+      var p = terrProj(o.cx, o.cy, h + 4);
+      var label = o.g.replace('구', '');
+      var w = c.measureText(label).width + 12;
+      c.fillStyle = 'rgba(10,16,22,.72)';
+      c.fillRect(p[0] - w / 2, p[1] - 15, w, 17);
+      c.fillStyle = o.winner && o.winner.n === TERR_MINE ? '#EBFF7A' : 'rgba(240,245,250,.9)';
+      c.fillText(label, p[0], p[1] - 2);
+    });
+  }
+
+  function drawDongLevel(c) {
+    var list = TERR.filter(function (t) { return t.d.g === terrFocusGu; });
+    var maxS = 1;
+    list.forEach(function (t) { if (t.sess > maxS) maxS = t.sess; });
+    var order = list.slice().sort(function (a, b) {
+      return terrProj(a.d.c[0], a.d.c[1], 0)[1] - terrProj(b.d.c[0], b.d.c[1], 0)[1];
+    });
+    order.forEach(function (t) {
+      var mine = t.owner && t.owner.n === TERR_MINE;
+      var fill = t.owner ? t.owner.c : '#26333F';
+      var h = 4 + (t.sess / maxS) * 20;
+      t.hit = drawPrism(c, t.d.p, h, fill, {
+        stroke: mine ? '#EBFF7A' : 'rgba(10,16,22,.42)',
+        lw: mine ? 2 : 1,
+        hatch: t.contested
+      });
+      if (terrHover === t) {
+        c.beginPath(); c.moveTo(t.hit[0][0], t.hit[0][1]);
+        for (var i = 1; i < t.hit.length; i++) c.lineTo(t.hit[i][0], t.hit[i][1]);
+        c.closePath(); c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+      }
+    });
+    /* 드릴다운에서는 동 이름도 들어갑니다. */
+    c.textAlign = 'center';
+    c.font = '600 10px ' + getComputedStyle(document.body).fontFamily;
+    list.forEach(function (t) {
+      var h = 4 + (t.sess / maxS) * 20;
+      var p = terrProj(t.d.c[0], t.d.c[1], h + 3);
+      var w = c.measureText(t.d.n).width + 10;
+      if (w > 70) return;
+      c.fillStyle = 'rgba(10,16,22,.7)';
+      c.fillRect(p[0] - w / 2, p[1] - 14, w, 16);
+      c.fillStyle = t.owner && t.owner.n === TERR_MINE ? '#EBFF7A' : 'rgba(240,245,250,.85)';
+      c.fillText(t.d.n, p[0], p[1] - 2);
+    });
+  }
+
+  /* 카메라를 목표값으로 부드럽게 당깁니다. 순간이동하면 어디로 갔는지 모릅니다. */
+  function terrTick() {
+    var d = Math.abs(CAM.x - CAM_T.x) + Math.abs(CAM.y - CAM_T.y) + Math.abs(CAM.zoom - CAM_T.zoom) * 40;
+    CAM.x += (CAM_T.x - CAM.x) * 0.18;
+    CAM.y += (CAM_T.y - CAM.y) * 0.18;
+    CAM.zoom += (CAM_T.zoom - CAM.zoom) * 0.18;
+    terrDraw();
+    if (d > 0.35) terrRAF = requestAnimationFrame(terrTick);
+    else { CAM.x = CAM_T.x; CAM.y = CAM_T.y; CAM.zoom = CAM_T.zoom; terrDraw(); terrRAF = null; }
+  }
+  function terrGo() { if (!terrRAF) terrRAF = requestAnimationFrame(terrTick); }
+
+  function terrFocus(cx, cy, zoom) { CAM_T.x = cx; CAM_T.y = cy; CAM_T.zoom = zoom; terrGo(); }
+  function terrReset() { terrLevel = 'gu'; terrFocusGu = null; terrHover = null; terrFocus(0, 0, 1); terrChrome(); }
+  function terrEnter(gu) {
+    var o = GU_LIST.filter(function (x) { return x.g === gu; })[0];
+    if (!o) return;
+    terrLevel = 'dong'; terrFocusGu = gu; terrHover = null;
+    /* 그 구가 화면을 채우도록 배율을 맞춥니다. */
+    var mnx = 1e9, mxx = -1e9, mny = 1e9, mxy = -1e9;
+    o.parts.forEach(function (r) { r.forEach(function (q) {
+      if (q[0] < mnx) mnx = q[0]; if (q[0] > mxx) mxx = q[0];
+      if (q[1] < mny) mny = q[1]; if (q[1] > mxy) mxy = q[1];
+    }); });
+    var span = Math.max(mxx - mnx, (mxy - mny) * 1.4);
+    terrFocus((mnx + mxx) / 2, (mny + mxy) / 2, Math.min(6, 200 / Math.max(span, 12)));
+    terrChrome();
+  }
+
+  /* 상단 크롬 — 지금 어디를 보고 있는지, 어떻게 빠져나가는지 */
+  function terrChrome() {
+    var back = document.getElementById('terr-back');
+    var where = document.getElementById('terr-where');
+    if (back) back.hidden = terrLevel === 'gu';
+    if (where) {
+      where.textContent = terrLevel === 'gu'
+        ? '서울 25개 구 · 구를 누르면 동 단위로 들어갑니다'
+        : terrFocusGu + ' · 행정동 ' +
+          TERR.filter(function (t) { return t.d.g === terrFocusGu; }).length + '개';
+    }
+  }
+
+  function terrGuWins() {
+    var win = {};
+    GU_LIST.forEach(function (o) { if (o.winner) win[o.g] = o.winner.n; });
+    return win;
+  }
+
+  var terrReady = false;
+  function renderTerritory() {
+    terrCv = document.getElementById('terr-canvas');
+    if (!terrCv) return;
+    terrCtx = terrCv.getContext('2d');
+    terrSize(); terrDraw(); terrChrome();
+    if (terrReady) return;
+    terrReady = true;
+
+    var tip = document.getElementById('terr-tip');
+
+    function pickAt(pt) {
+      if (terrLevel === 'gu') {
+        for (var i = GU_LIST.length - 1; i >= 0; i--) {
+          var o = GU_LIST[i];
+          if (!o.hit) continue;
+          for (var k = 0; k < o.hit.length; k++) if (terrInPoly(pt, o.hit[k])) return o;
+        }
+      } else {
+        var list = TERR.filter(function (t) { return t.d.g === terrFocusGu; });
+        for (var j = list.length - 1; j >= 0; j--) {
+          if (list[j].hit && terrInPoly(pt, list[j].hit)) return list[j];
+        }
+      }
+      return null;
+    }
+
+    function showTip(o) {
+      if (!o) { tip.hidden = true; return; }
+      tip.hidden = false;
+      var isGu = !!o.parts;
+      document.getElementById('terr-name').textContent = isGu ? o.g : o.d.n;
+      document.getElementById('terr-gu').textContent = isGu
+        ? ('행정동 ' + o.dongCount + '개') : o.d.g;
+      var own = document.getElementById('terr-own');
+      var w = isGu ? o.winner : o.owner;
+      own.textContent = w ? w.n : '미점령';
+      own.style.color = w ? w.c : 'rgba(237,242,247,.55)';
+      document.getElementById('terr-sess').textContent = o.sess.toLocaleString();
+      document.getElementById('terr-state').textContent =
+        !w ? '중립' : (o.contested ? '경합 중' : '안정');
+    }
+
+    terrCv.addEventListener('mousemove', function (e) {
+      if (dragging) return;
+      var r = terrCv.getBoundingClientRect();
+      var found = pickAt([e.clientX - r.left, e.clientY - r.top]);
+      if (found === terrHover) return;
+      terrHover = found; terrDraw(); showTip(found);
+      terrCv.style.cursor = found ? 'pointer' : 'grab';
+    });
+    terrCv.addEventListener('mouseleave', function () {
+      terrHover = null; tip.hidden = true; terrDraw();
+    });
+
+    /* 클릭 = 드릴다운. 구를 누르면 그 구만 남습니다. */
+    terrCv.addEventListener('click', function (e) {
+      if (moved) return;
+      var r = terrCv.getBoundingClientRect();
+      var found = pickAt([e.clientX - r.left, e.clientY - r.top]);
+      if (found && terrLevel === 'gu') terrEnter(found.g);
+    });
+    terrCv.addEventListener('dblclick', function () { terrReset(); });
+
+    /* 휠 확대 — 커서 위치를 기준으로 */
+    terrCv.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var f = e.deltaY < 0 ? 1.16 : 1 / 1.16;
+      CAM_T.zoom = Math.max(0.6, Math.min(9, CAM_T.zoom * f));
+      terrGo();
+    }, { passive: false });
+
+    /* 드래그 이동 */
+    var dragging = false, moved = false, sx = 0, sy = 0, ox = 0, oy = 0;
+    terrCv.addEventListener('mousedown', function (e) {
+      dragging = true; moved = false;
+      sx = e.clientX; sy = e.clientY; ox = CAM_T.x; oy = CAM_T.y;
+      terrCv.style.cursor = 'grabbing';
+    });
+    window.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+      var s = terrBase * CAM.zoom;
+      CAM_T.x = ox - dx / s;
+      CAM_T.y = oy + dy / (s * Math.cos(CAM.tilt * Math.PI / 180));
+      terrGo();
+    });
+    window.addEventListener('mouseup', function () {
+      if (!dragging) return;
+      dragging = false; terrCv.style.cursor = 'grab';
+      setTimeout(function () { moved = false; }, 30);
+    });
+
+    /* 컨트롤 */
+    var btnMine = document.getElementById('terr-gomine');
+    if (btnMine) btnMine.addEventListener('click', function () {
+      /* 우리 학교가 가장 많이 가진 구로 날아갑니다. */
+      var best = null, bv = -1;
+      GU_LIST.forEach(function (o) {
+        var v = o.byUni[TERR_MINE] || 0;
+        if (v > bv) { bv = v; best = o; }
+      });
+      if (best) terrEnter(best.g);
+    });
+    var btnBack = document.getElementById('terr-back');
+    if (btnBack) btnBack.addEventListener('click', terrReset);
+    var btnZin = document.getElementById('terr-zin');
+    if (btnZin) btnZin.addEventListener('click', function () {
+      CAM_T.zoom = Math.min(9, CAM_T.zoom * 1.35); terrGo();
+    });
+    var btnZout = document.getElementById('terr-zout');
+    if (btnZout) btnZout.addEventListener('click', function () {
+      CAM_T.zoom = Math.max(0.6, CAM_T.zoom / 1.35); terrGo();
+    });
+    var chkMine = document.getElementById('terr-mine');
+    if (chkMine) chkMine.addEventListener('change', terrDraw);
+
+    window.addEventListener('resize', function () {
+      if (screens.campus && !screens.campus.hidden) { terrSize(); terrDraw(); }
+    });
+
+    /* 점유율·시즌 태그를 실제 데이터로 */
+    var wins = terrGuWins(), mineGu = 0, counts = {};
+    Object.keys(wins).forEach(function (g) { if (wins[g] === TERR_MINE) mineGu++; });
+    GU_LIST.forEach(function (o) { if (o.winner) counts[o.winner.n] = (counts[o.winner.n] || 0) + 1; });
+    var rank = Object.keys(counts).map(function (n) { return [n, counts[n]]; })
+                 .sort(function (a, b) { return b[1] - a[1]; }).slice(0, 4);
+    var legend = document.querySelector('#screen-campus .legend');
+    if (legend) {
+      var html = '';
+      rank.forEach(function (r) {
+        var u = TERR_UNIS.filter(function (x) { return x.n === r[0]; })[0];
+        html += '<li><span class="sw" style="background:' + (u ? u.c : '#556') + ';"></span> '
+             + r[0] + ' <span class="pct">' + r[1] + '개 구</span></li>';
+      });
+      var neutral = GU_LIST.filter(function (o) { return !o.winner; }).length;
+      if (neutral) html += '<li><span class="sw" style="background:#26333F;"></span> 중립 '
+                        + '<span class="pct">' + neutral + '개 구</span></li>';
+      legend.innerHTML = html;
+    }
+    var seasonTag = document.querySelector('#screen-campus .tag-outline');
+    if (seasonTag) seasonTag.textContent = '1위인 구 ' + mineGu + ' / 25 · 12일 남음';
+  }
+
+
+
+  /* ==========================================================
+     레벨업 연출
+
+     15 레벨 중 캐릭터의 겉모습이 바뀌는 지점에서만 화면을 덮습니다.
+     나머지 레벨업은 토스트 한 줄입니다 — 매번 화면을 덮으면 축하가
+     흔해지고, 흔해진 축하는 축하가 아닙니다.
+     ========================================================== */
+  var LV_STAGES = [
+    { lv: 1,  cls: 'c1', name: '뽀각 거북' },
+    { lv: 3,  cls: 'c2', name: '꿈틀 거북' },
+    { lv: 5,  cls: 'c2', name: '빼꼼 거부기린' },
+    { lv: 8,  cls: 'c3', name: '반듯 거부기린' },
+    { lv: 11, cls: 'c4', name: '쭉쭉 기린' },
+    { lv: 14, cls: 'c5', name: '우뚝 기린' }
+  ];
+  function lvStageIndex(lv) {
+    var idx = 0;
+    for (var i = 0; i < LV_STAGES.length; i++) if (lv >= LV_STAGES[i].lv) idx = i;
+    return idx;
+  }
+  function lvAvatarHTML() {
+    return '<svg class="avatar" viewBox="0 0 40 40" fill="none" aria-hidden="true">'
+      + '<path d="M10 30c0-7 4.5-11 10-11s10 4 10 11" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>'
+      + '<path d="M20 19V7" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>'
+      + '<circle cx="20" cy="5.4" r="3.2" fill="#fff"/></svg>';
+  }
+
+  var lvEl = document.getElementById('levelup');
+  var lvBtn = document.getElementById('levelup-close');
+
+  function closeLevelUp() {
+    if (!lvEl) return;
+    lvEl.hidden = true;
+    if (lvBtn) lvBtn.removeAttribute('data-ready');
+  }
+  if (lvBtn) lvBtn.addEventListener('click', closeLevelUp);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && lvEl && !lvEl.hidden) closeLevelUp();
+  });
+
+  function showLevelUp(lv) {
+    if (!lvEl) return;
+    var i = lvStageIndex(lv);
+    var cur = LV_STAGES[i], prev = LV_STAGES[i - 1], next = LV_STAGES[i + 1];
+
+    var fig = document.getElementById('levelup-fig');
+    fig.className = 'levelup-fig ' + cur.cls;
+    fig.innerHTML = lvAvatarHTML();
+
+    document.getElementById('levelup-name').textContent = 'Lv.' + lv + ' ' + cur.name;
+    document.getElementById('levelup-sub').textContent  = '목이 한 단계 더 펴졌어요';
+
+    var p = document.getElementById('levelup-prev');
+    var n = document.getElementById('levelup-next');
+    p.className = 'mini ' + ((prev || cur).cls); p.innerHTML = lvAvatarHTML();
+    n.className = 'mini ' + ((next || cur).cls); n.innerHTML = lvAvatarHTML();
+
+    lvEl.hidden = false;
+    lvConfetti();
+
+    /* 파티클이 떨어지는 중에도 넘어갈 수 있어야 합니다. 인질로 잡지 않습니다. */
+    var wait = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1100;
+    setTimeout(function () { if (lvBtn) lvBtn.setAttribute('data-ready', ''); }, wait);
+  }
+
+  /* 파티클 예산은 넉넉하게 잡지 않습니다 — 이 화면 뒤에서 웹캠과
+     자세 추론이 돌고 있을 수 있습니다. */
+  function lvConfetti() {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var cv = document.getElementById('levelup-confetti');
+    if (!cv) return;
+    var ctx = cv.getContext('2d');
+    cv.width = cv.offsetWidth; cv.height = cv.offsetHeight;
+    var COLORS = ['#EBFF7A', '#D7EE55', '#7A8C00', '#FFFFFF'];
+    var ps = [], i;
+    for (i = 0; i < 44; i++) ps.push({
+      x: cv.width / 2 + (Math.random() - 0.5) * 220,
+      y: cv.height / 2 - 40,
+      vx: (Math.random() - 0.5) * 8.5,
+      vy: -Math.random() * 12 - 4,
+      s: 4 + Math.random() * 5,
+      r: Math.random() * Math.PI,
+      c: COLORS[(Math.random() * COLORS.length) | 0],
+      life: 0
+    });
+    (function loop() {
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      var alive = 0;
+      ps.forEach(function (q) {
+        q.life++; if (q.life > 130) return;
+        alive++;
+        q.vy += 0.4; q.x += q.vx; q.y += q.vy; q.r += 0.11;
+        ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.r);
+        ctx.globalAlpha = Math.max(0, 1 - q.life / 130);
+        ctx.fillStyle = q.c;
+        ctx.fillRect(-q.s / 2, -q.s / 2, q.s, q.s * 1.55);
+        ctx.restore();
+      });
+      if (alive) requestAnimationFrame(loop);
+      else ctx.clearRect(0, 0, cv.width, cv.height);
+    })();
+  }
+
+  /* 결과 화면에서 부릅니다. 단계가 안 바뀌면 토스트로만.
+     LV_XP_PER 은 시연용 값입니다 — 실제 곡선은 upright-now 의
+     src/constants/game.ts 가 단일 출처입니다. 여기 값은 프로토타입에서
+     레벨업 연출을 보기 위한 것이지 밸런스가 아닙니다. */
+  var LV_XP_PER = 120;
+  var LV_XP = 7 * LV_XP_PER;
+  var LV_NOW = 7;
+  function grantLevel(next) {
+    var before = LV_NOW;
+    LV_NOW = next;
+    if (lvStageIndex(next) > lvStageIndex(before)) showLevelUp(next);
+    else toastAt(null, 'Lv.' + next + ' 도달');
+  }
 
   paintCamBtn();
   paintSchool('명지대');

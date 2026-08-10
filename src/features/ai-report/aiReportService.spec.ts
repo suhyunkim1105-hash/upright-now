@@ -36,15 +36,17 @@ const INPUT: AiReportInput = {
 
 const REPORT: AiSessionReport = {
   headline: '이번 흐름을 짧게 정리했어요.',
-  reflection: '집중 시간과 회복 행동을 다음 세션의 출발점으로 남겨 보세요.',
-  highlights: [
-    { label: '집중 시간', detail: '계획한 흐름을 끝까지 이어 갔어요.' },
-    { label: '회복 행동', detail: '리셋이 필요할 때 다시 흐름을 만들었어요.' },
-    { label: '다음 시도', detail: '짧은 단위로 바로 이어 가기 좋아요.' },
-  ],
-  nextAction: {
+  stats: [
+      { label: '앉은 시간', value: '21분 / 25분' },
+      { label: '잰 시간', value: '18분' },
+      { label: '돌아온 횟수', value: '4번' },
+    ],
+    observations: [],
+    followUps: [],
+    nextAction: {
     title: '2분 정리 후 다시 시작',
     instruction: '다음 할 일을 적고 2분 안에 시작해 보세요.',
+    because: '이번 세션 이탈이 화면과의 거리에 몰렸어요',
     durationMinutes: 2,
   },
 }
@@ -78,8 +80,15 @@ describe('Gemini AI 세션 회고 서비스', () => {
   })
 
   it('안전하지 않은 Gemini 문장은 응답으로 내보내지 않는다', async () => {
+    // 관찰 칸이 의료 표현이 새어 나올 가능성이 가장 높은 자리입니다 —
+    // 모델이 숫자를 보고 원인을 해석하려 드는 곳이라서요.
     createInteraction.mockResolvedValue({
-      output_text: JSON.stringify({ ...REPORT, reflection: '진단을 위해 확인하세요.' }),
+      output_text: JSON.stringify({
+        ...REPORT,
+        observations: [
+          { fact: '후반에 이탈이 몰렸어요', read: '통증으로 이어질 수 있어요' },
+        ],
+      }),
     })
 
     await expect(generateAiSessionReport(INPUT, 'test-key')).rejects.toThrow(

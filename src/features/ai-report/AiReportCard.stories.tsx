@@ -4,15 +4,17 @@ import type { AiSessionReport, SessionSummary } from '@/types'
 
 const reportFixture: AiSessionReport = {
   headline: '이번 흐름을 짧게 정리했어요.',
-  reflection: '계획한 집중 흐름을 끝까지 이어 갔고, 필요할 때 다시 자리에 앉아 다음 행동을 준비했어요.',
-  highlights: [
-    { label: '집중 시간', detail: '계획한 흐름을 끝까지 이어 갔어요.' },
-    { label: '회복 행동', detail: '필요할 때 다시 흐름을 만들었어요.' },
-    { label: '다음 시도', detail: '짧은 단위로 바로 이어 가기 좋아요.' },
-  ],
-  nextAction: {
+  stats: [
+      { label: '앉은 시간', value: '21분 / 25분' },
+      { label: '잰 시간', value: '18분' },
+      { label: '돌아온 횟수', value: '4번' },
+    ],
+    observations: [],
+    followUps: [],
+    nextAction: {
     title: '2분 정리 후 다시 시작',
     instruction: '물 한 모금과 다음 할 일을 적고 2분 안에 시작해 보세요.',
+    because: '이번 세션 이탈이 화면과의 거리에 몰렸어요',
     durationMinutes: 2,
   },
 }

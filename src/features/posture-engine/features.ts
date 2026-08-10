@@ -8,6 +8,8 @@
  * visibility 는 "보이는 정도"로만 쓰고 자세 정확도 확률로 해석하지 않습니다.
  */
 
+import { headPoseUsable, type HeadPose } from './headPose'
+
 /** MediaPipe Pose 랜드마크 인덱스 */
 const IDX = {
   nose: 0,
@@ -42,17 +44,28 @@ export interface PointInfo {
 export type FeatureKey =
   | 'faceScaleRatio'
   | 'headHeightRatio'
+  | 'facePitchRatio'
+  | 'earEyeRatio'
+  | 'shoulderSpan'
   | 'lateralOffsetRatio'
   | 'shoulderTiltRatio'
   | 'forwardDepthRatio'
   | 'torsoLean'
+  | 'headDistanceCm'
+  | 'headPitchDeg'
 
 export const PRIMARY_FEATURES: FeatureKey[] = [
   'faceScaleRatio',
   'headHeightRatio',
+  'facePitchRatio',
+  'earEyeRatio',
+  'shoulderSpan',
   'lateralOffsetRatio',
   'shoulderTiltRatio',
   'torsoLean',
+  // 얼굴 메시가 있을 때만 채워집니다. 없으면 나머지 축으로 그대로 판정합니다.
+  'headDistanceCm',
+  'headPitchDeg',
 ]
 
 /** z 기반 특징 — 보조 신호로만 사용 (단독으로 warning/bad 를 만들지 않음) */
@@ -108,6 +121,7 @@ function inFrame(p: PointInfo): boolean {
 
 export function analyzeLandmarks(
   landmarks: Landmark[] | undefined,
+  headPose?: HeadPose | null,
 ): LandmarkAnalysis | null {
   if (!landmarks || landmarks.length < 25) return null
 
@@ -173,6 +187,41 @@ export function analyzeLandmarks(
     excluded.headHeightRatio = eyesOk ? '어깨 미감지' : '눈 미감지'
   }
 
+  /*
+   * 시상면(앞뒤) 축 — 정면 카메라의 핵심 문제입니다.
+   *
+   * faceScaleRatio·headHeightRatio 는 shoulderWidth 로 정규화하는데, 거북목은
+   * 대개 상체가 같이 앞으로 나오므로 어깨도 함께 커져 신호가 상쇄됩니다.
+   * (합성 평가: 몸 전체 10cm 전진에서 faceScaleRatio 편차가 중립과 거의 동일)
+   *
+   * 아래 두 축은 **eyeDist 로만** 정규화해 카메라 거리와 무관하고, 고개 각도
+   * 자체를 잽니다. 거북목은 곧 고개 숙임 + 전방 이동이므로 여기에 남습니다.
+   * z 를 쓰지 않으므로 조명·거리에 따라 흘러다니지도 않습니다.
+   */
+  if (eyesOk && nose.present && eyeDist > 0 && !moderateRotation) {
+    // 코는 얼굴 평면보다 앞으로 튀어나와 있어, 고개를 숙이면 눈-코 세로 간격이
+    // 오히려 벌어집니다. 즉 증가가 이탈 방향입니다.
+    features.facePitchRatio = (nose.y - eyeMidY) / eyeDist
+  } else {
+    excluded.facePitchRatio = moderateRotation
+      ? '고개 돌림(측정 제한)'
+      : eyesOk
+        ? '코 미감지'
+        : '눈 미감지'
+  }
+
+  if (eyesOk && earsOk && eyeDist > 0 && !moderateRotation) {
+    // 귀는 눈보다 뒤에 있어, 고개를 숙이면 눈보다 덜 내려가 상대적으로 올라갑니다.
+    const earMidY = (leftEar.y + rightEar.y) / 2
+    features.earEyeRatio = (earMidY - eyeMidY) / eyeDist
+  } else {
+    excluded.earEyeRatio = moderateRotation
+      ? '고개 돌림(측정 제한)'
+      : eyesOk
+        ? '귀 미감지'
+        : '눈 미감지'
+  }
+
   if (nose.present && bothShouldersOk && !moderateRotation) {
     features.lateralOffsetRatio = Math.abs(nose.x - shoulderMidX) / sw
     features.forwardDepthRatio = shoulderMidZ - nose.z
@@ -188,8 +237,13 @@ export function analyzeLandmarks(
 
   if (bothShouldersOk) {
     features.shoulderTiltRatio = Math.abs(leftShoulder.y - rightShoulder.y) / sw
+    // 유일하게 정규화하지 않는 축입니다. 어깨폭은 카메라까지의 거리에
+    // 그대로 반비례하므로, 몸 전체가 화면으로 다가온 것을 잡아냅니다.
+    // (비율 축들은 분자·분모가 같이 커져 이 움직임을 상쇄해 버립니다.)
+    features.shoulderSpan = shoulderWidth
   } else {
     excluded.shoulderTiltRatio = '어깨 미감지'
+    excluded.shoulderSpan = '어깨 미감지'
   }
 
   if (hipsOk && bothShouldersOk) {
@@ -197,6 +251,22 @@ export function analyzeLandmarks(
     features.torsoLean = Math.abs(shoulderMidX - hipMidX) / sw
   } else {
     excluded.torsoLean = hipsOk ? '어깨 미감지' : '엉덩이 화면 밖'
+  }
+
+  /*
+   * 얼굴 메시 기반 축 — 있으면 시상면 판정을 여기가 주도합니다.
+   * 표준 얼굴 모형에 맞춘 cm 단위 값이라 어깨폭 정규화에 상쇄되지 않고,
+   * z 채널처럼 조명·거리에 따라 흘러다니지도 않습니다.
+   */
+  if (headPose && headPoseUsable(headPose)) {
+    features.headDistanceCm = headPose.headDistanceCm
+    features.headPitchDeg = headPose.headPitchDeg
+  } else if (headPose) {
+    excluded.headDistanceCm = '고개 돌림(측정 제한)'
+    excluded.headPitchDeg = '고개 돌림(측정 제한)'
+  } else {
+    excluded.headDistanceCm = '얼굴 메시 없음'
+    excluded.headPitchDeg = '얼굴 메시 없음'
   }
 
   return {

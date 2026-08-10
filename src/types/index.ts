@@ -55,17 +55,33 @@ export interface SessionConfig {
 }
 
 export interface AiSessionReport {
+  /** 오늘을 한 문장으로. 숫자는 넣지 않습니다 — 숫자는 stats 의 일입니다. */
   headline: string
-  reflection: string
-  highlights: Array<{
+  /** 오늘의 숫자 3칸. 순서는 AI 가 정합니다(세션마다 중요한 값이 다름). */
+  stats: Array<{
     label: string
-    detail: string
+    value: string
+  }>
+  /**
+   * 무엇이 흔들렸나. **비어 있을 수 있습니다.**
+   * 표본이 적거나 축이 고르게 흩어졌으면 지어내지 않습니다 —
+   * 없는 패턴을 만드는 것이 이 기능이 신뢰를 잃는 가장 빠른 길입니다.
+   */
+  observations: Array<{
+    /** 숫자에서 나온 사실 */
+    fact: string
+    /** AI 의 해석. 사실과 섞지 않아야 어디까지가 측정인지 압니다. */
+    read: string
   }>
   nextAction: {
     title: string
     instruction: string
+    /** 어느 관찰에서 나왔는지. 근거가 보이면 따를 이유가 생깁니다. */
+    because: string
     durationMinutes: number
   }
+  /** 리포트 아래 채팅으로 이어지는 질문 칩 */
+  followUps: string[]
 }
 
 export interface SessionSummary {

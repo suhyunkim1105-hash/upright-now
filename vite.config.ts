@@ -42,19 +42,30 @@ function aiReportDevApi(): Plugin {
             process.env.AI_REPORT_MOCK === 'true'
               ? {
                   enabled: true,
+                  /* AI_REPORT_MOCK 용 고정 응답. 다섯 칸 모양을 지킵니다 —
+                     모양이 다르면 로컬에서만 화면이 깨집니다.
+                     observations 를 하나만 두는 것도 의도입니다: 이 칸이
+                     비거나 하나일 수 있다는 걸 개발 중에 계속 보게 됩니다. */
                   generate: async () => ({
-                    headline: '이번 흐름을 짧게 정리했어요.',
-                    reflection: '집중 시간과 회복 행동을 다음 세션의 출발점으로 남겨 보세요.',
-                    highlights: [
-                      { label: '집중 시간', detail: '계획한 흐름을 끝까지 이어 갔어요.' },
-                      { label: '회복 행동', detail: '리셋이 필요할 때 다시 흐름을 만들었어요.' },
-                      { label: '다음 시도', detail: '짧은 단위로 바로 이어 가기 좋아요.' },
+                    headline: '끝까지 앉아 있었어요',
+                    stats: [
+                      { label: '앉은 시간', value: '25분 / 25분' },
+                      { label: '잰 시간', value: '23분' },
+                      { label: '돌아온 횟수', value: '2번' },
+                    ],
+                    observations: [
+                      {
+                        fact: '한 번도 자세를 바꾸지 않고 12분을 앉아 있었어요',
+                        read: '오래 같은 자세로 머무는 것 자체가 부담이 돼요.',
+                      },
                     ],
                     nextAction: {
-                      title: '2분 정리 후 다시 시작',
-                      instruction: '물 한 모금과 다음 할 일을 적고 2분 안에 시작해 보세요.',
+                      title: '중간에 한 번 바꾸기',
+                      instruction: '다음 세션엔 절반쯤에서 등받이에 기대는 자세로 한 번 바꿔 보세요.',
+                      because: '12분 동안 자세가 한 번도 바뀌지 않았어요',
                       durationMinutes: 2,
                     },
+                    followUps: ['이 시간이 저한테 맞나요?', '기준을 다시 맞출까요?'],
                   }),
                 }
               : undefined,

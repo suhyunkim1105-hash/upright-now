@@ -18,33 +18,58 @@ function errorMessage(error: Error): string {
   return 'AI 회고를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요.'
 }
 
+/**
+ * 다섯 칸 — docs/23_AI_REPORT_SPEC.md §3.
+ * 위에서 아래로 읽으면 끝나고, 1번만 읽고 닫아도 세션이 완결됩니다.
+ */
 function ReportContent({ report }: { report: AiSessionReport }) {
   return (
     <div className="mt-4 space-y-4">
+      {/* 1 · 한 줄 */}
       <div className="rounded-2xl border border-blue/25 bg-surface px-4 py-4">
-        <p className="text-xs font-bold tracking-wide text-[#2b52a8]">이번 흐름 한 줄</p>
+        <p className="text-xs font-bold tracking-wide text-[#2b52a8]">이번 세션</p>
         <h3 className="mt-1 text-base font-bold text-ink">{report.headline}</h3>
-        <p className="mt-2 text-sm leading-6 text-ink-soft">{report.reflection}</p>
       </div>
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {report.highlights.map((highlight) => (
-          <li
-            key={`${highlight.label}-${highlight.detail}`}
+
+      {/* 2 · 오늘의 숫자 */}
+      <dl className="grid grid-cols-3 gap-2">
+        {report.stats.map((stat) => (
+          <div
+            key={stat.label}
             className="rounded-xl border border-blue/15 bg-surface/80 px-3 py-3"
           >
-            <p className="text-xs font-bold text-ink">{highlight.label}</p>
-            <p className="mt-0.5 text-xs leading-5 text-ink-soft">{highlight.detail}</p>
-          </li>
+            <dt className="text-xs text-ink-soft">{stat.label}</dt>
+            <dd className="mt-0.5 text-sm font-bold tabular-nums text-ink">{stat.value}</dd>
+          </div>
         ))}
-      </ul>
+      </dl>
+
+      {/* 3 · 무엇이 흔들렸나 — 관찰이 없으면 이 칸 자체가 없습니다.
+             빈 제목만 남기면 "분석 실패" 처럼 보입니다. */}
+      {report.observations.length > 0 && (
+        <ul className="space-y-2">
+          {report.observations.map((o) => (
+            <li
+              key={o.fact}
+              className="rounded-xl border border-blue/15 bg-surface/80 px-3 py-3"
+            >
+              {/* 사실과 해석을 시각적으로도 나눕니다 — 어디까지가 측정인지
+                  보이지 않으면 둘 다 의심받습니다. */}
+              <p className="text-sm font-bold text-ink">{o.fact}</p>
+              <p className="mt-1 text-xs leading-5 text-ink-soft">{o.read}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* 4 · 다음 세션 한 가지 */}
       <div className="rounded-2xl border border-pink/25 bg-pink-soft/70 px-4 py-4">
         <p className="text-xs font-bold tracking-wide text-[#b8285a]">
           다음 {report.nextAction.durationMinutes}분
         </p>
         <p className="mt-1 text-sm font-bold text-ink">{report.nextAction.title}</p>
-        <p className="mt-1 text-xs leading-5 text-ink">
-          {report.nextAction.instruction}
-        </p>
+        <p className="mt-1 text-xs leading-5 text-ink">{report.nextAction.instruction}</p>
+        <p className="mt-2 text-xs leading-5 text-ink-soft">{report.nextAction.because}</p>
       </div>
     </div>
   )

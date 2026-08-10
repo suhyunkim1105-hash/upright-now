@@ -258,7 +258,7 @@ function buildProfile(
   }
 
   return {
-    version: 2,
+    version: 3,
     id: `cal-${Math.round(now)}-${Math.round(Math.abs(samples[0]?.shoulderWidth ?? 0) * 1e6) % 997}`,
     name,
     createdAt: Date.now(),

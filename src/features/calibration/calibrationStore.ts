@@ -17,7 +17,7 @@ export interface FeatureStat {
 }
 
 export interface CalibrationProfile {
-  version: 2
+  version: 3
   id: string
   name: string
   createdAt: number
@@ -70,7 +70,7 @@ const loaded = loadLocal<LegacyShape>(STORAGE_KEYS.calibration, {
 
 const migratedProfiles: CalibrationProfile[] = (
   loaded.profiles ?? (loaded.profile ? [loaded.profile] : [])
-).filter((p) => p && p.version === 2)
+).filter((p) => p && p.version === 3)
 
 // 구버전(단일 프로필) 저장형만 첫 프로필을 활성으로 승격합니다.
 // 신형 저장형에서 activeProfileId 가 비었거나 삭제된 프로필을 가리키면
@@ -174,5 +174,5 @@ export function hasValidActiveProfile(
 ): boolean {
   if (!s.activeProfileId) return false
   const active = s.profiles.find((p) => p.id === s.activeProfileId)
-  return Boolean(active && active.version === 2)
+  return Boolean(active && active.version === 3)
 }

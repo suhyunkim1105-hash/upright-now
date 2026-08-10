@@ -82,7 +82,7 @@ export function makeLandmarks(overrides: FixtureOverrides = {}): Landmark[] {
 export function makeProfile(): CalibrationProfile {
   const stat = (median: number) => ({ median, mad: 0.002, validSampleCount: 48 })
   return {
-    version: 2,
+    version: 3,
     id: 'cal-test',
     name: '테스트 기준',
     createdAt: Date.now(),

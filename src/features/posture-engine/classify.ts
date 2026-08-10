@@ -17,16 +17,42 @@ import { BAD_HOLD_MS, type Sensitivity } from '@/constants/posture'
  * - z(forwardDepthRatio)는 보조: warning/bad 표가 되지 않고 good 복귀도
  *   막지 않습니다. (실카메라에서 z 는 조명·거리에 따라 흘러다녀,
  *   marginal 한 주 특징을 bad 로 승격시키거나 회복을 영영 막던 원인)
+ *
+ * ## 시상면 축을 왜 늘렸는가
+ *
+ * 초기 주 특징 5개 중 3개(lateral·tilt·torso)는 **좌우** 축이라 거북목에
+ * 전혀 반응하지 않았습니다. 남은 2개도 shoulderWidth 로 정규화해서, 상체가
+ * 같이 앞으로 나오면 분자·분모가 함께 커져 신호가 상쇄됐습니다.
+ * `postureEval.spec.ts` 로 재 보니 **머리 10cm 전방 + 22° 숙임이 warning 조차
+ * 뜨지 않았습니다**(최대 편차 0.82).
+ *
+ * 그래서 z 를 주 특징으로 올리는 대신(위의 드리프트 문제가 그대로 돌아옵니다)
+ * 흘러다니지 않는 축을 넷 더했습니다.
+ *
+ * | 축 | 정규화 | 잡아내는 것 |
+ * |---|---|---|
+ * | `facePitchRatio` | eyeDist | 고개 숙임 (코가 얼굴 평면보다 앞) |
+ * | `earEyeRatio` | eyeDist | 고개 숙임 (귀가 눈보다 뒤) |
+ * | `shoulderSpan` | 없음 | 몸 전체가 화면으로 접근 |
+ * | `headDistanceCm`·`headPitchDeg` | 없음(cm·도) | 얼굴 메시 6DoF |
+ *
+ * 얼굴 메시 두 축은 Face Landmarker 가 있을 때만 채워집니다. 없으면 나머지로
+ * 판정하고, 고개 숙임형 거북목은 그대로 잡힙니다(평가 3번째 케이스).
  */
 
 /** 나빠지는 방향: +1 = 증가가 이탈, -1 = 감소가 이탈 */
 const DIRECTION: Record<FeatureKey, 1 | -1> = {
   faceScaleRatio: 1, // 얼굴이 커짐 = 카메라 쪽으로 접근
   headHeightRatio: -1, // 눈-어깨 거리가 줄어듦 = 고개 숙임·움츠림
+  facePitchRatio: 1, // 눈-코 세로 간격이 벌어짐 = 고개 숙임
+  earEyeRatio: -1, // 귀가 눈보다 올라감 = 고개 숙임
+  shoulderSpan: 1, // 어깨폭이 넓어짐 = 몸 전체가 화면으로 접근
   lateralOffsetRatio: 1, // 코가 어깨 중앙에서 벗어남 = 좌우 기울기
   shoulderTiltRatio: 1, // 어깨 높이 차 증가
   forwardDepthRatio: 1, // 코가 어깨보다 카메라 쪽 (보조)
   torsoLean: 1, // 상체 좌우 쏠림 (엉덩이 보일 때만)
+  headDistanceCm: -1, // 얼굴이 카메라에 가까워짐 = 머리 전방 이동
+  headPitchDeg: 1, // 턱을 내림 = 고개 숙임
 }
 
 /**
@@ -39,12 +65,18 @@ const DIRECTION: Record<FeatureKey, 1 | -1> = {
  * 거북목 감지의 핵심이므로 그대로 둡니다.
  */
 const FLOOR: Record<FeatureKey, number> = {
-  faceScaleRatio: 0.05,
+  faceScaleRatio: 0.03,
   headHeightRatio: 0.08,
+  facePitchRatio: 0.06,
+  earEyeRatio: 0.06,
+  shoulderSpan: 0.012,
   lateralOffsetRatio: 0.1,
   shoulderTiltRatio: 0.08,
   forwardDepthRatio: 0.35,
   torsoLean: 0.1,
+  // cm·도 단위라 다른 축과 스케일이 다릅니다. 4cm 접근 / 8도 숙임을 1.0 으로 봅니다.
+  headDistanceCm: 4,
+  headPitchDeg: 8,
 }
 
 /** MAD → tolerance 배수 */

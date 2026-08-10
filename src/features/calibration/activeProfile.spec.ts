@@ -33,7 +33,7 @@ describe('활성 자세 기준 검증 — 프로필 개수가 아니라 활성 �
   })
 
   it('스키마 버전이 다르면 시작 불가', () => {
-    const stale = { ...makeProfile(), id: 'p-old', version: 1 as unknown as 2 }
+    const stale = { ...makeProfile(), id: 'p-old', version: 2 as unknown as 3 }
     expect(
       hasValidActiveProfile({ profiles: [stale], activeProfileId: 'p-old' }),
     ).toBe(false)

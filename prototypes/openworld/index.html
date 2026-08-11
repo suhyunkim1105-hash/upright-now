@@ -20,6 +20,26 @@
     font-display: swap;
   }
 
+  /* 갈무리 — 픽셀 격자에 맞춰 설계된 한글 글꼴입니다. 세 종을 쓰는 이유는
+     크기마다 획이 따로 그려져 있기 때문입니다. 7 을 키워 11 자리에 쓰면
+     갈무리를 쓰는 뜻이 없어집니다.
+     SIL Open Font License 1.1 — assets/fonts/Galmuri-OFL.md */
+  @font-face {
+    font-family: 'Galmuri7';
+    src: url('assets/fonts/Galmuri7.woff2') format('woff2');
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: 'Galmuri9';
+    src: url('assets/fonts/Galmuri9.woff2') format('woff2');
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+  @font-face {
+    font-family: 'Galmuri11';
+    src: url('assets/fonts/Galmuri11.woff2') format('woff2');
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+
   :root {
     /* 코랄 — 서비스 주색 */
     --coral-50:  #FFF5F2;
@@ -1198,6 +1218,9 @@ function paintEdgeWall(w, h, P, vertical) {
 
 /** 방 하나에 벽 넉 장을 두릅니다. 그리기 전용이라 충돌은 그대로 둡니다. */
 function dressRoom(m, P, decor) {
+  /* 위쪽 벽에는 '안내' 판이 붙습니다 — 글꼴이 오면 그 한 장만 다시
+     그립니다. dressRoom 전체를 다시 부르면 바닥까지 덧칠됩니다. */
+  TEXT_ART.push(() => { m.walls[0].c = paintTopWall(m.w, P, decor); });
   m.walls = [
     { c: paintTopWall(m.w, P, decor), x: 0, y: 0 },
     { c: paintEdgeWall(1, m.h - 5, P, true), x: 0, y: 3 },
@@ -1328,59 +1351,27 @@ function shadow(g, cx, y, rx, ry) {
 }
 
 /* ---- 픽셀 글자 ----
-   6px 한글을 그대로 4배로 키우면 안티에일리어싱이 같이 커져 글자가
-   번집니다. 크게 그린 다음 **알파를 1비트로 잘라** 냅니다 — 반투명
-   픽셀이 하나도 안 남으므로 확대해도 계단만 보이고 흐려지지 않습니다.
-   본문은 프리텐다드지만 여기만 맑은 고딕을 먼저 씁니다. 작은 크기에
-   맞춰 힌팅된 글꼴이라 자르고 나서 획이 덜 끊깁니다. */
-/* ---- 손으로 그린 한글 7×8 ----
-   맑은 고딕을 잘라 쓰는 방식은 9px 이 바닥입니다. 8px 로 내리면 "도서관"
-   이 "도서리" 가 되고 "본관" 이 "른관" 이 됩니다 — 획 사이가 반투명
-   한 겹뿐이라, 자르면 그 겹이 통째로 사라집니다. 무게와 문턱값을 여섯
-   조합 시험해도 마찬가지였습니다.
+   갈무리는 픽셀 격자 위에 획을 직접 놓아 만든 한글 글꼴입니다. 맑은
+   고딕처럼 윤곽선 글꼴을 작게 줄여 쓰는 것이 아니라서, 제 크기로 찍으면
+   획이 이미 칸에 맞습니다. 남은 반투명 픽셀만 1비트로 잘라 냅니다 —
+   반투명이 하나도 안 남으므로 확대해도 계단만 보이고 흐려지지 않습니다.
 
-   더 작게 가려면 획을 직접 놓는 수밖에 없습니다. 표지판에 쓰는 열두
-   글자만 7×8 격자에 그렸습니다. 자간은 1px 이라 "학생회관" 이 31px —
-   같은 글을 잘라 쓰면 34px 입니다. 작아지고 또렷해졌습니다. */
-const GLYPH8 = {
-  '기': ['#####.#', '....#.#', '....#.#', '......#', '......#', '......#', '......#', '.......'],
-  '숙': ['...#...', '..#.#..', '.#...#.', '#######', '...#...', '.#####.', '.....#.', '.......'],
-  '사': ['.#...#.', '.#...#.', '#.#..#.', '#.#..##', '#..#.#.', '#..#.#.', '.....#.', '.......'],
-  '도': ['.#####.', '.#.....', '.#.....', '.#####.', '.......', '...#...', '...#...', '#######'],
-  '서': ['.#....#', '.#....#', '#.#...#', '#.#.###', '#..#..#', '#..#..#', '......#', '.......'],
-  '관': ['####..#.', '...#..#.', '......##', '..#...#.', '#####.#.', '........', '#.......', '######..'],
-  '본': ['#..#...', '####...', '#..#...', '####...', '..#....', '#######', '#......', '######.'],
-  '학': ['..#...#.', '#####.#.', '.####.##', '.#..#.#.', '.####.#.', '......#.', '####....', '...#....'],
-  '생': ['.#...#.#', '#.#..#.#', '#.#..###', '#.#..#.#', '.....#.#', '####.#.#', '#..#.#.#', '####.#.#'],
-  '회': ['..#...#', '#####.#', '.###..#', '.#.#..#', '.###..#', '..#...#', '..#...#', '#####.#'],
-  '안': ['.###..#.', '#...#.#.', '#...#.##', '.###..#.', '......#.', '........', '#.......', '######..'],
-  '내': ['#...#.#', '#...#.#', '#...#.#', '#...###', '#...#.#', '#...#.#', '###.#.#', '.......'],
-};
-/** 손글자를 한 장으로 이어 붙입니다. 없는 글자는 잘라 쓰기로 넘깁니다. */
-function handText(text, color) {
-  const rows = 8, gap = 1;
-  const cells = [...text].map((ch) => GLYPH8[ch]);
-  if (cells.some((c) => !c)) return null;
-  /* 글자마다 실제로 쓴 폭만 씁니다 — 오른쪽 빈 칸을 그대로 두면
-     "기" 와 "관" 사이가 벌어져 자간이 들쭉날쭉해집니다. */
-  const widths = cells.map((c) => {
-    let w = 0;
-    c.forEach((r) => { const i = r.lastIndexOf('#'); if (i + 1 > w) w = i + 1; });
-    return w;
-  });
-  const c = document.createElement('canvas');
-  c.width = widths.reduce((a, b) => a + b, 0) + gap * (cells.length - 1);
-  c.height = rows;
-  const g = c.getContext('2d');
-  g.fillStyle = color;
-  let ox = 0;
-  cells.forEach((cell, k) => {
-    cell.forEach((row, y) => {
-      for (let x = 0; x < row.length; x++) if (row[x] === '#') g.fillRect(ox + x, y, 1, 1);
-    });
-    ox += widths[k] + gap;
-  });
-  return c;
+   크기는 **그 글꼴이 정한 크기의 정수배로만** 씁니다. 어긋나면 획이
+   칸 사이에 걸쳐 번지고, 그러면 갈무리를 쓸 이유가 없어집니다.
+
+   주의 — 이름의 숫자가 곧 px 이 아닙니다. 갈무리 README 가 정한 크기는
+   갈무리7=8px, 갈무리9=10px, 갈무리11=12px 입니다(이름은 글자 획의
+   높이고, px 은 줄 높이라 하나씩 큽니다). 이름 그대로 7·9·11 로 찍으면
+   반투명 픽셀이 95% 나오고, 제 크기로 찍으면 80% 대로 떨어집니다. */
+const GALMURI = [
+  { upTo: 8,        family: 'Galmuri7',  unit: 8  },
+  { upTo: 10,       family: 'Galmuri9',  unit: 10 },
+  { upTo: Infinity, family: 'Galmuri11', unit: 12 },
+];
+/** 부르는 쪽 크기를 갈무리 한 종과 그 정수배 크기로 맞춥니다. */
+function galmuriFont(size) {
+  const f = GALMURI.find((f) => size <= f.upTo);
+  return { px: f.unit * Math.max(1, Math.round(size / f.unit)), family: f.family };
 }
 
 const PXTEXT = new Map();
@@ -1388,33 +1379,44 @@ const hexRGB = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 function pixelText(text, size, color) {
   const key = text + '|' + size + '|' + color;
   if (PXTEXT.has(key)) return PXTEXT.get(key);
-  /* 8px 이하는 손글자가 있으면 손글자를 씁니다. 자른 글자는 여기서
-     이미 무너져 있습니다. */
-  if (size <= 8) {
-    const hand = handText(text, color);
-    if (hand) { PXTEXT.set(key, hand); return hand; }
-  }
   const pad = 4;
   const t = document.createElement('canvas');
   const g = t.getContext('2d');
-  const font = `600 ${size}px "Malgun Gothic", "Pretendard Variable", sans-serif`;
+  const gm = galmuriFont(size);
+  /* 폴백을 남겨 둡니다. 글꼴을 못 읽어도 글자는 나와야 합니다 — 흐릴
+     뿐이지 표지판이 비지는 않습니다. 프리텐다드로 받는 이유는 이 파일이
+     이미 싣고 있고 한글이 다 들어 있어서입니다. monospace 로 두면 맑은
+     고딕이 없는 기계에서 두부가 뜹니다. */
+  const font = `${gm.px}px "${gm.family}", 'Pretendard Variable', sans-serif`;
   g.font = font;
   t.width = Math.ceil(g.measureText(text).width) + pad * 2;
-  t.height = size + pad * 2;
+  /* 글꼴의 행간이 글자 크기보다 큽니다. 넉넉히 잡고 아래 잘라내기에
+     맡깁니다 — 모자라면 받침이 잘립니다. */
+  t.height = gm.px * 2 + pad * 2;
   g.font = font;                       // 크기를 바꾸면 컨텍스트가 초기화됩니다
-  /* 자간을 좁힙니다. 한글은 자간이 넉넉해서 그대로 두면 판이 길어지고,
-     길어진 만큼 표지판이 커집니다. 크롬은 letterSpacing 을 지원하고,
-     못 알아듣는 브라우저에서는 그냥 기본 자간이 됩니다. */
-  try { g.letterSpacing = '-0.5px'; } catch (e) { /* 무시 */ }
+  /* 자간은 손대지 않습니다. 갈무리는 자간까지 격자에 맞춰 놓았고,
+     여기서 밀면 그 격자가 깨집니다. */
   g.textBaseline = 'top'; g.fillStyle = '#000';
   g.fillText(text, pad, pad);
   const d = g.getImageData(0, 0, t.width, t.height), a = d.data;
   const [r, gg, b] = hexRGB(color);
-  /* 알파를 1비트로 자르면서 잉크가 실제로 닿은 칸을 함께 잽니다 */
+  /* 알파를 1비트로 자르면서 잉크가 실제로 닿은 칸을 함께 잽니다.
+     캔버스 fillText 는 글꼴이 격자에 맞아도 가장자리를 부드럽게 그립니다 —
+     끄는 방법이 없습니다. 그래서 자르는 일 자체는 갈무리로 바꿔도 남습니다.
+
+     문턱은 112 입니다. 위 크기를 지키면 80~160 어디로 잘라도 결과가
+     **한 픽셀도 다르지 않습니다**(표지판 넉 장과 안내판으로 확인).
+     제 크기의 갈무리는 획 안쪽이 꽉 차고 바깥만 옅게 남아서, 중간값이
+     아예 안 생기기 때문입니다. 그래서 이 값은 예민하지 않습니다.
+
+     예민해지는 건 크기가 어긋났을 때입니다. 7·9·11px 로 찍으면 획이
+     칸 사이에 걸쳐 중간 알파가 잔뜩 생기고, 그때는 문턱 64 에서 "학생"
+     이 한 덩어리가 되고 160 에서 "기숙사" 가 끊깁니다. 문턱을 만지고
+     싶어지면 크기부터 의심하세요. */
   let x0 = t.width, y0 = t.height, x1 = -1, y1 = -1;
   for (let y = 0; y < t.height; y++) for (let x = 0; x < t.width; x++) {
     const i2 = (y * t.width + x) * 4;
-    const on = a[i2 + 3] > 96;
+    const on = a[i2 + 3] > 112;
     a[i2] = r; a[i2 + 1] = gg; a[i2 + 2] = b; a[i2 + 3] = on ? 255 : 0;
     if (on) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   }
@@ -1436,6 +1438,26 @@ function stamp(g, text, size, color, x, y, align = 'left', valign = 'top') {
   g.drawImage(t, Math.round(dx), Math.round(dy));
   return t.width;
 }
+
+/* ---- 글꼴이 늦게 오는 문제 ----
+   글자가 든 그림은 스크립트를 읽는 순간 한 번 그려 캐시에 넣습니다.
+   그런데 웹폰트는 그때 아직 안 와 있습니다 — 첫 판이 폴백으로 찍히고,
+   캐시에 들어갔으니 영영 그대로 남습니다.
+
+   그래서 다시 그리는 방법을 여기 모아 두고, 글꼴이 온 뒤 한 번 더
+   돌립니다. 글자가 든 그림을 새로 만들 때는 여기에 등록하세요. */
+const TEXT_ART = [];
+function repaintTextArt() {
+  PXTEXT.clear();              // 폴백으로 찍힌 글자를 버립니다
+  TEXT_ART.forEach((f) => f());
+}
+/* 캔버스에 글꼴 이름을 적는 것만으로는 브라우저가 내려받지 않는 경우가
+   있습니다. 쓸 글자를 주며 명시적으로 부릅니다. 못 읽어도 넘어갑니다 —
+   폴백으로 찍힌 그림이 이미 있으니 앱은 그대로 돕니다. */
+Promise.all(GALMURI.map((f) =>
+  document.fonts.load(`${f.unit}px "${f.family}"`, '기숙사도서관본관학생회안내')
+    .catch(() => null)
+)).then(() => document.fonts.ready).then(repaintTextArt);
 
 const PAINTED = {};
 
@@ -1634,10 +1656,15 @@ function gateCanvas(key, name, base, lit, dark, glow, emblem) {
   px(g, 11, 57, 42, 1, lit);
   PAINTED[key] = c;
 }
-gateCanvas('gateEsc', '방탈출', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
-gateCanvas('gateA', 'Ex 1', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'ex');
-gateCanvas('gateB', 'Ex 2', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
-gateCanvas('gateC', 'Ex 3', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'ex');
+/* 이름 천에 글자가 들어갑니다 — 글꼴이 온 뒤 다시 그립니다. */
+const paintGates = () => {
+  gateCanvas('gateEsc', '방탈출', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
+  gateCanvas('gateA', 'Ex 1', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'ex');
+  gateCanvas('gateB', 'Ex 2', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
+  gateCanvas('gateC', 'Ex 3', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'ex');
+};
+paintGates();
+TEXT_ART.push(paintGates);
 
 /* ---- 서가 3×2 ----
    책등 색을 무작위로 흩되 폭은 2~4px 로 묶습니다. 폭까지 무작위면
@@ -1920,7 +1947,7 @@ vendingCanvas('#3E6E96', '#5A8CB4');
    판에 상징을 넣어 봤다가 뺐습니다 — 18px 짜리 책과 글자가 같은 판
    안에서 겹쳐 둘 다 안 읽혔습니다. 상징은 지붕이 이미 맡고 있으니
    여기서는 **색 · 이름 · 화살표** 셋이면 충분합니다. */
-{
+function paintSignpost() {
   const c = canvasOf(3, 4), g = c.getContext('2d');
   const CX = 24;
   shadow(g, CX, 63, 10, 3);
@@ -1987,6 +2014,8 @@ vendingCanvas('#3E6E96', '#5A8CB4');
 
   PAINTED.signpost = c;
 }
+paintSignpost();
+TEXT_ART.push(paintSignpost);
 /* ---- 침대 2×2 — 기숙사 미니룸 ---- */
 {
   const c = canvasOf(2, 2), g = c.getContext('2d');

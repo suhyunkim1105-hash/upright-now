@@ -1,5 +1,15 @@
 # DATA, PRIVACY & SECURITY
 
+이 문서는 **구현 원칙**입니다. 이용자에게 보여 줄 문서는 따로 있습니다.
+
+| 문서 | 무엇 |
+|---|---|
+| [`privacy/PRIVACY_POLICY.md`](privacy/PRIVACY_POLICY.md) | 개인정보처리방침 초안 — 코드를 읽고 확인한 실제 수집·전송 항목 |
+| [`privacy/TERMS_OF_SERVICE.md`](privacy/TERMS_OF_SERVICE.md) | 이용약관 초안 — 가상재화·금지행위·의료 서비스 아님 |
+| [`privacy/CONSENT_FLOW.md`](privacy/CONSENT_FLOW.md) | 최초 진입 동의 화면 설계 |
+
+셋 다 **법률 자문 전 초안**입니다. 공개 전에 검토를 받아야 합니다.
+
 ## 1. 기본 원칙
 
 - 온디바이스 자세 처리
@@ -134,7 +144,8 @@
 - HTML escape
 - 제어 문자 제거
 - 빈 값 기본 닉네임
-- 욕설·공격적 표현 필터는 후속 검토
+- 욕설·운영자 사칭 필터 — `src/lib/validation/nicknameFilter.ts` `checkNickname`
+  (차단어 목록은 `nicknameBlocklist.ts`. 학교명 사칭은 **허용**합니다)
 - 실명 입력 유도 없음
 
 ## 9. 데이터 초기화

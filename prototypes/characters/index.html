@@ -1,0 +1,253 @@
+<title>기린캠퍼스 - 캐릭터 넷</title>
+
+<style>
+  @font-face {
+    font-family: 'Pretendard Variable';
+    src: url('../openworld/assets/fonts/PretendardVariable.woff2') format('woff2-variations');
+    font-weight: 45 920; font-style: normal; font-display: swap;
+  }
+
+  :root {
+    --coral:     #FF6B52;
+    --coral-50:  #FFF5F2;
+    --coral-300: #FFAA99;
+    --coral-600: #F0523A;
+    --coral-700: #C2412C;
+    --ink:       #2A2320;
+    --ink-2:     #6B5F5A;
+    --line:      #EFE6E2;
+    --line-2:    #E4D8D2;
+    --surface:   #FFFFFF;
+    --surface-2: #FBF7F5;
+    --surface-3: #F4ECE8;
+    --on-coral:  #2A2320;
+    --r: 10px; --r-lg: 16px; --r-xl: 22px;
+    --sh: 0 8px 24px rgba(78,47,38,.10);
+    --ease: cubic-bezier(.16,1,.3,1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--surface-2); color: var(--ink);
+    font: 15px/1.62 'Pretendard Variable', Pretendard, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  canvas { image-rendering: pixelated; display: block; }
+  :focus-visible { outline: 3px solid var(--coral-600); outline-offset: 3px; border-radius: 4px; }
+
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 64px 28px 88px; }
+
+  header { display: flex; flex-direction: column; gap: 14px; margin-bottom: 46px; }
+  .mark { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 800; color: var(--ink-2); }
+  .mark i { width: 9px; height: 9px; border-radius: 50%; background: var(--coral); }
+  h1 { margin: 0; font-size: clamp(30px, 4.4vw, 44px); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+  .sub { margin: 0; max-width: 56ch; color: var(--ink-2); font-size: 15.5px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .tag {
+    padding: 5px 11px; border-radius: 999px; background: var(--surface-3);
+    font-size: 12.5px; font-weight: 700; color: var(--ink-2);
+  }
+  .tag.on { background: var(--coral-50); color: var(--coral-700); }
+
+  /* 한 종에 한 줄. 카드 넷을 나란히 두면 비교부터 시작하게 되는데,
+     여기서 필요한 건 하나씩 제대로 보는 것입니다. */
+  .sheet { display: flex; flex-direction: column; gap: 18px; }
+  .row {
+    display: grid; grid-template-columns: 188px minmax(0, 1fr) auto;
+    gap: 30px; align-items: center;
+    background: var(--surface); border: 1px solid var(--line-2);
+    border-radius: var(--r-xl); padding: 26px 30px;
+    box-shadow: var(--sh);
+  }
+  .art {
+    display: flex; align-items: flex-end; justify-content: center; gap: 14px;
+    background: var(--surface-2); border-radius: var(--r-lg); padding: 18px 14px 14px;
+    min-height: 150px;
+  }
+  .art canvas.pet { width: 96px; height: 96px; }
+  .art canvas.egg { width: 40px; height: 60px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .art canvas.pet { animation: bob 3s ease-in-out infinite; }
+    .row:nth-child(2) .art canvas.pet { animation-delay: .3s; }
+    .row:nth-child(3) .art canvas.pet { animation-delay: .6s; }
+    .row:nth-child(4) .art canvas.pet { animation-delay: .9s; }
+  }
+  @keyframes bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+  .info { min-width: 0; display: flex; flex-direction: column; gap: 9px; }
+  .info h2 { margin: 0; font-size: 23px; font-weight: 800; letter-spacing: -.02em; }
+  .info h2 small { font-size: 13px; font-weight: 700; color: var(--ink-2); margin-left: 9px; letter-spacing: 0; }
+  .info p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+  .swatches { display: flex; gap: 0; border-radius: 8px; overflow: hidden; width: fit-content; border: 1px solid var(--line-2); }
+  .swatches i { width: 30px; height: 22px; display: block; }
+  .swatches i:first-child { position: relative; }
+  .hex { margin: 0; font: 600 11.5px/1 ui-monospace, 'Consolas', monospace; color: var(--ink-2); letter-spacing: .02em; }
+
+  .side { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+  .zoom { display: flex; gap: 10px; align-items: flex-end; justify-content: center; padding: 6px 0 2px; }
+  .zoom figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .zoom canvas { border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+  .zoom figcaption { font: 700 10.5px/1 ui-monospace, monospace; color: var(--ink-2); }
+  .dl {
+    appearance: none; cursor: pointer; white-space: nowrap;
+    padding: 9px 15px; border-radius: 999px; border: 1px solid var(--line-2);
+    background: var(--surface); color: var(--ink-2);
+    font: 700 12.5px/1 'Pretendard Variable', sans-serif;
+    transition: border-color .14s var(--ease), color .14s var(--ease), background .14s var(--ease);
+  }
+  .dl:hover { border-color: var(--coral-300); color: var(--ink); background: var(--coral-50); }
+
+  /* 나란히 보는 자리는 마지막에 딱 한 번 */
+  .lineup {
+    margin-top: 40px; padding: 34px 30px 30px;
+    background: #5B9E52; border-radius: var(--r-xl); border: 1px solid #4A8746;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .lineup h2 { margin: 0; color: #FFF; font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+  .lineup p { margin: 0; color: rgba(255,255,255,.86); font-size: 13.5px; }
+  .lineup .strip {
+    display: flex; align-items: flex-end; justify-content: center; gap: clamp(14px, 4vw, 52px);
+    padding: 10px 0 4px; flex-wrap: wrap;
+  }
+  .lineup canvas { width: 128px; height: 128px; }
+
+  .foot { margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--ink-2); font-size: 13px; }
+  .foot code {
+    background: var(--surface-3); padding: 2px 6px; border-radius: 5px;
+    font: 600 12.5px ui-monospace, 'Consolas', monospace;
+  }
+
+  @media (max-width: 860px) {
+    .row { grid-template-columns: 1fr; gap: 18px; padding: 20px; }
+    .side { flex-direction: row; align-items: center; justify-content: space-between; }
+    .wrap { padding: 40px 18px 60px; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="mark"><i></i>기린캠퍼스</p>
+    <h1>캐릭터 넷</h1>
+    <p class="sub">알에서 나오는 네 종입니다. 확정본이라 이후 화면은 전부 이 그림을 씁니다.
+      전부 16×16 격자에 코드로 그렸고, 시트에서 가져온 조각은 없습니다.</p>
+    <div class="meta">
+      <span class="tag on">확정</span>
+      <span class="tag">16×16</span>
+      <span class="tag">정면 1컷</span>
+      <span class="tag">걷기 애니메이션 미제작</span>
+    </div>
+  </header>
+
+  <div class="sheet" id="sheet"></div>
+
+  <section class="lineup">
+    <h2>월드에서 보이는 크기</h2>
+    <p>실제 캠퍼스 잔디 위, 4배 확대. 옆에 세워 두면 네 실루엣이 서로 안 닮았는지 알 수 있습니다.</p>
+    <div class="strip" id="strip"></div>
+  </section>
+
+  <p class="foot">
+    그림은 <code>characters.js</code> 한 파일에 있습니다. 온보딩과 오픈월드가 같은 파일을 가져다 쓰므로,
+    여기서 고치면 두 곳이 같이 바뀝니다. 아직 없는 것은 걷기 4방향, 앉기, 감정표현입니다.
+  </p>
+</div>
+
+<script src="characters.js"></script>
+<script>
+(function () {
+  const art = GirinChars.build();
+  const sheet = document.getElementById('sheet');
+  const strip = document.getElementById('strip');
+
+  /** 캔버스를 배율만 바꿔 복제합니다. CSS 로만 키우면 저장 버튼이
+      16px 원본을 뱉어, 팀원이 받아 보고 "왜 이렇게 작아" 가 됩니다. */
+  function scaled(src, factor) {
+    const c = document.createElement('canvas');
+    c.width = src.width * factor; c.height = src.height * factor;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(src, 0, 0, src.width, src.height, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  GirinChars.SPECIES.forEach(function (sp) {
+    const pet = art[sp.id];
+    const egg = art['egg' + sp.id[0].toUpperCase() + sp.id.slice(1)];
+
+    const row = document.createElement('article');
+    row.className = 'row';
+
+    /* 알과 캐릭터를 붙여 둡니다. 껍질 색이 그대로 몸에 있다는 게 보여야
+       고르는 화면에서 알만 보고도 짐작이 됩니다. */
+    const box = document.createElement('div');
+    box.className = 'art';
+    const p = pet.cloneNode(); p.className = 'pet';
+    p.getContext('2d').drawImage(pet, 0, 0);
+    p.setAttribute('role', 'img');
+    p.setAttribute('aria-label', sp.name + ' 캐릭터');
+    const e = egg.cloneNode(); e.className = 'egg';
+    e.getContext('2d').drawImage(egg, 0, 0);
+    e.setAttribute('role', 'img');
+    e.setAttribute('aria-label', sp.name + ' 알');
+    box.append(p, e);
+
+    const info = document.createElement('div');
+    info.className = 'info';
+    const h = document.createElement('h2');
+    h.textContent = sp.name;
+    const sm = document.createElement('small');
+    sm.textContent = sp.id + ' · 알 ' + sp.order + '번';
+    h.appendChild(sm);
+    const line = document.createElement('p');
+    line.textContent = sp.line;
+    const sw = document.createElement('div');
+    sw.className = 'swatches';
+    sw.setAttribute('role', 'img');
+    sw.setAttribute('aria-label', sp.name + ' 팔레트 ' + sp.palette.length + '색: ' + sp.palette.join(', '));
+    sp.palette.forEach(function (c) {
+      const i = document.createElement('i'); i.style.background = c; sw.appendChild(i);
+    });
+    const hex = document.createElement('p');
+    hex.className = 'hex';
+    hex.textContent = sp.palette.length + '색 · ' + sp.palette[3];
+    info.append(h, line, sw, hex);
+
+    /* 배율 셋을 나란히 - 팀원이 "어디에 얼마로 쓰나" 를 눈으로 잡습니다 */
+    const side = document.createElement('div');
+    side.className = 'side';
+    const zoom = document.createElement('div');
+    zoom.className = 'zoom';
+    [[1, '원본'], [2, '2×'], [4, '월드']].forEach(function (pair) {
+      const f = document.createElement('figure');
+      const c = scaled(pet, pair[0]);
+      c.style.width = (32 * pair[0]) + 'px';
+      c.style.height = (32 * pair[0]) + 'px';
+      const cap = document.createElement('figcaption');
+      cap.textContent = pair[1];
+      f.append(c, cap);
+      zoom.appendChild(f);
+    });
+    const dl = document.createElement('button');
+    dl.type = 'button'; dl.className = 'dl';
+    dl.textContent = 'PNG 내려받기';
+    dl.addEventListener('click', function () {
+      const a = document.createElement('a');
+      a.download = 'girin-' + sp.id + '@4x.png';
+      a.href = scaled(pet, 4).toDataURL('image/png');
+      a.click();
+    });
+    side.append(zoom, dl);
+
+    row.append(box, info, side);
+    sheet.appendChild(row);
+
+    /* 라인업 */
+    const big = pet.cloneNode();
+    big.getContext('2d').drawImage(pet, 0, 0);
+    big.setAttribute('role', 'img');
+    big.setAttribute('aria-label', sp.name);
+    strip.appendChild(big);
+  });
+})();
+</script>

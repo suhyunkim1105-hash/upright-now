@@ -1977,6 +1977,21 @@ function floorInlay(c: any, x: any, y: any, w: any, h: any, kind: any) {
 }
 
 /* ================== 맵 ================== */
+/* ---------------- 표면 ----------------
+   무엇을 밟고 있는지. 발소리·먼지·풀 눕히기가 전부 이 값을 봅니다.
+
+   over 나 base 로 매번 알아내지 않는 이유 - 트랙과 자갈 마당은 잔디
+   위에 **그림으로만** 얹혀 있어 타일 값으로는 구분되지 않습니다. 그림과
+   감촉이 어긋나면 포석 위에서 잔디 소리가 납니다. */
+const SURF = { GRASS: 0, STONE: 1, WOOD: 2, TILE: 3, WATER: 4, GRAVEL: 5, TRACK: 6 };
+
+/** 바닥 그림과 짝이 맞는 표면을 칠합니다. 그림을 그린 자리에 같은 범위로
+    부르세요 - 안 부르면 bake 가 잔디로 둡니다. */
+function fillSurf(m: any, x: any, y: any, w: any, h: any, kind: any) {
+  for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++)
+    if (inMap(m, i, j)) m.surf[at(m, i, j)] = kind;
+}
+
 
 /* ---------------- 존 ----------------
    맵 하나의 모양입니다. makeMap 이 뼈대를 만들고, 존을 짓는 쪽이 이름과
@@ -1998,6 +2013,13 @@ export interface WorldMap {
   w: number; h: number;
   base: Uint16Array;          // 바닥 타일 인덱스
   over: Uint8Array;           // 오토타일 재질 (0 = 없음)
+  /** 무엇을 밟고 있는지. SURF 값. 발소리·먼지·풀 눕히기가 이걸 봅니다.
+      over 나 base 로 알아낼 수 없는 이유 - 트랙과 자갈 마당은 잔디 위에
+      그림으로만 얹혀 있어 타일 값으로는 구분되지 않습니다. */
+  surf: Uint8Array;
+  /** 실내는 바닥 한 장이 방 전체라 방의 재질이 곧 표면입니다.
+      bake 가 이 값으로 surf 의 빈 칸을 채웁니다. 야외는 없습니다. */
+  floorKind?: number;
   props: WorldProp[];
   portals: WorldPortal[];
   npcs: WorldNpc[];
@@ -2019,8 +2041,8 @@ export interface WorldMap {
 
 function makeMap(w: number, h: number, baseTile: number): WorldMap {
   return { w, h, base: new Uint16Array(w * h).fill(baseTile),
-           over: new Uint8Array(w * h), props: [], portals: [], npcs: [],
-           things: [] };
+           over: new Uint8Array(w * h), surf: new Uint8Array(w * h),
+           props: [], portals: [], npcs: [], things: [] };
 }
 const at = (m: WorldMap, x: any, y: any) => y * m.w + x;
 const inMap = (m: WorldMap, x: any, y: any) => x >= 0 && y >= 0 && x < m.w && y < m.h;
@@ -2033,6 +2055,15 @@ function fillOver(m: WorldMap, x: any, y: any, w: any, h: any, mat: any) {
   for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++)
     if (inMap(m, i, j)) m.over[at(m, i, j)] = mat;
 }
+/** 타원으로 표면을 칠합니다. 트랙 인필드처럼 둥근 안쪽을 되살릴 때 씁니다. */
+function fillEllipseSurf(m: any, cx: any, cy: any, rx: any, ry: any, kind: any) {
+  for (let y = Math.floor(cy - ry); y <= cy + ry; y++)
+    for (let x = Math.floor(cx - rx); x <= cx + rx; x++) {
+      const dx = (x + 0.5 - cx) / rx, dy = (y + 0.5 - cy) / ry;
+      if (dx * dx + dy * dy <= 1 && inMap(m, x, y)) m.surf[at(m, x, y)] = kind;
+    }
+}
+
 /** 타원으로 재질을 칠합니다. 사각형으로 칠한 못은 수영장이 됩니다. */
 function fillEllipse(m: WorldMap, cx: any, cy: any, rx: any, ry: any, mat: any) {
   for (let y = Math.floor(cy - ry); y <= cy + ry; y++)
@@ -2282,6 +2313,13 @@ const ZONES: Record<string, WorldMap> = {};
     gg.drawImage(paintTrack(14, 12), 1 * T, 1 * T);        // 북서 운동장
     gg.drawImage(paintArcadeCourt(14, 12), 31 * T, 1 * T);        // 북동 미니게임존
   }
+  /* 그림만 얹은 두 곳은 표면도 같이 칠합니다. 안 칠하면 우레탄 트랙
+     위에서 잔디 소리가 납니다. 트랙은 타원이라 안쪽 잔디를 도로 살립니다. */
+  fillSurf(m, 1, 1, 14, 12, SURF.TRACK);
+  fillEllipseSurf(m, 8, 7, 4.2, 3.4, SURF.GRASS);          // 인필드
+  fillSurf(m, 31, 1, 14, 12, SURF.GRAVEL);
+  {
+  }
 
   /* 가운데 원형 광장 — 모서리를 깎아 둥글게 */
   fillOver(m, 15, 16, 16, 11, M.PLAZA);
@@ -2390,7 +2428,7 @@ const ZONES: Record<string, WorldMap> = {};
 
   ring(m, 0, 0, m.w, m.h, F.brickR);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickR);
-  m.floor = paintFloor(m.w, m.h, 'parquet');
+  m.floor = paintFloor(m.w, m.h, 'parquet'); m.floorKind = SURF.WOOD;
   floorInlay(m.floor, 1, 3, m.w - 2, m.h - 5, 'border');
   floorInlay(m.floor, 17, 3, 4, m.h - 5, 'runner');   // 가운데 통로
 
@@ -2454,7 +2492,7 @@ const ZONES: Record<string, WorldMap> = {};
 
   ring(m, 0, 0, m.w, m.h, F.brickR);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickR);
-  m.floor = paintFloor(m.w, m.h, 'stone');
+  m.floor = paintFloor(m.w, m.h, 'stone'); m.floorKind = SURF.STONE;
   floorInlay(m.floor, 1, 3, m.w - 2, m.h - 5, 'border');
   floorInlay(m.floor, 6, 8, 26, 17, 'runner');        // 강의실 바닥
 
@@ -2508,7 +2546,7 @@ const ZONES: Record<string, WorldMap> = {};
 
   ring(m, 0, 0, m.w, m.h, F.brickO);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickO);
-  m.floor = paintFloor(m.w, m.h, 'laminate');
+  m.floor = paintFloor(m.w, m.h, 'laminate'); m.floorKind = SURF.WOOD;
   floorInlay(m.floor, 2, 4, 3, 2, 'rug');
 
   dressRoom(m, IPAL.dorm, [
@@ -2535,7 +2573,7 @@ const ZONES: Record<string, WorldMap> = {};
 
   ring(m, 0, 0, m.w, m.h, F.brickO);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickO);
-  m.floor = paintFloor(m.w, m.h, 'tile');
+  m.floor = paintFloor(m.w, m.h, 'tile'); m.floorKind = SURF.TILE;
   floorInlay(m.floor, 2, 5, 12, 8, 'runner');           // 상점
   floorInlay(m.floor, 20, 5, 12, 8, 'runner');          // 명예의 전당
   floorInlay(m.floor, 1, 3, m.w - 2, m.h - 5, 'border');
@@ -2588,9 +2626,17 @@ const ZONES: Record<string, WorldMap> = {};
 function bake(m: WorldMap) {
   m.solid = new Uint8Array(m.w * m.h);
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
-    const b = m.base[at(m, x, y)];
-    if (b === F.brickR || b === F.brickO) m.solid[at(m, x, y)] = 1;
-    if (m.over[at(m, x, y)] === M.WATER) m.solid[at(m, x, y)] = 1;
+    const i = at(m, x, y);
+    const b = m.base[i];
+    if (b === F.brickR || b === F.brickO) m.solid[i] = 1;
+    if (m.over[i] === M.WATER) m.solid[i] = 1;
+    /* 표면은 존이 직접 칠한 자리(트랙·자갈)를 남기고 나머지만 유도합니다.
+       실내는 바닥 한 장이 방 전체라 방의 재질이 곧 표면입니다. */
+    if (!m.surf[i]) {
+      if (m.over[i] === M.WATER) m.surf[i] = SURF.WATER;
+      else if (m.over[i]) m.surf[i] = SURF.STONE;          // 포장·판석
+      else if (m.floorKind) m.surf[i] = m.floorKind;
+    }
   }
   m.sitSpots = [];
   for (const p of m.props) {
@@ -2655,11 +2701,14 @@ export {
   paintFloor,
   floorGlow,
   floorInlay,
+  SURF,
+  fillSurf,
   makeMap,
   at,
   inMap,
   fillBase,
   fillOver,
+  fillEllipseSurf,
   fillEllipse,
   ring,
   prop,

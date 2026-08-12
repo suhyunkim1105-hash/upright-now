@@ -126,6 +126,13 @@ export interface WorldMap {
   w: number; h: number;
   base: Uint16Array;          // 바닥 타일 인덱스
   over: Uint8Array;           // 오토타일 재질 (0 = 없음)
+  /** 무엇을 밟고 있는지. SURF 값. 발소리·먼지·풀 눕히기가 이걸 봅니다.
+      over 나 base 로 알아낼 수 없는 이유 - 트랙과 자갈 마당은 잔디 위에
+      그림으로만 얹혀 있어 타일 값으로는 구분되지 않습니다. */
+  surf: Uint8Array;
+  /** 실내는 바닥 한 장이 방 전체라 방의 재질이 곧 표면입니다.
+      bake 가 이 값으로 surf 의 빈 칸을 채웁니다. 야외는 없습니다. */
+  floorKind?: number;
   props: WorldProp[];
   portals: WorldPortal[];
   npcs: WorldNpc[];

@@ -271,13 +271,14 @@ upright-now:consent
 
 `/settings` 에 아래를 추가합니다.
 
-| 항목 | 동작 |
-|---|---|
-| 이용약관 | 전문 보기 |
-| 개인정보처리방침 | 전문 보기 |
-| 내가 동의한 내역 | 동의 시각과 버전 표시 |
-| 카메라 권한 상태 | 현재 상태 표시 + 브라우저 설정으로 가는 안내 |
-| 전체 데이터 초기화 | 이미 있음 |
+| 항목 | 지금 | 할 일 |
+|---|---|---|
+| 이용약관 | 없음 | 전문 보기 링크 |
+| 개인정보처리방침 | 없음 | 전문 보기 링크 |
+| 내가 동의한 내역 | 없음 | 동의 시각과 버전 표시 |
+| 카메라 확인 | ✅ `카메라 확인` 버튼이 있고, 확인 즉시 트랙을 정지합니다 | 권한이 거부됐을 때 다시 켜는 방법 한 줄 추가 |
+| 닉네임 수정 | ✅ 있음 | **여기에도 `checkNickname` 을 걸어야 합니다** (온보딩만 막으면 우회됩니다) |
+| 전체 데이터 초기화 | ✅ 있음 | 서버 데이터(익명 계정·학교 인증)도 지울지 결정 — [PRIVACY_POLICY.md](PRIVACY_POLICY.md) §4.1 |
 
 ---
 
@@ -297,6 +298,18 @@ upright-now:consent
 | 10 | 설정에 방침·약관 링크 | `src/app/routes/Settings.tsx` | 작음 |
 | 11 | 문서 전문을 앱 안에서 렌더 | `src/app/routes/Legal.tsx` (신규) | 중간 |
 | 12 | E2E — 동의 없이는 진행 불가 | `e2e/` | 작음 |
+| 13 | 닉네임 필터 연결 — **두 곳 모두** | `src/app/routes/OnboardingName.tsx`, `Settings.tsx` | 작음 |
+
+13번은 모듈(`src/lib/validation/nicknameFilter.ts` `checkNickname`)이 이미
+있습니다. 화면에서 부르기만 하면 됩니다.
+
+```tsx
+const result = checkNickname(value)
+if (!result.ok) { setError(result.message); return }
+setNickname(value)
+```
+
+**온보딩만 막으면 설정에서 바꿔 우회할 수 있습니다.** 두 곳을 함께 고치세요.
 
 > `/welcome` 은 첫 화면 흐름을 바꾸므로 **E2E 회귀에 특히 주의**해야 합니다.
 > `AGENTS.md` §8.4 에 적힌 대로, 화면·흐름을 바꾸면 `npm run test:e2e` 까지 돌려야 합니다.

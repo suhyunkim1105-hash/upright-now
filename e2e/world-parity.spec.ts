@@ -20,8 +20,20 @@ import { test, expect, type Page } from '@playwright/test'
  * getContext('2d') 가 null 입니다. 픽셀을 재려면 진짜 브라우저가 필요합니다.
  */
 
+/* The prototype under development, not the copy inside this repo.
+ *
+ * This used to point at upright-now/prototypes/openworld/index.html, which is
+ * a snapshot taken when the port was generated. Comparing the port against
+ * that snapshot compares two frozen copies of the same thing: the test was
+ * green for two days while the real prototype moved underneath it, and it
+ * reported parity three times over changes it had never seen.
+ *
+ * A test whose reference is a copy of its subject cannot fail for the reason
+ * it exists. Pointing at the live file means this goes red whenever the port
+ * falls behind, which is the fact it is supposed to report.
+ */
 const PROTOTYPE = pathToFileURL(
-  fileURLToPath(new URL('../prototypes/openworld/index.html', import.meta.url)),
+  fileURLToPath(new URL('../../prototypes/openworld/index.html', import.meta.url)),
 ).href
 
 /** 파일에 얼려 둔 값 - 픽셀이 아니라 **개수와 배치**만 지킵니다.

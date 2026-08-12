@@ -142,11 +142,34 @@ upright-now:consent
 **이 화면은 이미 구현돼 있습니다** (`src/app/routes/CameraIntro.tsx`).
 아래는 지금 있는 것과 보완할 것입니다.
 
+### 4.0 ⚠️ 먼저 막아야 할 구멍 — `/calibration` 직접 진입
+
+`/camera` 는 안내를 잘 하고 있지만, **`/calibration` 에는 진입 가드가 없습니다.**
+
+`src/app/routes/Calibration.tsx` 는 화면이 뜨자마자 `useEffect` 에서 `start()` 를
+부르고, 그 안에서 `getUserMedia` 가 실행됩니다
+(`src/app/router/AppRoutes.tsx` 에 `/calibration` 가드 없음).
+
+그래서 주소창에 `https://upright-now.vercel.app/calibration` 을 직접 치거나
+북마크로 들어오면 **아무 설명 없이 브라우저 권한창이 바로 뜹니다.**
+`/camera` 에 적어 둔 "영상은 저장하지 않아요" 를 한 번도 못 본 채로요.
+
+**고치는 법** — `/calibration` 진입 시 아래를 확인하고, 하나라도 아니면
+`/camera` 로 보냅니다.
+
+| 확인 | 아니면 |
+|---|---|
+| `/welcome` 필수 동의를 마쳤는가 | `/welcome` 으로 |
+| `/camera` 안내를 거쳐 왔는가 | `/camera` 로 |
+
+가장 간단한 방법은 `/camera` 의 CTA 가 라우터 state 로 표시를 남기고,
+`/calibration` 이 그 표시가 없으면 `<Navigate to="/camera" replace />` 하는 것입니다.
+
 ### 4.1 이미 잘 되어 있는 것
 
 | | |
 |---|---|
-| ✅ | 이용자가 `카메라 연결하기` 를 누르기 전에는 `getUserMedia` 를 부르지 않습니다 |
+| ✅ | `/camera` 를 거쳐 오는 정상 경로에서는 이용자가 `카메라 연결하기` 를 누른 뒤에만 권한창이 뜹니다 (위 §4.0 의 직접 진입은 예외) |
 | ✅ | "권한은 아래 버튼을 누를 때만 요청해요" 라고 미리 알립니다 |
 | ✅ | "영상은 저장하지도, 외부로 보내지도 않아요" 를 3단계 안내에 넣었습니다 |
 | ✅ | "카메라 없이 3분 데모" 라는 거부 경로가 항상 있습니다 |
@@ -290,6 +313,7 @@ upright-now:consent
 | 2 | 동의 화면 컴포넌트 | `src/app/routes/Welcome.tsx` (신규) | 중간 |
 | 3 | 동의 기록 저장·버전 비교 | `src/lib/storage/local.ts` 에 `consent` 키 추가 | 작음 |
 | 4 | 미동의 시 `/welcome` 로 보내는 가드 | `src/app/router/` | 작음 |
+| 4b | **`/calibration` 직접 진입 가드** (§4.0 — 가장 급합니다) | `src/app/router/AppRoutes.tsx`, `src/app/routes/Calibration.tsx` | 작음 |
 | 5 | `/camera` 문구 보완 (§4.2 의 4·5·7) | `src/app/routes/CameraIntro.tsx` | 작음 |
 | 6 | 권한 거부 시 복구 안내 | `src/app/routes/Calibration.tsx` | 작음 |
 | 7 | 과목·목표 입력란 경고 문구 | `src/app/routes/RoomNew.tsx` | 작음 |

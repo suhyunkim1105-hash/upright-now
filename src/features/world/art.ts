@@ -1,20 +1,20 @@
 /* ==================================================================
-   기린캠퍼스 — 월드 그림·맵·존
+   기린캠퍼스 - 월드 그림·맵·존
 
-   prototypes/openworld/index.html 의 L536-3083 을 **그대로** 옮긴
-   것입니다. 손으로 옮겨 적지 않고 잘라 붙였습니다 - 2,549 줄을 사람이
-   옮기면 어딘가 한 글자가 틀리고, 그 한 글자는 픽셀 하나로만 나타나
-   눈으로는 안 잡힙니다.
+   **이 파일은 손으로 고치지 마세요.** prototypes/openworld/index.html 에서
+   자동으로 뽑아 옵니다. 고칠 곳은 프로토타입이고, 고친 뒤에
 
-   같은 그림이 나오는지는 e2e/world-parity.spec.ts 가 확인합니다.
-   src/features/world/__baseline__/prototype.json 의 지문과 대조합니다.
+     node tools/port-world-art.mjs
+     npx playwright test e2e/world-parity.spec.ts --project=chromium
+
+   을 돌리면 여기가 따라옵니다. 대조검사가 픽셀 단위로 확인합니다.
 
    이 구간은 DOM 을 만지지 않습니다. document.createElement('canvas') 만
-   쓰므로 import 시점에 안전하게 실행됩니다. 화면·입력·세션은 별도 파일에
-   있습니다.
+   쓰므로 import 시점에 안전합니다. 화면·입력·세션은 React 로 다시 짜므로
+   여기 없습니다.
 
-   타입은 느슨합니다. px() 나 disc() 에 엄격한 타입을 붙여 잡히는 버그는
-   없고, 존·기물 같은 경계면에서만 타입이 일합니다 (DECISIONS.md §7).
+   타입이 느슨한 이유는 DECISIONS.md §7 에 있습니다. px() 에 number 를
+   붙여 잡히는 버그는 없고, 타입이 일하는 곳은 WorldMap 같은 경계면입니다.
    ================================================================== */
 /* eslint-disable */
 
@@ -850,7 +850,7 @@ function handText(text: any, color: any) {
      "기" 와 "관" 사이가 벌어져 자간이 들쭉날쭉해집니다. */
   const widths = cells.map((c) => {
     let w = 0;
-    c.forEach((r: any) => { const i = r.lastIndexOf('#'); if (i + 1 > w) w = i + 1; });
+    c.forEach((r) => { const i = r.lastIndexOf('#'); if (i + 1 > w) w = i + 1; });
     return w;
   });
   const c = document.createElement('canvas');
@@ -860,7 +860,7 @@ function handText(text: any, color: any) {
   g.fillStyle = color;
   let ox = 0;
   cells.forEach((cell, k) => {
-    cell.forEach((row: any, y: any) => {
+    cell.forEach((row, y) => {
       for (let x = 0; x < row.length; x++) if (row[x] === '#') g.fillRect(ox + x, y, 1, 1);
     });
     ox += widths[k] + gap;
@@ -2608,7 +2608,7 @@ function bake(m: WorldMap) {
 }
 Object.values(ZONES).forEach(bake);
 /* ---------------- 내보내기 ----------------
-   최상위 선언을 전부 내보냅니다. 목록을 손으로 적으면 하나씩 빠집니다. */
+   최상위 선언 전부. 목록을 손으로 적으면 새로 만든 것이 빠집니다. */
 export {
   T,
   SCALE,

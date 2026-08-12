@@ -3120,6 +3120,10 @@ function bake(m) {
       if (inMap(m, po.x + i, po.y + j)) m.solid[at(m, po.x + i, po.y + j)] = 0;
 }
 Object.values(ZONES).forEach(bake);
+/* 건물 창은 그림 안에 있어 좌표를 밖에서 알 수 없습니다. 존을 다 지은
+   뒤 건물 위치에서 한 번만 계산해 둡니다 - 매 프레임 다시 구하면
+   같은 답을 60 번 냅니다. */
+Object.values(ZONES).forEach((m) => { m.winLights = windowLights(m); });
 
 /* ================== 그리기 ================== */
 const cv = document.getElementById('world');
@@ -3460,6 +3464,199 @@ const FX = {
   },
 
   clear() { this.list.length = 0; },
+};
+
+
+/* ==================================================================
+   시각과 빛
+
+   진짜 시계가 하늘을 움직입니다. 3 시에 앉아 고개를 드니 노을이면,
+   월드가 "얼마나 앉아 있었는지" 를 숫자 없이 말해 줍니다. 학생은 밤에
+   공부하니 제품 사실과도 맞습니다.
+
+   ---- 색 ----
+   밝기만 낮추면 회색이 됩니다. 픽셀아트의 기본은 **어두운 쪽을 파랑·
+   보라로 식히고 채도를 낮추며, 밝은 쪽을 노랑으로 데우는** 것입니다.
+   그래서 아래 표는 밝기 한 축이 아니라 색 그 자체를 적었습니다.
+
+   값은 곱셈 합성에 그대로 들어갑니다. 정오가 흰색(255,255,255)이면
+   아무것도 안 바뀌고, 밤이 (112,126,178)이면 빨강이 44%·파랑이 70%만
+   남아 어둡고 푸르게 가라앉습니다.
+
+   ---- 밤이 너무 어두우면 안 됩니다 ----
+   공부하는 사람이 가장 많은 시간이 밤입니다. 분위기를 위해 안 보이게
+   만들면 제품을 망칩니다. 그래서 가장 어두운 시각도 빨강 채널 기준
+   38% 아래로 내려가지 않습니다.
+
+   ---- 실내 ----
+   실내는 사람이 불을 켜고 있습니다. 바깥이 밤이어도 방은 밝아야 하고,
+   대신 색만 조금 따뜻해집니다.
+   ================================================================== */
+const SKY = [
+  /* 시각, 곱할 색 [r,g,b] */
+  [0,    [104, 118, 170]],   // 한밤 - 파랑
+  [4,    [ 98, 110, 160]],   // 가장 어두운 때
+  [6,    [138, 138, 178]],   // 여명이 번지기 시작
+  [7,    [232, 190, 175]],   // 해 뜰 무렵 - 복숭아
+  [9,    [250, 244, 236]],
+  [12,   [255, 255, 255]],   // 정오 - 중립
+  [16,   [252, 244, 228]],
+  [18,   [250, 214, 178]],   // 금빛
+  [19.5, [238, 168, 140]],   // 노을 - 코랄과 만나는 시각
+  [21,   [150, 136, 180]],   // 땅거미 - 보라
+  [23,   [112, 126, 178]],   // 밤
+  [24,   [104, 118, 170]],   // 0시로 이어집니다
+];
+
+const TIME = {
+  /** 시험용 고정 시각. null 이면 진짜 시계를 씁니다. */
+  override: null,
+  hour() {
+    if (this.override !== null) return this.override;
+    const d = new Date();
+    return d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600;
+  },
+  /** 지금 하늘색. 두 구간 사이를 부드럽게 건너갑니다 - 계단으로 바뀌면
+      1 분마다 화면이 툭툭 튑니다. */
+  tint() {
+    const h = this.hour();
+    for (let i = 0; i < SKY.length - 1; i++) {
+      const [h0, c0] = SKY[i], [h1, c1] = SKY[i + 1];
+      if (h >= h0 && h <= h1) {
+        const t = (h - h0) / (h1 - h0);
+        return [
+          Math.round(c0[0] + (c1[0] - c0[0]) * t),
+          Math.round(c0[1] + (c1[1] - c0[1]) * t),
+          Math.round(c0[2] + (c1[2] - c0[2]) * t),
+        ];
+      }
+    }
+    return [255, 255, 255];
+  },
+  /** 0(대낮) ~ 1(가장 어두움). 불을 켤지 정하는 데 씁니다. */
+  darkness() {
+    const c = this.tint();
+    return Math.max(0, Math.min(1, (255 - (c[0] + c[1] + c[2]) / 3) / 120));
+  },
+};
+
+/* ---------------- 광원 ----------------
+   기물 종류에서 자동으로 뽑습니다. 존마다 손으로 적으면 기물을 옮길
+   때마다 빛이 제자리에 남습니다.
+   dx dy 는 기물 좌상단에서 빛이 나는 지점까지의 픽셀. */
+const LAMPS = {
+  lamp:      { dx: 8,  dy: 6,  r: 52, c: [255, 226, 172], i: 1.0 },
+  floorLamp: { dx: 8,  dy: 8,  r: 40, c: [255, 224, 172], i: 0.9 },
+  deskLamp:  { dx: 8,  dy: 6,  r: 30, c: [255, 232, 184], i: 0.8 },
+  vending:   { dx: 8,  dy: 12, r: 26, c: [190, 226, 255], i: 0.7 },
+  vending2:  { dx: 8,  dy: 12, r: 26, c: [190, 226, 255], i: 0.7 },
+  gateEsc:   { dx: 32, dy: 42, r: 44, c: [255, 150, 120], i: 1.0 },
+  gateA:     { dx: 32, dy: 42, r: 44, c: [130, 230, 215], i: 1.0 },
+  gateB:     { dx: 32, dy: 42, r: 44, c: [255, 220, 130], i: 1.0 },
+  gateC:     { dx: 32, dy: 42, r: 44, c: [190, 160, 255], i: 1.0 },
+  signpost:  { dx: 24, dy: 20, r: 22, c: [255, 236, 200], i: 0.5 },
+  /* 노트북·모니터 화면. 밤에 방에 광원이 하나도 없으면 평평해집니다.
+     화면빛은 차갑고 좁습니다 - 등불과 색이 달라야 둘이 구분됩니다. */
+  laptopN:   { dx: 8,  dy: 4,  r: 22, c: [176, 214, 255], i: 0.72 },
+  laptop:    { dx: 8,  dy: 4,  r: 22, c: [176, 214, 255], i: 0.72 },
+  monitor:   { dx: 8,  dy: 4,  r: 24, c: [176, 214, 255], i: 0.75 },
+  pc:        { dx: 8,  dy: 6,  r: 18, c: [176, 214, 255], i: 0.6 },
+  tv:        { dx: 8,  dy: 6,  r: 26, c: [190, 210, 255], i: 0.7 },
+};
+
+/** 건물 창. 기물에서 못 뽑는 것들은 존이 직접 적습니다 -
+    창은 건물 그림 안에 있어 좌표를 밖에서 알 수 없습니다. */
+function windowLights(m) {
+  const out = [];
+  for (const p of m.props) {
+    const d = PROP[p.kind];
+    if (!d || !p.kind.startsWith('bld')) continue;
+    /* 정면 창문 줄은 건물 아래에서 두 칸 위입니다. 건물 폭에 걸쳐
+       고르게 놓습니다 - 창 하나하나를 따라가지 않고 벽면이 은은하게
+       빛나게 하는 편이 16px 에서 더 깨끗합니다. */
+    const y = (p.y + d.h - 2) * T + 8;
+    for (let i = 1; i < d.w - 1; i += 3) out.push({ x: (p.x + i) * T + 8, y, r: 34, c: [255, 226, 170], i: 0.62 });
+  }
+  return out;
+}
+
+const LIGHTMAP = {
+  buf: null, g: null,
+  blobs: new Map(),        // 색마다 미리 그려 둔 빛 덩어리
+
+  /** 빛 한 덩어리를 미리 그려 캐시합니다. 프레임마다 createRadialGradient
+      를 부르면 광원 수만큼 그라디언트를 새로 만들게 됩니다. */
+  blob(c) {
+    const key = c.join(',');
+    let b = this.blobs.get(key);
+    if (b) return b;
+    const R = 64;
+    b = document.createElement('canvas');
+    b.width = b.height = R * 2;
+    const g = b.getContext('2d');
+    const grad = g.createRadialGradient(R, R, 0, R, R, R);
+    grad.addColorStop(0,    'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)');
+    grad.addColorStop(0.45, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0.42)');
+    grad.addColorStop(1,    'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, R * 2, R * 2);
+    this.blobs.set(key, b);
+    return b;
+  },
+
+  /** 조명 층을 만들어 화면에 곱합니다. 곱셈이라 흰색은 아무 일도 하지
+      않고, 어두운 색은 그만큼 가라앉힙니다. 빛은 그 위에 더해 올려
+      되살립니다. */
+  apply(ctx, m, camX, camY, vw, vh) {
+    const dark = TIME.darkness();
+    /* 대낮에는 통째로 건너뜁니다. 흰색을 곱하는 건 아무 일도 아닌데
+       화면 크기만 한 합성을 한 번 하는 셈이라 순수한 낭비입니다. */
+    if (dark < 0.02) return;
+
+    let tint = TIME.tint();
+    /* 실내는 사람이 불을 켜고 있습니다. 바깥만큼 어두워지면 안 되고,
+       색만 조금 따뜻해집니다. */
+    const inside = !!m.floor;
+    if (inside) {
+      const k = 0.30;                       // 바깥 어둠을 30% 만 들입니다
+      tint = tint.map((v) => Math.round(255 - (255 - v) * k));
+    }
+
+    if (!this.buf || this.buf.width !== vw || this.buf.height !== vh) {
+      this.buf = document.createElement('canvas');
+      this.buf.width = vw; this.buf.height = vh;
+      this.g = this.buf.getContext('2d');
+    }
+    const g = this.g;
+    g.globalCompositeOperation = 'source-over';
+    g.fillStyle = 'rgb(' + tint[0] + ',' + tint[1] + ',' + tint[2] + ')';
+    g.fillRect(0, 0, vw, vh);
+
+    /* 불은 어두워질수록 밝아집니다. 대낮에 가로등이 켜져 있으면
+       거짓말이고, 한밤에 꺼져 있으면 길이 안 보입니다. */
+    const on = Math.max(0, (dark - 0.18) / 0.82);
+    if (on > 0) {
+      g.globalCompositeOperation = 'lighter';
+      const put = (L) => {
+        const x = L.x - camX, y = L.y - camY, r = L.r;
+        if (x < -r || y < -r || x > vw + r || y > vh + r) return;
+        g.globalAlpha = Math.min(1, on * (L.i ?? 1));
+        g.drawImage(this.blob(L.c), x - r, y - r, r * 2, r * 2);
+      };
+      for (const p of m.props) {
+        const L = LAMPS[p.kind];
+        if (!L) continue;
+        put({ x: p.x * T + L.dx, y: p.y * T + L.dy, r: L.r, c: L.c, i: L.i });
+      }
+      if (m.winLights) for (const L of m.winLights) put(L);
+      g.globalAlpha = 1;
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.drawImage(this.buf, 0, 0);
+    ctx.restore();
+  },
 };
 
 /* ================== 세션 ==================
@@ -4959,6 +5156,9 @@ function draw() {
     drawCount++;
   }
 
+  /* 조명은 맨 마지막입니다. 땅도 건물도 사람도 같은 빛을 받아야
+     한 공간에 있는 것으로 보입니다. HUD 는 캔버스 밖이라 안 어두워집니다. */
+  LIGHTMAP.apply(ctx, zone, camX, camY, VIEW_W, VIEW_H);
 }
 
 function drawPlayer() {

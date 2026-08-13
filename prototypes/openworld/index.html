@@ -1864,6 +1864,13 @@ function gateEmblem(g, kind, cx, cy, ink) {
     px(g, cx + 5, cy + 1, 2, 3, ink);
     px(g, cx + 8, cy + 1, 2, 3, ink);
   } else {
+    /* 기린 — 고개 숙인 기린 목 펴기 */
+    if (kind === 'shell') {
+      circleLine(g, cx, cy, 8, ink);
+      px(g, cx - 6, cy - 1, 12, 2, ink);
+      px(g, cx - 1, cy - 7, 2, 14, ink);
+      return;
+    }
     /* 물음표 — 아직 정하지 않은 놀이 */
     px(g, cx - 4, cy - 7, 8, 2, ink);
     px(g, cx + 3, cy - 6, 2, 4, ink);
@@ -1935,7 +1942,7 @@ function gateCanvas(key, name, base, lit, dark, glow, emblem) {
 /* 이름 천에 글자가 들어갑니다 — 글꼴이 온 뒤 다시 그립니다. */
 const paintGates = () => {
   gateCanvas('gateEsc', '방탈출', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
-  gateCanvas('gateA', 'Ex 1', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'ex');
+gateCanvas('gateA', '기린 목 펴기', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'shell');
   gateCanvas('gateB', 'Ex 2', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
   gateCanvas('gateC', 'Ex 3', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'ex');
 };
@@ -3193,6 +3200,9 @@ const ZONES = {};
      무엇이 들어갈지 정해지면 천 색과 문장만 바꾸면 됩니다. */
   prop(m, 'gateEsc', 32, 2); prop(m, 'gateA', 39, 2);
   prop(m, 'gateB', 32, 7);   prop(m, 'gateC', 39, 7);
+  m.things = [
+    { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
+  ];
   prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
 
   /* 남서 — 호수. 세션과 세션 사이에 아무것도 안 해도 되는 자리가
@@ -3873,7 +3883,15 @@ addEventListener('keydown', (e) => {
   if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
   /* 스페이스가 상호작용입니다. 엄지가 이미 거기 있고, WASD 를 잡은 손을
      떼지 않아도 됩니다. E 는 왼손 검지를 W 에서 떼야 합니다. */
-  if (panelOpen) { if (k === 'escape' || k === ' ') closePanel(); return; }
+  if (panelOpen) {
+    if (GIRAFFE_NECK.active && k === ' ') {
+      e.preventDefault();
+      tapGiraffeNeck();
+      return;
+    }
+    if (k === 'escape' || (k === ' ' && activePanelKey !== 'giraffeNeck')) closePanel();
+    return;
+  }
   /* 미니맵이 펼쳐져 있으면 숫자로 바로 갑니다. 지도를 보면서 고르는
      것이 자연스러운 순서라, 지도가 열렸을 때만 듣습니다. */
   if (MINI.on) {
@@ -5105,7 +5123,110 @@ function schoolRanking() {
   return rows.sort((a, b) => b.hours - a.hours || b.recoveries - a.recoveries);
 }
 
+/* ==================================================================
+   미니게임 1 — 기린 목 펴기
+
+   고개를 숙인 기린이 10초 안에 바른 자세를 찾도록 도와주는 게임입니다.
+   Space 또는 게임 영역 클릭을 연속해서 입력할수록 목이 펴집니다.
+   ================================================================== */
+const GIRAFFE_NECK = {
+  active: false, timer: 0, startedAt: 0, angle: 42, combo: 0, lastTapAt: 0, rewarded: false,
+};
+const GIRAFFE_START_ANGLE = 42;
+const GIRAFFE_TARGET_ANGLE = 4;
+function giraffeNeckHtml() {
+  return `
+    <p>고개 숙인 기린의 목을 10초 안에 펴 주세요.</p>
+    <div class="rows">
+      <div class="row"><span>남은 시간</span><span class="val" id="giraffe-time">10초</span></div>
+      <div class="row"><span>조작</span><span class="val">Space · 클릭</span></div>
+      <div class="row"><span>목표</span><span class="val">목을 끝까지 펴기</span></div>
+    </div>
+    <div class="giraffe-stage" data-do="giraffe-tap" role="button" tabindex="0" aria-label="기린 목 펴기. 클릭해서 목을 펴세요." style="position:relative;height:170px;margin:14px 0;border-radius:14px;background:linear-gradient(180deg,#dce9ef,#f4dfb9);overflow:hidden;cursor:pointer;user-select:none">
+      <div class="giraffe-body" style="position:absolute;left:50%;bottom:12px;width:58px;height:58px;transform:translateX(-50%);border-radius:48% 48% 35% 35%;background:#d7953f;border:4px solid #9b5b2b;box-shadow:inset 10px 0 #edb657,inset -9px 0 #b66d31"></div>
+      <div id="giraffe-neck-group" style="position:absolute;left:calc(50% - 32px);bottom:52px;width:64px;height:110px;transform-origin:50% 100%;transition:transform .12s ease">
+        <div class="giraffe-neck" id="giraffe-neck" style="position:absolute;left:20px;bottom:0;width:24px;height:78px;background:#e8ad50;border:4px solid #9b5b2b;border-bottom:0;border-radius:14px 14px 0 0"><i style="position:absolute;left:4px;top:14px;width:7px;height:7px;border-radius:50%;background:#a96b30;box-shadow:10px 16px #a96b30,0 38px #a96b30,10px 58px #a96b30"></i></div>
+        <div class="giraffe-head" id="giraffe-head" style="position:absolute;left:0;bottom:67px;width:64px;height:40px;background:#e8ad50;border:4px solid #9b5b2b;border-radius:45% 55% 40% 35%"><i style="position:absolute;right:13px;top:14px;width:7px;height:7px;border-radius:50%;background:#2a2520"></i><b style="position:absolute;right:-11px;top:20px;width:16px;height:8px;background:#e8ad50;border:3px solid #9b5b2b;border-left:0;border-radius:0 10px 10px 0"></b><em style="position:absolute;left:10px;top:-12px;width:7px;height:12px;border-left:3px solid #9b5b2b;border-right:3px solid #9b5b2b"></em></div>
+      </div>
+      <span class="giraffe-tap-hint" style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:3px 9px;border-radius:999px;background:rgba(42,37,32,.72);color:#fff;font-size:12px">여기를 연속 클릭!</span>
+    </div>
+    <div style="margin:14px 0 10px;height:12px;border-radius:999px;background:var(--surface-3);overflow:hidden;border:1px solid var(--line-2)">
+      <i id="giraffe-progress" style="display:block;width:0%;height:100%;background:var(--good);transition:width .12s ease"></i>
+    </div>
+    <p class="hint" id="giraffe-message" aria-live="polite">Space 또는 기린을 클릭해 주세요.</p>
+    <button class="act" data-do="giraffe-restart">다시 시작</button>`;
+}
+function renderGiraffeNeck() {
+  const neck = panelBody.querySelector('#giraffe-neck');
+  const head = panelBody.querySelector('#giraffe-head');
+  const time = panelBody.querySelector('#giraffe-time');
+  const progress = panelBody.querySelector('#giraffe-progress');
+  if (!neck || !head || !time || !progress) return;
+  const elapsed = GIRAFFE_NECK.active ? Date.now() - GIRAFFE_NECK.startedAt : 0;
+  const left = Math.max(0, 10 - Math.ceil(elapsed / 1000));
+  const progressValue = Math.max(0, Math.min(100, ((GIRAFFE_START_ANGLE - GIRAFFE_NECK.angle) / (GIRAFFE_START_ANGLE - GIRAFFE_TARGET_ANGLE)) * 100));
+  const group = panelBody.querySelector('#giraffe-neck-group');
+  if (group) group.style.transform = `rotate(${GIRAFFE_NECK.angle}deg)`;
+  time.textContent = GIRAFFE_NECK.active ? `${left}초` : time.textContent;
+  progress.style.width = `${progressValue}%`;
+}
+function finishGiraffeNeck(success) {
+  GIRAFFE_NECK.active = false;
+  clearInterval(GIRAFFE_NECK.timer);
+  const stage = panelBody.querySelector('.giraffe-stage');
+  const message = panelBody.querySelector('#giraffe-message');
+  const button = panelBody.querySelector('[data-do="giraffe-restart"]');
+  if (success) {
+    if (!GIRAFFE_NECK.rewarded) {
+      GIRAFFE_NECK.rewarded = true;
+      earn(5, '기린 목 펴기 성공');
+    }
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
+    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+  } else if (message) {
+    message.textContent = '시간이 끝났어요. 조금 더 빠르게 연속 입력해 보세요.';
+  }
+  if (button) button.textContent = '다시 하기';
+  renderGiraffeNeck();
+}
+function tickGiraffeNeck() {
+  if (!GIRAFFE_NECK.active) return;
+  const now = Date.now();
+  if (now - GIRAFFE_NECK.lastTapAt > 700) GIRAFFE_NECK.combo = 0;
+  GIRAFFE_NECK.angle = Math.min(GIRAFFE_START_ANGLE, GIRAFFE_NECK.angle + .14);
+  if (GIRAFFE_NECK.angle <= GIRAFFE_TARGET_ANGLE) return finishGiraffeNeck(true);
+  if (now - GIRAFFE_NECK.startedAt >= 10000) return finishGiraffeNeck(false);
+  renderGiraffeNeck();
+}
+function tapGiraffeNeck() {
+  if (!GIRAFFE_NECK.active) return;
+  const now = Date.now();
+  GIRAFFE_NECK.combo = now - GIRAFFE_NECK.lastTapAt <= 700 ? GIRAFFE_NECK.combo + 1 : 1;
+  GIRAFFE_NECK.lastTapAt = now;
+  const lift = Math.min(1.2, .8 + GIRAFFE_NECK.combo * .05);
+  GIRAFFE_NECK.angle = Math.max(GIRAFFE_TARGET_ANGLE, GIRAFFE_NECK.angle - lift);
+  const message = panelBody.querySelector('#giraffe-message');
+  if (message) message.textContent = GIRAFFE_NECK.combo >= 3 ? `${GIRAFFE_NECK.combo} 콤보! 계속 눌러 주세요.` : '좋아요! 목이 펴지고 있어요.';
+  renderGiraffeNeck();
+  if (GIRAFFE_NECK.angle <= GIRAFFE_TARGET_ANGLE) finishGiraffeNeck(true);
+}
+function startGiraffeNeck() {
+  clearInterval(GIRAFFE_NECK.timer);
+  GIRAFFE_NECK.active = true;
+  GIRAFFE_NECK.startedAt = Date.now();
+  GIRAFFE_NECK.angle = GIRAFFE_START_ANGLE;
+  GIRAFFE_NECK.combo = 0;
+  GIRAFFE_NECK.lastTapAt = 0;
+  GIRAFFE_NECK.rewarded = false;
+  GIRAFFE_NECK.timer = setInterval(tickGiraffeNeck, 100);
+  renderGiraffeNeck();
+}
+
 const PANELS = {
+  giraffeNeck: () => ({
+    title: '기린 목 펴기', kind: 'MINI GAME',
+    html: giraffeNeckHtml(),
+  }),
   /* ---- 안내 — 벽에 붙은 표지판이 여는 창 ----
      기능이 아니라 **읽을 것**입니다. 처음 온 사람이 무엇을 하는 곳인지
      알아야 하니 방 안에 두었고, 나머지는 전부 마이페이지에 있습니다. */
@@ -5388,7 +5509,7 @@ const PANELS = {
   },
 };
 
-let panelOpen = false;
+let panelOpen = false, activePanelKey = '';
 function openPanel(key) {
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
@@ -5415,12 +5536,24 @@ function openPanel(key) {
 
   panelEl.classList.add('on');
   panelOpen = true;
+  activePanelKey = key;
   keys.clear();
+  if (key === 'giraffeNeck') startGiraffeNeck();
   panelEl.querySelector('header button').focus();
 }
-function closePanel() { panelEl.classList.remove('on'); panelOpen = false; }
+function closePanel() {
+  if (GIRAFFE_NECK.active) {
+    GIRAFFE_NECK.active = false;
+    clearInterval(GIRAFFE_NECK.timer);
+  }
+  panelEl.classList.remove('on'); panelOpen = false; activePanelKey = '';
+}
 panelEl.querySelector('header button').addEventListener('click', closePanel);
 panelEl.addEventListener('click', (e) => { if (e.target === panelEl) closePanel(); });
+panelBody.addEventListener('click', (e) => {
+  if (e.target.closest('[data-do="giraffe-restart"]')) return startGiraffeNeck();
+  if (e.target.closest('[data-do="giraffe-tap"]')) tapGiraffeNeck();
+});
 
 /* ---- 값 고치기 ----
    업라이트 마이페이지의 편집 흐름을 그대로 옮겼습니다. 다만 모달을
@@ -5574,6 +5707,10 @@ panelBody.addEventListener('click', (e) => {
   const act = e.target.closest('[data-do]');
   if (!act) return;
   const what = act.dataset.do;
+  if (what === 'giraffe-restart') {
+    startGiraffeNeck();
+    return;
+  }
   if (what === 'edit-save' || what === 'edit-cancel') {
     const box = act.closest('.edit');
     if (what === 'edit-save') {

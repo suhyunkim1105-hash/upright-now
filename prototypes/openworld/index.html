@@ -3880,6 +3880,11 @@ let camX = 0, camY = 0, portalCooldown = 0, sitStart = 0, nearby = null;
 const keys = new Set();
 addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
+  /* 버튼이나 입력칸에 포커스가 있으면 월드 조작은 비켜 줍니다. 이게 없으면
+     스페이스가 버튼을 누르는 대신 아래 preventDefault 에 먹히고, 마이페이지
+     입력칸에 띄어쓰기를 넣으면 창이 닫힙니다. Esc 만은 언제나 통과시켜야
+     닫기 버튼에 포커스가 가 있어도 창이 닫힙니다. */
+  if (k !== 'escape' && e.target?.closest?.('button, input, textarea, select, [role="button"], [role="switch"]')) return;
   if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
   /* 스페이스가 상호작용입니다. 엄지가 이미 거기 있고, WASD 를 잡은 손을
      떼지 않아도 됩니다. E 는 왼손 검지를 W 에서 떼야 합니다. */
@@ -5965,6 +5970,7 @@ function draw() {
   /* 같은 줄에 섰을 때는 플레이어가 앞에 옵니다. 동점이면 정렬이 프레임마다
      뒤바뀌어 캐릭터가 물건 앞뒤로 깜빡였습니다. */
   items.push({ sort: sortKey(player.y, player.x) + 0.5, kind: 'player' });
+  if (window.MP) MP.collect(items);   // 다른 플레이어 — multiplayer.js
   items.sort((a, b) => a.sort - b.sort);
 
   for (const it of items) {
@@ -5991,6 +5997,7 @@ function draw() {
         ctx.fillRect(it.n.x * T - camX + 7, it.n.y * T - camY - 6 + bob, 2, 4);
         ctx.fillRect(it.n.x * T - camX + 7, it.n.y * T - camY - 1 + bob, 2, 2);
       }
+    } else if (it.kind === 'mp') { MP.drawOne(it.rp); drawCount++;
     } else { drawPlayer(); drawCount++; }
   }
 
@@ -6296,5 +6303,11 @@ urban.src = 'assets/urban.png';
 city.src = 'assets/city.png';
 school48.src = 'assets/school48.png';
 </script>
+
+<!-- 위 스크립트의 전역을 쓰므로 반드시 뒤에 옵니다. 순서도 이대로입니다.
+     chat 은 MP 를, comfort 는 둘 다 있다고 보고 붙습니다. -->
+<script src="multiplayer.js"></script>
+<script src="chat.js"></script>
+<script src="comfort.js"></script>
 </body>
 </html>

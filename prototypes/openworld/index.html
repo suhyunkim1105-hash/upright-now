@@ -1,4 +1,9 @@
-<title>기린캠퍼스 — 오픈월드 프로토타입</title>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>기린캠퍼스 — 오픈월드 프로토타입</title>
 
 <style>
   /* ==================================================================
@@ -159,6 +164,19 @@
     box-shadow: 0 2px 5px rgba(78, 47, 38, .18), 0 0 0 1px rgba(78, 47, 38, .07);
   }
   #headTimer.on { display: inline-flex; }
+
+  /* 이름표 — 머리 바로 위. 바탕이 학교 색이고, 글자는 그 색 위에서
+     대비가 큰 쪽(잉크 또는 흰색)을 재서 고릅니다. 코랄 위 흰 글자를
+     금지한 것과 같은 이유입니다. */
+  #nameTag {
+    position: fixed; pointer-events: none; display: none;
+    padding: 2px 7px; border-radius: 999px;
+    background: var(--school, #5A6472); color: #FFF;
+    font-size: 10px; font-weight: 700; line-height: 1.4; white-space: nowrap;
+    transform: translate(-50%, -100%);
+    box-shadow: 0 2px 5px rgba(78, 47, 38, .22);
+  }
+  #nameTag.on { display: block; }
   #headTimer i {
     width: 5px; height: 5px; border-radius: 50%;
     background: var(--coral); flex: none;
@@ -277,6 +295,31 @@
     border-radius: 50%; background: var(--coral);
   }
 
+  /* ---------- 남의 방에 와 있을 때 ----------
+     설정 버튼 자리에 대신 섭니다. 여기가 내 방이 아니라는 사실과 나가는
+     길이 늘 같이 보여야 합니다. */
+  #visit {
+    position: fixed; right: 20px; top: 18px; z-index: 6;
+    display: none; align-items: center; gap: 9px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--school, var(--coral));
+    border-radius: var(--r); padding: 8px 9px 8px 13px;
+    font-size: 12.5px; font-weight: 600; color: var(--ink-2); box-shadow: var(--sh);
+  }
+  #visit.on { display: flex; }
+  #visit i {
+    width: 8px; height: 8px; border-radius: 50%; flex: none;
+    background: var(--school, var(--coral));
+  }
+  #visit b { color: var(--ink); font-weight: 700; }
+  #visit button {
+    background: var(--surface-3); border: 1px solid var(--line-2); border-radius: 999px;
+    color: var(--ink-2); font: inherit; font-size: 12px; font-weight: 600;
+    padding: 5px 12px; cursor: pointer;
+  }
+  #visit button:hover { background: var(--coral-100); color: var(--ink); }
+  #visit button:focus-visible { outline: 2px solid var(--coral-600); outline-offset: 2px; }
+
   /* ---------- 창 ---------- */
   #panel {
     position: fixed; inset: 0; z-index: 8;
@@ -378,6 +421,23 @@
   #panel .row.tap:hover { background: var(--coral-50); }
   #panel .row.tap:focus-visible { outline: 2px solid var(--coral-600); outline-offset: -2px; }
   #panel .row .chev { margin-left: 6px; color: var(--ink-3); flex: none; }
+  /* 켜고 끄는 스위치. 값 자리에 앉으므로 행 오른쪽 끝입니다. */
+  #panel .toggle {
+    margin-left: auto; flex: none; width: 42px; height: 24px; padding: 0;
+    background: var(--surface-3); border: 1px solid var(--line-2);
+    border-radius: 999px; cursor: pointer;
+    transition: background .16s ease, border-color .16s ease;
+  }
+  #panel .toggle i {
+    display: block; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--surface); margin-left: 2px;
+    box-shadow: 0 1px 3px rgba(78,47,38,.28);
+    transition: transform .16s ease;
+  }
+  #panel .toggle[aria-pressed="true"] { background: var(--coral); border-color: var(--coral-600); }
+  #panel .toggle[aria-pressed="true"] i { transform: translateX(18px); }
+  #panel .toggle:focus-visible { outline: 2px solid var(--coral-600); outline-offset: 2px; }
+
   #panel .edit {
     display: flex; gap: 8px; align-items: center; padding: 10px 0;
     border-bottom: 1px solid var(--line);
@@ -388,6 +448,7 @@
     color: var(--ink); font: inherit; font-size: 13.5px;
   }
   #panel .edit input:focus { outline: 2px solid var(--coral-600); outline-offset: 1px; }
+  #panel .edit-error { margin: 6px 0 0; font-size: 11.5px; color: var(--coral-700); }
   #panel .hint { margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3); }
 
   #panel .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 15px; }
@@ -401,6 +462,18 @@
   #panel .chip[aria-pressed="true"] {
     background: var(--coral); border-color: var(--coral-600); color: var(--on-coral);
   }
+  /* 학교 칩의 색점. 이름만 있으면 무슨 색이 붙는지 눌러 봐야 압니다. */
+  #panel .chip i {
+    display: inline-block; width: 9px; height: 9px; border-radius: 3px;
+    margin-right: 6px; vertical-align: -1px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.18);
+  }
+
+  /* ---------- 학교 강조 ----------
+     색이 닿는 곳은 여기까지입니다. 버튼·글자·배경은 무채색으로 둡니다. */
+  #panel header { background: linear-gradient(var(--school-soft, var(--coral-50)), var(--surface)); }
+  #panel .stat { background: var(--school-soft, var(--coral-50)); }
+  #panel .school-val { color: var(--school, var(--ink-2)); font-weight: 700; }
   #panel .chip:focus-visible { outline: 2px solid var(--coral-600); outline-offset: 2px; }
   #panel .code {
     display: flex; align-items: center; gap: 10px;
@@ -434,6 +507,107 @@
     overflow: hidden; margin-top: 8px;
   }
   #panel .bar i { display: block; height: 100%; background: var(--coral); border-radius: 999px; }
+
+  /* ---------- 상점 ----------
+     왼쪽 미리보기 · 오른쪽 목록. 좁은 창에서는 위아래로 접힙니다. */
+  #panel .shop { display: grid; grid-template-columns: 168px 1fr; gap: 16px; }
+  @media (max-width: 560px) { #panel .shop { grid-template-columns: 1fr; } }
+  #panel .shop-prev {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 12px; align-self: start;
+  }
+  /* 종이 인형 — 스프라이트가 오기 전까지 칸의 자리를 보여 줍니다 */
+  #panel .doll {
+    width: 74px; height: 108px; margin: 0 auto 10px; position: relative;
+  }
+  #panel .doll span { position: absolute; left: 50%; transform: translateX(-50%); border-radius: 4px; }
+  #panel .doll .hat    { top: 0;   width: 40px; height: 12px; border-radius: 7px 7px 2px 2px; }
+  #panel .doll .head   { top: 12px; width: 30px; height: 30px; border-radius: 50%; background: #E8D2B4; }
+  #panel .doll .top    { top: 44px; width: 52px; height: 34px; }
+  #panel .doll .bottom { top: 79px; width: 44px; height: 22px; }
+  #panel .doll .shoes  { top: 101px; width: 50px; height: 7px; border-radius: 3px; }
+  #panel .shop-prev .who { text-align: center; margin-bottom: 10px; }
+  #panel .shop-prev .who b { display: block; font-size: 13.5px; font-weight: 700; }
+  #panel .shop-prev .who em { font-style: normal; font-size: 11.5px; color: var(--ink-3); }
+  #panel .lays { display: flex; flex-direction: column; gap: 5px; }
+  #panel .lay { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
+  #panel .lay i {
+    width: 12px; height: 12px; border-radius: 3px; flex: none;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.14);
+  }
+  #panel .lay span { color: var(--ink-3); }
+  #panel .lay em { font-style: normal; margin-left: auto; color: var(--ink-2); font-weight: 600; }
+  #panel .shop-prev .hint { margin-top: 10px; font-size: 10.5px; line-height: 1.5; }
+
+  #panel .shop-list { display: flex; flex-direction: column; gap: 6px; }
+  #panel .shop-coin {
+    font-size: 11.5px; color: var(--ink-3); text-align: right; margin-bottom: 2px;
+  }
+  #panel .shop-coin b { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  #panel .item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: 11px;
+    background: var(--surface);
+  }
+  #panel .item.on { border-color: var(--school, var(--coral)); background: var(--school-soft, var(--coral-50)); }
+  #panel .item > i {
+    width: 26px; height: 26px; border-radius: 7px; flex: none;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.14);
+  }
+  #panel .item > span { font-size: 13px; font-weight: 600; }
+  #panel .item > span em {
+    display: block; font-style: normal; font-size: 11px; color: var(--ink-3); font-weight: 400;
+  }
+  #panel .item > u {
+    margin-left: auto; text-decoration: none; font-size: 11px; color: var(--ink-3);
+  }
+  #panel .item .act { margin-left: auto; min-width: 62px; text-align: center; }
+  #panel .item > u + .act { margin-left: 8px; }
+  #panel .item .act[disabled] { opacity: .4; cursor: not-allowed; }
+
+  /* ---------- 명예의 전당 ---------- */
+  #panel .ranks { display: flex; flex-direction: column; }
+  #panel .rank {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 6px; border-bottom: 1px solid var(--line);
+  }
+  #panel .rank.me { background: var(--school-soft, var(--coral-50)); border-radius: 9px; }
+  #panel .rank u {
+    text-decoration: none; width: 20px; flex: none; text-align: center;
+    font-size: 12px; font-weight: 800; color: var(--ink-3); font-variant-numeric: tabular-nums;
+  }
+  #panel .rank:nth-child(1) u { color: #B8860B; }
+  #panel .rank i {
+    width: 10px; height: 18px; border-radius: 3px; flex: none;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.16);
+  }
+  #panel .rank span { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; }
+  #panel .rank span em {
+    font-style: normal; font-size: 10.5px; color: var(--school, var(--ink-3)); font-weight: 700;
+  }
+  #panel .rank b {
+    font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right;
+    min-width: 62px;
+  }
+  #panel .rank b.sub { color: var(--ink-3); font-weight: 600; min-width: 62px; }
+  #panel .rank b small { font-size: 10px; color: var(--ink-3); font-weight: 400; margin-left: 3px; }
+
+  /* 역대 1위 — 액자 셋이 나란히 */
+  #panel .frames { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  #panel .frame {
+    border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 9px 11px;
+    background: var(--surface-2); text-align: center;
+    box-shadow: inset 0 0 0 3px var(--surface);
+  }
+  #panel .frame .plate {
+    display: inline-block; border-radius: 999px; padding: 2px 9px; margin-bottom: 7px;
+    font-size: 10px; font-weight: 800; letter-spacing: .06em;
+  }
+  #panel .frame b { display: block; font-size: 12px; font-weight: 700; }
+  #panel .frame em {
+    font-style: normal; font-size: 10.5px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
 
   /* 세션 표시 — 좌측 하단. 지금 세션이 돌고 있다는 사실과 얼마나
      됐는지가 늘 보여야 합니다. 종료 버튼을 옆에 두는 이유는, 회고를
@@ -482,6 +656,79 @@
   @keyframes coinPop { 0%,100% { transform: scale(1); } 40% { transform: scale(1.18); } }
   #coin.pop svg { animation: coinPop .42s ease; }
 
+  /* ---------- 미니맵 ----------
+     캠퍼스를 4배로 줄여 통째로 보여 줍니다. 지도 위의 이름표가 곧
+     이동 단추입니다. */
+  #minimap {
+    position: fixed; inset: 0; z-index: 8;
+    display: grid; place-items: center; padding: 24px;
+    background: rgba(42, 35, 32, .34); backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none; transition: opacity .18s ease;
+  }
+  #minimap.on { opacity: 1; pointer-events: auto; }
+  #minimap .mini-box {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 18px; overflow: hidden; box-shadow: var(--sh-lg);
+    transform: scale(.97); transition: transform .2s cubic-bezier(.2,.9,.3,1);
+  }
+  #minimap.on .mini-box { transform: none; }
+  #minimap header {
+    display: flex; align-items: center; gap: 9px;
+    padding: 13px 14px 12px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(var(--school-soft, var(--coral-50)), var(--surface));
+  }
+  #minimap header b { font-size: 14px; font-weight: 800; letter-spacing: -.02em; }
+  #minimap header u {
+    text-decoration: none; font-size: 10px; color: var(--ink-3);
+    letter-spacing: .1em; font-weight: 700;
+  }
+  #minimap header button {
+    margin-left: auto; width: 26px; height: 26px; flex: none;
+    background: var(--surface-3); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--ink-2); font: 600 15px/1 sans-serif; cursor: pointer;
+  }
+  #minimap header button:hover { background: var(--coral-100); color: var(--ink); }
+  .mini-wrap { position: relative; padding: 12px; }
+  #minimap-cv { display: block; border-radius: 10px; outline: 1px solid var(--line-2); }
+  #minimap-spots { position: absolute; left: 12px; top: 12px; pointer-events: none; }
+  #minimap-spots .spot {
+    position: absolute; transform: translate(-50%, -50%); pointer-events: auto;
+    display: flex; align-items: center; gap: 5px; white-space: nowrap;
+    background: rgba(255,255,255,.94); border: 1px solid var(--line-2);
+    border-radius: 999px; padding: 3px 7px 3px 6px; cursor: pointer;
+    font: 700 10.5px/1.3 inherit; color: var(--ink);
+    box-shadow: 0 2px 6px rgba(78,47,38,.22);
+    transition: transform .12s ease, border-color .12s ease;
+  }
+  #minimap-spots .spot:hover {
+    transform: translate(-50%, -50%) scale(1.07); border-color: var(--coral);
+  }
+  #minimap-spots .spot:focus-visible { outline: 2px solid var(--coral-600); outline-offset: 2px; }
+  #minimap-spots .spot i {
+    width: 6px; height: 6px; border-radius: 50%; flex: none; background: var(--coral);
+  }
+  #minimap-spots .spot kbd {
+    background: var(--surface-3); border: 1px solid var(--line-2); border-radius: 4px;
+    padding: 0 4px; font: 700 9.5px/1.5 ui-monospace, monospace; color: var(--ink-2);
+  }
+
+  /* 코인을 받은 이유 — 코인 칩 위로 한 줄 떠올랐다 사라집니다 */
+  .coin-toast {
+    position: fixed; right: 20px; bottom: 62px; z-index: 7;
+    display: flex; align-items: center; gap: 7px; pointer-events: none;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 999px; padding: 7px 14px 7px 11px; box-shadow: var(--sh);
+    font-size: 12px; font-weight: 600; color: var(--ink-2);
+    animation: coinToast 2.2s ease both;
+  }
+  .coin-toast b { color: #B8860B; font-weight: 800; font-variant-numeric: tabular-nums; }
+  @keyframes coinToast {
+    0%   { opacity: 0; transform: translateY(8px); }
+    12%  { opacity: 1; transform: none; }
+    76%  { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(-10px); }
+  }
+
   #boot {
     position: fixed; inset: 0; z-index: 9; display: grid; place-items: center;
     background: var(--surface-2); font-size: 13px; color: var(--ink-3);
@@ -489,6 +736,9 @@
   }
   #boot.gone { opacity: 0; pointer-events: none; }
 </style>
+
+</head>
+<body>
 
 <div id="stage"><canvas id="world"></canvas></div>
 
@@ -500,7 +750,7 @@
 </div>
 <div class="hud" id="hud-help">
   <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동 ·
-  <kbd>Space</kbd> 상호작용 · <kbd>Shift</kbd> 뛰기
+  <kbd>Space</kbd> 상호작용 · <kbd>Shift</kbd> 뛰기 · <kbd>M</kbd> 지도
 </div>
 
 <div class="hud" id="hud-session">
@@ -519,6 +769,7 @@
 </button>
 
 <div id="prompt"></div>
+<div id="nameTag"></div>
 <div id="headTimer"><i></i><b>0:00</b></div>
 <div id="banner"><span></span><b></b></div>
 
@@ -540,12 +791,24 @@
 </div>
 
 <button type="button" id="gear"><i></i>마이페이지</button>
+<div id="visit"><i></i><b>—</b><button type="button" id="visit-out">내 방으로</button></div>
 
 <div id="panel" role="dialog" aria-modal="true">
   <div class="box">
     <header><u></u><b></b><button type="button" aria-label="닫기">×</button></header>
     <div class="tabs" hidden></div>
     <div class="body"></div>
+  </div>
+</div>
+
+<div id="minimap">
+  <div class="mini-box">
+    <header><b>기린캠퍼스</b><u>M · 눌러서 이동</u>
+      <button type="button" id="minimap-close" aria-label="닫기">×</button></header>
+    <div class="mini-wrap">
+      <canvas id="minimap-cv"></canvas>
+      <div id="minimap-spots"></div>
+    </div>
   </div>
 </div>
 
@@ -1450,6 +1713,19 @@ const TEXT_ART = [];
 function repaintTextArt() {
   PXTEXT.clear();              // 폴백으로 찍힌 글자를 버립니다
   TEXT_ART.forEach((f) => f());
+  /* 그리고 **다시 가리킵니다.**
+
+     여기 등록된 함수 중 몇은 캔버스를 새로 만들어 PAINTED 에 넣습니다
+     (표지판·관문). 그런데 PROP 은 만들어질 때 그 시점의 캔버스를 붙들어
+     둡니다. 그러면 다시 그린 그림은 PAINTED 에만 있고, 화면에는 글꼴이
+     오기 전 폴백으로 찍힌 판이 영영 남습니다.
+
+     광장 표지판 넉 장이 그랬습니다 — 8px 프리텐다드를 1비트로 자른
+     글자라 획이 부스러져 있었습니다. 방 안내판만 멀쩡했던 이유는
+     dressRoom 이 캔버스가 아니라 **참조를** 바꿔 끼우기 때문입니다. */
+  for (const d of Object.values(PROP)) {
+    if (d && d.key && PAINTED[d.key]) d.canvas = PAINTED[d.key];
+  }
 }
 /* 캔버스에 글꼴 이름을 적는 것만으로는 브라우저가 내려받지 않는 경우가
    있습니다. 쓸 글자를 주며 명시적으로 부릅니다. 못 읽어도 넘어갑니다 —
@@ -1588,6 +1864,13 @@ function gateEmblem(g, kind, cx, cy, ink) {
     px(g, cx + 5, cy + 1, 2, 3, ink);
     px(g, cx + 8, cy + 1, 2, 3, ink);
   } else {
+    /* 기린 — 고개 숙인 기린 목 펴기 */
+    if (kind === 'shell') {
+      circleLine(g, cx, cy, 8, ink);
+      px(g, cx - 6, cy - 1, 12, 2, ink);
+      px(g, cx - 1, cy - 7, 2, 14, ink);
+      return;
+    }
     /* 물음표 — 아직 정하지 않은 놀이 */
     px(g, cx - 4, cy - 7, 8, 2, ink);
     px(g, cx + 3, cy - 6, 2, 4, ink);
@@ -1659,7 +1942,7 @@ function gateCanvas(key, name, base, lit, dark, glow, emblem) {
 /* 이름 천에 글자가 들어갑니다 — 글꼴이 온 뒤 다시 그립니다. */
 const paintGates = () => {
   gateCanvas('gateEsc', '방탈출', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
-  gateCanvas('gateA', 'Ex 1', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'ex');
+gateCanvas('gateA', '기린 목 펴기', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'shell');
   gateCanvas('gateB', 'Ex 2', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
   gateCanvas('gateC', 'Ex 3', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'ex');
 };
@@ -2075,7 +2358,9 @@ function paintedProp(key, w, h, solidRows) {
     c.push([]);
     for (let i = 0; i < w; i++) c[j].push(solidRows ? (solidRows[j] ? 1 : 0) : 1);
   }
-  return { s: 'img', canvas: PAINTED[key], w, h, c, t: null };
+  /* key 를 들고 있어야 글꼴이 온 뒤 다시 그린 캔버스로 갈아 끼울 수
+     있습니다 (repaintTextArt). */
+  return { s: 'img', key, canvas: PAINTED[key], w, h, c, t: null };
 }
 
 /* 윗줄이 뚫린 것들 — 가로등·깃대는 기둥만 막습니다 */
@@ -2217,6 +2502,52 @@ PROP.mirror   = paintedProp('mirror', 1, 2, [0, 1]);
   disc(g, 8, 9, 1, '#A8465A');
   PAINTED.cushion = c;
 }
+
+/* ---- 학교 색이 닿는 기숙사 소품 둘 ----
+   과잠과 이름표만으로는 학교가 캐릭터에만 붙습니다. 방에도 하나쯤
+   있어야 "내 학교의 방" 이 됩니다. 둘로 그칩니다 — 방 전체를 학교 색으로
+   칠하면 열 학교가 열 개의 다른 앱이 됩니다.
+
+   빈 캔버스를 먼저 만들어 두고 안에만 다시 그립니다. 캔버스를 갈아
+   끼우면 PROP 이 예전 것을 계속 가리킵니다. */
+PAINTED.pennant = canvasOf(1, 2);
+PAINTED.schoolCushion = canvasOf(1, 1);
+function paintSchoolProps() {
+  const col = roomColor();
+  const [r, g_, b] = hexRGB(col);
+  const lit = 'rgba(255,255,255,.30)', dark = 'rgba(0,0,0,.26)';
+
+  /* 삼각 응원기 — 벽에 거는 페넌트 */
+  {
+    const c = PAINTED.pennant, g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    px(g, 2, 2, 2, 26, '#8E827C');                     // 걸이 끈
+    px(g, 2, 2, 1, 26, '#B4AAA4');
+    /* 깃발 — 오른쪽으로 갈수록 좁아지는 삼각형 */
+    for (let y = 0; y < 14; y++) {
+      const w = 13 - Math.round(y * 0.55);
+      px(g, 4, 5 + y, w, 1, y < 3 ? lit : col);
+    }
+    g.fillStyle = dark;
+    for (let y = 10; y < 14; y++) g.fillRect(4, 5 + y, 13 - Math.round(y * 0.55), 1);
+    px(g, 4, 5, 13, 1, 'rgba(255,255,255,.5)');
+    px(g, 6, 9, 5, 2, readableOn(col) === '#FFFFFF' ? '#FFFFFF' : '#2A2320');
+  }
+
+  /* 방석 — 학교 색 천에 흰 테두리 */
+  {
+    const c = PAINTED.schoolCushion, g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    shadow(g, 8, 14, 6, 2);
+    px(g, 2, 5, 12, 8, 'rgb(' + Math.round(r * .78) + ',' + Math.round(g_ * .78) + ',' + Math.round(b * .78) + ')');
+    px(g, 3, 6, 10, 6, col);
+    px(g, 3, 6, 10, 2, lit);
+    px(g, 3, 12, 10, 1, dark);
+    px(g, 7, 8, 2, 2, 'rgba(255,255,255,.55)');
+  }
+}
+PROP.pennant       = paintedProp('pennant', 1, 2, [0, 0]);
+PROP.schoolCushion = paintedProp('schoolCushion', 1, 1, [0]);
 
 PROP.wardrobe  = paintedProp('wardrobe', 2, 2);
 PROP.floorLamp = paintedProp('floorLamp', 1, 2, [0, 1]);
@@ -2858,9 +3189,9 @@ const ZONES = {};
 
   /* ================= 모서리 넷 ================= */
 
-  /* 북서 — 운동장. 오래 앉아 있는 것이 이 제품이 고치려는 문제인데,
-     그동안 캠퍼스에는 일어설 이유가 한 군데도 없었습니다. 매트 위에서
-     하는 스트레칭은 랭킹 둘째 지표(회복 시간)와 곧장 이어집니다. */
+  /* 북서 — 운동장. 매트는 **그림입니다.** 스트레칭 기능은 접기로 했고
+     코인 표에서도 뺐습니다. 여기 두는 이유는 트랙만 있으면 운동장이
+     비어 보이기 때문이지, 곧 뭐가 붙어서가 아닙니다. */
   prop(m, 'mat', 6, 6); prop(m, 'mat', 9, 6);
 
   /* 북동 — 미니게임존. 집중이 흐트러졌을 때 세션을 끊는 대신 갈 곳입니다.
@@ -2869,6 +3200,9 @@ const ZONES = {};
      무엇이 들어갈지 정해지면 천 색과 문장만 바꾸면 됩니다. */
   prop(m, 'gateEsc', 32, 2); prop(m, 'gateA', 39, 2);
   prop(m, 'gateB', 32, 7);   prop(m, 'gateC', 39, 7);
+  m.things = [
+    { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
+  ];
   prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
 
   /* 남서 — 호수. 세션과 세션 사이에 아무것도 안 해도 되는 자리가
@@ -3023,6 +3357,9 @@ const ZONES = {};
   prop(m, 'desk1', 1, 3); prop(m, 'laptopN', 1, 3);
   prop(m, 'chair', 1, 5);                 // 여기 앉으면 세션 카메라가 켜집니다
   prop(m, 'bed', 5, 3);
+  /* 학교 색이 닿는 둘. 벽에 응원기, 바닥에 방석. */
+  prop(m, 'pennant', 4, 3);
+  prop(m, 'schoolCushion', 3, 5);
 
   m.things = [{ x: 2, y: 2, name: '안내', panel: 'guide' }];
 
@@ -3064,12 +3401,14 @@ const ZONES = {};
   prop(m, 'vending', 32, 20);
   prop(m, 'bin', 30, 21);
 
+  /* 셋 다 말만 하던 사람들이었습니다. 이제 각자 맡은 창을 엽니다 —
+     panel 이 있으면 대사 대신 그 창이 뜹니다(interact 참고). */
   m.npcs.push(
-    { x: 8, y: 8, sprite: 266, name: '상점 · 미르',
+    { x: 8, y: 8, sprite: 266, name: '상점 · 미르', panel: 'shop',
       line: '알은 하나만 깨고 나왔죠? 다른 알도 여기서 팝니다. 비싸요.' },
-    { x: 26, y: 8, sprite: 185, name: '명예의 전당 · 하연',
-      line: '이번 시즌은 42일 남았어요. 순위는 앉은 시간과 회복 시간으로만 매깁니다 — 자세를 점수로 매기지는 않아요.' },
-    { x: 16, y: 5, sprite: 131, name: '출석 · 도윤',
+    { x: 26, y: 8, sprite: 185, name: '명예의 전당 · 하연', panel: 'hall',
+      line: '순위는 앉은 시간과 회복 횟수로만 매깁니다 — 자세를 점수로 매기지는 않아요.' },
+    { x: 16, y: 5, sprite: 131, name: '출석 · 도윤', panel: 'attend',
       line: '오늘 출석은 아직이네요. 도서관이나 본관에서 한 세션만 채우면 됩니다.' },
   );
 
@@ -3111,12 +3450,291 @@ function bake(m) {
 }
 Object.values(ZONES).forEach(bake);
 
+/* ==================================================================
+   학교 색
+
+   학교마다 쓰는 색이 어두운 남색부터 형광까지 제각각입니다. 그대로
+   화면에 얹으면 어떤 학교는 검은 얼룩이 되고 어떤 학교는 눈이 아픕니다.
+   그래서 **색상과 채도는 그대로 두고 명도만** 30~55% 로 끌어옵니다.
+   그 구간이 흰 UI 위에서도, 잔디 위 16px 캐릭터에서도 둘 다 읽힙니다.
+
+   색을 쓰는 곳은 넷뿐입니다 — 과잠, 이름표 바탕, 마이페이지 강조,
+   기숙사 소품 둘. 배경·버튼·글자는 무채색으로 둡니다. 학교 색이 화면
+   전체를 물들이면 열 학교가 열 개의 다른 앱이 됩니다.
+
+   아래 색값은 각 학교가 널리 쓰는 대표색을 눈으로 맞춘 **근삿값**입니다.
+   실제 브랜드 가이드의 값으로 바꿔야 합니다.
+   ================================================================== */
+const SCHOOLS = [
+  { name: '서울대학교',     domain: 'snu.ac.kr',     raw: '#00468B' },
+  { name: '연세대학교',     domain: 'yonsei.ac.kr',  raw: '#0F4C81' },
+  { name: '고려대학교',     domain: 'korea.ac.kr',   raw: '#862633' },
+  { name: '성균관대학교',   domain: 'skku.edu',      raw: '#00563F' },
+  { name: '한양대학교',     domain: 'hanyang.ac.kr', raw: '#0E4A84' },
+  { name: '중앙대학교',     domain: 'cau.ac.kr',     raw: '#0B4DA2' },
+  { name: '경희대학교',     domain: 'khu.ac.kr',     raw: '#8C1D40' },
+  { name: '이화여자대학교', domain: 'ewha.ac.kr',    raw: '#00713C' },
+  { name: '서강대학교',     domain: 'sogang.ac.kr',  raw: '#8B0029' },
+  { name: '명지대학교',     domain: 'mju.ac.kr',     raw: '#003A70' },
+];
+
+function hexToHsl(hex) {
+  const [r, g, b] = hexRGB(hex).map((v) => v / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  if (!d) return [0, 0, l];
+  const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0))
+          : mx === g ? (b - r) / d + 2
+          : (r - g) / d + 4;
+  return [h / 6, s, l];
+}
+function hslToHex(h, s, l) {
+  const f = (n) => {
+    const k = (n + h * 12) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(v * 255).toString(16).padStart(2, '0');
+  };
+  return '#' + f(0) + f(8) + f(4);
+}
+/** 명도만 30~55% 구간으로 끌어옵니다. 색상·채도는 그 학교 것 그대로. */
+function normalizeSchoolColor(hex) {
+  const [h, s, l] = hexToHsl(hex);
+  return hslToHex(h, s, Math.min(0.55, Math.max(0.30, l)));
+}
+SCHOOLS.forEach((s) => { s.color = normalizeSchoolColor(s.raw); });
+
+const SCHOOL_BY_NAME = Object.fromEntries(SCHOOLS.map((s) => [s.name, s]));
+/* 도메인 → 학교. 없으면 도메인을 그대로 보여 주고 "(미확인)" 을 붙입니다 —
+   없는 학교를 지어내지 않습니다. */
+const SCHOOL_BY_DOMAIN = Object.fromEntries(SCHOOLS.map((s) => [s.domain, s.name]));
+
+const DEFAULT_SCHOOL_COLOR = '#5A6472';    // 미확인 학교 — 무채색에 가깝게
+function schoolColorOf(name) {
+  return (SCHOOL_BY_NAME[name] || {}).color || DEFAULT_SCHOOL_COLOR;
+}
+/** 내 색 — 과잠 · 이름표 · 마이페이지. 남의 방에 가도 내 학교입니다. */
+function schoolColor() { return schoolColorOf(ROOM.school); }
+/** 이 방 주인의 색 — 기숙사 소품. 친구 방에 가면 친구 학교 색입니다. */
+function roomColor() { return schoolColorOf((VISIT.host || ROOM).school); }
+/** 흰 판 위에 아주 옅게 까는 같은 색. 강조 칸의 바탕입니다. */
+function schoolSoft(alpha) {
+  const [r, g, b] = hexRGB(schoolColor());
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+/** 학교가 바뀌면 색이 닿는 곳을 전부 다시 칠합니다. */
+function applySchoolColor() {
+  const c = schoolColor();
+  const root = document.documentElement.style;
+  root.setProperty('--school', c);
+  root.setProperty('--school-soft', schoolSoft(0.10));
+  root.setProperty('--school-line', schoolSoft(0.30));
+  jacketCanvas = null;                       // 과잠을 다시 굽습니다
+  paintSchoolProps();
+  nameTagEl.style.background = c;
+  nameTagEl.style.color = readableOn(c);
+}
+/** 바탕색 위에서 읽히는 글자색. 코랄 위 흰 글자를 금지한 것과 같은 이유로,
+    학교 색도 밝기를 재서 잉크와 흰색 중 대비가 큰 쪽을 씁니다. */
+function readableOn(hex) {
+  const [r, g, b] = hexRGB(hex).map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return (L + 0.05) / 0.05 > (1.05) / (L + 0.05) ? '#2A2320' : '#FFFFFF';
+}
+
+/* ==================================================================
+   소리
+
+   음원 파일을 싣지 않습니다. 이 프로토타입은 파일 하나로 도는 것이
+   전부라, mp3 를 넣는 순간 그 성질을 잃습니다. 대신 Web Audio 로
+   **그 자리에서 만듭니다** — 잡음 한 벌과 필터, 사인파 몇 개면 장소의
+   공기는 충분히 납니다.
+
+   장소마다 다른 소리를 트는 이유는 세션 모델과 같습니다: 공간이 곧
+   모드입니다. 도서관에 들어왔다는 것이 귀로도 와야 합니다.
+
+   브라우저는 사용자가 건드리기 전에는 소리를 못 내게 합니다. 그래서
+   첫 키·첫 클릭에서 깨웁니다 — 그전까지는 조용한 게 정상입니다.
+   ================================================================== */
+const SOUND = Object.assign({ bgm: true, sfx: true }, loadJSON('girin.sound', {}));
+function saveSound() { saveJSON('girin.sound', { bgm: SOUND.bgm, sfx: SOUND.sfx }); }
+
+const AUDIO = { ctx: null, master: null, bgmGain: null, amb: null, ambId: null, noise: null };
+
+/** 분홍잡음 한 벌. 흰잡음은 이 크기에서 쉬익 소리가 세서 귀가 아픕니다. */
+function noiseBuffer(ctx) {
+  if (AUDIO.noise) return AUDIO.noise;
+  const len = ctx.sampleRate * 4;                 // 4초를 이어 붙여 씁니다
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  /* Voss-McCartney 를 줄인 판. 옥타브마다 값을 드물게 바꿔 더하면
+     저음이 두터운 분홍잡음이 납니다. */
+  let b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < len; i++) {
+    const w = Math.random() * 2 - 1;
+    b0 = 0.99765 * b0 + w * 0.0990460;
+    b1 = 0.96300 * b1 + w * 0.2965164;
+    b2 = 0.57000 * b2 + w * 1.0526913;
+    d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.16;
+  }
+  AUDIO.noise = buf;
+  return buf;
+}
+
+function audio() {
+  if (AUDIO.ctx) return AUDIO.ctx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ctx = new AC();
+  AUDIO.ctx = ctx;
+  AUDIO.master = ctx.createGain();
+  AUDIO.master.gain.value = 0.5;
+  AUDIO.master.connect(ctx.destination);
+  AUDIO.bgmGain = ctx.createGain();
+  AUDIO.bgmGain.gain.value = 0;
+  AUDIO.bgmGain.connect(AUDIO.master);
+  return ctx;
+}
+
+/* ---- 장소별 앰비언트 ----
+   같은 잡음을 필터로 다르게 깎습니다. 도서관은 위를 잘라 조용하게,
+   본관은 아주 낮은 곳만 남겨 웅웅거리게, 기숙사는 그보다 더 낮고
+   따뜻하게. 광장만 잡음 대신 화음을 얹어 밝게 둡니다. */
+const AMBIENCE = {
+  library: { cut: 900,  q: 0.6, gain: 0.16, tone: null },
+  mainhall:{ cut: 220,  q: 1.2, gain: 0.22, tone: [72, 108] },
+  dorm:    { cut: 160,  q: 1.0, gain: 0.20, tone: [64, 96] },
+  union:   { cut: 1400, q: 0.5, gain: 0.12, tone: [196, 294] },
+  campus:  { cut: 2600, q: 0.4, gain: 0.07, tone: [294, 392, 494] },
+};
+
+function stopAmbience() {
+  if (!AUDIO.amb) return;
+  const ctx = AUDIO.ctx, t = ctx.currentTime;
+  const dying = AUDIO.amb;
+  dying.gain.gain.cancelScheduledValues(t);
+  dying.gain.gain.setValueAtTime(dying.gain.gain.value, t);
+  dying.gain.gain.linearRampToValueAtTime(0, t + 0.5);
+  setTimeout(() => dying.nodes.forEach((n) => { try { n.stop(); } catch { /* 이미 멈춤 */ } }), 700);
+  AUDIO.amb = null; AUDIO.ambId = null;
+}
+
+/** 장소가 바뀌면 앞엣것을 접고 새로 답니다. 뚝 끊으면 문을 지날 때마다
+    딸깍 소리가 납니다 — 0.5초씩 겹쳐 넘깁니다. */
+function setAmbience(id) {
+  if (AUDIO.ambId === id) return;
+  const spec = AMBIENCE[id];
+  const ctx = audio();
+  if (!ctx || !spec) { stopAmbience(); return; }
+  stopAmbience();
+
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  gain.connect(AUDIO.bgmGain);
+  const nodes = [];
+
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer(ctx);
+  src.loop = true;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = spec.cut; lp.Q.value = spec.q;
+  src.connect(lp); lp.connect(gain);
+  src.start(); nodes.push(src);
+
+  /* 화음 — 잡음만이면 환풍기입니다. 아주 작게 깐 지속음이 있어야
+     "여기 있다" 는 느낌이 납니다. */
+  (spec.tone || []).forEach((hz, i) => {
+    const o = ctx.createOscillator();
+    o.type = i === 0 ? 'sine' : 'triangle';
+    o.frequency.value = hz;
+    const og = ctx.createGain();
+    og.gain.value = 0.035 / (i + 1);
+    /* 아주 느린 흔들림. 고정된 사인파는 몇 초만 지나도 기계음이 됩니다. */
+    const lfo = ctx.createOscillator(), lg = ctx.createGain();
+    lfo.frequency.value = 0.05 + i * 0.03; lg.gain.value = 0.012;
+    lfo.connect(lg); lg.connect(og.gain);
+    o.connect(og); og.connect(gain);
+    o.start(); lfo.start();
+    nodes.push(o, lfo);
+  });
+
+  gain.gain.linearRampToValueAtTime(spec.gain, ctx.currentTime + 0.6);
+  AUDIO.amb = { gain, nodes }; AUDIO.ambId = id;
+  syncSound();
+}
+
+/* ---- 효과음 ----
+   짧은 톤 하나씩입니다. 길게 만들면 문을 여러 번 지날 때 겹쳐 울립니다. */
+const SFX = {
+  door:  { hz: [330, 220], dur: 0.16, type: 'triangle', gain: 0.16 },
+  sit:   { hz: [220, 165], dur: 0.14, type: 'sine',     gain: 0.14 },
+  coin:  { hz: [880, 1320], dur: 0.12, type: 'square',  gain: 0.07 },
+  deny:  { hz: [200, 140], dur: 0.18, type: 'sawtooth', gain: 0.08 },
+  buy:   { hz: [523, 784, 1046], dur: 0.20, type: 'triangle', gain: 0.10 },
+};
+function sfx(kind) {
+  if (!SOUND.sfx) return;
+  const spec = SFX[kind];
+  const ctx = audio();
+  if (!ctx || !spec || ctx.state !== 'running') return;
+  const t = ctx.currentTime;
+  spec.hz.forEach((hz, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = spec.type; o.frequency.value = hz;
+    const t0 = t + i * spec.dur * 0.55;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(spec.gain, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + spec.dur);
+    o.connect(g); g.connect(AUDIO.master);
+    o.start(t0); o.stop(t0 + spec.dur + 0.02);
+  });
+}
+
+/** 설정이 바뀌면 여기서 한 번에 반영합니다.
+
+    지금 값을 먼저 못 박고 나서 기울입니다. 안 그러면 **마지막으로 예약된
+    값**에서 출발해서, 끄자마자 켜면 0 이 아니라 예전 목표에서 시작해
+    소리가 튑니다. */
+function syncSound() {
+  if (!AUDIO.ctx) return;
+  const g = AUDIO.bgmGain.gain, t = AUDIO.ctx.currentTime;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(SOUND.bgm ? 1 : 0, t + 0.25);
+}
+
+/* 브라우저는 사용자가 건드리기 전에 소리를 못 내게 합니다. 첫 입력에서
+   깨우고, 그때 지금 있는 장소의 앰비언트를 답니다. */
+let audioWoken = false;
+function wakeAudio() {
+  if (audioWoken) return;
+  const ctx = audio();
+  if (!ctx) return;
+  audioWoken = true;
+  ctx.resume?.();
+  setAmbience(zoneId);
+}
+addEventListener('keydown', wakeAudio, { once: false });
+addEventListener('pointerdown', wakeAudio, { once: false });
+
 /* ================== 그리기 ================== */
 const cv = document.getElementById('world');
 const ctx = cv.getContext('2d', { alpha: false });
 ctx.imageSmoothingEnabled = false;
 
 let VIEW_W = 0, VIEW_H = 0;
+/* 캔버스의 화면 위 자리. 창이 바뀔 때만 다시 잽니다 — 매 프레임 재면
+   그때마다 레이아웃을 다시 계산하게 만듭니다. */
+let rectCache = null;
+function canvasRect() {
+  if (!rectCache) rectCache = cv.getBoundingClientRect();
+  return rectCache;
+}
 function resize() {
   VIEW_W = Math.floor(Math.min(window.innerWidth - 40, 1220) / SCALE);
   VIEW_H = Math.floor(Math.min(window.innerHeight - 40, 700) / SCALE);
@@ -3124,6 +3742,7 @@ function resize() {
   cv.style.width = VIEW_W * SCALE + 'px';
   cv.style.height = VIEW_H * SCALE + 'px';
   ctx.imageSmoothingEnabled = false;
+  rectCache = null;
 }
 window.addEventListener('resize', resize);
 resize();
@@ -3185,6 +3804,43 @@ function autoTile(m, x, y, mat) {
   return AUTO[mat].t[r * 3 + c];
 }
 
+/* ---------------- 야외 바닥 굽기 ----------------
+   광장이 느렸던 이유입니다.
+
+   실내는 방 하나가 이미 한 장(zone.floor)이라 바닥이 drawImage 한 번이고,
+   그래서 25~50 draws 에 120fps 가 나왔습니다. 야외는 달랐습니다 — 잔디는
+   한 장인데 그 위의 포장(over)만은 **매 프레임 칸마다** 오토타일을 골라
+   그렸습니다. 화면에 20×12 칸이 걸리고 광장은 거의 전부가 포장이라,
+   가만히 서 있어도 프레임마다 240 번이 넘게 들었습니다.
+
+   오토타일은 이웃한 칸만 보고 정해지고 그 이웃은 변하지 않습니다. 즉
+   **한 번 굽고 끝날 그림을 매 프레임 다시 그리고 있었습니다.** 여기서
+   잔디 위에 포장을 미리 얹어 두면 야외도 실내처럼 바닥이 한 장이 됩니다.
+
+   시트가 와야 그릴 수 있으므로 maybeStart 에서 부릅니다. */
+function bakeGround(m) {
+  if (m.floor) return;                       // 실내는 이미 한 장입니다
+  if (!m.ground) {
+    /* 바닥 시트를 쓰는 야외가 생기면 여기서 한 장으로 만듭니다 */
+    m.ground = canvasOf(m.w, m.h);
+    const bg = m.ground.getContext('2d');
+    bg.imageSmoothingEnabled = false;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+      const i = m.base[at(m, x, y)];
+      bg.drawImage(urban, (i % U_COLS) * T, ((i / U_COLS) | 0) * T, T, T, x * T, y * T, T, T);
+    }
+  }
+  const g = m.ground.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    const mat = m.over[at(m, x, y)];
+    if (!mat) continue;
+    const i = autoTile(m, x, y, mat);
+    g.drawImage(urban, (i % U_COLS) * T, ((i / U_COLS) | 0) * T, T, T, x * T, y * T, T, T);
+  }
+  m.groundBaked = true;
+}
+
 /* ================== 플레이어 ================== */
 const CHAR_BASE = 23;
 const DIR_COL = { down: 0, up: 2, side: 3 };
@@ -3227,7 +3883,24 @@ addEventListener('keydown', (e) => {
   if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
   /* 스페이스가 상호작용입니다. 엄지가 이미 거기 있고, WASD 를 잡은 손을
      떼지 않아도 됩니다. E 는 왼손 검지를 W 에서 떼야 합니다. */
-  if (panelOpen) { if (k === 'escape' || k === ' ') closePanel(); return; }
+  if (panelOpen) {
+    if (GIRAFFE_NECK.active && k === ' ') {
+      e.preventDefault();
+      tapGiraffeNeck();
+      return;
+    }
+    if (k === 'escape' || (k === ' ' && activePanelKey !== 'giraffeNeck')) closePanel();
+    return;
+  }
+  /* 미니맵이 펼쳐져 있으면 숫자로 바로 갑니다. 지도를 보면서 고르는
+     것이 자연스러운 순서라, 지도가 열렸을 때만 듣습니다. */
+  if (MINI.on) {
+    if (k === 'escape' || k === 'm' || k === ' ') { toggleMinimap(false); return; }
+    const p = PLACES.find((q) => q.key === k);
+    if (p) { travel(p); return; }
+    return;
+  }
+  if (k === 'm') { toggleMinimap(true); return; }
   if (k === ' ') { interact(); return; }
   keys.add(k);
 });
@@ -3248,23 +3921,33 @@ function canStand(px, py) {
 function enterZone(id, sx, sy) {
   /* 세션은 여기서 한 번만 시작합니다. 존을 옮겨 다녀도 이어집니다 —
      캠퍼스 안에 있는 동안이 하나의 세션입니다. */
-  if (!SESSION.startedAt) SESSION.startedAt = Date.now();
+  if (!SESSION.startedAt) { SESSION.startedAt = Date.now(); }
   zoneId = id; zone = ZONES[id];
   player.x = sx * T + T / 2; player.y = sy * T + T;
   /* 짧게 둡니다. 문 바로 안쪽에 서므로, 돌아서면 곧바로 다시 나갈 수
      있어야 합니다. 길면 문이 잠긴 것처럼 느껴집니다. */
   portalCooldown = 0.35;
+  /* 친구 방에 와 있으면 방 이름이 주인 이름입니다 — 여기가 남의 방이라는
+     것을 문을 지나는 순간 알아야 합니다. */
+  const guest = id === 'dorm' && VISIT.host;
+  const title = guest ? VISIT.host.nickname + '의 기숙사' : zone.name;
+  const sub = guest ? '방문 중 · ' + VISIT.host.school : zone.sub;
   const b = document.getElementById('banner');
-  b.querySelector('b').textContent = zone.name;
-  b.querySelector('span').textContent = zone.sub;
+  b.querySelector('b').textContent = title;
+  b.querySelector('span').textContent = sub;
   b.classList.remove('play'); void b.offsetWidth; b.classList.add('play');
-  document.querySelector('#hud-zone b').textContent = zone.name;
-  document.querySelector('#hud-zone span').textContent = zone.sub;
-  /* 설정은 미니룸에서만. 캠퍼스를 걷는 동안에는 월드를 가립니다. */
-  document.getElementById('gear').classList.toggle('on', id === 'dorm');
+  document.querySelector('#hud-zone b').textContent = title;
+  document.querySelector('#hud-zone span').textContent = sub;
+  /* 설정은 내 미니룸에서만. 남의 방에서는 대신 나가는 문을 보여 줍니다. */
+  document.getElementById('gear').classList.toggle('on', id === 'dorm' && !guest);
+  document.getElementById('visit').classList.toggle('on', !!guest);
+  if (guest) document.querySelector('#visit b').textContent = VISIT.host.nickname + '의 방';
   if (panelOpen) closePanel();
   closeDialog();
   if (player.sitting) stand();
+  /* 공간이 곧 모드라면 소리도 공간을 따라야 합니다 */
+  if (audioWoken) { sfx('door'); setAmbience(id); }
+  minimapDirty = true;
 }
 window.__teleport = enterZone;
 
@@ -3344,6 +4027,7 @@ function sit(spot) {
   document.getElementById('coin').classList.add('shifted');
   document.getElementById('session-place').textContent =
     FOCUS[zoneId] || (zone.name + ' · 집중 공간 아님');
+  sfx('sit');
   startCamera();
 }
 function stand() {
@@ -3745,7 +4429,7 @@ const LIVE = {
   on: false, smoother: null, arb: null, profile: null, zone: null,
   state: 'idle', msg: '측정 준비',
   frames: 0, seen: 0,
-  goodMs: 0, warnMs: 0, badMs: 0, recoveries: 0, lastTick: 0, wasBad: false,
+  goodMs: 0, warnMs: 0, badMs: 0, recoveries: 0, rewardedRecoveries: 0, lastTick: 0, wasBad: false,
 };
 
 const STATE_COLOR = { good: '#2E9E5B', warning: '#D98324', bad: '#E0483A', idle: '#9A8E88' };
@@ -3762,7 +4446,15 @@ function setState(kind, msg) {
   LIVE.lastTick = now;
   /* 회복 — bad 를 겪고 good 으로 돌아온 것만 셉니다. 랭킹이 이걸 씁니다. */
   if (kind === 'bad') LIVE.wasBad = true;
-  else if (kind === 'good' && LIVE.wasBad) { LIVE.recoveries++; LIVE.wasBad = false; }
+  else if (kind === 'good' && LIVE.wasBad) {
+    LIVE.recoveries++; LIVE.wasBad = false;
+    /* 돌아온 것에 줍니다. 굽지 않고 버틴 것이 아니라 **돌아온 행동**이
+       이 앱이 만들려는 습관입니다. */
+    if (LIVE.rewardedRecoveries < COIN.maxRewardedRecoveries) {
+      earn(COIN.perRecovery, '회복 성공');
+      LIVE.rewardedRecoveries++;
+    }
+  }
 
   LIVE.state = kind;
   LIVE.msg = msg || STATE_TEXT[kind] || '';
@@ -4069,12 +4761,24 @@ const ROOM = {
   floor: 'laminate',
   music: 'none',
   invite: null,
+  owned: [],          // 산 아이템 id
+  worn: {},           // 칸(top/bottom/shoes/hat) → 아이템 id
 };
 try {
   Object.assign(ROOM, JSON.parse(localStorage.getItem('girin.room') || '{}'));
 } catch { /* 저장된 게 깨졌으면 기본값으로 갑니다 */ }
+/* 저장된 판이 이 필드들보다 오래됐을 수 있습니다 */
+if (!Array.isArray(ROOM.owned)) ROOM.owned = [];
+if (!ROOM.worn || typeof ROOM.worn !== 'object') ROOM.worn = {};
 function saveRoom() {
   try { localStorage.setItem('girin.room', JSON.stringify(ROOM)); } catch { /* 무시 */ }
+}
+/* 초기 UTF-8 선언이 없던 버전에서 저장된 닉네임은 replacement character
+   (�)를 포함할 수 있습니다. 이름표는 DOM 텍스트라 폰트를 바꿔도 복구되지
+   않으므로, 깨진 저장값만 안전한 기본값으로 한 번 교정합니다. */
+if (typeof ROOM.nickname !== 'string' || ROOM.nickname.includes('\uFFFD')) {
+  ROOM.nickname = '익명의 기린';
+  saveRoom();
 }
 
 function esc(s) {
@@ -4082,6 +4786,171 @@ function esc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+/* ==================================================================
+   코인
+
+   버는 규칙이 화면에 적혀만 있고 실제로는 아무것도 쌓이지 않았습니다.
+   여기 한 곳에 규칙을 두고, 세션 쪽에서 불러 씁니다.
+
+   **자세가 좋아서 주는 코인은 없습니다.** 앉아 있던 시간과 돌아온 횟수,
+   그리고 왔다는 사실에만 줍니다 — 자세로 주면 목이 긴 사람이 유리한
+   게임이 됩니다.
+
+   코인은 세션 종료와 회복 성공처럼 실제 행동이 확정될 때만 지급합니다. */
+const COIN = {
+  perRecovery: 5,      // 회복 성공 1회
+  maxRewardedRecoveries: 5,
+};
+const SESSION_COIN_REWARDS = [
+  { min: 50, points: 60 },
+  { min: 30, points: 40 },
+  { min: 15, points: 30 },
+  { min: 5, points: 10 },
+];
+const STREAK_MILESTONES = [
+  { days: 3, points: 10 },
+  { days: 7, points: 25 },
+  { days: 14, points: 50 },
+  { days: 30, points: 100 },
+  { days: 60, points: 180 },
+];
+const PRICE = { wear: [150, 250], acc: [100, 200], egg: 800, eggRare: 2000 };
+
+function kstDateKey(at = Date.now()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(at);
+}
+const today = () => kstDateKey();
+function kstDateDaysAgo(days) {
+  return kstDateKey(Date.now() - days * 86400000);
+}
+function sessionCompletionCoins(minutes) {
+  return SESSION_COIN_REWARDS.find((reward) => minutes >= reward.min)?.points || 0;
+}
+function streakMilestone(days) {
+  return STREAK_MILESTONES.find((milestone) => milestone.days === days) || null;
+}
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+}
+function saveJSON(key, v) {
+  try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* 무시 */ }
+}
+
+/** 오늘 얼마나 벌었는지. 날짜가 바뀌면 0 부터 다시 셉니다. */
+function coinDay() {
+  const d = loadJSON('girin.coinday', null);
+  if (!d || d.date !== today()) return { date: today(), earned: 0 };
+  return d;
+}
+/** 상한에 걸리면 걸린 만큼만 줍니다. 준 액수를 돌려줍니다. */
+function earn(amount, why) {
+  if (amount <= 0) return 0;
+  const d = coinDay();
+  const give = amount;
+  d.earned += give; saveJSON('girin.coinday', d);
+  ROOM.coins += give; saveRoom();
+  paintCoins(true);
+  sfx('coin');
+  if (why) coinToast(give, why);
+  return give;
+}
+function spend(amount) {
+  if (ROOM.coins < amount) return false;
+  ROOM.coins -= amount; saveRoom(); paintCoins(true);
+  return true;
+}
+
+/** 출석. 10분 이상 유효 집중 세션을 완료했을 때만 호출합니다. */
+function markAttendance() {
+  const a = loadJSON('girin.attend', { last: '', streak: 0, claimed: [] });
+  a.claimed = Array.isArray(a.claimed) ? a.claimed : [];
+  const t = today();
+  if (a.last === t) return { first: false, streak: a.streak, milestone: null };
+  const y = kstDateDaysAgo(1);
+  a.streak = a.last === y ? a.streak + 1 : 1;
+  a.last = t; saveJSON('girin.attend', a);
+  const milestone = streakMilestone(a.streak);
+  if (milestone && !a.claimed.includes(milestone.days)) {
+    a.claimed.push(milestone.days);
+    saveJSON('girin.attend', a);
+    return { first: true, streak: a.streak, milestone };
+  }
+  return { first: true, streak: a.streak, milestone: null };
+}
+
+/* ==================================================================
+   초대 코드
+
+   서버가 없으니 이 브라우저가 서버 노릇을 합니다. 나중에 Supabase 로
+   갈아 끼울 때 **여기 네 함수만** 바꾸면 되도록 모아 뒀습니다 —
+   publish 는 upsert, lookup 은 select, revoke 는 delete 가 됩니다.
+   부르는 쪽(패널·방문)은 저장소가 무엇인지 모릅니다.
+
+   같은 브라우저 안에서만 도는 것이 이 구현의 한계이고, 그래서 데모용
+   코드를 몇 개 심어 둡니다. 그게 없으면 이 기능은 기기 두 대가 있어야
+   눌러 볼 수 있습니다.
+   ================================================================== */
+const INVITE = {
+  KEY: 'girin.invites',
+  ABC: 'ABCDEFGHJKMNPQRSTUVWXYZ23456789',   // 0/O/1/I 는 뺐습니다 — 받아적다 틀립니다
+  LEN: 6,
+
+  all() { return loadJSON(this.KEY, {}); },
+  /** 코드를 등록합니다. → supabase.from('invites').upsert(...) */
+  publish(code, profile) {
+    const a = this.all();
+    a[code] = Object.assign({ at: Date.now() }, profile);
+    saveJSON(this.KEY, a);
+  },
+  /** 코드로 사람을 찾습니다. → supabase.from('invites').select().eq('code', code) */
+  lookup(code) { return this.all()[String(code || '').toUpperCase().trim()] || null; },
+  /** → supabase.from('invites').delete().eq('code', code) */
+  revoke(code) { const a = this.all(); delete a[code]; saveJSON(this.KEY, a); },
+
+  make() {
+    let c = '';
+    for (let i = 0; i < this.LEN; i++) c += this.ABC[Math.floor(Math.random() * this.ABC.length)];
+    return c;
+  },
+  valid(code) {
+    const c = String(code || '').toUpperCase().trim();
+    return c.length === this.LEN && [...c].every((ch) => this.ABC.includes(ch));
+  },
+  /** 내 코드를 만들고 등록합니다. 이미 있으면 프로필만 갱신합니다. */
+  mine() {
+    if (!ROOM.invite || !this.valid(ROOM.invite)) { ROOM.invite = this.make(); saveRoom(); }
+    this.publish(ROOM.invite, {
+      nickname: ROOM.nickname, school: ROOM.school, character: ROOM.character, self: true,
+    });
+    return ROOM.invite;
+  },
+};
+
+/* 데모용 이웃 둘. 기기가 하나뿐이라 이게 없으면 "유효한 코드" 를 넣어
+   볼 방법이 없습니다. 서버가 붙으면 통째로 지웁니다.
+
+   코드에 I·L·O 를 못 쓰는 것은 위 ABC 가 정한 규칙입니다 — 1·I 와 0·O 를
+   받아적다 틀리기 때문입니다. 데모 코드도 같은 규칙을 지켜야 합니다. */
+const DEMO_INVITES = ['GRN234', 'GRN567'];
+(function seedDemoInvites() {
+  const a = INVITE.all();
+  const demo = {
+    [DEMO_INVITES[0]]: { nickname: '연우', school: '연세대학교', character: '기린' },
+    [DEMO_INVITES[1]]: { nickname: '민철', school: '고려대학교', character: '미어캣' },
+  };
+  let changed = false;
+  for (const [code, p] of Object.entries(demo)) {
+    if (!a[code]) { a[code] = Object.assign({ at: Date.now(), demo: true }, p); changed = true; }
+  }
+  if (changed) saveJSON(INVITE.KEY, a);
+})();
+
+/* 지금 누구 방에 있는지. null 이면 내 방입니다. */
+const VISIT = { host: null, code: null };
+
+/* 세션 종료 시 유효 집중 시간에 따라 완주 보상을 계산합니다. */
 /** 이 기기에 쌓인 세션 기록. 없으면 없다고 말합니다. */
 function myStats() {
   let rows = [];
@@ -4091,7 +4960,273 @@ function myStats() {
   return { count: rows.length, total, recov };
 }
 
+/* ==================================================================
+   상점
+
+   아이템 그림이 아직 없습니다. 그래서 **색 블록**으로 세우되, 아이템
+   하나가 가진 정보(칸·이름·값·색)는 실물과 똑같이 갖춰 둡니다. 나중에
+   sprite 필드만 채우면 그림이 색 블록을 대신합니다 — 구조를 나중에
+   고치지 않아도 되게 하려는 것입니다.
+
+   칸(slot)이 하나뿐인 이유: 상의를 두 벌 겹쳐 입을 일이 없습니다.
+   같은 칸의 다른 옷을 입으면 앞엣것이 자동으로 벗겨집니다.
+   ================================================================== */
+const SHOP_CATS = [
+  { id: 'top',    name: '상의' },
+  { id: 'bottom', name: '하의' },
+  { id: 'shoes',  name: '신발' },
+  { id: 'hat',    name: '모자' },
+  { id: 'egg',    name: '알' },
+];
+/* sprite 는 아직 null 입니다. 채워지면 색 블록 대신 그 그림을 씁니다. */
+const SHOP = [
+  { id: 'top-hoodie',  cat: 'top',    name: '후드티',      price: 150, color: '#6B7A8F', sprite: null },
+  { id: 'top-varsity', cat: 'top',    name: '과잠',        price: 220, color: null,      sprite: null,
+    school: true, desc: '내 학교 색이 붙습니다' },
+  { id: 'top-knit',    cat: 'top',    name: '니트',        price: 180, color: '#C08A5E', sprite: null },
+  { id: 'top-shirt',   cat: 'top',    name: '셔츠',        price: 250, color: '#E8EDF2', sprite: null },
+
+  { id: 'bot-jeans',   cat: 'bottom', name: '청바지',      price: 160, color: '#4A6180', sprite: null },
+  { id: 'bot-slacks',  cat: 'bottom', name: '슬랙스',      price: 200, color: '#3E4450', sprite: null },
+  { id: 'bot-shorts',  cat: 'bottom', name: '반바지',      price: 150, color: '#8A9A6B', sprite: null },
+
+  { id: 'sho-sneaker', cat: 'shoes',  name: '운동화',      price: 150, color: '#F0F2F5', sprite: null },
+  { id: 'sho-boots',   cat: 'shoes',  name: '워커',        price: 230, color: '#5A4433', sprite: null },
+  { id: 'sho-slipper', cat: 'shoes',  name: '삼선 슬리퍼', price: 150, color: '#2F3A46', sprite: null },
+
+  { id: 'hat-cap',     cat: 'hat',    name: '볼캡',        price: 100, color: '#2F4E74', sprite: null },
+  { id: 'hat-beanie',  cat: 'hat',    name: '비니',        price: 120, color: '#8E4A52', sprite: null },
+  { id: 'hat-glasses', cat: 'hat',    name: '안경',        price: 200, color: '#3A4652', sprite: null },
+
+  { id: 'egg-turtle',  cat: 'egg',    name: '거북이 알',   price: 800,  color: '#63B87A', sprite: null },
+  { id: 'egg-giraffe', cat: 'egg',    name: '기린 알',     price: 800,  color: '#F0C566', sprite: null },
+  { id: 'egg-meerkat', cat: 'egg',    name: '미어캣 알',   price: 800,  color: '#D8AE84', sprite: null },
+  { id: 'egg-pig',     cat: 'egg',    name: '돼지 알',     price: 2000, color: '#F2A6B2', sprite: null,
+    rare: true, desc: '레어' },
+];
+const SHOP_BY_ID = Object.fromEntries(SHOP.map((i) => [i.id, i]));
+/* 알은 입는 게 아니라 캐릭터가 바뀌는 것이라 칸이 아니라 이름으로 갑니다 */
+const EGG_CHARACTER = {
+  'egg-turtle': '거북이', 'egg-giraffe': '기린',
+  'egg-meerkat': '미어캣', 'egg-pig': '돼지',
+};
+
+const itemColor = (it) => (it.school ? schoolColor() : it.color);
+const owns = (id) => ROOM.owned.includes(id);
+const wearing = (id) => {
+  const it = SHOP_BY_ID[id];
+  return it.cat === 'egg' ? ROOM.character === EGG_CHARACTER[id] : ROOM.worn[it.cat] === id;
+};
+
+/** 왼쪽 미리보기 — 지금 입은 것을 쌓아 보여 줍니다. */
+function shopPreviewHtml() {
+  const layer = (cat, label) => {
+    const id = ROOM.worn[cat];
+    const it = id && SHOP_BY_ID[id];
+    return `<div class="lay">
+      <i style="background:${it ? itemColor(it) : 'var(--surface-3)'}"></i>
+      <span>${label}</span><em>${it ? esc(it.name) : '없음'}</em></div>`;
+  };
+  return `
+    <div class="shop-prev">
+      <div class="doll" style="--jacket:${schoolColor()}">
+        <span class="hat" style="background:${ROOM.worn.hat ? itemColor(SHOP_BY_ID[ROOM.worn.hat]) : 'transparent'}"></span>
+        <span class="head"></span>
+        <span class="top" style="background:${ROOM.worn.top ? itemColor(SHOP_BY_ID[ROOM.worn.top]) : 'var(--line-2)'}"></span>
+        <span class="bottom" style="background:${ROOM.worn.bottom ? itemColor(SHOP_BY_ID[ROOM.worn.bottom]) : 'var(--line-2)'}"></span>
+        <span class="shoes" style="background:${ROOM.worn.shoes ? itemColor(SHOP_BY_ID[ROOM.worn.shoes]) : 'var(--ink-3)'}"></span>
+      </div>
+      <div class="who"><b>${esc(ROOM.nickname)}</b><em>${esc(ROOM.character)}</em></div>
+      <div class="lays">
+        ${layer('hat', '모자')}${layer('top', '상의')}
+        ${layer('bottom', '하의')}${layer('shoes', '신발')}
+      </div>
+      <p class="hint">그림은 아직 색 블록이에요. 자리는 실물과 같습니다.</p>
+    </div>`;
+}
+
+function shopTabHtml(cat) {
+  const items = SHOP.filter((i) => i.cat === cat);
+  const card = (it) => {
+    const have = owns(it.id), on = wearing(it.id);
+    const afford = ROOM.coins >= it.price;
+    const action = !have
+      ? `<button class="act" data-buy="${it.id}"${afford ? '' : ' disabled'}>${it.price}</button>`
+      : on
+        ? `<button class="act ghost" data-off="${it.id}">벗기</button>`
+        : `<button class="act" data-on="${it.id}">입기</button>`;
+    return `<div class="item${on ? ' on' : ''}">
+      <i style="background:${itemColor(it) || 'var(--line-2)'}"></i>
+      <span>${esc(it.name)}${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</span>
+      ${have && !on ? '<u>보유</u>' : ''}
+      ${action}</div>`;
+  };
+  return `<div class="shop">
+    ${shopPreviewHtml()}
+    <div class="shop-list">
+      <div class="shop-coin">가진 코인 <b>${ROOM.coins}</b></div>
+      ${items.map(card).join('')}
+    </div>
+  </div>`;
+}
+
+/* ==================================================================
+   명예의 전당
+
+   서버가 없으니 순위는 **예시 값**입니다. 빈 화면을 보여 주는 것보다
+   낫지만, 진짜인 척해서는 안 됩니다 — 화면 아래에 예시라고 적습니다.
+
+   내 학교만 이 기기에 쌓인 진짜 기록을 더해 얹습니다. 내가 앉은 시간이
+   우리 학교 숫자에 더해지는 것이 이 화면의 요점이니까요.
+   ================================================================== */
+const SEED_RANKING = [
+  { school: '연세대학교',     hours: 12840, recoveries: 41200 },
+  { school: '고려대학교',     hours: 12610, recoveries: 39800 },
+  { school: '서울대학교',     hours: 11930, recoveries: 37400 },
+  { school: '한양대학교',     hours: 9880,  recoveries: 31100 },
+  { school: '성균관대학교',   hours: 9240,  recoveries: 29600 },
+  { school: '중앙대학교',     hours: 8410,  recoveries: 26800 },
+  { school: '경희대학교',     hours: 7960,  recoveries: 25300 },
+  { school: '서강대학교',     hours: 6180,  recoveries: 19700 },
+  { school: '이화여자대학교', hours: 5940,  recoveries: 18900 },
+  { school: '명지대학교',     hours: 4720,  recoveries: 15100 },
+];
+const PAST_SEASONS = [
+  { no: 3, school: '고려대학교', hours: 14210 },
+  { no: 2, school: '연세대학교', hours: 13050 },
+  { no: 1, school: '서울대학교', hours: 11480 },
+];
+
+/** 시즌은 90일. 남은 날이 보여야 "이번 시즌 안에" 라는 말이 성립합니다. */
+function seasonInfo() {
+  const LEN = 90, START = Date.UTC(2026, 0, 5);       // 시즌 4 시작
+  const days = Math.floor((Date.now() - START) / 86400000);
+  const no = 4 + Math.floor(days / LEN);
+  const into = ((days % LEN) + LEN) % LEN;
+  const from = new Date(START + (no - 4) * LEN * 86400000);
+  const to = new Date(from.getTime() + (LEN - 1) * 86400000);
+  const fmt = (d) => (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일';
+  return { no, daysLeft: LEN - into, progress: into / LEN, from: fmt(from), to: fmt(to) };
+}
+
+/** 예시 값에 이 기기의 진짜 기록을 얹어 정렬합니다. */
+function schoolRanking() {
+  const s = myStats();
+  const rows = SEED_RANKING.map((r) => Object.assign({}, r));
+  const mine = rows.find((r) => r.school === ROOM.school);
+  if (mine) {
+    mine.hours += Math.round(s.total / 60);
+    mine.recoveries += s.recov;
+  } else if (ROOM.school) {
+    rows.push({ school: ROOM.school, hours: Math.round(s.total / 60), recoveries: s.recov });
+  }
+  return rows.sort((a, b) => b.hours - a.hours || b.recoveries - a.recoveries);
+}
+
+/* ==================================================================
+   미니게임 1 — 기린 목 펴기
+
+   고개를 숙인 기린이 10초 안에 바른 자세를 찾도록 도와주는 게임입니다.
+   Space 또는 게임 영역 클릭을 연속해서 입력할수록 목이 펴집니다.
+   ================================================================== */
+const GIRAFFE_NECK = {
+  active: false, timer: 0, startedAt: 0, angle: 42, combo: 0, lastTapAt: 0, rewarded: false,
+};
+const GIRAFFE_START_ANGLE = 42;
+const GIRAFFE_TARGET_ANGLE = 4;
+function giraffeNeckHtml() {
+  return `
+    <p>고개 숙인 기린의 목을 10초 안에 펴 주세요.</p>
+    <div class="rows">
+      <div class="row"><span>남은 시간</span><span class="val" id="giraffe-time">10초</span></div>
+      <div class="row"><span>조작</span><span class="val">Space · 클릭</span></div>
+      <div class="row"><span>목표</span><span class="val">목을 끝까지 펴기</span></div>
+    </div>
+    <div class="giraffe-stage" data-do="giraffe-tap" role="button" tabindex="0" aria-label="기린 목 펴기. 클릭해서 목을 펴세요." style="position:relative;height:170px;margin:14px 0;border-radius:14px;background:linear-gradient(180deg,#dce9ef,#f4dfb9);overflow:hidden;cursor:pointer;user-select:none">
+      <div class="giraffe-body" style="position:absolute;left:50%;bottom:12px;width:58px;height:58px;transform:translateX(-50%);border-radius:48% 48% 35% 35%;background:#d7953f;border:4px solid #9b5b2b;box-shadow:inset 10px 0 #edb657,inset -9px 0 #b66d31"></div>
+      <div id="giraffe-neck-group" style="position:absolute;left:calc(50% - 32px);bottom:52px;width:64px;height:110px;transform-origin:50% 100%;transition:transform .12s ease">
+        <div class="giraffe-neck" id="giraffe-neck" style="position:absolute;left:20px;bottom:0;width:24px;height:78px;background:#e8ad50;border:4px solid #9b5b2b;border-bottom:0;border-radius:14px 14px 0 0"><i style="position:absolute;left:4px;top:14px;width:7px;height:7px;border-radius:50%;background:#a96b30;box-shadow:10px 16px #a96b30,0 38px #a96b30,10px 58px #a96b30"></i></div>
+        <div class="giraffe-head" id="giraffe-head" style="position:absolute;left:0;bottom:67px;width:64px;height:40px;background:#e8ad50;border:4px solid #9b5b2b;border-radius:45% 55% 40% 35%"><i style="position:absolute;right:13px;top:14px;width:7px;height:7px;border-radius:50%;background:#2a2520"></i><b style="position:absolute;right:-11px;top:20px;width:16px;height:8px;background:#e8ad50;border:3px solid #9b5b2b;border-left:0;border-radius:0 10px 10px 0"></b><em style="position:absolute;left:10px;top:-12px;width:7px;height:12px;border-left:3px solid #9b5b2b;border-right:3px solid #9b5b2b"></em></div>
+      </div>
+      <span class="giraffe-tap-hint" style="position:absolute;left:50%;bottom:8px;transform:translateX(-50%);padding:3px 9px;border-radius:999px;background:rgba(42,37,32,.72);color:#fff;font-size:12px">여기를 연속 클릭!</span>
+    </div>
+    <div style="margin:14px 0 10px;height:12px;border-radius:999px;background:var(--surface-3);overflow:hidden;border:1px solid var(--line-2)">
+      <i id="giraffe-progress" style="display:block;width:0%;height:100%;background:var(--good);transition:width .12s ease"></i>
+    </div>
+    <p class="hint" id="giraffe-message" aria-live="polite">Space 또는 기린을 클릭해 주세요.</p>
+    <button class="act" data-do="giraffe-restart">다시 시작</button>`;
+}
+function renderGiraffeNeck() {
+  const neck = panelBody.querySelector('#giraffe-neck');
+  const head = panelBody.querySelector('#giraffe-head');
+  const time = panelBody.querySelector('#giraffe-time');
+  const progress = panelBody.querySelector('#giraffe-progress');
+  if (!neck || !head || !time || !progress) return;
+  const elapsed = GIRAFFE_NECK.active ? Date.now() - GIRAFFE_NECK.startedAt : 0;
+  const left = Math.max(0, 10 - Math.ceil(elapsed / 1000));
+  const progressValue = Math.max(0, Math.min(100, ((GIRAFFE_START_ANGLE - GIRAFFE_NECK.angle) / (GIRAFFE_START_ANGLE - GIRAFFE_TARGET_ANGLE)) * 100));
+  const group = panelBody.querySelector('#giraffe-neck-group');
+  if (group) group.style.transform = `rotate(${GIRAFFE_NECK.angle}deg)`;
+  time.textContent = GIRAFFE_NECK.active ? `${left}초` : time.textContent;
+  progress.style.width = `${progressValue}%`;
+}
+function finishGiraffeNeck(success) {
+  GIRAFFE_NECK.active = false;
+  clearInterval(GIRAFFE_NECK.timer);
+  const stage = panelBody.querySelector('.giraffe-stage');
+  const message = panelBody.querySelector('#giraffe-message');
+  const button = panelBody.querySelector('[data-do="giraffe-restart"]');
+  if (success) {
+    if (!GIRAFFE_NECK.rewarded) {
+      GIRAFFE_NECK.rewarded = true;
+      earn(5, '기린 목 펴기 성공');
+    }
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
+    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+  } else if (message) {
+    message.textContent = '시간이 끝났어요. 조금 더 빠르게 연속 입력해 보세요.';
+  }
+  if (button) button.textContent = '다시 하기';
+  renderGiraffeNeck();
+}
+function tickGiraffeNeck() {
+  if (!GIRAFFE_NECK.active) return;
+  const now = Date.now();
+  if (now - GIRAFFE_NECK.lastTapAt > 700) GIRAFFE_NECK.combo = 0;
+  GIRAFFE_NECK.angle = Math.min(GIRAFFE_START_ANGLE, GIRAFFE_NECK.angle + .14);
+  if (GIRAFFE_NECK.angle <= GIRAFFE_TARGET_ANGLE) return finishGiraffeNeck(true);
+  if (now - GIRAFFE_NECK.startedAt >= 10000) return finishGiraffeNeck(false);
+  renderGiraffeNeck();
+}
+function tapGiraffeNeck() {
+  if (!GIRAFFE_NECK.active) return;
+  const now = Date.now();
+  GIRAFFE_NECK.combo = now - GIRAFFE_NECK.lastTapAt <= 700 ? GIRAFFE_NECK.combo + 1 : 1;
+  GIRAFFE_NECK.lastTapAt = now;
+  const lift = Math.min(1.2, .8 + GIRAFFE_NECK.combo * .05);
+  GIRAFFE_NECK.angle = Math.max(GIRAFFE_TARGET_ANGLE, GIRAFFE_NECK.angle - lift);
+  const message = panelBody.querySelector('#giraffe-message');
+  if (message) message.textContent = GIRAFFE_NECK.combo >= 3 ? `${GIRAFFE_NECK.combo} 콤보! 계속 눌러 주세요.` : '좋아요! 목이 펴지고 있어요.';
+  renderGiraffeNeck();
+  if (GIRAFFE_NECK.angle <= GIRAFFE_TARGET_ANGLE) finishGiraffeNeck(true);
+}
+function startGiraffeNeck() {
+  clearInterval(GIRAFFE_NECK.timer);
+  GIRAFFE_NECK.active = true;
+  GIRAFFE_NECK.startedAt = Date.now();
+  GIRAFFE_NECK.angle = GIRAFFE_START_ANGLE;
+  GIRAFFE_NECK.combo = 0;
+  GIRAFFE_NECK.lastTapAt = 0;
+  GIRAFFE_NECK.rewarded = false;
+  GIRAFFE_NECK.timer = setInterval(tickGiraffeNeck, 100);
+  renderGiraffeNeck();
+}
+
 const PANELS = {
+  giraffeNeck: () => ({
+    title: '기린 목 펴기', kind: 'MINI GAME',
+    html: giraffeNeckHtml(),
+  }),
   /* ---- 안내 — 벽에 붙은 표지판이 여는 창 ----
      기능이 아니라 **읽을 것**입니다. 처음 온 사람이 무엇을 하는 곳인지
      알아야 하니 방 안에 두었고, 나머지는 전부 마이페이지에 있습니다. */
@@ -4154,42 +5289,132 @@ const PANELS = {
   },
 
   /* ---- 코인 ---- */
-  coins: () => ({
-    title: '코인', kind: '',
-    html: `
+  coins: () => {
+    const d = coinDay();
+    const a = loadJSON('girin.attend', { last: '', streak: 0 });
+    return {
+      title: '코인', kind: '',
+      html: `
       <div class="stats">
         <div class="stat"><u>가진 코인</u><b>${ROOM.coins}</b></div>
-        <div class="stat"><u>이번 주</u><b>0</b></div>
-        <div class="stat"><u>쓴 코인</u><b>0</b></div>
+        <div class="stat"><u>오늘 번 것</u><b>${d.earned}</b></div>
+        <div class="stat"><u>연속 출석</u><b>${a.streak}<span style="font-size:12px">일</span></b></div>
       </div>
       <h4>어떻게 모으나</h4>
       <div class="rows">
-        <div class="row"><span>세션 완주 <em>길수록 많이</em></span><span class="val">10~60</span></div>
-        <div class="row"><span>회복 성공 <em>한 세션에 다섯 번까지</em></span><span class="val">5</span></div>
-        <div class="row"><span>스트레칭 완주</span><span class="val">10</span></div>
-        <div class="row"><span>출석</span><span class="val">준비 중</span></div>
+        <div class="row"><span>5~14분 세션 완주</span><span class="val">+10</span></div>
+        <div class="row"><span>15~29분 세션 완주</span><span class="val">+30</span></div>
+        <div class="row"><span>30~49분 세션 완주</span><span class="val">+40</span></div>
+        <div class="row"><span>50분 이상 세션 완주</span><span class="val">+60</span></div>
+        <div class="row"><span>회복 성공 <em>한 번마다</em></span><span class="val">+${COIN.perRecovery}</span></div>
+        <div class="row"><span>회복 보상 상한</span><span class="val">세션당 5회</span></div>
+        <div class="row"><span>출석 인정</span><span class="val">10분 이상</span></div>
+        <div class="row"><span>출석 보너스</span><span class="val">3·7·14·30·60일</span></div>
       </div>
+      <p class="hint">코인은 실제 세션과 회복 행동이 확정될 때 지급돼요.</p>
       <h4 style="margin-top:18px">어디에 쓰나</h4>
       <div class="rows">
-        <div class="row"><span>꾸미기 아이템 <em>학생회관 상점</em></span><span class="val">준비 중</span></div>
-        <div class="row"><span>새 알 <em>다른 캐릭터</em></span><span class="val">준비 중</span></div>
+        <div class="row"><span>옷 <em>상의·하의·신발</em></span><span class="val">${PRICE.wear[0]}~${PRICE.wear[1]}</span></div>
+        <div class="row"><span>모자·안경</span><span class="val">${PRICE.acc[0]}~${PRICE.acc[1]}</span></div>
+        <div class="row"><span>알 <em>일반</em></span><span class="val">${PRICE.egg}</span></div>
+        <div class="row"><span>알 <em>레어</em></span><span class="val">${PRICE.eggRare}</span></div>
       </div>
       <div class="note">코인은 <b>행동</b>으로만 쌓입니다. 자세를 잘 잡았다고 더 주지
       않아요 — 그러면 목이 긴 사람이 유리한 게임이 됩니다.</div>`,
+    };
+  },
+
+  /* ---- 상점 — 학생회관 미르 ----
+     왼쪽에 지금 내 캐릭터, 오른쪽에 살 것. 미리보기가 없으면 사고 나서야
+     어떻게 생겼는지 알게 되고, 그러면 사는 일이 도박이 됩니다.
+
+     아이템 그림은 아직 없습니다. 색 블록으로 세워 두되 **자리와 구조는
+     실물과 같게** 만들어, 나중에 스프라이트만 갈아 끼우면 되게 했습니다. */
+  shop: () => ({
+    title: '상점', kind: '미르',
+    tabs: SHOP_CATS.map((c) => c.name),
+    tabHtml: SHOP_CATS.map((c) => shopTabHtml(c.id)),
   }),
+
+  /* ---- 명예의 전당 — 학생회관 하연 ----
+     학교끼리 겨룹니다. 개인 순위를 앞에 두면 "나는 몇 등인가" 가 먼저
+     보이고, 그건 자세를 점수로 만드는 것과 같은 실수입니다. */
+  hall: () => {
+    const season = seasonInfo();
+    const rank = schoolRanking();
+    const mine = rank.findIndex((r) => r.school === ROOM.school);
+    const row = (r, i) => `
+      <div class="rank${r.school === ROOM.school ? ' me' : ''}">
+        <u>${i + 1}</u>
+        <i style="background:${schoolColorOf(r.school)}"></i>
+        <span>${esc(r.school)}${r.school === ROOM.school ? ' <em>우리 학교</em>' : ''}</span>
+        <b>${r.hours.toLocaleString()}<small>시간</small></b>
+        <b class="sub">${r.recoveries.toLocaleString()}<small>회복</small></b>
+      </div>`;
+    return {
+      title: '명예의 전당', kind: '하연',
+      html: `
+      <div class="stats">
+        <div class="stat"><u>시즌</u><b>${season.no}</b></div>
+        <div class="stat"><u>남은 날</u><b>${season.daysLeft}<span style="font-size:12px">일</span></b></div>
+        <div class="stat"><u>우리 학교</u><b>${mine < 0 ? '—' : mine + 1 + '위'}</b></div>
+      </div>
+      <div class="bar"><i style="width:${Math.round(season.progress * 100)}%"></i></div>
+      <p class="hint">${season.from} ~ ${season.to}</p>
+
+      <h4 style="margin-top:18px">이번 시즌 학교 순위</h4>
+      <div class="ranks">${rank.map(row).join('')}</div>
+
+      <h4 style="margin-top:20px">역대 시즌 1위</h4>
+      <div class="frames">${PAST_SEASONS.map((p) => `
+        <div class="frame">
+          <div class="plate" style="background:${schoolColorOf(p.school)};
+               color:${readableOn(schoolColorOf(p.school))}">시즌 ${p.no}</div>
+          <b>${esc(p.school)}</b>
+          <em>${p.hours.toLocaleString()}시간</em>
+        </div>`).join('')}</div>
+
+      <div class="note">순위는 <b>앉은 시간과 회복 횟수</b>로만 매깁니다. 자세를
+      점수로 매기지 않아요 — 그러면 목이 긴 사람이 유리한 게임이 됩니다.
+      아래 숫자는 서버가 붙기 전까지 <b>예시 값</b>입니다.</div>`,
+    };
+  },
+
+  /* ---- 출석 — 학생회관 도윤 ---- */
+  attend: () => {
+    const a = loadJSON('girin.attend', { last: '', streak: 0 });
+    const d = coinDay();
+    const s = myStats();
+    return {
+      title: '출석', kind: '도윤',
+      html: `
+      <div class="stats">
+        <div class="stat"><u>연속 출석</u><b>${a.streak}<span style="font-size:12px">일</span></b></div>
+        <div class="stat"><u>오늘 번 코인</u><b>${d.earned}</b></div>
+        <div class="stat"><u>지금까지 세션</u><b>${s.count}</b></div>
+      </div>
+      <div class="rows">
+        <div class="row"><span>오늘 출석</span><span class="val">${a.last === today() ? '완료' : '아직'}</span></div>
+        <div class="row"><span>출석 인정</span><span class="val">10분 이상 세션</span></div>
+        <div class="row"><span>3일 연속</span><span class="val">+10P</span></div>
+        <div class="row"><span>7일 연속</span><span class="val">+25P</span></div>
+        <div class="row"><span>14일 연속</span><span class="val">+50P</span></div>
+        <div class="row"><span>30일 연속</span><span class="val">+100P</span></div>
+        <div class="row"><span>60일 연속</span><span class="val">+180P</span></div>
+      </div>
+      <div class="note">10분 이상 앉아 있는 세션을 완료하면 출석으로 기록돼요.
+      하루라도 비면 연속일은 1일부터 다시 세고, 마일스톤 보너스는 단계별 한 번만 받아요.</div>`,
+    };
+  },
 
   /* ---- 마이페이지 — 기능은 전부 여기 ----
      물건마다 창을 달았더니 어디를 눌러야 할지 알 수 없었습니다.
      한 곳에 모으고 탭으로 나눕니다. */
   settings: () => {
     const s = myStats();
-    const goal = 50, done = Math.min(s.total, goal);
-    if (!ROOM.invite) {
-      const abc = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-      let code = '';
-      for (let i = 0; i < 6; i++) code += abc[Math.floor(Math.random() * abc.length)];
-      ROOM.invite = code; saveRoom();
-    }
+    /* 마이페이지를 열 때마다 내 코드를 다시 등록합니다 — 닉네임이나
+       학교를 바꿨으면 찾아온 친구가 옛 이름을 보게 되니까요. */
+    INVITE.mine();
     const chips = (group, list) => `<div class="chips" data-group="${group}">${
       list.map(([v, n]) => `<button class="chip" data-v="${v}"
         aria-pressed="${ROOM[group] === v}">${n}</button>`).join('')}</div>`;
@@ -4210,11 +5435,18 @@ const PANELS = {
             <span class="val">${esc(ROOM.nickname)}</span><svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></div>
           <div class="row tap" tabindex="0" role="button" data-edit="school">
             <span>학교 <em>${ROOM.schoolVerifiedAt ? esc(ROOM.schoolVerifiedAt) + " 인증됨" : "미인증"}</em></span>
-            <span class="val">${esc(ROOM.school)}</span><svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></div>
+            <span class="val school-val">${esc(ROOM.school)}</span><svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></div>
           <div class="row"><span>캐릭터 <em>알에서 나온 첫 캐릭터</em></span>
-            <span class="val">${esc(ROOM.character)} · 변경 준비 중</span></div>
+            <span class="val">${esc(ROOM.character)}</span></div>
           <div class="row"><span>코인</span><span class="val">${ROOM.coins}</span></div>
         </div>
+        <h4 style="margin-top:18px">학교 고르기</h4>
+        <p class="hint" style="margin:-4px 0 10px">고르면 과잠과 이름표에 그 학교
+        색이 붙습니다. <b>인증은 따로예요</b> — 위 학교 줄에서 학교 메일을 넣어야
+        인증으로 칩니다.</p>
+        <div class="chips" data-group="school">${SCHOOLS.map((s) => `
+          <button class="chip" data-v="${esc(s.name)}" aria-pressed="${ROOM.school === s.name}">
+            <i style="background:${s.color}"></i>${esc(s.name)}</button>`).join('')}</div>
         <div class="note">자세에 점수를 매기지 않습니다. 얼마나 앉았고 몇 번
         돌아왔는지만 셉니다 — 목이 긴 사람이 유리한 게임을 만들지 않기 위해서예요.</div>`,
         /* 자세 기준 */
@@ -4236,24 +5468,40 @@ const PANELS = {
         기준값도 이 기기에만 남습니다.</div>`,
 
         /* 초대 */
-        `<p>이 코드를 받은 친구는 같은 자리에 앉아 함께 세션을 진행할 수 있어요.</p>
+        `<h4>내 코드</h4>
+        <p style="margin-bottom:10px">이 코드를 받은 친구는 내 기숙사로 찾아올 수 있어요.</p>
         <div class="code"><b>${esc(ROOM.invite)}</b>
           <button class="act" data-do="copy">복사</button></div>
-        <div class="rows">
-          <div class="row"><span>초대 인원 <em>한 방에 최대 10명</em></span><span class="val">0 / 10</span></div>
-          <div class="row"><span>유효 기간 <em>새로 만들면 이전 코드는 끊깁니다</em></span><span class="val">24시간</span></div>
-        </div>
-        <div style="margin-top:14px">
+        <div style="margin:-4px 0 18px">
           <button class="act ghost" data-do="regen">코드 새로 만들기</button>
-        </div>`,
+        </div>
+
+        <h4>친구 코드로 찾아가기</h4>
+        <div class="edit" style="border-bottom:0;padding-bottom:4px">
+          <input id="invite-in" type="text" maxlength="6" inputmode="latin"
+            placeholder="영문·숫자 6자" aria-label="친구 초대 코드"
+            style="text-transform:uppercase;letter-spacing:.18em;font-weight:700">
+          <button class="act" data-do="visit">찾아가기</button>
+        </div>
+        <p class="hint" id="invite-msg" role="status">기기가 하나뿐이라
+        <b>${DEMO_INVITES[0]}</b> · <b>${DEMO_INVITES[1]}</b> 두 개를 데모용으로 넣어 뒀어요.</p>
+
+        <div class="note">지금은 코드가 <b>이 브라우저 안에만</b> 있습니다. 다른
+        기기에서 만든 코드는 아직 찾을 수 없어요 — 서버가 붙으면 그때
+        저장소만 갈아 끼웁니다.</div>`,
 
         /* 설정 */
         `<div class="rows">
-          <div class="row"><span>배경 음악</span><span class="val">켬</span></div>
-          <div class="row"><span>효과음</span><span class="val">켬</span></div>
+          <div class="row"><span>배경 음악 <em>장소마다 다른 앰비언트</em></span>
+            <button class="toggle" data-toggle="bgm" aria-pressed="${SOUND.bgm}"><i></i></button></div>
+          <div class="row"><span>효과음 <em>문 · 앉기 · 코인</em></span>
+            <button class="toggle" data-toggle="sfx" aria-pressed="${SOUND.sfx}"><i></i></button></div>
           <div class="row"><span>이동 <em>WASD 또는 방향키</em></span><span class="val">기본</span></div>
           <div class="row"><span>상호작용</span><span class="val">Space</span></div>
+          <div class="row"><span>미니맵 <em>전체 지도 · 눌러서 이동</em></span><span class="val">M</span></div>
         </div>
+        <p class="hint">소리는 브라우저 정책상 화면을 한 번 누르거나 키를 눌러야
+        납니다. 그전까지 조용한 것은 고장이 아니에요.</p>
         <div class="note">카메라 영상과 관절 좌표는 어떤 서버에도 보내지 않습니다.
         나가는 것은 “몇 분 앉았는지” 같은 숫자뿐이에요.</div>`,
       ],
@@ -4261,7 +5509,7 @@ const PANELS = {
   },
 };
 
-let panelOpen = false;
+let panelOpen = false, activePanelKey = '';
 function openPanel(key) {
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
@@ -4288,12 +5536,24 @@ function openPanel(key) {
 
   panelEl.classList.add('on');
   panelOpen = true;
+  activePanelKey = key;
   keys.clear();
+  if (key === 'giraffeNeck') startGiraffeNeck();
   panelEl.querySelector('header button').focus();
 }
-function closePanel() { panelEl.classList.remove('on'); panelOpen = false; }
+function closePanel() {
+  if (GIRAFFE_NECK.active) {
+    GIRAFFE_NECK.active = false;
+    clearInterval(GIRAFFE_NECK.timer);
+  }
+  panelEl.classList.remove('on'); panelOpen = false; activePanelKey = '';
+}
 panelEl.querySelector('header button').addEventListener('click', closePanel);
 panelEl.addEventListener('click', (e) => { if (e.target === panelEl) closePanel(); });
+panelBody.addEventListener('click', (e) => {
+  if (e.target.closest('[data-do="giraffe-restart"]')) return startGiraffeNeck();
+  if (e.target.closest('[data-do="giraffe-tap"]')) tapGiraffeNeck();
+});
 
 /* ---- 값 고치기 ----
    업라이트 마이페이지의 편집 흐름을 그대로 옮겼습니다. 다만 모달을
@@ -4306,7 +5566,8 @@ panelEl.addEventListener('click', (e) => { if (e.target === panelEl) closePanel(
 const EDITS = {
   nickname: {
     label: '닉네임', hint: '2~12자', max: 12,
-    validate: (v) => v.trim().length >= 2 && v.trim().length <= 12,
+    validate: (v) => !nicknameValidation(v),
+    error: nicknameValidation,
     apply: (v) => { ROOM.nickname = v.trim(); },
   },
   school: {
@@ -4321,20 +5582,34 @@ const EDITS = {
       ROOM.school = SCHOOL_BY_DOMAIN[host] || host.replace(/\.ac\.kr$/, '') + ' (미확인)';
       const d = new Date();
       ROOM.schoolVerifiedAt = d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월';
+      applySchoolColor();
     },
     note: '인증 메일을 보내는 것은 서버가 붙은 뒤예요. 지금은 적어 두기만 합니다.',
   },
 };
 
-/* 도메인 → 학교. 늘려야 하는 표지만, 없으면 도메인을 그대로 보여 주고
-   "(미확인)" 을 붙입니다 — 없는 학교를 지어내지 않습니다. */
-const SCHOOL_BY_DOMAIN = {
-  'mju.ac.kr': '명지대학교', 'korea.ac.kr': '고려대학교',
-  'yonsei.ac.kr': '연세대학교', 'snu.ac.kr': '서울대학교',
-  'skku.edu': '성균관대학교', 'hanyang.ac.kr': '한양대학교',
-  'cau.ac.kr': '중앙대학교', 'khu.ac.kr': '경희대학교',
-  'ewha.ac.kr': '이화여자대학교', 'sogang.ac.kr': '서강대학교',
-};
+/* 닉네임 필터 — 화면 표시용 원문은 보존하고, 검사할 때만 정규화합니다.
+   공백·기호를 제거해 "시 발", "시.발" 같은 간단한 우회를 막습니다.
+   짧은 목록으로 시작하고, 오탐 사례가 나오면 목록을 조정합니다. */
+const NICKNAME_BLOCKLIST = [
+  '씨발', '시발', 'ㅅㅂ', 'ㅆㅂ', '개새끼', '개새', '새끼',
+  '병신', '븅신', 'ㅂㅅ', '지랄', '니미', '좆', '존나', '좃',
+  '보지', '자지', '창녀', 'fuck', 'shit', 'bitch', 'asshole',
+];
+function normalizeNicknameForFilter(value) {
+  return value.normalize('NFKC').toLowerCase()
+    .replace(/[\s\p{P}\p{S}_]+/gu, '');
+}
+function nicknameValidation(value) {
+  const nickname = value.trim();
+  if (nickname.length < 2 || nickname.length > 12) return '닉네임은 2~12자로 입력해 주세요.';
+  if(/[\u0000-\u001F\u007F]/.test(nickname)) return '사용할 수 없는 문자가 있어요.';
+  const normalized = normalizeNicknameForFilter(nickname);
+  if (NICKNAME_BLOCKLIST.some((word) => normalized.includes(word))) {
+    return '비속어가 포함된 닉네임은 사용할 수 없어요.';
+  }
+  return '';
+}
 
 function openEdit(key, row) {
   const spec = EDITS[key];
@@ -4355,8 +5630,17 @@ function openEdit(key, row) {
   }
   input.focus(); input.select();
   box.dataset.key = key;
+  const error = document.createElement('p');
+  error.className = 'edit-error';
+  error.setAttribute('aria-live', 'polite');
+  box.append(error);
   const save = box.querySelector('[data-do="edit-save"]');
-  const sync = () => { save.disabled = !spec.validate(input.value); save.style.opacity = save.disabled ? .45 : 1; };
+  const sync = () => {
+    const message = spec.error ? spec.error(input.value) : (spec.validate(input.value) ? '' : '입력값을 확인해 주세요.');
+    save.disabled = Boolean(message);
+    save.style.opacity = save.disabled ? .45 : 1;
+    error.textContent = message;
+  };
   input.addEventListener('input', sync);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !save.disabled) save.click();
@@ -4367,6 +5651,13 @@ function openEdit(key, row) {
 
 /* 창 안의 조작 — 위임 하나로 받습니다 */
 panelBody.addEventListener('keydown', (e) => {
+  /* 코드를 치고 엔터. 버튼까지 탭으로 옮겨 가게 하면 여섯 자 넣는 일이
+     열 번 누르는 일이 됩니다. */
+  if (e.key === 'Enter' && e.target.id === 'invite-in') {
+    e.preventDefault();
+    panelBody.querySelector('[data-do="visit"]')?.click();
+    return;
+  }
   if (e.key !== 'Enter' && e.key !== ' ') return;
   const tap = e.target.closest('.row.tap');
   if (!tap) return;
@@ -4380,6 +5671,35 @@ panelBody.addEventListener('click', (e) => {
     [...chip.parentNode.children].forEach((c) => c.setAttribute('aria-pressed', 'false'));
     chip.setAttribute('aria-pressed', 'true');
     ROOM[group] = chip.dataset.v; saveRoom();
+    /* 학교를 고르면 과잠·이름표·강조색이 그 자리에서 바뀝니다.
+       인증 여부는 건드리지 않습니다 — 고르는 것과 인증은 다른 일입니다. */
+    if (group === 'school') applySchoolColor();
+    return;
+  }
+  /* ---- 상점 ---- */
+  const buy = e.target.closest('[data-buy]');
+  if (buy) {
+    const it = SHOP_BY_ID[buy.dataset.buy];
+    if (!it) return;
+    if (!spend(it.price)) { sfx('deny'); return; }
+    ROOM.owned.push(it.id);
+    equip(it.id);                        // 산 것은 바로 입혀 줍니다
+    saveRoom(); sfx('buy'); reopenShop();
+    return;
+  }
+  const on = e.target.closest('[data-on]');
+  if (on) { equip(on.dataset.on); saveRoom(); sfx('sit'); reopenShop(); return; }
+  const off = e.target.closest('[data-off]');
+  if (off) { unequip(off.dataset.off); saveRoom(); sfx('sit'); reopenShop(); return; }
+
+  const tog = e.target.closest('[data-toggle]');
+  if (tog) {
+    const k = tog.dataset.toggle;
+    SOUND[k] = !SOUND[k];
+    tog.setAttribute('aria-pressed', String(SOUND[k]));
+    saveSound(); syncSound();
+    /* 켠 순간 소리가 나야 켜진 걸 압니다 */
+    if (SOUND[k]) { wakeAudio(); if (k === 'sfx') sfx('door'); }
     return;
   }
   const tap = e.target.closest('.row.tap');
@@ -4387,6 +5707,10 @@ panelBody.addEventListener('click', (e) => {
   const act = e.target.closest('[data-do]');
   if (!act) return;
   const what = act.dataset.do;
+  if (what === 'giraffe-restart') {
+    startGiraffeNeck();
+    return;
+  }
   if (what === 'edit-save' || what === 'edit-cancel') {
     const box = act.closest('.edit');
     if (what === 'edit-save') {
@@ -4413,9 +5737,75 @@ panelBody.addEventListener('click', (e) => {
     act.textContent = '복사됨';
     setTimeout(() => { act.textContent = '복사'; }, 1400);
   } else if (what === 'regen') {
-    ROOM.invite = null; saveRoom(); openPanel('mailbox');
+    /* 옛 코드는 끊습니다. 새로 만들었는데 옛 코드로도 들어와지면
+       "새로 만들기" 가 아무 뜻이 없습니다. */
+    if (ROOM.invite) INVITE.revoke(ROOM.invite);
+    ROOM.invite = null; saveRoom(); INVITE.mine();
+    openPanel('settings');
+    panelTabs.querySelectorAll('button')[2].click();
+  } else if (what === 'visit') {
+    const input = panelBody.querySelector('#invite-in');
+    const msg = panelBody.querySelector('#invite-msg');
+    const r = visitRoom(input ? input.value : '');
+    if (!r.ok && msg) {
+      msg.textContent = r.msg;
+      msg.style.color = 'var(--warn)';
+      input?.focus(); input?.select();
+      sfx('deny');
+    }
   }
 });
+
+/* 같은 칸의 다른 옷을 입으면 앞엣것은 자동으로 벗겨집니다 —
+   상의를 두 벌 겹쳐 입을 일이 없습니다. */
+function equip(id) {
+  const it = SHOP_BY_ID[id];
+  if (!it || !owns(id)) return;
+  if (it.cat === 'egg') ROOM.character = EGG_CHARACTER[id] || ROOM.character;
+  else ROOM.worn[it.cat] = id;
+}
+function unequip(id) {
+  const it = SHOP_BY_ID[id];
+  if (!it || it.cat === 'egg') return;   // 알은 벗을 수 없습니다. 다른 알로 바꿀 뿐입니다
+  if (ROOM.worn[it.cat] === id) delete ROOM.worn[it.cat];
+}
+/** 산 뒤에도 보던 칸에 그대로 남아야 합니다 — 매번 상의로 튕기면
+    신발 세 켤레를 사는 데 열 번을 눌러야 합니다. */
+function reopenShop() {
+  const tabs = [...panelTabs.querySelectorAll('button')];
+  const active = Math.max(0, tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true'));
+  openPanel('shop');
+  panelTabs.querySelectorAll('button')[active]?.click();
+}
+
+/* ---- 친구 방으로 ----
+   코드를 확인하고, 맞으면 그 사람의 기숙사로 넘어갑니다. 틀린 이유마다
+   다른 문장을 돌려줍니다 — "잘못된 코드입니다" 하나로 묶으면 오타인지
+   없는 코드인지 사용자가 알 수 없습니다. */
+function visitRoom(code) {
+  const c = String(code || '').toUpperCase().trim();
+  if (!c) return { ok: false, msg: '코드를 넣어 주세요.' };
+  if (!INVITE.valid(c))
+    return { ok: false, msg: '코드는 영문·숫자 6자예요. 0·O·1·I 는 쓰지 않습니다.' };
+  if (c === ROOM.invite)
+    return { ok: false, msg: '내 코드예요. 친구에게 받은 코드를 넣어 주세요.' };
+  const p = INVITE.lookup(c);
+  if (!p)
+    return { ok: false, msg: '그런 코드가 없어요. 오타이거나, 친구가 코드를 새로 만들었을 수 있어요.' };
+
+  VISIT.host = p; VISIT.code = c;
+  applySchoolColor();                    // 방 소품이 친구 학교 색으로
+  closePanel();
+  enterZone('dorm', 3, 5);
+  return { ok: true, msg: p.nickname + '님의 기숙사' };
+}
+function leaveVisit() {
+  if (!VISIT.host) return;
+  VISIT.host = null; VISIT.code = null;
+  applySchoolColor();
+  enterZone('dorm', 3, 5);
+}
+document.getElementById('visit-out').addEventListener('click', leaveVisit);
 
 /* 설정 버튼 — 미니룸에서만 */
 /* 코인 — 값이 바뀌면 한 번 튕겨서 알려 줍니다. 숫자만 조용히 바뀌면
@@ -4426,6 +5816,15 @@ function paintCoins(pop) {
   coinNum.textContent = ROOM.coins;
   if (!pop) return;
   coinBtn.classList.remove('pop'); void coinBtn.offsetWidth; coinBtn.classList.add('pop');
+}
+/* 왜 받았는지를 그 자리에서 한 줄로 말합니다. 숫자만 늘면 어디서 받은
+   건지 모르고, 모르면 다시 하게 만들지 못합니다. */
+function coinToast(amount, why) {
+  const t = document.createElement('div');
+  t.className = 'coin-toast';
+  t.innerHTML = '<b>+' + amount + '</b>' + esc(why);
+  document.body.append(t);
+  setTimeout(() => t.remove(), 2200);
 }
 coinBtn.addEventListener('click', () => openPanel('coins'));
 paintCoins(false);
@@ -4439,6 +5838,21 @@ function endSession() {
   if (SESSION.ended) return;
   if (player.sitting) stand();
   SESSION.ended = true;
+  /* 보상·출석은 월드 체류 시간이 아니라 실제로 의자에 앉아 있던 시간으로 계산합니다. */
+  const mins = Math.floor(SESSION.seatedMs / 60000);
+  const completionCoins = sessionCompletionCoins(mins);
+  if (completionCoins) earn(completionCoins, `${mins}분 세션 완주`);
+  if (mins >= 10) {
+    const attendance = markAttendance();
+    if (attendance.milestone) {
+      earn(attendance.milestone.points, `${attendance.streak}일 연속 출석`);
+    }
+  }
+  /* 이번 세션을 기록에 남깁니다 — 마이페이지·명예의 전당이 이걸 읽습니다 */
+  const rows = loadJSON('girin.sessions', []);
+  rows.push({ at: Date.now(), minutes: Math.round(mins),
+              seated: Math.round(SESSION.seatedMs / 60000), recoveries: LIVE.recoveries });
+  saveJSON('girin.sessions', rows.slice(-200));
   sessBox.classList.add('done');
   sessEnd.textContent = '회고 보기';
   openPanel('retro');
@@ -4448,10 +5862,12 @@ function newSession() {
   SESSION.seatedMs = 0; SESSION.seatedAt = 0; SESSION.ended = false;
   LIVE.goodMs = 0; LIVE.warnMs = 0; LIVE.badMs = 0;
   LIVE.recoveries = 0; LIVE.wasBad = false;
+  LIVE.rewardedRecoveries = 0;
   sessBox.classList.remove('done');
   sessEnd.textContent = '세션 종료';
   closePanel();
 }
+
 sessEnd.addEventListener('click', () => (SESSION.ended ? openPanel('retro') : endSession()));
 
 const gearBtn = document.getElementById('gear');
@@ -4502,6 +5918,8 @@ function update(dt) {
     동점을 그대로 두면 sort 가 불안정해 매 프레임 순서가 뒤집힙니다. */
 function sortKey(foot, x) { return foot * 4096 + x; }
 
+const DRAW_ITEMS = [];
+
 function draw() {
   drawCount = 0;
   /* 지도 밖 여백. 페이지가 밝아졌으니 여기도 밝아야 액자가 안 생깁니다. */
@@ -4511,23 +5929,11 @@ function draw() {
   const x1 = Math.min(zone.w - 1, Math.ceil((camX + VIEW_W) / T));
   const y1 = Math.min(zone.h - 1, Math.ceil((camY + VIEW_H) / T));
 
-  if (zone.floor) {
-    /* 실내는 방 전체가 한 장입니다. 타일을 반복하면 격자가 눈에 띄고,
-       널판 이음새를 어긋나게 놓을 수도 없습니다. */
-    ctx.drawImage(zone.floor, -camX, -camY);
-    drawCount++;
-  } else {
-    /* 캠퍼스도 바닥은 한 장입니다. 그 위에 포장 오토타일만 얹으면
-       길 가장자리는 시트가 그려 주고 잔디는 격자 없이 이어집니다. */
-    if (zone.ground) { ctx.drawImage(zone.ground, -camX, -camY); drawCount++; }
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-      const dx = x * T - camX, dy = y * T - camY;
-      if (!zone.ground) blitU(zone.base[at(zone, x, y)], dx, dy);
-      const mat = zone.over[at(zone, x, y)];
-      if (mat) blitU(autoTile(zone, x, y, mat), dx, dy);
-      drawCount += mat ? 2 : 1;
-    }
-  }
+  /* 바닥은 실내든 야외든 한 장입니다 — 야외 포장은 bakeGround 가 잔디 위에
+     미리 얹어 둡니다. 예전에는 야외만 칸마다 오토타일을 다시 골라 그렸고,
+     그것이 광장이 실내보다 다섯 배 느렸던 이유입니다. */
+  const floor = zone.floor || zone.ground;
+  if (floor) { ctx.drawImage(floor, -camX, -camY); drawCount++; }
 
   /* 손으로 그린 실내 벽. 바닥 위, 소품 아래에 깝니다 — Kenney 벽돌
      위를 덮어 겉과 속의 결을 맞춥니다. */
@@ -4544,8 +5950,9 @@ function draw() {
   for (const p of zone.portals) ctx.fillRect(p.x * T - camX, p.y * T - camY, p.w * T, p.h * T);
   ctx.restore();
 
-  /* y 로 정렬해 겹칩니다. 없으면 캐릭터가 건물 앞에 붙어 평면이 됩니다. */
-  const items = [];
+  /* y 로 정렬해 겹칩니다. 없으면 캐릭터가 건물 앞에 붙어 평면이 됩니다.
+     배열은 프레임마다 새로 만들지 않고 비워 씁니다. */
+  const items = DRAW_ITEMS; items.length = 0;
   for (const p of zone.props) {
     const d = PROP[p.kind];
     if (p.x > x1 + 3 || p.x + d.w < x0 - 1 || p.y > y1 + 3 || p.y + d.h < y0 - 1) continue;
@@ -4608,6 +6015,34 @@ function draw() {
 
 }
 
+/* ---- 과잠 ----
+   캐릭터 넉 장(아래·미사용·위·옆)이 시트에서 4×3 블록으로 붙어 있습니다.
+   그 블록만 한 번 떠서 몸통 줄을 학교 색으로 덮어 둡니다.
+
+   source-atop 을 쓰는 이유는, 사각형으로 덮되 **캐릭터가 그려진 칸에만**
+   묻어야 하기 때문입니다. 그냥 칠하면 캐릭터 옆 빈칸까지 색띠가 됩니다.
+
+   학교가 바뀌면 jacketCanvas 를 비우고 다음 프레임에 다시 굽습니다 —
+   매 프레임 다시 만들면 광장에서 고친 것을 여기서 도로 까먹습니다. */
+const CHAR_SHEET_COL = 23, CHAR_SHEET_W = 4, CHAR_SHEET_H = 3;
+let jacketCanvas = null;
+function playerSheet() {
+  if (jacketCanvas) return jacketCanvas;
+  const c = canvasOf(CHAR_SHEET_W, CHAR_SHEET_H), g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.drawImage(urban, CHAR_SHEET_COL * T, 0, c.width, c.height, 0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'source-atop';
+  const col = schoolColor();
+  for (let r = 0; r < CHAR_SHEET_H; r++) {
+    px(g, 0, r * T + 8, c.width, 5, col);
+    px(g, 0, r * T + 8, c.width, 1, 'rgba(255,255,255,.28)');   // 어깨선
+    px(g, 0, r * T + 12, c.width, 1, 'rgba(0,0,0,.22)');        // 밑단 그늘
+  }
+  g.globalCompositeOperation = 'source-over';
+  jacketCanvas = c;
+  return c;
+}
+
 function drawPlayer() {
   const dx = Math.round(player.x - T / 2 - camX), dy = Math.round(player.y - T - camY);
   ctx.save();
@@ -4618,42 +6053,181 @@ function drawPlayer() {
   const col = DIR_COL[player.dir];
   const rowI = player.moving ? WALK_ROW[player.frame & 3] : 0;
   const idx = CHAR_BASE + rowI * U_COLS + col;
-  const sx = (idx % U_COLS) * T, sy = ((idx / U_COLS) | 0) * T;
+  /* 시트가 아니라 과잠을 입힌 블록에서 뜹니다. 블록이 시트 23열부터라
+     가로 자리를 그만큼 당깁니다. */
+  const sheet = playerSheet();
+  const sx = (idx % U_COLS - CHAR_SHEET_COL) * T, sy = ((idx / U_COLS) | 0) * T;
   const bob = player.moving && !player.sitting ? (Math.floor(player.anim * 2) % 2 ? -1 : 0) : 0;
 
   if (player.dir === 'side' && player.flip) {
     ctx.save(); ctx.translate(dx + T, dy + bob); ctx.scale(-1, 1);
-    ctx.drawImage(urban, sx, sy, T, T, 0, 0, T, T); ctx.restore();
+    ctx.drawImage(sheet, sx, sy, T, T, 0, 0, T, T); ctx.restore();
   } else {
-    ctx.drawImage(urban, sx, sy, T, T, dx, dy + bob, T, T);
+    ctx.drawImage(sheet, sx, sy, T, T, dx, dy + bob, T, T);
   }
 
 }
 
 const promptEl = document.getElementById('prompt');
+const nameTagEl = document.getElementById('nameTag');
 const headTimerEl = document.getElementById('headTimer');
 const headTimerVal = headTimerEl.querySelector('b');
 function syncPrompt() {
-  const r = cv.getBoundingClientRect();
+  /* 캔버스 자리는 창 크기가 바뀔 때만 움직입니다. 매 프레임 재면 그때마다
+     레이아웃을 다시 계산하게 만들어, 그림과 상관없는 비용이 붙습니다. */
+  const r = canvasRect();
   const hx = r.left + (player.x - camX) * SCALE;
   const hy = r.top + (player.y - T - camY) * SCALE;
-  /* 타이머가 먼저 머리 위에 앉고, 안내는 그 위로 비켜 섭니다.
-     같은 자리에 두면 말 걸 때마다 시간이 가려집니다. */
+  /* 머리 위에 세 겹이 쌓입니다 — 이름표 · 타이머 · 안내.
+     아래에서부터 차곡차곡 올려야 서로 안 가립니다. */
   const live = SESSION.startedAt && !SESSION.ended;
+  let top = hy - 2;
+
+  nameTagEl.classList.toggle('on', !dialogOpen);
+  if (!dialogOpen) {
+    if (nameTagEl.textContent !== ROOM.nickname) nameTagEl.textContent = ROOM.nickname;
+    nameTagEl.style.left = hx + 'px';
+    nameTagEl.style.top = top + 'px';
+    top -= 18;
+  }
+
   headTimerEl.classList.toggle('on', !!live && !dialogOpen);
-  if (live) {
+  if (live && !dialogOpen) {
     headTimerVal.textContent = sessionText();
     headTimerEl.style.left = hx + 'px';
-    headTimerEl.style.top = hy - 4 + 'px';
+    headTimerEl.style.top = top + 'px';
+    top -= 18;
   }
+
   if (!nearby || dialogOpen) { promptEl.classList.remove('on'); return; }
   promptEl.textContent = nearby.kind === 'sit' ? 'Space · 앉기'
     : nearby.kind === 'stand' ? 'Space · 일어나기'
     : 'Space · ' + nearby.npc.name.split(' · ')[0];
   promptEl.style.left = hx + 'px';
-  promptEl.style.top = hy - (live ? 24 : 6) + 'px';
+  promptEl.style.top = top - 2 + 'px';
   promptEl.classList.add('on');
 }
+
+/* ==================================================================
+   미니맵
+
+   캠퍼스는 46×42 이고 화면에는 20×12 만 들어옵니다. 즉 **한 번에 보이는
+   것이 지도의 8분의 1** 입니다. 그래서 처음 온 사람은 도서관이 동쪽에
+   있다는 것을 걸어 보고서야 압니다.
+
+   전체를 한 장으로 미리 그려 두고(bakeMinimap), M 으로 펼칩니다.
+   프레임마다 다시 그리는 것은 나와 카메라 상자뿐입니다 — 광장에서 고친
+   것을 여기서 도로 까먹지 않으려는 것입니다.
+
+   여기서 장소를 누르면 그리로 갑니다. 지도가 "어디에 뭐가 있나" 만
+   말하고 데려다주지는 않으면, 결국 다시 걸어야 합니다.
+   ================================================================== */
+/* 배율 10 — 46×42 칸이 460×420 이 됩니다. 4 로 뒀더니 지도(184×168)가
+   장소 이름표보다 작아서 이름끼리 겹쳐 읽히지 않았습니다. 지도는 이름이
+   안 겹칠 만큼은 커야 지도입니다. */
+const MINI = { on: false, scale: 10, canvas: null, base: null, spots: [] };
+let minimapDirty = true;
+
+/* 장소마다 지도 위의 자리와, 눌렀을 때 갈 곳. */
+const PLACES = [
+  { id: 'dorm',     to: ['dorm', 3, 5],      x: 22, y: 6,  name: '기숙사', key: '1' },
+  { id: 'mainhall', to: ['mainhall', 18, 25], x: 7,  y: 19, name: '본관',   key: '2' },
+  { id: 'library',  to: ['library', 18, 25],  x: 38, y: 19, name: '도서관', key: '3' },
+  { id: 'union',    to: ['union', 16, 21],    x: 23, y: 33, name: '학생회관', key: '4' },
+  { id: 'campus',   to: ['campus', 22, 25],   x: 22, y: 21, name: '중앙 광장', key: '5' },
+  { id: 'field',    to: ['campus', 8, 8],     x: 8,  y: 7,  name: '운동장', key: '6' },
+  { id: 'arcade',   to: ['campus', 38, 8],    x: 38, y: 7,  name: '미니게임존', key: '7' },
+  { id: 'lake',     to: ['campus', 6, 29],    x: 6,  y: 35, name: '호수', key: '8' },
+  { id: 'clubs',    to: ['campus', 40, 29],   x: 40, y: 35, name: '동아리 거리', key: '9' },
+];
+
+/** 캠퍼스 바닥을 줄여 한 장으로 굽습니다. 한 번만 합니다. */
+function bakeMinimap() {
+  const m = ZONES.campus;
+  const S = MINI.scale;
+  const c = document.createElement('canvas');
+  c.width = m.w * S; c.height = m.h * S;
+  const g = c.getContext('2d');
+  /* 여기서만 부드럽게 줄입니다. 월드는 픽셀을 지켜야 하지만 지도는
+     축소판이라, 각 잡힌 픽셀보다 형태가 뭉개지지 않는 쪽이 낫습니다. */
+  g.imageSmoothingEnabled = true;
+  /* 구워 둔 야외 바닥을 그대로 줄입니다 — 지도와 세계가 어긋나지 않습니다 */
+  if (m.ground) g.drawImage(m.ground, 0, 0, c.width, c.height);
+  g.imageSmoothingEnabled = false;
+
+  /* 건물은 지도 위에서 덩어리로 보여야 합니다. 축소한 그림만으로는
+     잔디와 지붕이 같은 얼룩이 됩니다. */
+  for (const p of m.props) {
+    const d = PROP[p.kind];
+    if (!d || d.w < 6) continue;                   // 건물만
+    const X = p.x * S, Y = p.y * S, W = d.w * S, H = (d.h - 1) * S;
+    g.fillStyle = 'rgba(255,255,255,.62)'; g.fillRect(X, Y, W, H);       // 지붕
+    g.fillStyle = 'rgba(42,35,32,.55)'; g.fillRect(X, Y + H, W, S);      // 정면
+    g.strokeStyle = 'rgba(42,35,32,.45)'; g.lineWidth = 1;
+    g.strokeRect(X + .5, Y + .5, W - 1, H + S - 1);
+  }
+  MINI.base = c;
+}
+
+function toggleMinimap(force) {
+  MINI.on = force === undefined ? !MINI.on : force;
+  document.getElementById('minimap').classList.toggle('on', MINI.on);
+  if (MINI.on) drawMinimap();
+}
+
+function drawMinimap() {
+  if (!MINI.base) bakeMinimap();
+  const cvs = MINI.canvas;
+  const g = cvs.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.clearRect(0, 0, cvs.width, cvs.height);
+  g.drawImage(MINI.base, 0, 0);
+
+  const S = MINI.scale;
+  /* 지금 보고 있는 만큼을 상자로 표시합니다. 캠퍼스 밖(실내)일 때는
+     상자가 뜻이 없으므로 건너뜁니다. */
+  if (zoneId === 'campus') {
+    g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = 1;
+    g.strokeRect(Math.round(camX / T * S) + .5, Math.round(camY / T * S) + .5,
+                 Math.round(VIEW_W / T * S), Math.round(VIEW_H / T * S));
+    g.fillStyle = '#FF6B52';
+    g.fillRect(Math.round(player.x / T * S) - 2, Math.round(player.y / T * S) - 2, 4, 4);
+    g.fillStyle = '#FFF';
+    g.fillRect(Math.round(player.x / T * S) - 1, Math.round(player.y / T * S) - 1, 2, 2);
+  }
+}
+
+const minimapEl = document.getElementById('minimap');
+MINI.canvas = document.getElementById('minimap-cv');
+{
+  const m = ZONES.campus;
+  MINI.canvas.width = m.w * MINI.scale;
+  MINI.canvas.height = m.h * MINI.scale;
+  /* 장소 단추를 지도 위에 얹습니다. 캔버스에 글자를 그리면 누를 수
+     없고, 누를 수 없으면 지도가 아니라 그림입니다. */
+  const holder = document.getElementById('minimap-spots');
+  holder.style.width = MINI.canvas.width + 'px';
+  holder.style.height = MINI.canvas.height + 'px';
+  PLACES.forEach((p) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'spot';
+    b.style.left = (p.x * MINI.scale) + 'px';
+    b.style.top = (p.y * MINI.scale) + 'px';
+    b.innerHTML = '<i></i><span>' + p.name + '</span><kbd>' + p.key + '</kbd>';
+    b.addEventListener('click', () => travel(p));
+    holder.append(b);
+  });
+}
+
+/** 지도에서 고른 곳으로 갑니다. */
+function travel(p) {
+  toggleMinimap(false);
+  enterZone(p.to[0], p.to[1], p.to[2]);
+}
+
+document.getElementById('minimap-close').addEventListener('click', () => toggleMinimap(false));
+minimapEl.addEventListener('click', (e) => { if (e.target === minimapEl) toggleMinimap(false); });
 
 const el = {
   fpsGame: document.getElementById('fps-game'),
@@ -4666,6 +6240,8 @@ const el = {
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
   update(dt); draw(); syncPrompt();
+  /* 미니맵은 펼쳐져 있을 때만 다시 그립니다 */
+  if (MINI.on) drawMinimap();
   gameFrames++;
   if (now - fpsClock >= 500) {
     gameFps = Math.round(gameFrames * 1000 / (now - fpsClock));
@@ -4679,7 +6255,6 @@ function frame(now) {
     el.lm.textContent = LIVE.recoveries;
   }
   if (SESSION.startedAt) {
-    const s = 0;
     el.sitTime.textContent = sessionText();
     if (!SESSION.ended) sessTime.textContent = sessionText();
   }
@@ -4687,9 +6262,25 @@ function frame(now) {
 }
 
 let ready = 0;
-function maybeStart() {
-  if (++ready < 3) return;
+let started = false;
+async function maybeStart() {
+  if (started || ++ready < 3) return;
+  started = true;
+  /* 표지판·NPC 이름을 canvas 에 굽기 전에 실제 한글 폰트를 준비합니다.
+     폰트가 늦게 도착하면 첫 렌더가 폴백 글꼴로 캐시되어 글자가 깨집니다. */
+  if (document.fonts) {
+    await Promise.allSettled([
+      document.fonts.load('8px Galmuri7'),
+      document.fonts.load('10px Galmuri9'),
+      document.fonts.load('12px Galmuri11'),
+      document.fonts.load('14px "Pretendard Variable"'),
+    ]);
+    await document.fonts.ready;
+  }
   school = downscale3(school48);
+  /* 야외 바닥을 굽습니다. 시트가 와야 오토타일을 그릴 수 있어 여기입니다. */
+  Object.values(ZONES).forEach(bakeGround);
+  applySchoolColor();          // 과잠·이름표·소품·강조색
   document.getElementById('boot').classList.add('gone');
   enterZone('dorm', 3, 5);
   requestAnimationFrame(frame);
@@ -4705,3 +6296,5 @@ urban.src = 'assets/urban.png';
 city.src = 'assets/city.png';
 school48.src = 'assets/school48.png';
 </script>
+</body>
+</html>

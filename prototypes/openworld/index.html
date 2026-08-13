@@ -448,6 +448,7 @@
     color: var(--ink); font: inherit; font-size: 13.5px;
   }
   #panel .edit input:focus { outline: 2px solid var(--coral-600); outline-offset: 1px; }
+  #panel .edit-error { margin: 6px 0 0; font-size: 11.5px; color: var(--coral-700); }
   #panel .hint { margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3); }
 
   #panel .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 15px; }
@@ -5432,7 +5433,8 @@ panelEl.addEventListener('click', (e) => { if (e.target === panelEl) closePanel(
 const EDITS = {
   nickname: {
     label: '닉네임', hint: '2~12자', max: 12,
-    validate: (v) => v.trim().length >= 2 && v.trim().length <= 12,
+    validate: (v) => !nicknameValidation(v),
+    error: nicknameValidation,
     apply: (v) => { ROOM.nickname = v.trim(); },
   },
   school: {
@@ -5453,6 +5455,29 @@ const EDITS = {
   },
 };
 
+/* 닉네임 필터 — 화면 표시용 원문은 보존하고, 검사할 때만 정규화합니다.
+   공백·기호를 제거해 "시 발", "시.발" 같은 간단한 우회를 막습니다.
+   짧은 목록으로 시작하고, 오탐 사례가 나오면 목록을 조정합니다. */
+const NICKNAME_BLOCKLIST = [
+  '씨발', '시발', 'ㅅㅂ', 'ㅆㅂ', '개새끼', '개새', '새끼',
+  '병신', '븅신', 'ㅂㅅ', '지랄', '니미', '좆', '존나', '좃',
+  '보지', '자지', '창녀', 'fuck', 'shit', 'bitch', 'asshole',
+];
+function normalizeNicknameForFilter(value) {
+  return value.normalize('NFKC').toLowerCase()
+    .replace(/[\s\p{P}\p{S}_]+/gu, '');
+}
+function nicknameValidation(value) {
+  const nickname = value.trim();
+  if (nickname.length < 2 || nickname.length > 12) return '닉네임은 2~12자로 입력해 주세요.';
+  if(/[\u0000-\u001F\u007F]/.test(nickname)) return '사용할 수 없는 문자가 있어요.';
+  const normalized = normalizeNicknameForFilter(nickname);
+  if (NICKNAME_BLOCKLIST.some((word) => normalized.includes(word))) {
+    return '비속어가 포함된 닉네임은 사용할 수 없어요.';
+  }
+  return '';
+}
+
 function openEdit(key, row) {
   const spec = EDITS[key];
   if (!spec || !row) return;
@@ -5472,8 +5497,17 @@ function openEdit(key, row) {
   }
   input.focus(); input.select();
   box.dataset.key = key;
+  const error = document.createElement('p');
+  error.className = 'edit-error';
+  error.setAttribute('aria-live', 'polite');
+  box.append(error);
   const save = box.querySelector('[data-do="edit-save"]');
-  const sync = () => { save.disabled = !spec.validate(input.value); save.style.opacity = save.disabled ? .45 : 1; };
+  const sync = () => {
+    const message = spec.error ? spec.error(input.value) : (spec.validate(input.value) ? '' : '입력값을 확인해 주세요.');
+    save.disabled = Boolean(message);
+    save.style.opacity = save.disabled ? .45 : 1;
+    error.textContent = message;
+  };
   input.addEventListener('input', sync);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !save.disabled) save.click();

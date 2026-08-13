@@ -1,4 +1,9 @@
-<title>기린캠퍼스 — 오픈월드 프로토타입</title>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>기린캠퍼스 — 오픈월드 프로토타입</title>
 
 <style>
   /* ==================================================================
@@ -730,6 +735,9 @@
   }
   #boot.gone { opacity: 0; pointer-events: none; }
 </style>
+
+</head>
+<body>
 
 <div id="stage"><canvas id="world"></canvas></div>
 
@@ -3894,7 +3902,7 @@ function canStand(px, py) {
 function enterZone(id, sx, sy) {
   /* 세션은 여기서 한 번만 시작합니다. 존을 옮겨 다녀도 이어집니다 —
      캠퍼스 안에 있는 동안이 하나의 세션입니다. */
-  if (!SESSION.startedAt) { SESSION.startedAt = Date.now(); sessionRewards(); }
+  if (!SESSION.startedAt) { SESSION.startedAt = Date.now(); }
   zoneId = id; zone = ZONES[id];
   player.x = sx * T + T / 2; player.y = sy * T + T;
   /* 짧게 둡니다. 문 바로 안쪽에 서므로, 돌아서면 곧바로 다시 나갈 수
@@ -4402,7 +4410,7 @@ const LIVE = {
   on: false, smoother: null, arb: null, profile: null, zone: null,
   state: 'idle', msg: '측정 준비',
   frames: 0, seen: 0,
-  goodMs: 0, warnMs: 0, badMs: 0, recoveries: 0, lastTick: 0, wasBad: false,
+  goodMs: 0, warnMs: 0, badMs: 0, recoveries: 0, rewardedRecoveries: 0, lastTick: 0, wasBad: false,
 };
 
 const STATE_COLOR = { good: '#2E9E5B', warning: '#D98324', bad: '#E0483A', idle: '#9A8E88' };
@@ -4423,7 +4431,10 @@ function setState(kind, msg) {
     LIVE.recoveries++; LIVE.wasBad = false;
     /* 돌아온 것에 줍니다. 굽지 않고 버틴 것이 아니라 **돌아온 행동**이
        이 앱이 만들려는 습관입니다. */
-    earn(COIN.perRecovery, '회복 성공');
+    if (LIVE.rewardedRecoveries < COIN.maxRewardedRecoveries) {
+      earn(COIN.perRecovery, '회복 성공');
+      LIVE.rewardedRecoveries++;
+    }
   }
 
   LIVE.state = kind;
@@ -4743,6 +4754,13 @@ if (!ROOM.worn || typeof ROOM.worn !== 'object') ROOM.worn = {};
 function saveRoom() {
   try { localStorage.setItem('girin.room', JSON.stringify(ROOM)); } catch { /* 무시 */ }
 }
+/* 초기 UTF-8 선언이 없던 버전에서 저장된 닉네임은 replacement character
+   (�)를 포함할 수 있습니다. 이름표는 DOM 텍스트라 폰트를 바꿔도 복구되지
+   않으므로, 깨진 저장값만 안전한 기본값으로 한 번 교정합니다. */
+if (typeof ROOM.nickname !== 'string' || ROOM.nickname.includes('\uFFFD')) {
+  ROOM.nickname = '익명의 기린';
+  saveRoom();
+}
 
 function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
@@ -4759,20 +4777,41 @@ function esc(s) {
    그리고 왔다는 사실에만 줍니다 — 자세로 주면 목이 긴 사람이 유리한
    게임이 됩니다.
 
-   하루 상한이 있는 이유는 켜 두기만 해도 쌓이는 구조라서입니다.
-   상한이 없으면 오래 켜 둔 사람이 이기는 게임이 됩니다. */
+   코인은 세션 종료와 회복 성공처럼 실제 행동이 확정될 때만 지급합니다. */
 const COIN = {
-  perMinute: 2,        // 세션 1분당
   perRecovery: 5,      // 회복 성공 1회
-  finish: 30,          // 세션 완주 — 25분 이상
-  finishMin: 25,
-  streak: 10,          // 연속 출석 하루
-  firstToday: 20,      // 하루 첫 세션
-  dailyCap: 300,       // 하루 획득 상한
+  maxRewardedRecoveries: 5,
 };
+const SESSION_COIN_REWARDS = [
+  { min: 50, points: 60 },
+  { min: 30, points: 40 },
+  { min: 15, points: 30 },
+  { min: 5, points: 10 },
+];
+const STREAK_MILESTONES = [
+  { days: 3, points: 10 },
+  { days: 7, points: 25 },
+  { days: 14, points: 50 },
+  { days: 30, points: 100 },
+  { days: 60, points: 180 },
+];
 const PRICE = { wear: [150, 250], acc: [100, 200], egg: 800, eggRare: 2000 };
 
-const today = () => new Date().toISOString().slice(0, 10);
+function kstDateKey(at = Date.now()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(at);
+}
+const today = () => kstDateKey();
+function kstDateDaysAgo(days) {
+  return kstDateKey(Date.now() - days * 86400000);
+}
+function sessionCompletionCoins(minutes) {
+  return SESSION_COIN_REWARDS.find((reward) => minutes >= reward.min)?.points || 0;
+}
+function streakMilestone(days) {
+  return STREAK_MILESTONES.find((milestone) => milestone.days === days) || null;
+}
 function loadJSON(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 }
@@ -4790,9 +4829,7 @@ function coinDay() {
 function earn(amount, why) {
   if (amount <= 0) return 0;
   const d = coinDay();
-  const room = Math.max(0, COIN.dailyCap - d.earned);
-  const give = Math.min(amount, room);
-  if (give <= 0) return 0;
+  const give = amount;
   d.earned += give; saveJSON('girin.coinday', d);
   ROOM.coins += give; saveRoom();
   paintCoins(true);
@@ -4806,15 +4843,22 @@ function spend(amount) {
   return true;
 }
 
-/** 출석. 어제도 왔으면 이어지고, 하루라도 비면 1 부터 다시 셉니다. */
+/** 출석. 10분 이상 유효 집중 세션을 완료했을 때만 호출합니다. */
 function markAttendance() {
-  const a = loadJSON('girin.attend', { last: '', streak: 0 });
+  const a = loadJSON('girin.attend', { last: '', streak: 0, claimed: [] });
+  a.claimed = Array.isArray(a.claimed) ? a.claimed : [];
   const t = today();
-  if (a.last === t) return { first: false, streak: a.streak };
-  const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  if (a.last === t) return { first: false, streak: a.streak, milestone: null };
+  const y = kstDateDaysAgo(1);
   a.streak = a.last === y ? a.streak + 1 : 1;
   a.last = t; saveJSON('girin.attend', a);
-  return { first: true, streak: a.streak };
+  const milestone = streakMilestone(a.streak);
+  if (milestone && !a.claimed.includes(milestone.days)) {
+    a.claimed.push(milestone.days);
+    saveJSON('girin.attend', a);
+    return { first: true, streak: a.streak, milestone };
+  }
+  return { first: true, streak: a.streak, milestone: null };
 }
 
 /* ==================================================================
@@ -4887,18 +4931,7 @@ const DEMO_INVITES = ['GRN234', 'GRN567'];
 /* 지금 누구 방에 있는지. null 이면 내 방입니다. */
 const VISIT = { host: null, code: null };
 
-/* 세션이 도는 동안 1분마다 줍니다. 끝나고 한꺼번에 주면 버는 게 눈에
-   안 보이고, 그러면 모으는 재미가 회고 화면에만 갇힙니다. */
-let coinMinutePaid = 0;
-function coinTick() {
-  if (!SESSION.startedAt || SESSION.ended) return;
-  const mins = Math.floor(sessionMinutes());
-  if (mins > coinMinutePaid) {
-    earn((mins - coinMinutePaid) * COIN.perMinute, '세션 ' + mins + '분');
-    coinMinutePaid = mins;
-  }
-}
-
+/* 세션 종료 시 유효 집중 시간에 따라 완주 보상을 계산합니다. */
 /** 이 기기에 쌓인 세션 기록. 없으면 없다고 말합니다. */
 function myStats() {
   let rows = [];
@@ -5137,7 +5170,6 @@ const PANELS = {
   coins: () => {
     const d = coinDay();
     const a = loadJSON('girin.attend', { last: '', streak: 0 });
-    const left = Math.max(0, COIN.dailyCap - d.earned);
     return {
       title: '코인', kind: '',
       html: `
@@ -5148,15 +5180,16 @@ const PANELS = {
       </div>
       <h4>어떻게 모으나</h4>
       <div class="rows">
-        <div class="row"><span>세션 <em>1분마다</em></span><span class="val">${COIN.perMinute}</span></div>
-        <div class="row"><span>회복 성공 <em>한 번마다</em></span><span class="val">${COIN.perRecovery}</span></div>
-        <div class="row"><span>세션 완주 <em>${COIN.finishMin}분 이상</em></span><span class="val">+${COIN.finish}</span></div>
-        <div class="row"><span>하루 첫 세션</span><span class="val">+${COIN.firstToday}</span></div>
-        <div class="row"><span>연속 출석 <em>하루마다</em></span><span class="val">+${COIN.streak}</span></div>
-        <div class="row"><span>하루 획득 상한</span><span class="val">${COIN.dailyCap}</span></div>
+        <div class="row"><span>5~14분 세션 완주</span><span class="val">+10</span></div>
+        <div class="row"><span>15~29분 세션 완주</span><span class="val">+30</span></div>
+        <div class="row"><span>30~49분 세션 완주</span><span class="val">+40</span></div>
+        <div class="row"><span>50분 이상 세션 완주</span><span class="val">+60</span></div>
+        <div class="row"><span>회복 성공 <em>한 번마다</em></span><span class="val">+${COIN.perRecovery}</span></div>
+        <div class="row"><span>회복 보상 상한</span><span class="val">세션당 5회</span></div>
+        <div class="row"><span>출석 인정</span><span class="val">10분 이상</span></div>
+        <div class="row"><span>출석 보너스</span><span class="val">3·7·14·30·60일</span></div>
       </div>
-      <div class="bar"><i style="width:${Math.round(d.earned / COIN.dailyCap * 100)}%"></i></div>
-      <p class="hint">오늘 ${left}코인 더 받을 수 있어요.</p>
+      <p class="hint">코인은 실제 세션과 회복 행동이 확정될 때 지급돼요.</p>
       <h4 style="margin-top:18px">어디에 쓰나</h4>
       <div class="rows">
         <div class="row"><span>옷 <em>상의·하의·신발</em></span><span class="val">${PRICE.wear[0]}~${PRICE.wear[1]}</span></div>
@@ -5240,11 +5273,15 @@ const PANELS = {
       </div>
       <div class="rows">
         <div class="row"><span>오늘 출석</span><span class="val">${a.last === today() ? '완료' : '아직'}</span></div>
-        <div class="row"><span>하루 첫 세션</span><span class="val">+${COIN.firstToday}</span></div>
-        <div class="row"><span>연속 출석 <em>이어질 때마다</em></span><span class="val">+${COIN.streak}</span></div>
+        <div class="row"><span>출석 인정</span><span class="val">10분 이상 세션</span></div>
+        <div class="row"><span>3일 연속</span><span class="val">+10P</span></div>
+        <div class="row"><span>7일 연속</span><span class="val">+25P</span></div>
+        <div class="row"><span>14일 연속</span><span class="val">+50P</span></div>
+        <div class="row"><span>30일 연속</span><span class="val">+100P</span></div>
+        <div class="row"><span>60일 연속</span><span class="val">+180P</span></div>
       </div>
-      <div class="note">캠퍼스에 들어오면 그날 출석으로 칩니다. 하루라도 비면
-      연속은 1일부터 다시 세요.</div>`,
+      <div class="note">10분 이상 앉아 있는 세션을 완료하면 출석으로 기록돼요.
+      하루라도 비면 연속일은 1일부터 다시 세고, 마일스톤 보너스는 단계별 한 번만 받아요.</div>`,
     };
   },
 
@@ -5630,9 +5667,16 @@ function endSession() {
   if (SESSION.ended) return;
   if (player.sitting) stand();
   SESSION.ended = true;
-  /* 완주 보상. 25분은 이 앱이 "한 판" 으로 치는 길이입니다. */
-  const mins = sessionMinutes();
-  if (mins >= COIN.finishMin) earn(COIN.finish, '세션 완주');
+  /* 보상·출석은 월드 체류 시간이 아니라 실제로 의자에 앉아 있던 시간으로 계산합니다. */
+  const mins = Math.floor(SESSION.seatedMs / 60000);
+  const completionCoins = sessionCompletionCoins(mins);
+  if (completionCoins) earn(completionCoins, `${mins}분 세션 완주`);
+  if (mins >= 10) {
+    const attendance = markAttendance();
+    if (attendance.milestone) {
+      earn(attendance.milestone.points, `${attendance.streak}일 연속 출석`);
+    }
+  }
   /* 이번 세션을 기록에 남깁니다 — 마이페이지·명예의 전당이 이걸 읽습니다 */
   const rows = loadJSON('girin.sessions', []);
   rows.push({ at: Date.now(), minutes: Math.round(mins),
@@ -5647,21 +5691,12 @@ function newSession() {
   SESSION.seatedMs = 0; SESSION.seatedAt = 0; SESSION.ended = false;
   LIVE.goodMs = 0; LIVE.warnMs = 0; LIVE.badMs = 0;
   LIVE.recoveries = 0; LIVE.wasBad = false;
-  coinMinutePaid = 0;
+  LIVE.rewardedRecoveries = 0;
   sessBox.classList.remove('done');
   sessEnd.textContent = '세션 종료';
   closePanel();
-  sessionRewards();
 }
 
-/* 하루 첫 세션과 연속 출석. 세션이 **시작될 때** 줍니다 — 끝까지
-   가야 받는다면 오늘 처음 왔다는 사실에 주는 뜻이 없어집니다. */
-function sessionRewards() {
-  const a = markAttendance();
-  if (!a.first) return;
-  earn(COIN.firstToday, '오늘 첫 세션');
-  if (a.streak > 1) earn(COIN.streak, a.streak + '일 연속 출석');
-}
 sessEnd.addEventListener('click', () => (SESSION.ended ? openPanel('retro') : endSession()));
 
 const gearBtn = document.getElementById('gear');
@@ -6051,14 +6086,26 @@ function frame(now) {
   if (SESSION.startedAt) {
     el.sitTime.textContent = sessionText();
     if (!SESSION.ended) sessTime.textContent = sessionText();
-    coinTick();
   }
   requestAnimationFrame(frame);
 }
 
 let ready = 0;
-function maybeStart() {
-  if (++ready < 3) return;
+let started = false;
+async function maybeStart() {
+  if (started || ++ready < 3) return;
+  started = true;
+  /* 표지판·NPC 이름을 canvas 에 굽기 전에 실제 한글 폰트를 준비합니다.
+     폰트가 늦게 도착하면 첫 렌더가 폴백 글꼴로 캐시되어 글자가 깨집니다. */
+  if (document.fonts) {
+    await Promise.allSettled([
+      document.fonts.load('8px Galmuri7'),
+      document.fonts.load('10px Galmuri9'),
+      document.fonts.load('12px Galmuri11'),
+      document.fonts.load('14px "Pretendard Variable"'),
+    ]);
+    await document.fonts.ready;
+  }
   school = downscale3(school48);
   /* 야외 바닥을 굽습니다. 시트가 와야 오토타일을 그릴 수 있어 여기입니다. */
   Object.values(ZONES).forEach(bakeGround);
@@ -6078,3 +6125,5 @@ urban.src = 'assets/urban.png';
 city.src = 'assets/city.png';
 school48.src = 'assets/school48.png';
 </script>
+</body>
+</html>

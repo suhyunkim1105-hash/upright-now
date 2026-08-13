@@ -27,3 +27,5 @@ incoming-assets/
 # public/ 은 그대로 dist/ 로 복사되므로, 여기 남은 번들은 배포마다 함께 나갑니다.
 public/assets/*.js
 public/assets/*.css
+# 프로토타입 단독 시연본은 빌드 산출물입니다. 원본은 index.html 입니다.
+prototypes/**/standalone.html

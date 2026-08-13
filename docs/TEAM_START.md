@@ -345,13 +345,32 @@ AI 세션 회고만 예외입니다. `VITE_ENABLE_AI_REPORT`, `AI_REPORT_ENABLED
 
 | 항목 | 값 |
 |---|---|
-| 폰트 | **Pretendard** (없으면 Inter → 시스템 폰트 순) |
+| 폰트 | **Wanted Sans Variable** (저장소에 포함, OFL-1.1). 없으면 Pretendard → Inter → 시스템 폰트 순 |
 | 카드 모서리 | `--radius-card` `1.25rem` |
 | 큰 카드 모서리 | `--radius-card-lg` `1.75rem` |
 | 카드 그림자 | `--shadow-card` — 낮고 넓게 |
 | 강조 글로우 | `--shadow-glow-pink` / `-coral` / `-green` |
 
 한국어가 단어 중간에서 잘리지 않도록 `word-break: keep-all` 이 전역 적용돼 있습니다.
+
+### 폰트
+
+**Wanted Sans Variable** 을 저장소에 직접 담아 씁니다 (`public/fonts/wanted-sans/`).
+외부 CDN을 쓰지 않으므로 네트워크가 막힌 환경에서도 같은 화면이 나옵니다.
+
+| 항목 | 값 |
+|---|---|
+| 라이선스 | SIL Open Font License 1.1 — `public/fonts/wanted-sans/OFL.txt` |
+| 출처 | https://github.com/wanteddev/wanted-sans (v1.0.3) |
+| 형식 | 가변 폰트 woff2, 유니코드 구간별 92개 subset |
+| 가변 축 | `font-weight` **400~1000**. 400 보다 얇은 값은 400 으로 잘립니다 |
+| 로딩 | `index.html` 의 stylesheet 링크. `font-display: swap` |
+
+**subset 으로 잘려 있어서** 브라우저는 화면에 실제로 쓰인 글자가 속한 조각만
+내려받습니다. 전체 2.2MB 이지만 한 화면에서 실제로 오가는 양은 보통 100~300KB 입니다.
+라틴(`split.90`)과 자주 쓰는 한글(`split.88`)은 `preload` 로 미리 받습니다.
+
+**`font-weight: 300` 같은 값을 쓰지 마세요.** 이 폰트에는 400 미만이 없습니다.
 
 > 이 값들을 왜 이렇게 정했는지(설계 의도)는
 > [docs/archive/12_DESIGN_SYSTEM.md](archive/12_DESIGN_SYSTEM.md) 에 있습니다.
@@ -496,8 +515,11 @@ npm run test
 | [CLAUDE.md](../CLAUDE.md) | AI 코딩 도구용 짧은 안내 — 읽을 순서·금지 5줄·담당 표 |
 | [docs/AI_HANDOFF.md](AI_HANDOFF.md) | 기술 상세 인수인계 — 자세 판정 파이프라인, 데이터 흐름 |
 | [docs/14_DATA_PRIVACY_SECURITY.md](14_DATA_PRIVACY_SECURITY.md) | 개인정보 처리 원칙 — **꼭 읽어 주세요** |
-| [docs/20_DECISION_LOG.md](20_DECISION_LOG.md) | 왜 이렇게 결정했는지 기록 |
+| [docs/DECISIONS.md](DECISIONS.md) | 왜 이렇게 결정했는지 — 검토한 대안과 재검토 조건까지 |
+| [docs/ARCHITECTURE.md](ARCHITECTURE.md) | 시스템 구조·데이터 흐름·환경변수·배포 |
+| [docs/CODEX_HANDOFF.md](CODEX_HANDOFF.md) | 작업 인수인계 — 지금 상태, 남은 일, 바로 시작할 다음 단계 |
 | [docs/21_RESEARCH_BASIS.md](21_RESEARCH_BASIS.md) | 자세 판정 근거 조사 — CVA 지표를 쓰지 않는 이유, 개인 기준 방식을 택한 배경 (자세 작업 시 참고) |
+| [docs/22_PRODUCT_SPEC_V2.md](22_PRODUCT_SPEC_V2.md) | **다음 개정 방향** — 2026-08-04 기획 회의 정리. 현재 코드와의 차이, 불변조건 충돌 4건, 미결 10건 |
 | [docs/archive/](archive/) | 초기 기획 문서 (숫자는 현재와 다름) |
 
 ### 이것만은 지켜 주세요 — 개인정보

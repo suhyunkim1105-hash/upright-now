@@ -4,6 +4,27 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <!--
+      Wanted Sans Variable (OFL-1.1) — 본문 서체.
+      유니코드 구간별로 잘린 92개 subset 이라, 브라우저는 화면에 실제로 쓰인
+      글자가 속한 조각만 내려받습니다. 라이선스 원문은 같은 폴더의 OFL.txt.
+    -->
+    <link rel="stylesheet" href="/fonts/wanted-sans/WantedSansVariable.css" />
+    <!-- 90 = 라틴·숫자·문장부호, 88 = 사용 빈도가 높은 한글 음절. 화면 어디에나 쓰입니다. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/wanted-sans/woff2/WantedSansVariable.split.90.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/wanted-sans/woff2/WantedSansVariable.split.88.woff2"
+      crossorigin
+    />
     <title>UpRight Now — 자세를 펴고, 오늘의 목표를 끝내는 시간</title>
     <meta
       name="description"

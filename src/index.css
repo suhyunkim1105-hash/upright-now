@@ -34,9 +34,13 @@
   --color-warning: #d7a62a;
   --color-muted: #68645e;
 
-  /* 타이포 */
-  --font-sans: Pretendard, Inter, system-ui, -apple-system, 'Segoe UI',
-    'Malgun Gothic', sans-serif;
+  /*
+   * 타이포 — Wanted Sans Variable (OFL-1.1)
+   * 가변 축은 400~1000 입니다. 400 보다 얇은 값을 쓰면 400 으로 잘립니다.
+   * 웹폰트 로딩은 index.html 의 stylesheet 링크가 담당합니다.
+   */
+  --font-sans: 'Wanted Sans Variable', 'Wanted Sans', Pretendard, Inter,
+    system-ui, -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif;
 
   /* 모서리 */
   --radius-card: 1.25rem;

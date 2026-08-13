@@ -9,6 +9,21 @@ export const STREAK_MILESTONES = [
   { days: 30, points: 150, badge: true },
 ] as const
 
+export type StreakRewardEventType =
+  | 'streak_3'
+  | 'streak_5'
+  | 'streak_7'
+  | 'streak_14'
+  | 'streak_30'
+
+/** 출석 마일스톤을 서버 보상 원장의 고정 이벤트 타입으로 변환합니다. */
+export function streakRewardEventType(days: number): StreakRewardEventType | null {
+  if (days === 3 || days === 5 || days === 7 || days === 14 || days === 30) {
+    return `streak_${days}` as StreakRewardEventType
+  }
+  return null
+}
+
 export interface StreakInfo {
   current: number
   best: number

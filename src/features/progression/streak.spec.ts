@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { computeStreak, STREAK_MILESTONES } from './streak'
+import {
+  computeStreak,
+  STREAK_MILESTONES,
+  streakRewardEventType,
+} from './streak'
 import { useProgressionStore } from './progressionStore'
 import { dayDiff, kstDateKey } from '@/lib/time/kst'
 
@@ -73,5 +77,11 @@ describe('마일스톤 보너스', () => {
       [14, 80],
       [30, 150],
     ])
+  })
+
+  it('마일스톤을 서버 원장 이벤트 타입으로 변환한다', () => {
+    expect(streakRewardEventType(3)).toBe('streak_3')
+    expect(streakRewardEventType(30)).toBe('streak_30')
+    expect(streakRewardEventType(4)).toBeNull()
   })
 })

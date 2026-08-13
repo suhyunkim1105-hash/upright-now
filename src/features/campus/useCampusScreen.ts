@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { initCampus, setCampusScreenOpen, useCampusStore } from './campusStore'
+import { initCampus, refreshCampus, setCampusScreenOpen, useCampusStore } from './campusStore'
 import { useCampusThemeStore } from './campusThemeStore'
 import { rankStandings } from './contribution'
 import { seasonAt } from './season'
@@ -49,6 +49,17 @@ export function useCampusScreen() {
       archived: [],
     }
   }, [stored])
+
+  // Realtime 이벤트가 없는 상태에서도 시즌 경계 직후 새 지도·최종 기록을
+  // 가져옵니다. 화면을 계속 열어 둔 사용자도 다음 시즌으로 자동 전환됩니다.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const delay = Math.max(1_000, snapshot.season.endsAt - Date.now() + 1_000)
+    const timer = window.setTimeout(() => {
+      void refreshCampus()
+    }, delay)
+    return () => window.clearTimeout(timer)
+  }, [snapshot.season.id, snapshot.season.endsAt])
 
   const myTiles = useMemo(
     () =>

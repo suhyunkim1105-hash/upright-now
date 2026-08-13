@@ -2,7 +2,7 @@ import { CAMPUS_GRID_SEED } from './campusGridOverlay'
 import type { CampusTile, CampusZoneId } from './types'
 
 /**
- * 자체 제작한 12×8 가상 캠퍼스 타일 지도.
+ * 서울 지도 위에 얹는 12×8 영토 타일 지도.
  *
  * 실제 서울 지도나 특정 학교 부지를 복제하지 않습니다.
  * 좌표는 순수한 격자이며 지리 정보가 아닙니다.

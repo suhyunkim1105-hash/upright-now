@@ -10,6 +10,7 @@ import campusSql from '../../../supabase/migrations/20260727_campus_realtime_v2.
 import finalSql from '../../../supabase/migrations/20260727_campus_final_grid_realtime.sql?raw'
 import roomSql from '../../../supabase/migrations/20260727_room_presence_cleanup.sql?raw'
 import verificationSql from '../../../supabase/migrations/20260730_campus_school_verification.sql?raw'
+import quarterlySql from '../../../supabase/migrations/20260805_campus_quarterly_seasons.sql?raw'
 import repoSrc from './supabaseRepository.ts?raw'
 import roomServiceSrc from '../rooms/roomService.ts?raw'
 
@@ -85,6 +86,16 @@ describe('campus school verification migration', () => {
     expect(verificationSql).toContain('create or replace function public.campus_verify_school')
     expect(verificationSql).toContain("raise exception 'school_verification_required'")
     expect(verificationSql).toContain('revoke insert, update, delete on public.campus_verifications')
+  })
+})
+
+describe('campus quarterly season migration', () => {
+  it('uses UTC calendar quarters and preserves the prior grid', () => {
+    expect(quarterlySql).toContain("date_trunc('quarter'")
+    expect(quarterlySql).toContain("interval '3 months'")
+    expect(quarterlySql).toContain("format('season-%s-q%s'")
+    expect(quarterlySql).toContain('where t.season_id = v_source')
+    expect(quarterlySql).toContain('on conflict (id) do nothing')
   })
 })
 

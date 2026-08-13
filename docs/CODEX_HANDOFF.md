@@ -1,312 +1,229 @@
-# CODEX_HANDOFF — 작업 인수인계
+# CODEX_HANDOFF
 
-> 작성: 2026-08-04 · 브랜치 `feat/wanted-sans-font` (`4863dc5`)
->
-> **다음 작업자가 이 문서 하나로 이어받을 수 있게** 쓴 문서입니다.
-> 자세 판정 파이프라인의 기술 상세는 [`AI_HANDOFF.md`](AI_HANDOFF.md),
-> 시스템 구조는 [`ARCHITECTURE.md`](ARCHITECTURE.md),
-> 앞으로 만들 것은 [`22_PRODUCT_SPEC_V2.md`](22_PRODUCT_SPEC_V2.md) 에 있습니다.
+마지막 갱신: 2026-08-11
 
----
+이 문서는 다른 OpenAI 계정이나 새 Codex 워크스페이스에서 UpRight Now 작업을 이어받기 위한 현재 기준 인수인계 문서입니다. 실제 API 키, Supabase URL, Vercel URL 같은 민감값은 기록하지 않습니다. 값은 각 서비스 대시보드와 `.env.local`에서 다시 설정합니다.
 
-## 1. 지금 어디까지 왔는가
+## 1. 현재 프로젝트 요약
 
-| 항목 | 값 |
-|---|---|
-| 운영 | https://upright-now.vercel.app (`main` · 태그 `v1.1.0`) |
-| 작업 브랜치 | `feat/wanted-sans-font` |
-| 열린 PR | [#8](https://github.com/suhyunkim1105-hash/upright-now/pull/8) — `feat/pip-camera-preview` → `main`. Ready for review · MERGEABLE |
-| 최근 게이트 | lint 0 · typecheck 통과 · unit **526/526** · e2e **96 통과 1 skip** · build 통과 |
+UpRight Now는 웹캠 기반 자세 회복 습관 앱입니다. 사용자는 개인 기준 자세를 등록하고, 집중 세션 중 자세가 흐트러졌을 때 회복하면 XP·포인트·캠퍼스 기여도를 얻습니다. 최근에는 학교 인증, 캠퍼스 랭킹·영토전, 성장 보상 DB, 픽셀 메타버스 캠퍼스 방향으로 확장 중입니다.
 
-### 브랜치 관계
+현재 큰 흐름은 두 갈래입니다.
 
-```
-main (v1.1.0)
- └─ feat/pip-camera-preview        ← PR #8. main 병합 대기
-     └─ docs/product-spec-v2         스펙 문서
-         └─ feat/wanted-sans-font    결정 반영 + 폰트 + IA + 프로토타입  ← 지금 여기
-```
+- 기존 앱: 자세 감지, 집중 세션, 친구 방, 성장·상점, 캠퍼스 인증·기여·영토전
+- 다음 방향: 픽셀 게임 느낌의 캠퍼스 월드, 학교 랭킹전, NPC·상점·친구 방·채팅 확장
 
-**스택 브랜치입니다.** `feat/wanted-sans-font` 는 아래 셋을 전부 포함합니다.
-PR 을 어떻게 나눌지는 아직 정하지 않았습니다 (§6-1).
+## 2. 현재 Git 상태 체크포인트
 
----
+작성 시점에 확인한 상태입니다. 새 환경에서는 반드시 다시 확인하세요.
 
-## 2. 완료된 작업
+- 메인 작업 위치: `/Users/yeonwoo/Documents/New project/upright-now`
+- 기본 브랜치: `main`
+- 작성 시점 `main`은 `origin/main`보다 3커밋 앞서 있었습니다.
+- 최근 커밋에는 서울 자치구 지도 정렬 수정, 픽셀 월드 설계 문서, `.worktrees` ignore 작업이 포함되어 있었습니다.
+- 별도 worktree가 존재했습니다.
+  - 경로: `.worktrees/campus-pixel-world`
+  - 브랜치: `codex/campus-pixel-world`
+  - 상태: Phaser 기반 픽셀 월드 구현 파일이 커밋되지 않은 상태
 
-### 2.1 v1.1.0 까지 (운영 중)
+새 계정으로 옮기기 전에는 `main`과 `.worktrees/campus-pixel-world`를 모두 확인해야 합니다. 특히 worktree의 미커밋 파일은 GitHub에 자동으로 올라가지 않습니다.
 
-카메라 자세 감지 · 5초 캘리브레이션 · 회복 게임 · 세션/기록 · 성장 · 상점 ·
-설정 · 스트레칭 6종 · PIP 미니 위젯 · 친구 방(최대 10인·상시방·중간 입장·리액션) ·
-모드 시스템(기본 3 + 내 모드 3) · 경제 v2 · 개인 괴물 4단계 · 캠퍼스 테마·96 영토전 ·
-사운드 팩 · 승인 에셋 112건.
+## 3. 완료된 작업
 
-### 2.2 이번 작업 구간 (2026-08-04)
+### 기본 앱
 
-| 커밋 | 내용 |
-|---|---|
-| `9cd7ab0` | **회귀 2건 수정** — 대시보드 우측 레일과 성장 화면 캐릭터 이미지 (§2.3) |
-| `4b74005` | 폐지된 Zarafa 랜딩을 제품에서 분리. **dist 127MB → 65MB** |
-| `12555c6` | `origin/main` 병합 (23 커밋). 충돌 2건 해결 |
-| `8fb5a1d` | V2 제품 스펙 신설 — 회의 결정을 코드와 42개 항목 대조 |
-| `80044a5` | 불변조건 충돌 4건 결정 반영 (C-01~C-04) |
-| `2676a33` | **Wanted Sans Variable 도입** (자체 호스팅, OFL-1.1) |
-| `4856ec7` | 폰트 교체 후 QA 스크린샷 갱신 |
-| `4863dc5` | **IA 확정** — 좌측 레일 4탭, 방 만들기 통합, Zoom 톤 프로토타입 |
+- React, Vite, TypeScript 기반 SPA 구조
+- 앱 라우팅과 주요 화면: 홈, 온보딩, 카메라, 캘리브레이션, 세션, 결과, 기록, 성장, 상점, 설정
+- MediaPipe 기반 자세 감지 구조
+- 카메라 없이 확인 가능한 QA Lab
+- 로컬 저장소 기반 프로필·세션·성장·상점 흐름
+- Vercel SPA 배포용 rewrite 설정
 
-### 2.3 잡아낸 회귀 2건 — 왜 중요한가
+### 친구 방
 
-둘 다 디자인 패스 커밋 `c62a10e` 에서 들어왔고, **E2E 가 아니었으면 못 잡았습니다.**
+- Supabase 기반 익명 사용자 생성
+- 방 생성·입장·Presence·Broadcast 구조
+- 여러 room lifecycle 관련 migration
+- 카메라 프레임·랜드마크·자세 좌표를 저장하거나 전송하지 않는 원칙 유지
 
-| 파일 | 증상 |
-|---|---|
-| `src/components/layout/AppShell.tsx` | 우측 레일이 `xl:flex` → `2xl:flex` 로 바뀌면서 **지원 폭 1280·1440 에서 레일과 캠퍼스 카드가 통째로 사라짐** |
-| `src/components/character/GrowthTimeline.tsx` | `CharacterViewport` 가 빠지고 번호 노드만 남아 **성장 화면에 승인 캐릭터 이미지가 0개** |
+### 캠퍼스
 
-**교훈** — 화면을 바꾸는 작업일수록 `npm run test:e2e` 를 돌려야 합니다.
-단위 테스트는 둘 다 통과했습니다. `toBeInTheDocument` 는 통과하고
-`toBeVisible` 만 실패하는 종류의 결함이라 E2E 밖에서 안 보입니다.
+- 학교 선택 UI
+- 학교별 테마 색상 반영
+- 검색형 학교 선택 UX로 전환
+- 목록에 없는 학교를 사용자가 추가하면 공용 학교 목록에 반영하는 방향의 구조
+- Supabase Auth 이메일 링크 기반 학교 인증
+- 인증된 학생만 캠퍼스 기여·점령 가능하도록 설계
+- 캠퍼스 시즌, 학교 도메인, 학교 디렉터리, 기여도, 영토전 관련 migration
+- 서울 25개 자치구 기반 영토전 프로토타입
+- 기여도가 쌓이면 학교 색상으로 구역이 표시되는 방향으로 전환
 
----
+### 성장·보상 DB
 
-## 3. 진행 중인 작업
+- 성장 XP와 포인트를 서버 원장으로 다루는 설계 문서 작성
+- `progression_balances`, `progression_reward_rules`, `progression_reward_events` 기반으로 보상 기록을 관리하는 방향 확정
+- 이벤트별 XP·포인트 지급 기준, 한도, 멱등성 원칙 정리
+- 학교별 참여 인원 보정점수 설계
 
-| 항목 | 상태 | 막고 있는 것 |
-|---|---|---|
-| PR #8 병합 | Ready for review, MERGEABLE, Vercel 프리뷰 통과 | 팀 리뷰 |
-| V2 화면 개편 | 스펙·IA·프로토타입까지. **코드 착수 전** | §6-1 디자인 톤 결정 |
-| Zoom 톤 검토 | 프로토타입 `docs/prototypes/zoom-tone-v1.html` | 같은 결정 |
+### 픽셀 월드
 
----
+- 제품 방향을 “픽셀 메타버스 + 싸이월드 미니홈피 감성”으로 재정의하는 설계 문서 작성
+- `/campus/world`를 별도 라우트로 추가하는 구현 계획 작성
+- Phaser를 React 안에 마운트하는 방식 선택
+- 기숙사 개인 공간, 거북이·기린 아바타, 이동·충돌·앉기 모션을 1차 범위로 정함
+- 이 구현은 작성 시점에 별도 worktree에서 진행 중이며, main에 완전히 통합된 상태가 아닐 수 있습니다.
 
-## 4. 남은 작업과 우선순위
+## 4. 진행 중인 작업
 
-`22_PRODUCT_SPEC_V2.md` §3.2 의 순서입니다. 회의에서 정한 순서와 다릅니다 —
-캐릭터가 다섯 화면의 공통 의존성이고, 지도가 가장 불확실하기 때문입니다.
+### 서울 자치구 지도 정확도
 
-| 단계 | 내용 | 담당 | 선행 조건 |
-|---|---|---|---|
-| **0** | 상점 비활성화 · 좌측 레일 4탭 · 마이페이지 신설 · 설정 축소 | 프론트 | 디자인 톤 결정 |
-| **1** | 성장 시스템 — 15레벨 · XP 곡선 · 주간 회복 지수 | 프론트 | 만렙 XP 결정 |
-| **2** | 방 만들기 10단계 흐름 + 스트레칭 전/후 게이트 | 프론트 | 단계 0 |
-| **3** | PIP 2단계 — 자세 색·아이콘·화면 숨기기 | 민철 | 없음. **지금 시작 가능** |
-| **4** | 방 시스템 — 초대 코드 상시 노출 · 캐릭터 표시 · 자유 채팅 | 수현 | 없음. **지금 시작 가능** |
-| **5** | AI 리포트 마이페이지 축적 | 프론트 | 단계 0 |
-| **6** | 캠퍼스 서울 지도 재설계 | 연우 | 지도 서비스 결정 |
+현재 지도는 “실제 행정경계와 비슷한 시각적 프로토타입” 수준입니다. 사용자는 행정구역 모양에 맞게 학교가 구를 점령하는 방식을 원합니다.
 
-**단계 3·4 는 아무것도 기다리지 않습니다.** 디자인 톤 결정이 늦어지면 여기부터 하세요.
+현재 문제:
 
----
+- 임시 외곽선이나 단순화한 polygon이 실제 서울 지도와 완벽히 일치하지 않았습니다.
+- 지도 배경 이미지와 오버레이가 따로 노는 문제가 있었습니다.
+- 장기적으로는 정적 이미지 위에 손으로 맞춘 polygon보다 공식 GeoJSON 또는 검증된 SVG 경계 데이터를 쓰는 편이 안전합니다.
 
-## 5. 주요 기술적 의사결정
+### 픽셀 메타버스 캠퍼스
 
-전체 목록과 검토한 대안은 [`DECISIONS.md`](DECISIONS.md) 에 있습니다.
-이번 구간에서 새로 내린 것만 아래에 정리합니다.
+별도 worktree에서 `/campus/world` 구현을 시작한 흔적이 있습니다. 새 작업자는 먼저 해당 worktree 상태를 확인해야 합니다.
 
-| ID | 결정 | 이유 |
-|---|---|---|
-| C-01 | **XP 는 감소하지 않는다.** 주간 회복 지수를 따로 만든다 | 레벨이 XP 파생이라 XP 감소 = 레벨 퇴화. 불변조건 위반이고, 카메라를 켜 두는 제품에서 "감시와 처벌" 인상은 이탈로 직결 |
-| C-02 | **초대 코드 방에서만 자유 채팅.** 신고·차단·80자 제한 필수 | 익명 로그인이라 제재할 계정이 없음. 서로 아는 사이로 범위를 좁혀 위험을 낮춤 |
-| C-03 | **학교 로고 대신 자체 엠블럼** (학교 색 + 자체 도형) | 대학 로고는 상표. 허가 없이 경쟁형 서비스에 쓸 수 없음 |
-| C-04 | 민감도 설정 UI 만 제거. **내부 값은 `default` 유지** | `ISSUE-009` — 임계값을 조였을 때 정상 미세 흔들림까지 실패로 처리한 이력. 실기기 검증 전에는 올리지 않음 |
-| IA | **좌측 레일 유지.** 하단 탭 아님 | 웹캠·PiP·장시간 PC 작업이 전제인 데스크톱 제품 |
-| IA | 홈·집중 세션·친구 방 → **방 만들기** 하나 | 혼자와 함께의 차이는 방 종류일 뿐. 진입점이 셋일 이유가 없음 |
-| 폰트 | **Wanted Sans 자체 호스팅.** CDN 아님 | 네트워크가 막힌 환경에서도 같은 화면. 폰트 호스트에 세션 정보가 새지 않음 |
-| 폰트 | npm 패키지 대신 `public/` 배치 | npm 은 unpacked 48MB 에 otf/ttf 까지 딸려 옴. subset woff2 만 필요 |
-| Zarafa | 삭제 대신 `../zarafa-archive/` 로 이동 | 되돌릴 수 있게. `web/` 소스에서 재빌드도 가능 |
+확인할 파일 예:
 
----
+- `.worktrees/campus-pixel-world/package.json`
+- `.worktrees/campus-pixel-world/src/app/routes/CampusWorld.tsx`
+- `.worktrees/campus-pixel-world/src/components/campus/world/`
+- `.worktrees/campus-pixel-world/src/features/campus/world/`
 
-## 6. 결정이 필요한 것
+## 5. 남은 작업과 우선순위
 
-### 6-1. 디자인 톤 — **가장 급함**
+### P0 - 계정 이전과 작업 보존
 
-`docs/20_DECISION_LOG.md` 의 `D-006` 은 *Playful Pastel Dashboard × Cozy Campus
-Island* 이고, 승인 에셋 112건이 그 톤으로 제작됐습니다. Zoom 톤은 반대 축입니다.
+1. `main`의 앞선 커밋을 GitHub에 푸시했는지 확인합니다.
+2. `.worktrees/campus-pixel-world`의 미커밋 작업을 커밋·푸시하거나 별도 백업합니다.
+3. 새 계정에서 GitHub, Vercel, Supabase 접근 권한을 다시 연결합니다.
+4. `.env.local`은 커밋하지 말고 새 환경에서 다시 만듭니다.
 
-| 안 | 내용 | 비용 |
-|---|---|---|
-| **A (추천)** | 껍데기(레일·툴바·버튼·카드)만 Zoom 톤. 캐릭터 자리는 따뜻하게 | 에셋 재제작 없음. `D-006` 에 단서 추가 |
-| B | 전면 교체 | 에셋 112건 재제작. `D-006` 개정 |
-| C | 파스텔 유지 | 없음 |
+### P1 - Supabase와 배포 환경 안정화
 
-A 라면 `src/index.css` 의 `@theme` 블록 하나 교체로 대부분 끝납니다.
-화면 코드가 전부 토큰 이름(`bg-pink`·`text-ink`)만 쓰고 있기 때문입니다.
+1. Supabase SQL migration 적용 순서 점검
+2. Vercel 환경변수와 Supabase Auth URL Configuration 정합성 확인
+3. 이메일 인증 링크가 배포 사이트로 돌아오고 `consumeAuthCallback()`이 세션을 정상 확정하는지 확인
+4. 캠퍼스 인증 RPC와 영토 RPC가 새 Supabase 프로젝트에서 모두 존재하는지 확인
 
-### 6-2. 나머지 5건
+### P2 - 캠퍼스 지도/랭킹
 
-| 항목 | 선택지 | 막는 작업 |
-|---|---|---|
-| 만렙 누적 XP | 13,000 (약 10주) / 10,000 (약 8주) | 단계 1 |
-| 잎사귀 포인트의 쓰임 | 상점 복귀까지 보류 / 캠퍼스 기여 전환 / 삭제 | 경제 전반 |
-| 지도 서비스 | Mapbox / Google / Cesium / VWorld | 단계 6 |
-| 구역 단위 | 자치구 25 / 대학 반경 / 육각 그리드 | 단계 6 |
-| 랜덤 참여 범위 | 전체 공개방 / 같은 학교끼리 / 보류 | 단계 4 |
+1. 서울 자치구 경계 데이터를 검증 가능한 소스로 교체합니다.
+2. 학교 위치 또는 선택 구역과 자치구 매핑을 DB로 관리합니다.
+3. 사용자가 점령할 자치구를 선택하고, 학교 점수가 더 높으면 소유권이 바뀌는 RPC를 완성합니다.
+4. 학교별 참여 인원 보정점수를 랭킹에 반영합니다.
 
-### 6-3. PR 을 어떻게 나눌지
+### P3 - 성장·보상 서버 연결
 
-현재 `feat/wanted-sans-font` 는 스펙 문서·폰트·IA·프로토타입을 다 담고 있습니다.
-PR #8 병합 후 하나로 낼지, 문서와 폰트를 쪼갤지 정해야 합니다.
+1. 세션 종료, 자세 회복, 스트레칭, 목표 완료 이벤트를 서버 RPC로 지급합니다.
+2. 클라이언트가 XP·포인트 숫자를 보내지 않게 유지합니다.
+3. 성장 화면이 서버 잔액과 최근 원장을 읽도록 전환합니다.
+4. 운영 전 기존 로컬 데이터 이관 정책을 결정합니다.
 
----
+### P4 - 픽셀 월드
 
-## 7. 알려진 문제
+1. `/campus/world` 라우트와 Phaser mount를 main에 안전하게 합칩니다.
+2. 기숙사 맵, 이동, 충돌, 앉기 모션을 먼저 완성합니다.
+3. 캐릭터 에셋은 직접 제작 또는 명확한 라이선스가 있는 에셋만 사용합니다.
+4. 이후 친구 방문, 자유 채팅, 학생회관 NPC, 명예의 전당, 상점, BGM을 단계적으로 추가합니다.
 
-### 7.1 차단은 아니지만 중요
+## 6. 주요 기술적 의사결정
 
-| # | 문제 | 상태 |
-|---|---|---|
-| **R-01** | **실카메라 자세 판정 임계값이 검증되지 않았습니다.** 전부 합성 데이터 기준 | 미해결. 사람 5~8명 · 카메라 3대 이상 관찰 필요 |
-| R-02 | 온보딩 튜토리얼 없음. 처음 온 사용자가 뭘 해야 할지 모름 | 미구현 |
-| R-03 | 캐릭터 Lv.2/4/5/6 자세별 컷, `away` 전용 컷 없음 | 에셋 미보유 |
-| R-04 | 운영에 `VITE_ENABLE_PIP` 미설정 → PiP 자동 열기 꺼짐 | Vercel 환경변수 추가하면 끝 |
-| R-05 | AI 회고 운영 비활성 (서버 키·비용 한도 미결) | 결정 필요 |
-| R-06 | 모바일 375px 에서 사이드바 캐릭터가 약 14px 가로 오버플로 | 데스크톱 우선이라 보류 |
-| R-07 | 모션 WebM 미보유. 정적 WebP + CSS 로 대체 | 보류 |
+- 카메라 프레임·랜드마크 원본은 저장하거나 전송하지 않습니다.
+- Supabase service role key는 프론트엔드에 넣지 않습니다.
+- 학교 인증은 Supabase Auth 이메일 링크와 학교 도메인 whitelist를 사용합니다.
+- 캠퍼스 기여·점령은 로컬 저장소가 아니라 Supabase migration/RPC를 기준으로 관리합니다.
+- 성장 보상은 클라이언트 숫자를 믿지 않고 서버 규칙 테이블과 원장으로 계산합니다.
+- 픽셀 월드는 기존 `/campus`를 갈아엎지 않고 별도 `/campus/world`에서 시작합니다.
 
-**R-01 이 어떤 기능 개발보다 우선합니다.** 자세 판정이 틀리면 성장도 영토전도
-의미가 없습니다. 기능 개발과 **병행**해서 관찰을 시작하세요.
+## 7. 알려진 오류와 해결되지 않은 문제
 
-### 7.2 이번에 새로 찾은 것 — 빌드에 45MB 가 그냥 실립니다
+### Supabase 이메일 인증
 
-| 경로 | 크기 | 상태 |
-|---|---|---|
-| `public/mediapipe/` | **41.3 MB** | git 추적 중. **코드가 참조하지 않음** — 로더는 jsDelivr CDN 을 씁니다 |
-| `public/fonts/*.woff2` (Gowun·IBMPlex·Pretendard) | **4.2 MB** | Zarafa 시절 잔재. **참조되지 않음** |
+증상:
 
-`public/` 은 그대로 `dist/` 로 복사되므로 배포마다 함께 나갑니다.
-**MediaPipe 사본은 지우기 전에 결정이 필요합니다** — CDN 두 곳이 지금 자세 감지의
-단일 장애점이라, 이 사본을 폴백으로 쓰는 편이 나을 수 있습니다.
+- 메일은 오지만 localhost로 돌아가거나 인증 실패로 표시됨
+- `/auth/v1/otp`가 429로 실패
+- `campus_verify_school` RPC 404
 
-| 안 | 할 일 |
-|---|---|
-| 폴백으로 쓴다 | `src/lib/mediapipe/loader.ts` 를 로컬 우선 + CDN 폴백으로 |
-| 안 쓴다 | `public/mediapipe/` 삭제 |
-| 지금 | **둘 다 아닌 상태.** 41MB 를 옮기기만 하고 안 씁니다 |
+확인할 것:
 
-폰트 잔재 4.2MB 는 참조가 없으므로 그냥 지우면 됩니다.
+- Vercel 환경변수 `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`
+- Supabase Authentication URL Configuration의 Site URL과 Redirect URLs
+- 새 Vercel 주소가 Supabase Redirect URLs에 들어갔는지
+- 필요한 migration이 새 Supabase 프로젝트에 전부 적용됐는지
+- Supabase Rate Limits, Custom SMTP 설정
 
-### 7.3 환경 관련
+### SQL migration 적용 순서
 
-| # | 문제 |
-|---|---|
-| E-01 | Vitest 병렬 워커가 이 개발 머신에서 죽으면서 수집 파일 수가 매번 달랐습니다. `fileParallelism: false` + `scripts/run-tests.mjs` 가드로 막아 뒀습니다. **가드는 남겨 두세요.** |
-| E-02 | PowerShell 에서 `git commit -m` 에 큰따옴표가 든 메시지를 넘기면 인자가 쪼개집니다. `-F <파일>` 을 쓰세요. |
+일부 migration은 앞 단계 테이블 또는 함수가 있어야 실행됩니다. 예를 들어 `progression_reward_rules`가 없다는 오류는 foundation migration보다 balance/rules migration을 먼저 실행했을 때 발생할 수 있습니다.
 
----
+권장:
 
-## 8. 바로 시작할 수 있는 다음 단계
+1. `supabase/schema.sql`
+2. 기존 방·캠퍼스 migration
+3. 학교 인증 migration
+4. 성장 foundation migration
+5. 성장 balance/rules migration
+6. 자치구 영토 관련 migration
 
-### 8.1 처음 받았다면
+실제 적용 전에는 `supabase/README.md`와 각 migration 상단 주석을 확인합니다.
+
+### 지도 정확도
+
+현재 자치구 지도는 제품 감성용 프로토타입입니다. 실제 서울 행정경계를 정확히 반영하려면 공식 또는 라이선스가 명확한 GeoJSON/SVG 데이터로 교체해야 합니다.
+
+### 테스트
+
+`npm run test`는 `scripts/run-tests.mjs`를 통해 spec 파일 수집 누락을 감지합니다. 머신 성능이나 jsdom 이슈로 오래 걸릴 수 있습니다. 완료 보고 전에는 최소한 관련 focused test와 `npm run typecheck`, 가능하면 `npm run build`를 실행합니다.
+
+## 8. 다음 작업자가 바로 시작할 단계
+
+새 계정에서 이어받으면 아래 순서로 시작하세요.
 
 ```bash
-cd upright-now
-```
-
-```bash
+cd "/Users/yeonwoo/Documents/New project/upright-now"
+git status --short --branch
+git worktree list
 npm install
-```
-
-```bash
 cp .env.example .env.local
-```
-
-`.env.local` 의 Supabase 두 줄만 채웁니다. 나머지 스위치는 이미 `true` 입니다.
-
-```bash
-npx playwright install chromium
-```
-
-```bash
-npm run dev
-```
-
-### 8.2 지금 바로 할 수 있는 일 — 결정을 안 기다립니다
-
-**① 운영 PiP 켜기 (R-04) — 5분**
-Vercel Production 환경변수에 `VITE_ENABLE_PIP=true` 추가 후 재배포.
-
-**② 폰트 잔재 정리 — 10분**
-`public/fonts/` 의 Gowun·IBMPlex·Pretendard woff2 와 OFL txt 삭제.
-참조가 없으니 `npm run build` 만 통과하면 됩니다.
-
-**③ PIP 2단계 (단계 3) — 관련 파일**
-
-| 파일 | 할 일 |
-|---|---|
-| `src/features/pip/PipWidget.tsx` | 자세 상태 색 + **아이콘** 표시 (`FR-PIP-02` — 색만으로 전달 금지) |
-| `src/features/pip/pipStore.ts` | 카메라 표시 토글 상태 |
-| `src/features/pip/pipController.tsx` | 창 생성·복귀 |
-| `e2e/pip.spec.ts` | 수용 기준을 테스트 이름에 `FR-PIP-02` 로 |
-
-**④ 방 시스템 (단계 4) — 관련 파일**
-
-| 파일 | 할 일 |
-|---|---|
-| `src/app/routes/Session.tsx` | 세션 중에도 초대 코드 상시 노출 (`FR-ROOM-01`) |
-| `src/features/rooms/roomStore.ts` | 참가자 표시를 캐릭터 + 학교 색으로 |
-| `src/components/room/` | 참가자 타일 컴포넌트 |
-| `src/features/rooms/roomEvents.ts` | 자유 채팅 도입 시 `sanitizeRoomEvent` 확장 (C-02 · `FR-CHAT-01`~`06`) |
-
-### 8.3 디자인 톤이 A 로 정해지면
-
-```
-src/index.css  @theme 블록의 색 토큰 교체
-   ↓
-npm run test:e2e   ← 반드시. 폭별 오버플로 검사가 여기 있습니다
-   ↓
-artifacts/ 스크린샷 갱신 커밋
-```
-
-화면 코드는 손대지 않습니다. 토큰 이름만 쓰고 있기 때문입니다.
-
-### 8.4 작업을 마치기 전 반드시
-
-```bash
-npm run lint
-```
-
-```bash
 npm run typecheck
-```
-
-```bash
-npm run test
-```
-
-```bash
 npm run build
 ```
 
-화면·흐름을 바꿨으면 E2E 까지. 몇 분 걸립니다.
+그 다음:
 
-```bash
-npm run test:e2e
-```
+1. `.env.local`에 본인 Supabase 프로젝트의 `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`를 넣습니다.
+2. Supabase SQL Editor에서 필요한 migration이 모두 적용됐는지 확인합니다.
+3. Vercel 프로젝트의 환경변수도 동일하게 설정합니다.
+4. Supabase Auth의 Site URL과 Redirect URLs에 현재 배포 주소를 추가합니다.
+5. `/campus` 인증, 기여도, 지도 표시를 확인합니다.
+6. 픽셀 월드 작업을 이어갈 경우 `.worktrees/campus-pixel-world` 상태를 먼저 보존합니다.
 
----
+## 9. 관련 파일 경로
 
-## 9. 관련 파일 빠른 찾기
-
-| 찾는 것 | 경로 |
-|---|---|
-| 제품 불변조건·금지 사항 | `AGENTS.md` |
-| 현재 수치·협업 규칙 | `docs/TEAM_START.md` |
-| 시스템 구조·환경변수·배포 | `docs/ARCHITECTURE.md` |
-| 자세 판정 파이프라인 상세 | `docs/AI_HANDOFF.md` |
-| 앞으로 만들 것 | `docs/22_PRODUCT_SPEC_V2.md` |
-| 결정 기록과 대안 | `docs/DECISIONS.md` |
-| 개인정보 원칙 | `docs/14_DATA_PRIVACY_SECURITY.md` |
-| Zoom 톤 프로토타입 | `docs/prototypes/zoom-tone-v1.html` |
-| **모든 수치** | `src/constants/` |
-| 자세 임계값 | `src/constants/posture.ts` |
-| 보상·괴물·캐릭터 단계 | `src/constants/game.ts` |
-| 세션 길이 | `src/constants/session.ts` |
-| 방 인원 | `src/constants/rooms.ts` |
-| 학교·캠퍼스 문구 | `src/constants/campus.ts` |
-| 화면 문구 | `src/constants/copy.ts` |
-| 디자인 토큰 | `src/index.css` `@theme` |
-| 기능 플래그 | `src/lib/feature-flags/flags.ts` |
-| 보상 단일 통로 | `src/features/game/rewards.ts` |
-| 세션 종료 단일 통로 | `src/features/sessions/finalizeSession.ts` |
-| DB 변경 | `supabase/migrations/` |
+- 최상위 작업 계약: `AGENTS.md`
+- 새 계정 인수인계: `docs/CODEX_HANDOFF.md`
+- 시스템 구조: `docs/ARCHITECTURE.md`
+- 결정 기록: `docs/DECISIONS.md`
+- 오래된 상세 인수인계: `docs/AI_HANDOFF.md`
+- 오래된 상세 결정 로그: `docs/20_DECISION_LOG.md`
+- 팀 시작 가이드: `docs/TEAM_START.md`
+- 환경변수 예시: `.env.example`
+- Vercel SPA 설정: `vercel.json`
+- 라우팅: `src/app/router/AppRoutes.tsx`
+- Supabase 클라이언트: `src/lib/supabase/client.ts`
+- 기능 플래그: `src/lib/feature-flags/flags.ts`
+- 캠퍼스 화면: `src/app/routes/Campus.tsx`
+- 캠퍼스 지도: `src/components/campus/TerritoryMap.tsx`
+- 캠퍼스 로직: `src/features/campus/`
+- 성장 보상 문서: `docs/specs/growth-reward-db.md`, `docs/specs/growth-balance-spec.md`
+- Supabase migration: `supabase/migrations/`
+- 픽셀 월드 설계: `docs/superpowers/specs/2026-08-11-campus-pixel-world-design.md`
+- 픽셀 월드 계획: `docs/superpowers/plans/2026-08-11-campus-pixel-world-plan.md`

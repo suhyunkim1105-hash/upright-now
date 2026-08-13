@@ -3,6 +3,7 @@ import { useGameStore } from './gameStore'
 import { MAX_REWARDED_RECOVERIES } from '@/constants/posture'
 import { REWARD } from '@/constants/game'
 import { registerSessionLockRelease } from '@/features/sessions/sessionLocks'
+import { syncProgressionReward } from '@/features/progression/progressionRepository'
 
 /**
  * 보상 처리의 단일 진입점.
@@ -67,6 +68,8 @@ export interface RewardInput {
   type: RewardType
   /** 길이별 세션 완주처럼 표 대신 쓸 지급량 (경제 v2) */
   override?: { xp: number; points: number }
+  /** 세션 완주 길이별 서버 보상 계산용(분) */
+  plannedMinutes?: number
 }
 
 export interface RewardOutcome {
@@ -112,6 +115,18 @@ export function applyReward(input: RewardInput): RewardOutcome {
 
   if (SESSION_SCOPED.includes(type) && (xp > 0 || points > 0)) {
     useGameStore.getState().addSessionEarnings(xp, points)
+  }
+
+  // 서버가 아직 길이별 세션 보상 계산을 알지 못하는 단계에서는
+  // 고정 보상만 원장에 기록합니다. override 보상은 다음 migration에서
+  // 세션 메타데이터 검증을 추가한 뒤 연결합니다.
+  if ((!input.override || (type === 'session_completed' && input.plannedMinutes)) && (xp > 0 || points > 0)) {
+    void syncProgressionReward({
+      eventId: id,
+      eventType: type,
+      sessionId,
+      plannedMinutes: input.plannedMinutes,
+    })
   }
 
   return { applied: true, xp, points, capped }

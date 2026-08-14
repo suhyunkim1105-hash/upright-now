@@ -5828,7 +5828,7 @@ function startShellSlide() {
    등껍질 퍼즐 슬롯에 맞는 독립 미로 게임으로 교체했습니다.
    ================================================================== */
 const TURTLE_MAZE = {
-  active: false, timer: 60, timerId: null, grid: [], player: { r: 0, c: 0 },
+  active: false, timer: 30, timerId: null, grid: [], player: { r: 0, c: 0 },
   goal: { r: 9, c: 9 }, moves: 0, rewarded: false,
 };
 function mazePathExists(grid) {
@@ -5858,7 +5858,7 @@ function createTurtleMaze() {
   }
   let walls = 0;
   for (const cell of candidates) {
-    if (walls >= 28) break;
+    if (walls >= 36) break;
     grid[cell.r][cell.c] = 1;
     if (!mazePathExists(grid)) grid[cell.r][cell.c] = 0;
     else walls++;
@@ -5869,7 +5869,7 @@ function turtleMazeHtml() {
   return `
     <p>거북이를 출구까지 안전하게 안내하세요.</p>
     <div class="rows">
-      <div class="row"><span>남은 시간</span><span class="val" id="maze-time">60초</span></div>
+      <div class="row"><span>남은 시간</span><span class="val" id="maze-time">30초</span></div>
       <div class="row"><span>이동 횟수</span><span class="val" id="maze-moves">0회</span></div>
       <div class="row"><span>목표</span><span class="val">🐢 → 🏁</span></div>
     </div>
@@ -5923,7 +5923,7 @@ function startTurtleMaze() {
   clearInterval(TURTLE_MAZE.timerId);
   panelBody.innerHTML = turtleMazeHtml();
   TURTLE_MAZE.active = true;
-  TURTLE_MAZE.timer = 60;
+  TURTLE_MAZE.timer = 30;
   TURTLE_MAZE.moves = 0;
   TURTLE_MAZE.rewarded = false;
   TURTLE_MAZE.grid = createTurtleMaze();

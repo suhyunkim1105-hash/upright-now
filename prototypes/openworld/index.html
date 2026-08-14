@@ -1941,9 +1941,9 @@ function gateCanvas(key, name, base, lit, dark, glow, emblem) {
 }
 /* 이름 천에 글자가 들어갑니다 — 글꼴이 온 뒤 다시 그립니다. */
 const paintGates = () => {
-  gateCanvas('gateEsc', '방탈출', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
+  gateCanvas('gateEsc', '알 합치기', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
 gateCanvas('gateA', '기린 목 펴기', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'shell');
-  gateCanvas('gateB', 'Ex 2', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
+  gateCanvas('gateB', '목 쌓기', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
   gateCanvas('gateC', 'Ex 3', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'ex');
 };
 paintGates();
@@ -3201,6 +3201,8 @@ const ZONES = {};
   prop(m, 'gateEsc', 32, 2); prop(m, 'gateA', 39, 2);
   prop(m, 'gateB', 32, 7);   prop(m, 'gateC', 39, 7);
   m.things = [
+    { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
+    { x: 32, y: 7, name: '기린 목 쌓기', panel: 'giraffeStack' },
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
   ];
   prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
@@ -3878,8 +3880,13 @@ function sessionText() {
 let camX = 0, camY = 0, portalCooldown = 0, sitStart = 0, nearby = null;
 
 const keys = new Set();
+const KEY_ALIASES = { 'ㅡ': 'm', 'ㅈ': 'w', 'ㅁ': 'a', 'ㄴ': 's', 'ㅇ': 'd' };
+function controlKey(key) {
+  const lower = key.toLowerCase();
+  return KEY_ALIASES[lower] || lower;
+}
 addEventListener('keydown', (e) => {
-  const k = e.key.toLowerCase();
+  const k = controlKey(e.key);
   if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault();
   /* 스페이스가 상호작용입니다. 엄지가 이미 거기 있고, WASD 를 잡은 손을
      떼지 않아도 됩니다. E 는 왼손 검지를 W 에서 떼야 합니다. */
@@ -3889,7 +3896,17 @@ addEventListener('keydown', (e) => {
       tapGiraffeNeck();
       return;
     }
-    if (k === 'escape' || (k === ' ' && activePanelKey !== 'giraffeNeck')) closePanel();
+    if (EGG_MERGE.active && ['a', 'd', 'w', 's', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k)) {
+      e.preventDefault();
+      moveEggMerge(k);
+      return;
+    }
+    if (GIRAFFE_STACK.active && k === ' ') {
+      e.preventDefault();
+      dropGiraffeStack();
+      return;
+    }
+    if (k === 'escape' || (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack'].includes(activePanelKey))) closePanel();
     return;
   }
   /* 미니맵이 펼쳐져 있으면 숫자로 바로 갑니다. 지도를 보면서 고르는
@@ -3904,7 +3921,7 @@ addEventListener('keydown', (e) => {
   if (k === ' ') { interact(); return; }
   keys.add(k);
 });
-addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+addEventListener('keyup', (e) => keys.delete(controlKey(e.key)));
 addEventListener('blur', () => keys.clear());
 
 function solidAt(px, py) {
@@ -5142,7 +5159,7 @@ function giraffeNeckHtml() {
       <div class="row"><span>조작</span><span class="val">Space · 클릭</span></div>
       <div class="row"><span>목표</span><span class="val">목을 끝까지 펴기</span></div>
     </div>
-    <div class="giraffe-stage" data-do="giraffe-tap" role="button" tabindex="0" aria-label="기린 목 펴기. 클릭해서 목을 펴세요." style="position:relative;height:170px;margin:14px 0;border-radius:14px;background:linear-gradient(180deg,#dce9ef,#f4dfb9);overflow:hidden;cursor:pointer;user-select:none">
+    <div class="giraffe-stage" data-do="giraffe-tap" role="button" tabindex="0" aria-label="기린 목 펴기. 클릭해서 목을 펴세요." style="position:relative;height:260px;margin:14px 0;border-radius:14px;background:linear-gradient(180deg,#dce9ef,#f4dfb9);overflow:hidden;cursor:pointer;user-select:none">
       <div class="giraffe-body" style="position:absolute;left:50%;bottom:12px;width:58px;height:58px;transform:translateX(-50%);border-radius:48% 48% 35% 35%;background:#d7953f;border:4px solid #9b5b2b;box-shadow:inset 10px 0 #edb657,inset -9px 0 #b66d31"></div>
       <div id="giraffe-neck-group" style="position:absolute;left:calc(50% - 32px);bottom:52px;width:64px;height:110px;transform-origin:50% 100%;transition:transform .12s ease">
         <div class="giraffe-neck" id="giraffe-neck" style="position:absolute;left:20px;bottom:0;width:24px;height:78px;background:#e8ad50;border:4px solid #9b5b2b;border-bottom:0;border-radius:14px 14px 0 0"><i style="position:absolute;left:4px;top:14px;width:7px;height:7px;border-radius:50%;background:#a96b30;box-shadow:10px 16px #a96b30,0 38px #a96b30,10px 58px #a96b30"></i></div>
@@ -5222,7 +5239,471 @@ function startGiraffeNeck() {
   renderGiraffeNeck();
 }
 
+/* ==================================================================
+   미니게임 2 — 방탈출
+
+   60초 안에 방 안의 단서 세 개를 찾아 숫자를 순서대로 입력합니다.
+   단서는 한 번에 하나씩 열리므로 발견하는 과정이 게임의 핵심입니다.
+   ================================================================== */
+const ESCAPE_ROOM = {
+  active: false, timer: 0, startedAt: 0, clues: [false, false, false],
+  digits: ['4', '2', '8'], rewarded: false,
+};
+function escapeRoomHtml() {
+  return `
+    <p>방 안의 단서 3개를 찾아 비밀번호를 완성하세요.</p>
+    <div class="rows">
+      <div class="row"><span>남은 시간</span><span class="val" id="escape-time">60초</span></div>
+      <div class="row"><span>찾은 단서</span><span class="val" id="escape-found">0 / 3</span></div>
+      <div class="row"><span>힌트</span><span class="val">숫자를 순서대로 입력</span></div>
+    </div>
+    <div id="escape-clues" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0">
+      ${[0, 1, 2].map((i) => `<button class="escape-clue" data-do="escape-clue" data-clue="${i}" style="min-height:84px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer"><b>단서 ${i + 1}</b><span id="escape-clue-${i}" style="display:block;margin-top:8px;font-size:22px">?</span></button>`).join('')}
+    </div>
+    <div id="escape-code" style="text-align:center;letter-spacing:.35em;font-size:28px;font-weight:800;padding:10px;border-radius:10px;background:var(--surface-3)">_ _ _</div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input id="escape-input" inputmode="numeric" maxlength="3" placeholder="비밀번호 3자리" aria-label="방탈출 비밀번호" style="flex:1;min-width:0;padding:11px;border:1px solid var(--line-2);border-radius:10px;font:inherit">
+      <button class="act" data-do="escape-submit">확인</button>
+    </div>
+    <p class="hint" id="escape-message" aria-live="polite">단서를 모두 찾아 숫자를 입력해 주세요.</p>
+    <button class="act" data-do="escape-restart">다시 시작</button>`;
+}
+function renderEscapeRoom() {
+  const time = panelBody.querySelector('#escape-time');
+  const found = panelBody.querySelector('#escape-found');
+  if (!time || !found) return;
+  const elapsed = ESCAPE_ROOM.active ? Date.now() - ESCAPE_ROOM.startedAt : 0;
+  time.textContent = ESCAPE_ROOM.active ? `${Math.max(0, 60 - Math.ceil(elapsed / 1000))}초` : time.textContent;
+  found.textContent = `${ESCAPE_ROOM.clues.filter(Boolean).length} / 3`;
+  ESCAPE_ROOM.clues.forEach((open, i) => {
+    const cell = panelBody.querySelector(`#escape-clue-${i}`);
+    if (cell) cell.textContent = open ? ESCAPE_ROOM.digits[i] : '?';
+  });
+  const code = panelBody.querySelector('#escape-code');
+  if (code) code.textContent = ESCAPE_ROOM.clues.map((open, i) => open ? ESCAPE_ROOM.digits[i] : '_').join(' ');
+}
+function finishEscapeRoom(success, message) {
+  ESCAPE_ROOM.active = false;
+  clearInterval(ESCAPE_ROOM.timer);
+  const stage = panelBody.querySelector('#escape-clues');
+  const messageEl = panelBody.querySelector('#escape-message');
+  if (success) {
+    if (!ESCAPE_ROOM.rewarded) {
+      ESCAPE_ROOM.rewarded = true;
+      earn(5, '방탈출 성공');
+    }
+    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
+    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+  } else if (messageEl) messageEl.textContent = message || '시간이 끝났어요. 다시 도전해 보세요.';
+  renderEscapeRoom();
+}
+function tickEscapeRoom() {
+  if (!ESCAPE_ROOM.active) return;
+  if (Date.now() - ESCAPE_ROOM.startedAt >= 60000) finishEscapeRoom(false);
+  else renderEscapeRoom();
+}
+function revealEscapeClue(index) {
+  if (!ESCAPE_ROOM.active || ESCAPE_ROOM.clues[index]) return;
+  ESCAPE_ROOM.clues[index] = true;
+  const message = panelBody.querySelector('#escape-message');
+  if (message) message.textContent = `단서 ${index + 1} 발견! 나머지 단서도 찾아보세요.`;
+  renderEscapeRoom();
+}
+function submitEscapeCode() {
+  if (!ESCAPE_ROOM.active) return;
+  const input = panelBody.querySelector('#escape-input');
+  const message = panelBody.querySelector('#escape-message');
+  const code = input?.value.trim() || '';
+  if (ESCAPE_ROOM.clues.some((clue) => !clue)) {
+    if (message) message.textContent = '먼저 단서 3개를 모두 찾아야 해요.';
+    return;
+  }
+  if (code === ESCAPE_ROOM.digits.join('')) return finishEscapeRoom(true);
+  if (message) message.textContent = '비밀번호가 맞지 않아요. 단서 순서를 다시 확인해 보세요.';
+  if (input) { input.value = ''; input.focus(); }
+}
+function startEscapeRoom() {
+  clearInterval(ESCAPE_ROOM.timer);
+  if (!panelBody.querySelector('#escape-clues .escape-clue')) panelBody.innerHTML = escapeRoomHtml();
+  ESCAPE_ROOM.active = true;
+  ESCAPE_ROOM.startedAt = Date.now();
+  ESCAPE_ROOM.clues = [false, false, false];
+  ESCAPE_ROOM.rewarded = false;
+  ESCAPE_ROOM.timer = setInterval(tickEscapeRoom, 100);
+  renderEscapeRoom();
+}
+
+/* ==================================================================
+   미니게임 2 — 거북이 알 받기
+
+   바구니를 좌우로 움직여 떨어지는 알을 받습니다. 20초 안에 8개 중
+   5개 이상 받으면 성공합니다.
+   ================================================================== */
+const TURTLE_EGG = {
+  active: false, timer: 0, startedAt: 0, basketX: 50, eggs: [],
+  spawned: 0, caught: 0, missed: 0, lastSpawn: 0, rewarded: false,
+};
+function turtleEggHtml() {
+  return `
+    <p>바구니를 움직여 떨어지는 거북이 알을 받아 주세요.</p>
+    <div class="rows">
+      <div class="row"><span>남은 시간</span><span class="val" id="egg-time">20초</span></div>
+      <div class="row"><span>받은 알</span><span class="val" id="egg-score">0 / 5</span></div>
+      <div class="row"><span>조작</span><span class="val">A/D · ←/→</span></div>
+    </div>
+    <div class="egg-stage" style="position:relative;height:300px;margin:14px 0;border-radius:14px;background:linear-gradient(180deg,#dce9ef,#f4dfb9);overflow:hidden">
+      <div id="egg-sky-hint" style="position:absolute;top:8px;left:0;right:0;text-align:center;color:#8a6b50;font-size:12px">알이 떨어지고 있어요!</div>
+      <div id="egg-basket" style="position:absolute;left:50%;bottom:12px;width:42px;height:24px;transform:translateX(-50%);border:4px solid #8f572b;border-top:0;border-radius:0 0 18px 18px;background:#d7953f;transition:left .08s ease"></div>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;margin-top:-6px">
+      <button class="act" data-do="egg-left" aria-label="왼쪽으로 이동">←</button>
+      <button class="act" data-do="egg-right" aria-label="오른쪽으로 이동">→</button>
+    </div>
+    <p class="hint" id="egg-message" aria-live="polite">알 5개를 받아야 성공이에요.</p>
+    <button class="act" data-do="egg-restart">다시 시작</button>`;
+}
+function renderTurtleEgg() {
+  const stage = panelBody.querySelector('.egg-stage');
+  const basket = panelBody.querySelector('#egg-basket');
+  const time = panelBody.querySelector('#egg-time');
+  const score = panelBody.querySelector('#egg-score');
+  if (!stage || !basket || !time || !score) return;
+  const elapsed = TURTLE_EGG.active ? Date.now() - TURTLE_EGG.startedAt : 0;
+  time.textContent = TURTLE_EGG.active ? `${Math.max(0, 20 - Math.ceil(elapsed / 1000))}초` : time.textContent;
+  score.textContent = `${TURTLE_EGG.caught} / 5`;
+  basket.style.left = `${TURTLE_EGG.basketX}%`;
+  stage.querySelectorAll('.falling-egg').forEach((egg) => egg.remove());
+  TURTLE_EGG.eggs.forEach((egg) => {
+    const el = document.createElement('span');
+    el.className = 'falling-egg';
+    el.textContent = '🥚';
+    el.style.cssText = `position:absolute;left:${egg.x}%;top:${egg.y}px;font-size:22px;line-height:1;transform:translateX(-50%)`;
+    stage.append(el);
+  });
+}
+function moveTurtleBasket(direction) {
+  if (!TURTLE_EGG.active) return;
+  TURTLE_EGG.basketX = Math.max(10, Math.min(90, TURTLE_EGG.basketX + direction * 7));
+  renderTurtleEgg();
+}
+function finishTurtleEgg(success, message) {
+  TURTLE_EGG.active = false;
+  clearInterval(TURTLE_EGG.timer);
+  const stage = panelBody.querySelector('.egg-stage');
+  const messageEl = panelBody.querySelector('#egg-message');
+  if (success) {
+    if (!TURTLE_EGG.rewarded) {
+      TURTLE_EGG.rewarded = true;
+      earn(5, '거북이 알 받기 성공');
+    }
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">거북이 알을 잘 받았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
+    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+  } else if (messageEl) messageEl.textContent = message || '알을 충분히 받지 못했어요. 다시 도전해 보세요.';
+  renderTurtleEgg();
+}
+function tickTurtleEgg() {
+  if (!TURTLE_EGG.active) return;
+  const now = Date.now();
+  if (now - TURTLE_EGG.lastSpawn >= 1100 && TURTLE_EGG.spawned < 8) {
+    TURTLE_EGG.eggs.push({ x: 12 + Math.random() * 76, y: 24 });
+    TURTLE_EGG.spawned++;
+    TURTLE_EGG.lastSpawn = now;
+  }
+  TURTLE_EGG.eggs.forEach((egg) => { egg.y += 3.1; });
+  const basketY = 152;
+  TURTLE_EGG.eggs = TURTLE_EGG.eggs.filter((egg) => {
+    if (egg.y >= basketY) {
+      if (Math.abs(egg.x - TURTLE_EGG.basketX) <= 10) TURTLE_EGG.caught++;
+      else TURTLE_EGG.missed++;
+      return false;
+    }
+    return true;
+  });
+  const elapsed = now - TURTLE_EGG.startedAt;
+  if (TURTLE_EGG.caught >= 5) return finishTurtleEgg(true);
+  if (elapsed >= 20000) return finishTurtleEgg(false);
+  if (TURTLE_EGG.spawned >= 8 && TURTLE_EGG.eggs.length === 0) return finishTurtleEgg(false);
+  renderTurtleEgg();
+}
+function startTurtleEgg() {
+  clearInterval(TURTLE_EGG.timer);
+  if (!panelBody.querySelector('.egg-stage')) panelBody.innerHTML = turtleEggHtml();
+  TURTLE_EGG.active = true;
+  TURTLE_EGG.startedAt = Date.now();
+  TURTLE_EGG.basketX = 50;
+  TURTLE_EGG.eggs = [];
+  TURTLE_EGG.spawned = 0;
+  TURTLE_EGG.caught = 0;
+  TURTLE_EGG.missed = 0;
+  TURTLE_EGG.lastSpawn = Date.now();
+  TURTLE_EGG.rewarded = false;
+  TURTLE_EGG.timer = setInterval(tickTurtleEgg, 100);
+  renderTurtleEgg();
+}
+
+/* ==================================================================
+   미니게임 2 — 거북이 알 합치기
+
+   2048 방식의 4×4 블록 퍼즐입니다. 같은 알을 합치면 다음 동물로
+   진화하고, 왕관 알을 만들면 성공합니다.
+   ================================================================== */
+const EGG_MERGE = {
+  active: false, board: [], score: 0, rewarded: false,
+};
+const EGG_TILES = ['','🥚','🐢','🌿','🦒','✨','👑'];
+function eggMergeHtml() {
+  return `
+    <p>같은 알을 합쳐 왕관 알을 만들어 보세요.</p>
+    <div class="rows">
+      <div class="row"><span>점수</span><span class="val" id="egg-merge-score">0</span></div>
+      <div class="row"><span>목표</span><span class="val">👑 왕관 알</span></div>
+      <div class="row"><span>조작</span><span class="val">방향키 · WASD</span></div>
+    </div>
+    <div id="egg-merge-board" style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:8px;margin:14px 0;background:#a78360;border-radius:14px;aspect-ratio:1">
+      ${Array.from({ length: 16 }, (_, i) => `<div id="egg-cell-${i}" style="display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(255,255,255,.24);font-size:clamp(24px,8vw,42px);min-height:52px"></div>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px;margin:8px 0">
+      <button class="act" data-do="egg-up" aria-label="위로 이동">↑</button>
+    </div>
+    <div style="display:flex;justify-content:center;gap:8px">
+      <button class="act" data-do="egg-left" aria-label="왼쪽으로 이동">←</button>
+      <button class="act" data-do="egg-down" aria-label="아래로 이동">↓</button>
+      <button class="act" data-do="egg-right" aria-label="오른쪽으로 이동">→</button>
+    </div>
+    <p class="hint" id="egg-merge-message" aria-live="polite">알을 합쳐 더 큰 동물로 진화시키세요.</p>
+    <button class="act" data-do="egg-merge-restart">다시 시작</button>`;
+}
+function renderEggMerge() {
+  const score = panelBody.querySelector('#egg-merge-score');
+  if (!score) return;
+  score.textContent = EGG_MERGE.score;
+  EGG_MERGE.board.forEach((value, i) => {
+    const cell = panelBody.querySelector(`#egg-cell-${i}`);
+    if (!cell) return;
+    cell.textContent = EGG_TILES[value] || '';
+    cell.style.background = value ? ['','#f5dfb2','#acd19b','#91c8a8','#f0c566','#e3b2e8','#ffe6a3'][value] : 'rgba(255,255,255,.24)';
+  });
+}
+function addEggTile() {
+  const empty = EGG_MERGE.board.map((v, i) => v ? -1 : i).filter((i) => i >= 0);
+  if (!empty.length) return;
+  EGG_MERGE.board[empty[Math.floor(Math.random() * empty.length)]] = Math.random() < .85 ? 1 : 2;
+}
+function slideEggLine(line) {
+  const packed = line.filter(Boolean);
+  const result = [];
+  for (let i = 0; i < packed.length; i++) {
+    if (packed[i] === packed[i + 1]) {
+      result.push(packed[i] + 1); EGG_MERGE.score += 2 ** (packed[i] + 1); i++;
+    } else result.push(packed[i]);
+  }
+  while (result.length < 4) result.push(0);
+  return result;
+}
+function moveEggMerge(direction) {
+  if (!EGG_MERGE.active) return;
+  const before = EGG_MERGE.board.join(',');
+  const b = EGG_MERGE.board;
+  if (direction === 'a' || direction === 'arrowleft') {
+    for (let r = 0; r < 4; r++) b.splice(r * 4, 4, ...slideEggLine(b.slice(r * 4, r * 4 + 4)));
+  } else if (direction === 'd' || direction === 'arrowright') {
+    for (let r = 0; r < 4; r++) b.splice(r * 4, 4, ...slideEggLine(b.slice(r * 4, r * 4 + 4).reverse()).reverse());
+  } else if (direction === 'w' || direction === 'arrowup') {
+    for (let c = 0; c < 4; c++) {
+      const line = [b[c], b[c + 4], b[c + 8], b[c + 12]];
+      const moved = slideEggLine(line);
+      moved.forEach((v, r) => { b[r * 4 + c] = v; });
+    }
+  } else if (direction === 's' || direction === 'arrowdown') {
+    for (let c = 0; c < 4; c++) {
+      const line = [b[c + 12], b[c + 8], b[c + 4], b[c]];
+      const moved = slideEggLine(line);
+      moved.reverse().forEach((v, r) => { b[r * 4 + c] = v; });
+    }
+  }
+  if (before === b.join(',')) {
+    const movable = b.some((v, i) => !v || (i % 4 < 3 && v === b[i + 1]) || (i < 12 && v === b[i + 4]));
+    if (!movable) finishEggMerge(false);
+    return;
+  }
+  addEggTile();
+  if (b.some((v) => v >= 6)) return finishEggMerge(true);
+  renderEggMerge();
+}
+function finishEggMerge(success) {
+  EGG_MERGE.active = false;
+  const board = panelBody.querySelector('#egg-merge-board');
+  const message = panelBody.querySelector('#egg-merge-message');
+  if (success) {
+    if (!EGG_MERGE.rewarded) {
+      EGG_MERGE.rewarded = true;
+      earn(5, '거북이 알 합치기 성공');
+    }
+    if (board) board.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;border-radius:10px;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">왕관 알이 탄생했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
+    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+  } else if (message) message.textContent = '더 움직일 수 없어요. 다시 도전해 보세요.';
+  renderEggMerge();
+}
+function startEggMerge() {
+  if (!panelBody.querySelector('#egg-merge-board')) panelBody.innerHTML = eggMergeHtml();
+  EGG_MERGE.active = true;
+  EGG_MERGE.board = Array(16).fill(0);
+  EGG_MERGE.score = 0;
+  EGG_MERGE.rewarded = false;
+  addEggTile(); addEggTile();
+  renderEggMerge();
+}
+
+/* ==================================================================
+   미니게임 3 — 기린 목 쌓기
+
+   좌우로 움직이는 목 블록을 Space/클릭으로 떨어뜨립니다. 아래 블록과
+   겹친 부분만 남고, 여섯 층을 쌓으면 기린 머리가 완성됩니다.
+   ================================================================== */
+const GIRAFFE_STACK = {
+  active: false, timer: 0, x: 50, width: 24, visualWidth: 48, level: 0, stackHeight: 0, blocks: [],
+  direction: 1, rewarded: false, dropping: false, dropTop: 34, round: 0,
+};
+function giraffeStackHtml() {
+  return `
+    <p>움직이는 목 블록을 잘 맞춰 기린을 완성하세요.</p>
+    <div class="rows">
+      <div class="row"><span>쌓은 층</span><span class="val" id="stack-level">0 / 6</span></div>
+      <div class="row"><span>조작</span><span class="val">Space · 클릭</span></div>
+      <div class="row"><span>실패 조건</span><span class="val">블록이 빗나가면 종료</span></div>
+    </div>
+    <div class="stack-stage" data-do="giraffe-stack-drop" role="button" tabindex="0" aria-label="기린 목 블록 떨어뜨리기" style="position:relative;height:400px;margin:14px 0;border-radius:14px;background:linear-gradient(180deg,#dce9ef,#f4dfb9);overflow:hidden;cursor:pointer;user-select:none">
+      <img id="stack-head" src="assets/giraffe-head.png" alt="기린 머리" style="position:absolute;left:50%;top:24px;width:78px;height:62px;object-fit:contain;transform:translateX(-50%);opacity:0;pointer-events:none">
+      <div id="stack-tower" style="position:absolute;left:50%;bottom:12px;width:78%;height:370px;transform:translateX(-50%);overflow:visible"></div>
+      <div id="stack-moving" style="position:absolute;left:50%;top:104px;width:72px;height:72px;transform:translateX(-50%);transition:left .04s linear,top .28s cubic-bezier(.2,.85,.3,1);pointer-events:none"><img src="assets/giraffe-body-block-square.png" alt="기린 몸통 블록" style="display:block;width:100%;height:100%;object-fit:cover;pointer-events:none"></div>
+      <span style="position:absolute;left:50%;top:8px;transform:translateX(-50%);font-size:12px;color:#8a6b50">위에서 움직이는 목 블록을 클릭해서 떨어뜨리기</span>
+    </div>
+    <p class="hint" id="stack-message" aria-live="polite">아래 블록과 최대한 겹치게 맞춰 보세요.</p>
+    <button class="act" data-do="giraffe-stack-restart">다시 시작</button>`;
+}
+function renderGiraffeStack() {
+  const moving = panelBody.querySelector('#stack-moving');
+  const tower = panelBody.querySelector('#stack-tower');
+  const level = panelBody.querySelector('#stack-level');
+  if (!moving || !tower || !level) return;
+  moving.style.left = `${GIRAFFE_STACK.x}%`;
+  moving.style.width = `${GIRAFFE_STACK.visualWidth}px`;
+  moving.style.height = `${GIRAFFE_STACK.visualWidth}px`;
+  moving.style.top = `${GIRAFFE_STACK.dropping ? GIRAFFE_STACK.dropTop : 104}px`;
+  level.textContent = `${GIRAFFE_STACK.level} / 6`;
+  tower.innerHTML = GIRAFFE_STACK.blocks.map((block, i) => `<i style="position:absolute;left:${block.x}%;bottom:${block.bottom}px;width:${block.visualWidth}px;height:${block.visualWidth}px;transform:translateX(-50%);display:block;overflow:hidden;font-style:normal"><img src="assets/giraffe-body-block-square.png" alt="기린 몸통 블록 ${i + 1}" style="display:block;width:100%;height:100%;object-fit:cover;pointer-events:none"></i>`).join('');
+  const head = panelBody.querySelector('#stack-head');
+  if (head) head.style.opacity = .35;
+}
+function tickGiraffeStack() {
+  if (!GIRAFFE_STACK.active) return;
+  GIRAFFE_STACK.x += GIRAFFE_STACK.direction * 1.2;
+  const edge = 10;
+  if (GIRAFFE_STACK.x >= 100 - edge || GIRAFFE_STACK.x <= edge) GIRAFFE_STACK.direction *= -1;
+  renderGiraffeStack();
+}
+function dropGiraffeStack() {
+  if (!GIRAFFE_STACK.active) return;
+  if (GIRAFFE_STACK.dropping) return;
+  const previous = GIRAFFE_STACK.blocks[GIRAFFE_STACK.blocks.length - 1] || { x: 50, width: 24, visualWidth: 48 };
+  const left = Math.max(GIRAFFE_STACK.x - GIRAFFE_STACK.width / 2, previous.x - previous.width / 2);
+  const right = Math.min(GIRAFFE_STACK.x + GIRAFFE_STACK.width / 2, previous.x + previous.width / 2);
+  const overlap = right - left;
+  if (overlap <= 3) return finishGiraffeStack(false);
+  const nextVisualWidth = Math.max(30, Math.round(previous.visualWidth * overlap / previous.width));
+  const nextX = (left + right) / 2;
+  GIRAFFE_STACK.dropping = true;
+  GIRAFFE_STACK.dropTop = Math.max(26, 400 - 14 - GIRAFFE_STACK.stackHeight - nextVisualWidth);
+  GIRAFFE_STACK.x = nextX;
+  GIRAFFE_STACK.visualWidth = nextVisualWidth;
+  clearInterval(GIRAFFE_STACK.timer);
+  renderGiraffeStack();
+  const round = GIRAFFE_STACK.round;
+  setTimeout(() => {
+    if (!GIRAFFE_STACK.active || round !== GIRAFFE_STACK.round) return;
+    GIRAFFE_STACK.blocks.push({ x: nextX, width: overlap, visualWidth: nextVisualWidth, bottom: GIRAFFE_STACK.stackHeight });
+    GIRAFFE_STACK.stackHeight += nextVisualWidth;
+    GIRAFFE_STACK.width = overlap;
+    GIRAFFE_STACK.x = nextX;
+    GIRAFFE_STACK.level++;
+    GIRAFFE_STACK.dropping = false;
+    GIRAFFE_STACK.dropTop = 104;
+    if (GIRAFFE_STACK.level >= 6) return finishGiraffeStack(true);
+    GIRAFFE_STACK.timer = setInterval(tickGiraffeStack, 50);
+    const message = panelBody.querySelector('#stack-message');
+    if (message) message.textContent = GIRAFFE_STACK.width < 35 ? '조심하세요! 목 블록이 많이 좁아졌어요.' : '좋아요! 다음 블록도 맞춰 보세요.';
+    renderGiraffeStack();
+  }, 300);
+}
+function finishGiraffeStack(success) {
+  GIRAFFE_STACK.active = false;
+  clearInterval(GIRAFFE_STACK.timer);
+  const stage = panelBody.querySelector('.stack-stage');
+  const message = panelBody.querySelector('#stack-message');
+  if (success) {
+    if (!GIRAFFE_STACK.rewarded) {
+      GIRAFFE_STACK.rewarded = true;
+      earn(5, '기린 목 쌓기 성공');
+    }
+    if (stage) {
+      const topBlock = GIRAFFE_STACK.blocks[GIRAFFE_STACK.blocks.length - 1] || { visualWidth: 48 };
+      const headWidth = Math.round(topBlock.visualWidth * 1.55);
+      const legsWidth = Math.round(topBlock.visualWidth * 1.05);
+      const legsHeight = Math.round(legsWidth * .5);
+      const baseBottom = 12;
+      const blockBottom = baseBottom + legsHeight;
+      const finishedBlocks = GIRAFFE_STACK.blocks.map((block, i) => `<img src="assets/giraffe-body-block-square.png" alt="내가 쌓은 기린 몸통 ${i + 1}" style="position:absolute;left:${block.x}%;bottom:${blockBottom + block.bottom}px;width:${block.visualWidth}px;height:${block.visualWidth}px;transform:translateX(-50%);object-fit:cover">`).join('');
+      const headBottom = blockBottom + GIRAFFE_STACK.stackHeight;
+      stage.innerHTML =
+        '<div style="height:100%;display:flex;align-items:center;justify-content:center;gap:18px;background:linear-gradient(145deg,#f0c566,#d7953f);color:#fff;text-align:center">' +
+          '<div style="position:relative;width:180px;height:390px">' +
+            '<img src="assets/giraffe-lower-legs.png" alt="완성된 기린 다리" style="position:absolute;left:50%;bottom:' + baseBottom + 'px;width:' + legsWidth + 'px;height:' + legsHeight + 'px;transform:translateX(-50%);object-fit:contain">' +
+            finishedBlocks +
+            '<img src="assets/giraffe-head.png" alt="완성된 기린 머리" style="position:absolute;left:50%;bottom:' + headBottom + 'px;width:' + headWidth + 'px;height:' + Math.round(headWidth * .78) + 'px;transform:translateX(-50%);object-fit:contain">' +
+          '</div>' +
+          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">내가 만든 기린 완성!</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">+5P</b></div>' +
+        '</div>';
+    }
+    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+  } else if (message) message.textContent = '블록이 빗나갔어요. 다시 쌓아 보세요.';
+  renderGiraffeStack();
+}
+function startGiraffeStack() {
+  clearInterval(GIRAFFE_STACK.timer);
+  panelBody.innerHTML = giraffeStackHtml();
+  GIRAFFE_STACK.active = true;
+  GIRAFFE_STACK.x = 50;
+  GIRAFFE_STACK.width = 24;
+  GIRAFFE_STACK.visualWidth = 48;
+  GIRAFFE_STACK.level = 0;
+  GIRAFFE_STACK.stackHeight = 0;
+  GIRAFFE_STACK.blocks = [];
+  GIRAFFE_STACK.direction = 1;
+  GIRAFFE_STACK.rewarded = false;
+  GIRAFFE_STACK.dropping = false;
+  GIRAFFE_STACK.dropTop = 104;
+  GIRAFFE_STACK.round++;
+  GIRAFFE_STACK.timer = setInterval(tickGiraffeStack, 50);
+  renderGiraffeStack();
+}
+
 const PANELS = {
+  giraffeStack: () => ({
+    title: '기린 목 쌓기', kind: 'MINI GAME',
+    html: giraffeStackHtml(),
+  }),
+  eggMerge: () => ({
+    title: '거북이 알 합치기', kind: 'MINI GAME',
+    html: eggMergeHtml(),
+  }),
+  turtleEgg: () => ({
+    title: '거북이 알 받기', kind: 'MINI GAME',
+    html: turtleEggHtml(),
+  }),
+  escapeRoom: () => ({
+    title: '방탈출', kind: 'MINI GAME',
+    html: escapeRoomHtml(),
+  }),
   giraffeNeck: () => ({
     title: '기린 목 펴기', kind: 'MINI GAME',
     html: giraffeNeckHtml(),
@@ -5539,6 +6020,8 @@ function openPanel(key) {
   activePanelKey = key;
   keys.clear();
   if (key === 'giraffeNeck') startGiraffeNeck();
+  if (key === 'eggMerge') startEggMerge();
+  if (key === 'giraffeStack') startGiraffeStack();
   panelEl.querySelector('header button').focus();
 }
 function closePanel() {
@@ -5546,13 +6029,45 @@ function closePanel() {
     GIRAFFE_NECK.active = false;
     clearInterval(GIRAFFE_NECK.timer);
   }
+  if (TURTLE_EGG.active) {
+    TURTLE_EGG.active = false;
+    clearInterval(TURTLE_EGG.timer);
+  }
+  EGG_MERGE.active = false;
+  if (GIRAFFE_STACK.active) {
+    GIRAFFE_STACK.active = false;
+    clearInterval(GIRAFFE_STACK.timer);
+  }
   panelEl.classList.remove('on'); panelOpen = false; activePanelKey = '';
 }
 panelEl.querySelector('header button').addEventListener('click', closePanel);
 panelEl.addEventListener('click', (e) => { if (e.target === panelEl) closePanel(); });
+panelBody.addEventListener('pointerdown', (e) => {
+  if (activePanelKey === 'giraffeStack' && e.target.closest('[data-do="giraffe-stack-drop"]')) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+});
 panelBody.addEventListener('click', (e) => {
+  if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
+    return dropGiraffeStack();
+  }
   if (e.target.closest('[data-do="giraffe-restart"]')) return startGiraffeNeck();
   if (e.target.closest('[data-do="giraffe-tap"]')) tapGiraffeNeck();
+  if (e.target.closest('[data-do="egg-restart"]')) return startTurtleEgg();
+  if (e.target.closest('[data-do="egg-merge-restart"]')) return startEggMerge();
+  if (e.target.closest('[data-do="egg-up"]')) return moveEggMerge('arrowup');
+  if (e.target.closest('[data-do="egg-down"]')) return moveEggMerge('arrowdown');
+  if (e.target.closest('[data-do="egg-left"]')) return moveEggMerge('arrowleft');
+  if (e.target.closest('[data-do="egg-right"]')) return moveEggMerge('arrowright');
+  if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
+  if (e.target.closest('[data-do="giraffe-stack-drop"]')) return dropGiraffeStack();
+  if (e.target.closest('[data-do="escape-restart"]')) return startEscapeRoom();
+  if (e.target.closest('[data-do="escape-clue"]')) return revealEscapeClue(Number(e.target.closest('[data-do="escape-clue"]').dataset.clue));
+  if (e.target.closest('[data-do="escape-submit"]')) return submitEscapeCode();
 });
 
 /* ---- 값 고치기 ----
@@ -5651,6 +6166,11 @@ function openEdit(key, row) {
 
 /* 창 안의 조작 — 위임 하나로 받습니다 */
 panelBody.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.id === 'escape-input') {
+    e.preventDefault();
+    submitEscapeCode();
+    return;
+  }
   /* 코드를 치고 엔터. 버튼까지 탭으로 옮겨 가게 하면 여섯 자 넣는 일이
      열 번 누르는 일이 됩니다. */
   if (e.key === 'Enter' && e.target.id === 'invite-in') {

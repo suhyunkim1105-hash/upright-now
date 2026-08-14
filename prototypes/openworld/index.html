@@ -1944,7 +1944,7 @@ const paintGates = () => {
   gateCanvas('gateEsc', '알 합치기', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
 gateCanvas('gateA', '기린 목 펴기', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'shell');
   gateCanvas('gateB', '목 쌓기', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
-  gateCanvas('gateC', 'Ex 3', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'ex');
+  gateCanvas('gateC', '등껍질 퍼즐', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
 };
 paintGates();
 TEXT_ART.push(paintGates);
@@ -3204,6 +3204,7 @@ const ZONES = {};
     { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
     { x: 32, y: 7, name: '기린 목 쌓기', panel: 'giraffeStack' },
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
+    { x: 39, y: 7, name: '거북이 등껍질 퍼즐', panel: 'shellSlide' },
   ];
   prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
 
@@ -3906,7 +3907,12 @@ addEventListener('keydown', (e) => {
       dropGiraffeStack();
       return;
     }
-    if (k === 'escape' || (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack'].includes(activePanelKey))) closePanel();
+    if (SHELL_SLIDE.active && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+      e.preventDefault();
+      moveShellSlide(k);
+      return;
+    }
+    if (k === 'escape' || (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'shellSlide'].includes(activePanelKey))) closePanel();
     return;
   }
   /* 미니맵이 펼쳐져 있으면 숫자로 바로 갑니다. 지도를 보면서 고르는
@@ -5687,6 +5693,134 @@ function startGiraffeStack() {
   renderGiraffeStack();
 }
 
+/* ==================================================================
+   미니게임 4 — 거북이 등껍질 슬라이드 퍼즐
+
+   MIT License로 공개된 javascript-games의 Sliding Puzzle 구조를 참고해
+   현재 프로토타입의 패널/보상 흐름에 맞게 독립적으로 작성했습니다.
+   ================================================================== */
+const SHELL_SLIDE = {
+  active: false, timer: 60, timerId: null, board: [], blank: 8, moves: 0, rewarded: false,
+};
+const SHELL_SOLVED = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+function shellSlideNeighbors(blank) {
+  const row = Math.floor(blank / 3), col = blank % 3;
+  const result = [];
+  if (row > 0) result.push(blank - 3);
+  if (row < 2) result.push(blank + 3);
+  if (col > 0) result.push(blank - 1);
+  if (col < 2) result.push(blank + 1);
+  return result;
+}
+function shellSlideShuffle() {
+  const board = SHELL_SOLVED.slice();
+  let blank = 8;
+  let previousBlank = -1;
+  for (let i = 0; i < 80; i++) {
+    const choices = shellSlideNeighbors(blank).filter((index) => index !== previousBlank);
+    const target = choices[Math.floor(Math.random() * choices.length)];
+    [board[blank], board[target]] = [board[target], board[blank]];
+    previousBlank = blank;
+    blank = target;
+  }
+  if (board.every((value, index) => value === SHELL_SOLVED[index])) return shellSlideShuffle();
+  SHELL_SLIDE.blank = blank;
+  return board;
+}
+function shellSlideIsSolved() {
+  return SHELL_SLIDE.board.every((value, index) => value === SHELL_SOLVED[index]);
+}
+function shellSlideDirectionTarget(direction) {
+  const row = Math.floor(SHELL_SLIDE.blank / 3), col = SHELL_SLIDE.blank % 3;
+  if (direction === 'arrowup' && row < 2) return SHELL_SLIDE.blank + 3;
+  if (direction === 'arrowdown' && row > 0) return SHELL_SLIDE.blank - 3;
+  if (direction === 'arrowleft' && col < 2) return SHELL_SLIDE.blank + 1;
+  if (direction === 'arrowright' && col > 0) return SHELL_SLIDE.blank - 1;
+  return -1;
+}
+function moveShellSlide(input) {
+  if (!SHELL_SLIDE.active) return false;
+  const target = typeof input === 'number' ? input : shellSlideDirectionTarget(input);
+  if (!shellSlideNeighbors(SHELL_SLIDE.blank).includes(target)) return false;
+  [SHELL_SLIDE.board[SHELL_SLIDE.blank], SHELL_SLIDE.board[target]] = [SHELL_SLIDE.board[target], SHELL_SLIDE.board[SHELL_SLIDE.blank]];
+  SHELL_SLIDE.blank = target;
+  SHELL_SLIDE.moves++;
+  renderShellSlide();
+  if (shellSlideIsSolved()) finishShellSlide(true);
+  return true;
+}
+function shellSlideTileStyle(tile) {
+  const palettes = [
+    ['#f9d66d', '#c79032'], ['#ffe28a', '#d19a36'], ['#f5c85e', '#a97229'],
+    ['#ffdf77', '#bc8230'], ['#f8cf65', '#b97827'], ['#ffe596', '#c48a2d'],
+    ['#f6c45a', '#9f6827'], ['#ffda70', '#b87528'],
+  ];
+  const [light, dark] = palettes[tile] || palettes[0];
+  return `background:radial-gradient(circle at 30% 24%,#fff6c8 0 7%,transparent 8%),linear-gradient(145deg,${light},${dark});transition:transform .12s ease,filter .12s ease;`;
+}
+function shellSlideTileMarkup(tile, index, solvedView = false) {
+  if (tile === 8) return '<span class="shell-blank" aria-hidden="true"></span>';
+  const label = solvedView ? `완성된 등껍질 조각 ${tile + 1}` : `등껍질 조각 ${tile + 1} 이동`;
+  const tag = solvedView ? 'span' : 'button type="button" data-shell-index="' + index + '" aria-label="' + label + '"';
+  return `<${tag} class="shell-tile" style="${shellSlideTileStyle(tile)}"><span>🐢</span><small>${tile + 1}</small></${solvedView ? 'span' : 'button'}>`;
+}
+function shellSlideHtml() {
+  return `
+    <style>@media (prefers-reduced-motion: reduce){#shell-slide-board .shell-tile{transition:none!important}}</style>
+    <p>조각을 밀어서 거북이 등껍질을 완성하세요.</p>
+    <div class="rows">
+      <div class="row"><span>남은 시간</span><span class="val" id="shell-slide-time">60초</span></div>
+      <div class="row"><span>이동 횟수</span><span class="val" id="shell-slide-moves">0회</span></div>
+      <div class="row"><span>조작</span><span class="val">클릭 · 방향키</span></div>
+    </div>
+    <div id="shell-slide-board" role="group" aria-label="거북이 등껍질 퍼즐" style="display:grid;grid-template-columns:repeat(3,1fr);gap:7px;width:min(100%,300px);aspect-ratio:1;margin:18px auto;padding:9px;border-radius:18px;background:#3f8c82;box-shadow:inset 0 0 0 3px #246259">
+    </div>
+    <p class="hint" id="shell-slide-message" aria-live="polite">빈칸 옆 조각을 눌러 이동하세요.</p>
+    <button class="act" data-do="shell-slide-restart">다시 시작</button>`;
+}
+function renderShellSlide() {
+  const board = panelBody.querySelector('#shell-slide-board');
+  const time = panelBody.querySelector('#shell-slide-time');
+  const moves = panelBody.querySelector('#shell-slide-moves');
+  if (!board || !time || !moves) return;
+  board.innerHTML = SHELL_SLIDE.board.map((tile, index) => shellSlideTileMarkup(tile, index)).join('');
+  time.textContent = `${SHELL_SLIDE.timer}초`;
+  moves.textContent = `${SHELL_SLIDE.moves}회`;
+}
+function finishShellSlide(success) {
+  SHELL_SLIDE.active = false;
+  clearInterval(SHELL_SLIDE.timerId);
+  SHELL_SLIDE.timerId = null;
+  const board = panelBody.querySelector('#shell-slide-board');
+  const message = panelBody.querySelector('#shell-slide-message');
+  if (success) {
+    if (!SHELL_SLIDE.rewarded) {
+      SHELL_SLIDE.rewarded = true;
+      earn(5, '거북이 등껍질 퍼즐 성공');
+    }
+    if (board) board.innerHTML = `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:9px;border-radius:12px;background:#3f8c82">${SHELL_SOLVED.map((tile, index) => shellSlideTileMarkup(tile, index, true)).join('')}</div>`;
+    if (message) message.textContent = '성공! 거북이 등껍질을 완성했어요. +5P';
+  } else if (message) {
+    message.textContent = '시간이 끝났어요. 다시 도전해 보세요.';
+  }
+}
+function startShellSlide() {
+  clearInterval(SHELL_SLIDE.timerId);
+  panelBody.innerHTML = shellSlideHtml();
+  SHELL_SLIDE.active = true;
+  SHELL_SLIDE.timer = 60;
+  SHELL_SLIDE.moves = 0;
+  SHELL_SLIDE.rewarded = false;
+  SHELL_SLIDE.board = shellSlideShuffle();
+  SHELL_SLIDE.timerId = setInterval(() => {
+    if (!SHELL_SLIDE.active) return;
+    SHELL_SLIDE.timer--;
+    renderShellSlide();
+    if (SHELL_SLIDE.timer <= 0) finishShellSlide(false);
+  }, 1000);
+  renderShellSlide();
+}
+
 const PANELS = {
   giraffeStack: () => ({
     title: '기린 목 쌓기', kind: 'MINI GAME',
@@ -5707,6 +5841,10 @@ const PANELS = {
   giraffeNeck: () => ({
     title: '기린 목 펴기', kind: 'MINI GAME',
     html: giraffeNeckHtml(),
+  }),
+  shellSlide: () => ({
+    title: '거북이 등껍질 퍼즐', kind: 'MINI GAME',
+    html: shellSlideHtml(),
   }),
   /* ---- 안내 — 벽에 붙은 표지판이 여는 창 ----
      기능이 아니라 **읽을 것**입니다. 처음 온 사람이 무엇을 하는 곳인지
@@ -6022,6 +6160,7 @@ function openPanel(key) {
   if (key === 'giraffeNeck') startGiraffeNeck();
   if (key === 'eggMerge') startEggMerge();
   if (key === 'giraffeStack') startGiraffeStack();
+  if (key === 'shellSlide') startShellSlide();
   panelEl.querySelector('header button').focus();
 }
 function closePanel() {
@@ -6038,6 +6177,9 @@ function closePanel() {
     GIRAFFE_STACK.active = false;
     clearInterval(GIRAFFE_STACK.timer);
   }
+  SHELL_SLIDE.active = false;
+  clearInterval(SHELL_SLIDE.timerId);
+  SHELL_SLIDE.timerId = null;
   panelEl.classList.remove('on'); panelOpen = false; activePanelKey = '';
 }
 panelEl.querySelector('header button').addEventListener('click', closePanel);
@@ -6049,6 +6191,12 @@ panelBody.addEventListener('pointerdown', (e) => {
   }
 });
 panelBody.addEventListener('click', (e) => {
+  if (activePanelKey === 'shellSlide' && (e.target.closest('[data-shell-index]') || e.target.closest('[data-do="shell-slide-restart"]'))) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    if (e.target.closest('[data-do="shell-slide-restart"]')) return startShellSlide();
+    return moveShellSlide(Number(e.target.closest('[data-shell-index]').dataset.shellIndex));
+  }
   if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();

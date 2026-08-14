@@ -1944,7 +1944,7 @@ const paintGates = () => {
   gateCanvas('gateEsc', '알 합치기', '#FF6B52', '#FFA694', '#8E2E1C', '255,150,120', 'key');
 gateCanvas('gateA', '기린 목 펴기', '#3E8D82', '#79C4B8', '#1F544C', '130,230,215', 'shell');
   gateCanvas('gateB', '목 쌓기', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
-  gateCanvas('gateC', '등껍질 퍼즐', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
+  gateCanvas('gateC', '거북이 미로', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
 };
 paintGates();
 TEXT_ART.push(paintGates);
@@ -3204,7 +3204,7 @@ const ZONES = {};
     { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
     { x: 32, y: 7, name: '기린 목 쌓기', panel: 'giraffeStack' },
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
-    { x: 39, y: 7, name: '거북이 등껍질 퍼즐', panel: 'shellSlide' },
+    { x: 39, y: 7, name: '거북이 미로 탈출', panel: 'turtleMaze' },
   ];
   prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
 
@@ -3907,12 +3907,12 @@ addEventListener('keydown', (e) => {
       dropGiraffeStack();
       return;
     }
-    if (SHELL_SLIDE.active && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+    if (TURTLE_MAZE.active && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
       e.preventDefault();
-      moveShellSlide(k);
+      turtleMazeMove(k);
       return;
     }
-    if (k === 'escape' || (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'shellSlide'].includes(activePanelKey))) closePanel();
+    if (k === 'escape' || (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'turtleMaze'].includes(activePanelKey))) closePanel();
     return;
   }
   /* 미니맵이 펼쳐져 있으면 숫자로 바로 갑니다. 지도를 보면서 고르는
@@ -5821,6 +5821,122 @@ function startShellSlide() {
   renderShellSlide();
 }
 
+/* ==================================================================
+   미니게임 4 — 거북이 미로 탈출
+
+   MIT License로 공개된 javascript-games의 Maze Game 구조를 참고해
+   등껍질 퍼즐 슬롯에 맞는 독립 미로 게임으로 교체했습니다.
+   ================================================================== */
+const TURTLE_MAZE = {
+  active: false, timer: 60, timerId: null, grid: [], player: { r: 0, c: 0 },
+  goal: { r: 9, c: 9 }, moves: 0, rewarded: false,
+};
+function mazePathExists(grid) {
+  const queue = [{ r: 0, c: 0 }], seen = new Set(['0,0']);
+  while (queue.length) {
+    const current = queue.shift();
+    if (current.r === 9 && current.c === 9) return true;
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr, dc]) => {
+      const r = current.r + dr, c = current.c + dc, key = `${r},${c}`;
+      if (r >= 0 && r < 10 && c >= 0 && c < 10 && grid[r][c] === 0 && !seen.has(key)) {
+        seen.add(key); queue.push({ r, c });
+      }
+    });
+  }
+  return false;
+}
+function createTurtleMaze() {
+  const grid = Array.from({ length: 10 }, () => Array(10).fill(0));
+  const candidates = [];
+  for (let r = 0; r < 10; r++) for (let c = 0; c < 10; c++) {
+    if ((r === 0 && c === 0) || (r === 9 && c === 9)) continue;
+    candidates.push({ r, c });
+  }
+  for (let i = candidates.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+  }
+  let walls = 0;
+  for (const cell of candidates) {
+    if (walls >= 28) break;
+    grid[cell.r][cell.c] = 1;
+    if (!mazePathExists(grid)) grid[cell.r][cell.c] = 0;
+    else walls++;
+  }
+  return grid;
+}
+function turtleMazeHtml() {
+  return `
+    <p>거북이를 출구까지 안전하게 안내하세요.</p>
+    <div class="rows">
+      <div class="row"><span>남은 시간</span><span class="val" id="maze-time">60초</span></div>
+      <div class="row"><span>이동 횟수</span><span class="val" id="maze-moves">0회</span></div>
+      <div class="row"><span>목표</span><span class="val">🐢 → 🏁</span></div>
+    </div>
+    <div id="maze-board" role="group" aria-label="거북이 미로" style="display:grid;grid-template-columns:repeat(10,1fr);gap:2px;width:min(100%,360px);aspect-ratio:1;margin:16px auto;padding:6px;border-radius:14px;background:#315f68;box-shadow:inset 0 0 0 3px #24474d"></div>
+    <div style="display:grid;grid-template-columns:repeat(3,46px);justify-content:center;gap:5px;margin:10px auto 4px">
+      <span></span><button class="act" data-maze-dir="up" aria-label="위로 이동">↑</button><span></span>
+      <button class="act" data-maze-dir="left" aria-label="왼쪽 이동">←</button><button class="act" data-maze-dir="down" aria-label="아래로 이동">↓</button><button class="act" data-maze-dir="right" aria-label="오른쪽 이동">→</button>
+    </div>
+    <p class="hint" id="maze-message" aria-live="polite">방향키, W/A/S/D 또는 버튼으로 이동하세요.</p>
+    <button class="act" data-do="turtle-maze-restart">다시 시작</button>`;
+}
+function renderTurtleMaze() {
+  const board = panelBody.querySelector('#maze-board');
+  const time = panelBody.querySelector('#maze-time');
+  const moves = panelBody.querySelector('#maze-moves');
+  if (!board || !time || !moves) return;
+  board.innerHTML = TURTLE_MAZE.grid.map((row, r) => row.map((cell, c) => {
+    const isPlayer = TURTLE_MAZE.player.r === r && TURTLE_MAZE.player.c === c;
+    const isGoal = TURTLE_MAZE.goal.r === r && TURTLE_MAZE.goal.c === c;
+    return `<span style="display:grid;place-items:center;border-radius:3px;background:${cell ? '#193c43' : '#e8d69c'};color:${isPlayer ? '#2e7d72' : '#c28737'};font-size:clamp(12px,3.4vw,22px);aspect-ratio:1">${isPlayer ? '🐢' : isGoal ? '🏁' : ''}</span>`;
+  }).join('')).join('');
+  time.textContent = `${TURTLE_MAZE.timer}초`;
+  moves.textContent = `${TURTLE_MAZE.moves}회`;
+}
+function turtleMazeMove(input) {
+  if (!TURTLE_MAZE.active) return false;
+  const direction = { w: [-1,0], arrowup: [-1,0], a: [0,-1], arrowleft: [0,-1], s: [1,0], arrowdown: [1,0], d: [0,1], arrowright: [0,1] }[input];
+  if (!direction) return false;
+  const r = TURTLE_MAZE.player.r + direction[0], c = TURTLE_MAZE.player.c + direction[1];
+  if (r < 0 || r >= 10 || c < 0 || c >= 10 || TURTLE_MAZE.grid[r][c]) return false;
+  TURTLE_MAZE.player = { r, c };
+  TURTLE_MAZE.moves++;
+  renderTurtleMaze();
+  if (r === TURTLE_MAZE.goal.r && c === TURTLE_MAZE.goal.c) finishTurtleMaze(true);
+  return true;
+}
+function finishTurtleMaze(success) {
+  TURTLE_MAZE.active = false;
+  clearInterval(TURTLE_MAZE.timerId);
+  TURTLE_MAZE.timerId = null;
+  const message = panelBody.querySelector('#maze-message');
+  if (success) {
+    if (!TURTLE_MAZE.rewarded) {
+      TURTLE_MAZE.rewarded = true;
+      earn(5, '거북이 미로 탈출 성공');
+    }
+    if (message) message.textContent = '성공! 거북이가 미로를 탈출했어요. +5P';
+  } else if (message) message.textContent = '시간이 끝났어요. 다시 도전해 보세요.';
+}
+function startTurtleMaze() {
+  clearInterval(TURTLE_MAZE.timerId);
+  panelBody.innerHTML = turtleMazeHtml();
+  TURTLE_MAZE.active = true;
+  TURTLE_MAZE.timer = 60;
+  TURTLE_MAZE.moves = 0;
+  TURTLE_MAZE.rewarded = false;
+  TURTLE_MAZE.grid = createTurtleMaze();
+  TURTLE_MAZE.player = { r: 0, c: 0 };
+  TURTLE_MAZE.timerId = setInterval(() => {
+    if (!TURTLE_MAZE.active) return;
+    TURTLE_MAZE.timer--;
+    renderTurtleMaze();
+    if (TURTLE_MAZE.timer <= 0) finishTurtleMaze(false);
+  }, 1000);
+  renderTurtleMaze();
+}
+
 const PANELS = {
   giraffeStack: () => ({
     title: '기린 목 쌓기', kind: 'MINI GAME',
@@ -5842,9 +5958,9 @@ const PANELS = {
     title: '기린 목 펴기', kind: 'MINI GAME',
     html: giraffeNeckHtml(),
   }),
-  shellSlide: () => ({
-    title: '거북이 등껍질 퍼즐', kind: 'MINI GAME',
-    html: shellSlideHtml(),
+  turtleMaze: () => ({
+    title: '거북이 미로 탈출', kind: 'MINI GAME',
+    html: turtleMazeHtml(),
   }),
   /* ---- 안내 — 벽에 붙은 표지판이 여는 창 ----
      기능이 아니라 **읽을 것**입니다. 처음 온 사람이 무엇을 하는 곳인지
@@ -6160,7 +6276,7 @@ function openPanel(key) {
   if (key === 'giraffeNeck') startGiraffeNeck();
   if (key === 'eggMerge') startEggMerge();
   if (key === 'giraffeStack') startGiraffeStack();
-  if (key === 'shellSlide') startShellSlide();
+  if (key === 'turtleMaze') startTurtleMaze();
   panelEl.querySelector('header button').focus();
 }
 function closePanel() {
@@ -6177,9 +6293,9 @@ function closePanel() {
     GIRAFFE_STACK.active = false;
     clearInterval(GIRAFFE_STACK.timer);
   }
-  SHELL_SLIDE.active = false;
-  clearInterval(SHELL_SLIDE.timerId);
-  SHELL_SLIDE.timerId = null;
+  TURTLE_MAZE.active = false;
+  clearInterval(TURTLE_MAZE.timerId);
+  TURTLE_MAZE.timerId = null;
   panelEl.classList.remove('on'); panelOpen = false; activePanelKey = '';
 }
 panelEl.querySelector('header button').addEventListener('click', closePanel);
@@ -6191,11 +6307,11 @@ panelBody.addEventListener('pointerdown', (e) => {
   }
 });
 panelBody.addEventListener('click', (e) => {
-  if (activePanelKey === 'shellSlide' && (e.target.closest('[data-shell-index]') || e.target.closest('[data-do="shell-slide-restart"]'))) {
+  if (activePanelKey === 'turtleMaze' && (e.target.closest('[data-maze-dir]') || e.target.closest('[data-do="turtle-maze-restart"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (e.target.closest('[data-do="shell-slide-restart"]')) return startShellSlide();
-    return moveShellSlide(Number(e.target.closest('[data-shell-index]').dataset.shellIndex));
+    if (e.target.closest('[data-do="turtle-maze-restart"]')) return startTurtleMaze();
+    return turtleMazeMove(e.target.closest('[data-maze-dir]').dataset.mazeDir);
   }
   if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {
     e.preventDefault();

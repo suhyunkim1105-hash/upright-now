@@ -129,8 +129,11 @@ PASS  미니게임 첫 호출 +10 / 같은 날 두 번째 0, 서버·로컬 모�
 
 ### 코인 규칙 (`src/constants/coin.ts`)
 
-의존성 설치가 불가능해(아래 §5) vitest 대신 규칙 함수만 직접 평가:
-**21 pass / 0 fail** (`coin.spec.ts` 가 주장하는 값과 동일).
+```
+vitest run src/constants/coin.spec.ts   →  Test Files 1 passed / Tests 6 passed
+```
+
+규칙 함수 직접 평가로도 교차 확인: **21 pass / 0 fail**.
 
 ### lint
 
@@ -139,16 +142,25 @@ PASS  미니게임 첫 호출 +10 / 같은 날 두 번째 0, 서버·로컬 모�
 
 ### 돌리지 못한 검사
 
-`npm run typecheck` / `test` / `build` — **환경 문제로 불가**.
-디스크가 가득 차(0바이트 여유) `npm ci` 가 ENOSPC 로 중단됐고,
-`zod`·`@google/genai`·`@langfuse/client`·`genkit` 이 설치되지 않았습니다.
-원본 트리의 `node_modules` 도 117개만 있어 같은 상태입니다.
-따라서 typecheck 오류(TS2307 Cannot find module …)는 **제 변경과 무관한
-기존 환경 문제**입니다. 제가 만든 `coin.ts`·`coin.spec.ts` 는 오류 목록에
-등장하지 않습니다.
+`npm run typecheck` / `build` — **환경 문제로 불가**.
+작업 중 디스크가 가득 차(0바이트) `npm ci` 가 ENOSPC 로 중단됐습니다.
+정리 후 8GB 를 회수했지만, 그 사이 원본 트리의 `node_modules` 가 다른
+프로세스에 의해 재설치되면서 `.bin/tsc` 심(shim)이 사라진 상태입니다.
 
-> 디스크 여유를 만들면(약 2GB) `npm ci && npm run test && npm run build` 로
-> 확인해 주세요. 제가 설치 중 만든 1.5GB 부분 설치본은 지웠습니다.
+typecheck 를 처음 돌렸을 때 나온 오류는 전부 `TS2307 Cannot find module`
+(zod·@google/genai·@langfuse/client·genkit) 이었습니다 — **설치 누락이지
+제 변경 때문이 아닙니다.** 제가 만든 `coin.ts`·`coin.spec.ts` 는 오류 목록에
+등장하지 않았고, vitest 가 같은 파일을 TS 로 변환해 통과시켰습니다.
+
+전체 유닛 스위트(`npm run test`)는 **의도적으로 중단했습니다.** 디스크가
+다시 0에 가까워지고 있었고, `src` 안에서 `coin.ts` 를 import 하는 파일이
+`coin.spec.ts` 하나뿐이라(확인함) 나머지 spec 은 제 변경의 영향을 받지
+않습니다. 디스크를 지키는 쪽을 택했습니다.
+
+> `npm ci` 가 끝난 환경에서 `npm run typecheck && npm run test && npm run build`
+> 를 한 번 확인해 주세요. 제가 설치 중 만든 1.5GB 부분 설치본과 npm 캐시는
+> 지웠습니다(디스크 0 → 8GB 회수). 검사에 쓴 `node_modules` 정션도
+> 제거해 원본 트리는 건드리지 않은 상태입니다.
 
 ---
 

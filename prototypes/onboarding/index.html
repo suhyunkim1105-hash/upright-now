@@ -1,0 +1,2668 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기린캠퍼스 - 시작하기</title>
+<!-- Wanted Sans — 유니코드 구간별 92 subset 을 이 CSS 가 부릅니다.
+     읽는 글자만 내려받으므로 한 벌을 통째로 받는 것보다 가볍습니다. -->
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+
+<style>
+  /* ==================================================================
+     기린캠퍼스 - 온보딩
+
+     색·서체는 오픈월드 프로토타입의 토큰을 그대로 씁니다. 온보딩과
+     월드가 다른 손이면, 알을 깨고 들어간 순간 다른 서비스에 온 것처럼
+     보입니다.
+
+     **청록 위에 흰 글자는 쓰지 않습니다.** 대비 1.86 으로 한참 미달입니다
+     (재서 확인). 청록은 채움으로 쓰고 글자는 잉크를 얹습니다(8.30).
+     눌린 상태(600)에서도 잉크를 유지하면 5.02 로 버팁니다 - 자리마다
+     글자색이 달라지면 그때부터 계통이 어긋납니다.
+     크림 바탕에 청록으로 글씨를 쓸 때만 teal-700 을 씁니다(5.25).
+
+     한 가지 테마로 잠급니다. 제품이 "흰 판 위의 픽셀 세계" 라는 결정을
+     이미 했고, 온보딩만 어두워지면 그 약속이 첫 화면에서 깨집니다.
+     ================================================================== */
+  @font-face {
+    font-family: 'Pretendard Variable';
+    src: url('../openworld/assets/fonts/PretendardVariable.woff2') format('woff2-variations');
+    font-weight: 45 920;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    /* 청록 — 서비스 주색. 월드(openworld/index.html)와 **같은 값**입니다.
+       온보딩 끝에 월드로 넘어가므로 여기서 색이 바뀌면 다른 제품에
+       들어온 것처럼 보입니다.
+
+       청록 위에는 먹 글자를 얹습니다. 흰 글자는 1.86:1 로 못 씁니다. */
+    --teal-50:  #EFFBF9;
+    --teal-100: #CFF2ED;
+    --teal-200: #ADEBE2;
+    --teal-300: #8AE5D9;
+    --teal-400: #56DCCA;
+    --teal:     #2DD4BF;
+    --teal-600: #12A592;   /* 눌림 · 호버 — 여기도 먹 글자 5.02 */
+    --teal-700: #0D7769;   /* 크림 위 청록 글자 5.25 — AA */
+    --teal-800: #0C5A4F;
+
+    /* 흰 무대. 앰버 크림에서 넘어왔습니다 - 크림 위에서는 픽셀 캐릭터가
+       누렇게 보이고, 화면 전체가 한 겹 흐려집니다. 순백을 깔고 여백을
+       크게 두면 움직이는 것만 눈에 들어옵니다.
+
+       중성색은 아주 조금 차갑습니다. 완전한 무채색은 청록 옆에서
+       누렇게 보입니다. */
+    --bg:        #FFFFFF;
+    --ink:       #2B3230;   /* 흰 위 13.11 */
+    --ink-2:     #5C6663;   /* 5.94 */
+    --ink-3:     #6E7876;   /* 4.55 — 작은 글자도 통과해야 하는 층 */
+    --line:      #E8EBEB;
+    --line-2:    #DCE0E0;
+    --surface:   #FFFFFF;
+    --surface-2: #F7F8F8;
+    --surface-3: #EFF1F1;
+
+    /* 손으로 그은 선. 글자(--ink #2B3230, 흰 위 13.11)보다 약합니다 -
+       테두리가 글자와 같은 검정이면 상자가 내용보다 크게 말합니다.
+       흰 위 7.84 · 청록 채움 위 4.21 로, 낮췄어도 형태는 남습니다. */
+    --stroke:    #4A5451;
+
+    /* ---- 여백 ----
+       4px 기반 8단. 값이 33종이었습니다 - 9·10·11·12·13·14·15·16·17·18·
+       20·22·26·30. 다 다른 이유가 없었고, 새 화면을 만들 때마다 "여기는
+       몇 px 이지" 를 다시 정해야 했습니다.
+
+       계단을 성기게 둔 것이 요점입니다. 16 다음이 24, 그 다음이 40 이라
+       중간을 고를 수 없습니다. 고를 수 있으면 고르게 되고, 그러면 다시
+       33종이 됩니다.
+
+       2px 만 계단 밖입니다. 아이콘을 글줄에 맞추는 광학 보정용이고,
+       여백이 아닙니다. */
+    --sp-2xs:  2px;   /* 광학 보정 전용 */
+    --sp-xs:   4px;
+    --sp-sm:   8px;
+    --sp-md:  12px;
+    --sp-lg:  16px;
+    --sp-xl:  24px;
+    --sp-2xl: 40px;
+    --sp-3xl: 64px;
+
+    --on-teal:   #2B3230;
+    --good:      #2E9E5B;
+    --warn:      #D98324;
+
+
+    --sh:    0 8px 24px rgba(20, 40, 38, .10);
+    --sh-lg: 0 24px 56px rgba(20, 40, 38, .16);
+    /* ---- 모서리 ----
+       모양이 뜻을 나릅니다. 알약은 누르는 것, 16 은 담는 판, 12 는
+       글자를 받는 것. 값이 9종이었을 때는 10·11·12·14·16 이 뒤섞여
+       있었고, 그 차이가 아무 말도 안 했습니다. */
+    --r-pill: 999px;  /* 누르는 것 · 진행 막대 · 배지 */
+    --r-lg:    16px;  /* 판 — 카드 · 말풍선 · 영상 · 요약 */
+    --r-md:    12px;  /* 글자를 받는 것 — 입력칸 · 아이콘 판 */
+    --r-sm:     8px;  /* 칩 */
+    --r:       12px;  /* = --r-md. 옛 이름, 남은 자리가 있어 둡니다 */
+    --r-xl:    22px;  /* 랜딩 전용 */
+
+    --ease: cubic-bezier(.16, 1, .3, 1);
+    /* 누르는 반응 전용. 기본 ease 는 시작이 느려서, 90ms 안에 끝나야
+       하는 눌림에 쓰면 손가락보다 늦게 출발합니다. 이건 즉시 떠나고
+       끝에서만 잦아듭니다. */
+    --ease-press: cubic-bezier(.2, 0, 0, 1);
+    /* 나가는 것 전용 — 가속. 떠나는 화면은 뒤돌아보지 않습니다.
+       들어오는 --ease 가 감속인 것과 짝입니다. 둘이 같으면 방향이
+       사라지고, 화면이 그냥 깜빡인 것처럼 보입니다. */
+    --ease-exit: cubic-bezier(.55, 0, 1, .45);
+    /* 진행 막대만. 끝에서 아주 살짝 넘겼다 앉습니다 - 이건 상태
+       표시가 아니라 "한 장 끝냈다" 는 보상이라서 그렇습니다. */
+    --ease-reward: cubic-bezier(.34, 1.28, .64, 1);
+
+    /* 한 걸음의 박자. 누름은 즉시, 막대가 먼저 차고, 그 다음 화면이
+       바뀝니다. 세 값이 순서를 만듭니다. */
+    --t-press:  90ms;
+    --t-out:   180ms;   /* 앞 화면이 빠지는 시간 */
+    --t-in:    320ms;   /* 새 화면 조각 하나가 앉는 시간 */
+    --t-hold:   90ms;   /* 막대만 보이는 틈 — 여기가 "끝났다" 입니다 */
+    --t-lag:    55ms;   /* 조각 사이 간격 */
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    /* 500 입니다. 한국어는 400 대에서 획이 뭉개져 얇아 보이는 게 아니라
+       흐려 보입니다 - 토스가 본문 400 이하를 금지하는 이유입니다. */
+    font: 500 15px/1.62 'Wanted Sans Variable', 'Pretendard Variable', -apple-system,
+          'Segoe UI', 'Malgun Gothic', sans-serif;
+    /* 값이 바뀌는 자리(남은 시간·번호·코인)에서 자릿수가 흔들리지 않게.
+       안 켜면 타이머가 매초 좌우로 떱니다. */
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  canvas { image-rendering: pixelated; display: block; }
+  ::selection { background: var(--teal-200); color: var(--ink); }
+
+  /* 초점은 어디서나 보여야 합니다 - 키보드만 쓰는 사람이 길을 잃습니다 */
+  :focus-visible { outline: 3px solid var(--teal-600); outline-offset: 3px; border-radius: 4px; }
+
+  .sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------------- 무대 ---------------- */
+  #app { min-height: 100dvh; display: grid; }
+
+  /* ================= 랜딩 =================
+     좌우로 가릅니다. 왼쪽은 무엇인지, 오른쪽은 실제 그림입니다.
+     가운데 정렬 히어로는 "무슨 서비스인지" 보다 "우리가 멋지다" 를 먼저
+     말하게 됩니다. 여기서 필요한 건 앞쪽입니다. */
+  #landing {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+    align-items: center;
+    align-content: center;          /* 행 자체를 세로 가운데로. 이게 없으면
+                                       auto 행이 위에 붙고 아래가 텅 빕니다 */
+    gap: 40px;
+    max-width: 1180px;
+    width: 100%;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 72px 44px 56px;
+  }
+  #landing .lead { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; }
+  .wordmark {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 13.5px; font-weight: 800; letter-spacing: .01em; color: var(--ink-2);
+  }
+  .wordmark i {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--teal); flex: none;
+  }
+  #landing h1 {
+    margin: 0;
+    font-size: clamp(38px, 5.4vw, 62px);
+    font-weight: 800; letter-spacing: -.032em; line-height: 1.06;
+    text-wrap: balance;
+  }
+  #landing h1 em {
+    font-style: normal; font-weight: 800; color: var(--teal-700);
+  }
+  #landing .sub {
+    margin: 0; max-width: 34ch;
+    font-size: 16.5px; line-height: 1.68; color: var(--ink-2);
+  }
+
+  /* 셋을 나란히 두지 않습니다. 세로로 쌓고 각 줄이 하나씩 말하게 합니다 -
+     동일한 카드 셋은 읽는 사람이 비교를 시작하게 만들고, 여기엔 비교할
+     것이 없습니다. */
+  .points { margin: 0; padding: 0; list-style: none; display: grid; gap: 0; width: 100%; max-width: 430px; }
+  .points li {
+    display: grid; grid-template-columns: 26px 1fr; gap: 13px;
+    padding: 15px 0; border-top: 1px solid var(--line);
+  }
+  .points li:last-child { border-bottom: 1px solid var(--line); }
+  .points .ic {
+    width: 26px; height: 26px; display: grid; place-items: center;
+    border-radius: 8px; background: var(--teal-50); color: var(--teal-700);
+  }
+  .points .ic svg { width: 15px; height: 15px; }
+  .points b { display: block; font-size: 14.5px; font-weight: 700; }
+  .points span { font-size: 13.5px; color: var(--ink-2); line-height: 1.55; }
+
+  /* ---------------- 설명 목록 (4장 · 6장) ----------------
+     랜딩의 .points 와 같은 문법이되 한 급 큽니다. 저기는 곁눈으로 스치는
+     자리고, 여기는 **읽으라고 세운 화면**입니다. 같은 크기로 두면 화면이
+     바뀐 줄 모릅니다. */
+  /* Duolingo 의 선택 카드 문법입니다. 테두리 2px + 아래 단 4px.
+     1px 테두리에 그림자 없는 상자는 "읽을 것" 이고, 2px 에 단이 있으면
+     "만질 것" 으로 보입니다. 여기 셋은 안 눌리지만, 온보딩 전체가 한
+     문법이어야 3장과 4장이 같은 제품으로 읽힙니다. */
+  .about { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-md); }
+  .about li {
+    position: relative; isolation: isolate;
+    display: grid; grid-template-columns: 40px 1fr; gap: var(--sp-lg); align-items: start;
+    padding: var(--sp-lg); border-radius: var(--r-lg);
+    filter: drop-shadow(2px 3px 0 rgba(74, 84, 81, .10));
+  }
+  .about li::before {
+    content: ''; position: absolute; inset: -1px; z-index: -1;
+    border-radius: inherit;
+    background: var(--surface); border: 2px solid var(--stroke);
+    filter: url(#wobble);
+  }
+  .about .ic {
+    position: relative; isolation: isolate;
+    width: 40px; height: 40px; display: grid; place-items: center;
+    border-radius: var(--r-md); color: var(--teal-700);
+  }
+  /* 아이콘 판도 손으로 그립니다. 여기만 반듯하면 붙여 넣은 것처럼 보입니다. */
+  .about .ic::before {
+    content: ''; position: absolute; inset: 0; z-index: -1;
+    border-radius: inherit;
+    background: var(--teal-50); border: 2px solid var(--stroke);
+    filter: url(#wobble-sm);
+  }
+  .about .ic svg { width: 21px; height: 21px; }
+  .about b { display: block; font-size: 15px; font-weight: 600; letter-spacing: 0; }
+  .about span { display: block; margin-top: var(--sp-xs); font-size: 13px; font-weight: 500; color: var(--ink-2); line-height: 1.5; letter-spacing: 0; }
+
+  /* 지켜 준다는 약속 한 줄만 색을 입습니다. 셋 다 강조하면 아무것도
+     강조가 아니고, 이 제품이 파는 것은 결국 이 줄입니다. */
+  .about li.keep::before { background: var(--teal-50); }
+  .about li.keep .ic::before { background: var(--teal-100); }
+
+  /* ---------------- 카메라 ---------------- */
+  .camBox {
+    position: relative; width: 100%; aspect-ratio: 4 / 3;
+    margin: 0 0 var(--sp-xl); border-radius: var(--r-lg); overflow: hidden;
+    background: #1B211F; border: 1px solid var(--line-2);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    display: grid; place-items: center;
+  }
+  .camBox video {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    /* 거울로 보여 줍니다. 안 뒤집으면 왼쪽으로 기울일 때 화면은 오른쪽으로
+       가고, 사람은 자기 자세를 못 고칩니다. */
+    transform: scaleX(-1);
+  }
+  /* 켜져 있다는 표시. 빨간 녹화등이 아니라 청록입니다 - 이건 녹화가
+     아니니까요. 그 구분이 이 화면의 전부입니다. */
+  .camDot {
+    position: absolute; top: 12px; left: 12px; width: 9px; height: 9px;
+    border-radius: 50%; background: var(--teal);
+  }
+  /* 고리는 따로 둡니다. box-shadow 를 반복하면 카메라 화면에 머무는
+     내내 매 프레임 다시 칠합니다 - 무한 루프는 GPU 로 갈 수 있는
+     속성만 써야 합니다. */
+  .camDot::after {
+    content: ''; position: absolute; inset: -4px;
+    border-radius: 50%; background: rgba(45, 212, 191, .26);
+    z-index: -1;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .camDot::after { animation: camPulse 2s ease-in-out infinite; }
+  }
+  @keyframes camPulse {
+    0%, 100% { transform: scale(1);    opacity: 1;  }
+    50%      { transform: scale(1.5); opacity: .38; }
+  }
+
+  /* ---------------- 기준 설정 ---------------- */
+  /* 영상 위에 어둠을 한 겹 깝니다. 카메라 그림이 그대로면 고리와
+     숫자가 화면과 싸우고, 10초 동안 볼 것은 남은 시간입니다. */
+  .camBox.cal video { opacity: .5; }
+  .camBox.cal::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(58% 58% at 50% 50%, rgba(12,26,24,.34) 0%, rgba(12,26,24,.62) 100%);
+  }
+  .calRing { position: absolute; inset: 0; margin: auto; width: 62%; height: 62%; transform: rotate(-90deg); }
+  .calRing circle { fill: none; stroke-width: 7; stroke-linecap: round; }
+  .calRing .track { stroke: rgba(255,255,255,.22); }
+  .calRing .fill {
+    stroke: var(--teal);
+    /* 2πr, r=54 */
+    stroke-dasharray: 339.29;
+    stroke-dashoffset: 339.29;
+    transition: stroke-dashoffset .3s linear;
+  }
+  .calNum {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font: 800 42px/1 'Wanted Sans Variable', sans-serif;
+    font-variant-numeric: tabular-nums;   /* 안 켜면 숫자가 매초 흔들립니다 */
+    color: #EFFBF9; text-shadow: 0 2px 12px rgba(0,0,0,.5);
+  }
+  /* ---- 준비 셋 ----
+     예고 없이 재기 시작하면 **움직이는 도중에** 잡힙니다. 3·2·1 은
+     "지금부터 자세를 잡아라" 를 말하는 3초이고, 카메라 UX 에서 이건
+     장식이 아니라 측정 조건입니다.
+
+     숫자가 커졌다 작아지며 사라집니다 - 다가오는 것처럼 보여야
+     기다리는 게 아니라 세는 것이 됩니다. */
+  .calReady {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font: 800 88px/1 'Wanted Sans Variable', sans-serif;
+    font-variant-numeric: tabular-nums;
+    color: #FFFFFF; text-shadow: 0 3px 18px rgba(0,0,0,.55);
+    pointer-events: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .calReady { animation: readyBeat 1s var(--ease) infinite; }
+  }
+  @keyframes readyBeat {
+    0%   { opacity: 0; transform: scale(1.5); }
+    22%  { opacity: 1; transform: scale(1);   }
+    78%  { opacity: 1; transform: scale(1);   }
+    100% { opacity: 0; transform: scale(.86); }
+  }
+
+  .calSay {
+    margin: 0 0 var(--sp-xl); padding: var(--sp-md) var(--sp-lg);
+    background: var(--surface); border: 1px solid var(--line-2); border-radius: var(--r-md);
+    font-size: 13.5px; color: var(--ink-2); line-height: 1.55; text-align: center;
+    min-height: 46px; display: grid; place-items: center;
+  }
+  .calSay.warn { background: #FFF6E8; border-color: #F2D9A8; color: #7A5417; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .camDot { animation: none; }
+    .calRing .fill { transition: none; }
+  }
+
+  .cta {
+    appearance: none; border: 0; cursor: pointer;
+    /* ::before 로 판을 까는 규칙이 아래에 있습니다. 여기 position 이
+       없으면 그 판이 버튼이 아니라 **조상 박스 전체**에 대고 자리를
+       잡아, 화면만 한 회색 덩어리가 됩니다. */
+    position: relative;
+    display: inline-flex; align-items: center; gap: var(--sp-sm); white-space: nowrap;
+    padding: var(--sp-lg) var(--sp-xl); border-radius: var(--r-pill);
+    background: var(--teal); color: var(--on-teal);
+    font: 700 15.5px/1 'Wanted Sans Variable', sans-serif; letter-spacing: 0;
+    background: transparent;
+    box-shadow: none;
+    transition: transform 90ms var(--ease-press), filter 90ms var(--ease-press);
+  }
+  /* 채움과 테두리는 뒤에 깔린 판이 맡습니다. 글자는 이 판 위에 그대로
+     놓여 안 밀립니다. */
+  .cta::before {
+    content: ''; position: absolute; inset: -1px; z-index: -1;
+    border-radius: inherit;
+    background: var(--teal); border: 2px solid var(--stroke);
+    filter: url(#wobble);
+    transition: background .16s var(--ease);
+  }
+  .cta:hover::before { background: var(--teal-400); }
+  /* 손으로 그린 그림자 - 흐린 번짐이 아니라 한 번 더 그은 선입니다.
+     누르면 종이에 붙으며 그림자가 줄어듭니다. */
+  .cta { filter: drop-shadow(2px 3px 0 rgba(74, 84, 81, .16)); }
+  /* :active 라 **누르는 순간** 반응합니다. 떼는 순간을 기다리면 죽은
+     버튼이 됩니다. 종이에 붙으면서 아주 살짝 줄어듭니다 - 밀려 내려가기만
+     하면 미끄러진 것이고, 같이 줄어야 눌린 것입니다. */
+  .cta:active { transform: translate(1px, 2px) scale(.985); filter: drop-shadow(1px 1px 0 rgba(74, 84, 81, .16)); }
+  .cta svg { width: 17px; height: 17px; }
+
+  /* 보조 버튼도 단을 답니다. 하나만 눌리고 하나는 안 눌리면 그쪽이
+     고장 난 것처럼 보입니다. 단만 중성색입니다. */
+  .ghost {
+    appearance: none; cursor: pointer; position: relative; isolation: isolate;
+    padding: var(--sp-md) var(--sp-xl); border-radius: var(--r-pill);
+    background: transparent; border: 0; color: var(--ink-2);
+    font: 750 14.5px/1 'Wanted Sans Variable', sans-serif;
+    filter: drop-shadow(2px 3px 0 rgba(74, 84, 81, .10));
+    transition: transform 90ms var(--ease-press), filter 90ms var(--ease-press), color .16s var(--ease);
+  }
+  .ghost::before {
+    content: ''; position: absolute; inset: -1px; z-index: -1;
+    border-radius: inherit;
+    background: var(--surface); border: 2px solid var(--stroke);
+    filter: url(#wobble);
+  }
+  .ghost:hover { color: var(--ink); }
+  .ghost:active { transform: translate(1px, 2px); filter: drop-shadow(1px 1px 0 rgba(74, 84, 81, .10)); }
+
+  .ctaRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .note { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+
+  /* 히어로 그림은 진짜 픽셀 캔버스입니다. 제품 화면을 div 로 흉내 내면
+     그게 곧 "아직 안 만들었다" 는 뜻입니다. */
+  .stageArt {
+    position: relative; border-radius: var(--r-xl); overflow: hidden;
+    border: 1px solid var(--line-2); background: #5B9E52;
+    box-shadow: var(--sh-lg);
+    aspect-ratio: 4 / 3;
+  }
+  .stageArt canvas { width: 100%; height: 100%; }
+
+  /* ================= 온보딩 =================
+     한 화면에 한 가지 결정. 진행 표시는 점이 아니라 얇은 막대입니다 -
+     점은 개수를 세게 만들고, 막대는 남은 양을 보여 줍니다. */
+  /* 가운데 두는 것은 grid 의 place-items 가 아니라 margin 입니다.
+     justify-self: center 를 걸면 항목이 내용 크기로 줄어들어 max-width 가
+     아무 일도 하지 않습니다 - 카드가 글자 길이만큼만 넓어집니다. */
+  #flow { display: none; min-height: 100dvh; }
+  #flow.on { display: block; }
+
+  /* 화면 높이를 다 씁니다. 위는 진행, 가운데는 내용, 아래는 버튼 -
+     세 자리가 고정이면 일곱 화면을 지나는 동안 눈이 안 움직입니다. */
+  .shell {
+    width: 100%; max-width: 560px; margin: 0 auto;
+    min-height: 100dvh; padding: var(--sp-lg) var(--sp-xl) var(--sp-xl);
+    display: flex; flex-direction: column;
+  }
+
+  .topbar { display: flex; align-items: center; gap: var(--sp-lg); padding-bottom: var(--sp-xl); }
+  .backBtn {
+    appearance: none; cursor: pointer; flex: none;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: none; border: 0; color: var(--ink-3);
+    transition: color .14s var(--ease), background .14s var(--ease);
+  }
+  .backBtn:hover { color: var(--ink); background: var(--surface-3); }
+  .backBtn svg { width: 20px; height: 20px; }
+  .backBtn[hidden] { visibility: hidden; display: grid; }
+
+  /* 굵은 막대. 3px 선은 진행이 아니라 밑줄로 보입니다. 안쪽 흰 줄은
+     채워진 부분에 두께를 줍니다 - 없으면 색칠한 띠입니다. */
+  /* 막대도 안 떱니다 - 너비가 매 프레임 바뀌는데 필터를 걸면 프레임마다
+     난류를 다시 계산합니다. 잉크 두께만 맞춥니다. */
+  .bar {
+    flex: 1; height: 16px; background: var(--surface-3);
+    border: 2px solid var(--stroke); border-radius: var(--r-pill);
+    padding: 0; overflow: hidden;
+  }
+  /* 채움은 늘 전체 폭이고 가로로만 눌립니다. width 를 전환하면 매
+     프레임 레이아웃이 다시 계산됩니다.
+
+     안쪽 흰 줄은 ::after 가 아니라 **세로 그라디언트**입니다. 가로
+     축소에 안 늘어나기 때문입니다 - ::after 로 두면 채움이 줄어들 때
+     같이 찌그러집니다. */
+  .bar i {
+    display: block; height: 100%; width: 100%; background: var(--teal);
+    background-image: linear-gradient(to bottom,
+      transparent 0 3px, rgba(255,255,255,.46) 3px 7px, transparent 7px);
+    border-radius: var(--r-pill);
+    transform: scaleX(0); transform-origin: left center;
+    /* 화면보다 **먼저** 찹니다. 누른 것에 대한 답이 이것이고, 화면이
+       바뀌는 건 그 다음 일입니다. 끝에서 살짝 넘겼다 앉는 것도
+       일부러입니다 - 도착에 무게가 실립니다. */
+    transition: transform .34s var(--ease-reward);
+  }
+
+  /* 흰 바탕 위의 흰 카드였습니다. 아무 일도 안 하면서 화면만 좁혔고,
+     "만들다 만 화면" 으로 보이게 하는 가장 흔한 물건입니다. 이제
+     내용이 바탕 위에 바로 섭니다. */
+  /* 나가는 화면이 겹쳐서 빠지므로 기준이 필요합니다. */
+  .card { flex: 1; display: flex; flex-direction: column; position: relative; }
+  /* ---------------- 글자 ----------------
+     표준 위계입니다. 토스식(자간 -0.02em, 무게 800, 32px)은 글자를
+     덩어리로 뭉쳐 부드럽게 만드는 방식인데, 여기서는 그 반대로 갑니다.
+
+       제목  26 / 700 / 자간 0 / 행간 1.4
+       본문  15 / 500 / 자간 0 / 행간 1.55
+       보조  13 / 500 / 자간 0
+
+     딱딱함은 **자간과 무게 차이**에서 나옵니다. 자간을 0 으로 두면
+     글자가 각자 서고, 제목을 700 으로 낮추면 본문과의 낙차가 줄어
+     화면이 차분해집니다. 크기로 소리치지 않습니다.
+
+     본문 500 은 취향이 아니라 바닥입니다. 한국어는 400 대에서 획이
+     얇아지는 게 아니라 흐려집니다. 이건 양식이 아니라 가독성입니다. */
+  .card h2 {
+    margin: 0; font-size: 26px; font-weight: 700;
+    letter-spacing: 0; line-height: 1.4;
+  }
+  /* 화면이 바뀌면 초점을 제목으로 옮깁니다 - 안 옮기면 스크린리더
+     사용자가 화면이 바뀐 줄 모릅니다. 다만 제목은 키보드로 **가는**
+     곳이 아니라서, 초점 테두리까지 그리면 누른 적 없는 자리에 청록
+     상자가 하나 생깁니다. 일곱 장 내내 그랬습니다.
+
+     알림은 남기고 상자만 지웁니다 - 건너뛰기 링크의 목적지에 쓰는
+     방식과 같습니다. */
+  .card h2[tabindex] { outline: none; }
+  .card .say {
+    margin: 0; font-size: 15px; font-weight: 500; color: var(--ink-2);
+    max-width: 40ch; line-height: 1.55; letter-spacing: 0;
+  }
+
+  /* [hidden] 은 UA 스타일이라 클래스 규칙에 집니다. .cta 는 display 를
+     지정하므로 hidden 을 걸어도 그대로 보입니다 - 알을 깨기 전에 다음
+     버튼이 떠 있던 원인입니다. 숨김은 숨김이어야 합니다. */
+  [hidden] { display: none !important; }
+
+  .step { display: none; }
+  /* 켜진 화면이 남은 높이를 다 먹고, 그 안에서 버튼이 맨 아래로 밀립니다.
+     화면마다 버튼 높이가 달라지면 일곱 번 누르는 동안 손이 계속 움직입니다. */
+  .step.on { display: flex; flex-direction: column; gap: var(--sp-lg); flex: 1; }
+
+  /* ---------------- 걸음 ----------------
+     "빠르다" 는 시간이 짧아서가 아니라 **박자가 없어서** 그렇습니다.
+     눌렀는데 아무 일도 안 일어나고 갑자기 다른 화면이면, 뭘 끝냈다는
+     느낌이 없습니다. 그래서 한 걸음을 넷으로 나눕니다.
+
+       0ms   누름         버튼이 즉시 눌립니다 (:active)
+       0ms   막대         차오릅니다 — 이게 "한 장 끝냈다" 입니다
+       90ms  앞 화면      가속하며 반대쪽으로 빠집니다
+       170ms 새 화면      조각이 55ms 간격으로 차례로 앉습니다
+
+     앞으로 갈 때와 뒤로 갈 때 **방향이 반대**입니다. 방향이 없으면
+     사용자가 자기 위치를 모릅니다 - 일곱 장을 지나는 동안 앞으로
+     가는지 뒤로 가는지 화면이 말해 주지 않습니다.
+
+     나가는 화면은 **한 덩어리로** 나가고, 들어오는 화면은 **조각으로**
+     앉습니다. 끝난 것은 단위이고, 새 것은 순서대로 읽을 것이기 때문에
+     이렇게 다릅니다. */
+  .step.out {
+    display: flex; flex-direction: column; gap: var(--sp-lg);
+    /* 절대 위치 - 나란히 두면 전환 중에 화면이 두 배로 길어집니다. */
+    position: absolute; inset: 0;
+    pointer-events: none;   /* 빠지는 중인 버튼은 눌리면 안 됩니다 */
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .step.out { animation: stepOut var(--t-out) var(--ease-exit) var(--t-hold) both; }
+
+    .step.on > *,
+    .phase:not([hidden]) > * { animation: partIn var(--t-in) var(--ease) both; }
+    .step.on > *:nth-child(1), .phase:not([hidden]) > *:nth-child(1) { animation-delay: calc(var(--t-hold) + 80ms); }
+    .step.on > *:nth-child(2), .phase:not([hidden]) > *:nth-child(2) { animation-delay: calc(var(--t-hold) + 80ms + var(--t-lag)); }
+    .step.on > *:nth-child(3), .phase:not([hidden]) > *:nth-child(3) { animation-delay: calc(var(--t-hold) + 80ms + var(--t-lag) * 2); }
+    .step.on > *:nth-child(4), .phase:not([hidden]) > *:nth-child(4) { animation-delay: calc(var(--t-hold) + 80ms + var(--t-lag) * 3); }
+    .step.on > *:nth-child(n+5),
+    .phase:not([hidden]) > *:nth-child(n+5) { animation-delay: calc(var(--t-hold) + 80ms + var(--t-lag) * 4); }
+
+    /* 6장은 안쪽 단계 div 가 스스로 나서지 않습니다 - 그 안의 조각들이
+       대신 앉습니다. 둘 다 움직이면 겹쳐서 뭉갭니다. */
+    .step.on > .phase { animation: none; }
+  }
+
+  /* 방향. 기본은 앞으로, data-dir="back" 이면 뒤로. */
+  #flow { --dir: 1; }
+  #flow[data-dir="back"] { --dir: -1; }
+
+  @keyframes stepOut {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translateX(calc(var(--dir) * -26px)); }
+  }
+  @keyframes partIn {
+    from { opacity: 0; transform: translateX(calc(var(--dir) * 22px)); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ---------------- 수직 자리 ----------------
+     질문 아래로 내용이 **흐르고**, 빈 곳은 버튼 위에만 둡니다.
+
+     처음엔 위아래를 갈라 내용을 정가운데 놓았는데, 말풍선과 카드 사이가
+     170px 벌어져 둘이 남남이 됐습니다. 읽는 것들은 붙어 있어야 한 덩어리로
+     읽힙니다. 빈 곳은 한 군데에만 있으면 여백이고, 두 군데로 갈라지면
+     구멍입니다.
+
+     주인공이 하나뿐인 화면(알 고르기·부화)은 이 규칙이 필요 없습니다 -
+     무대가 flex:1 로 남은 높이를 먹고 그 안에서 알이 가운데 섭니다. */
+  /* 나가는 화면에도 걸어야 합니다. .on 에만 걸면 클래스가 바뀌는 순간
+     버튼이 바닥에서 본문 밑으로 **뛰어 올라온 채로** 빠져나갑니다. */
+  .step.on > .actions,
+  .step.out > .actions { margin-top: auto; padding-top: var(--sp-xl); }
+
+  /* 6장은 단계 div 가 한 겹 더 있어 같은 일을 그 안에서 합니다. */
+  .phase:not([hidden]) { flex: 1; display: flex; flex-direction: column; gap: var(--sp-lg); }
+  .phase:not([hidden]) > .actions { margin-top: auto; padding-top: var(--sp-xl); }
+
+  /* ---------------- 화자 ----------------
+     알에서 나온 뒤부터 **캐릭터가 진행합니다.** 부화 전에는 화자가
+     없습니다 - 아직 아무도 없으니까요. 3장부터 말풍선이 붙는 것이
+     알을 깬 보상이고, 그때부터 "이 친구" 가 실제 인물이 됩니다.
+
+     Duolingo 가 Duo 로 하는 일이고, 이 제품에서는 그 자리가 비어
+     있었습니다. */
+  .narr { display: flex; align-items: flex-start; gap: var(--sp-md); }
+  .narr canvas {
+    width: 56px; height: 56px; flex: none; image-rendering: pixelated;
+    /* 살짝 튕깁니다. 말할 때 몸이 안 움직이면 인형입니다. */
+    animation: narrBob 2.8s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { .narr canvas { animation: none; } }
+  @keyframes narrBob { 0%,100% { translate: 0 0 } 50% { translate: 0 -4px } }
+
+  /* 말풍선이야말로 손으로 그려야 하는 물건입니다. 반듯한 모서리의
+     말풍선은 말이 아니라 안내문으로 보입니다. */
+  .bubble {
+    position: relative; isolation: isolate; flex: 1;
+    border-radius: var(--r-lg); padding: var(--sp-md) var(--sp-lg);
+    filter: drop-shadow(2px 3px 0 rgba(74, 84, 81, .10));
+    font-size: 14.5px; font-weight: 500; color: var(--ink); line-height: 1.5; letter-spacing: 0;
+  }
+  .bubble::before {
+    content: ''; position: absolute; inset: -1px; z-index: -1;
+    border-radius: inherit;
+    background: var(--surface); border: 2px solid var(--stroke);
+    filter: url(#wobble);
+  }
+  /* 꼬리. 판과 같은 잉크선으로 두르고 왼쪽 변만 판에 묻히게 겹칩니다. */
+  .bubble::after {
+    content: ''; position: absolute; left: -8px; top: 16px; z-index: -1;
+    width: 14px; height: 14px; transform: rotate(45deg);
+    background: var(--surface); border-left: 2px solid var(--stroke); border-bottom: 2px solid var(--stroke);
+    filter: url(#wobble-sm);
+  }
+  /* ---------------- 만남 ----------------
+     3장·5장의 화자입니다. 56px 로 옆에 세우면 아이콘이 되고, 아이콘은
+     장식이라 아무도 안 봅니다. 이 화면의 주인공이면 주인공 크기여야
+     합니다 - Duolingo 의 Duo 가 질문 화면에서 140px 인 이유입니다.
+
+     세 가지가 동시에 일합니다.
+       크기 대비 — 116px. 옆의 .narr 보다 두 배 큽니다
+       겹침     — 말풍선 왼쪽 변을 캐릭터가 10px 덮습니다. 나란히 놓으면
+                  목록이고, 겹치면 장면입니다
+       공통 영역 — 캐릭터와 말풍선이 한 덩어리, 입력칸은 별개. 지금까지는
+                  셋이 같은 간격이라 셋 다 형제로 읽혔습니다 */
+  .meet { display: flex; align-items: flex-start; gap: 0; padding-top: var(--sp-xs); }
+  .meet canvas {
+    /* 32px 원본의 정확히 4배. 116 처럼 안 떨어지는 배수로 늘리면 픽셀
+       폭이 3px 과 4px 로 섞여 격자가 흔들립니다. */
+    width: 128px; height: 128px; flex: none;
+    /* 겹침. 음수 여백이라 말풍선 폭은 그대로 두고 깊이만 만듭니다. */
+    margin-right: -10px; position: relative; z-index: 1;
+    animation: narrBob 3.4s ease-in-out infinite;
+  }
+  .meet .bubble {
+    /* 머리 높이에 맞춰 내립니다. 꼬리(top:16px)가 머리를 가리킵니다. */
+    margin-top: 14px; font-size: 15.5px;
+    padding: var(--sp-lg) var(--sp-xl);
+  }
+  /* 입력칸에 답이 들어오면 화자가 한 번 뜁니다. 정지된 그림에 눈을
+     그려 넣을 수는 없으니, 반응으로 살아 있음을 말합니다. */
+  .meet.react canvas { animation: meetHop 460ms var(--ease-reward); }
+  @keyframes meetHop {
+    0%   { transform: translateY(0)    scale(1);        }
+    28%  { transform: translateY(-14px) scale(1.04, .96); }
+    58%  { transform: translateY(0)    scale(.96, 1.04); }
+    100% { transform: translateY(0)    scale(1);        }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .meet canvas, .meet.react canvas { animation: none; }
+  }
+
+  /* ---------------- 알 고르기 ---------------- */
+  /* ---------------- 알 고르기 ----------------
+     격자에 담긴 상자 넷이었습니다. 상자는 "목록에서 하나 선택" 이라고
+     말하고, 그건 설문지입니다. 알을 공중에 띄우고 각자 다른 박자로
+     흔들면 "만져 봐" 가 됩니다.
+
+     자리는 일부러 어긋나 있습니다. 나란히 놓으면 다시 격자입니다. */
+  /* 남은 높이를 다 씁니다. 320px 로 고정하면 화면이 클 때 알과 버튼
+     사이에 죽은 공간이 400px 생깁니다 - 알은 가운데 떠 있어야지
+     위쪽에 몰려 있으면 안 됩니다. */
+  .eggStage {
+    position: relative; flex: 1; min-height: 300px; margin: 4px 0 8px;
+    /* 물러나는 알이 화면 밖으로 나가면서 가로 스크롤을 만들었습니다.
+       투명해도 자리는 차지합니다. 무대가 가두면 알이 페이지 여백을
+       떠도는 대신 **틀 밖으로 나가는** 것으로 보입니다. */
+    overflow: hidden;
+    /* 무대 바닥의 아주 옅은 빛. 알이 어딘가 위에 떠 있다는 것만 말합니다. */
+    background: radial-gradient(58% 46% at 50% 58%, var(--teal-50) 0%, transparent 72%);
+  }
+  /* 슬롯 크기는 **알 그림과 같아야** 합니다. 슬롯이 더 크면 누르는
+     영역이 서로 물려서, 두 알 사이를 누르면 안 보이는 쪽이 잡힙니다. */
+  .eggSlot {
+    position: absolute; left: 50%; top: 50%;
+    width: 72px; height: 108px; margin: -54px 0 0 -36px;
+    transform: translate(var(--x), var(--y));
+    /* 고르면 가운데(0,0)로 돌아옵니다. 집 자리 자체가 변형값이라
+       가운데로 보내는 데 계산이 필요 없습니다. */
+    transition: transform .62s cubic-bezier(.34, 1.32, .5, 1), opacity .38s var(--ease);
+  }
+  /* 620ms 짜리 공간 이동이라 감축 설정에서는 투명도만 남깁니다.
+     0 으로 만들지 않고 부드럽게 줄이는 것이 이 설정의 뜻입니다. */
+  @media (prefers-reduced-motion: reduce) {
+    .eggSlot { transition: opacity .2s var(--ease); }
+  }
+  .eggBtn {
+    appearance: none; border: 0; background: none; padding: 0;
+    cursor: pointer; position: relative;
+    width: 100%; height: 100%;
+    display: grid; place-items: center;
+    transition: transform .2s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  .eggBtn canvas {
+    width: 72px; height: 108px; display: block;
+    /* 떠 있는 것의 그림자는 흐릿하고 아래에 있습니다. 단(ledge)은
+       바닥에 붙은 물건의 것이라 여기 쓰면 알이 서 있는 게 됩니다. */
+    filter: drop-shadow(0 12px 10px rgba(20, 40, 38, .16));
+    transition: filter .2s var(--ease);
+  }
+  /* 호버 움직임은 진짜 포인터에서만. 터치에서는 한 번 누르면 호버가
+     눌러붙어 알이 커진 채로 남습니다. */
+  @media (hover: hover) and (pointer: fine) {
+    .eggBtn:hover { transform: scale(1.08); }
+    .eggBtn:hover canvas { filter: drop-shadow(0 18px 14px rgba(20, 40, 38, .22)); }
+  }
+  .eggBtn:active { transform: scale(.96); }
+  .eggBtn:focus-visible { outline: none; }
+  .eggBtn:focus-visible canvas {
+    filter: drop-shadow(0 0 0 3px var(--teal-300)) drop-shadow(0 12px 10px rgba(20, 40, 38, .16));
+  }
+
+  /* 저마다 다른 박자로 떱니다. 같은 박자면 넷이 한 덩어리로 보이고,
+     한 덩어리는 다시 격자입니다. */
+  @media (prefers-reduced-motion: no-preference) {
+    .eggSlot .eggBtn { animation: float var(--dur) ease-in-out var(--delay) infinite; }
+  }
+  @keyframes float {
+    0%, 100% { translate: 0 0; }
+    50%      { translate: 0 -13px; }
+  }
+
+  /* 고른 알 - 가운데로 날아와 커집니다. */
+  .eggStage.picked .eggSlot { --x: 0px; --y: 0px; }
+  .eggStage.picked .eggSlot[data-on="0"] { opacity: 0; pointer-events: none; }
+  /* 안 고른 알은 바깥으로 밀려나며 사라집니다. 제자리에서 흐려지기만
+     하면 고른 알에 겹쳐 지저분해집니다. */
+  .eggStage.picked .eggSlot[data-on="0"] { transform: translate(var(--fx), var(--fy)) scale(.55); }
+  .eggStage.picked .eggSlot[data-on="1"] { transform: translate(0, -8px) scale(1.42); z-index: 2; }
+  .eggStage.picked .eggSlot[data-on="1"] .eggBtn { animation-duration: 4.6s; }
+
+
+  /* ---------------- 부화 ---------------- */
+  /* 회색 판 위에 알이 들어 있었습니다. 판은 아무 일도 안 하면서 알을
+     가두고, 알은 그 안에서 작아 보였습니다. 판을 걷어내고 알을 화면에
+     그냥 세웁니다 - 이 장에서 볼 것은 알 하나뿐입니다. */
+  .hatchStage {
+    position: relative; display: grid; place-items: center;
+    flex: 1; min-height: 300px;
+    background: radial-gradient(50% 40% at 50% 50%, var(--teal-50) 0%, transparent 70%);
+  }
+  /* ---- 팔레트 섬광 ----
+     돌아가는 햇살 부채꼴이 있던 자리입니다. 그건 무료 벡터 사이트의
+     기본 항목이라, 픽셀 월드를 직접 그려 놓고 그 위에 스톡 그림을 얹은
+     셈이었습니다.
+
+     대신 **한 번 하얗게 태웁니다.** 포켓몬이 문을 지날 때 흰색을 거쳐
+     가는 것과 같고, 5단으로 끊어 내려가므로 페이드가 아니라 팔레트가
+     바뀌는 것으로 읽힙니다. 껍질이 사라지고 캐릭터가 나타나는 그 한
+     프레임을 이것이 덮습니다 - 교체를 안 보여 주는 것이 목적입니다. */
+  .hatchFlash {
+    position: absolute; inset: 0; border-radius: var(--r-lg);
+    background: #FFFFFF; opacity: 0; pointer-events: none; z-index: 3;
+  }
+  /* 200ms 입니다. 300ms 였을 때는 커지는 연출의 절반을 흰색이 덮어
+     버렸습니다 - 섬광은 **교체를 감추는** 것이지 등장을 감추는 것이
+     아닙니다. 이제 460ms 에 걷히고, 커지는 560ms 중 뒤쪽 64% 가
+     맨눈에 보입니다. */
+  @media (prefers-reduced-motion: no-preference) {
+    .hatchFlash.on { animation: hatchFlash 200ms steps(4, end) both; }
+  }
+  @keyframes hatchFlash { from { opacity: .9; } to { opacity: 0; } }
+
+  .tapEgg {
+    appearance: none; background: none; border: 0; cursor: pointer;
+    position: relative; padding: var(--sp-sm); border-radius: var(--r);
+  }
+  /* 눌러 달라는 표시. 글자로 "눌러 보세요" 라고 쓰는 대신 고리를 한 번씩
+     밀어냅니다 - 물건 자체가 부르는 편이 안내문보다 빠릅니다.
+     한 번 두드리면 사라집니다. 이미 알아들었으니까요. */
+  .tapEgg::after {
+    content: ''; position: absolute; left: 50%; top: 52%;
+    width: 96px; height: 96px; margin: -48px 0 0 -48px;
+    border: 2px solid var(--teal); border-radius: 50%;
+    opacity: 0; pointer-events: none; z-index: -1;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .tapEgg:not([data-touched])::after { animation: tapRing 2.4s ease-out infinite; }
+  }
+  @keyframes tapRing {
+    0%   { transform: scale(.72); opacity: 0; }
+    28%  { opacity: .55; }
+    100% { transform: scale(1.5); opacity: 0; }
+  }
+  /* 누르는 동안 들어갑니다. 흔들림은 뗀 뒤에 오는 것이라, 이게 없으면
+     누르고 있는 동안 화면이 죽어 있습니다. 옆 버튼들과 같은 문법입니다. */
+  .tapEgg:active { transform: scale(.94); }
+  .tapEgg { transition: transform 90ms var(--ease-press); }
+  .tapEgg canvas { width: 124px; height: 186px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .tapEgg canvas { animation: eggBob 2.6s ease-in-out infinite; }
+    .tapEgg.shake canvas { animation: eggShake .4s var(--ease); }
+  }
+  @keyframes eggBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  @keyframes eggShake {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    18% { transform: translateX(-5px) rotate(-4deg); }
+    38% { transform: translateX(5px) rotate(4deg); }
+    58% { transform: translateX(-3px) rotate(-2deg); }
+    78% { transform: translateX(3px) rotate(2deg); }
+  }
+
+  /* ---------------- 등장 ----------------
+     포켓몬 2·4세대에서 주인공이 문으로 들어갈 때 스프라이트가 **이산
+     배율로 작아지며** 사라집니다. 그걸 크기만 뒤집었습니다 - 우리 캐릭터는
+     월드에서 걸어다니는 크기(32px)로 나타나 주인공 크기(128px)까지
+     커집니다.
+
+     DS 는 아핀 변환으로 스프라이트를 늘렸고, 그 샘플링이 **최근접
+     이웃**이었습니다. 그래서 배율이 정수가 아닐 때 픽셀 폭이 3px 과
+     4px 로 섞이는데, 그 불균일함이 이 연출의 정체입니다. 매끄럽게
+     보간하면 픽셀 게임이 아니라 확대한 그림이 됩니다.
+
+     그래서 **CSS transform 을 안 씁니다.** transform: scale() 은
+     합성 단계에서 쌍선형 보간을 하므로 0.25 배에서 뭉갭니다.
+     `image-rendering: pixelated` 는 캔버스 자기 확대에만 듣고 합성
+     변환에는 안 듣습니다. 대신 캔버스 안에서 `imageSmoothingEnabled
+     = false` 로 매 단계 다시 그립니다 - 하드웨어가 하던 것과 같고,
+     요소 박스는 128px 로 고정이라 레이아웃도 안 건드립니다.
+
+     크기가 CSS 로 안 변하므로 여기 남는 것은 도착한 뒤의 숨쉬기뿐입니다.
+     지연을 두는 이유 - 커지는 동안 같이 흔들리면 두 움직임이 싸웁니다. */
+  .pet { position: relative; }
+  .pet canvas { width: 128px; height: 128px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .pet canvas { animation: petBob 2.9s ease-in-out infinite .62s; }
+  }
+  @keyframes petBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+  .shard { position: absolute; width: 9px; height: 9px; border-radius: 2px; pointer-events: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    .shard { animation: shardOut .95s var(--ease) both; }
+  }
+  @keyframes shardOut {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); }
+  }
+
+  .tapHint {
+    margin: 0; text-align: center; font-size: 13.5px; font-weight: 700; color: var(--teal-700);
+  }
+  .tapHint[data-done="1"] { color: var(--ink-2); font-weight: 600; }
+
+  /* ---------------- 폼 ---------------- */
+  .field { display: flex; flex-direction: column; gap: var(--sp-sm); }
+  .field label { font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: 0; }
+  /* 입력칸은 안 떱니다. input 은 ::before 를 못 갖고, 요소 자체에 필터를
+     걸면 **타이핑한 글자가 같이 밀려** 못 읽습니다. 잉크 두께만
+     맞춰서 한 식구로 보이게 합니다. */
+  .field input {
+    width: 100%; padding: var(--sp-lg);
+    background: var(--bg); border: 2px solid var(--stroke); border-radius: var(--r-md);
+    color: var(--ink); font: inherit; font-size: 15px;
+    box-shadow: 2px 3px 0 rgba(74, 84, 81, .10);
+    transition: border-color .14s var(--ease), background .14s var(--ease);
+  }
+  .field input::placeholder { color: var(--ink-2); opacity: .72; }
+  .field input:hover { border-color: var(--teal-300); }
+  .field input:focus { background: var(--surface); border-color: var(--teal); }
+  .field input[aria-invalid="true"] { border-color: var(--teal-700); background: var(--teal-50); }
+  .field .help { font-size: 13px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; }
+  .field .err {
+    display: none; align-items: center; gap: var(--sp-sm);
+    font-size: 12.5px; font-weight: 600; color: var(--teal-700);
+  }
+  .field .err.on { display: flex; }
+  .field .err svg { width: 14px; height: 14px; flex: none; }
+
+  /* ---------------- 인증번호 여섯 칸 ----------------
+     한 칸짜리 입력칸은 여섯 자리가 들어갔는지 세어 봐야 압니다. 칸을
+     나누면 **몇 개 남았는지가 그림으로** 보입니다.
+
+     입력칸은 여전히 **하나**입니다 - 여섯 개로 쪼개면 붙여넣기,
+     지우기, 자동완성(one-time-code)을 전부 직접 만들어야 하고 그 셋이
+     인증 화면에서 제일 많이 쓰입니다. 진짜 입력칸을 투명하게 깔고
+     그 아래 칸을 그립니다. shadcn 의 InputOTP 가 쓰는 구조입니다. */
+  .otp { position: relative; }
+  .otp input {
+    /* 진짜 입력칸. 칸 위에 통째로 깔려 있고 글자만 안 보입니다 -
+       없애면 붙여넣기와 자동완성(one-time-code)이 같이 사라집니다. */
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    padding: 0; border: 0; background: none; box-shadow: none;
+    color: transparent; caret-color: transparent; font: inherit;
+  }
+  /* .field input:focus 가 흰 바탕을 칠해 칸을 덮습니다. 여기서만 막습니다.
+     초점 테두리는 그대로 둡니다 - 키보드로 오는 사람이 여길 못 찾습니다. */
+  .otp input:focus { background: none; }
+  .otp input:focus-visible { outline-offset: 6px; }
+  .otp .cells { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--sp-sm); }
+  .otp .cells i {
+    height: 62px; display: grid; place-items: center;
+    background: var(--bg); border: 2px solid var(--stroke); border-radius: var(--r-md);
+    box-shadow: 2px 3px 0 rgba(74, 84, 81, .10);
+    font: 800 24px/1 'Wanted Sans Variable', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums; font-style: normal; color: var(--ink);
+    transition: border-color .14s var(--ease), background .14s var(--ease), transform .14s var(--ease);
+  }
+  /* 채워진 칸은 색을 갖고, 지금 받을 칸은 커서를 깜빡입니다. 어디를
+     보고 있어야 하는지 칸이 스스로 말합니다. */
+  .otp .cells i[data-on] { border-color: var(--teal); background: var(--teal-50); }
+  .otp .cells i[data-now] { border-color: var(--teal); transform: translateY(-2px); }
+  .otp .cells i[data-now]::after {
+    content: ''; width: 2px; height: 26px; background: var(--teal-700);
+    animation: caret 1.06s step-end infinite;
+  }
+  @keyframes caret { 0%, 49% { opacity: 1 } 50%, 100% { opacity: 0 } }
+  @media (prefers-reduced-motion: reduce) { .otp .cells i[data-now]::after { animation: none; } }
+  .otp[data-bad] .cells i { border-color: var(--teal-700); }
+
+  /* 세로로 쌓습니다. 나란히 두면 둘이 같은 무게로 보이고, 온보딩에서
+     주 버튼과 도망갈 길은 절대 같은 무게가 아닙니다. */
+  .actions { display: flex; flex-direction: column; gap: var(--sp-sm); }
+  .actions .cta, .actions .ghost { width: 100%; justify-content: center; }
+  .actions .cta { padding: var(--sp-lg) var(--sp-xl); font-size: 16.5px; }
+  /* 못 누르는 버튼도 두께는 있습니다. 단이 사라지면 버튼이 아니라
+     회색 자국이 되고, 왜 못 누르는지가 아니라 뭐가 있었는지를 잊습니다. */
+  /* 잠긴 글자도 읽혀야 합니다. ink-3 은 이 바탕에서 4.02 라, 무엇이
+     잠겨 있는지 알 수 없게 됩니다 - 다음에 뭘 해야 하는지는 잠긴
+     버튼이 말해 주는 경우가 많습니다. */
+  .cta[disabled] { color: var(--ink-2); cursor: not-allowed; transform: none; filter: none; }
+  .cta[disabled]::before,
+  .cta[disabled]:hover::before { background: var(--surface-3); border-color: var(--line-2); }
+
+  /* 보내는 동안 - 원형 스피너 대신 버튼 안에서 점 셋이 뜁니다.
+     버튼이 자기 상태를 말하는 편이 화면 어딘가의 스피너보다 낫습니다. */
+  .dots { display: inline-flex; gap: 4px; }
+  .dots i { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .35; }
+  @media (prefers-reduced-motion: no-preference) {
+    .dots i { animation: dot 1s ease-in-out infinite; }
+    .dots i:nth-child(2) { animation-delay: .15s; }
+    .dots i:nth-child(3) { animation-delay: .3s; }
+  }
+  @keyframes dot { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+  .mailSent {
+    display: flex; align-items: flex-start; gap: var(--sp-md);
+    background: var(--teal-50); border: 1px dashed var(--teal-300);
+    border-radius: var(--r-lg); padding: var(--sp-lg);
+  }
+  .mailSent svg { width: 17px; height: 17px; color: var(--teal-700); flex: none; margin-top: var(--sp-2xs); }
+  .mailSent p { margin: 0; font-size: 13px; color: var(--ink-2); }
+  .mailSent b { color: var(--ink); }
+  .linkish {
+    appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+    color: var(--teal-700); font: inherit; font-size: 13px; font-weight: 700;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+
+  /* ---------------- 요약 / 진입 ---------------- */
+  .whoami {
+    display: flex; align-items: center; gap: var(--sp-lg);
+    padding: var(--sp-lg); border-radius: var(--r-lg); background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+  .whoami canvas { width: 68px; height: 68px; flex: none; }
+  .whoami .meta { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-xs); }
+  .whoami .nm { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+  .whoami .sc { font-size: 13px; color: var(--ink-2); }
+  .whoami .badge {
+    align-self: flex-start; margin-top: var(--sp-xs);
+    display: inline-flex; align-items: center; gap: var(--sp-xs);
+    padding: var(--sp-xs) var(--sp-sm); border-radius: var(--r-pill);
+    background: #E7F6EC; color: #1F6E40;
+    font-size: 11.5px; font-weight: 700;
+  }
+  .whoami .badge svg { width: 12px; height: 12px; }
+
+  /* 세션이 언제 시작되는지 여기서 한 번 말합니다. 월드에 들어간 뒤
+     타이머가 이미 돌고 있으면 "언제 시작된 거지" 가 됩니다. */
+  .heads {
+    display: grid; gap: 0;
+    border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden;
+  }
+  .heads div {
+    display: grid; grid-template-columns: 22px 1fr; gap: var(--sp-md); align-items: start;
+    padding: var(--sp-md) var(--sp-lg); font-size: 13.5px; color: var(--ink-2);
+  }
+  .heads div + div { border-top: 1px solid var(--line); }
+  .heads svg { width: 16px; height: 16px; color: var(--teal-700); margin-top: var(--sp-2xs); }
+  .heads b { color: var(--ink); font-weight: 700; }
+
+  /* ---------------- 반응형 ---------------- */
+  @media (max-width: 900px) {
+    #landing {
+      grid-template-columns: 1fr; gap: 30px; padding: 46px 22px 44px;
+      justify-items: start;
+    }
+    #landing .stageArt { width: 100%; order: -1; aspect-ratio: 16 / 10; }
+    #landing h1 { font-size: clamp(31px, 8.6vw, 42px); }
+    .points { max-width: none; }
+  }
+
+</style>
+
+<!-- ==================================================================
+     손그림 테두리
+
+     피그마의 Dynamic stroke 를 웹에서 그대로 하는 방법입니다.
+       Frequency -> baseFrequency      Wiggle -> scale
+
+     난류(feTurbulence)로 잡음을 만들고, 그 잡음으로 그림을 밀어냅니다
+     (feDisplacementMap). 곧은 선이 손으로 그은 선처럼 흔들립니다.
+
+     흔들림은 **자리**에 따라 정해지므로, 같은 필터를 써도 버튼마다
+     다르게 떱니다 - 한 벌만 두면 됩니다.
+
+     둘로 나눈 이유: 테두리와 채움만 밀고 **글자는 안 밉니다.** 글자까지
+     밀면 못 읽습니다. 그래서 필터는 버튼이 아니라 버튼 뒤에 깔린
+     가짜 판(::before)에만 걸립니다.
+     ================================================================== -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <filter id="wobble" x="-12%" y="-14%" width="124%" height="128%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.024" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <!-- 작은 물건은 같은 세기로 밀면 모양이 무너집니다. 약하게 한 벌 더. -->
+  <filter id="wobble-sm" x="-16%" y="-18%" width="132%" height="136%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="1.7" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<div id="app">
+
+  <!-- ================= 랜딩 ================= -->
+  <main id="landing">
+    <div class="lead">
+      <p class="wordmark"><i></i>기린캠퍼스</p>
+
+      <h1>오래 앉아 있는 건<br>어쩔 수 없어도,<br><em>굽은 건 아니다.</em></h1>
+
+      <p class="sub">
+        카메라가 목과 어깨를 봐 줍니다. 무너지면 알려 주고, 다시 편 시간을 셉니다.
+        혼자 버티는 대신 캠퍼스에서 같이 앉습니다.
+      </p>
+
+      <ul class="points">
+        <li>
+          <span class="ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
+          </span>
+          <span><b>자세를 봐 줍니다</b><span>얼굴은 어디에도 저장되지 않아요. 판정은 기기 안에서 끝나요.</span></span>
+        </li>
+        <li>
+          <span class="ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 9V6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v3"/><path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V11a2 2 0 0 0-4 0z"/><path d="M5 18v2"/><path d="M19 18v2"/></svg>
+          </span>
+          <span><b>앉을 자리를 고릅니다</b><span>도서관은 백색소음, 본관은 음악. 앉으면 카메라 화면이 작게 떠서 다른 창을 봐도 돼요.</span></span>
+        </li>
+        <li>
+          <span class="ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14.66V17a1 1 0 0 1-1 1 2 2 0 0 0-2 2v2"/><path d="M14 14.66V17a1 1 0 0 0 1 1 2 2 0 0 1 2 2v2"/><path d="M17.916 10H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3"/></svg>
+          </span>
+          <span><b>학교끼리 겨룹니다</b><span>시즌마다 오래 앉은 학교와 오래 편 학교를 가려요. 개인 순위는 없어요.</span></span>
+        </li>
+      </ul>
+
+      <div class="ctaRow">
+        <button class="cta" id="go" type="button">
+          알 부화하기
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        </button>
+        <button class="ghost" id="resume" type="button" hidden>이어서 하기</button>
+      </div>
+
+      <p class="note">학교 이메일 하나로 가입하고 로그인해요. 비밀번호는 없어요.</p>
+    </div>
+
+    <div class="stageArt">
+      <canvas id="heroArt" width="480" height="360" role="img"
+              aria-label="잔디 위에 알 넷이 놓인 캠퍼스 그림"></canvas>
+    </div>
+  </main>
+
+  <!-- ================= 온보딩 ================= -->
+  <main id="flow" aria-live="polite">
+    <div class="shell">
+
+      <!-- 뒤로 화살표와 진행 막대가 **한 줄**입니다. 진행이 화면 맨 위
+           한 줄로 끝나야 아래가 전부 내용이 됩니다. 숫자는 뺐습니다 -
+           "3 / 7" 은 남은 개수를 세게 만들고, 막대는 남은 양만 보입니다. -->
+      <header class="topbar">
+        <button class="backBtn" id="back" type="button" aria-label="뒤로">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+        </button>
+        <div class="bar" role="progressbar" aria-valuemin="1" aria-valuemax="7"
+             aria-valuenow="1" aria-label="가입 진행" id="bar"><i></i></div>
+      </header>
+
+      <div class="card">
+
+        <!-- 1. 알 고르기 -->
+        <section class="step on" id="s1" aria-labelledby="s1h">
+          <h2 id="s1h">알을 하나 골라 주세요</h2>
+          <p class="say">안에 누가 있는지는 깨야 알 수 있어요.</p>
+          <div class="eggStage" id="eggStage" role="group" aria-label="알 고르기">
+          </div>
+          <div class="actions">
+            <button class="cta" id="toHatch" type="button" disabled>알 깨기</button>
+            <!-- 고르고 나면 나머지 셋이 화면 밖으로 나갑니다. 되돌릴 길이
+                 없으면 사용자는 새로고침을 누르고, 그러면 처음부터입니다. -->
+            <button class="ghost" id="rePick" type="button" hidden>다시 고르기</button>
+          </div>
+        </section>
+
+        <!-- 2. 부화 -->
+        <section class="step" id="s2" aria-labelledby="s2h">
+          <h2 id="s2h">알을 세 번 두드려 주세요</h2>
+          <div class="hatchStage">
+            <button class="tapEgg" id="tapEgg" type="button" aria-label="알 두드리기">
+              <canvas id="hatchCv" width="32" height="48"></canvas>
+            </button>
+            <!-- 32×32 원본을 이 안에서 32→128 로 키웁니다. 그래서 뒷그림이
+                 128 이고, CSS 크기도 128 입니다 - 1:1 이라 브라우저가
+                 손댈 확대가 없습니다. -->
+            <div class="pet" id="petWrap" hidden>
+              <canvas id="petCv" width="128" height="128" role="img"></canvas>
+            </div>
+            <div class="hatchFlash" id="hatchFlash" aria-hidden="true"></div>
+          </div>
+          <p class="tapHint" id="tapHint"></p>
+          <div class="actions">
+            <button class="cta" id="toName" type="button" hidden>이름 지어주기</button>
+          </div>
+        </section>
+
+        <!-- 3. 닉네임 -->
+        <section class="step" id="s3" aria-labelledby="s3h">
+          <h2 id="s3h"><span id="petName">이 친구</span>의 이름을 지어 주세요</h2>
+          <div class="meet"><canvas class="narrPet" width="32" height="32" aria-hidden="true"></canvas>
+            <p class="bubble">캠퍼스에서 내 머리 위에 떠. 나중에 바꿔도 돼.</p></div>
+          <div class="field">
+            <label for="nick">이름</label>
+            <input id="nick" type="text" maxlength="12" autocomplete="nickname"
+                   placeholder="2~12자" aria-describedby="nickHelp nickErr">
+            <span class="help" id="nickHelp">한글, 영문, 숫자 2~12자</span>
+            <span class="err" id="nickErr" role="alert">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+              <span id="nickErrText"></span>
+            </span>
+          </div>
+          <div class="actions">
+            <button class="cta" id="toAbout" type="button" disabled>다음</button>
+          </div>
+        </section>
+
+        <!-- 4. 여기서 하는 일 ─────────────────────────────────────────
+             이 화면이 **다음 화면의 이메일을 벌어옵니다.** 없이 주소를
+             달라고 하면, 사용자는 뭘 위해 내는지 모르는 채 냅니다.
+
+             세 줄뿐입니다. 여기서 제품 설명서를 쓰면 아무도 안 읽고,
+             안 읽은 채로 메일 주소를 요구받게 됩니다. 셋째 줄(영상이
+             기기를 안 떠난다)이 가장 중요하므로 색과 테두리를 줍니다 -
+             이 제품이 파는 것은 결국 그 약속입니다. -->
+        <section class="step" id="s4" aria-labelledby="s4h">
+          <h2 id="s4h"><span id="aboutPet">이 친구는</span> 이렇게 자라요</h2>
+          <div class="narr"><canvas class="narrPet" width="32" height="32" aria-hidden="true"></canvas>
+            <p class="bubble">세 가지만 알면 돼.</p></div>
+
+          <ul class="about">
+            <li>
+              <span class="ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
+              </span>
+              <span><b>카메라가 목과 어깨를 봐요.</b></span>
+            </li>
+            <li>
+              <span class="ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/></svg>
+              </span>
+              <span><b>앉아 있는 시간이 <span id="growPet">이 친구를</span> 키워요.</b></span>
+            </li>
+            <li class="keep">
+              <span class="ic" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+              </span>
+              <span><b>영상은 이 기기를 떠나지 않아요.</b>
+                판정은 브라우저 안에서 끝나요.</span>
+            </li>
+          </ul>
+
+          <div class="actions">
+            <button class="cta" id="toSchool" type="button">학교 인증하기</button>
+          </div>
+        </section>
+
+        <!-- 5. 학교 인증 -->
+        <section class="step" id="s5" aria-labelledby="s5h">
+          <h2 id="s5h">학교 이메일을 알려 주세요</h2>
+          <div class="meet"><canvas class="narrPet" width="32" height="32" aria-hidden="true"></canvas>
+            <p class="bubble">학교끼리 순위를 매기거든. 비밀번호는 안 만들어.</p></div>
+
+          <div id="mailStage">
+            <div class="field">
+              <label for="email">학교 이메일</label>
+              <input id="email" type="email" inputmode="email" autocomplete="email"
+                     placeholder="hong@mju.ac.kr" aria-describedby="emailHelp emailErr">
+              <span class="help" id="emailHelp"><code>ac.kr</code>로 끝나는 주소만 받아요.</span>
+              <span class="err" id="emailErr" role="alert">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                <span id="emailErrText"></span>
+              </span>
+            </div>
+            <div class="actions" style="margin-top:20px">
+              <button class="cta" id="sendCode" type="button" disabled>인증 메일 받기</button>
+            </div>
+          </div>
+
+          <div id="codeStage" hidden>
+            <div class="mailSent">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+              <p><b id="sentTo">주소</b>로 인증번호 6자리를 보냈어요.</p>
+            </div>
+            <div class="field" style="margin-top:16px">
+              <label for="code">인증번호</label>
+              <div class="otp" id="otp">
+                <div class="cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <input id="code" type="text" inputmode="numeric" maxlength="6"
+                       autocomplete="one-time-code" aria-describedby="codeErr" aria-label="인증번호 6자리">
+              </div>
+              <span class="err" id="codeErr" role="alert">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                <span id="codeErrText"></span>
+              </span>
+            </div>
+            <div class="actions" style="margin-top:20px">
+              <button class="ghost" id="reMail" type="button">주소 다시 입력</button>
+              <button class="cta" id="verify" type="button" disabled>인증하기</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. 카메라 ─────────────────────────────────────────────────
+             한 섹션 안에 네 단계입니다. 인증 화면이 메일 → 번호로 두
+             단계인 것과 같은 구조입니다.
+
+               예고 → 권한 → 내 모습 → 기준 설정
+
+             **예고가 있어야 권한이 허용됩니다.** 예고 없이 브라우저
+             권한창이 뜨면 사람은 일단 거절합니다. 무엇을 위한 것인지
+             모르는 채 카메라를 내주지는 않으니까요.
+
+             그리고 이 순서가 인증 **뒤**인 이유 - 먼저 물었다가 거절당하면
+             전부 잃습니다. 계정이 생긴 뒤라면 거절해도 되돌릴 수 있습니다.
+
+             스켈레톤과 10초 기준 계측은 여기서 진짜로 돌지 않습니다.
+             진짜 기준과 판정은 캠퍼스에 들어가는 순간(세션 시작)에
+             붙습니다 - 판정 모델은 수 MB 라, 가입하는 사람에게 받게 할
+             물건이 아닙니다. 여기서 진짜인 것은 **권한과 내 얼굴**이고,
+             그 둘이 이 화면이 해야 할 말("영상은 안 나갑니다")을 다
+             합니다. -->
+        <section class="step" id="s6" aria-labelledby="s6h">
+          <h2 id="s6h">카메라를 켜 주세요</h2>
+
+          <!-- 6a. 예고 -->
+          <div class="phase" id="camIntro">
+            <div class="narr"><canvas class="narrPet" width="32" height="32" aria-hidden="true"></canvas>
+              <p class="bubble">자세를 보려면 카메라가 필요해. 먼저 알려줄게.</p></div>
+
+            <ul class="about">
+              <li>
+                <span class="ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>
+                </span>
+                <span><b>목과 어깨 위치만 봐요.</b></span>
+              </li>
+              <li class="keep">
+                <span class="ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+                </span>
+                <span><b>서버로 아무것도 보내지 않아요.</b>
+                  녹화도 저장도 하지 않아요.</span>
+              </li>
+              <li>
+                <span class="ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                </span>
+                <span><b>언제든 끌 수 있어요.</b></span>
+              </li>
+            </ul>
+
+            <div class="actions">
+              <button class="cta" id="camAsk" type="button">카메라 켜기</button>
+              <button class="ghost" id="camSkip" type="button">나중에 하기</button>
+            </div>
+          </div>
+
+          <!-- 6b~c. 내 모습. 권한이 허용되면 여기가 열립니다. -->
+          <div class="phase" id="camLive" hidden>
+            <p class="say">이 화면은 <b>브라우저 안에만</b> 있어요.</p>
+
+            <div class="camBox">
+              <!-- 좌우를 뒤집습니다. 거울처럼 보여야 사람이 자기 자세를
+                   고칠 수 있습니다. 안 뒤집으면 왼쪽으로 기울일 때
+                   화면이 오른쪽으로 움직여 헷갈립니다. -->
+              <video id="camVideo" autoplay playsinline muted></video>
+              <span class="camDot" aria-hidden="true"></span>
+            </div>
+
+            <div class="actions">
+              <button class="cta" id="camOk" type="button">다음</button>
+            </div>
+          </div>
+
+          <!-- 6d. 기준 설정. 화면만 만들고 판정은 월드에서 붙입니다.
+               버튼이 없습니다 - 들어오면 3·2·1 을 세고 바로 잽니다.
+               "다음 → 기준 맞추기" 로 두 번 누르게 하면, 두 번째 버튼이
+               무슨 버튼인지 읽어야 하는 결정이 하나 더 생깁니다. -->
+          <div class="phase" id="camCal" hidden>
+            <p class="say">평소 공부할 때처럼 앉아 주세요.</p>
+
+            <div class="camBox cal">
+              <video id="calVideo" autoplay playsinline muted></video>
+              <svg class="calRing" id="calRing" viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="track" cx="60" cy="60" r="54"/>
+                <circle class="fill" cx="60" cy="60" r="54"/>
+              </svg>
+              <span class="calNum" id="calNum" aria-hidden="true">10</span>
+              <span class="calReady" id="calReady" aria-hidden="true">3</span>
+            </div>
+
+            <p class="calSay" id="calSay" role="status">잠시 후 시작할게요. 자세를 잡아 주세요</p>
+
+            <div class="actions">
+              <button class="ghost" id="calLater" type="button">그만두기</button>
+            </div>
+          </div>
+
+          <!-- 거절했을 때. 막지 않습니다 - 계정은 이미 생겼고,
+               노트북이 없거나 공공장소에 있는 사람을 여기서 잃으면
+               되돌릴 방법이 없습니다. -->
+          <div class="phase" id="camDenied" hidden>
+            <div class="narr"><canvas class="narrPet" width="32" height="32" aria-hidden="true"></canvas>
+              <p class="bubble">괜찮아. 카메라 없이도 들어갈 수 있어.</p></div>
+            <ul class="about">
+              <li>
+                <span class="ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+                </span>
+                <span><b>대신 자세 기록은 남지 않아요.</b></span>
+              </li>
+            </ul>
+            <p class="note" id="camWhy">주소창 왼쪽 자물쇠에서 카메라를 허용으로 바꾸면 다시 켤 수 있어요.</p>
+            <div class="actions">
+              <button class="cta" id="camRetry" type="button">다시 시도하기</button>
+              <button class="ghost" id="camGo" type="button">이대로 시작하기</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. 진입 -->
+        <section class="step" id="s7" aria-labelledby="s7h">
+          <h2 id="s7h">준비가 끝났어요</h2>
+
+          <div class="whoami">
+            <canvas id="doneCv" width="32" height="32" role="img" aria-label="내 캐릭터"></canvas>
+            <div class="meta">
+              <span class="nm" id="doneNick">닉네임</span>
+              <span class="sc" id="doneSchool">학교</span>
+              <span class="badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+                학교 인증 완료
+              </span>
+            </div>
+          </div>
+
+          <div class="heads">
+            <div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <span><b>들어가면 바로 세션이 시작돼요.</b> <span id="doneCam">카메라가 켜지고 10초 동안 기준을 잡아요.</span></span>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+              <span><b>기숙사에서 출발해요.</b></span>
+            </div>
+            <div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+              <span><b>회고는 세션을 끝내야 볼 수 있어요.</b></span>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="cta" id="enter" type="button">캠퍼스 들어가기</button>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Supabase 주소와 anon 키. 없으면 로그인이 흉내로 돕니다. -->
+<script src="../shared/korcen.js"></script>
+<script src="../shared/config.js"></script>
+<script src="../shared/school-auth.js"></script>
+<script>
+/* ==================================================================
+   기린캠퍼스 - 온보딩
+
+   그림은 전부 코드로 그립니다. 알은 오픈월드에서 쓰는 것과 **같은
+   함수**입니다 - 온보딩에서 고른 알과 캠퍼스 상점에 놓인 알이 다르게
+   생기면, 그 순간 두 화면이 다른 제품이 됩니다.
+
+   새끼 넷은 여기서 처음 그렸습니다. 아직 걷는 스프라이트가 없어서
+   정면 한 컷뿐이고, 월드에 들어가면 지금은 사람 스프라이트가 나옵니다.
+   ================================================================== */
+
+const T = 16;
+
+/* ---------------- 픽셀 도구 ----------------
+   오픈월드와 같은 원시 함수입니다. 확대는 브라우저가 하고, 여기서는
+   1px 단위로만 찍습니다. */
+function canvasOf(w, h) {
+  const c = document.createElement('canvas');
+  c.width = w * T; c.height = h * T;
+  return c;
+}
+function px(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
+
+/** 정수 격자에 맞춘 원. arc() 로 그리면 가장자리가 반투명해져 확대할 때
+    흐려집니다. 행마다 폭을 계산해 채웁니다. */
+function disc(g, cx, cy, r, color) {
+  g.fillStyle = color;
+  for (let dy = -r; dy <= r; dy++) {
+    const w = Math.floor(Math.sqrt(Math.max(0, r * r - dy * dy)));
+    g.fillRect(Math.round(cx - w), Math.round(cy + dy), w * 2 + 1, 1);
+  }
+}
+function shadow(g, cx, y, rx, ry) {
+  g.fillStyle = 'rgba(0,0,0,.20)';
+  for (let dy = -ry; dy <= ry; dy++) {
+    const half = Math.floor(rx * Math.sqrt(1 - (dy * dy) / (ry * ry || 1)));
+    g.fillRect(cx - half, y + dy, half * 2 + 1, 1);
+  }
+}
+function rnd(x, y, s = 0) {
+  let h = (x * 374761393 + y * 668265263 + s * 2246822519) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+const ART = {};
+
+/* ==================== 알 ====================
+   오픈월드 index.html 의 eggCanvas 를 그대로 옮겼습니다. 받침을 빼고
+   알만 씁니다 - 고르는 화면에서는 받침이 알보다 눈에 띕니다. */
+function eggCanvas(key, shell, shellLit, shellDark, spot) {
+  const c = canvasOf(2, 3), g = c.getContext('2d');
+  shadow(g, 16, 40, 11, 3);
+  /* 아래가 넓은 타원. 위아래 반지름을 다르게 줘야 공이 안 됩니다. */
+  for (let y = -15; y <= 13; y++) {
+    const t = y < 0 ? y / 15 : y / 13;
+    const w = Math.round(Math.sqrt(Math.max(0, 1 - t * t)) * (y < 0 ? 8.5 : 10));
+    if (!w) continue;
+    px(g, 16 - w, 24 + y, w * 2, 1, shellDark);
+    px(g, 16 - w + 1, 24 + y, w * 2 - 2, 1, shell);
+  }
+  disc(g, 12, 18, 4, shellLit);
+  disc(g, 11, 17, 2, '#FFFFFF');
+  /* 무늬 - 종마다 다릅니다. 이게 없으면 알 넷이 색만 다른 같은 알입니다. */
+  g.fillStyle = spot;
+  [[15, 13, 4, 3], [10, 22, 5, 4], [19, 19, 4, 5], [14, 30, 6, 3], [21, 28, 3, 3]]
+    .forEach(([x, y, w, h]) => g.fillRect(x, y, w, h));
+  ART[key] = c;
+  return c;
+}
+
+/* ==================== 새끼 넷 ====================
+   16×16 정면 한 컷. 규칙은 월드와 같습니다 - 빛은 왼쪽 위, 바닥에 닿는
+   면은 어둡게. 눈은 흰자 없이 검은 점 하나에 흰 반사 1px 입니다.
+   작은 크기에서는 흰자를 넣는 순간 눈이 아니라 얼룩이 됩니다. */
+function eyes(g, lx, rx, y, dark = '#2A2320') {
+  px(g, lx, y, 2, 3, dark);
+  px(g, rx, y, 2, 3, dark);
+  px(g, lx, y, 1, 1, 'rgba(255,255,255,.85)');
+  px(g, rx, y, 1, 1, 'rgba(255,255,255,.85)');
+}
+function blush(g, lx, rx, y, c = 'rgba(255,138,115,.55)') {
+  px(g, lx, y, 3, 2, c);
+  px(g, rx, y, 3, 2, c);
+}
+
+/* 거북이 - 등껍질이 몸보다 커야 새끼로 보입니다 */
+{
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  shadow(g, 16, 29, 11, 2);
+  px(g, 6, 24, 4, 4, '#4E9A63');  px(g, 22, 24, 4, 4, '#4E9A63');   // 뒷발
+  px(g, 6, 24, 4, 1, '#6FBC83');  px(g, 22, 24, 4, 1, '#6FBC83');
+  disc(g, 16, 17, 11, '#3D8A55');                                    // 등껍질
+  disc(g, 16, 16, 10, '#63B87A');
+  disc(g, 13, 13, 5, '#8FD9A2');
+  g.fillStyle = '#3D8A55';                                           // 껍질 무늬
+  [[12, 11], [20, 11], [16, 17], [10, 18], [22, 18]].forEach(([x, y]) => {
+    g.fillRect(x - 2, y, 5, 1); g.fillRect(x - 1, y - 1, 3, 3);
+  });
+  px(g, 3, 18, 4, 3, '#7FCF97');  px(g, 25, 18, 4, 3, '#7FCF97');    // 앞발
+  disc(g, 16, 25, 6, '#7FCF97');                                     // 머리
+  disc(g, 16, 24, 5, '#9BE0AF');
+  eyes(g, 12, 19, 23);
+  px(g, 15, 27, 2, 1, '#3D8A55');
+  blush(g, 9, 20, 26, 'rgba(255,138,115,.42)');
+  ART.petTurtle = c;
+}
+
+/* 기린 - 목이 없으면 기린이 아닙니다. 새끼라 짧게, 대신 반점을 크게 */
+{
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  shadow(g, 16, 30, 9, 2);
+  px(g, 11, 25, 3, 5, '#C39338');  px(g, 18, 25, 3, 5, '#C39338');   // 다리
+  px(g, 11, 25, 1, 5, '#E8B85A');  px(g, 18, 25, 1, 5, '#E8B85A');
+  px(g, 9, 19, 14, 8, '#C39338');                                    // 몸통
+  px(g, 10, 19, 12, 7, '#F0C566');
+  px(g, 10, 19, 12, 2, '#FFDC8E');
+  g.fillStyle = '#A8722A';                                           // 반점
+  [[11, 21], [16, 22], [19, 20], [13, 24]].forEach(([x, y]) => g.fillRect(x, y, 3, 3));
+  px(g, 14, 10, 5, 10, '#C39338');                                   // 목
+  px(g, 15, 10, 4, 9, '#F0C566');
+  px(g, 15, 12, 2, 2, '#A8722A');
+  px(g, 15, 16, 2, 2, '#A8722A');
+  disc(g, 17, 8, 6, '#C39338');                                      // 머리
+  disc(g, 17, 7, 5, '#F5D07A');
+  px(g, 20, 7, 4, 4, '#FFE1A0');                                     // 주둥이
+  px(g, 21, 9, 1, 1, '#8E6320'); px(g, 23, 9, 1, 1, '#8E6320');
+  eyes(g, 14, 19, 5);
+  px(g, 12, 1, 2, 4, '#8E6320'); px(g, 12, 0, 3, 2, '#B5762E');      // 뿔
+  px(g, 18, 1, 2, 4, '#8E6320'); px(g, 18, 0, 3, 2, '#B5762E');
+  px(g, 10, 4, 4, 3, '#E8B85A');                                     // 귀
+  ART.petGiraffe = c;
+}
+
+/* 미어캣 - 서 있는 자세와 눈 주변 검은 무늬가 종을 만듭니다 */
+{
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  shadow(g, 16, 30, 9, 2);
+  px(g, 23, 12, 4, 15, '#A87F58');                                   // 꼬리
+  px(g, 23, 12, 2, 14, '#C79B70');
+  px(g, 10, 26, 4, 4, '#A87F58');  px(g, 18, 26, 4, 4, '#A87F58');   // 발
+  px(g, 9, 15, 14, 13, '#A87F58');                                   // 몸통
+  px(g, 10, 15, 12, 12, '#D8AE84');
+  px(g, 11, 18, 10, 8, '#EBCBA6');                                   // 배
+  g.fillStyle = 'rgba(140,102,68,.5)';                               // 등 줄무늬
+  for (let y = 17; y < 25; y += 3) g.fillRect(10, y, 12, 1);
+  px(g, 6, 17, 4, 7, '#C79B70');  px(g, 22, 17, 4, 7, '#C79B70');    // 앞발
+  disc(g, 16, 10, 8, '#A87F58');                                     // 머리
+  disc(g, 16, 9, 7, '#D8AE84');
+  px(g, 8, 3, 4, 4, '#8E6440'); px(g, 20, 3, 4, 4, '#8E6440');       // 귀
+  px(g, 9, 4, 2, 2, '#C48F63'); px(g, 21, 4, 2, 2, '#C48F63');
+  px(g, 10, 6, 5, 4, '#5C4128');                                     // 눈 주변 검은 무늬
+  px(g, 17, 6, 5, 4, '#5C4128');
+  eyes(g, 11, 18, 7, '#1A120A');
+  px(g, 13, 11, 6, 4, '#EBCBA6');                                    // 주둥이
+  px(g, 15, 11, 3, 2, '#3A2A18');
+  px(g, 16, 13, 1, 2, '#8E6440');
+  ART.petMeerkat = c;
+}
+
+/* 돼지 - 코가 전부입니다. 콧구멍 두 점이 없으면 분홍 곰입니다 */
+{
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  shadow(g, 16, 30, 10, 2);
+  px(g, 24, 16, 2, 2, '#C4737F');                                    // 꼬리
+  px(g, 26, 14, 2, 2, '#C4737F'); px(g, 24, 12, 2, 2, '#C4737F');
+  px(g, 10, 25, 4, 5, '#C4737F');  px(g, 18, 25, 4, 5, '#C4737F');   // 다리
+  px(g, 10, 25, 1, 5, '#F0A0AC');  px(g, 18, 25, 1, 5, '#F0A0AC');
+  disc(g, 16, 18, 11, '#C4737F');                                    // 몸통
+  disc(g, 16, 17, 10, '#F2A6B2');
+  disc(g, 13, 14, 5, '#FFC4CD');
+  px(g, 5, 6, 6, 7, '#C4737F'); px(g, 21, 6, 6, 7, '#C4737F');       // 귀
+  px(g, 6, 7, 4, 5, '#F5B6C0');  px(g, 22, 7, 4, 5, '#F5B6C0');
+  eyes(g, 11, 19, 15);
+  disc(g, 16, 22, 5, '#D98593');                                     // 코
+  disc(g, 16, 21, 4, '#FFBEC8');
+  px(g, 14, 21, 2, 3, '#B05F6E');
+  px(g, 18, 21, 2, 3, '#B05F6E');
+  blush(g, 7, 22, 19);
+  ART.petPig = c;
+}
+
+/* ---------------- 조사 ----------------
+   "기린 가 나왔습니다" 는 틀립니다. 받침이 있으면 이/은, 없으면 가/는.
+   종 이름을 넷 다 하드코딩하면 상점에서 종이 늘 때마다 문구가 틀립니다.
+   한글 음절은 (코드 - 0xAC00) % 28 이 0 이 아니면 받침이 있습니다. */
+function hasBatchim(w) {
+  const ch = w.charCodeAt(w.length - 1);
+  if (ch < 0xAC00 || ch > 0xD7A3) return false;   // 한글이 아니면 없는 것으로
+  return (ch - 0xAC00) % 28 !== 0;
+}
+/* ---- 조사 ----
+   은/는·이/가·을/를이 각각 따로 있었고, 세 번째가 필요해진 자리에서
+   묶었습니다. toss/es-hangul 의 josa() 와 같은 판정이지만, 이 프로토타입은
+   빌드가 없어 라이브러리를 인라인할 수 없습니다 - 단독본 빌드가 깨집니다.
+
+   **'의' 는 여기 없습니다.** 받침과 무관하기 때문입니다. 4장 제목이
+   "거북이가 이름을 지어 주세요" 로 나왔던 이유가 바로 그 자리에 iga() 를
+   쓴 것이었습니다. 거북이가 짓는 게 아니라 사용자가 짓습니다. */
+const josa = (w, pair) => w + pair[hasBatchim(w) ? 0 : 1];
+const iga = (w) => josa(w, '이가');
+const eulreul = (w) => josa(w, '을를');
+
+/* ==================== 종 ==================== */
+/* shell 은 **캐릭터** 색, eggShell 은 **알** 색입니다. 둘을 갈라 놓은
+   것이 이 화면의 전부입니다 - 알에 캐릭터 색을 입히면 초록 알에 거북이가
+   든 게 뻔히 보이고, 그러면 고르는 것이 아니라 답을 아는 것이 됩니다.
+   깨야 안다는 약속이 첫 화면에서 깨집니다.
+
+   짝은 자리로 고정입니다. 무작위로 돌리면 새로고침해서 다시 뽑게 되고,
+   그때부터 이건 선택이 아니라 뽑기입니다. */
+const SPECIES = [
+  { id: 'turtle',  egg: 'eggTurtle',  pet: 'petTurtle',  name: '거북이',
+    line: '느려도 끝까지 가. 오래 앉아 있는 건 자신 있어.',
+    shell:    ['#63B87A', '#8FD9A2', '#3D8A55', '#3F8F5C'],
+    eggShell: ['#F3E3C0', '#FFF7E4', '#D6BE93', '#C4A97C'] },   // 모래
+  { id: 'giraffe', egg: 'eggGiraffe', pet: 'petGiraffe', name: '기린',
+    line: '목이 길어서 그만큼 더 신경 써.',
+    shell:    ['#F0C566', '#FFE1A0', '#C39338', '#B5762E'],
+    eggShell: ['#C3DEF4', '#E9F4FD', '#8FB4D6', '#7BA2C6'] },   // 하늘
+  { id: 'meerkat', egg: 'eggMeerkat', pet: 'petMeerkat', name: '미어캣',
+    line: '똑바로 서 있는 게 특기야.',
+    shell:    ['#D8AE84', '#F2D2AE', '#A87F58', '#8E6440'],
+    eggShell: ['#DDCCF1', '#F2EAFB', '#B49CD8', '#A288CA'] },   // 라벤더
+  { id: 'pig',     egg: 'eggPig',     pet: 'petPig',     name: '돼지',
+    line: '쉬는 시간은 내가 제일 잘 챙겨.',
+    shell:    ['#F2A6B2', '#FFCBD4', '#C4737F', '#B95F6E'],
+    eggShell: ['#F8D3C2', '#FFEEE6', '#DFA791', '#CD9480'] },   // 복숭아
+];
+SPECIES.forEach((s) => eggCanvas(s.egg, ...s.eggShell));
+
+/* 금 간 알 - 두드릴수록 자랍니다. 껍질을 새로 그리지 않고 원본 위에
+   덧그려, 금이 껍질과 같은 색 계열로 갈라지게 합니다. */
+function crackedEgg(sp, level) {
+  const base = ART[sp.egg];
+  const c = document.createElement('canvas');
+  c.width = base.width; c.height = base.height;
+  const g = c.getContext('2d');
+  g.drawImage(base, 0, 0);
+  if (!level) return c;
+  /* 금도 **알** 색으로 갈라집니다. 캐릭터 색으로 그으면 금이 갈 때마다
+     안에 누가 있는지가 새어 나갑니다. */
+  const dark = sp.eggShell[2];
+  const seams = [
+    [[16, 10], [13, 15], [17, 18], [14, 23]],
+    [[16, 10], [20, 14], [17, 18], [21, 22], [18, 27]],
+    [[9, 20], [13, 22], [11, 26], [15, 28], [12, 33]],
+  ];
+  for (let k = 0; k < Math.min(level, seams.length); k++) {
+    const path = seams[k];
+    g.fillStyle = dark;
+    for (let i = 0; i < path.length - 1; i++) {
+      const [x0, y0] = path[i], [x1, y1] = path[i + 1];
+      const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+      for (let t = 0; t <= steps; t++) {
+        const x = Math.round(x0 + (x1 - x0) * (t / steps));
+        const y = Math.round(y0 + (y1 - y0) * (t / steps));
+        g.fillRect(x, y, 2, 2);
+      }
+    }
+  }
+  return c;
+}
+
+/* ==================== 히어로 그림 ====================
+   실제 월드와 같은 손으로 그린 잔디 위에 알 넷을 놓습니다. 제품 화면을
+   div 로 흉내 내는 대신, 진짜 캔버스를 보여 주는 편이 정직합니다. */
+{
+  const cv = document.getElementById('heroArt');
+  const g = cv.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  const W = 120, H = 90;                    // 논리 픽셀. 4배로 확대해 보여 줍니다
+  const buf = document.createElement('canvas');
+  buf.width = W; buf.height = H;
+  const b = buf.getContext('2d');
+
+  /* 하늘과 먼 언덕 */
+  const sky = b.createLinearGradient(0, 0, 0, 46);
+  sky.addColorStop(0, '#FFF1EC'); sky.addColorStop(1, '#FFE0D6');
+  b.fillStyle = sky; b.fillRect(0, 0, W, 46);
+  b.fillStyle = '#4A8746';
+  for (let x = 0; x < W; x++) b.fillRect(x, 40 + Math.round(Math.sin(x / 17) * 3), 1, 8);
+
+  /* 잔디 - 얼룩을 먼저 깔고 풀포기를 얹습니다 */
+  b.fillStyle = '#5B9E52'; b.fillRect(0, 46, W, H - 46);
+  for (let y = 46; y < H; y += 4) for (let x = 0; x < W; x += 4) {
+    const r = rnd(x, y, 3);
+    if (r > .78) { b.fillStyle = '#68AC5C'; b.fillRect(x, y, 4, 3); }
+    else if (r < .2) { b.fillStyle = '#4F8E49'; b.fillRect(x, y, 3, 3); }
+  }
+  for (let y = 49; y < H - 3; y += 9) for (let x = 3; x < W - 3; x += 9) {
+    if (rnd(x, y, 11) < .38) continue;
+    const bx = x + Math.round(rnd(x, y, 12) * 8), by = y + Math.round(rnd(x, y, 13) * 8);
+    if (bx >= W - 2 || by >= H - 3) continue;
+    b.fillStyle = '#7CBF66';
+    b.fillRect(bx, by, 1, 2); b.fillRect(bx - 1, by - 1, 1, 2); b.fillRect(bx + 1, by - 1, 1, 2);
+  }
+
+  /* 포석 한 줄 - 알이 놓인 자리를 바닥이 먼저 말합니다 */
+  b.fillStyle = '#BFB6A2'; b.fillRect(0, 62, W, 15);
+  b.fillStyle = '#CBC2AC';
+  for (let x = -6; x < W; x += 12) b.fillRect(x + ((x / 12) % 2 ? 6 : 0), 64, 11, 5);
+  b.fillStyle = '#8E8471'; b.fillRect(0, 62, W, 1); b.fillRect(0, 76, W, 1);
+
+  const eggs = SPECIES.map((s) => ART[s.egg]);
+  let t0 = null;
+  function frame(ts) {
+    if (t0 === null) t0 = ts;
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.drawImage(buf, 0, 0, W, H, 0, 0, cv.width, cv.height);
+    eggs.forEach((e, i) => {
+      const bob = Math.sin((ts - t0) / 720 + i * 1.35) * 2.2;
+      const x = 14 + i * 24, y = 30 + bob;
+      g.drawImage(e, 0, 0, 32, 48, x * 4, Math.round(y) * 4, 32 * 4, 48 * 4);
+    });
+    raf = requestAnimationFrame(frame);
+  }
+  let raf = requestAnimationFrame(frame);
+  /* 움직임을 줄이고 싶다는 설정이면 한 컷만 두고 멈춥니다 */
+  const rm = matchMedia('(prefers-reduced-motion: reduce)');
+  const applyRM = () => {
+    if (!rm.matches) return;
+    cancelAnimationFrame(raf);
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.drawImage(buf, 0, 0, W, H, 0, 0, cv.width, cv.height);
+    eggs.forEach((e, i) =>
+      g.drawImage(e, 0, 0, 32, 48, (14 + i * 24) * 4, 30 * 4, 32 * 4, 48 * 4));
+  };
+  rm.addEventListener('change', applyRM); applyRM();
+}
+
+/* ==================== 상태 ====================
+   새로고침해도 하던 자리에서 이어집니다. 알을 고르고 이메일까지 넣은
+   사람이 실수로 새로고침했다고 처음부터 하게 만들 이유가 없습니다. */
+const KEY = 'girin.signup';
+const S = Object.assign(
+  /* camera: null(아직 안 물음) · 'on'(허용) · 'off'(거절·건너뜀).
+     허용 여부만 적습니다. 권한 자체는 브라우저가 들고 있고, 우리가
+     기억해 봐야 사용자가 설정에서 바꾸면 거짓말이 됩니다. */
+  { step: 1, species: null, nick: '', email: '', school: '', verified: false, cracks: 0, camera: null },
+  JSON.parse(localStorage.getItem(KEY) || '{}')
+);
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } };
+const spec = () => SPECIES.find((s) => s.id === S.species) || null;
+
+const $ = (id) => document.getElementById(id);
+const STEPS = 7;
+
+/* ==================== 화면 전환 ==================== */
+/** 받침이 있으면 은, 없으면 는. "복실이 는 이렇게" 를 막습니다.
+    종성 판정을 두 군데서 따로 하고 있었습니다. josa() 하나만 씁니다. */
+const eunneun = (w) => josa(w, '은는');
+
+/** 말풍선 옆의 캐릭터. 부화한 뒤에만 있으므로 종이 정해지기 전에는
+    조용히 넘어갑니다 - 3장부터 화자가 생기는 것이 알을 깬 보상입니다. */
+function paintNarr() {
+  const sp = spec(); if (!sp || !ART[sp.pet]) return;
+  for (const c of document.querySelectorAll('.narrPet')) {
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    g.drawImage(ART[sp.pet], 0, 0);
+  }
+}
+
+/* 모션을 끄고 쓰는 사람에게는 걸음도 없습니다. 화면은 그냥 바뀝니다. */
+const RM = matchMedia('(prefers-reduced-motion: reduce)');
+
+/**
+ * 한 장 넘깁니다.
+ *
+ * 순서가 곧 박자입니다 - 막대가 먼저 차고(누른 것에 대한 답), 앞 화면이
+ * 가속하며 빠지고, 새 화면 조각이 차례로 앉습니다. CSS 가 시간을 맡고
+ * 여기서는 방향과 클래스만 정합니다.
+ *
+ * @param {number} n        갈 화면 (1~7)
+ * @param {boolean} instant 전환 없이 바로 - 랜딩에서 들어올 때
+ */
+/** 이름이 들어가는 자리를 한 번에 채웁니다.
+ *
+ *  세 자리가 따로 채워지고 있었고, 그래서 4장 제목만 "복실이는" 이 되고
+ *  본문은 "이 친구를" 로 남았습니다. 한 화면에서 이름과 대명사가 같이
+ *  나오면, 이름을 받아 놓고 안 쓰는 것으로 보입니다.
+ *
+ *  이름을 짓기 전에는 종 이름으로 부릅니다 - "거북이의 이름을 지어 주세요".
+ *  조사는 josa() 가 붙이므로 "기린을" 과 "거북이를" 이 알아서 갈립니다. */
+function paintWho() {
+  const sp = spec(); if (!sp) return;
+  const who = S.nick || sp.name;
+  $('petName').textContent = sp.name;   // 이름 짓기 전이므로 늘 종 이름
+  $('aboutPet').textContent = eunneun(who);
+  $('growPet').textContent = eulreul(who);
+}
+
+function show(n, instant) {
+  const prev = S.step;
+  S.step = n; save();
+
+  /* 막대가 화면보다 **먼저** 찹니다. 이게 "한 장 끝냈다" 이고, 화면이
+     바뀌는 건 그 다음 박자입니다. 폭이 아니라 가로 축소입니다 - width 를
+     전환하면 매 프레임 레이아웃이 다시 계산됩니다. */
+  $('bar').firstElementChild.style.transform = 'scaleX(' + (n / STEPS) + ')';
+  $('bar').setAttribute('aria-valuenow', String(n));
+  /* 앞으로 갈 때와 뒤로 갈 때 방향이 반대입니다. 방향이 없으면 앞으로
+     가는지 뒤로 가는지 화면이 말해 주지 않습니다. */
+  $('flow').dataset.dir = (prev && n < prev) ? 'back' : 'fwd';
+
+  /* 지난 전환이 아직 안 끝났으면 먼저 치웁니다. 빨리 두 번 누르면
+     나가던 화면이 새 화면 위에 그대로 얹혀 있습니다. */
+  for (const el of document.querySelectorAll('.step.out')) el.classList.remove('out');
+
+  const move = prev && prev !== n && !instant && !RM.matches;
+  for (let i = 1; i <= STEPS; i++) {
+    const el = $('s' + i);
+    el.classList.toggle('on', i === n);
+    if (i !== prev || !move) continue;
+    el.classList.add('out');
+    /* 자식들의 애니메이션도 같은 이벤트로 올라옵니다. once 로 두면 캐릭터가
+       한 번 튄 것이 그걸 먹어 버리므로, 이름을 보고 그때만 뗍니다. */
+    el.addEventListener('animationend', function done(e) {
+      if (e.animationName !== 'stepOut') return;
+      el.removeEventListener('animationend', done);
+      el.classList.remove('out');
+    });
+  }
+
+  /* 카메라 화면은 늘 예고부터 시작합니다. 돌아왔을 때 켜진 영상이
+     그대로 있으면 권한을 다시 안 물은 것처럼 보입니다. */
+  if (n === 6 && !camStream) camPhase('camIntro');
+  if (n !== 6) camStop();
+  $('back').hidden = n === 1;
+  paintNarr();
+  /* 초점을 새 화면의 제목으로 옮깁니다. 안 옮기면 스크린리더 사용자가
+     이전 버튼에 남아 화면이 바뀐 줄 모릅니다. */
+  const h = $('s' + n).querySelector('h2');
+  if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
+}
+
+function openFlow() {
+  $('landing').style.display = 'none';
+  $('flow').classList.add('on');
+  /* 하던 자리로 되돌립니다. 뒤에서부터 봅니다 - 앞에서부터 보면 나중
+     단계를 끝낸 사람도 앞 조건에 먼저 걸립니다. */
+  /* 전환 없이 바로 섭니다. 랜딩에서 들어오는 것은 "한 장 넘김" 이
+     아니라 시작이라, 방향을 줄 앞 화면이 없습니다. */
+  show(
+    S.camera ? 7 :            // 카메라까지 답했으면 마지막
+    S.verified ? 6 :          // 인증했으면 카메라
+    S.nick ? 4 :              // 이름을 지었으면 여기서 하는 일
+    S.species ? (S.cracks >= 3 ? 3 : 2) : 1,
+    true
+  );
+}
+
+$('go').addEventListener('click', () => {
+  Object.assign(S, { step: 1, species: null, nick: '', email: '', school: '', verified: false, cracks: 0 });
+  save(); paintEggs(); openFlow();
+});
+$('resume').addEventListener('click', openFlow);
+if (S.species || S.nick) {
+  $('resume').hidden = false;
+  $('go').firstChild.textContent = '처음부터 하기 ';
+}
+
+$('back').addEventListener('click', () => {
+  /* 2 장으로 돌아가면 알을 다시 붙입니다. 깨진 알로 "두드려 깨 보세요"
+     화면에 서면 할 일이 없습니다. */
+  if (S.step === 2) { S.cracks = 0; save(); resetHatch(); return show(1); }
+  /* 카메라에서 뒤로 가면 켜 둔 것을 끕니다. 안 끄면 다른 화면에서
+     카메라 표시등이 켜진 채로 남습니다. */
+  if (S.step === 6) camStop();
+  if (S.step > 1) show(S.step - 1);
+});
+
+/* ==================== 1. 알 고르기 ==================== */
+/* ---- 알 넷 ----
+   **알 색은 종 색이 아닙니다.** 캐릭터 껍데기 색을 그대로 쓰면 초록 알에
+   거북이가 든 게 뻔히 보이고, 그러면 고르는 게 아니라 답을 아는 것이
+   됩니다. 알에게 자기 색을 줍니다.
+
+   짝은 자리로 고정합니다 - 같은 알을 고르면 늘 같은 친구가 나옵니다.
+   무작위로 돌리면 새로고침해서 다시 뽑게 되고, 그때부터 이건 선택이
+   아니라 뽑기입니다.
+
+   fx/fy 는 안 골렸을 때 밀려나는 방향입니다. 집 자리에서 바깥쪽으로
+   더 나가야 고른 알과 안 겹칩니다. */
+const EGG_SLOTS = [
+  { x: -104, y: -46, fx: -230, fy: -110, dur: '3.6s', delay: '0s'    },
+  { x:   86, y: -78, fx:  200, fy: -180, dur: '4.2s', delay: '-1.1s' },
+  { x:  -70, y:  74, fx: -180, fy:  180, dur: '3.9s', delay: '-2.3s' },
+  { x:   98, y:  50, fx:  228, fy:  126, dur: '4.5s', delay: '-0.6s' },
+];
+
+function paintEggs() {
+  const stage = $('eggStage');
+  stage.textContent = '';
+  stage.classList.remove('picked');
+
+  SPECIES.forEach((sp, i) => {
+    const slot = EGG_SLOTS[i];
+    const el = document.createElement('div');
+    el.className = 'eggSlot';
+    el.style.cssText = `--x:${slot.x}px; --y:${slot.y}px; --fx:${slot.fx}px; --fy:${slot.fy}px;` +
+                       `--dur:${slot.dur}; --delay:${slot.delay}`;
+    el.dataset.on = '0';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'eggBtn';
+    /* 종 이름은 없습니다. 이름이 보이면 고르는 게 아니라 검색이 됩니다. */
+    btn.setAttribute('aria-label', (i + 1) + '번 알 고르기');
+
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 48;
+    c.getContext('2d').drawImage(ART[sp.egg], 0, 0);
+    btn.appendChild(c);
+
+    btn.addEventListener('click', () => {
+      S.species = sp.id; S.cracks = 0; save();
+      pickEgg(i);
+      /* 고르고 나면 다음 버튼이 할 일입니다. 초점을 옮기면 키보드로
+         온 사람이 알 사이를 헤매지 않습니다. */
+      setTimeout(() => $('toHatch').focus({ preventScroll: true }), 420);
+    });
+
+    el.appendChild(btn);
+    stage.appendChild(el);
+  });
+
+  /* 이어서 하기로 들어온 사람은 고른 알이 이미 가운데 있어야 합니다. */
+  if (S.species) pickEgg(SPECIES.findIndex((s) => s.id === S.species));
+  else unpickEgg();
+}
+
+/** i 번 알을 가운데로. 나머지는 밖으로 밀려납니다. */
+function pickEgg(i) {
+  const stage = $('eggStage');
+  stage.classList.add('picked');
+  [...stage.querySelectorAll('.eggSlot')].forEach((s, j) => { s.dataset.on = j === i ? '1' : '0'; });
+  $('toHatch').disabled = false;
+  $('rePick').hidden = false;
+}
+
+/** 넷을 다시 펼칩니다. 되돌릴 길이 없으면 사용자는 새로고침을 누르고,
+    그러면 고른 것만 잃는 게 아니라 처음부터 다시 시작합니다. */
+function unpickEgg() {
+  const stage = $('eggStage');
+  stage.classList.remove('picked');
+  [...stage.querySelectorAll('.eggSlot')].forEach((s) => { s.dataset.on = '0'; });
+  S.species = null; S.cracks = 0; save();
+  $('toHatch').disabled = true;
+  $('rePick').hidden = true;
+}
+
+$('rePick').addEventListener('click', () => {
+  unpickEgg();
+  $('eggStage').querySelector('.eggBtn')?.focus({ preventScroll: true });
+});
+paintEggs();
+
+$('toHatch').addEventListener('click', () => { resetHatch(); show(2); });
+
+/* ==================== 2. 부화 ==================== */
+function resetHatch() {
+  S.cracks = 0; save();
+  $('petWrap').hidden = true;
+  $('tapEgg').hidden = false;
+  delete $('tapEgg').dataset.touched;   // 다시 오면 다시 불러야 합니다
+  $('hatchFlash').classList.remove('on');
+  $('toName').hidden = true;
+  /* 처음에는 비웁니다. 제목이 이미 "세 번 두드려 주세요" 라고 했고,
+     같은 말을 아래에 한 번 더 쓰면 두 줄이 됩니다. 이 자리는 두드린
+     뒤부터 **남은 횟수**를 말합니다 - 그건 새 정보입니다. */
+  $('tapHint').textContent = '';
+  $('tapHint').dataset.done = '';
+  $('s2h').textContent = '알을 세 번 두드려 주세요';
+  drawHatchEgg();
+}
+function drawHatchEgg() {
+  const sp = spec(); if (!sp) return;
+  const cv = $('hatchCv'), g = cv.getContext('2d');
+  g.clearRect(0, 0, cv.width, cv.height);
+  g.drawImage(crackedEgg(sp, S.cracks), 0, 0);
+}
+
+/* 조각이 흩어집니다. 껍질색을 그대로 써서 "그 알이 깨진 것" 으로 보이게. */
+function burstShards(host) {
+  const sp = spec();
+  const r = host.getBoundingClientRect();
+  const stage = host.closest('.hatchStage');
+  const s = stage.getBoundingClientRect();
+  for (let i = 0; i < 12; i++) {
+    const el = document.createElement('i');
+    el.className = 'shard';
+    el.style.background = i % 3 === 0 ? sp.shell[2] : i % 3 === 1 ? sp.shell[0] : sp.shell[1];
+    el.style.left = (r.left - s.left + r.width / 2 - 4) + 'px';
+    el.style.top = (r.top - s.top + r.height / 2 - 4) + 'px';
+    const a = (i / 12) * Math.PI * 2 + 0.3;
+    el.style.setProperty('--dx', Math.cos(a) * (54 + i * 4) + 'px');
+    el.style.setProperty('--dy', (Math.sin(a) * (44 + i * 3) + 26) + 'px');
+    el.style.setProperty('--rot', (i * 47) + 'deg');
+    stage.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+}
+
+$('tapEgg').addEventListener('click', () => {
+  const sp = spec(); if (!sp) return;
+  S.cracks = Math.min(3, S.cracks + 1); save();
+  const btn = $('tapEgg');
+  /* 한 번 두드리면 부르는 고리를 끕니다. 알아들은 사람에게 계속
+     부르면 그때부터는 잔소리입니다. */
+  btn.dataset.touched = '1';
+  btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake');
+
+  if (S.cracks < 3) {
+    drawHatchEgg();
+    $('tapHint').textContent = ['', '두 번 남았어요', '한 번 남았어요'][S.cracks];
+    return;
+  }
+
+  drawHatchEgg();
+  burstShards(btn);
+  /* 껍질이 흩어지는 동안 알을 치우고 새끼를 올립니다. 흰 섬광이 그
+     교체 프레임을 덮으므로 알이 사라지는 순간은 안 보입니다 - 겹쳐서
+     흐려지는 게 아니라 **끊고** 바뀝니다. 픽셀 게임의 문법입니다. */
+  setTimeout(() => {
+    const flash = $('hatchFlash');
+    flash.classList.remove('on'); void flash.offsetWidth; flash.classList.add('on');
+    btn.hidden = true;
+    const pet = $('petCv');
+    pet.setAttribute('aria-label', sp.name + ' 새끼');
+    $('petWrap').hidden = false;
+    petZoom(sp);
+    $('s2h').textContent = eulreul(sp.name) + ' 만났어요';
+    $('tapHint').textContent = sp.line;
+    $('tapHint').dataset.done = '1';
+    $('toName').hidden = false;
+    $('toName').focus({ preventScroll: true });
+  }, 260);
+});
+
+/* ---- 등장: 포켓몬 문 진입 연출을 크기만 뒤집은 것 ----
+
+   2·4세대에서 주인공이 문으로 들어갈 때 스프라이트가 **이산 배율로**
+   작아지며 사라집니다. 매끄럽게 줄어드는 게 아니라 몇 단계로 툭툭
+   끊깁니다 - DS 가 아핀 변환 행렬을 프레임마다 갈아치웠기 때문입니다.
+   우리는 방향만 뒤집습니다. 월드에서 걸어다니는 크기로 나타나
+   주인공 크기까지 커집니다.
+
+   지켜야 하는 것 셋. 하나라도 빠지면 픽셀 게임이 아니라 확대한
+   그림이 됩니다.
+
+     최근접 이웃  imageSmoothingEnabled = false. 이게 전부입니다.
+                 CSS transform: scale() 은 합성 단계에서 쌍선형 보간을
+                 하므로 0.25 배에서 뭉갭니다. image-rendering: pixelated
+                 는 캔버스 자기 확대에만 듣고 합성 변환에는 안 듭니다.
+                 그래서 CSS 가 아니라 캔버스 안에서 다시 그립니다 -
+                 하드웨어가 하던 것과 같고, 요소 박스는 128px 고정이라
+                 레이아웃도 안 건드립니다.
+     이산 단계    아홉 칸, 560ms = 초당 16단. 픽셀 표준 8~12fps 보다
+                 살짝 빠른 이유는 배율 범위가 네 배라 12단으로는
+                 한 칸이 너무 크게 뛰기 때문입니다.
+     발 고정      가운데를 잡으면 캐릭터가 위로 떠오르고, 그러면
+                 도착하는 게 아니라 확대되는 그림이 됩니다. 발이 땅에
+                 박혀 있어야 커지는 것이 몸으로 읽힙니다.
+
+   32 → 43 → 53 → 64 → 75 → 85 → 96 → 107 → 117 → 128.
+   정수가 아닌 배율에서 픽셀 폭이 3px 과 4px 로 섞이는데, 그
+   불균일함이 연출의 정체입니다. 마지막 칸만 정확히 4배로 떨어집니다. */
+const ZOOM_STEPS = 9, ZOOM_MS = 560, ZOOM_FROM = 32, ZOOM_TO = 128;
+
+function petZoom(sp) {
+  const cv = $('petCv'), g = cv.getContext('2d');
+  const draw = (size) => {
+    g.imageSmoothingEnabled = false;   // clearRect 뒤에 풀리는 브라우저가 있어 매번 켭니다
+    g.clearRect(0, 0, ZOOM_TO, ZOOM_TO);
+    g.drawImage(ART[sp.pet], 0, 0, 32, 32,
+                Math.round((ZOOM_TO - size) / 2), ZOOM_TO - size, size, size);
+  };
+  if (RM.matches) return draw(ZOOM_TO);   // 모션을 끄면 그냥 서 있습니다
+
+  const t0 = Date.now();
+  let last = -1;
+  const tick = () => {
+    /* 칸 번호를 **시각에서 역산**합니다. 프레임을 세면 탭이 가려져
+       스로틀될 때 연출이 느려진 채로 끝까지 갑니다. */
+    const i = Math.min(ZOOM_STEPS, Math.floor((Date.now() - t0) / (ZOOM_MS / ZOOM_STEPS)));
+    if (i !== last) {
+      last = i;
+      draw(Math.round(ZOOM_FROM + (ZOOM_TO - ZOOM_FROM) * i / ZOOM_STEPS));
+    }
+    if (i < ZOOM_STEPS) requestAnimationFrame(tick);
+  };
+  tick();
+}
+
+$('toName').addEventListener('click', () => {
+  paintWho();
+  show(3);
+  setTimeout(() => $('nick').focus(), 320);
+});
+
+/** 화자가 한 번 뜁니다. 답이 들어온 그 순간에만 - 글자마다 뛰면
+    소음이 되고, 소음이 되면 사람이 캐릭터를 안 봅니다.
+    정지된 그림에 시선을 그려 넣을 수는 없으니 반응으로 대신합니다. */
+function meetReact(step) {
+  const m = $('s' + step).querySelector('.meet');
+  if (!m || RM.matches || m.classList.contains('react')) return;
+  m.classList.add('react');
+  m.addEventListener('animationend', function done(e) {
+    if (e.animationName !== 'meetHop') return;
+    m.removeEventListener('animationend', done);
+    m.classList.remove('react');
+  });
+}
+
+/* ==================== 3. 닉네임 ==================== */
+const NICK_RE = /^[가-힣a-zA-Z0-9]+(?: [가-힣a-zA-Z0-9]+)?$/;
+function checkNick(quiet) {
+  const v = $('nick').value.trim();
+  let msg = '';
+  if (!v) msg = quiet ? '' : '닉네임을 입력해 주세요.';
+  else if (v.length < 2) msg = '두 글자 이상이어야 해요.';
+  else if (v.length > 12) msg = '열두 글자까지 쓸 수 있어요.';
+  else if (!NICK_RE.test(v)) msg = '한글·영문·숫자와 공백 하나만 쓸 수 있어요.';
+  /* 비속어 — 형태가 맞은 뒤에 봅니다. 길이도 안 맞는 입력에 "비속어"
+     라고 하면 무엇이 문제인지 헷갈립니다.
+     무엇이 걸렸는지는 안 알려 줍니다. 알려 주면 그게 우회 안내서입니다. */
+  else if (window.Korcen && window.Korcen.isProfane(v))
+    msg = '이 이름은 쓸 수 없어요. 다른 이름을 지어 주세요.';
+  const ok = !msg && v.length >= 2;
+  $('nickErr').classList.toggle('on', !!msg);
+  $('nickErrText').textContent = msg;
+  $('nick').setAttribute('aria-invalid', String(!!msg));
+  /* 버튼이 잠겨 있다가 열리는 그 순간 = 방금 유효해진 순간입니다. */
+  if (ok && $('toAbout').disabled) meetReact(3);
+  $('toAbout').disabled = !ok;
+  return ok;
+}
+$('nick').value = S.nick;
+$('nick').addEventListener('input', () => checkNick(true));
+$('nick').addEventListener('blur', () => { if ($('nick').value.trim()) checkNick(false); });
+$('nick').addEventListener('keydown', (e) => { if (e.key === 'Enter' && checkNick(false)) $('toAbout').click(); });
+$('toAbout').addEventListener('click', () => {
+  if (!checkNick(false)) return;
+  S.nick = $('nick').value.trim(); save();
+  paintWho();
+  show(4);
+});
+
+/* 4장 → 5장. 설명을 읽은 사람만 이메일 화면을 봅니다. */
+$('toSchool').addEventListener('click', () => {
+  show(5);
+  setTimeout(() => $('email').focus(), 320);
+});
+
+/* ==================== 4. 학교 인증 ====================
+   Supabase Auth 의 이메일 OTP 입니다 (shared/school-auth.js).
+
+   설정이 있고 http://localhost 로 열었으면 **진짜로 메일이 갑니다.**
+   설정이 없거나 file:// 로 열었으면 흉내로 돕니다 - 팀원이 파일을
+   더블클릭해서 화면만 볼 수 있어야 하니까요. 다만 흉내일 때는 화면에
+   그렇다고 적습니다. 가짜 통과를 진짜 로그인으로 착각하면 안 됩니다.
+
+   ac.kr 판정은 서버에서 한 번 더 합니다 - 여기 검사는 사용자를 돕는
+   것이지 막는 것이 아닙니다. 막는 것은 가입 차단 훅입니다
+   (supabase/migrations/20260813_school_email_signup_guard.sql). */
+const LIVE_AUTH = Boolean(window.SchoolAuth && window.SchoolAuth.live);
+const SCHOOLS = {
+  'mju.ac.kr': '명지대학교', 'snu.ac.kr': '서울대학교', 'yonsei.ac.kr': '연세대학교',
+  'korea.ac.kr': '고려대학교', 'hanyang.ac.kr': '한양대학교', 'skku.edu': '성균관대학교',
+  'kaist.ac.kr': 'KAIST', 'postech.ac.kr': 'POSTECH', 'cau.ac.kr': '중앙대학교',
+  'khu.ac.kr': '경희대학교', 'ewha.ac.kr': '이화여자대학교', 'sogang.ac.kr': '서강대학교',
+  'konkuk.ac.kr': '건국대학교', 'dankook.ac.kr': '단국대학교', 'inha.ac.kr': '인하대학교',
+};
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function domainOf(v) { return (v.split('@')[1] || '').toLowerCase(); }
+function schoolOf(v) {
+  const d = domainOf(v);
+  if (SCHOOLS[d]) return SCHOOLS[d];
+  /* 학과 서브도메인 - cs.snu.ac.kr 같은 주소도 받습니다 */
+  const hit = Object.keys(SCHOOLS).find((k) => d.endsWith('.' + k));
+  if (hit) return SCHOOLS[hit];
+  return d.endsWith('.ac.kr') ? d.replace(/\.ac\.kr$/, '') + ' (미등록 학교)' : null;
+}
+function checkEmail(quiet) {
+  const v = $('email').value.trim();
+  let msg = '';
+  /* 판정은 한 곳에서만 합니다. 서버 규칙과 같은 함수를 씁니다 - 여기서
+     통과시킨 주소를 서버가 거절하면 사용자는 이유를 알 수 없습니다. */
+  const school = window.SchoolAuth
+    ? window.SchoolAuth.isSchoolEmail(v)
+    : (domainOf(v).endsWith('.ac.kr') || Boolean(SCHOOLS[domainOf(v)]));
+  if (!v) msg = quiet ? '' : '이메일을 입력해 주세요.';
+  else if (!EMAIL_RE.test(v)) msg = '이메일 형식이 아니에요.';
+  else if (!school)
+    msg = '학교 이메일이 아니에요. ac.kr로 끝나는 주소가 필요해요.';
+  const ok = !msg && !!v;
+  $('emailErr').classList.toggle('on', !!msg);
+  $('emailErrText').textContent = msg;
+  $('email').setAttribute('aria-invalid', String(!!msg));
+  if (ok && $('sendCode').disabled) meetReact(5);
+  $('sendCode').disabled = !ok;
+  return ok;
+}
+$('email').value = S.email;
+$('email').addEventListener('input', () => checkEmail(true));
+$('email').addEventListener('blur', () => { if ($('email').value.trim()) checkEmail(false); });
+$('email').addEventListener('keydown', (e) => { if (e.key === 'Enter' && checkEmail(false)) $('sendCode').click(); });
+
+function busy(btn, on, label) {
+  if (on) {
+    btn.dataset.label = btn.textContent;
+    btn.textContent = '';
+    const d = document.createElement('span');
+    d.className = 'dots'; d.innerHTML = '<i></i><i></i><i></i>';
+    btn.appendChild(d);
+    btn.disabled = true;
+  } else {
+    btn.textContent = label || btn.dataset.label || '';
+    btn.disabled = false;
+  }
+}
+
+/** 메일을 보낸 뒤 번호 입력 화면으로. 두 경로가 같은 자리로 모입니다. */
+function toCodeStage() {
+  S.email = $('email').value.trim().toLowerCase();
+  S.school = schoolOf(S.email) || '';
+  save();
+  $('sentTo').textContent = S.email;
+  $('mailStage').hidden = true;
+  $('codeStage').hidden = false;
+  $('s5h').textContent = '메일함을 확인해 주세요';
+  startResendCooldown();
+  setTimeout(() => $('code').focus(), 60);
+}
+
+function emailError(msg) {
+  $('emailErr').classList.add('on');
+  $('emailErrText').textContent = msg;
+  $('email').setAttribute('aria-invalid', 'true');
+  $('email').focus();
+}
+
+/* 다시 보내기는 60 초에 한 번입니다. Supabase 가 그 아래로는 429 를
+   돌려주므로, 화면이 남은 시간을 세어 주지 않으면 사용자는 눌리는 버튼을
+   계속 누르고 이유 없이 막힙니다. */
+let resendAt = 0, resendTimer = 0;
+function startResendCooldown() {
+  if (!LIVE_AUTH) return;
+  resendAt = Date.now() + window.SchoolAuth.RESEND_SEC * 1000;
+  clearInterval(resendTimer);
+  resendTimer = setInterval(tickResend, 250);
+  tickResend();
+}
+function tickResend() {
+  const left = Math.ceil((resendAt - Date.now()) / 1000);
+  const btn = $('reMail');
+  if (left > 0) {
+    btn.disabled = true;
+    btn.textContent = '다시 받기 · ' + left + '초';
+  } else {
+    clearInterval(resendTimer); resendTimer = 0;
+    btn.disabled = false;
+    btn.textContent = btn.dataset.label0 || '주소 다시 입력';
+  }
+}
+
+$('sendCode').addEventListener('click', async () => {
+  if (!checkEmail(false)) return;
+  const btn = $('sendCode');
+  busy(btn, true);
+  if (!LIVE_AUTH) {
+    /* 흉내. 화면 흐름만 확인하는 경로입니다. */
+    setTimeout(() => { busy(btn, false, '인증 메일 받기'); toCodeStage(); }, 900);
+    return;
+  }
+  try {
+    await window.SchoolAuth.sendCode($('email').value.trim());
+    busy(btn, false, '인증 메일 받기');
+    toCodeStage();
+  } catch (err) {
+    busy(btn, false, '인증 메일 받기');
+    emailError(err.friendly || '메일을 보내지 못했어요.');
+  }
+});
+
+$('reMail').addEventListener('click', () => {
+  clearInterval(resendTimer); resendTimer = 0;
+  $('reMail').disabled = false;
+  $('reMail').textContent = $('reMail').dataset.label0 || '주소 다시 입력';
+  $('codeStage').hidden = true;
+  $('mailStage').hidden = false;
+  $('s5h').textContent = '학교 이메일을 알려 주세요';
+  $('code').value = '';
+  $('codeErr').classList.remove('on');
+  $('otp').removeAttribute('data-bad');
+  $('verify').disabled = true;
+  paintOtp();
+  $('email').focus();
+});
+$('reMail').dataset.label0 = $('reMail').textContent;
+
+/* ---- 여섯 칸 그리기 ----
+   입력칸은 하나뿐이고, 칸은 그 값을 비추기만 합니다. 여섯 개의 진짜
+   입력칸으로 쪼개면 붙여넣기·백스페이스·자동완성을 전부 손으로 다시
+   만들어야 하는데, 인증 화면에서 제일 많이 쓰이는 게 그 셋입니다. */
+const OTP_CELLS = [...$('otp').querySelectorAll('.cells i')];
+function paintOtp() {
+  const v = $('code').value;
+  const here = document.activeElement === $('code');
+  OTP_CELLS.forEach((c, i) => {
+    c.textContent = v[i] || '';
+    c.toggleAttribute('data-on', i < v.length);
+    /* 커서는 다음에 받을 칸에만. 여섯 개가 다 차면 갈 곳이 없습니다. */
+    c.toggleAttribute('data-now', here && i === v.length && v.length < 6);
+  });
+}
+$('code').addEventListener('focus', paintOtp);
+$('code').addEventListener('blur', paintOtp);
+$('code').addEventListener('input', () => {
+  $('code').value = $('code').value.replace(/\D/g, '').slice(0, 6);
+  $('codeErr').classList.remove('on');
+  $('otp').removeAttribute('data-bad');
+  $('code').setAttribute('aria-invalid', 'false');
+  $('verify').disabled = $('code').value.length !== 6;
+  paintOtp();
+});
+$('code').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && $('code').value.length === 6) $('verify').click();
+});
+
+function codeError(msg) {
+  $('codeErr').classList.add('on');
+  $('codeErrText').textContent = msg;
+  $('code').setAttribute('aria-invalid', 'true');
+  /* 여섯 칸 전부가 틀렸다고 말합니다. 한 칸만 붉히면 그 칸이 틀린
+     것처럼 보이는데, 틀린 것은 번호 전체입니다. */
+  $('otp').setAttribute('data-bad', '');
+  $('code').focus();
+  paintOtp();
+}
+
+/** 인증이 끝났습니다. 다음은 카메라입니다. */
+function finishVerified() {
+  S.verified = true; save();
+  clearInterval(resendTimer); resendTimer = 0;
+  paintDone();
+  show(6);
+}
+
+/** 마지막 화면의 명패. 인증 직후와 재개, 두 곳에서 부릅니다. */
+function paintDone() {
+  const sp = spec();
+  if (!sp) return;
+  $('doneCv').getContext('2d').drawImage(ART[sp.pet], 0, 0);
+  $('doneNick').textContent = S.nick;
+  $('doneSchool').textContent = (S.school || '학교') + ' · ' + sp.name;
+  /* 카메라를 미룬 사람에게 "켜진다" 고 말하면 거짓말이 됩니다 */
+  $('doneCam').textContent = S.camera === 'off'
+    ? '카메라를 켜면 그때부터 자세를 봐요.'
+    : '카메라가 켜지고 10초 동안 기준을 잡아요.';
+}
+
+$('verify').addEventListener('click', async () => {
+  const btn = $('verify');
+  busy(btn, true);
+  if (!LIVE_AUTH) {
+    setTimeout(() => {
+      busy(btn, false, '인증하기');
+      /* 흉내라 어떤 번호든 통과시킵니다. 000000 만 실패로 두어 오류
+         화면도 눈으로 확인할 수 있게 했습니다. */
+      if ($('code').value === '000000') {
+        codeError('번호가 맞지 않아요. 메일을 다시 확인해 주세요.');
+        return;
+      }
+      finishVerified();
+    }, 1000);
+    return;
+  }
+  try {
+    const sess = await window.SchoolAuth.verifyCode(S.email, $('code').value);
+    busy(btn, false, '인증하기');
+    /* 서버가 확인해 준 주소를 씁니다. 화면에 입력된 값이 아니라 -
+       세션에 들어 있는 것이 실제로 인증된 주소입니다. */
+    if (sess && sess.email) { S.email = sess.email; S.school = schoolOf(sess.email) || S.school; }
+    finishVerified();
+  } catch (err) {
+    busy(btn, false, '인증하기');
+    codeError(err.friendly || '번호를 확인하지 못했어요.');
+  }
+});
+
+/* ==================== 6. 카메라 ====================
+   네 단계가 한 섹션 안에 있습니다: 예고 → 권한 → 내 모습 → 기준 설정.
+
+   여기서 **진짜인 것은 권한과 영상**입니다. 스켈레톤과 10초 기준 계측은
+   화면만 있고, 실제 계산은 캠퍼스에 들어가는 순간(세션 시작)부터
+   붙습니다 - 판정 모델은 수 MB 라 가입하는 사람에게 받게 할 물건이
+   아닙니다. 그리고 이 화면이 해야 할 말("영상은 안 나갑니다")은 자기
+   얼굴이 뜨는 것으로 이미 다 됩니다.
+
+   거절해도 막지 않습니다. 계정은 이미 있고, 노트북이 없거나 공공장소에
+   있는 사람을 여기서 잃으면 되돌릴 방법이 없습니다. */
+let camStream = null;
+
+/** 켜 둔 카메라를 끕니다. 안 끄면 다른 화면으로 가도 표시등이 켜진 채로
+    남습니다 - 이 제품에서 그건 그냥 버그가 아니라 약속을 어기는 것입니다. */
+function camStop() {
+  if (!camStream) return;
+  camStream.getTracks().forEach((t) => t.stop());
+  camStream = null;
+  for (const id of ['camVideo', 'calVideo']) { const v = $(id); if (v) v.srcObject = null; }
+}
+
+/** 6장 안에서 한 단계만 보입니다. */
+function camPhase(name) {
+  for (const id of ['camIntro', 'camLive', 'camCal', 'camDenied']) $(id).hidden = (id !== name);
+  /* 기준 화면은 늘 처음 상태로 돌아옵니다. 세다 만 뒤 다시 들어오면
+     끝나 있는 고리 앞에 서게 됩니다. */
+  if (name === 'camCal') {
+    calStop();
+    $('calNum').textContent = String(CAL_SEC);
+    $('calNum').hidden = true;
+    $('calRing').querySelector('.fill').style.strokeDashoffset = CAL_C;
+    /* 들어오면 바로 셉니다. 버튼을 하나 더 두면 사용자가 "다음" 을 누른
+       뒤에 또 무슨 버튼인지 읽고 눌러야 합니다. */
+    calReady();
+  } else {
+    calStop();
+  }
+  const h = { camIntro: '카메라를 켜 주세요', camLive: '이렇게 보여요',
+              camCal: '기준을 미리 맞춰 볼게요', camDenied: '카메라 없이 시작할게요' }[name];
+  $('s6h').textContent = h;
+}
+
+$('camAsk').addEventListener('click', async () => {
+  const btn = $('camAsk');
+  busy(btn, true);
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      /* 소리는 안 받습니다. 자세를 보는 데 필요 없고, 요구하면 권한창이
+         "카메라와 마이크" 가 되어 허용률이 떨어집니다. */
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+      audio: false,
+    });
+    busy(btn, false, '카메라 켜기');
+    $('camVideo').srcObject = camStream;
+    camPhase('camLive');
+  } catch (err) {
+    busy(btn, false, '카메라 켜기');
+    /* 거절과 고장을 가릅니다. 카메라가 없는 사람에게 "허용으로 바꾸세요"
+       라고 하면 없는 설정을 찾아 헤매게 됩니다. */
+    const gone = err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError';
+    $('camWhy').textContent = gone
+      ? '이 기기에서 카메라를 찾지 못했어요. 웹캠이 있는 기기에서 다시 열어 주세요.'
+      : '주소창 왼쪽 자물쇠에서 카메라를 허용으로 바꾸면 다시 켤 수 있어요.';
+    camPhase('camDenied');
+  }
+});
+
+$('camSkip').addEventListener('click', () => {
+  $('camWhy').textContent = '캠퍼스에 들어갈 때 다시 물어볼게요.';
+  camPhase('camDenied');
+});
+$('camRetry').addEventListener('click', () => camPhase('camIntro'));
+
+$('camGo').addEventListener('click', () => {
+  camStop();
+  S.camera = 'off'; save();
+  paintDone(); show(7);
+});
+
+$('camOk').addEventListener('click', () => {
+  $('calVideo').srcObject = camStream;
+  camPhase('camCal');
+});
+
+$('calLater').addEventListener('click', () => {
+  /* 세는 중에 눌렀으면 타이머부터 끕니다. 안 끄면 다음 화면에 가 있는
+     동안 계속 돌다가 10초째에 혼자 또 넘어갑니다. */
+  calStop();
+  camStop();
+  S.camera = 'on'; save();          // 권한은 받았습니다. 기준만 미룬 것입니다.
+  paintDone(); show(7);
+});
+
+/* ---- 준비 셋 · 기준 10초 ----
+   여기서는 **시간만 셉니다.** 진짜 판정은 월드에서 붙습니다.
+
+   버튼이 없습니다. 권한을 받고 "다음" 을 누르면 이 화면으로 오고,
+   오자마자 3·2·1 을 센 뒤 바로 잽니다. 옛 흐름은 버튼을 두 번 눌러야
+   했는데, 두 번째 버튼은 무엇을 하는 버튼인지 읽어야 알 수 있었습니다.
+
+   3초를 앞에 두는 이유는 예의가 아니라 **측정 조건**입니다. 예고 없이
+   재기 시작하면 자세를 잡으러 움직이는 도중이 기준이 됩니다.
+
+   10초인 이유 — 옛 30초는 정확했지만 가입 도중에 요구하기엔 깁니다.
+   판정 쪽 표본 하한을 같이 내려서 맞췄습니다(월드의 CAL_MIN_SAMPLES ·
+   CAL_BUCKETS). 시간만 줄이면 표본이 모자라 늘 실패합니다.
+
+   Date.now() 로 계산합니다: 탭이 가려지면 타이머가 스로틀돼 1초 배수로
+   튀는데, 시각에서 역산하면 돌아왔을 때 맞는 값이 나옵니다. */
+const CAL_SEC = 10;
+const CAL_READY = 3;               // 자세를 잡을 시간
+const CAL_C = 339.29;              // 2πr, r=54
+let calTimer = 0;
+
+/* 10초에 네 마디는 많습니다 - 다 읽기 전에 다음 문장이 옵니다. 셋. */
+const CAL_SAY = [
+  [1.00, '얼굴과 어깨가 함께 보이게 앉아 주세요'],
+  [0.62, '좋아요. 그대로 계세요'],
+  [0.24, '거의 다 됐어요'],
+];
+
+/** 세던 것을 전부 멈춥니다. 준비 셋이든 본 계측이든 타이머는 하나입니다. */
+function calStop() {
+  clearInterval(calTimer); calTimer = 0;
+  $('calReady').hidden = true;
+}
+
+/** 3·2·1. 다 세면 곧바로 계측으로 넘어갑니다. */
+function calReady() {
+  calStop();
+  const el = $('calReady');
+  el.hidden = false;
+  el.textContent = String(CAL_READY);
+  $('calSay').textContent = '잠시 후 시작할게요. 자세를 잡아 주세요';
+  const end = Date.now() + CAL_READY * 1000;
+  calTimer = setInterval(() => {
+    const left = Math.ceil((end - Date.now()) / 1000);
+    if (left > 0) {
+      /* 같은 숫자를 다시 쓰면 애니메이션이 안 다시 돕니다. 바뀔 때만. */
+      if (el.textContent !== String(left)) el.textContent = String(left);
+      return;
+    }
+    calStop();
+    calRun();
+  }, 100);
+}
+
+/** 10초 계측. 남은 시간을 숫자와 고리로 같이 보입니다 - 숫자만 있으면
+    기다리는 시간이고, 줄어드는 고리가 있으면 끝이 보입니다. */
+function calRun() {
+  $('calNum').hidden = false;
+  const fill = $('calRing').querySelector('.fill');
+  const end = Date.now() + CAL_SEC * 1000;
+  const tick = () => {
+    const left = Math.max(0, (end - Date.now()) / 1000);
+    $('calNum').textContent = Math.ceil(left);
+    fill.style.strokeDashoffset = CAL_C * (left / CAL_SEC);
+    const say = CAL_SAY.find(([k]) => left / CAL_SEC <= k);
+    if (say) $('calSay').textContent = say[1];
+    if (left > 0) return;
+    calStop();
+    camStop();
+    S.camera = 'on'; save();
+    paintDone(); show(7);
+  };
+  tick();
+  calTimer = setInterval(tick, 100);
+}
+
+$('enter').addEventListener('click', () => {
+  const btn = $('enter');
+  busy(btn, true);
+  /* 월드로 넘깁니다. 오픈월드 프로토타입이 옆 폴더에 있으니 바로 열립니다. */
+  setTimeout(() => { location.href = '../openworld/index.html'; }, 500);
+});
+
+/* 이어서 하기로 들어온 사람의 화면을 미리 채워 둡니다 */
+if (S.verified && spec()) {
+  $('doneCv').getContext('2d').drawImage(ART[spec().pet], 0, 0);
+  $('doneNick').textContent = S.nick;
+  $('doneSchool').textContent = (S.school || '학교') + ' · ' + spec().name;
+}
+if (S.species) { paintWho(); drawHatchEgg(); }
+
+/* ==================== 검토용 바로가기 ====================
+   ?step=4          4장으로 바로
+   ?step=6&cam=camCal   6장의 기준 설정 단계로 바로
+   ?step=2&fresh    알을 안 고른 상태로
+
+   일곱 장을 매번 처음부터 밟으면 뒤쪽 화면은 손볼 때마다 여섯 번을
+   지나야 합니다. 주소만으로 뛰게 해 둡니다.
+
+   주소에 아무것도 없으면 하던 자리로 돌아가므로, 평소 흐름에는 아무
+   영향이 없습니다. */
+(function jump() {
+  /* 물음표 뒤와 우물 뒤를 둘 다 봅니다. 클로드 아티팩트처럼 iframe 에
+     끼워 보여 주는 곳은 물음표 뒤를 안 넘겨 줄 때가 있는데, 우물 뒤는
+     주소 그대로 남습니다. */
+  const q = new URLSearchParams(location.search || location.hash.replace(/^#/, '?'));
+  const step = Number(q.get('step'));
+  if (!step) return;
+
+  if (q.has('fresh')) {
+    Object.assign(S, { species: null, nick: '', email: '', school: '', verified: false, cracks: 0, camera: null });
+  } else {
+    /* 뒤쪽 화면을 보려면 앞 단계가 채워져 있어야 합니다. */
+    S.species = S.species || 'turtle';
+    S.nick = S.nick || '복실이';
+    S.email = S.email || 'hong@mju.ac.kr';
+    S.school = S.school || '명지대학교';
+    S.cracks = 3;
+    if (step >= 6) S.verified = true;
+  }
+  save();
+  paintEggs(); resetHatch(); paintDone();
+  if (S.species) { paintWho(); drawHatchEgg(); }
+  $('landing').style.display = 'none';
+  $('flow').classList.add('on');
+  show(Math.max(1, Math.min(STEPS, step)));
+  const cam = q.get('cam');
+  if (step === 6 && cam) camPhase(cam);
+})();
+
+/* ==================== 로그인 상태 맞추기 ====================
+   `verified` 는 이 브라우저가 적어 둔 메모일 뿐입니다. 진짜 로그인이
+   켜져 있으면 **세션이 있어야** 인증된 것입니다. 세션이 없는데 메모만
+   남아 있으면 지웁니다 - 안 지우면 로그아웃된 사람이 인증된 화면을
+   보고, 서버 요청이 전부 401 로 떨어질 때 원인을 못 찾습니다. */
+(async function syncAuth() {
+  if (!window.SchoolAuth) return;
+
+  if (!window.SchoolAuth.live) {
+    /* 흉내로 도는 중이면 화면에 적습니다. 조용히 넘어가면 가짜 통과를
+       진짜 로그인으로 착각합니다. */
+    const tag = document.createElement('p');
+    tag.className = 'help';
+    tag.style.cssText = 'margin-top:10px;color:#8A6039';
+    tag.textContent = '지금은 인증을 흉내만 내고 있어요 — ' + window.SchoolAuth.reason;
+    const help = $('emailHelp');
+    if (help && help.parentNode) help.parentNode.appendChild(tag);
+    return;
+  }
+
+  const sess = await window.SchoolAuth.session();
+  if (sess) {
+    S.email = sess.email || S.email;
+    S.school = schoolOf(S.email) || S.school;
+    if (!S.verified) { S.verified = true; }
+    save();
+    paintDone();
+  } else if (S.verified) {
+    S.verified = false; S.camera = null; save();
+    /* 인증 뒤 화면(카메라·완료)에 서 있었다면 인증으로 되돌립니다.
+       세션이 없는데 카메라 화면에 서 있으면, 다 끝낸 줄 알고 들어갔다가
+       월드에서 401 을 만납니다. */
+    if (S.step >= 5 && $('flow').classList.contains('on')) show(5);
+  }
+})();
+</script>

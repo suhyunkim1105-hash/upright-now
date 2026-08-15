@@ -1,0 +1,252 @@
+{
+  "generated": "scripts/build-items.mjs",
+  "frame": {
+    "w": 32,
+    "h": 48
+  },
+  "dirs": [
+    "right",
+    "up",
+    "left",
+    "down"
+  ],
+  "slots": {
+    "feet": {
+      "z": 20,
+      "rect": [
+        10,
+        44,
+        21,
+        47
+      ]
+    },
+    "legs": {
+      "z": 30,
+      "rect": [
+        10,
+        37,
+        21,
+        47
+      ]
+    },
+    "torso": {
+      "z": 40,
+      "rect": [
+        10,
+        26,
+        21,
+        37
+      ]
+    },
+    "bag": {
+      "z": 50,
+      "rect": [
+        8,
+        26,
+        23,
+        42
+      ]
+    },
+    "face": {
+      "z": 60,
+      "rect": [
+        10,
+        18,
+        21,
+        20
+      ]
+    },
+    "hat": {
+      "z": 70,
+      "rect": [
+        10,
+        14,
+        21,
+        19
+      ]
+    }
+  },
+  "palette": {
+    "O": "#2b2438",
+    "E": "#eae6de",
+    "e": "#bdb7ae",
+    "N": "#6b7385",
+    "n": "#454c5c",
+    "J": "#46628f",
+    "j": "#32486b",
+    "D": "#b8503f",
+    "d": "#8a3a2d",
+    "G": "#5b8f5c",
+    "B": "#d9a441",
+    "H": "#6b4a35"
+  },
+  "school": {
+    "red": {
+      "label": "빨강",
+      "hex": "#c0392b"
+    },
+    "blue": {
+      "label": "파랑",
+      "hex": "#2f5aa8"
+    },
+    "green": {
+      "label": "초록",
+      "hex": "#2e7d4f"
+    }
+  },
+  "items": {
+    "torso": [
+      {
+        "id": "varsity_red",
+        "label": "과잠(빨강)",
+        "file": "tops/varsity_red.png",
+        "z": 40,
+        "recolor": {
+          "base": "tops/varsity_base.png",
+          "mask": "tops/varsity_mask.png",
+          "color": "#c0392b"
+        }
+      },
+      {
+        "id": "varsity_blue",
+        "label": "과잠(파랑)",
+        "file": "tops/varsity_blue.png",
+        "z": 40,
+        "recolor": {
+          "base": "tops/varsity_base.png",
+          "mask": "tops/varsity_mask.png",
+          "color": "#2f5aa8"
+        }
+      },
+      {
+        "id": "varsity_green",
+        "label": "과잠(초록)",
+        "file": "tops/varsity_green.png",
+        "z": 40,
+        "recolor": {
+          "base": "tops/varsity_base.png",
+          "mask": "tops/varsity_mask.png",
+          "color": "#2e7d4f"
+        }
+      },
+      {
+        "id": "hoodie",
+        "label": "후드티",
+        "file": "tops/hoodie.png",
+        "z": 40
+      },
+      {
+        "id": "shirt",
+        "label": "셔츠",
+        "file": "tops/shirt.png",
+        "z": 40
+      },
+      {
+        "id": "tee",
+        "label": "반팔티",
+        "file": "tops/tee.png",
+        "z": 40
+      }
+    ],
+    "legs": [
+      {
+        "id": "jeans",
+        "label": "청바지",
+        "file": "bottoms/jeans.png",
+        "z": 30
+      },
+      {
+        "id": "trainers",
+        "label": "트레이닝복",
+        "file": "bottoms/trainers.png",
+        "z": 30
+      },
+      {
+        "id": "slacks",
+        "label": "슬랙스",
+        "file": "bottoms/slacks.png",
+        "z": 30
+      },
+      {
+        "id": "shorts",
+        "label": "반바지",
+        "file": "bottoms/shorts.png",
+        "z": 30
+      }
+    ],
+    "feet": [
+      {
+        "id": "sneakers",
+        "label": "운동화",
+        "file": "shoes/sneakers.png",
+        "z": 20
+      },
+      {
+        "id": "slippers",
+        "label": "슬리퍼",
+        "file": "shoes/slippers.png",
+        "z": 20
+      },
+      {
+        "id": "dress",
+        "label": "구두",
+        "file": "shoes/dress.png",
+        "z": 20
+      }
+    ],
+    "hat": [
+      {
+        "id": "grad_cap",
+        "label": "학사모",
+        "file": "hats/grad_cap.png",
+        "z": 70
+      },
+      {
+        "id": "cap",
+        "label": "볼캡",
+        "file": "hats/cap.png",
+        "z": 70
+      },
+      {
+        "id": "beanie",
+        "label": "비니",
+        "file": "hats/beanie.png",
+        "z": 70
+      }
+    ],
+    "face": [
+      {
+        "id": "horn",
+        "label": "뿔테",
+        "file": "glasses/horn.png",
+        "z": 60
+      },
+      {
+        "id": "round",
+        "label": "동그란테",
+        "file": "glasses/round.png",
+        "z": 60
+      },
+      {
+        "id": "sunglasses",
+        "label": "선글라스",
+        "file": "glasses/sunglasses.png",
+        "z": 60
+      }
+    ],
+    "bag": [
+      {
+        "id": "backpack",
+        "label": "백팩",
+        "file": "bags/backpack.png",
+        "z": 50
+      },
+      {
+        "id": "tote",
+        "label": "에코백",
+        "file": "bags/tote.png",
+        "z": 50
+      }
+    ]
+  }
+}

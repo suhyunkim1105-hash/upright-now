@@ -548,16 +548,13 @@
     background: var(--surface-2); border: 1px solid var(--line);
     border-radius: 14px; padding: 14px 12px; align-self: start;
   }
-  /* 종이 인형 — 스프라이트가 오기 전까지 칸의 자리를 보여 줍니다 */
+  /* 종이 인형 — 마네킹 위에 산 옷을 실제로 겹쳐 그린 캔버스입니다.
+     확대해도 픽셀이 뭉개지면 안 되므로 pixelated 를 씁니다. */
   #panel .doll {
-    width: 74px; height: 108px; margin: 0 auto 10px; position: relative;
+    display: block; margin: 0 auto 10px;
+    image-rendering: pixelated;
+    background: var(--surface-3); border-radius: 10px;
   }
-  #panel .doll span { position: absolute; left: 50%; transform: translateX(-50%); border-radius: 4px; }
-  #panel .doll .hat    { top: 0;   width: 40px; height: 12px; border-radius: 7px 7px 2px 2px; }
-  #panel .doll .head   { top: 12px; width: 30px; height: 30px; border-radius: 50%; background: #E8D2B4; }
-  #panel .doll .top    { top: 44px; width: 52px; height: 34px; }
-  #panel .doll .bottom { top: 79px; width: 44px; height: 22px; }
-  #panel .doll .shoes  { top: 101px; width: 50px; height: 7px; border-radius: 3px; }
   #panel .shop-prev .who { text-align: center; margin-bottom: 10px; }
   #panel .shop-prev .who b { display: block; font-size: 13.5px; font-weight: 700; }
   #panel .shop-prev .who em { font-style: normal; font-size: 11.5px; color: var(--ink-3); }
@@ -582,9 +579,12 @@
     background: var(--surface);
   }
   #panel .item.on { border-color: var(--school, var(--coral)); background: var(--school-soft, var(--coral-50)); }
-  #panel .item > i {
-    width: 26px; height: 26px; border-radius: 7px; flex: none;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,.14);
+  /* 목록 그림 — 32x48 프레임 한 장을 그대로. 세로가 길어 카드가 커지지
+     않도록 위아래를 잘라 보여 줍니다(옷은 가운데 모여 있습니다). */
+  #panel .item > .thumb {
+    width: 32px; height: 48px; flex: none;
+    image-rendering: pixelated;
+    background: var(--surface-2); border-radius: 7px;
   }
   #panel .item > span { font-size: 13px; font-weight: 600; }
   #panel .item > span em {
@@ -1441,6 +1441,32 @@ function paintTopWall(w, P, decor) {
         px(g, ax, ay, 7, 7, cols[i % 4]);
         px(g, ax, ay, 7, 2, 'rgba(0,0,0,.14)');
       }
+    }
+    else if (d.k === 'frame') {
+      /* 액자 — 명예의 전당 벽. 안쪽은 학교 색이 아니라 **금색**입니다.
+         학교 색으로 칠하면 시즌마다 벽이 통째로 바뀌어, 명예의 전당이
+         아니라 학교 게시판으로 보입니다. */
+      const w = T + 6, h = 22, fx = x - 3;
+      px(g, fx, y - 3, w, h + 4, '#8A6A44');
+      px(g, fx + 2, y - 1, w - 4, h, d.c || '#C9A44C');
+      px(g, fx + 3, y, w - 6, h - 2, '#F7EFD9');
+      /* 안에 든 것 — 트로피 실루엣 하나. 얼굴을 그리면 누구인지
+         묻게 되고, 지금은 대답할 서버가 없습니다. */
+      px(g, fx + w / 2 - 3, y + 4, 6, 7, d.c || '#C9A44C');
+      px(g, fx + w / 2 - 1, y + 11, 2, 3, '#8A6A44');
+      px(g, fx + w / 2 - 4, y + 14, 8, 2, '#8A6A44');
+      px(g, fx + 3, y + h - 6, w - 6, 1, 'rgba(0,0,0,.16)');
+    }
+    else if (d.k === 'poster') {
+      /* 포스터 — 기숙사 방. 압정 넷으로 벽에 붙인 종이 한 장. */
+      const w = T + 2, h = 24, fx = x - 1;
+      px(g, fx, y - 2, w, h, d.c || '#F2E4D2');
+      px(g, fx, y - 2, w, 4, 'rgba(255,255,255,.5)');
+      px(g, fx + 3, y + 3, w - 6, 8, d.c2 || '#5CB177');
+      px(g, fx + 3, y + 13, w - 8, 2, 'rgba(0,0,0,.22)');
+      px(g, fx + 3, y + 16, w - 12, 2, 'rgba(0,0,0,.16)');
+      for (const [px_, py_] of [[1, -1], [w - 3, -1], [1, h - 4], [w - 3, h - 4]])
+        px(g, fx + px_, y + py_, 2, 2, '#B4553F');
     }
     else if (d.k === 'banner') {
       /* 현수막 */
@@ -3205,6 +3231,28 @@ const ZONES = {};
   /* ---- 광장 한가운데: 방향 표지판 ---- */
   prop(m, 'signpost', 21, 20);
 
+  /* ---- 캠퍼스의 두 사람 ----
+     안내는 **북 대로가 광장에 닿는 자리**에 섭니다. 기숙사에서 나오면
+     반드시 여기를 지나기 때문입니다. 표지판 옆에 세우면 표지판을 이미
+     찾은 사람에게만 말을 겁니다 — 그건 안내가 필요 없는 사람입니다. */
+  m.npcs.push(
+    { x: 24, y: 18, sprite: 428, name: '안내 · 나루',
+      lines: [
+        '처음이죠? 여기가 중앙 광장이고, 사방으로 건물 넷이 있어요.',
+        '북쪽이 기숙사, 서쪽 본관, 동쪽 도서관, 남쪽이 학생회관이에요. 앉는 자리는 본관과 도서관에 있어요.',
+        '길을 잃으면 M 을 눌러 지도를 보세요. 처음 안내를 다시 보시겠어요?',
+      ],
+      after: startTutorial },
+    /* 관리인은 기숙사 문 앞 — 방 안이 아니라. 방 안은 내 방이고,
+       관리인이 내 방에 서 있으면 관리인이 아니라 불청객입니다. */
+    { x: 25, y: 11, sprite: 104, name: '기숙사 관리인 · 성재',
+      lines: [
+        '이 방은 혼자 쓰는 1인실이에요. 문 잠그는 건 신경 안 쓰셔도 됩니다.',
+        '곧 친구 방에 놀러 갈 수 있게 될 거예요. 초대 코드를 받아서 넣으면 그 친구 방으로 넘어갑니다.',
+        '지금은 설정에서 내 코드를 만들어 둘 수 있어요. 친구가 그 코드로 찾아옵니다.',
+      ] },
+  );
+
   /* 벤치는 **마주 보게**. 한 줄로 세우면 정류장처럼 보입니다. */
   prop(m, 'bench', 17, 19); prop(m, 'bench', 17, 24);
   prop(m, 'bench', 28, 19); prop(m, 'bench', 28, 24);
@@ -3293,11 +3341,37 @@ const ZONES = {};
     table(24, 8 + r * 5);
     table(30, 8 + r * 5);
   }
+  /* 열람석 구역감 — 6인석 한 덩이마다 바닥에 테두리를 둘러 "이 셋은
+     한 자리" 라고 말합니다. 바닥 무늬는 zone.floor 한 장에 구워지니
+     **그리는 횟수가 늘지 않습니다.** 칸막이를 세우는 것보다 싸고,
+     지나다니는 길도 안 막습니다.
+
+     깔개(rug)로도 해 봤지만 도서관 바닥이 이미 갈색 마루라 열두 덩이가
+     전부 갈색이 되어 어디가 자리인지 오히려 안 보였습니다. 테두리는
+     바닥색을 안 덮으면서 경계만 긋습니다. */
+  for (let r = 0; r < 3; r++) [3, 9, 24, 30].forEach((x) =>
+    floorInlay(m.floor, x - 1, 7 + r * 5, 5, 5, 'border'));
 
   prop(m, 'drawers', 17, 5); prop(m, 'pc', 19, 6);
-  /* 서가 — 열람석 위쪽 벽을 따라 두 줄. 도서관을 도서관으로 만드는 것은
-     책상이 아니라 책입니다. */
-  [2, 6, 10, 23, 27, 31].forEach((x) => prop(m, 'stack', x, 4));
+  /* 대출대 — 들어와서 가운데 통로로 걸어 올라오면 정면에 있습니다.
+     사서가 그 뒤에 섭니다. */
+  prop(m, 'desk3', 19, 7); prop(m, 'books2', 19, 7); prop(m, 'deskLamp', 21, 7);
+  m.npcs.push(
+    { x: 20, y: 6, sprite: 347, name: '사서 · 하람',
+      lines: [
+        '(작은 소리로) 여기서는 조용히 해 주세요. 다들 집중하고 있어요.',
+        '자리에 앉으면 세션이 시작돼요. 한 번에 오래 앉기보다, 짧게 여러 번이 편합니다.',
+        '중간에 일어나도 앉아 있던 시간은 그대로 쌓여요. 편하게 다녀오세요.',
+      ] },
+  );
+
+  /* 서가 — 열람석 위쪽 벽을 따라 한 줄. 도서관을 도서관으로 만드는 것은
+     책상이 아니라 책입니다. stack 은 한 장으로 그려 둔 소품이라 3x2 를
+     차지하면서도 그리는 횟수는 하나입니다. */
+  [2, 6, 10, 13, 23, 27, 31].forEach((x) => prop(m, 'stack', x, 4));
+  /* 오른쪽 벽면 서가 — 비어 있던 동쪽 여백을 책으로 채웁니다.
+     열람석(x30–32)과 겹치지 않게 x34 부터입니다. */
+  [7, 11, 15, 19].forEach((y) => prop(m, 'stack', 34, y));
   /* 스탠드 아래 빛웅덩이 — 책상마다 하나 */
   for (let r = 0; r < 3; r++) [5, 11, 26, 32].forEach((x) =>
     floorGlow(m.floor, x + 0.6, 9.6 + r * 5, 2.6));
@@ -3338,34 +3412,46 @@ const ZONES = {};
   floorInlay(m.floor, 1, 3, m.w - 2, m.h - 5, 'border');
   floorInlay(m.floor, 6, 8, 26, 17, 'runner');        // 강의실 바닥
 
-  /* 칠판과 게시판은 벽에 그려져 있습니다 (dressRoom) */
-  prop(m, 'desk3', 16, 5); prop(m, 'laptopN', 17, 5);
-  prop(m, 'plant', 6, 4); prop(m, 'plant2', 31, 4);
+  /* 교탁 — 칠판 한가운데 앞. 강의실의 앞이 어디인지 이것 하나로 정해집니다 */
+  prop(m, 'desk3', 17, 5); prop(m, 'laptopN', 18, 5);
+  prop(m, 'plant', 4, 4); prop(m, 'plant2', 33, 4);
 
   /* 강의실 — 2칸 책상 하나에 의자 둘. 도서관과 같은 규칙이고
-     배치만 다릅니다: 여기는 전부 칠판을 봅니다. */
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 4; c++) {
-      if (c === 2) continue;                        // 가운데 통로
-      const x = 7 + c * 6, y = 9 + r * 4;
-      prop(m, 'desk2', x, y);
-      prop(m, 'books2', x, y);
-      prop(m, 'chair', x, y + 1);
-      prop(m, 'chairC', x + 1, y + 1);
-    }
+     배치만 다릅니다: 여기는 전부 칠판을 봅니다.
+
+     예전에는 c===2 만 건너뛰어 책상이 x7–26 에 몰리고 오른쪽 열 칸이
+     통째로 비었습니다. 강의실이 한쪽으로 쏠려 보이던 이유입니다.
+     지금은 통로(x16–21)를 **가운데 두고 좌우 셋씩** 세웁니다. */
+  const SEAT_X = [4, 9, 14, 22, 27, 32], SEAT_Y = [10, 15, 20];
+  for (const y of SEAT_Y) for (const x of SEAT_X) {
+    prop(m, 'desk2', x, y);
+    prop(m, 'chair', x, y + 1);
+    prop(m, 'chairC', x + 1, y + 1);
   }
+  /* 책은 앞줄에만 올립니다. 열여덟 자리 전부에 올렸더니 그리는 횟수가
+     한 방에서 아홉이 늘었습니다 — 강의실은 책상 줄이 보이면 되고,
+     책이 보여야 하는 곳은 도서관입니다. */
+  for (const x of SEAT_X) prop(m, 'books2', x, SEAT_Y[0]);
   prop(m, 'lockers', 2, 24); prop(m, 'lockers', 33, 24);
   prop(m, 'bin', 35, 25);
-  floorGlow(m.floor, 19, 6, 5);            // 칠판 위 조명
-  for (let r = 0; r < 4; r++) [8, 14, 26].forEach((x) =>
-    floorGlow(m.floor, x, 10.5 + r * 4, 2.2));
 
+  floorGlow(m.floor, 19, 6, 5);            // 칠판 위 조명
+  /* 줄마다 바닥을 한 겹 깔아 "여기부터 여기까지가 한 줄"을 만듭니다.
+     바닥은 zone.floor 한 장에 구워지므로 그리는 횟수가 늘지 않습니다. */
+  for (const y of SEAT_Y) {
+    floorInlay(m.floor, 3, y - 1, 13, 4, 'rug');
+    floorInlay(m.floor, 21, y - 1, 13, 4, 'rug');
+    for (const x of SEAT_X) floorGlow(m.floor, x + 0.5, y + 1.5, 2.2);
+  }
+
+  /* 칠판은 셋을 잇대어 **한 판**으로 만듭니다. 예전에는 판 둘 사이에
+     시계가 끼어 있어 칠판이 아니라 액자 둘로 보였습니다. 시계는 옆으로. */
   dressRoom(m, IPAL.mainhall, [
     { k: 'win', x: 2, style: 'tall' }, { k: 'banner', x: 5, c: '#3C5C82' },
-    { k: 'win', x: 8, style: 'tall' }, { k: 'board', x: 12 },
-    { k: 'clock', x: 17 }, { k: 'board', x: 20 },
-    { k: 'win', x: 26, style: 'tall' }, { k: 'banner', x: 30, c: '#2F4E74' },
-    { k: 'win', x: 33, style: 'tall' },
+    { k: 'clock', x: 8 },
+    { k: 'board', x: 12 }, { k: 'board', x: 15 }, { k: 'board', x: 18 },
+    { k: 'win', x: 23, style: 'tall' }, { k: 'notice', x: 26 },
+    { k: 'banner', x: 30, c: '#2F4E74' }, { k: 'win', x: 33, style: 'tall' },
   ]);
 
   /* 나가는 곳 — 네 건물이 전부 같은 문입니다. 건물마다 다르면
@@ -3391,11 +3477,20 @@ const ZONES = {};
   m.floor = paintFloor(m.w, m.h, 'laminate');
   floorInlay(m.floor, 2, 4, 3, 2, 'rug');
 
+  /* 벽에 포스터 한 장 — 방이라기보다 창고 같던 이유가 벽이 비어서였습니다.
+     벽 그림은 벽 캔버스 한 장에 같이 구워지므로 공짜입니다.
+
+     포스터 x 만 칸 단위가 아닌 이유: 이 방은 벽이 여덟 칸뿐이라
+     안내판(두 칸)과 시계 사이에 남는 자리가 한 칸이 안 됩니다. x4 에
+     두면 안내판을 2px 덮습니다. 안내판은 (2,2) 물건과 자리를 맞춰야
+     하므로 움직일 수 없어서, 포스터를 반 칸 밀었습니다. */
   dressRoom(m, IPAL.dorm, [
     { k: 'guide', x: 2 },      // 아래 한 칸을 비워야 다가갈 수 있습니다
-    { k: 'clockFace', x: 5 },
+    { k: 'poster', x: 4.4, c: '#F2E4D2', c2: '#5CB177' },
+    { k: 'clockFace', x: 6.4 },
   ]);
-  m.clock = { x: 5, y: 0 };
+  m.clock = { x: 6.4, y: 0 };
+  m.clock = { x: 6, y: 0 };
 
   prop(m, 'desk1', 1, 3); prop(m, 'laptopN', 1, 3);
   prop(m, 'chair', 1, 5);                 // 여기 앉으면 세션 카메라가 켜집니다
@@ -3403,6 +3498,9 @@ const ZONES = {};
   /* 학교 색이 닿는 둘. 벽에 응원기, 바닥에 방석. */
   prop(m, 'pennant', 4, 3);
   prop(m, 'schoolCushion', 3, 5);
+  /* 화분 둘 — 여기까지가 방을 방으로 만드는 최소치입니다. 옷장까지
+     넣었더니 방이 아니라 진열장이 됐던 판이 있었습니다(위 주석). */
+  prop(m, 'plantS', 6, 5); prop(m, 'plant', 3, 3);
 
   m.things = [{ x: 2, y: 2, name: '안내', panel: 'guide' }];
 
@@ -3430,10 +3528,18 @@ const ZONES = {};
   prop(m, 'shelfLow', 11, 5); prop(m, 'shelfLow2', 12, 5);
   prop(m, 'desk3', 4, 9); prop(m, 'desk3', 8, 9);
   prop(m, 'phone', 4, 9); prop(m, 'pc', 9, 9);
+  /* 상점 진열대 — 계산대(y9) 앞뒤로 물건이 놓여야 가게로 보입니다.
+     계산대 앞 줄 설 자리(x6–7)는 그대로 비워 둡니다. stack 은 한 장짜리
+     소품이라 3x2 를 채우면서 그리는 횟수는 하나입니다. */
+  prop(m, 'stack', 2, 11); prop(m, 'stack', 10, 11);
+  prop(m, 'books2', 6, 9); prop(m, 'deskLamp', 10, 9);
 
   prop(m, 'board', 24, 5); prop(m, 'board', 26, 5);
   prop(m, 'desk3', 22, 9); prop(m, 'desk3', 27, 9);
   prop(m, 'monitor', 23, 9); prop(m, 'monitor', 28, 9);
+  /* 명예의 전당 쪽 진열 — 트로피 대신 책·스탠드. 트로피 그림이 없어서
+     색 덩어리를 놓느니 있는 소품으로 자리를 채웁니다. */
+  prop(m, 'stack', 21, 11); prop(m, 'stack', 28, 11);
 
   prop(m, 'desk3', 13, 18); prop(m, 'desk3', 18, 18);
   rowOf(m, 'chairB', 13, 17, 3); rowOf(m, 'chairD', 13, 20, 3);
@@ -3455,12 +3561,15 @@ const ZONES = {};
       line: '오늘 출석은 아직이네요. 도서관이나 본관에서 한 세션만 채우면 됩니다.' },
   );
 
+  /* 왼쪽 벽은 가게(창·게시판), 오른쪽 벽은 명예의 전당(액자 넉 장).
+     벽만 봐도 어느 쪽이 무엇을 하는 곳인지 갈립니다. 액자는 벽 캔버스
+     한 장에 같이 그려지므로 넷을 걸어도 그리는 횟수는 그대로입니다. */
   dressRoom(m, IPAL.union, [
     { k: 'win', x: 2, style: 'shop' }, { k: 'notice', x: 5 },
     { k: 'banner', x: 9, c: '#3B8055' }, { k: 'win', x: 12, style: 'shop' },
-    { k: 'clock', x: 16 }, { k: 'win', x: 19, style: 'shop' },
-    { k: 'banner', x: 23, c: '#5CB177' }, { k: 'notice', x: 26 },
-    { k: 'win', x: 30, style: 'shop' },
+    { k: 'clock', x: 16 },
+    { k: 'frame', x: 21, c: '#C9A44C' }, { k: 'frame', x: 24, c: '#B6BAC2' },
+    { k: 'frame', x: 27, c: '#C08B4A' }, { k: 'frame', x: 30, c: '#C9A44C' },
   ]);
 
   /* 나가는 곳 — 네 건물이 전부 같은 문입니다. 건물마다 다르면
@@ -4058,7 +4167,7 @@ function interact() {
      이걸 nearby 보다 먼저 보지 않으면 창이 영영 안 닫힙니다 — 대화를
      연 자리에 그대로 서 있으니 nearby 가 살아 있고, 스페이스를 누를
      때마다 같은 창이 다시 열립니다. 자리를 뜬 경우만 닫히던 이유입니다. */
-  if (dialogOpen) return closeDialog();
+  if (dialogOpen) return advanceDialog();
   const n = nearby;
   if (!n) return;
   if (n.kind === 'stand') return stand();
@@ -4070,15 +4179,42 @@ function interact() {
   }
 }
 
-let dialogOpen = false;
+/* 대사는 두세 줄씩 이어집니다. 스페이스가 다음 줄로 넘기고, 마지막
+   줄에서 한 번 더 누르면 닫힙니다. 한 줄만 반복하면 두 번째부터는 말을
+   걸 이유가 없습니다. 한 줄짜리(line)도 그대로 받아 줍니다. */
+let dialogOpen = false, talkingTo = null;
+const npcLines = (npc) => npc.lines || [npc.line];
 function talk(npc) {
+  talkingTo = npc; npc.at = 0;
+  paintDialog();
+}
+/** 스페이스 — 남은 줄이 있으면 넘기고, 없으면 닫습니다.
+    마지막 줄까지 다 들은 사람만 after 가 걸립니다(안내 NPC → 튜토리얼). */
+function advanceDialog() {
+  const npc = talkingTo;
+  if (!npc || npc.at >= npcLines(npc).length - 1) {
+    const after = npc && npc.after;
+    closeDialog();
+    if (after) after();
+    return;
+  }
+  npc.at++;
+  paintDialog();
+}
+function paintDialog() {
+  const npc = talkingTo, lines = npcLines(npc);
   const d = document.getElementById('dialog');
   d.querySelector('b').textContent = npc.name;
-  d.querySelector('p').textContent = npc.line;
+  d.querySelector('p').textContent = lines[npc.at];
+  const last = npc.at >= lines.length - 1;
+  d.querySelector('small').textContent = last
+    ? 'Space 로 닫기'
+    : `Space 로 계속 · ${npc.at + 1}/${lines.length}`;
   d.classList.add('on'); dialogOpen = true;
 }
 function closeDialog() {
-  document.getElementById('dialog').classList.remove('on'); dialogOpen = false;
+  document.getElementById('dialog').classList.remove('on');
+  dialogOpen = false; talkingTo = null;
 }
 
 const FOCUS = { library: '도서관 · 백색소음', mainhall: '본관 · 대중음악' };
@@ -5063,42 +5199,66 @@ function myStats() {
 }
 
 /* ==================================================================
-   상점
+   상점 — 아이템 스프라이트
 
-   아이템 그림이 아직 없습니다. 그래서 **색 블록**으로 세우되, 아이템
-   하나가 가진 정보(칸·이름·값·색)는 실물과 똑같이 갖춰 둡니다. 나중에
-   sprite 필드만 채우면 그림이 색 블록을 대신합니다 — 구조를 나중에
-   고치지 않아도 되게 하려는 것입니다.
+   그림이 색 블록이 아니라 **실물 픽셀 스프라이트**입니다.
+   `assets/items/` 는 upright-metaverse 의 `assets/03_items` 를 그대로
+   가져온 것이고, 좌표 규격은 같이 딸려 온 `assets/items/item-spec.md`
+   가 정답입니다. 여기서 지켜야 하는 것만 옮겨 적습니다.
+
+   - 한 장이 **128x48** — 32x48 프레임 넷이 가로로 붙어 있습니다.
+   - 프레임 순서는 **right, up, left, down** 입니다. 캐릭터 시트를
+     따라간 것이라, 여기만 down 을 0번에 두면 방향이 통째로 어긋납니다.
+   - 겹치는 순서(z)는 신발20 < 하의30 < 상의40 < 가방50 < 안경60 < 모자70.
+     이 순서 덕분에 발목·허리춤이 저절로 정리됩니다.
 
    칸(slot)이 하나뿐인 이유: 상의를 두 벌 겹쳐 입을 일이 없습니다.
    같은 칸의 다른 옷을 입으면 앞엣것이 자동으로 벗겨집니다.
    ================================================================== */
+const ITEM_DIR = { right: 0, up: 1, left: 2, down: 3 };
+const ITEM_W = 32, ITEM_H = 48;
+const ITEM_BASE = 'assets/items/';
+
 const SHOP_CATS = [
   { id: 'top',    name: '상의' },
   { id: 'bottom', name: '하의' },
   { id: 'shoes',  name: '신발' },
   { id: 'hat',    name: '모자' },
+  { id: 'face',   name: '안경' },
+  { id: 'bag',    name: '가방' },
   { id: 'egg',    name: '알' },
 ];
-/* sprite 는 아직 null 입니다. 채워지면 색 블록 대신 그 그림을 씁니다. */
+/* cat 은 화면의 칸, z 는 겹치는 순서(item-spec §4). 둘이 다른 이유는
+   '안경' 과 '모자' 가 화면에선 남남이지만 겹칠 때는 순서가 있어서입니다.
+   color 는 스프라이트가 못 뜰 때만 쓰는 대비색입니다 — 그림이 정답입니다. */
 const SHOP = [
-  { id: 'top-hoodie',  cat: 'top',    name: '후드티',      price: 150, color: '#6B7A8F', sprite: null },
-  { id: 'top-varsity', cat: 'top',    name: '과잠',        price: 220, color: null,      sprite: null,
-    school: true, desc: '내 학교 색이 붙습니다' },
-  { id: 'top-knit',    cat: 'top',    name: '니트',        price: 180, color: '#C08A5E', sprite: null },
-  { id: 'top-shirt',   cat: 'top',    name: '셔츠',        price: 250, color: '#E8EDF2', sprite: null },
+  { id: 'top-varsity', cat: 'top',    name: '과잠',        price: 220, z: 40, color: null,
+    school: true, desc: '내 학교 색이 붙습니다',
+    recolor: { base: 'tops/varsity_base.png', mask: 'tops/varsity_mask.png' } },
+  { id: 'top-hoodie',  cat: 'top',    name: '후드티',      price: 150, z: 40, color: '#6B7A8F', sprite: 'tops/hoodie.png' },
+  { id: 'top-shirt',   cat: 'top',    name: '셔츠',        price: 250, z: 40, color: '#E8EDF2', sprite: 'tops/shirt.png' },
+  { id: 'top-tee',     cat: 'top',    name: '반팔티',      price: 120, z: 40, color: '#B8503F', sprite: 'tops/tee.png' },
 
-  { id: 'bot-jeans',   cat: 'bottom', name: '청바지',      price: 160, color: '#4A6180', sprite: null },
-  { id: 'bot-slacks',  cat: 'bottom', name: '슬랙스',      price: 200, color: '#3E4450', sprite: null },
-  { id: 'bot-shorts',  cat: 'bottom', name: '반바지',      price: 150, color: '#8A9A6B', sprite: null },
+  { id: 'bot-jeans',   cat: 'bottom', name: '청바지',      price: 160, z: 30, color: '#4A6180', sprite: 'bottoms/jeans.png' },
+  { id: 'bot-slacks',  cat: 'bottom', name: '슬랙스',      price: 200, z: 30, color: '#3E4450', sprite: 'bottoms/slacks.png' },
+  { id: 'bot-shorts',  cat: 'bottom', name: '반바지',      price: 150, z: 30, color: '#8A9A6B', sprite: 'bottoms/shorts.png' },
+  { id: 'bot-trainer', cat: 'bottom', name: '트레이닝복',  price: 140, z: 30, color: '#6B7385', sprite: 'bottoms/trainers.png' },
 
-  { id: 'sho-sneaker', cat: 'shoes',  name: '운동화',      price: 150, color: '#F0F2F5', sprite: null },
-  { id: 'sho-boots',   cat: 'shoes',  name: '워커',        price: 230, color: '#5A4433', sprite: null },
-  { id: 'sho-slipper', cat: 'shoes',  name: '삼선 슬리퍼', price: 150, color: '#2F3A46', sprite: null },
+  { id: 'sho-sneaker', cat: 'shoes',  name: '운동화',      price: 150, z: 20, color: '#F0F2F5', sprite: 'shoes/sneakers.png' },
+  { id: 'sho-dress',   cat: 'shoes',  name: '구두',        price: 230, z: 20, color: '#6B4A35', sprite: 'shoes/dress.png' },
+  { id: 'sho-slipper', cat: 'shoes',  name: '삼선 슬리퍼', price: 150, z: 20, color: '#2F3A46', sprite: 'shoes/slippers.png' },
 
-  { id: 'hat-cap',     cat: 'hat',    name: '볼캡',        price: 100, color: '#2F4E74', sprite: null },
-  { id: 'hat-beanie',  cat: 'hat',    name: '비니',        price: 120, color: '#8E4A52', sprite: null },
-  { id: 'hat-glasses', cat: 'hat',    name: '안경',        price: 200, color: '#3A4652', sprite: null },
+  { id: 'hat-cap',     cat: 'hat',    name: '볼캡',        price: 100, z: 70, color: '#B8503F', sprite: 'hats/cap.png' },
+  { id: 'hat-beanie',  cat: 'hat',    name: '비니',        price: 120, z: 70, color: '#46628F', sprite: 'hats/beanie.png' },
+  { id: 'hat-grad',    cat: 'hat',    name: '학사모',      price: 400, z: 70, color: '#2B2438', sprite: 'hats/grad_cap.png',
+    desc: '졸업은 아직입니다' },
+
+  { id: 'fac-horn',    cat: 'face',   name: '뿔테',        price: 200, z: 60, color: '#6B4A35', sprite: 'glasses/horn.png' },
+  { id: 'fac-round',   cat: 'face',   name: '동그란테',    price: 200, z: 60, color: '#6B4A35', sprite: 'glasses/round.png' },
+  { id: 'fac-sun',     cat: 'face',   name: '선글라스',    price: 260, z: 60, color: '#2B2438', sprite: 'glasses/sunglasses.png' },
+
+  { id: 'bag-backpack',cat: 'bag',    name: '백팩',        price: 180, z: 50, color: '#5B8F5C', sprite: 'bags/backpack.png' },
+  { id: 'bag-tote',    cat: 'bag',    name: '에코백',      price: 140, z: 50, color: '#BDB7AE', sprite: 'bags/tote.png' },
 
   { id: 'egg-turtle',  cat: 'egg',    name: '거북이 알',   price: 800,  color: '#63B87A', sprite: null },
   { id: 'egg-giraffe', cat: 'egg',    name: '기린 알',     price: 800,  color: '#F0C566', sprite: null },
@@ -5107,6 +5267,81 @@ const SHOP = [
     rare: true, desc: '레어' },
 ];
 const SHOP_BY_ID = Object.fromEntries(SHOP.map((i) => [i.id, i]));
+
+/* 예전 판에서 산 아이템(니트·워커·안경)은 이제 없습니다. 그대로 두면
+   `SHOP_BY_ID[id]` 가 undefined 라 입은 칸을 그릴 때 터집니다. 들어오는
+   길목 하나에서 걸러야 뒤에 있는 모든 곳이 안전합니다. */
+function pruneUnknownItems() {
+  ROOM.owned = (ROOM.owned || []).filter((id) => SHOP_BY_ID[id]);
+  for (const cat of Object.keys(ROOM.worn || {}))
+    if (!SHOP_BY_ID[ROOM.worn[cat]]) delete ROOM.worn[cat];
+}
+pruneUnknownItems();
+
+/* ---- 스프라이트 한 장씩 — 다 뜨면 열린 상점을 다시 그립니다 ---- */
+const ITEM_IMG = {};
+let itemsPending = 0;
+function loadItemImg(path) {
+  if (ITEM_IMG[path]) return ITEM_IMG[path];
+  const img = new Image();
+  itemsPending++;
+  img.onload = () => { if (--itemsPending === 0) repaintOpenPanel(); };
+  img.onerror = () => { itemsPending--; };            // 그림이 없으면 색 블록으로 물러납니다
+  img.src = ITEM_BASE + path;
+  ITEM_IMG[path] = img;
+  return img;
+}
+const itemReady = (img) => !!img && img.complete && img.naturalWidth > 0;
+
+const MANNEQUIN = loadItemImg('mannequin.png');
+for (const it of SHOP) {
+  if (it.sprite) loadItemImg(it.sprite);
+  if (it.recolor) { loadItemImg(it.recolor.base); loadItemImg(it.recolor.mask); }
+}
+
+/* 과잠 — 무채색 마스크에 학교 색을 곱하면 회색 2단계가 그대로 명암이
+   됩니다(item-spec §7). 학교를 바꾸기 전까지는 같은 그림이라 캐시합니다. */
+let varsityCache = null, varsityCacheColor = '';
+function varsitySheet() {
+  const col = schoolColor();
+  if (varsityCache && varsityCacheColor === col) return varsityCache;
+  const r = SHOP_BY_ID['top-varsity'].recolor;
+  const base = ITEM_IMG[r.base], mask = ITEM_IMG[r.mask];
+  if (!itemReady(base) || !itemReady(mask)) return null;
+  const c = document.createElement('canvas');
+  c.width = ITEM_W * 4; c.height = ITEM_H;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.drawImage(mask, 0, 0);
+  g.globalCompositeOperation = 'multiply';
+  g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'destination-in';      // 곱하면서 번진 알파를 되돌립니다
+  g.drawImage(mask, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  g.drawImage(base, 0, 0);                            // 흰 소매·립은 학교색을 안 탑니다
+  varsityCache = c; varsityCacheColor = col;
+  return c;
+}
+
+/** 아이템 하나의 그림 한 장 — 과잠이면 학교색을 입힌 것. */
+function itemSheet(it) {
+  if (it.recolor) return varsitySheet();
+  const img = it.sprite && ITEM_IMG[it.sprite];
+  return itemReady(img) ? img : null;
+}
+
+/** 마네킹 위에 입은 것을 z 순서로 쌓아 한 방향을 그립니다. */
+function drawDoll(g, worn, dir, zoom) {
+  const sx = ITEM_DIR[dir] * ITEM_W;
+  const put = (src) => g.drawImage(src, sx, 0, ITEM_W, ITEM_H, 0, 0, ITEM_W * zoom, ITEM_H * zoom);
+  g.imageSmoothingEnabled = false;
+  if (itemReady(MANNEQUIN)) put(MANNEQUIN);
+  const on = Object.values(worn || {}).map((id) => SHOP_BY_ID[id]).filter(Boolean);
+  for (const it of on.sort((a, b) => a.z - b.z)) {
+    const sheet = itemSheet(it);
+    if (sheet) put(sheet);
+  }
+}
 /* 알은 입는 게 아니라 캐릭터가 바뀌는 것이라 칸이 아니라 이름으로 갑니다 */
 const EGG_CHARACTER = {
   'egg-turtle': '거북이', 'egg-giraffe': '기린',
@@ -5120,30 +5355,27 @@ const wearing = (id) => {
   return it.cat === 'egg' ? ROOM.character === EGG_CHARACTER[id] : ROOM.worn[it.cat] === id;
 };
 
-/** 왼쪽 미리보기 — 지금 입은 것을 쌓아 보여 줍니다. */
+/** 왼쪽 미리보기 — 입은 것을 마네킹에 실제로 겹쳐 보여 줍니다. */
 function shopPreviewHtml() {
   const layer = (cat, label) => {
     const id = ROOM.worn[cat];
     const it = id && SHOP_BY_ID[id];
     return `<div class="lay">
-      <i style="background:${it ? itemColor(it) : 'var(--surface-3)'}"></i>
+      <i style="background:${it ? itemColor(it) || 'var(--line-2)' : 'var(--surface-3)'}"></i>
       <span>${label}</span><em>${it ? esc(it.name) : '없음'}</em></div>`;
   };
+  const Z = 3;
   return `
     <div class="shop-prev">
-      <div class="doll" style="--jacket:${schoolColor()}">
-        <span class="hat" style="background:${ROOM.worn.hat ? itemColor(SHOP_BY_ID[ROOM.worn.hat]) : 'transparent'}"></span>
-        <span class="head"></span>
-        <span class="top" style="background:${ROOM.worn.top ? itemColor(SHOP_BY_ID[ROOM.worn.top]) : 'var(--line-2)'}"></span>
-        <span class="bottom" style="background:${ROOM.worn.bottom ? itemColor(SHOP_BY_ID[ROOM.worn.bottom]) : 'var(--line-2)'}"></span>
-        <span class="shoes" style="background:${ROOM.worn.shoes ? itemColor(SHOP_BY_ID[ROOM.worn.shoes]) : 'var(--ink-3)'}"></span>
-      </div>
+      <canvas class="doll" data-doll="down" data-zoom="${Z}"
+        width="${ITEM_W * Z}" height="${ITEM_H * Z}"></canvas>
       <div class="who"><b>${esc(ROOM.nickname)}</b><em>${esc(ROOM.character)}</em></div>
       <div class="lays">
-        ${layer('hat', '모자')}${layer('top', '상의')}
-        ${layer('bottom', '하의')}${layer('shoes', '신발')}
+        ${layer('hat', '모자')}${layer('face', '안경')}${layer('top', '상의')}
+        ${layer('bottom', '하의')}${layer('shoes', '신발')}${layer('bag', '가방')}
       </div>
-      <p class="hint">그림은 아직 색 블록이에요. 자리는 실물과 같습니다.</p>
+      <p class="hint">몸은 임시 마네킹이에요 — 캐릭터 넷의 32x48 몸통이
+        나오면 그걸로 갈아끼웁니다. 옷 자리는 그때도 그대로입니다.</p>
     </div>`;
 }
 
@@ -5158,7 +5390,8 @@ function shopTabHtml(cat) {
         ? `<button class="act ghost" data-off="${it.id}">벗기</button>`
         : `<button class="act" data-on="${it.id}">입기</button>`;
     return `<div class="item${on ? ' on' : ''}">
-      <i style="background:${itemColor(it) || 'var(--line-2)'}"></i>
+      <canvas class="thumb" data-item="${it.id}" data-zoom="1"
+        width="${ITEM_W}" height="${ITEM_H}"></canvas>
       <span>${esc(it.name)}${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</span>
       ${have && !on ? '<u>보유</u>' : ''}
       ${action}</div>`;
@@ -6088,6 +6321,38 @@ const PANELS = {
 };
 
 let panelOpen = false, activePanelKey = '';
+
+/* 아이템 그림은 innerHTML 로는 안 들어옵니다 — 캔버스라 붙인 **뒤에**
+   칠해야 합니다. 창 내용이 바뀌는 길목을 하나로 모아 두면, 탭을 바꾸든
+   그림이 늦게 도착하든 칠하는 곳은 여기 하나뿐입니다. */
+function setPanelBody(html) {
+  panelBody.innerHTML = html;
+  paintItemCanvases();
+}
+function paintItemCanvases() {
+  for (const c of panelBody.querySelectorAll('canvas[data-doll]')) {
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    drawDoll(g, ROOM.worn, c.dataset.doll || 'down', Number(c.dataset.zoom) || 1);
+  }
+  for (const c of panelBody.querySelectorAll('canvas[data-item]')) {
+    const it = SHOP_BY_ID[c.dataset.item];
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, c.width, c.height);
+    const sheet = it && itemSheet(it);
+    if (sheet) {
+      const zoom = Number(c.dataset.zoom) || 1;
+      g.drawImage(sheet, ITEM_DIR.down * ITEM_W, 0, ITEM_W, ITEM_H, 0, 0, ITEM_W * zoom, ITEM_H * zoom);
+    } else if (it) {
+      /* 알처럼 그림이 없는 것과 아직 안 뜬 것 — 색 블록으로 자리를 지킵니다 */
+      g.fillStyle = itemColor(it) || '#C9C4BE';
+      g.fillRect(c.width * 0.25, c.height * 0.3, c.width * 0.5, c.height * 0.4);
+    }
+  }
+}
+const repaintOpenPanel = () => { if (panelOpen) paintItemCanvases(); };
+
 function openPanel(key) {
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
@@ -6103,13 +6368,13 @@ function openPanel(key) {
       b.setAttribute('aria-selected', String(i === 0));
       b.addEventListener('click', () => {
         [...panelTabs.children].forEach((c, j) => c.setAttribute('aria-selected', String(i === j)));
-        panelBody.innerHTML = spec.tabHtml[i];
+        setPanelBody(spec.tabHtml[i]);
       });
       panelTabs.append(b);
     });
-    panelBody.innerHTML = spec.tabHtml[0];
+    setPanelBody(spec.tabHtml[0]);
   } else {
-    panelBody.innerHTML = spec.html;
+    setPanelBody(spec.html);
   }
 
   panelEl.classList.add('on');
@@ -6382,11 +6647,13 @@ function equip(id) {
   if (!it || !owns(id)) return;
   if (it.cat === 'egg') ROOM.character = EGG_CHARACTER[id] || ROOM.character;
   else ROOM.worn[it.cat] = id;
+  jacketCanvas = null;                   // 월드 캐릭터를 다시 굽습니다
 }
 function unequip(id) {
   const it = SHOP_BY_ID[id];
   if (!it || it.cat === 'egg') return;   // 알은 벗을 수 없습니다. 다른 알로 바꿀 뿐입니다
   if (ROOM.worn[it.cat] === id) delete ROOM.worn[it.cat];
+  jacketCanvas = null;
 }
 /** 산 뒤에도 보던 칸에 그대로 남아야 합니다 — 매번 상의로 튕기면
     신발 세 켤레를 사는 데 열 번을 눌러야 합니다. */
@@ -6660,24 +6927,41 @@ function draw() {
 
 }
 
-/* ---- 과잠 ----
+/* ---- 월드에서 입은 옷 ----
    캐릭터 넉 장(아래·미사용·위·옆)이 시트에서 4×3 블록으로 붙어 있습니다.
-   그 블록만 한 번 떠서 몸통 줄을 학교 색으로 덮어 둡니다.
+   그 블록만 한 번 떠서 옷 줄을 산 옷의 색으로 덮어 둡니다.
+
+   **왜 상점의 32x48 그림을 여기 그대로 못 쓰는가**
+   월드 타일과 캐릭터는 한 변 16px 입니다(T). 아이템은 32x48 이고, 그
+   안에서 옷이 쓰는 폭은 x10–21 — 프레임의 37% 입니다. Kenney 사람은
+   16px 안에서 몸통이 60% 를 넘습니다. 절반으로 줄여 겹치면 폭도 안 맞고
+   1px 아웃라인이 반 픽셀이 되어 끊깁니다. 그림을 뭉개서 얹느니, 월드는
+   월드의 말(16px 색띠)로 말하게 두고 **실물 그림은 상점 인형에서** 보여
+   줍니다. 32x48 몸통 시트가 나오면 그때 둘을 하나로 합칩니다.
 
    source-atop 을 쓰는 이유는, 사각형으로 덮되 **캐릭터가 그려진 칸에만**
    묻어야 하기 때문입니다. 그냥 칠하면 캐릭터 옆 빈칸까지 색띠가 됩니다.
 
-   학교가 바뀌면 jacketCanvas 를 비우고 다음 프레임에 다시 굽습니다 —
-   매 프레임 다시 만들면 광장에서 고친 것을 여기서 도로 까먹습니다. */
+   학교나 입은 옷이 바뀌면 jacketCanvas 를 비우고 다음 프레임에 다시
+   굽습니다 — 매 프레임 다시 만들면 광장에서 고친 것을 여기서 까먹습니다. */
 const CHAR_SHEET_COL = 23, CHAR_SHEET_W = 4, CHAR_SHEET_H = 3;
 let jacketCanvas = null;
+/** 그 칸에 입은 것의 색. 과잠처럼 학교색을 타는 것은 학교색으로. */
+function wornColor(cat) {
+  const it = SHOP_BY_ID[ROOM.worn[cat]];
+  return it ? itemColor(it) : null;
+}
 function playerSheet() {
   if (jacketCanvas) return jacketCanvas;
   const c = canvasOf(CHAR_SHEET_W, CHAR_SHEET_H), g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
   g.drawImage(urban, CHAR_SHEET_COL * T, 0, c.width, c.height, 0, 0, c.width, c.height);
   g.globalCompositeOperation = 'source-atop';
-  const col = schoolColor();
+  /* 몸통 줄 하나만 갈아입힙니다. 모자·하의·신발 줄까지 색으로 덮어 봤지만
+     16px 안에서 다리 두 짝과 발이 한 덩어리가 되어 원본보다 나빠집니다 —
+     머리와 다리는 Kenney 가 그린 대로 두는 편이 사람으로 읽힙니다.
+     아무것도 안 입었으면 예전처럼 학교 과잠을 기본으로 입습니다. */
+  const col = wornColor('top') || schoolColor();
   for (let r = 0; r < CHAR_SHEET_H; r++) {
     px(g, 0, r * T + 8, c.width, 5, col);
     px(g, 0, r * T + 8, c.width, 1, 'rgba(255,255,255,.28)');   // 어깨선

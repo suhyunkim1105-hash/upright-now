@@ -249,6 +249,13 @@
           p.y < rect.top - 40 || p.y > rect.bottom + 40) {
         t.el.style.display = 'none'; continue;
       }
+      /* 회의 결정 — 이름표는 기본 감춤. 캐릭터에 커서를 올렸을 때만
+         닉네임·학교 툴팁으로 보여 줍니다. window.MOUSE 는 index.html 이
+         채웁니다. */
+      const M = window.MOUSE;
+      const hov = M && Math.abs(M.x - p.x) <= T * SCALE / 2 &&
+                  M.y >= p.y - 4 && M.y <= p.y + T * SCALE + 4;
+      if (!hov) { t.el.style.display = 'none'; continue; }
       t.el.style.display = 'block';
       t.el.style.left = p.x + 'px';
       t.el.style.top = (p.y - 6) + 'px';

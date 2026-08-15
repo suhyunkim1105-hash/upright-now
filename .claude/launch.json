@@ -12,6 +12,24 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
       "port": 4173
+    },
+    {
+      "name": "openworld-girin",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "C:/Users/수현/Desktop/upright-now-girin/prototypes/openworld", "-p", "8144", "-c-1"],
+      "port": 8144
+    },
+    {
+      "name": "openworld-we",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "C:/Users/수현/Desktop/upright-now/prototypes/openworld", "-p", "8155", "-c-1"],
+      "port": 8155
+    },
+    {
+      "name": "openworld-worldsave",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "C:/Users/수현/Desktop/upright-now/.claude/worktrees/world-server-save/prototypes", "-p", "8166", "-c-1"],
+      "port": 8166
     }
   ]
 }

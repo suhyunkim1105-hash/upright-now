@@ -4822,6 +4822,8 @@ function esc(s) {
 const COIN = {
   perRecovery: 5,      // 회복 성공 1회
   maxRewardedRecoveries: 5,
+  perMinigame: 10,     // 미니게임 완료 — 게임별 하루 1회
+  dailyCap: 300,       // 하루 획득 상한 — 서버(world__grant)와 같은 값
 };
 const SESSION_COIN_REWARDS = [
   { min: 50, points: 60 },
@@ -4866,11 +4868,14 @@ function coinDay() {
   if (!d || d.date !== today()) return { date: today(), earned: 0 };
   return d;
 }
-/** 상한에 걸리면 걸린 만큼만 줍니다. 준 액수를 돌려줍니다. */
+/** 상한에 걸리면 걸린 만큼만 줍니다. 준 액수를 돌려줍니다.
+    진짜 지급은 서버(world_coins)가 하고, 여기는 서버와 같은 규칙으로
+    화면 표시를 맞추는 것뿐입니다 — 규칙이 어긋나면 잔액이 널뜁니다. */
 function earn(amount, why) {
   if (amount <= 0) return 0;
   const d = coinDay();
-  const give = amount;
+  const give = Math.min(amount, Math.max(0, COIN.dailyCap - d.earned));
+  if (give <= 0) return 0;
   d.earned += give; saveJSON('girin.coinday', d);
   ROOM.coins += give; saveRoom();
   paintCoins(true);
@@ -4882,6 +4887,25 @@ function spend(amount) {
   if (ROOM.coins < amount) return false;
   ROOM.coins -= amount; saveRoom(); paintCoins(true);
   return true;
+}
+
+/** 서버(world_coins)가 돌려준 잔액으로 화면을 맞춥니다. 서버가 정답입니다. */
+function applyServerBalance(balance) {
+  if (typeof balance !== 'number') return;
+  ROOM.coins = balance; saveRoom(); paintCoins(false);
+}
+
+/** 미니게임 완료 보상 — 게임별 하루 1회. 지급은 서버가 하고(사흘 밀려도
+    save.js 큐가 다시 보냅니다), 여기 로컬 기록은 표시를 맞추는 용도입니다. */
+function earnMinigame(gameId, label) {
+  const d = loadJSON('girin.gameday', null);
+  const g = (!d || d.date !== today()) ? { date: today(), done: [] } : d;
+  if (g.done.includes(gameId)) return 0;
+  g.done.push(gameId); saveJSON('girin.gameday', g);
+  if (window.WORLD_SAVE && WORLD_SAVE.configured) {
+    WORLD_SAVE.earnMinigame(gameId).then(applyServerBalance);
+  }
+  return earn(COIN.perMinigame, label);
 }
 
 /** 출석. 10분 이상 유효 집중 세션을 완료했을 때만 호출합니다. */
@@ -5199,12 +5223,13 @@ function finishGiraffeNeck(success) {
   const message = panelBody.querySelector('#giraffe-message');
   const button = panelBody.querySelector('[data-do="giraffe-restart"]');
   if (success) {
+    let got = 0;
     if (!GIRAFFE_NECK.rewarded) {
       GIRAFFE_NECK.rewarded = true;
-      earn(5, '기린 목 펴기 성공');
+      got = earnMinigame('neck', '기린 목 펴기 성공');
     }
-    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (message) message.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (message) {
     message.textContent = '시간이 끝났어요. 조금 더 빠르게 연속 입력해 보세요.';
   }
@@ -5293,12 +5318,13 @@ function finishEscapeRoom(success, message) {
   const stage = panelBody.querySelector('#escape-clues');
   const messageEl = panelBody.querySelector('#escape-message');
   if (success) {
+    let got = 0;
     if (!ESCAPE_ROOM.rewarded) {
       ESCAPE_ROOM.rewarded = true;
-      earn(5, '방탈출 성공');
+      got = earnMinigame('escape', '방탈출 성공');
     }
-    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
-    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (messageEl) messageEl.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (messageEl) messageEl.textContent = message || '시간이 끝났어요. 다시 도전해 보세요.';
   renderEscapeRoom();
 }
@@ -5397,12 +5423,13 @@ function finishTurtleEgg(success, message) {
   const stage = panelBody.querySelector('.egg-stage');
   const messageEl = panelBody.querySelector('#egg-message');
   if (success) {
+    let got = 0;
     if (!TURTLE_EGG.rewarded) {
       TURTLE_EGG.rewarded = true;
-      earn(5, '거북이 알 받기 성공');
+      got = earnMinigame('egg-catch', '거북이 알 받기 성공');
     }
-    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">거북이 알을 잘 받았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
-    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">거북이 알을 잘 받았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (messageEl) messageEl.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (messageEl) messageEl.textContent = message || '알을 충분히 받지 못했어요. 다시 도전해 보세요.';
   renderTurtleEgg();
 }
@@ -5540,12 +5567,13 @@ function finishEggMerge(success) {
   const board = panelBody.querySelector('#egg-merge-board');
   const message = panelBody.querySelector('#egg-merge-message');
   if (success) {
+    let got = 0;
     if (!EGG_MERGE.rewarded) {
       EGG_MERGE.rewarded = true;
-      earn(5, '거북이 알 합치기 성공');
+      got = earnMinigame('egg-merge', '거북이 알 합치기 성공');
     }
-    if (board) board.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;border-radius:10px;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">왕관 알이 탄생했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (board) board.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;border-radius:10px;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">왕관 알이 탄생했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (message) message.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (message) message.textContent = '더 움직일 수 없어요. 다시 도전해 보세요.';
   renderEggMerge();
 }
@@ -5646,9 +5674,10 @@ function finishGiraffeStack(success) {
   const stage = panelBody.querySelector('.stack-stage');
   const message = panelBody.querySelector('#stack-message');
   if (success) {
+    let got = 0;
     if (!GIRAFFE_STACK.rewarded) {
       GIRAFFE_STACK.rewarded = true;
-      earn(5, '기린 목 쌓기 성공');
+      got = earnMinigame('stack', '기린 목 쌓기 성공');
     }
     if (stage) {
       const topBlock = GIRAFFE_STACK.blocks[GIRAFFE_STACK.blocks.length - 1] || { visualWidth: 48 };
@@ -5666,10 +5695,10 @@ function finishGiraffeStack(success) {
             finishedBlocks +
             '<img src="assets/giraffe-head.png" alt="완성된 기린 머리" style="position:absolute;left:50%;bottom:' + headBottom + 'px;width:' + headWidth + 'px;height:' + Math.round(headWidth * .78) + 'px;transform:translateX(-50%);object-fit:contain">' +
           '</div>' +
-          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">내가 만든 기린 완성!</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">+5P</b></div>' +
+          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">내가 만든 기린 완성!</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>' +
         '</div>';
     }
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (message) message.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (message) message.textContent = '블록이 빗나갔어요. 다시 쌓아 보세요.';
   renderGiraffeStack();
 }
@@ -5794,8 +5823,10 @@ const PANELS = {
         <div class="row"><span>50분 이상 세션 완주</span><span class="val">+60</span></div>
         <div class="row"><span>회복 성공 <em>한 번마다</em></span><span class="val">+${COIN.perRecovery}</span></div>
         <div class="row"><span>회복 보상 상한</span><span class="val">세션당 5회</span></div>
+        <div class="row"><span>미니게임 완료 <em>게임별 하루 1회</em></span><span class="val">+${COIN.perMinigame}</span></div>
         <div class="row"><span>출석 인정</span><span class="val">10분 이상</span></div>
         <div class="row"><span>출석 보너스</span><span class="val">3·7·14·30·60일</span></div>
+        <div class="row"><span>하루 획득 상한</span><span class="val">${COIN.dailyCap}</span></div>
       </div>
       <p class="hint">코인은 실제 세션과 회복 행동이 확정될 때 지급돼요.</p>
       <h4 style="margin-top:18px">어디에 쓰나</h4>
@@ -6354,6 +6385,10 @@ function coinToast(amount, why) {
 coinBtn.addEventListener('click', () => openPanel('coins'));
 paintCoins(false);
 
+/* 접속 직후 save.js 가 밀린 큐를 보내고 서버 잔액을 알려 줍니다.
+   새로고침해도 코인이 유지되는 것은 이 한 줄 덕입니다. */
+window.addEventListener('worldsave:balance', (e) => applyServerBalance(e.detail.balance));
+
 /* 세션 종료 — 카메라를 내리고 회고를 엽니다. 다시 시작하려면 명시적으로
    눌러야 합니다: 끝냈다는 감각이 있어야 다음 세션이 새로 시작됩니다. */
 const sessEnd = document.getElementById('sess-end');
@@ -6378,6 +6413,18 @@ function endSession() {
   rows.push({ at: Date.now(), minutes: Math.round(mins),
               seated: Math.round(SESSION.seatedMs / 60000), recoveries: LIVE.recoveries });
   saveJSON('girin.sessions', rows.slice(-200));
+  /* 서버에도 남깁니다. 코인 지급은 서버가 다시 계산하고, 돌아온 잔액이
+     정답입니다. 오프라인이면 save.js 큐에 쌓였다가 다음 접속에 갑니다. */
+  if (window.WORLD_SAVE && WORLD_SAVE.configured) {
+    WORLD_SAVE.finishSession({
+      school: ROOM.school,
+      seatedMinutes: mins,
+      campusMinutes: Math.round((Date.now() - (SESSION.startedAt || Date.now())) / 60000),
+      recoveries: LIVE.recoveries,
+      startedAt: SESSION.startedAt || Date.now(),
+      endedAt: Date.now(),
+    }).then(applyServerBalance);
+  }
   sessBox.classList.add('done');
   sessEnd.textContent = '회고 보기';
   openPanel('retro');
@@ -6826,6 +6873,8 @@ school48.src = 'assets/school48.png';
 
 <!-- 위 스크립트의 전역을 쓰므로 반드시 뒤에 옵니다. 순서도 이대로입니다.
      chat 은 MP 를, comfort 는 둘 다 있다고 보고 붙습니다. -->
+<script src="../shared/config.js"></script>
+<script src="save.js"></script>
 <script src="multiplayer.js"></script>
 <script src="chat.js"></script>
 <script src="comfort.js"></script>

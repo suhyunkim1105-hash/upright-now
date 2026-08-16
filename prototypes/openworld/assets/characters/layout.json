@@ -1,0 +1,185 @@
+{
+ "_출처": "제미나이 시안 8장을 32x48 격자에서 1:1 로 뽑아 잰 값 (1696 = 32 x 53)",
+ "frame": {
+  "w": 32,
+  "h": 48
+ },
+ "frameCount": 4,
+ "sheet": {
+  "w": 128,
+  "h": 48
+ },
+ "timerReserve": 5,
+ "headCeilingY": 5,
+ "headTopY0": 8,
+ "headBottomY": 24,
+ "attachY": 25,
+ "beltY": 37,
+ "feetTopY": 42,
+ "groundY": 45,
+ "centerX": 15.5,
+ "bodyX": [
+  3,
+  28
+ ],
+ "clothX": [
+  5,
+  26
+ ],
+ "legX": [
+  10,
+  21
+ ],
+ "hatSeatX": [
+  8,
+  23
+ ],
+ "hatSeatRows": 4,
+ "eyeX": [
+  10,
+  21
+ ],
+ "eyeTopY": 14,
+ "neck": {
+  "down": {
+   "core": [
+    13,
+    18
+   ],
+   "outline": [
+    12,
+    19
+   ]
+  },
+  "up": {
+   "core": [
+    13,
+    18
+   ],
+   "outline": [
+    12,
+    19
+   ]
+  },
+  "right": {
+   "core": [
+    13,
+    16
+   ],
+   "outline": [
+    12,
+    17
+   ]
+  },
+  "left": {
+   "core": [
+    15,
+    18
+   ],
+   "outline": [
+    14,
+    19
+   ]
+  }
+ },
+ "slots": {
+  "torso": {
+   "rect": [
+    5,
+    25,
+    26,
+    37
+   ],
+   "followsDy": true
+  },
+  "legs": {
+   "rect": [
+    10,
+    37,
+    21,
+    45
+   ],
+   "followsDy": false
+  },
+  "feet": {
+   "rect": [
+    10,
+    42,
+    21,
+    45
+   ],
+   "followsDy": false
+  },
+  "hat": {
+   "rect": null,
+   "followsDy": true,
+   "note": "5, hatY - 26, hatY+6"
+  }
+ },
+ "species": [
+  {
+   "name": "turtle",
+   "neck": 0,
+   "headTopY": 8,
+   "headBottomY": 24,
+   "hatDy": 0,
+   "eyeDy": 0
+  },
+  {
+   "name": "giraffe",
+   "neck": 0,
+   "headTopY": 8,
+   "headBottomY": 24,
+   "hatDy": 0,
+   "eyeDy": 0
+  },
+  {
+   "name": "penguin",
+   "neck": 0,
+   "headTopY": 7,
+   "headBottomY": 23,
+   "hatDy": -1,
+   "eyeDy": 3
+  },
+  {
+   "name": "hamster",
+   "neck": 0,
+   "headTopY": 7,
+   "headBottomY": 23,
+   "hatDy": -1,
+   "eyeDy": 0
+  },
+  {
+   "name": "frog",
+   "neck": 0,
+   "headTopY": 9,
+   "headBottomY": 25,
+   "hatDy": 1,
+   "eyeDy": -4
+  },
+  {
+   "name": "hedgehog",
+   "neck": 0,
+   "headTopY": 6,
+   "headBottomY": 22,
+   "hatDy": -2,
+   "eyeDy": 0
+  },
+  {
+   "name": "alpaca",
+   "neck": 0,
+   "headTopY": 7,
+   "headBottomY": 23,
+   "hatDy": -1,
+   "eyeDy": 0
+  },
+  {
+   "name": "swan",
+   "neck": 0,
+   "headTopY": 8,
+   "headBottomY": 24,
+   "hatDy": 0,
+   "eyeDy": 0
+  }
+ ]
+}

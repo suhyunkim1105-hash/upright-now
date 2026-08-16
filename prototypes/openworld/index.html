@@ -4,7 +4,7 @@
 <title>기린캠퍼스 — 오픈월드 프로토타입</title>
 <!-- Wanted Sans — UI 전용입니다. 월드 안의 픽셀 글자는 Malgun Gothic 을
      1비트로 잘라 만들므로 그쪽 서체 사슬은 건드리지 않습니다. -->
-<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="../../upright-now/public/fonts/wanted-sans/WantedSansVariable.css">
 
 <style>
   /* ==================================================================
@@ -120,21 +120,14 @@
   /* ---------- HUD ---------- */
   .hud { position: fixed; pointer-events: none; font-variant-numeric: tabular-nums; }
 
-  #hud-zone {
-    left: 20px; top: 18px;
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: var(--r); padding: 9px 14px 10px;
-    box-shadow: var(--sh);
-  }
-  #hud-zone em {
-    display: block; font-style: normal; font-size: 10px; font-weight: 700;
-    letter-spacing: .18em; color: var(--teal-700); margin-bottom: 1px;
-  }
-  #hud-zone b { font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
-  #hud-zone span { font-size: 12px; color: var(--ink-3); margin-left: 7px; }
+  /* 좌측 상단 존 배지와 좌측 하단 조작 안내는 걷어냈습니다. 지금 어느
+     건물인지는 화면이 말해 주고, 조작은 첫 진입 안내가 한 번 알려 준 뒤
+     나루에게 다시 물으면 됩니다. 늘 떠 있는 설명은 처음 한 번만 읽힙니다.
+     비운 왼쪽 아래는 채팅이 씁니다(chat.js).
 
+     성능 배지는 남깁니다 — 출시 직전에 지웁니다. */
   #hud-perf {
-    right: 20px; top: 62px; text-align: right;
+    right: 20px; top: 20px; text-align: right;
     font: 11px/1.5 ui-monospace, 'Consolas', monospace;
     color: var(--ink-3);
     background: var(--surface); border: 1px solid var(--line);
@@ -143,17 +136,113 @@
   #hud-perf b { color: var(--teal-700); font-weight: 700; }
   #hud-perf .warn { color: var(--warn); }
 
-  #hud-help {
-    left: 20px; bottom: 18px; font-size: 12px; color: var(--ink-2);
-    background: var(--surface); border: 1px solid var(--line);
-    border-radius: var(--r); padding: 9px 13px; box-shadow: var(--sh);
+  /* ==================================================================
+     첫 진입 안내
+
+     네 장을 아래쪽 카드 하나로 넘깁니다. 화면 가운데를 덮는 모달로 두면
+     배우는 동안 캠퍼스가 안 보이고, 배울 대상이 사라진 설명이 됩니다.
+
+     줄바꿈 — 한국어는 `word-break: normal` 이면 어절 중간에서 끊깁니다.
+     `keep-all` 로 어절을 지키고, 폭을 **글자 수로** 묶습니다(max-width 를
+     ch 로). 그래야 "도서관·본관에 앉을 / 자리가 있어요" 처럼 뜻 단위로
+     떨어집니다. 제목 한 줄 + 설명 한 줄로 나눈 것도 같은 이유입니다 —
+     한 문단에 다 넣으면 넉 줄이 되고 그러면 아무도 안 읽습니다.
+     ================================================================== */
+  /* 아래쪽 가운데는 채팅 입력줄이 씁니다(chat.js). 그 위로 올려야
+     둘이 안 겹칩니다 — 겹치면 안내를 읽는 동안 채팅을 못 칩니다. */
+  #tutorial {
+    position: fixed; left: 50%; bottom: 104px; z-index: 7;
+    transform: translate(-50%, 14px); opacity: 0; pointer-events: none;
+    transition: opacity .22s ease, transform .28s cubic-bezier(.2, .9, .3, 1);
   }
-  #hud-help kbd {
-    display: inline-block; min-width: 20px; text-align: center;
-    padding: 2px 6px; margin: 0 1px;
+  #tutorial.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+
+  .tut-card {
+    display: grid; grid-template-columns: 64px 1fr; gap: 4px 16px;
+    align-items: center;
+    width: max-content; max-width: 560px;
+    padding: 18px 20px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 18px; box-shadow: var(--sh-lg);
+  }
+
+  /* 왼쪽 — 그 장에서 누를 키. 그림 대신 실물 키캡을 보여 줍니다.
+     이모지를 쓰면 픽셀 월드 위에 혼자 다른 화풍이 얹힙니다. */
+  .tut-keys {
+    grid-row: 1 / span 2; align-self: center;
+    display: flex; flex-wrap: wrap; gap: 3px;
+    justify-content: center; align-content: center;
+    width: 64px;
+  }
+  .tut-keys kbd {
+    display: block; min-width: 20px; text-align: center;
+    padding: 3px 6px;
     background: var(--surface-3); border: 1px solid var(--line-2);
     border-bottom-width: 2px; border-radius: 5px;
     font: 700 11px/1.4 ui-monospace, monospace; color: var(--ink);
+  }
+  .tut-keys kbd.wide { min-width: 46px; }
+  .tut-keys .coin {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--teal-200); border: 2px solid var(--teal-600);
+    display: grid; place-items: center;
+    font: 800 13px/1 sans-serif; color: var(--teal-800);
+  }
+
+  .tut-text { min-width: 0; }
+  .tut-text b {
+    display: block; font-size: 15px; font-weight: 800; color: var(--ink);
+    letter-spacing: -.01em; margin-bottom: 3px;
+  }
+  .tut-text p {
+    margin: 0; font-size: 13px; line-height: 1.7; color: var(--ink-2);
+    /* keep-all 이 어절을 지키고, balance 가 두 줄 길이를 맞춥니다.
+       pretty 는 마지막 줄에 한 낱말만 남는 것만 막아서, 두 줄짜리
+       짧은 글에서는 앞줄이 꽉 차고 뒷줄이 헐거워집니다. */
+    word-break: keep-all; text-wrap: balance; max-width: 32ch;
+  }
+
+  .tut-foot {
+    grid-column: 2; display: flex; align-items: center; gap: 8px;
+    margin-top: 14px;
+  }
+  /* 몇 장 중 몇 장째인지. 숫자로 적으면 읽어야 알고, 점은 보면 압니다. */
+  .tut-dots { display: flex; gap: 5px; margin-right: auto; }
+  .tut-dots i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--line-2);
+    transition: background .18s ease, transform .18s cubic-bezier(.2, .9, .3, 1);
+  }
+  .tut-dots i.on { background: var(--teal); transform: scale(1.34); }
+  .tut-dots i.done { background: var(--teal-300); }
+
+  .tut-btn {
+    background: var(--teal); border: 1px solid var(--teal-600);
+    border-radius: 9px; color: var(--on-teal);
+    font: inherit; font-size: 12.5px; font-weight: 700;
+    padding: 8px 16px; cursor: pointer;
+    transition: filter .14s ease, transform .09s ease;
+  }
+  .tut-btn:hover { filter: brightness(1.04); }
+  .tut-btn:active { transform: scale(.97); }
+  .tut-btn.ghost {
+    background: var(--surface); border-color: var(--line-2); color: var(--ink-3);
+  }
+  .tut-btn.ghost:hover { background: var(--teal-50); color: var(--ink-2); }
+  .tut-btn:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 2px; }
+
+  /* 장이 바뀔 때 — 글자만 갈아 끼우면 바뀐 줄 모릅니다. 왼쪽에서 한 뼘
+     들어오게 해서 "다음 장" 이라는 사실을 몸이 먼저 압니다. */
+  @keyframes tutIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .tut-card.turn .tut-keys { animation: tutIn .26s cubic-bezier(.2, .9, .3, 1) both; }
+  .tut-card.turn .tut-text b { animation: tutIn .26s cubic-bezier(.2, .9, .3, 1) 40ms both; }
+  .tut-card.turn .tut-text p { animation: tutIn .26s cubic-bezier(.2, .9, .3, 1) 80ms both; }
+  @media (prefers-reduced-motion: reduce) {
+    #tutorial, .tut-card.turn .tut-keys,
+    .tut-card.turn .tut-text b, .tut-card.turn .tut-text p { animation: none; transition: none; }
   }
 
   /* 상호작용 안내 — 코랄 알약. 글자는 잉크입니다. */
@@ -242,8 +331,9 @@
   #banner.play { animation: bannerIn 2.1s ease both; }
 
   /* ---------- 집중 세션 ---------- */
+  /* 사유 칩(높이 31) 위. 121 + 31 + 12 = 164 → 실측에서 4px 겹쳐 176 */
   #session {
-    position: fixed; right: 20px; bottom: 20px; width: 300px;
+    position: fixed; right: 20px; bottom: 176px; width: 300px;
     background: var(--surface); border: 1px solid var(--line);
     border-radius: var(--r-lg); padding: 15px; box-shadow: var(--sh-lg);
     transform: translateY(16px); opacity: 0; pointer-events: none;
@@ -499,6 +589,106 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* ---------- 상점 ----------
+     왼쪽 미리보기 · 오른쪽 목록. 좁은 창에서는 위아래로 접힙니다. */
+  #panel .shop { display: grid; grid-template-columns: 168px 1fr; gap: 16px; }
+  #panel .shop-prev {
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px 12px; align-self: start;
+  }
+  /* 종이 인형 — 마네킹 위에 산 옷을 실제로 겹쳐 그린 캔버스입니다.
+     확대해도 픽셀이 뭉개지면 안 되므로 pixelated 를 씁니다. */
+  #panel .doll {
+    display: block; margin: 0 auto 10px;
+    image-rendering: pixelated;
+    background: var(--surface-3); border-radius: 10px;
+  }
+  #panel .shop-prev .who { text-align: center; margin-bottom: 10px; }
+  #panel .shop-prev .who b { display: block; font-size: 13.5px; font-weight: 700; }
+  #panel .shop-prev .who em { font-style: normal; font-size: 11.5px; color: var(--ink-3); }
+  #panel .lays { display: flex; flex-direction: column; gap: 5px; }
+  #panel .lay { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
+  #panel .lay i {
+    width: 12px; height: 12px; border-radius: 3px; flex: none;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.14);
+  }
+  #panel .lay span { color: var(--ink-3); }
+  #panel .lay em { font-style: normal; margin-left: auto; color: var(--ink-2); font-weight: 600; }
+  #panel .shop-prev .hint { margin-top: 10px; font-size: 10.5px; line-height: 1.5; }
+
+  #panel .shop-list { display: flex; flex-direction: column; gap: 6px; }
+  #panel .shop-coin {
+    font-size: 11.5px; color: var(--ink-3); text-align: right; margin-bottom: 2px;
+  }
+  #panel .shop-coin b { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  #panel .item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border: 1px solid var(--line); border-radius: 11px;
+    background: var(--surface);
+  }
+  #panel .item.on { border-color: var(--school, var(--coral)); background: var(--school-soft, var(--coral-50)); }
+  /* 목록 그림 — 32x48 프레임 한 장을 그대로. 세로가 길어 카드가 커지지
+     않도록 위아래를 잘라 보여 줍니다(옷은 가운데 모여 있습니다). */
+  #panel .item > .thumb {
+    width: 32px; height: 48px; flex: none;
+    image-rendering: pixelated;
+    background: var(--surface-2); border-radius: 7px;
+  }
+  #panel .item > span { font-size: 13px; font-weight: 600; }
+  #panel .item > span em {
+    display: block; font-style: normal; font-size: 11px; color: var(--ink-3); font-weight: 400;
+  }
+  #panel .item > u {
+    margin-left: auto; text-decoration: none; font-size: 11px; color: var(--ink-3);
+  }
+  #panel .item .act { margin-left: auto; min-width: 62px; text-align: center; }
+  #panel .item > u + .act { margin-left: 8px; }
+  #panel .item .act[disabled] { opacity: .4; cursor: not-allowed; }
+
+  /* ---------- 명예의 전당 ---------- */
+  #panel .ranks { display: flex; flex-direction: column; }
+  #panel .rank {
+    display: flex; align-items: center; gap: 9px;
+    padding: 9px 6px; border-bottom: 1px solid var(--line);
+  }
+  #panel .rank.me { background: var(--school-soft, var(--coral-50)); border-radius: 9px; }
+  #panel .rank u {
+    text-decoration: none; width: 20px; flex: none; text-align: center;
+    font-size: 12px; font-weight: 800; color: var(--ink-3); font-variant-numeric: tabular-nums;
+  }
+  #panel .rank:nth-child(1) u { color: #B8860B; }
+  #panel .rank i {
+    width: 10px; height: 18px; border-radius: 3px; flex: none;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.16);
+  }
+  #panel .rank span { font-size: 13px; font-weight: 600; flex: 1; min-width: 0; }
+  #panel .rank span em {
+    font-style: normal; font-size: 10.5px; color: var(--school, var(--ink-3)); font-weight: 700;
+  }
+  #panel .rank b {
+    font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right;
+    min-width: 62px;
+  }
+  #panel .rank b.sub { color: var(--ink-3); font-weight: 600; min-width: 62px; }
+  #panel .rank b small { font-size: 10px; color: var(--ink-3); font-weight: 400; margin-left: 3px; }
+
+  /* 역대 1위 — 액자 셋이 나란히 */
+  #panel .frames { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+  #panel .frame {
+    border: 1px solid var(--line-2); border-radius: 12px; padding: 10px 9px 11px;
+    background: var(--surface-2); text-align: center;
+    box-shadow: inset 0 0 0 3px var(--surface);
+  }
+  #panel .frame .plate {
+    display: inline-block; border-radius: 999px; padding: 2px 9px; margin-bottom: 7px;
+    font-size: 10px; font-weight: 800; letter-spacing: .06em;
+  }
+  #panel .frame b { display: block; font-size: 12px; font-weight: 700; }
+  #panel .frame em {
+    font-style: normal; font-size: 10.5px; color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
   /* ---- 지난 세션 ----
      업라이트 결과 화면의 판을 줄여 옮겼습니다. 한 세션이 **한 줄**입니다 —
      카드로 키우면 열 세션에 화면이 세 배가 되고, 그러면 "지난 흐름" 이
@@ -620,7 +810,7 @@
      됐는지가 늘 보여야 합니다. 종료 버튼을 옆에 두는 이유는, 회고를
      보려면 반드시 여기를 눌러야 하기 때문입니다. */
   #hud-session {
-    left: 20px; bottom: 62px; z-index: 6; pointer-events: auto;
+    right: 20px; bottom: 20px; z-index: 6; pointer-events: auto;
     display: flex; align-items: center; gap: 9px;
     background: var(--surface); border: 1px solid var(--line);
     border-radius: 999px; padding: 7px 8px 7px 14px; box-shadow: var(--sh);
@@ -649,8 +839,9 @@
   /* 코인 — 우측 하단. Lucide "coins" 아이콘(ISC).
      재화는 항상 보여야 합니다. 마이페이지를 열어야만 알 수 있으면
      "얼마나 모았나"가 동기가 되지 못합니다. */
+  /* 세션 알약(높이 40) 위. 아래에서부터 20 + 40 + 12 = 72 */
   #coin {
-    position: fixed; right: 20px; bottom: 20px; z-index: 6;
+    position: fixed; right: 20px; bottom: 72px; z-index: 6;
     display: flex; align-items: center; gap: 8px;
     background: var(--surface); border: 1px solid var(--line);
     border-radius: 999px; padding: 9px 16px 9px 12px;
@@ -662,16 +853,13 @@
   #coin:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 3px; }
   #coin svg { width: 19px; height: 19px; flex: none; color: #E0A21E; }
   #coin b { font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-  /* 세션 패널이 뜨면 겹치므로 비켜 줍니다. PIP 로 줄면 조금만 비킵니다 —
-     둘 다 실측값(패널 높이 + 8px)이라 패널 구성이 바뀌면 다시 재야 합니다. */
-  #coin.shifted { transform: translateY(-170px); }
-  /* 지급 사유 칩도 같은 모서리라 PIP 안에 겹쳐 뜹니다. 이쪽은 transform
-     을 등장 연출에 쓰고 있으므로 bottom 으로 비킵니다. */
-  #coinNote.shifted { bottom: 252px; }
   /* 지급 사유 칩 — 코인 버튼 위에 잠깐. 숫자만 튕기면 "왜 늘었는지" 를
      모릅니다. 사유가 보여야 행동과 보상이 이어집니다. */
+  /* 코인 알약(높이 41) 위. 72 + 41 + 8 = 121.
+     칩은 잠깐 떴다 사라지지만 자리는 늘 비워 둡니다 — 뜰 때마다 위엣것을
+     밀어 올리면 그게 더 어지럽습니다. */
   #coinNote {
-    position: fixed; right: 20px; bottom: 62px; z-index: 6;
+    position: fixed; right: 20px; bottom: 121px; z-index: 6;
     padding: 5px 11px; border-radius: 999px;
     background: var(--surface); border: 1px solid var(--line-2);
     font-size: 12px; font-weight: 700; color: var(--teal-700);
@@ -748,15 +936,10 @@
 
 <div id="stage"><canvas id="world"></canvas></div>
 
-<div class="hud" id="hud-zone"><em>기린캠퍼스</em><b>—</b><span></span></div>
 <div class="hud" id="hud-perf">
   <div>월드 <b id="fps-game">–</b> fps</div>
   <div>판정 <b id="fps-pose">–</b> fps</div>
   <div id="draw-count">– draws</div>
-</div>
-<div class="hud" id="hud-help">
-  <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 이동 ·
-  <kbd>Space</kbd> 상호작용 · <kbd>Shift</kbd> 뛰기 · <kbd>M</kbd> 지도
 </div>
 
 <div class="hud" id="hud-session">
@@ -820,6 +1003,23 @@
 </div>
 
 <div id="dialog"><b></b><p></p><small>Space 로 닫기</small></div>
+
+<!-- 첫 진입 안내. 월드를 가리지 않고 아래쪽에 얹습니다 — 배우는 동안에도
+     캠퍼스가 보여야 무엇을 배우는지 압니다. -->
+<div id="tutorial" role="dialog" aria-labelledby="tut-title" aria-live="polite">
+  <div class="tut-card">
+    <div class="tut-keys" id="tut-keys" aria-hidden="true"></div>
+    <div class="tut-text">
+      <b id="tut-title"></b>
+      <p id="tut-desc"></p>
+    </div>
+    <div class="tut-foot">
+      <div class="tut-dots" id="tut-dots" aria-hidden="true"></div>
+      <button type="button" id="tut-skip" class="tut-btn ghost">건너뛰기</button>
+      <button type="button" id="tut-next" class="tut-btn">다음</button>
+    </div>
+  </div>
+</div>
 <div id="boot">기린캠퍼스를 세우는 중…</div>
 
 <script>
@@ -2637,6 +2837,47 @@ PROP.circDesk  = paintedProp('circDesk', 4, 3, [1, 1, 1]);
 PROP.circDesk.c = [[1, 1, 1, 1], [1, 0, 0, 0], [1, 0, 0, 0]];
 PROP.board     = paintedProp('board', 2, 2, [0, 1]);
 PROP.mat       = { ...paintedProp('mat', 2, 2, [0, 0]), anchor: 0 };
+
+PAINTED.pennant = canvasOf(1, 2);
+PAINTED.schoolCushion = canvasOf(1, 1);
+function paintSchoolProps() {
+  const col = roomColor();
+  const [r, g_, b] = hexRGB(col);
+  const lit = 'rgba(255,255,255,.30)', dark = 'rgba(0,0,0,.26)';
+
+  /* 삼각 응원기 — 벽에 거는 페넌트 */
+  {
+    const c = PAINTED.pennant, g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    px(g, 2, 2, 2, 26, '#8E827C');                     // 걸이 끈
+    px(g, 2, 2, 1, 26, '#B4AAA4');
+    /* 깃발 — 오른쪽으로 갈수록 좁아지는 삼각형 */
+    for (let y = 0; y < 14; y++) {
+      const w = 13 - Math.round(y * 0.55);
+      px(g, 4, 5 + y, w, 1, y < 3 ? lit : col);
+    }
+    g.fillStyle = dark;
+    for (let y = 10; y < 14; y++) g.fillRect(4, 5 + y, 13 - Math.round(y * 0.55), 1);
+    px(g, 4, 5, 13, 1, 'rgba(255,255,255,.5)');
+    px(g, 6, 9, 5, 2, readableOn(col) === '#FFFFFF' ? '#FFFFFF' : '#2A2320');
+  }
+
+  /* 방석 — 학교 색 천에 흰 테두리 */
+  {
+    const c = PAINTED.schoolCushion, g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    shadow(g, 8, 14, 6, 2);
+    px(g, 2, 5, 12, 8, 'rgb(' + Math.round(r * .78) + ',' + Math.round(g_ * .78) + ',' + Math.round(b * .78) + ')');
+    px(g, 3, 6, 10, 6, col);
+    px(g, 3, 6, 10, 2, lit);
+    px(g, 3, 12, 10, 1, dark);
+    px(g, 7, 8, 2, 2, 'rgba(255,255,255,.55)');
+  }
+}
+PROP.pennant   = paintedProp('pennant', 1, 2, [0, 0]);
+/* 방석은 밟고 지나갑니다. anchor 0 이라야 캐릭터가 그 위에 서고,
+   안 그러면 방석이 사람을 가립니다(스트레칭 매트에서 겪은 것과 같은 것). */
+PROP.schoolCushion = { ...paintedProp('schoolCushion', 1, 1, [0]), anchor: 0 };
 PROP.reed      = paintedProp('reed', 1, 2, [0, 0]);
 PROP.bench     = paintedProp('bench', 2, 2, [0, 1]);
 PROP.benchAlt  = paintedProp('bench', 2, 2, [0, 1]);
@@ -3088,6 +3329,10 @@ function fillSurf(m, x, y, w, h, kind) {
 function makeMap(w, h, baseTile) {
   return { w, h, base: new Uint16Array(w * h).fill(baseTile),
            over: new Uint8Array(w * h), surf: new Uint8Array(w * h),
+           /* 바닥 그림에 직접 그린 칸. 오토타일을 얹지 않습니다 —
+              시트에는 직각 모서리 조각이 없어서, 곧게 그리려면 타일을
+              쓰지 않는 수밖에 없습니다. */
+           painted: new Uint8Array(w * h),
            props: [], portals: [], npcs: [], things: [] };
 }
 const at = (m, x, y) => y * m.w + x;
@@ -3096,6 +3341,50 @@ const inMap = (m, x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h;
 function fillBase(m, x, y, w, h, tile) {
   for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++)
     if (inMap(m, i, j)) m.base[at(m, i, j)] = tile;
+}
+/* ---- 못 ----
+   타일시트로는 직각이 안 나옵니다. 오토타일은 아홉 조각(모서리 넷 ·
+   변 넷 · 가운데)뿐이고 모서리 조각이 전부 둥글게 그려져 있어서,
+   무엇을 골라도 귀가 깎이거나 한쪽 변이 끊깁니다. 세 번 고쳐 봤고
+   세 번 다 어딘가 어긋났습니다.
+
+   그래서 못은 **바닥 그림에 직접 그립니다.** 물 사각형 하나, 그 둘레에
+   돌 테 하나 — 선이 곧고 귀가 직각입니다. 물낯 반짝임은 지금처럼
+   그리기 루프가 위에 얹으므로 그대로 삽니다. */
+function paintPond(m, x, y, w, h, rim) {
+  const g = m.ground.getContext('2d');
+  const X = x * T, Y = y * T, W = w * T, H = h * T, R = rim * T;
+
+  /* 1) 돌 테 — 바깥 사각형 전체를 돌로 깔고 안쪽을 물로 덮습니다.
+        테를 네 조각으로 그리면 귀에서 두 번 칠해져 톤이 어긋납니다. */
+  px(g, X, Y, W, H, '#8E93A6');
+  /* 판석 이음매. 가로 줄만 넣습니다 — 세로까지 그으면 격자가 되고,
+     16px 에서 격자는 곧 노이즈입니다. */
+  for (let j = 0; j < H; j += 8) px(g, X, Y + j, W, 1, '#7C8195');
+  px(g, X, Y, W, 1, '#A6ABBD');                      // 위 모서리 빛
+  px(g, X, Y + H - 1, W, 1, '#6E7386');              // 아래 모서리 그늘
+
+  /* 2) 물 — 안쪽 사각형. 가장자리 한 줄을 어둡게 해서 깊이를 냅니다. */
+  const wx = X + R, wy = Y + R, ww = W - R * 2, wh = H - R * 2;
+  px(g, wx, wy, ww, wh, '#2F6BA8');
+  px(g, wx, wy, ww, 2, '#255A90');                   // 안쪽 그림자 (위)
+  px(g, wx, wy, 2, wh, '#255A90');                   // 안쪽 그림자 (왼)
+  px(g, wx + ww - 2, wy, 2, wh, '#3576B4');          // 반대편은 조금 밝게
+  px(g, wx, wy + wh - 2, ww, 2, '#3576B4');
+  /* 물결 — 가로로 긴 얼룩 몇 개. 고인 물이라 세로 무늬는 안 넣습니다.
+     너비를 남은 폭으로 자릅니다. 안 자르면 오른쪽 끝 얼룩이 돌 테 위로
+     4px 삐져나가고, 그 한 줄 때문에 곧게 그린 테가 다시 어긋나 보입니다. */
+  for (let j = 6; j < wh - 4; j += 7) {
+    for (let i = 4; i < ww - 6; i += 13) {
+      if (rnd(i + X, j + Y, 17) < 0.45) continue;
+      const len = Math.min(6 + ((i + j) % 5), ww - 3 - i);
+      if (len > 1) px(g, wx + i, wy + j, len, 1, '#3A7CBB');
+    }
+  }
+
+  /* 3) 이 칸들은 그리기 루프가 타일로 덮지 않습니다 */
+  for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++)
+    if (inMap(m, i, j)) m.painted[at(m, i, j)] = 1;
 }
 function fillOver(m, x, y, w, h, mat) {
   for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++)
@@ -3389,13 +3678,19 @@ const ZONES = {};
 
   /* 남서 — 호수. 물은 시트 오토타일이 테두리를 그려 주고, bake 가
      그대로 못 건너는 칸으로 만듭니다. 돌 둘레는 걸어서 한 바퀴. */
-  /* 팔각으로 깎은 네모. 타원으로 그렸더니 가장자리가 울퉁불퉁해
-     "여기가 물이고 여기가 뭍" 이 한눈에 안 들어왔습니다. 직선이
-     들어간 못은 사람이 만든 못으로 보이고, 캠퍼스에는 그쪽이 맞습니다. */
-  fillOver(m, 1, 31, 10, 8, M.GRAY);
-  fillOver(m, 2, 30, 8, 10, M.GRAY);
-  fillOver(m, 2, 32, 8, 6, M.WATER);
-  fillOver(m, 3, 31, 6, 8, M.WATER);
+  /* **곧은 네모 못.** 전에는 모서리를 깎은 팔각이었는데, 오토타일이
+     대각선을 만나면 모서리마다 다른 조각을 물려서 둘레가 들쭉날쭉했고
+     돌 폭도 자리마다 한 칸에서 두 칸으로 오갔습니다.
+
+     지금은 물도 돌도 네모입니다 — 물 x2~9 · y31~38, 그 바깥으로 돌이
+     한 칸씩 둘러 x1~10 · y30~39. 바깥 치수는 전과 같습니다.
+     둘레가 한 칸으로 고르면 오토타일이 변 조각 넷과 모서리 조각 넷만
+     쓰게 되고, 그때 못이 사람이 쌓은 것으로 보입니다. */
+  /* over 는 남깁니다 — 물이 못 건너는 칸이라는 사실과 발밑 재질(물소리)
+     을 여기서 읽습니다. 그림만 타일 대신 손으로 그립니다. */
+  fillOver(m, 1, 30, 10, 10, M.GRAY);
+  fillOver(m, 2, 31, 8, 8, M.WATER);
+  paintPond(m, 1, 30, 10, 10, 1);
   /* 남동 — 동아리 거리. 천막이 설 자리라 바닥은 포석입니다.
      모서리를 깎아야 잔디에 붙인 색종이로 안 보입니다. */
   fillOver(m, 35, 30, 11, 11, M.GRAY);
@@ -3415,9 +3710,21 @@ const ZONES = {};
   /* ---- 광장 한가운데: 방향 표지판 ---- */
   prop(m, 'signpost', 21, 20);
 
-  /* 벤치는 **마주 보게**. 한 줄로 세우면 정류장처럼 보입니다. */
-  prop(m, 'bench', 17, 19); prop(m, 'bench', 17, 24);
-  prop(m, 'bench', 28, 19); prop(m, 'bench', 28, 24);
+  /* 안내 — 기숙사에서 나오면 21,11 에 섭니다. 바로 오른쪽 아래에 세워
+     고개를 돌리지 않아도 보이게 했습니다. 표지판(21,20)까지 걸어가야
+     길을 아는 것보다, 나오자마자 말 걸 사람이 있는 편이 낫습니다. */
+  m.npcs.push(
+    { x: 23, y: 12, sprite: 428, name: '안내 · 나루',
+      lines: [
+        '처음이죠? 여기가 중앙 광장이고, 사방으로 건물 넷이 있어요.',
+        '북쪽이 기숙사, 서쪽 본관, 동쪽 도서관, 남쪽이 학생회관이에요. 앉는 자리는 본관과 도서관에 있어요.',
+        '길을 잃으면 M 을 눌러 지도를 보세요. 처음 안내를 다시 보시겠어요?',
+      ],
+      after: startTutorial },
+  );
+
+  /* 벤치는 전부 뺐습니다. 자리를 다시 잡을 때까지 광장을 비워 둡니다 —
+     어중간하게 놓인 앉을 자리는 앉지도 지나가지도 못하게 합니다. */
 
   /* 가로등 넷. 여섯이면 광장이 주차장이 되고, 가로등 자리가 곧 사람이
      서는 자리라 서로 가립니다. */
@@ -3428,14 +3735,7 @@ const ZONES = {};
   /* 자판기와 쓰레기통은 뺐습니다. 광장은 사람이 모이는 곳이고, 모이는
      자리에 물건을 두면 서로를 가립니다. 필요해지면 건물 안에 둡니다. */
 
-  /* 화단 — 세로로 서서 길을 따라 줄을 섭니다 */
-  /* 화단은 **길이 끝나는 자리**에 섭니다. 길 한복판 옆에 세우면
-     지나가다 부딪히는 물건이고, 끝에 세우면 "여기까지" 라는 표시입니다. */
-  [[18, 16], [25, 16],        // 북 대로가 광장에 닿는 곳
-   [4, 27], [9, 27],          // 본관 앞마당 끝
-   [35, 27], [40, 27],        // 도서관 앞마당 끝
-   [17, 28], [26, 28]]        // 학생회관 북쪽 잔디
-    .forEach(([x, y]) => prop(m, 'planter', x, y));
+  /* 화단도 전부 뺐습니다. 벤치와 함께 다시 배치합니다. */
 
   /* ================= 모서리 넷 ================= */
 
@@ -3461,12 +3761,12 @@ const ZONES = {};
   ];
   prop(m, 'gateEsc', 32, 2); prop(m, 'gateA', 39, 2);
   prop(m, 'gateB', 32, 7);   prop(m, 'gateC', 39, 7);
-  prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
+  prop(m, 'board', 31, 12);
 
   /* 남서 — 호수. 세션과 세션 사이에 아무것도 안 해도 되는 자리가
      하나는 있어야 합니다. 광장은 지나가는 곳이라 머무는 곳이 못 됩니다. */
-  prop(m, 'reed', 1, 33); prop(m, 'reed', 9, 32); prop(m, 'reed', 8, 39);
-  prop(m, 'bench', 2, 30); prop(m, 'bench', 8, 41);
+  /* 해초는 뺐습니다. 물 안에 풀이 서 있으면 사람이 만든 못이 아니라
+     내버려 둔 웅덩이가 됩니다 — 이 못의 직선 둘레와도 어긋납니다. */
 
   /* 남동 — 동아리 거리. 학생회관이 혼자 쓰는 기능(상점·출석·랭킹)이면
      여기는 같이 쓰는 기능입니다. 친구 초대 링크가 닿을 자리. */
@@ -3563,6 +3863,21 @@ const ZONES = {};
   prop(m, 'board', 20, 24);
   m.things = [{ x: 20, y: 24, name: '도서관 안내', panel: 'aboutLibrary' }];
 
+  /* 사서 — ㄱ자 **안쪽**입니다. 카운터는 y21 에 가로대(x21~24)를 놓고
+     x21 로 세로 팔을 내려 ㄱ 을 만듭니다. 그 품 안이 x22~24 · y22~23 이고,
+     사서는 거기 섭니다.
+
+     북쪽(22,20)에 세워 봤더니 가로대 **바깥**이라, 창구를 등지고 복도에
+     서 있는 사람으로 보였습니다. 창구는 안에 사람이 있어야 창구입니다. */
+  m.npcs.push(
+    { x: 23, y: 22, sprite: 347, name: '사서 · 하람',
+      lines: [
+        '(작은 소리로) 여기서는 조용히 해 주세요. 다들 집중하고 있어요.',
+        '자리에 앉으면 웹캠\u00A0화면이 작게 떠요. 다른 탭을 봐도 자세는 계속 보고 있습니다.',
+        '중간에 일어나도 판정은 안 멈춰요. 코인은 세션을 끝낼 때, 판정이 돌아간 시간만큼 들어옵니다.',
+      ] },
+  );
+
   /* 나가는 곳 — 네 건물이 전부 같은 문입니다. 건물마다 다르면
      "여기가 출구" 를 매번 새로 배워야 합니다. */
   prop(m, 'exitDoor', 17, m.h - 2);
@@ -3614,7 +3929,11 @@ const ZONES = {};
   floorGlow(m.floor, 13.5, 23, 3); floorGlow(m.floor, 23.5, 23, 3);
 
 
-  floorGlow(m.floor, 19, 6, 5);            // 칠판 위 조명
+  /* 교탁 위 조명 — **책상 한가운데**입니다. desk3 는 세 칸이므로 x+1.5 가
+     가운데이고, 뒷줄 라운지도 같은 규칙을 씁니다(12 → 13.5).
+     여기만 19 로 박혀 있어 빛이 책상에서 한 칸 반 오른쪽으로 밀려 있었고,
+     노트북 한 대만 놓인 자리라 그 어긋남이 그대로 보였습니다. */
+  floorGlow(m.floor, 17.5, 6, 5);
   for (let r = 0; r < 3; r++) [7, 13, 23, 29].forEach((x) =>
     floorGlow(m.floor, x, 10.5 + r * 4, 2.2));
 
@@ -3665,6 +3984,10 @@ const ZONES = {};
   prop(m, 'desk1', 1, 3); prop(m, 'laptopN', 1, 3);
   prop(m, 'chair', 1, 5);                 // 앉는 자리. 카메라는 세션 시작에 이미 켜져 있고, 앉으면 화면만 PIP 로 줄어듭니다
   prop(m, 'bed', 5, 3);
+  /* 학교 색이 닿는 둘. 벽에 응원기, 바닥에 방석. 과잠·마이페이지
+     강조색과 같은 색이라, 방에 들어오면 내 학교가 먼저 보입니다. */
+  prop(m, 'pennant', 4, 3);
+  prop(m, 'schoolCushion', 3, 5);
 
   m.things = [{ x: 2, y: 2, name: '안내', panel: 'guide' }];
 
@@ -3732,10 +4055,12 @@ const ZONES = {};
 
 
   m.npcs.push(
-    { x: 6, y: 7, sprite: 266, name: '상점 · 미르',
+    { x: 6, y: 7, sprite: 266, name: '상점 · 미르', panel: 'shop',
       line: '알은 하나만 깨고 나왔죠? 다른 알도 여기서 팝니다. 비싸요.' },
-    { x: 26, y: 8, sprite: 185, name: '명예의 전당 · 하연',
-      line: '이번 시즌은 42일 남았어요. 순위는 앉은 시간과 회복 시간으로만 매깁니다 — 자세를 점수로 매기지는 않아요.' },
+    /* 남은 날은 대사에 안 적습니다 — 지도를 만들 때 굳어 버려서, 며칠이
+       지나도 같은 숫자를 말하게 됩니다. 숫자는 창이 그때그때 셉니다. */
+    { x: 26, y: 8, sprite: 185, name: '명예의 전당 · 하연', panel: 'hall',
+      line: '순위는 앉은 시간과 회복 횟수로만 매깁니다 — 자세를 점수로 매기지는 않아요.' },
     { x: 16, y: 5, sprite: 131, name: '출석 · 도윤',
       line: '오늘 출석은 아직이네요. 도서관이나 본관에서 한 세션만 채우면 됩니다.' },
   );
@@ -3832,7 +4157,9 @@ function blitC(i, dx, dy) { ctx.drawImage(city,  (i % C_COLS) * T, ((i / C_COLS)
 function blitK(i, dx, dy) { ctx.drawImage(school,(i % K_COLS) * T, ((i / K_COLS) | 0) * T, T, T, dx, dy, T, T); }
 const BLIT = { u: blitU, c: blitC, k: blitK };
 
-/** 이웃을 보고 테두리 타일을 고릅니다. 지도 밖은 같은 재질로 칩니다. */
+/** 이웃을 보고 테두리 타일을 고릅니다. 지도 밖은 같은 재질로 칩니다.
+    모서리는 시트가 그린 대로 둥급니다 — 잔디 위 포장은 그게 맞습니다.
+    직각이 필요한 못은 타일을 안 쓰고 바닥에 직접 그립니다(paintPond). */
 function autoTile(m, x, y, mat) {
   const same = (i, j) => !inMap(m, i, j) || m.over[at(m, i, j)] === mat;
   const r = !same(x, y - 1) ? 0 : (!same(x, y + 1) ? 2 : 1);
@@ -4756,6 +5083,13 @@ const SESSION = {
 function sessionMinutes() {
   return SESSION.startedAt ? (Date.now() - SESSION.startedAt) / 60000 : 0;
 }
+/** 자세 판정이 **실제로 돌아간** 분. 코인의 분모입니다.
+    의자 시계가 아니라 이것을 쓰는 이유 — 앉혀 두고 자리를 비우면 의자
+    시계는 흐르지만 사람이 없으므로 판정은 안 돕니다. 카메라를 못 열었을
+    때도 0 이라, 카메라 없이 시간만 흘려 코인을 받는 길이 막힙니다. */
+function judgedMinutes() {
+  return Math.floor((LIVE.goodMs + LIVE.warnMs + LIVE.badMs) / 60000);
+}
 function sessionText() {
   const sec = Math.floor((Date.now() - SESSION.startedAt) / 1000);
   return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
@@ -4874,8 +5208,8 @@ function enterZone(id, sx, sy) {
   b.querySelector('b').textContent = zone.name;
   b.querySelector('span').textContent = zone.sub;
   b.classList.remove('play'); void b.offsetWidth; b.classList.add('play');
-  document.querySelector('#hud-zone b').textContent = zone.name;
-  document.querySelector('#hud-zone span').textContent = zone.sub;
+  /* 존 배지를 없앴으므로 여기서 쓸 곳이 없습니다. 이름은 지도(M)와
+     건물 안내판이 말합니다. */
   /* 설정은 미니룸에서만. 캠퍼스를 걷는 동안에는 월드를 가립니다.
      세션은 기숙사에서 시작하므로, 기준을 다시 잡는 것도 자기 방에서
      하는 일이 됩니다 — 설정과 기준이 한자리에 모입니다. */
@@ -4926,7 +5260,7 @@ function interact() {
      이걸 nearby 보다 먼저 보지 않으면 창이 영영 안 닫힙니다 — 대화를
      연 자리에 그대로 서 있으니 nearby 가 살아 있고, 스페이스를 누를
      때마다 같은 창이 다시 열립니다. 자리를 뜬 경우만 닫히던 이유입니다. */
-  if (dialogOpen) return closeDialog();
+  if (dialogOpen) return advanceDialog();
   const n = nearby;
   if (!n) return;
   if (n.kind === 'stand') return stand();
@@ -4938,18 +5272,126 @@ function interact() {
   }
 }
 
-let dialogOpen = false;
+let dialogOpen = false, talkingTo = null;
+
+/** 한 줄짜리(line)든 여러 줄(lines)이든 배열로 봅니다. 부르는 쪽이 둘을
+    구분하지 않아도 되게, 읽는 자리에서 한 번만 맞춥니다. */
+const npcLines = (npc) => (npc.lines && npc.lines.length ? npc.lines : [npc.line]);
+
 function talk(npc) {
   /* things 도 이 창을 쓰므로 진짜 NPC 만 셉니다 */
   if ((zone.npcs || []).includes(npc)) award('once:npc_' + npc.name, npc.name.split(' · ')[1] + ' 첫 만남');
+  talkingTo = npc;
+  npc.at = 0;
+  paintDialog();
+}
+
+/** 스페이스 — 남은 줄이 있으면 넘기고, 없으면 닫습니다.
+    **끝까지 들은 사람만** after 가 걸립니다(안내 나루 → 튜토리얼).
+    중간에 걸어 나간 사람에게 안내를 밀어 넣지 않기 위해서입니다. */
+function advanceDialog() {
+  const npc = talkingTo;
+  if (!npc || npc.at >= npcLines(npc).length - 1) {
+    const after = npc && npc.after;
+    closeDialog();
+    if (after) after();
+    return;
+  }
+  npc.at++;
+  paintDialog();
+}
+
+function paintDialog() {
+  const npc = talkingTo, lines = npcLines(npc);
   const d = document.getElementById('dialog');
   d.querySelector('b').textContent = npc.name;
-  d.querySelector('p').textContent = npc.line;
+  d.querySelector('p').textContent = lines[npc.at];
+  const last = npc.at >= lines.length - 1;
+  /* 몇 줄 남았는지 보여 줍니다. 안 보여 주면 스페이스를 누를 때마다
+     이번이 마지막인지 아닌지 몰라 계속 누르게 됩니다. */
+  d.querySelector('small').textContent = last
+    ? 'Space 로 닫기'
+    : 'Space 로 계속 · ' + (npc.at + 1) + '/' + lines.length;
   d.classList.add('on'); dialogOpen = true;
 }
+
 function closeDialog() {
-  document.getElementById('dialog').classList.remove('on'); dialogOpen = false;
+  document.getElementById('dialog').classList.remove('on');
+  dialogOpen = false; talkingTo = null;
 }
+
+/* ==================================================================
+   첫 진입 안내
+
+   처음 온 사람에게만 네 장. 한 번 보면(끝까지 보든 건너뛰든) 다시 안
+   나오고, 다시 보려면 광장의 나루에게 말을 걸면 됩니다.
+
+   문구는 제목 한 줄 · 설명 한 줄입니다. 한 문단으로 쓰면 폭이 좁아
+   넉 줄이 되고, 넉 줄짜리 안내는 안 읽힙니다.
+
+   **"앉으면 세션이 시작된다" 고 쓰지 않습니다.** 이 판본에서 세션과
+   카메라는 월드에 들어온 순간 함께 시작하고, 앉기는 웹캠 화면을 띄우는
+   동작입니다. 원본 문구를 그대로 옮기면 제품 설명이 거짓이 됩니다.
+   ================================================================== */
+const TUT_STEPS = [
+  { keys: ['W', 'A', 'S', 'D'], title: '걸어서 다녀요',
+    desc: '방향키나 WASD 로 움직여요. Shift 를 누른 채면 뜁니다.' },
+  { keys: ['Space'], title: '자리에 앉아요',
+    /* U+00A0 = 안 끊기는 빈칸. '웹캠 화면' 은 한 덩어리로 읽히는 말이라
+       사이에서 줄이 바뀌면 눈이 한 번 멈춥니다. 어절 단위로만 끊는
+       keep-all 도 이건 못 막습니다 — 둘은 별개 어절이니까요. */
+    desc: '도서관과 본관에 자리가 있어요. 앉으면 웹캠\u00A0화면이 작게 떠서, 다른 탭을 봐도 됩니다.' },
+  { keys: ['M'], title: '지도를 열어요',
+    desc: '건물이 멀면 M 을 누르세요. 가고 싶은 곳을 누르면 바로 갑니다.' },
+  { coin: true, title: '코인으로 꾸며요',
+    desc: '세션을 끝내면 판정이 돌아간 만큼 코인이 들어와요. 학생회관\u00A0상점에서 씁니다.' },
+];
+const tutEl = document.getElementById('tutorial');
+const tutCard = tutEl.querySelector('.tut-card');
+const tutKeys = document.getElementById('tut-keys');
+const tutTitle = document.getElementById('tut-title');
+const tutDesc = document.getElementById('tut-desc');
+const tutDots = document.getElementById('tut-dots');
+const tutNext = document.getElementById('tut-next');
+let tutStep = 0;
+
+function paintTut() {
+  const s = TUT_STEPS[tutStep];
+  /* 코인 장은 키가 없습니다. HUD 코인 버튼과 **같은 아이콘**을 씁니다 —
+     설명에서 본 그림이 화면 구석에 그대로 있어야 어디를 보라는 말인지
+     따로 안 알려 줘도 됩니다. */
+  tutKeys.innerHTML = s.coin
+    ? '<span class="coin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+      + ' stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">'
+      + '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>'
+      + '<path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg></span>'
+    : s.keys.map((k) => '<kbd' + (k.length > 1 ? ' class="wide"' : '') + '>' + k + '</kbd>').join('');
+  tutTitle.textContent = s.title;
+  tutDesc.textContent = s.desc;
+  tutDots.innerHTML = TUT_STEPS
+    .map((_, i) => '<i class="' + (i === tutStep ? 'on' : i < tutStep ? 'done' : '') + '"></i>').join('');
+  tutNext.textContent = tutStep === TUT_STEPS.length - 1 ? '시작하기' : '다음';
+  /* 한 프레임 껐다 켜야 같은 애니메이션이 다시 돕니다 */
+  tutCard.classList.remove('turn');
+  void tutCard.offsetWidth;
+  tutCard.classList.add('turn');
+}
+
+function startTutorial() {
+  tutStep = 0;
+  paintTut();
+  tutEl.classList.add('on');
+}
+function endTutorial() {
+  tutEl.classList.remove('on');
+  try { localStorage.setItem('girin.tutorial', 'seen'); } catch { /* 무시 */ }
+}
+document.getElementById('tut-skip').addEventListener('click', endTutorial);
+tutNext.addEventListener('click', () => {
+  if (tutStep >= TUT_STEPS.length - 1) return endTutorial();
+  tutStep++;
+  paintTut();
+});
 
 const FOCUS = { library: '도서관 · 백색소음', mainhall: '본관 · 대중음악' };
 
@@ -4957,10 +5399,9 @@ const FOCUS = { library: '도서관 · 백색소음', mainhall: '본관 · 대�
     사유 칩도 함께 비킵니다 — 세 곳에서 따로 토글하다 한 곳을 빠뜨리면
     화면 구석에서 서로 겹칩니다. */
 function showPip(on) {
-  document.getElementById('session').classList.toggle('on', on);
-  document.getElementById('session').classList.toggle('pip', on);
-  document.getElementById('coin').classList.toggle('shifted', on);
-  document.getElementById('coinNote').classList.toggle('shifted', on);
+  const el = document.getElementById('session');
+  el.classList.toggle('on', on);
+  el.classList.toggle('pip', on);
 }
 /* 앉기 — 세션도 판정도 여기서 시작하지 않습니다. 둘 다 월드에 들어온
    순간부터 돌고 있습니다. 앉으면 **웹캠 화면(PIP)이 나타납니다** — 다른
@@ -4993,9 +5434,6 @@ function stand() {
   }
   SFX.chair(true);
   sitSquash = 1;
-  /* 연속이 끊깁니다. 도서관 보너스는 여기서 사라집니다 — 본관에는
-     애초에 걸린 것이 없어 손해가 없습니다. */
-  seatRunMs = 0; seatRunPaid = 0;
   player.sitting = false;
   player.y += T;
   if (!canStand(player.x, player.y)) player.y -= T;
@@ -5846,6 +6284,8 @@ const ROOM = {
   schoolVerifiedAt: '',
   schoolDomain: '',
   character: '거북이',
+  owned: [],              // 산 아이템 id
+  worn: {},               // 칸(cat) 하나에 하나씩. 같은 칸을 사면 앞엣것이 벗겨집니다
   coins: 0,
   wallpaper: 'cream',
   floor: 'laminate',
@@ -5854,6 +6294,7 @@ const ROOM = {
   sfxOn: 'on',
   camPeek: 'on',          // 세션 동안 웹캠 화면을 띄울지 (앉으면 작은 PIP 로 줄어듭니다)
   sayOn: 'on',            // 자세 말풍선을 캐릭터 머리 위에 띄울지
+  chatOn: 'on',           // 남의 말을 화면에 띄울지 (숨겨도 입력줄은 남습니다)
   invite: null,
 };
 try {
@@ -5867,6 +6308,502 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+/* ==================================================================
+   학교 색
+
+   학교마다 쓰는 색이 어두운 남색부터 형광까지 제각각입니다. 그대로
+   화면에 얹으면 어떤 학교는 검은 얼룩이 되고 어떤 학교는 눈이 아픕니다.
+   그래서 **색상과 채도는 그대로 두고 명도만** 30~55% 로 끌어옵니다.
+   그 구간이 흰 UI 위에서도, 잔디 위 16px 캐릭터에서도 둘 다 읽힙니다.
+
+   색을 쓰는 곳은 넷뿐입니다 — 과잠, 이름표 바탕, 마이페이지 강조,
+   기숙사 소품 둘. 배경·버튼·글자는 무채색으로 둡니다. 학교 색이 화면
+   전체를 물들이면 열 학교가 열 개의 다른 앱이 됩니다.
+
+   아래 색값은 각 학교가 널리 쓰는 대표색을 눈으로 맞춘 **근삿값**입니다.
+   실제 브랜드 가이드의 값으로 바꿔야 합니다.
+   ================================================================== */
+const SCHOOLS = [
+  { name: '서울대학교',     domain: 'snu.ac.kr',     raw: '#00468B' },
+  { name: '연세대학교',     domain: 'yonsei.ac.kr',  raw: '#0F4C81' },
+  { name: '고려대학교',     domain: 'korea.ac.kr',   raw: '#862633' },
+  { name: '성균관대학교',   domain: 'skku.edu',      raw: '#00563F' },
+  { name: '한양대학교',     domain: 'hanyang.ac.kr', raw: '#0E4A84' },
+  { name: '중앙대학교',     domain: 'cau.ac.kr',     raw: '#0B4DA2' },
+  { name: '경희대학교',     domain: 'khu.ac.kr',     raw: '#8C1D40' },
+  { name: '이화여자대학교', domain: 'ewha.ac.kr',    raw: '#00713C' },
+  { name: '서강대학교',     domain: 'sogang.ac.kr',  raw: '#8B0029' },
+  { name: '명지대학교',     domain: 'mju.ac.kr',     raw: '#003A70' },
+];
+
+function hexToHsl(hex) {
+  const [r, g, b] = hexRGB(hex).map((v) => v / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  if (!d) return [0, 0, l];
+  const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0))
+          : mx === g ? (b - r) / d + 2
+          : (r - g) / d + 4;
+  return [h / 6, s, l];
+}
+function hslToHex(h, s, l) {
+  const f = (n) => {
+    const k = (n + h * 12) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(v * 255).toString(16).padStart(2, '0');
+  };
+  return '#' + f(0) + f(8) + f(4);
+}
+/** 명도만 30~55% 구간으로 끌어옵니다. 색상·채도는 그 학교 것 그대로. */
+function normalizeSchoolColor(hex) {
+  const [h, s, l] = hexToHsl(hex);
+  return hslToHex(h, s, Math.min(0.55, Math.max(0.30, l)));
+}
+SCHOOLS.forEach((s) => { s.color = normalizeSchoolColor(s.raw); });
+
+const SCHOOL_BY_NAME = Object.fromEntries(SCHOOLS.map((s) => [s.name, s]));
+/* 도메인 → 학교. 없으면 도메인을 그대로 보여 주고 "(미확인)" 을 붙입니다 —
+   없는 학교를 지어내지 않습니다. */
+const SCHOOL_BY_DOMAIN = Object.fromEntries(SCHOOLS.map((s) => [s.domain, s.name]));
+
+const DEFAULT_SCHOOL_COLOR = '#5A6472';    // 미확인 학교 — 무채색에 가깝게
+function schoolColorOf(name) {
+  return (SCHOOL_BY_NAME[name] || {}).color || DEFAULT_SCHOOL_COLOR;
+}
+/** 내 색 — 과잠 · 이름표 · 마이페이지. 남의 방에 가도 내 학교입니다. */
+function schoolColor() { return schoolColorOf(ROOM.school); }
+/** 이 방 주인의 색 — 기숙사 소품.
+    ponytail: 원래는 친구 방 방문(VISIT.host)이면 친구 학교 색이었습니다.
+    이 판본에는 아직 방문 기능이 없어 늘 내 색입니다. 방문을 옮겨 올 때
+    `(VISIT.host || ROOM).school` 로 되돌리면 됩니다. */
+function roomColor() { return schoolColorOf(ROOM.school); }
+/** 흰 판 위에 아주 옅게 까는 같은 색. 강조 칸의 바탕입니다. */
+function schoolSoft(alpha) {
+  const [r, g, b] = hexRGB(schoolColor());
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+/** 학교가 바뀌면 색이 닿는 곳을 전부 다시 칠합니다. */
+function applySchoolColor() {
+  const c = schoolColor();
+  const root = document.documentElement.style;
+  root.setProperty('--school', c);
+  root.setProperty('--school-soft', schoolSoft(0.10));
+  root.setProperty('--school-line', schoolSoft(0.30));
+  jacketCanvas = null; dressedCache = null;                       // 과잠을 다시 굽습니다
+  paintSchoolProps();
+  /* ponytail: 원래는 여기서 기숙사 소품(페넌트·방석)도 학교 색으로 다시
+     구웠습니다. 그 두 기물은 아직 이 판본에 없어 실내 보강 때 같이
+     옮깁니다. 이름표는 이 제품에서 안 씁니다 — 머리 위에 이름을 띄우지
+     않기로 한 결정이라 되살리지 않습니다. */
+}
+/** 바탕색 위에서 읽히는 글자색. 코랄 위 흰 글자를 금지한 것과 같은 이유로,
+    학교 색도 밝기를 재서 잉크와 흰색 중 대비가 큰 쪽을 씁니다. */
+function readableOn(hex) {
+  const [r, g, b] = hexRGB(hex).map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return (L + 0.05) / 0.05 > (1.05) / (L + 0.05) ? '#2A2320' : '#FFFFFF';
+}
+
+/* ==================================================================
+   상점 — 아이템 스프라이트
+
+   그림이 색 블록이 아니라 **실물 픽셀 스프라이트**입니다.
+   `assets/items/` 는 upright-metaverse 의 `assets/03_items` 를 그대로
+   가져온 것이고, 좌표 규격은 같이 딸려 온 `assets/items/item-spec.md`
+   가 정답입니다. 여기서 지켜야 하는 것만 옮겨 적습니다.
+
+   - 한 장이 **128x48** — 32x48 프레임 넷이 가로로 붙어 있습니다.
+   - 프레임 순서는 **right, up, left, down** 입니다. 캐릭터 시트를
+     따라간 것이라, 여기만 down 을 0번에 두면 방향이 통째로 어긋납니다.
+   - 겹치는 순서(z)는 신발20 < 하의30 < 상의40 < 가방50 < 안경60 < 모자70.
+     이 순서 덕분에 발목·허리춤이 저절로 정리됩니다.
+
+   칸(slot)이 하나뿐인 이유: 상의를 두 벌 겹쳐 입을 일이 없습니다.
+   같은 칸의 다른 옷을 입으면 앞엣것이 자동으로 벗겨집니다.
+   ================================================================== */
+const ITEM_DIR = { right: 0, up: 1, left: 2, down: 3 };
+const ITEM_W = 32, ITEM_H = 48;
+const ITEM_BASE = 'assets/items/';
+
+const SHOP_CATS = [
+  { id: 'top',    name: '상의' },
+  { id: 'bottom', name: '하의' },
+  { id: 'shoes',  name: '신발' },
+  { id: 'hat',    name: '모자' },
+  { id: 'face',   name: '안경' },
+  { id: 'bag',    name: '가방' },
+  { id: 'egg',    name: '알' },
+];
+/* cat 은 화면의 칸, z 는 겹치는 순서(item-spec §4). 둘이 다른 이유는
+   '안경' 과 '모자' 가 화면에선 남남이지만 겹칠 때는 순서가 있어서입니다.
+   color 는 스프라이트가 못 뜰 때만 쓰는 대비색입니다 — 그림이 정답입니다. */
+const SHOP = [
+  { id: 'top-varsity', cat: 'top',    name: '과잠',        price: 220, z: 40, color: null,
+    school: true, desc: '내 학교 색이 붙습니다',
+    recolor: { base: 'tops/varsity_base.png', mask: 'tops/varsity_mask.png' } },
+  { id: 'top-hoodie',  cat: 'top',    name: '후드티',      price: 150, z: 40, color: '#6B7A8F', sprite: 'tops/hoodie.png' },
+  { id: 'top-shirt',   cat: 'top',    name: '셔츠',        price: 250, z: 40, color: '#E8EDF2', sprite: 'tops/shirt.png' },
+  { id: 'top-tee',     cat: 'top',    name: '반팔티',      price: 120, z: 40, color: '#B8503F', sprite: 'tops/tee.png' },
+
+  { id: 'bot-jeans',   cat: 'bottom', name: '청바지',      price: 160, z: 30, color: '#4A6180', sprite: 'bottoms/jeans.png' },
+  { id: 'bot-slacks',  cat: 'bottom', name: '슬랙스',      price: 200, z: 30, color: '#3E4450', sprite: 'bottoms/slacks.png' },
+  { id: 'bot-shorts',  cat: 'bottom', name: '반바지',      price: 150, z: 30, color: '#8A9A6B', sprite: 'bottoms/shorts.png' },
+  { id: 'bot-trainer', cat: 'bottom', name: '트레이닝복',  price: 140, z: 30, color: '#6B7385', sprite: 'bottoms/trainers.png' },
+
+  { id: 'sho-sneaker', cat: 'shoes',  name: '운동화',      price: 150, z: 20, color: '#F0F2F5', sprite: 'shoes/sneakers.png' },
+  { id: 'sho-dress',   cat: 'shoes',  name: '구두',        price: 230, z: 20, color: '#6B4A35', sprite: 'shoes/dress.png' },
+  { id: 'sho-slipper', cat: 'shoes',  name: '삼선 슬리퍼', price: 150, z: 20, color: '#2F3A46', sprite: 'shoes/slippers.png' },
+
+  { id: 'hat-cap',     cat: 'hat',    name: '볼캡',        price: 100, z: 70, color: '#B8503F', sprite: 'hats/cap.png' },
+  { id: 'hat-beanie',  cat: 'hat',    name: '비니',        price: 120, z: 70, color: '#46628F', sprite: 'hats/beanie.png' },
+  { id: 'hat-grad',    cat: 'hat',    name: '학사모',      price: 400, z: 70, color: '#2B2438', sprite: 'hats/grad_cap.png',
+    desc: '졸업은 아직입니다' },
+
+  { id: 'fac-horn',    cat: 'face',   name: '뿔테',        price: 200, z: 60, color: '#6B4A35', sprite: 'glasses/horn.png' },
+  { id: 'fac-round',   cat: 'face',   name: '동그란테',    price: 200, z: 60, color: '#6B4A35', sprite: 'glasses/round.png' },
+  { id: 'fac-sun',     cat: 'face',   name: '선글라스',    price: 260, z: 60, color: '#2B2438', sprite: 'glasses/sunglasses.png' },
+
+  { id: 'bag-backpack',cat: 'bag',    name: '백팩',        price: 180, z: 50, color: '#5B8F5C', sprite: 'bags/backpack.png' },
+  { id: 'bag-tote',    cat: 'bag',    name: '에코백',      price: 140, z: 50, color: '#BDB7AE', sprite: 'bags/tote.png' },
+
+  /* 알은 여덟 종 전부 있어야 합니다. 넷만 있던 판에서는 EGG_CHARACTER 가
+     여덟을 아는데 상품은 넷이라, 미어캣·돼지 알을 사면 EGG_CHARACTER 에
+     없는 이름이라 ROOM.character 가 undefined 가 됐습니다.
+     색은 각 시트의 **몸통에서 실제로 뽑은 값**입니다(펭귄만 예외 — 몸이
+     검어서 표본이 배 흰색으로 잡히므로 테두리 쪽 회청색을 씁니다).
+     값은 전부 800 으로 같습니다. 어느 종을 레어로 둘지는 정해진 바가
+     없어서, 아무거나 고르느니 안 나누는 쪽을 택했습니다. */
+  { id: 'egg-turtle',   cat: 'egg', name: '거북이 알',   price: 800, color: '#8CD296', sprite: null },
+  { id: 'egg-giraffe',  cat: 'egg', name: '기린 알',     price: 800, color: '#F08C32', sprite: null },
+  { id: 'egg-penguin',  cat: 'egg', name: '펭귄 알',     price: 800, color: '#4A5464', sprite: null },
+  { id: 'egg-hamster',  cat: 'egg', name: '햄스터 알',   price: 800, color: '#E6C8A0', sprite: null },
+  { id: 'egg-frog',     cat: 'egg', name: '개구리 알',   price: 800, color: '#82DC3C', sprite: null },
+  { id: 'egg-hedgehog', cat: 'egg', name: '고슴도치 알', price: 800, color: '#E6B48C', sprite: null },
+  { id: 'egg-alpaca',   cat: 'egg', name: '알파카 알',   price: 800, color: '#DCBEA0', sprite: null },
+  { id: 'egg-swan',     cat: 'egg', name: '백조 알',     price: 800, color: '#D2D2D2', sprite: null },
+];
+const SHOP_BY_ID = Object.fromEntries(SHOP.map((i) => [i.id, i]));
+
+/* 예전 판에서 산 아이템(니트·워커·안경)은 이제 없습니다. 그대로 두면
+   `SHOP_BY_ID[id]` 가 undefined 라 입은 칸을 그릴 때 터집니다. 들어오는
+   길목 하나에서 걸러야 뒤에 있는 모든 곳이 안전합니다. */
+function pruneUnknownItems() {
+  ROOM.owned = (ROOM.owned || []).filter((id) => SHOP_BY_ID[id]);
+  for (const cat of Object.keys(ROOM.worn || {}))
+    if (!SHOP_BY_ID[ROOM.worn[cat]]) delete ROOM.worn[cat];
+}
+pruneUnknownItems();
+
+/* ---- 스프라이트 한 장씩 — 다 뜨면 열린 상점을 다시 그립니다 ---- */
+const ITEM_IMG = {};
+let itemsPending = 0;
+function loadItemImg(path) {
+  if (ITEM_IMG[path]) return ITEM_IMG[path];
+  const img = new Image();
+  itemsPending++;
+  img.onload = () => { if (--itemsPending === 0) repaintOpenPanel(); };
+  img.onerror = () => { itemsPending--; };            // 그림이 없으면 색 블록으로 물러납니다
+  img.src = ITEM_BASE + path;
+  ITEM_IMG[path] = img;
+  return img;
+}
+const itemReady = (img) => !!img && img.complete && img.naturalWidth > 0;
+
+const MANNEQUIN = loadItemImg('mannequin.png');
+
+/* ==================================================================
+   캐릭터 — 32x48 시트
+
+   월드는 타일이 16px 인데 캐릭터는 32x48 입니다. 가로 두 칸 세로 세 칸을
+   차지한다는 뜻이라, 타일 격자와 어긋나지 않습니다.
+
+   시트 한 장에 right / up / left / down 네 프레임이 가로로 붙어 있고,
+   아이템(assets/items)과 프레임 순서가 같습니다 — 순서가 다르면 옷만
+   반대쪽을 보게 됩니다.
+
+   발바닥은 프레임 안에서 y45 입니다(y46-47 은 예전 바닥 그림자 자리로
+   비워 둡니다). 그래서 그릴 때 player.y 에서 45 를 빼고 얹습니다.
+   ================================================================== */
+const CHAR_W = 32, CHAR_H = 48;
+/* sitSquash 는 이 판본에 이미 있습니다(위 캐릭터 상태 쪽). 여기서 다시
+   선언하면 스크립트가 통째로 안 돕니다. */
+const CHAR_GROUND_Y = 45;                       // 프레임 안에서 발바닥이 닿는 줄
+const CHAR_BASE_PATH = 'assets/characters/';
+
+/* 종마다 다른 것은 셋뿐입니다.
+     line  — 테두리 색. 아이템 테두리(#2b2438)를 이 색으로 바꿔 그립니다.
+             안 바꾸면 머리·다리는 종 색 테두리인데 옷만 검은 테두리가 되어
+             이음매가 보입니다.
+     hatDy — 정수리 높이 차이. 모자를 이만큼 올리거나 내립니다.
+     eyeDy — 눈높이 차이. 안경이 씁니다.
+   숫자는 시안 8장을 32x48 격자에서 직접 재서 나온 값입니다. */
+const CHAR_SPECIES = {
+  '거북이':   { slug: 'turtle',   line: '#142814', hatDy: 0,  eyeDy: 0 },
+  '기린':     { slug: 'giraffe',  line: '#82461e', hatDy: 0,  eyeDy: 0 },
+  '펭귄':     { slug: 'penguin',  line: '#1a1a24', hatDy: -1, eyeDy: 3 },
+  '햄스터':   { slug: 'hamster',  line: '#6b3d18', hatDy: -1, eyeDy: 0 },
+  '개구리':   { slug: 'frog',     line: '#1e5a1e', hatDy: 1,  eyeDy: -4 },
+  '고슴도치': { slug: 'hedgehog', line: '#28140a', hatDy: -2, eyeDy: 0 },
+  '알파카':   { slug: 'alpaca',   line: '#785a46', hatDy: -1, eyeDy: 0 },
+  '백조':     { slug: 'swan',     line: '#6e6e78', hatDy: 0,  eyeDy: 0 },
+};
+const CHAR_IMG = {};
+for (const sp of Object.values(CHAR_SPECIES)) {
+  const img = new Image();
+  itemsPending++;
+  img.onload = () => { dressedCache = null; if (--itemsPending === 0) repaintOpenPanel(); };
+  img.onerror = () => { itemsPending--; };
+  img.src = CHAR_BASE_PATH + sp.slug + '.png';
+  CHAR_IMG[sp.slug] = img;
+}
+const speciesOf = (name) => CHAR_SPECIES[name] || CHAR_SPECIES['거북이'];
+
+/* 아이템 테두리를 종 테두리 색으로 바꾼 사본. 종·아이템 쌍마다 한 번만 굽습니다.
+   file:// 로 열면 픽셀을 읽을 수 없어(보안 제약) 원본을 그대로 씁니다 —
+   색이 조금 어긋날 뿐 그림은 나옵니다. */
+const OUTLINE_SRC = [0x2b, 0x24, 0x38];
+const tintCache = new Map();
+function tintedItem(sheet, line) {
+  if (!sheet) return null;
+  const key = (sheet.src || sheet.__id || '') + '|' + line;
+  if (tintCache.has(key)) return tintCache.get(key);
+  let out = sheet;
+  try {
+    const c = document.createElement('canvas');
+    c.width = sheet.width || sheet.naturalWidth; c.height = sheet.height || sheet.naturalHeight;
+    const g = c.getContext('2d', { willReadFrequently: true });
+    g.imageSmoothingEnabled = false;
+    g.drawImage(sheet, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height);
+    const r = parseInt(line.slice(1, 3), 16), gg = parseInt(line.slice(3, 5), 16), b = parseInt(line.slice(5, 7), 16);
+    for (let i = 0; i < d.data.length; i += 4) {
+      if (d.data[i + 3] === 0) continue;
+      if (d.data[i] === OUTLINE_SRC[0] && d.data[i + 1] === OUTLINE_SRC[1] && d.data[i + 2] === OUTLINE_SRC[2]) {
+        d.data[i] = r; d.data[i + 1] = gg; d.data[i + 2] = b;
+      }
+    }
+    g.putImageData(d, 0, 0);
+    out = c;
+  } catch { /* 픽셀을 못 읽으면 원본 그대로 */ }
+  tintCache.set(key, out);
+  return out;
+}
+
+/* 상의·가방은 종마다 몸 실루엣에 맞춰 깎아 둔 판본이 따로 있습니다.
+   시안 8종은 어깨 높이가 제각각이라(거북이 y25, 백조 y33) 한 벌을 그대로
+   얹으면 소매가 몸 밖으로 튀어나옵니다. */
+const FITTED_CATS = { top: 'tops', bag: 'bags' };
+function fittedPath(it, slug) {
+  const folder = FITTED_CATS[it.cat];
+  if (!folder || !it.sprite) return null;
+  return 'fitted/' + slug + '/' + it.sprite;
+}
+function itemSheetFor(it, sp) {
+  const fp = fittedPath(it, sp.slug);
+  if (fp) {
+    const img = loadItemImg(fp);
+    if (itemReady(img)) return img;
+  }
+  return itemSheet(it);
+}
+
+/** 모자·안경은 머리를 따라 올라갑니다(item-spec §5). 나머지는 몸에 붙습니다. */
+const followsHead = (it) => it.cat === 'hat' || it.cat === 'glasses';
+
+/* 옷을 입힌 시트 한 장. 종·입은 것·학교색이 그대로면 다시 굽지 않습니다 —
+   60fps 로 매 프레임 합성하면 그리는 것보다 합성이 비쌉니다. */
+let dressedCache = null, dressedKey = '';
+function dressedSheet() {
+  const sp = speciesOf(ROOM.character);
+  const key = sp.slug + '|' + JSON.stringify(ROOM.worn || {}) + '|' + schoolColor();
+  if (dressedCache && dressedKey === key) return dressedCache;
+  const base = CHAR_IMG[sp.slug];
+  if (!itemReady(base)) return null;
+  const c = document.createElement('canvas');
+  c.width = CHAR_W * 4; c.height = CHAR_H;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.drawImage(base, 0, 0);
+  const on = Object.values(ROOM.worn || {}).map((id) => SHOP_BY_ID[id]).filter(Boolean);
+  for (const it of on.sort((a, b) => a.z - b.z)) {
+    const sheet = tintedItem(itemSheetFor(it, sp), sp.line);
+    if (!sheet) continue;
+    g.drawImage(sheet, 0, followsHead(it) ? (it.cat === 'hat' ? sp.hatDy : sp.eyeDy) : 0);
+  }
+  dressedCache = c; dressedKey = key;
+  return c;
+}
+
+/* ==================================================================
+   다른 사람도 같은 그림으로 — multiplayer.js 가 쓰는 창구
+
+   내 캐릭터만 32x48 이면 화면에 두 크기가 섞입니다. 남을 그리는 쪽은
+   파일이 달라서(multiplayer.js) 여기 전역 하나만 열어 둡니다.
+
+   sheetFor(종 이름, 입은 것) -> 128x48 캔버스 (right/up/left/down)
+     · 종·입은 것이 같으면 구운 것을 돌려줍니다. 사람이 여럿이어도
+       종류만큼만 굽습니다 — 사람마다 구우면 100명이 100장이 됩니다.
+     · 시트가 아직 안 왔으면 null. 부르는 쪽이 예전 그림으로 물러나면 됩니다.
+   ================================================================== */
+const otherCache = new Map();
+window.GIRIN_CHAR = {
+  W: CHAR_W, H: CHAR_H, groundY: CHAR_GROUND_Y,
+  dirIndex: ITEM_DIR,                       // { right:0, up:1, left:2, down:3 }
+  species: CHAR_SPECIES,
+  names: Object.keys(CHAR_SPECIES),
+  /** 내 캐릭터 — 입은 것이 바뀌면 알아서 다시 굽습니다. */
+  mine: () => dressedSheet(),
+  /** 남의 캐릭터. worn 은 { top, bottom, shoes, hat, glasses, bag } 꼴이고 없으면 맨몸. */
+  sheetFor(name, worn) {
+    const sp = speciesOf(name);
+    const base = CHAR_IMG[sp.slug];
+    if (!itemReady(base)) return null;
+    const key = sp.slug + '|' + JSON.stringify(worn || {}) + '|' + schoolColor();
+    const hit = otherCache.get(key);
+    if (hit) return hit;
+    const c = document.createElement('canvas');
+    c.width = CHAR_W * 4; c.height = CHAR_H;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.drawImage(base, 0, 0);
+    const on = Object.values(worn || {}).map((id) => SHOP_BY_ID[id]).filter(Boolean);
+    for (const it of on.sort((a, b) => a.z - b.z)) {
+      const sheet = tintedItem(itemSheetFor(it, sp), sp.line);
+      if (sheet) g.drawImage(sheet, 0, followsHead(it) ? (it.cat === 'hat' ? sp.hatDy : sp.eyeDy) : 0);
+    }
+    /* 종류가 아무리 많아도 24장이면 충분합니다 — 8종 x 자주 쓰는 조합 몇 개.
+       넘치면 가장 오래된 것부터 버립니다. */
+    if (otherCache.size >= 24) otherCache.delete(otherCache.keys().next().value);
+    otherCache.set(key, c);
+    return c;
+  },
+};
+
+for (const it of SHOP) {
+  if (it.sprite) loadItemImg(it.sprite);
+  if (it.recolor) { loadItemImg(it.recolor.base); loadItemImg(it.recolor.mask); }
+}
+
+/* 과잠 — 무채색 마스크에 학교 색을 곱하면 회색 2단계가 그대로 명암이
+   됩니다(item-spec §7). 학교를 바꾸기 전까지는 같은 그림이라 캐시합니다. */
+let varsityCache = null, varsityCacheColor = '';
+function varsitySheet() {
+  const col = schoolColor();
+  if (varsityCache && varsityCacheColor === col) return varsityCache;
+  const r = SHOP_BY_ID['top-varsity'].recolor;
+  const base = ITEM_IMG[r.base], mask = ITEM_IMG[r.mask];
+  if (!itemReady(base) || !itemReady(mask)) return null;
+  const c = document.createElement('canvas');
+  c.width = ITEM_W * 4; c.height = ITEM_H;
+  const g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.drawImage(mask, 0, 0);
+  g.globalCompositeOperation = 'multiply';
+  g.fillStyle = col; g.fillRect(0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'destination-in';      // 곱하면서 번진 알파를 되돌립니다
+  g.drawImage(mask, 0, 0);
+  g.globalCompositeOperation = 'source-over';
+  g.drawImage(base, 0, 0);                            // 흰 소매·립은 학교색을 안 탑니다
+  varsityCache = c; varsityCacheColor = col;
+  return c;
+}
+
+/** 아이템 하나의 그림 한 장 — 과잠이면 학교색을 입힌 것. */
+function itemSheet(it) {
+  if (it.recolor) return varsitySheet();
+  const img = it.sprite && ITEM_IMG[it.sprite];
+  return itemReady(img) ? img : null;
+}
+
+/** 마네킹 위에 입은 것을 z 순서로 쌓아 한 방향을 그립니다. */
+function drawDoll(g, worn, dir, zoom) {
+  const sx = ITEM_DIR[dir] * ITEM_W;
+  const sp = speciesOf(ROOM.character);
+  const put = (src, dy) => g.drawImage(src, sx, 0, ITEM_W, ITEM_H, 0, (dy || 0) * zoom, ITEM_W * zoom, ITEM_H * zoom);
+  g.imageSmoothingEnabled = false;
+  /* 몸은 검사용 마네킹이 아니라 지금 고른 종입니다. 시트가 아직 안 왔으면
+     마네킹으로 물러납니다 — 빈 화면보다 낫습니다. */
+  const body = CHAR_IMG[sp.slug];
+  if (itemReady(body)) put(body);
+  else if (itemReady(MANNEQUIN)) put(MANNEQUIN);
+  const on = Object.values(worn || {}).map((id) => SHOP_BY_ID[id]).filter(Boolean);
+  for (const it of on.sort((a, b) => a.z - b.z)) {
+    const sheet = tintedItem(itemSheetFor(it, sp), sp.line);
+    if (sheet) put(sheet, followsHead(it) ? (it.cat === 'hat' ? sp.hatDy : sp.eyeDy) : 0);
+  }
+}
+/* 알은 입는 게 아니라 캐릭터가 바뀌는 것이라 칸이 아니라 이름으로 갑니다 */
+const EGG_CHARACTER = {
+  'egg-turtle': '거북이', 'egg-giraffe': '기린', 'egg-penguin': '펭귄',
+  'egg-hamster': '햄스터', 'egg-frog': '개구리', 'egg-hedgehog': '고슴도치',
+  'egg-alpaca': '알파카', 'egg-swan': '백조',
+};
+
+const itemColor = (it) => (it.school ? schoolColor() : it.color);
+const owns = (id) => ROOM.owned.includes(id);
+const wearing = (id) => {
+  const it = SHOP_BY_ID[id];
+  return it.cat === 'egg' ? ROOM.character === EGG_CHARACTER[id] : ROOM.worn[it.cat] === id;
+};
+
+/** 왼쪽 미리보기 — 입은 것을 마네킹에 실제로 겹쳐 보여 줍니다. */
+function shopPreviewHtml() {
+  const layer = (cat, label) => {
+    const id = ROOM.worn[cat];
+    const it = id && SHOP_BY_ID[id];
+    return `<div class="lay">
+      <i style="background:${it ? itemColor(it) || 'var(--line-2)' : 'var(--surface-3)'}"></i>
+      <span>${label}</span><em>${it ? esc(it.name) : '없음'}</em></div>`;
+  };
+  const Z = 3;
+  return `
+    <div class="shop-prev">
+      <canvas class="doll" data-doll="down" data-zoom="${Z}"
+        width="${ITEM_W * Z}" height="${ITEM_H * Z}"></canvas>
+      <div class="who"><b>${esc(ROOM.nickname)}</b><em>${esc(ROOM.character)}</em></div>
+      <div class="lays">
+        ${layer('hat', '모자')}${layer('face', '안경')}${layer('top', '상의')}
+        ${layer('bottom', '하의')}${layer('shoes', '신발')}${layer('bag', '가방')}
+      </div>
+      <p class="hint">여기 보이는 대로 입습니다. 캠퍼스에서는 아직 예전
+        몸으로 걸어요 — 32×48 몸통을 옮기는 중이고, 옷 자리는 그때도
+        그대로입니다.</p>
+    </div>`;
+}
+
+function shopTabHtml(cat) {
+  const items = SHOP.filter((i) => i.cat === cat);
+  const card = (it) => {
+    const have = owns(it.id), on = wearing(it.id);
+    const afford = ROOM.coins >= it.price;
+    const action = !have
+      ? `<button class="act" data-buy="${it.id}"${afford ? '' : ' disabled'}>${it.price}</button>`
+      : on
+        ? `<button class="act ghost" data-off="${it.id}">벗기</button>`
+        : `<button class="act" data-on="${it.id}">입기</button>`;
+    return `<div class="item${on ? ' on' : ''}">
+      <canvas class="thumb" data-item="${it.id}" data-zoom="1"
+        width="${ITEM_W}" height="${ITEM_H}"></canvas>
+      <span>${esc(it.name)}${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</span>
+      ${have && !on ? '<u>보유</u>' : ''}
+      ${action}</div>`;
+  };
+  return `<div class="shop">
+    ${shopPreviewHtml()}
+    <div class="shop-list">
+      <div class="shop-coin">가진 코인 <b>${ROOM.coins}</b></div>
+      ${items.map(card).join('')}
+    </div>
+  </div>`;
+}
+
 
 /** 이 기기에 쌓인 세션 기록. 없으면 없다고 말합니다. */
 /* ================== 세션 기록 ==================
@@ -5965,8 +6902,10 @@ function earn(amount, why) {
   RW.daily.games = RW.daily.games || [];
   if (RW.daily.games.includes(key)) return 0;    // 오늘 이미 받았습니다
   RW.daily.games.push(key); saveRW();
-  grant(5, why || '미니게임');
-  return 5;
+  /* 서버도 게임별 하루 1회를 따로 셉니다. 로컬은 표시를 즉시 맞추는
+     용도이고, 돌아온 잔액이 정답입니다. */
+  if (window.WORLD_SAVE && WORLD_SAVE.configured) WORLD_SAVE.earnMinigame(key).then(applyServerBalance);
+  return grant(COIN_MINIGAME, why || '미니게임');
 }
 
 /* ==================================================================
@@ -6521,6 +7460,89 @@ function startGiraffeStack() {
   renderGiraffeStack();
 }
 
+function equip(id) {
+  const it = SHOP_BY_ID[id];
+  if (!it || !owns(id)) return;
+  if (it.cat === 'egg') ROOM.character = EGG_CHARACTER[id] || ROOM.character;
+  else ROOM.worn[it.cat] = id;
+  jacketCanvas = null; dressedCache = null;                   // 월드 캐릭터를 다시 굽습니다
+}
+function unequip(id) {
+  const it = SHOP_BY_ID[id];
+  if (!it || it.cat === 'egg') return;   // 알은 벗을 수 없습니다. 다른 알로 바꿀 뿐입니다
+  if (ROOM.worn[it.cat] === id) delete ROOM.worn[it.cat];
+  jacketCanvas = null; dressedCache = null;
+}
+/** 산 뒤에도 보던 칸에 그대로 남아야 합니다 — 매번 상의로 튕기면
+    신발 세 켤레를 사는 데 열 번을 눌러야 합니다. */
+
+function reopenShop() {
+  const tabs = [...panelTabs.querySelectorAll('button')];
+  const active = Math.max(0, tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true'));
+  openPanel('shop');
+  panelTabs.querySelectorAll('button')[active]?.click();
+}
+
+function wornColor(cat) {
+  const it = SHOP_BY_ID[ROOM.worn[cat]];
+  return it ? itemColor(it) : null;
+}
+/* 16px 예비 그림 — 종 시트가 아직 안 왔을 때만 씁니다. Kenney 사람의
+   몸통 줄만 지금 입은 상의 색(없으면 학교 과잠 색)으로 갈아입힙니다. */
+const CHAR_SHEET_COL = 23, CHAR_SHEET_W = 4, CHAR_SHEET_H = 3;
+function playerSheet() {
+  if (jacketCanvas) return jacketCanvas;
+  const c = canvasOf(CHAR_SHEET_W, CHAR_SHEET_H), g = c.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  g.drawImage(urban, CHAR_SHEET_COL * T, 0, c.width, c.height, 0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'source-atop';
+  /* 몸통 줄 하나만 갈아입힙니다. 모자·하의·신발 줄까지 색으로 덮어 봤지만
+     16px 안에서 다리 두 짝과 발이 한 덩어리가 되어 원본보다 나빠집니다 —
+     머리와 다리는 Kenney 가 그린 대로 두는 편이 사람으로 읽힙니다.
+     아무것도 안 입었으면 예전처럼 학교 과잠을 기본으로 입습니다. */
+  const col = wornColor('top') || schoolColor();
+  for (let r = 0; r < CHAR_SHEET_H; r++) {
+    px(g, 0, r * T + 8, c.width, 5, col);
+    px(g, 0, r * T + 8, c.width, 1, 'rgba(255,255,255,.28)');   // 어깨선
+    px(g, 0, r * T + 12, c.width, 1, 'rgba(0,0,0,.22)');        // 밑단 그늘
+  }
+  g.globalCompositeOperation = 'source-over';
+  jacketCanvas = c;
+  return c;
+}
+
+function paintItemCanvases() {
+  for (const c of panelBody.querySelectorAll('canvas[data-doll]')) {
+    const g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    drawDoll(g, ROOM.worn, c.dataset.doll || 'down', Number(c.dataset.zoom) || 1);
+  }
+  for (const c of panelBody.querySelectorAll('canvas[data-item]')) {
+    const it = SHOP_BY_ID[c.dataset.item];
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, c.width, c.height);
+    const sheet = it && itemSheet(it);
+    if (sheet) {
+      const zoom = Number(c.dataset.zoom) || 1;
+      g.drawImage(sheet, ITEM_DIR.down * ITEM_W, 0, ITEM_W, ITEM_H, 0, 0, ITEM_W * zoom, ITEM_H * zoom);
+    } else if (it) {
+      /* 알처럼 그림이 없는 것과 아직 안 뜬 것 — 색 블록으로 자리를 지킵니다 */
+      g.fillStyle = itemColor(it) || '#C9C4BE';
+      g.fillRect(c.width * 0.25, c.height * 0.3, c.width * 0.5, c.height * 0.4);
+    }
+  }
+}
+const repaintOpenPanel = () => { if (panelOpen) paintItemCanvases(); };
+
+/** 창 내용을 갈아 끼울 때는 **늘 이 문을 지납니다.** 캔버스는 innerHTML
+    로 안 그려지므로, 넣은 다음 한 번 칠해 줘야 합니다. innerHTML 을
+    직접 쓰면 인형과 아이템 칸이 빈 채로 남습니다. */
+function setPanelBody(html) {
+  panelBody.innerHTML = html;
+  paintItemCanvases();
+}
+
 /* ================== 지난 세션 요약 ==================
    업라이트 결과 화면의 보고서 형식을 **줄여서** 옮깁니다. 그쪽에는 목표 ·
    진행도 · 다음 할 일 · 몬스터 피해량까지 있었는데, 여기에는 목표도 전투도
@@ -6614,6 +7636,65 @@ function pastSessionsHtml() {
     + '<h4>최근 이레</h4>'
     + '<div class="wk">' + bars + '</div><div class="wkx">' + xlab + '</div>'
     + '<h4>세션 기록</h4>' + rows + more;
+}
+
+/* ==================================================================
+   명예의 전당
+
+   서버가 없으니 순위는 **예시 값**입니다. 빈 화면을 보여 주는 것보다
+   낫지만, 진짜인 척해서는 안 됩니다 — 화면 아래에 예시라고 적습니다.
+
+   내 학교만 이 기기에 쌓인 진짜 기록을 더해 얹습니다. 내가 앉은 시간이
+   우리 학교 숫자에 더해지는 것이 이 화면의 요점이니까요.
+   ================================================================== */
+const SEED_RANKING = [
+  { school: '연세대학교',     hours: 12840, recoveries: 41200 },
+  { school: '고려대학교',     hours: 12610, recoveries: 39800 },
+  { school: '서울대학교',     hours: 11930, recoveries: 37400 },
+  { school: '한양대학교',     hours: 9880,  recoveries: 31100 },
+  { school: '성균관대학교',   hours: 9240,  recoveries: 29600 },
+  { school: '중앙대학교',     hours: 8410,  recoveries: 26800 },
+  { school: '경희대학교',     hours: 7960,  recoveries: 25300 },
+  { school: '서강대학교',     hours: 6180,  recoveries: 19700 },
+  { school: '이화여자대학교', hours: 5940,  recoveries: 18900 },
+  { school: '명지대학교',     hours: 4720,  recoveries: 15100 },
+];
+/* 역대 1위 — **바로 앞 세 시즌**입니다. 번호를 1·2·3 으로 박아 두면
+   시즌이 넘어갈 때마다 뒤로 밀려서, 지금이 6시즌인데 액자는 3시즌까지만
+   있는 화면이 됩니다. 학교와 시간은 예시 값이고 그 사실을 창 아래에
+   적어 두었습니다 — 번호만 그때그때 셉니다. */
+const PAST_WINNERS = [
+  { school: '고려대학교', hours: 14210 },
+  { school: '연세대학교', hours: 13050 },
+  { school: '서울대학교', hours: 11480 },
+];
+const PAST_SEASONS = () => PAST_WINNERS.map((w, i) =>
+  Object.assign({ no: seasonInfo().no - 1 - i }, w)).filter((p) => p.no >= 1);
+
+/** 시즌은 90일. 남은 날이 보여야 "이번 시즌 안에" 라는 말이 성립합니다. */
+function seasonInfo() {
+  const LEN = 90, START = Date.UTC(2026, 0, 5);       // 시즌 4 시작
+  const days = Math.floor((Date.now() - START) / 86400000);
+  const no = 4 + Math.floor(days / LEN);
+  const into = ((days % LEN) + LEN) % LEN;
+  const from = new Date(START + (no - 4) * LEN * 86400000);
+  const to = new Date(from.getTime() + (LEN - 1) * 86400000);
+  const fmt = (d) => (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일';
+  return { no, daysLeft: LEN - into, progress: into / LEN, from: fmt(from), to: fmt(to) };
+}
+
+/** 예시 값에 이 기기의 진짜 기록을 얹어 정렬합니다. */
+function schoolRanking() {
+  const s = myStats();
+  const rows = SEED_RANKING.map((r) => Object.assign({}, r));
+  const mine = rows.find((r) => r.school === ROOM.school);
+  if (mine) {
+    mine.hours += Math.round(s.total / 60);
+    mine.recoveries += s.recov;
+  } else if (ROOM.school) {
+    rows.push({ school: ROOM.school, hours: Math.round(s.total / 60), recoveries: s.recov });
+  }
+  return rows.sort((a, b) => b.hours - a.hours || b.recoveries - a.recoveries);
 }
 
 const PANELS = {
@@ -6784,6 +7865,59 @@ const PANELS = {
   },
 
   /* ---- 코인 ---- */
+/* ---- 명예의 전당 — 학생회관 하연 ----
+     학교끼리 겨룹니다. 개인 순위를 앞에 두면 "나는 몇 등인가" 가 먼저
+     보이고, 그건 자세를 점수로 만드는 것과 같은 실수입니다. */
+  hall: () => {
+    const season = seasonInfo();
+    const rank = schoolRanking();
+    const mine = rank.findIndex((r) => r.school === ROOM.school);
+    const row = (r, i) => `
+      <div class="rank${r.school === ROOM.school ? ' me' : ''}">
+        <u>${i + 1}</u>
+        <i style="background:${schoolColorOf(r.school)}"></i>
+        <span>${esc(r.school)}${r.school === ROOM.school ? ' <em>우리 학교</em>' : ''}</span>
+        <b>${r.hours.toLocaleString()}<small>시간</small></b>
+        <b class="sub">${r.recoveries.toLocaleString()}<small>회복</small></b>
+      </div>`;
+    return {
+      title: '명예의 전당', kind: '하연',
+      html: `
+      <div class="stats">
+        <div class="stat"><u>시즌</u><b>${season.no}</b></div>
+        <div class="stat"><u>남은 날</u><b>${season.daysLeft}<span style="font-size:12px">일</span></b></div>
+        <div class="stat"><u>우리 학교</u><b>${mine < 0 ? '—' : mine + 1 + '위'}</b></div>
+      </div>
+      <div class="bar"><i style="width:${Math.round(season.progress * 100)}%"></i></div>
+      <p class="hint">${season.from} ~ ${season.to}</p>
+
+      <h4 style="margin-top:18px">이번 시즌 학교 순위</h4>
+      <div class="ranks">${rank.map(row).join('')}</div>
+
+      <h4 style="margin-top:20px">역대 시즌 1위</h4>
+      <div class="frames">${PAST_SEASONS().map((p) => `
+        <div class="frame">
+          <div class="plate" style="background:${schoolColorOf(p.school)};
+               color:${readableOn(schoolColorOf(p.school))}">시즌 ${p.no}</div>
+          <b>${esc(p.school)}</b>
+          <em>${p.hours.toLocaleString()}시간</em>
+        </div>`).join('')}</div>
+
+      <div class="note">순위는 <b>앉은 시간과 회복 횟수</b>로만 매깁니다. 자세를
+      점수로 매기지 않아요 — 그러면 목이 긴 사람이 유리한 게임이 됩니다.
+      아래 숫자는 서버가 붙기 전까지 <b>예시 값</b>입니다.</div>`,
+    };
+  },
+
+  /* ---- 상점 — 학생회관 미르 ----
+     칸(cat)마다 탭 하나. 왼쪽에 지금 입은 모습을 실제로 겹쳐 보여 주고
+     오른쪽에 그 칸의 물건을 늘어놓습니다. */
+  shop: () => ({
+    title: '상점', kind: '미르',
+    tabs: SHOP_CATS.map((c) => c.name),
+    tabHtml: SHOP_CATS.map((c) => shopTabHtml(c.id)),
+  }),
+
   coins: () => ({
     title: '코인', kind: '',
     html: `
@@ -6794,15 +7928,19 @@ const PANELS = {
       </div>
       <h4>어떻게 모으나</h4>
       <div class="rows">
-        <div class="row"><span>캠퍼스 체류 <em>10분마다 · 하루 6</em></span><span class="val">1</span></div>
-        <div class="row"><span>본관에서 앉기 <em>10분마다 · 끊어도 그대로</em></span><span class="val">3</span></div>
-        <div class="row"><span>도서관에서 앉기 <em>10분마다</em></span><span class="val">2</span></div>
-        <div class="row"><span>도서관 연속 <em>쉬지 않고 30분 · 60분</em></span><span class="val">+3</span></div>
-        <div class="row"><span>회복 성공 <em>한 세션에 다섯 번까지</em></span><span class="val">3</span></div>
-        <div class="row"><span>회고 확인 <em>세션당 한 번</em></span><span class="val">3</span></div>
-        <div class="row"><span>출석 <em>연속이면 하루 +3, 30일까지</em></span><span class="val">5~92</span></div>
-        <div class="row"><span>미니게임 클리어 <em>게임마다 하루 한 번</em></span><span class="val">5</span></div>
+        <div class="row"><span>세션 완주 <em>판정이 돌아간 시간 5분 이상</em></span><span class="val">10</span></div>
+        <div class="row"><span>세션 완주 <em>15분 이상</em></span><span class="val">30</span></div>
+        <div class="row"><span>세션 완주 <em>30분 이상</em></span><span class="val">40</span></div>
+        <div class="row"><span>세션 완주 <em>50분 이상</em></span><span class="val">60</span></div>
+        <div class="row"><span>회복 성공 <em>한 세션에 다섯 번까지</em></span><span class="val">5</span></div>
+        <div class="row"><span>연속 출석 <em>3 · 7 · 14 · 30 · 60일에 한 번씩</em></span><span class="val">10~180</span></div>
+        <div class="row"><span>미니게임 클리어 <em>게임마다 하루 한 번</em></span><span class="val">10</span></div>
+        <div class="row"><span>하루 상한 <em>모든 원천 합산</em></span><span class="val">300</span></div>
       </div>
+      <div class="note">시간이 흐른다고 주는 코인은 없습니다. <b>세션을
+      끝내야</b> 완주 코인이 들어오고, 그 분모는 의자에 앉아 있던 시간이
+      아니라 <b>자세 판정이 실제로 돌아간 시간</b>이에요 — 앉혀 두고
+      자리를 비우면 시계는 흐르지만 판정은 안 돕니다.</div>
       <h4 style="margin-top:18px">어디에 쓰나</h4>
       <div class="rows">
         <div class="row"><span>꾸미기 아이템 <em>학생회관 상점</em></span><span class="val">준비 중</span></div>
@@ -6904,6 +8042,7 @@ const PANELS = {
         `<div class="rows">
           <div class="row"><span>웹캠 화면 <em>도서관·본관에서 앉으면 작은 화면으로 나와요</em></span>${chips('camPeek', [['on', '보이기'], ['off', '숨기기']])}</div>
           <div class="row"><span>자세 말풍선 <em>자세가 무너지면 캐릭터가 알려줘요</em></span>${chips('sayOn', [['on', '켬'], ['off', '끔']])}</div>
+          <div class="row"><span>채팅 <em>숨기면 Enter 를 눌렀을 때만 대화가 보여요</em></span>${chips('chatOn', [['on', '보이기'], ['off', '숨기기']])}</div>
           <div class="row"><span>배경 음악 <em>아직 곡이 없어요</em></span>${chips('bgm', [['on', '켬'], ['off', '끔']])}</div>
           <div class="row"><span>효과음 <em>발소리·문·코인</em></span>${chips('sfxOn', [['on', '켬'], ['off', '끔']])}</div>
         </div>
@@ -6928,7 +8067,8 @@ let panelOpen = false, activePanelKey = '';
     세션이 아직 도는 중이면 "지난 세션" 쪽을 먼저 보여 주기 위해서입니다. */
 function openPanel(key, tab) {
   activePanelKey = key;
-  if (key === 'retro' && SESSION.ended) award('retro', '회고 확인');
+  /* 회고를 열었다고 주던 코인은 없앴습니다 — 단일 규칙에 없는 축이고,
+     자기 기록을 보는 일에 값을 매기면 보러 오는 이유가 바뀝니다. */
   if (key === 'settings') award('once:decorate', '첫 꾸미기');
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
@@ -6944,14 +8084,14 @@ function openPanel(key, tab) {
       b.setAttribute('aria-selected', String(i === 0));
       b.addEventListener('click', () => {
         [...panelTabs.children].forEach((c, j) => c.setAttribute('aria-selected', String(i === j)));
-        panelBody.innerHTML = spec.tabHtml[i];
+        setPanelBody(spec.tabHtml[i]);
       });
       panelTabs.append(b);
     });
-    panelBody.innerHTML = spec.tabHtml[0];
+    setPanelBody(spec.tabHtml[0]);
     if (tab > 0 && panelTabs.children[tab]) panelTabs.children[tab].click();
   } else {
-    panelBody.innerHTML = spec.html;
+    setPanelBody(spec.html);
   }
 
   /* 지도가 떠 있는 채로 창이 열리면 두 겹이 됩니다. 창이 이깁니다. */
@@ -6993,10 +8133,28 @@ panelEl.addEventListener('click', (e) => { if (e.target === panelEl) closePanel(
    학교는 글자를 직접 고칠 수 없습니다. 가입할 때 학교 메일로 인증한
    소속이라, 여기서 아무 이름이나 적을 수 있으면 인증이 의미를 잃습니다.
    학교를 옮겼거나 인증이 만료된 사람을 위해 **다시 인증**으로만 엽니다. */
+/* 닉네임 검사 — 온보딩과 **같은 함수**를 씁니다. 두 곳에서 따로 검사하면
+   가입 때 막힌 이름이 마이페이지에서 통과합니다.
+   korcen(github.com/Tanat05/korcen.ts)을 브라우저용 한 파일로 빌드해 둔
+   것이고, 자모 분리·특수문자 우회까지 잡습니다. 직접 쓴 금칙어 목록은
+   "시1발" 한 번에 뚫립니다.
+   필터가 없거나 터지면 **통과**시킵니다 — 검사기가 고장 났다고 이름을
+   못 바꾸게 하면 그게 더 큰 고장입니다. */
+function nicknameError(v) {
+  const s = v.trim();
+  if (s.length < 2 || s.length > 12) return '닉네임은 2~12자로 입력해 주세요.';
+  if (/[\u0000-\u001F\u007F]/.test(s)) return '쓸 수 없는 문자가 있어요.';
+  try {
+    if (window.Korcen && Korcen.isProfane(s)) return '이 이름은 쓸 수 없어요. 다른 이름을 지어 주세요.';
+  } catch { /* 검사기가 터지면 통과 */ }
+  return '';
+}
+
 const EDITS = {
   nickname: {
     label: '닉네임', hint: '2~12자', max: 12,
-    validate: (v) => v.trim().length >= 2 && v.trim().length <= 12,
+    validate: (v) => nicknameError(v) === '',
+    error: nicknameError,
     apply: (v) => { ROOM.nickname = v.trim(); },
   },
   school: {
@@ -7018,13 +8176,8 @@ const EDITS = {
 
 /* 도메인 → 학교. 늘려야 하는 표지만, 없으면 도메인을 그대로 보여 주고
    "(미확인)" 을 붙입니다 — 없는 학교를 지어내지 않습니다. */
-const SCHOOL_BY_DOMAIN = {
-  'mju.ac.kr': '명지대학교', 'korea.ac.kr': '고려대학교',
-  'yonsei.ac.kr': '연세대학교', 'snu.ac.kr': '서울대학교',
-  'skku.edu': '성균관대학교', 'hanyang.ac.kr': '한양대학교',
-  'cau.ac.kr': '중앙대학교', 'khu.ac.kr': '경희대학교',
-  'ewha.ac.kr': '이화여자대학교', 'sogang.ac.kr': '서강대학교',
-};
+/* SCHOOL_BY_DOMAIN 은 학교 색 쪽에서 SCHOOLS 로부터 만듭니다. 같은 열 곳을
+   두 번 적어 두면 한쪽만 늘어납니다 — 색이 있는 쪽이 원본입니다. */
 
 function openEdit(key, row) {
   const spec = EDITS[key];
@@ -7046,7 +8199,23 @@ function openEdit(key, row) {
   input.focus(); input.select();
   box.dataset.key = key;
   const save = box.querySelector('[data-do="edit-save"]');
-  const sync = () => { save.disabled = !spec.validate(input.value); save.style.opacity = save.disabled ? .45 : 1; };
+  /* 왜 못 누르는지 그 자리에서 말합니다. 비속어로 막힌 경우 버튼만
+     흐려지면 사람은 글자 수를 세다 포기합니다. 빈 칸일 때는 아직
+     아무것도 안 쓴 것이니 조용히 둡니다. */
+  let why = null;
+  const sync = () => {
+    const bad = spec.error ? spec.error(input.value) : '';
+    save.disabled = spec.error ? bad !== '' : !spec.validate(input.value);
+    save.style.opacity = save.disabled ? .45 : 1;
+    const show = input.value.trim() ? bad : '';
+    if (show && !why) {
+      why = document.createElement('p');
+      why.className = 'hint'; why.style.color = 'var(--bad)';
+      why.setAttribute('role', 'alert');
+      box.after(why);
+    }
+    if (why) { why.textContent = show; why.hidden = !show; }
+  };
   input.addEventListener('input', sync);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !save.disabled) save.click();
@@ -7097,9 +8266,29 @@ panelBody.addEventListener('click', (e) => {
        하면, 눌러도 아무 일이 없는 설정이 됩니다. */
     if (group === 'sfxOn') SFX.muted = ROOM.sfxOn !== 'on';
     if (group === 'camPeek') syncCamPeek();
+    if (group === 'chatOn') syncChat();
     if (group === 'sayOn' && ROOM.sayOn === 'off') { sayEl.classList.remove('on'); clearTimeout(SAY.timer); }
+    /* 학교를 고르면 과잠·강조색이 그 자리에서 바뀝니다. 인증 여부는
+       건드리지 않습니다 — 고르는 것과 인증은 다른 일입니다. */
+    if (group === 'school') applySchoolColor();
     return;
   }
+
+  /* ---- 상점 ---- */
+  const buy = e.target.closest('[data-buy]');
+  if (buy) {
+    const it = SHOP_BY_ID[buy.dataset.buy];
+    if (!it) return;
+    if (!spend(it.price)) { SFX.deny && SFX.deny(); return; }
+    ROOM.owned.push(it.id);
+    equip(it.id);                        // 산 것은 바로 입혀 줍니다
+    saveRoom(); reopenShop();
+    return;
+  }
+  const on = e.target.closest('[data-on]');
+  if (on) { equip(on.dataset.on); saveRoom(); reopenShop(); return; }
+  const off = e.target.closest('[data-off]');
+  if (off) { unequip(off.dataset.off); saveRoom(); reopenShop(); return; }
   const tap = e.target.closest('.row.tap');
   if (tap) return openEdit(tap.dataset.edit, tap);
   const act = e.target.closest('[data-do]');
@@ -7279,6 +8468,13 @@ function syncCamPeek() {
 }
 syncCamPeek();
 
+/** 채팅 표시 — chat.js 는 index.html 뒤에 읽히므로 그때까지 기다립니다.
+    설정을 고칠 때마다 다시 부르는 곳은 칩 처리기입니다. */
+function syncChat() {
+  if (window.CHAT && CHAT.setVisible) CHAT.setVisible(ROOM.chatOn !== 'off');
+}
+addEventListener('load', syncChat);
+
 /* ================== 리워드 ==================
    잔액(ROOM.coins)과 지급 이력(girin.reward)을 분리합니다. 랭킹 지표가
    서버로 가는 날 이력 검증만 서버로 옮기면 됩니다.
@@ -7292,18 +8488,53 @@ syncCamPeek();
 
    로컬이라 콘솔로 잔액을 고칠 수 있습니다. 받아들입니다 — 개인 재화라
    피해자가 없고, 랭킹 지표(앉은 시간·회복)와는 분리돼 있습니다. */
-const SEASON_EPOCH = Date.UTC(2026, 7, 3);   // 시즌 1 시작 (월). 42일 창
-const seasonNow = () => Math.max(0, Math.floor((Date.now() - SEASON_EPOCH) / (42 * 86400000)));
+/* 시즌은 **한 곳에서만** 셉니다 — seasonInfo() (90일, 2026-01-05 부터).
+   전에는 여기에 42일짜리 창이 따로 있어서, 명예의 전당은 "시즌 4" 를
+   보여 주는데 코인 장부는 "시즌 1" 을 세고 있었습니다. 두 화면이 같은
+   낱말로 다른 것을 가리키면 둘 다 못 믿습니다. */
+const seasonNow = () => seasonInfo().no;
 function dayKey(t) {
   const d = t ? new Date(t) : new Date();
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-const RW_DAY = () => ({ stayMs: 0, seatMs: 0, stay: 0, seat: 0, retro: 0, got: 0, attended: false, games: [] });
+/* ---- 팀 확정 규칙 (연우안 + 민철안) ----
+   `upright-now/src/constants/coin.ts` 와 서버 마이그레이션이 **같은 값**을
+   씁니다. 셋 중 하나를 바꾸면 셋 다 바꿔야 합니다.
+
+   누적형(10분마다 얼마씩)을 버리고 완주 구간제로 왔습니다. 누적형은
+   켜 두기만 해도 쌓이고, 캠퍼스 체류 코인은 걸어다니기만 해도 줬습니다 —
+   멘토가 지적한 어뷰징이 정확히 그것입니다.
+
+   그리고 **분모가 앉은 시간이 아니라 판정이 돌아간 시간**입니다. 앉혀
+   두고 자리를 비우면 의자 시계는 흐르지만 판정은 안 돕니다. 이 월드는
+   세션 내내 카메라가 도므로(sit 이 아니라 세션이 카메라를 켭니다) 걸어
+   다닌 시간도 판정이 돌면 인정됩니다. */
+const COMPLETION_TIERS = [
+  { min: 50, points: 60 },
+  { min: 30, points: 40 },
+  { min: 15, points: 30 },
+  { min: 5,  points: 10 },
+];
+const STREAK_MILESTONES = [
+  { days: 3,  points: 10 },
+  { days: 7,  points: 25 },
+  { days: 14, points: 50 },
+  { days: 30, points: 100 },
+  { days: 60, points: 180 },
+];
+const DAILY_CAP = 300;             // 모든 원천 합산. 어뷰징 방지
+const COIN_RECOVERY = 5;           // 회복 성공 1회 · 세션당 5회까지
+const COIN_MINIGAME = 10;          // 게임별 하루 1회
+
+const completionCoins = (min) => (COMPLETION_TIERS.find((t) => min >= t.min) || { points: 0 }).points;
+const streakMilestone = (days) => STREAK_MILESTONES.find((m) => m.days === days) || null;
+
+const RW_DAY = () => ({ got: 0, attended: false, games: [] });
 let RW = {
   day: dayKey(),
   daily: RW_DAY(),
-  session: { recov: 0, retro: false },
-  streak: { days: 0, last: '' },
+  session: { recov: 0, completed: false },
+  streak: { days: 0, last: '', claimed: [] },
   once: {},
   season: { id: seasonNow(), first: false, attend: [] },
 };
@@ -7321,10 +8552,17 @@ function rwRoll() {
   }
 }
 
-/** 실제 지급 — 잔액·튕김·사유 칩. 상한 검사는 award 가 합니다. */
+/** 실제 지급 — 잔액·튕김·사유 칩.
+    **하루 상한 300 은 여기서** 겁니다. 축마다 걸면 새 축이 생길 때마다
+    빠뜨리게 되고, 그게 두 장부가 서로의 상한을 무시하던 이유입니다.
+    상한에 걸리면 걸린 만큼만 주고 조용히 넘어갑니다 — "더 못 받는다" 를
+    광고하면 상한이 목표가 됩니다. */
 const coinNote = document.getElementById('coinNote');
 let noteTimer = 0;
 function grant(v, label) {
+  rwRoll();
+  v = Math.max(0, Math.min(v, DAILY_CAP - (RW.daily.got || 0)));
+  if (v <= 0) return 0;
   ROOM.coins += v; saveRoom(); paintCoins(true);
   if (SESSION.startedAt && !SESSION.ended) SESSION.coins += v;
   RW.daily.got = (RW.daily.got || 0) + v;
@@ -7332,6 +8570,17 @@ function grant(v, label) {
   coinNote.classList.add('on');
   clearTimeout(noteTimer);
   noteTimer = setTimeout(() => coinNote.classList.remove('on'), 1600);
+  return v;
+}
+
+/** 쓰기 — 모자라면 아무것도 안 하고 false. 하루 상한은 **버는 쪽에만**
+    겁니다. 쓴 액수를 오늘 번 것에서 빼면 상한이 늘어납니다.
+    ponytail: 서버에는 아직 소비 RPC 가 없어 잔액 차감이 로컬입니다.
+    상점을 실서버에 붙일 때 world_spend 를 만들어 여기서 부릅니다. */
+function spend(amount) {
+  if (ROOM.coins < amount) return false;
+  ROOM.coins -= amount; saveRoom(); paintCoins(true);
+  return true;
 }
 
 /** 모든 축이 이 문으로만 들어옵니다. 상한에 걸리면 조용히 무시합니다 —
@@ -7340,19 +8589,19 @@ function award(kind, label, amount) {
   rwRoll();
   const D = RW.daily, S = RW.session;
   let v = 0;
-  if (kind === 'stay') { if (D.stay >= 6) return; D.stay += 1; v = 1; }
-  else if (kind === 'seat') {
-    /* 값은 부르는 쪽이 정합니다(공간마다 다름). 하루 18 상한은 여기서. */
-    const want = Math.max(0, Math.min(amount || 3, 18 - D.seat));
-    if (want <= 0) return;
-    D.seat += want; v = want;
+  /* 완주 — 세션이 끝날 때 한 번. amount 는 **판정이 돌아간 분**입니다. */
+  if (kind === 'complete') {
+    if (S.completed) return;
+    v = completionCoins(amount || 0);
+    if (v <= 0) return;
+    S.completed = true;
+    label = (amount || 0) + '분 세션 완주';
   }
   else if (kind === 'recov') {
     if (S.recov >= 5) return;
-    S.recov += 1; v = 3;
+    S.recov += 1; v = COIN_RECOVERY;
     if (!RW.once.firstRecov) { RW.once.firstRecov = true; v += 10; label = '첫 회복'; }
   }
-  else if (kind === 'retro') { if (S.retro || D.retro >= 3) return; S.retro = true; D.retro += 1; v = 3; }
   else if (kind === 'attend') {
     if (D.attended) return;
     D.attended = true;
@@ -7360,13 +8609,19 @@ function award(kind, label, amount) {
        last 가 미래가 되는데, 그때는 리셋만 합니다. */
     RW.streak.days = RW.streak.last === dayKey(Date.now() - 86400000) ? RW.streak.days + 1 : 1;
     RW.streak.last = RW.day;
-    /* 연속 보너스는 30일에서 멈춥니다 — 안 멈추면 100일차 출석 한 번이
-       다른 모든 축을 압도합니다. 30일차 = 92 고정. */
-    v = 5 + 3 * (Math.min(RW.streak.days, 30) - 1);
-    label = RW.streak.days > 1 ? '출석 · ' + RW.streak.days + '일 연속' : '출석';
     if (!RW.season.attend.includes(RW.day)) RW.season.attend.push(RW.day);
     if (!RW.season.first) { RW.season.first = true; grant(10, '시즌 첫 세션'); }
     if (!RW.once.firstSession) { RW.once.firstSession = true; grant(30, '첫 세션'); }
+    /* 연속 출석은 **마일스톤에서만** 줍니다 — 매일 조금씩 주면 그것도
+       누적형이고, 30일차 하루가 다른 축 전부를 압도했습니다.
+       각 마일스톤은 평생 한 번입니다(연속이 끊겼다 3일을 다시 채워도
+       또 주지 않습니다). */
+    RW.streak.claimed = RW.streak.claimed || [];
+    const ms = streakMilestone(RW.streak.days);
+    if (!ms || RW.streak.claimed.includes(ms.days)) { saveRW(); return; }
+    RW.streak.claimed.push(ms.days);
+    v = ms.points;
+    label = RW.streak.days + '일 연속 출석';
   }
   else if (kind.indexOf('once:') === 0) {
     const k = kind.slice(5);
@@ -7379,44 +8634,23 @@ function award(kind, label, amount) {
   grant(v, label);
 }
 
-/* ---- 체류·착석 적산 ----
-   프레임 dt 로 잽니다. 탭이 가려지면 rAF 가 멈춰 그 시간이 저절로
-   빠집니다 — 안 보고 있는 시간은 체류가 아니므로 그게 맞습니다.
-   복귀 첫 프레임의 점프(수 분)는 버립니다. */
+/* ---- 주기 작업 ----
+   프레임 dt 로 돕니다. 탭이 가려지면 rAF 가 멈추고, 복귀 첫 프레임의
+   점프(수 분)는 버립니다. */
 let rwLast = 0, rwSaveAt = 0, sessSaveAt = 0, lastActivity = Date.now();
-/* 연속으로 앉아 있은 시간. 일어나면 0 으로 돌아갑니다 — 도서관 보너스가
-   이걸 봅니다. 세션 전체가 아니라 **끊기지 않은 한 덩어리**입니다. */
-let seatRunMs = 0, seatRunPaid = 0;
 function rwTick(now) {
   if (!rwLast) { rwLast = now; return; }
   const ms = now - rwLast; rwLast = now;
   if (ms <= 0 || ms > 2000) return;
   rwRoll();
-  const D = RW.daily;
-  if (player.sitting) {
-    D.seatMs += ms;
-    seatRunMs += ms;
-    const lib = zoneId === 'library';
-    while (D.seatMs >= 600000) {
-      D.seatMs -= 600000;
-      award('seat', lib ? '도서관 10분' : '앉아서 10분', lib ? 2 : 3);
-      award('attend', '출석');      // 그날 첫 10분이 곧 유효 세션 = 출석
-    }
-    /* 도서관 연속 보너스 — 30분·60분에 한 번씩. 일어나면 사라집니다. */
-    if (lib) {
-      for (const [mark, i] of [[1800000, 1], [3600000, 2]]) {
-        if (seatRunMs >= mark && seatRunPaid < i) {
-          seatRunPaid = i;
-          award('seat', '쉬지 않고 ' + (mark / 60000) + '분', 3);
-        }
-      }
-    }
-  } else if (Date.now() - lastActivity < 600000) {
-    /* 활동 게이트 — 최근 10분 안에 키 입력이 없으면 그 시간은 체류가
-       아닙니다. 탭만 열어 두는 것과 캠퍼스에 있는 것을 가릅니다. */
-    D.stayMs += ms;
-    while (D.stayMs >= 600000) { D.stayMs -= 600000; award('stay', '캠퍼스 10분'); }
-  }
+  /* 여기서는 **아무것도 지급하지 않습니다.** 시간이 흐른다는 이유로 주는
+     축은 전부 없앴습니다 — 켜 두기만 해도 쌓이던 것이 어뷰징의 전부였고,
+     캠퍼스 체류 코인은 걸어다니기만 해도 줬습니다.
+     완주 코인은 세션이 끝날 때 한 번, 판정이 돌아간 시간으로 줍니다.
+
+     출석만 여기서 봅니다. 그날 판정이 10분을 넘긴 순간이 "왔다" 는
+     사실이고, 세션을 안 끝내고 탭을 닫아도 그건 사실이기 때문입니다. */
+  if (judgedMinutes() >= 10) award('attend', '출석');
   /* 운동장 첫 방문 — 존이 아니라 캠퍼스 북서 구역이라 여기서 봅니다 */
   if (zoneId === 'campus' && player.x < 15 * T && player.y < 13 * T) award('once:visit_track', '운동장 첫 방문');
   if (now - rwSaveAt > 10000) { rwSaveAt = now; saveRW(); }
@@ -7435,19 +8669,42 @@ const sessTime = document.getElementById('sess-time');
 function endSession() {
   if (SESSION.ended) return;
   if (player.sitting) stand();
+  /* 완주 코인은 카메라를 내리기 **전에** 셉니다 — stopCamera 뒤에 세면
+     판정 누적이 이미 멎은 뒤라 마지막 구간이 빠집니다. */
+  const judged = judgedMinutes();
+  award('complete', '', judged);
   stopCamera();                 // 세션 끝 = 촬영 끝. 서 있어도 꺼집니다.
   SESSION.ended = true;
   saveSession();
+  /* 서버에도 보냅니다. 코인은 서버가 다시 계산하고 돌아온 잔액이
+     정답입니다 — 로컬 잔액은 표시용이에요. 오프라인이면 save.js 큐에
+     쌓였다가 다음 접속에 갑니다. 설정이 없으면 조용히 넘어갑니다. */
+  if (window.WORLD_SAVE && WORLD_SAVE.configured) {
+    WORLD_SAVE.finishSession({
+      school: ROOM.school,
+      seatedMinutes: judged,          // 서버의 분모도 판정 시간입니다
+      campusMinutes: Math.round(sessionMinutes()),
+      recoveries: LIVE.recoveries,
+      startedAt: SESSION.startedAt || Date.now(),
+      endedAt: Date.now(),
+    }).then(applyServerBalance);
+  }
   sessBox.classList.add('done');
   sessEnd.textContent = '회고 보기';
   openPanel('retro');
+}
+
+/** 서버가 아는 잔액이 정답입니다. 오프라인이면 null 이 와서 그냥 둡니다. */
+function applyServerBalance(balance) {
+  if (typeof balance !== 'number') return;
+  ROOM.coins = balance; saveRoom(); paintCoins(true);
 }
 function newSession() {
   /* 마이페이지 경유로 회고가 세션 도중에도 열리므로, 이 버튼도 도중에
      눌릴 수 있게 됐습니다. 돌던 세션을 저장 없이 덮으면 마지막 자동저장
      이후 최대 1분이 사라집니다. */
   if (SESSION.startedAt && !SESSION.ended) saveSession();
-  RW.session = { recov: 0, retro: false }; saveRW();
+  RW.session = { recov: 0, completed: false }; saveRW();
   resetSay();
   SESSION.startedAt = Date.now();
   SESSION.seatedMs = 0; SESSION.seatedAt = 0; SESSION.ended = false; SESSION.coins = 0;
@@ -7572,7 +8829,10 @@ function draw() {
       const dx = x * T - camX, dy = y * T - camY;
       if (!zone.ground) blitU(zone.base[at(zone, x, y)], dx, dy);
       const mat = zone.over[at(zone, x, y)];
-      if (mat) blitU(autoTile(zone, x, y, mat), dx, dy);
+      /* painted 로 표시한 칸은 바닥 그림에 이미 그려져 있습니다. 여기서
+         타일을 또 얹으면 손으로 그린 곧은 모서리 위에 시트의 둥근
+         모서리가 덮입니다. */
+      if (mat && !zone.painted[at(zone, x, y)]) blitU(autoTile(zone, x, y, mat), dx, dy);
       drawCount += mat ? 2 : 1;
       /* 물낯. 가로로 긴 반짝임이 천천히 흘러가며 떴다 가라앉습니다.
          세로 무늬를 넣으면 흐르는 강이 되는데, 여기는 고인 호수입니다.
@@ -7665,6 +8925,9 @@ function draw() {
   /* 같은 줄에 섰을 때는 플레이어가 앞에 옵니다. 동점이면 정렬이 프레임마다
      뒤바뀌어 캐릭터가 물건 앞뒤로 깜빡였습니다. */
   items.push({ sort: sortKey(player.y, player.x) + 0.5, kind: 'player' });
+  /* 다른 사람들 — multiplayer.js 가 자기 목록을 여기 끼워 넣습니다.
+     같은 정렬 배열에 들어가야 기물 앞뒤가 맞습니다. */
+  if (window.MP) MP.collect(items);
   items.sort((a, b) => a.sort - b.sort);
 
   for (const it of items) {
@@ -7704,6 +8967,7 @@ function draw() {
         ctx.fillRect(bx, by - 6 + bob, 2, 4);
         ctx.fillRect(bx, by - 1 + bob, 2, 2);
       }
+    } else if (it.kind === 'mp') { MP.drawOne(it.rp); drawCount++;
     } else { drawPlayer(); drawCount++; }
   }
 
@@ -7751,18 +9015,24 @@ function draw() {
   }
 }
 
+/* 캐릭터 — 종 시트 32x48 에 산 옷을 겹쳐 구운 한 장을 얹습니다.
+   타일이 16px 인데 캐릭터는 가로 두 칸 세로 세 칸입니다. 발바닥은 프레임
+   안 y45 이고(y46-47 은 예전 그림자 자리), 그래서 발 위치에서 45 를 빼고
+   그립니다. 정렬은 예전처럼 발 줄로 하므로 기물 앞뒤가 그대로입니다.
+
+   시트가 아직 안 왔으면 예전 16px 사람으로 물러납니다 — 빈 화면보다
+   낫고, 시트가 도착하면 다음 프레임부터 저절로 바뀝니다. */
 function drawPlayer() {
-  const dx = Math.round(player.x - T / 2 - camX), dy = Math.round(player.y - T - camY);
+  const sheet = dressedSheet();
+  const bob = player.moving && !player.sitting ? (Math.floor(player.anim * 2) % 2 ? -1 : 0) : 0;
+
+  /* 그림자는 시트에 굽지 않고 여기서 그립니다 — 종마다 발 폭이 달라도
+     같은 타원이 깔려야 다 같은 바닥에 서 있는 것으로 보입니다. */
+  const fx = Math.round(player.x - camX), fy = Math.round(player.y - camY);
   ctx.save();
   ctx.globalAlpha = 0.22; ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.ellipse(dx + T / 2, dy + T - 1, 5, 2.2, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(fx, fy - 1, 6, 2.4, 0, 0, 7); ctx.fill();
   ctx.restore();
-
-  const col = DIR_COL[player.dir];
-  const rowI = player.moving ? WALK_ROW[player.frame & 3] : 0;
-  const idx = CHAR_BASE + rowI * U_COLS + col;
-  const sx = (idx % U_COLS) * T, sy = ((idx / U_COLS) | 0) * T;
-  const bob = player.moving && !player.sitting ? (Math.floor(player.anim * 2) % 2 ? -1 : 0) : 0;
 
   /* 앉고 일어설 때 한 번 눌립니다. 세로만 줄이고 발끝을 바닥에 붙여
      둬야 눌린 것으로 보입니다 - 가운데를 기준으로 줄이면 떠오릅니다.
@@ -7770,16 +9040,37 @@ function drawPlayer() {
   if (sitSquash > 0) sitSquash = Math.max(0, sitSquash - 1 / 60 / 0.18);
   const sq = sitSquash > 0 ? 1 - Math.sin(sitSquash * Math.PI) * 0.16 : 1;
 
-  ctx.save();
-  if (sq !== 1) { ctx.translate(dx + T / 2, dy + T); ctx.scale(1, sq); ctx.translate(-dx - T / 2, -dy - T); }
-  if (player.dir === 'side' && player.flip) {
-    ctx.translate(dx + T, dy + bob); ctx.scale(-1, 1);
-    ctx.drawImage(urban, sx, sy, T, T, 0, 0, T, T);
-  } else {
-    ctx.drawImage(urban, sx, sy, T, T, dx, dy + bob, T, T);
+  if (!sheet) {
+    const col = DIR_COL[player.dir];
+    const rowI = player.moving ? WALK_ROW[player.frame & 3] : 0;
+    const idx = CHAR_BASE + rowI * U_COLS + col;
+    const old = playerSheet();
+    const ox = (idx % U_COLS - CHAR_SHEET_COL) * T, oy = ((idx / U_COLS) | 0) * T;
+    ctx.save();
+    if (sq !== 1) { ctx.translate(fx, fy); ctx.scale(1, sq); ctx.translate(-fx, -fy); }
+    if (player.dir === 'side' && player.flip) {
+      ctx.translate(fx + T / 2, fy - T + bob); ctx.scale(-1, 1);
+      ctx.drawImage(old, ox, oy, T, T, 0, 0, T, T);
+    } else {
+      ctx.drawImage(old, ox, oy, T, T, fx - T / 2, fy - T + bob, T, T);
+    }
+    ctx.restore();
+    return;
   }
-  ctx.restore();
 
+  /* 방향 — 시트 순서는 right, up, left, down 이고 아이템과 같습니다.
+     player.dir 의 'side' 는 좌우를 flip 으로 만들던 16px 시절 표현이라
+     여기서 left/right 로 풀어 줍니다. 시트에 양쪽이 다 들어 있어
+     뒤집을 필요가 없고, 뒤집으면 옷의 단추가 반대편으로 갑니다. */
+  const dirName = player.dir === 'side' ? (player.flip ? 'left' : 'right')
+    : player.dir === 'up' ? 'up' : 'down';
+  const sx = ITEM_DIR[dirName] * CHAR_W;
+
+  ctx.save();
+  if (sq !== 1) { ctx.translate(fx, fy); ctx.scale(1, sq); ctx.translate(-fx, -fy); }
+  ctx.drawImage(sheet, sx, 0, CHAR_W, CHAR_H,
+                fx - CHAR_W / 2, fy - CHAR_GROUND_Y + bob, CHAR_W, CHAR_H);
+  ctx.restore();
 }
 
 const promptEl = document.getElementById('prompt');
@@ -7788,7 +9079,11 @@ const headTimerVal = headTimerEl.querySelector('b');
 function syncPrompt() {
   const r = cv.getBoundingClientRect();
   const hx = r.left + (player.x - camX) * SCALE;
-  const hy = r.top + (player.y - T - camY) * SCALE;
+  /* 머리 높이. 32x48 시트를 쓰면 발에서 정수리까지가 45px 이고, 예전
+     16px 사람은 16px 이었습니다. 옛 값을 그대로 두면 타이머와 말풍선이
+     캐릭터 가슴에 겹칩니다. 시트가 아직 안 왔으면 옛 높이로 돌아갑니다. */
+  const head = dressedSheet() ? CHAR_GROUND_Y : T;
+  const hy = r.top + (player.y - head - camY) * SCALE;
   /* 타이머가 먼저 머리 위에 앉고, 안내는 그 위로 비켜 섭니다.
      같은 자리에 두면 말 걸 때마다 시간이 가려집니다. */
   const live = SESSION.startedAt && !SESSION.ended;
@@ -7805,9 +9100,13 @@ function syncPrompt() {
     sayEl.style.top = hy - (live ? 46 : 28) + 'px';
   }
   if (!nearby || dialogOpen) { promptEl.classList.remove('on'); return; }
-  promptEl.textContent = nearby.kind === 'sit' ? 'Space · 앉기'
-    : nearby.kind === 'stand' ? 'Space · 일어나기'
-    : 'Space · ' + nearby.npc.name.split(' · ')[0];
+  /* 키 이름은 안 붙입니다. 게시판마다 "Space · 미니게임 설명 보기" 처럼
+     같은 낱말이 앞에 반복되면, 정작 읽어야 하는 뒷말이 뒤로 밀립니다.
+     Space 는 첫 진입 안내가 한 번 알려 주고 설정의 조작 목록에 남아
+     있으므로, 칩은 **무엇을 할 수 있는지**만 말합니다. */
+  promptEl.textContent = nearby.kind === 'sit' ? '앉기'
+    : nearby.kind === 'stand' ? '일어나기'
+    : nearby.npc.name.split(' · ')[0];
   promptEl.style.left = hx + 'px';
   promptEl.style.top = hy - (live ? 24 : 6) + 'px';
   promptEl.classList.add('on');
@@ -7850,6 +9149,11 @@ function maybeStart() {
   document.getElementById('boot').classList.add('gone');
   enterZone('dorm', 3, 5);
   requestAnimationFrame(frame);
+  /* 처음 온 사람에게만. 부팅 화면이 걷힌 뒤 한 박자 두고 띄웁니다 —
+     같은 순간에 겹치면 둘 다 못 읽습니다. */
+  try {
+    if (localStorage.getItem('girin.tutorial') !== 'seen') setTimeout(startTutorial, 700);
+  } catch { /* 저장소가 막혀 있으면 안 띄웁니다 */ }
 }
 function failed(name) {
   document.getElementById('boot').textContent =
@@ -7862,3 +9166,13 @@ urban.src = 'assets/urban.png';
 city.src = 'assets/city.png';
 school.src = 'assets/school16.png';
 </script>
+
+<!-- 네 모듈은 위 script 뒤에 읽히고 그 전역(player · camX · ctx · sortKey)을
+     그대로 씁니다. index.html 을 안 건드리는 쪽을 골라서, 스타일도 각
+     파일이 코드로 넣습니다. 그래야 같은 파일을 고치는 사람과 안 부딪힙니다. -->
+<script src="multiplayer.js"></script>
+<script src="chat.js"></script>
+<script src="comfort.js"></script>
+<script src="../shared/korcen.js"></script>
+<script src="../shared/config.js"></script>
+<script src="save.js"></script>

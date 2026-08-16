@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CAMPUS_COPY,
   CAMPUS_SCHOOLS,
@@ -19,6 +19,7 @@ import {
   type SchoolChangeDecision,
 } from '@/features/campus/schoolChange'
 import { seasonAt } from '@/features/campus/season'
+import { filterSchoolPickerResults } from '@/features/campus/schoolPickerSearch'
 import { CampusColorSourceNote } from './CampusBits'
 
 /**
@@ -34,7 +35,6 @@ export function SchoolPicker({
 }: {
   onChanged?: (schoolId: string) => void
 }) {
-  const groupName = useId()
   const schoolId = useCampusThemeStore((s) => s.schoolId)
   const customColor = useCampusThemeStore((s) => s.customColor)
   const customSchoolName = useCampusThemeStore((s) => s.customSchoolName)
@@ -47,11 +47,16 @@ export function SchoolPicker({
   const [message, setMessage] = useState<string | null>(null)
   const [colorDraft, setColorDraft] = useState(customColor)
   const [customFormOpen, setCustomFormOpen] = useState(false)
+  const [selectedRegion, setSelectedRegion] = useState('')
   const [schoolSearch, setSchoolSearch] = useState('')
   const directoryEntries = useCampusDirectoryStore((s) => s.entries)
   const registeredSchools = useMemo(
     () => listRegisteredCustomSchools(directoryEntries),
     [directoryEntries],
+  )
+  const searchResults = useMemo(
+    () => filterSchoolPickerResults(CAMPUS_SCHOOLS, registeredSchools, schoolSearch),
+    [registeredSchools, schoolSearch],
   )
   const saveCustomSchool = useCampusThemeStore((s) => s.saveCustomSchool)
   const syncStatus = useCampusThemeStore((s) => s.syncStatus)
@@ -72,6 +77,7 @@ export function SchoolPicker({
   const locked = Boolean(schoolId) && !probe.allowed
   const nextAllowed = formatNextAllowed(probe.nextAllowedAt)
   const currentTheme = resolveCampusTheme(schoolId, customColor)
+  const showSearchResults = selectedRegion.length > 0 && schoolSearch.trim().length > 0
 
   const isCustomSelected =
     customFormOpen || Boolean(schoolId?.startsWith('custom'))
@@ -111,91 +117,69 @@ export function SchoolPicker({
       <fieldset className="m-0 min-w-0 border-0 p-0">
         <legend className="sr-only">학교 선택</legend>
         <div className="grid grid-cols-1 gap-2 @[560px]:grid-cols-2">
-          {CAMPUS_SCHOOLS.map((preset) => {
-            const theme = resolveCampusTheme(preset.id, customColor)
+          <label className="relative block">
+            <span className="sr-only">지역 선택</span>
+            <select
+              value={selectedRegion}
+              onChange={(e) => {
+                setSelectedRegion(e.target.value)
+                setSchoolSearch('')
+              }}
+              aria-label="지역 선택"
+              className="h-11 w-full appearance-none rounded-2xl border border-line bg-surface px-3 text-sm text-ink outline-none focus:border-[#8b6cf6]"
+            >
+              <option value="">지역 선택</option>
+              <option value="서울">서울</option>
+            </select>
+          </label>
+          <label className="relative block">
+            <span className="sr-only">대학 검색</span>
+            <input
+              value={schoolSearch}
+              disabled={!selectedRegion}
+              onChange={(e) => setSchoolSearch(e.target.value)}
+              placeholder={selectedRegion ? '대학 이름 검색' : '먼저 지역을 선택하세요'}
+              aria-label="대학 검색"
+              className="h-11 w-full rounded-2xl border border-line bg-surface px-3 text-sm text-ink outline-none transition placeholder:text-ink-soft focus:border-[#8b6cf6] disabled:cursor-not-allowed disabled:bg-canvas disabled:opacity-70"
+            />
+          </label>
+        </div>
+        {schoolId && currentTheme && (
+          <p className="mt-2 rounded-xl bg-canvas px-3 py-2 text-xs text-ink-soft">
+            현재 선택: <strong className="text-ink">{currentTheme.schoolName}</strong>
+          </p>
+        )}
+        {!selectedRegion && (
+          <p className="mt-2 text-xs text-ink-soft">지역을 선택하면 해당 지역의 대학을 검색할 수 있어요.</p>
+        )}
+        {showSearchResults && (
+          <div className="relative z-10 mt-2">
+            <ul
+              role="listbox"
+              aria-label="대학 검색 결과"
+              className="flex max-h-64 flex-col gap-1 overflow-y-auto rounded-2xl border border-line bg-surface p-1 shadow-card"
+            >
+              {searchResults.map((result) => {
+            const preset = result.kind === 'preset' ? result.school : null
+            const entry = result.kind === 'registered' ? result.school : null
+            const id = preset?.id ?? entry?.id ?? ''
+            const name = preset?.name ?? entry?.displayName ?? ''
+            const color = preset?.primary ?? entry?.color ?? customColor
+            const theme = resolveCampusTheme(id, color)
             // 커스텀 학교는 stable key(custom-xxxx)로 저장되므로 prefix 로 판정합니다.
-            const selected = preset.custom ? isCustomSelected : preset.id === schoolId
+            const selected = preset ? preset.id === schoolId : entry?.id === schoolId
             const disabled = locked && !selected
             return (
-              <label
-                key={preset.id}
-                className={[
-                  'un-radio-card flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition',
-                  selected ? 'bg-surface shadow-card' : 'border-line bg-surface',
-                  disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-canvas',
-                ].join(' ')}
-                style={
-                  selected && theme
-                    ? { borderColor: theme.primary, boxShadow: `0 0 0 2px ${theme.softStrong}` }
-                    : undefined
-                }
+              <li
+                key={id}
               >
-                <input
-                  type="radio"
-                  className="sr-only"
-                  name={groupName}
-                  value={preset.id}
-                  checked={selected}
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={selected}
                   disabled={disabled}
-                  onChange={() => pick(preset.id)}
-                />
-                <span
-                  aria-hidden="true"
-                  className="inline-block h-7 w-7 shrink-0 rounded-full border border-line"
-                  style={{ backgroundColor: theme?.primary }}
-                />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-bold text-ink">
-                    {preset.name}
-                  </span>
-                  <span className="block truncate text-[11px] text-ink-soft">
-                    {preset.custom
-                      ? '색을 직접 골라요'
-                      : `${preset.colorLabel} · 프로토타입 프리셋`}
-                  </span>
-                </span>
-                {selected && (
-                  <span className="shrink-0">
-                    <Icon name="check" size={18} />
-                    <span className="sr-only">선택됨</span>
-                  </span>
-                )}
-              </label>
-            )
-          })}
-        </div>
-      </fieldset>
-
-      {/* 사용자 등록 학교 — 다른 사용자가 만든 학교에 같은 이름으로 참여 (§7) */}
-      {isCustomSelected && registeredSchools.length > 0 && (
-        <div className="rounded-2xl border border-line bg-canvas p-3">
-          <p className="text-sm font-bold text-ink">등록된 학교에 참여</p>
-          <p className="mt-0.5 text-[11px] text-ink-soft">
-            이미 등록된 학교는 같은 이름으로 함께 참여할 수 있어요. 표시 정보는
-            처음 등록한 사용자만 바꿀 수 있어요.
-          </p>
-          <input
-            value={schoolSearch}
-            onChange={(e) => setSchoolSearch(e.target.value)}
-            placeholder="학교 이름 검색"
-            aria-label="등록된 학교 검색"
-            className="mt-2 h-9 w-full rounded-xl border border-line bg-surface px-2 text-sm"
-          />
-          <ul className="mt-2 flex max-h-40 flex-col gap-1 overflow-y-auto">
-            {registeredSchools
-              .filter(
-                (e) =>
-                  schoolSearch.trim().length === 0 ||
-                  e.displayName.includes(schoolSearch.trim()) ||
-                  e.shortName.includes(schoolSearch.trim()),
-              )
-              .slice(0, 8)
-              .map((entry) => (
-                <li key={entry.id}>
-                  <button
-                    type="button"
-                    data-testid="campus-join-registered"
-                    onClick={() => {
+                  onClick={() => {
+                    if (entry) {
                       setCustomSchoolName(entry.displayName, entry.shortName)
                       setCustomColor(entry.color)
                       setColorDraft(entry.color)
@@ -207,28 +191,66 @@ export function SchoolPicker({
                         setMessage(reason ?? '지금은 학교를 바꿀 수 없어요.')
                         return
                       }
+                      setSchoolSearch('')
                       setMessage(null)
                       onChanged?.(useCampusThemeStore.getState().schoolId ?? '')
-                    }}
-                    className="flex w-full items-center gap-2 rounded-xl border border-line bg-surface px-2.5 py-1.5 text-left text-sm hover:bg-canvas"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="inline-block h-3.5 w-3.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: entry.color }}
-                    />
-                    <span className="min-w-0 flex-1 truncate font-semibold text-ink">
-                      {entry.displayName}
-                    </span>
-                    <span className="shrink-0 text-[11px] text-ink-soft">{entry.shortName}</span>
-                  </button>
-                </li>
-              ))}
-          </ul>
-        </div>
-      )}
+                      return
+                    }
+                    setSchoolSearch('')
+                    pick(id)
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-7 w-7 shrink-0 rounded-full border border-line"
+                  style={{ backgroundColor: theme?.primary }}
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-bold text-ink">
+                    {name}
+                  </span>
+                  <span className="block truncate text-[11px] text-ink-soft">
+                    {preset ? `${preset.colorLabel} · 프로토타입 프리셋` : '사용자가 등록한 학교'}
+                  </span>
+                </span>
+                {selected && (
+                  <span className="shrink-0">
+                    <Icon name="check" size={18} />
+                    <span className="sr-only">선택됨</span>
+                  </span>
+                )}
+                </button>
+              </li>
+            )
+              })}
+            </ul>
+            {searchResults.length === 0 && (
+              <p className="mt-2 rounded-2xl border border-dashed border-line bg-canvas px-3 py-3 text-sm text-ink-soft">
+                검색 결과가 없어요. 아래에서 목록에 없는 대학을 직접 추가할 수 있어요.
+              </p>
+            )}
+          </div>
+        )}
+      </fieldset>
 
       {/* 기타 / 직접 설정 — 새 학교 등록 (비공식) */}
+      <div className="mb-3 flex flex-wrap items-end gap-2 text-sm">
+          <button
+            type="button"
+            onClick={() => {
+              setCustomFormOpen(true)
+              setMessage(null)
+            }}
+            className="w-full rounded-2xl border border-line bg-canvas px-3 py-2 text-left text-sm font-bold text-ink hover:bg-surface"
+          >
+            목록에 없는 대학 직접 추가
+          </button>
+          <p className="w-full text-[11px] text-ink-soft">
+            저장하면 학교 디렉터리에 등록되어 다른 사용자도 검색하고 선택할 수 있어요.
+          </p>
+      </div>
+
       {isCustomSelected && (
         <div className="mb-3 flex flex-wrap items-end gap-2 text-sm">
           <label className="flex flex-col gap-1">

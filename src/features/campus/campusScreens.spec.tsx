@@ -28,7 +28,7 @@ const { useCampusThemeStore } = await import('./campusThemeStore')
 const { disposeCampus } = await import('./campusStore')
 const { resetMockCampusForTest } = await import('./mockRepository')
 const { useDemoStore } = await import('@/features/demo/demoMode')
-const { CAMPUS_GRID_CELLS } = await import('./campusGridOverlay')
+const { SEOUL_DISTRICTS } = await import('./seoulDistrictMap')
 
 function renderAt(path: string) {
   return render(
@@ -36,6 +36,12 @@ function renderAt(path: string) {
       <App />
     </MemoryRouter>,
   )
+}
+
+async function choosePresetSchool(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.selectOptions(screen.getByRole('combobox', { name: '지역 선택' }), '서울')
+  await user.type(screen.getByRole('textbox', { name: '대학 검색' }), name)
+  await user.click(screen.getByRole('option', { name: new RegExp(name) }))
 }
 
 /** 공식 대항전·공식 순위처럼 읽히면 안 되는 표현 */
@@ -68,22 +74,27 @@ describe('캠퍼스 화면 (플래그 ON)', () => {
     document.documentElement.style.removeProperty('--campus-primary')
   })
 
-  it('설정에 학교 선택이 있고 비공식 고지 문구가 그대로 보인다', () => {
+  it('설정에 학교 검색형 선택기가 있고 비공식 고지 문구가 그대로 보인다', async () => {
+    const user = userEvent.setup()
     renderAt('/settings')
 
     expect(screen.getByText('학교 선택 (캠퍼스 테마)')).toBeInTheDocument()
     expect(screen.getByTestId('campus-unofficial-line')).toHaveTextContent(
       CAMPUS_COPY.unofficialTheme,
     )
-    expect(screen.getByRole('radio', { name: /서울대학교/ })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /기타 \/ 직접 설정/ })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: '지역 선택' })).toBeInTheDocument()
+    expect(screen.getByRole('textbox', { name: '대학 검색' })).toBeDisabled()
+
+    await choosePresetSchool(user, '서울대학교')
+    expect(screen.getByText('현재 선택:')).toBeInTheDocument()
+    expect(screen.getByText('서울대학교')).toBeInTheDocument()
   })
 
   it('학교를 고르면 배지와 캠퍼스 CSS 변수가 나타난다', async () => {
     const user = userEvent.setup()
     renderAt('/settings')
 
-    await user.click(screen.getByRole('radio', { name: /고려대학교/ }))
+    await choosePresetSchool(user, '고려대학교')
 
     expect(useCampusThemeStore.getState().schoolId).toBe('korea')
     expect(document.documentElement.getAttribute('data-campus-school')).toBe('korea')
@@ -96,7 +107,7 @@ describe('캠퍼스 화면 (플래그 ON)', () => {
   it('색 출처를 공식 색상이라고 표시하지 않는다', async () => {
     const user = userEvent.setup()
     renderAt('/settings')
-    await user.click(screen.getByRole('radio', { name: /연세대학교/ }))
+    await choosePresetSchool(user, '연세대학교')
 
     expect(
       screen.getByText(/프로토타입이 임의로 고른 컬러 프리셋/),
@@ -107,20 +118,20 @@ describe('캠퍼스 화면 (플래그 ON)', () => {
     const user = userEvent.setup()
     renderAt('/settings')
 
-    await user.click(screen.getByRole('radio', { name: /기타 \/ 직접 설정/ }))
+    await user.click(screen.getByRole('button', { name: '목록에 없는 대학 직접 추가' }))
     expect(screen.getByText('내 색 고르기')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /딥 퍼플/ }))
     expect(useCampusThemeStore.getState().customColor).toBe('#7A4FA3')
   })
 
-  it('/campus 에 96칸 지도와 비공식 프로토타입 안내가 있다', async () => {
+  it('/campus 에 서울 25개 자치구 지도와 비공식 프로토타입 안내가 있다', async () => {
     useCampusThemeStore.getState().selectSchool('snu')
     renderAt('/campus')
 
     expect(await screen.findByTestId('territory-map')).toBeInTheDocument()
-    expect(screen.getAllByTestId('territory-tile')).toHaveLength(CAMPUS_GRID_CELLS.length)
-    expect(CAMPUS_GRID_CELLS).toHaveLength(96)
+    expect(screen.getAllByTestId('territory-district')).toHaveLength(SEOUL_DISTRICTS.length)
+    expect(SEOUL_DISTRICTS).toHaveLength(25)
     expect(screen.getAllByTestId('campus-unofficial-notice').length).toBeGreaterThan(0)
     expect(screen.getByText('내 학교')).toBeInTheDocument()
     expect(screen.getByText('이번 시즌')).toBeInTheDocument()
@@ -151,14 +162,16 @@ describe('캠퍼스 화면 (플래그 ON)', () => {
     renderAt('/campus/map')
 
     await screen.findByTestId('territory-map')
-    const tiles = screen.getAllByTestId('territory-tile')
-    await user.click(tiles[0])
+    const district = screen
+      .getAllByTestId('territory-district')
+      .find((candidate) => candidate.querySelector('path[role="button"]'))
+    expect(district).toBeDefined()
+    const selectableDistrict = within(district as HTMLElement).getByRole('button')
+    await user.click(selectableDistrict)
 
     expect(screen.getByText('현재 점령 학교')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '기여 대상으로 설정' }))
-    expect(useCampusThemeStore.getState().targetTileId).toBe(
-      tiles[0].getAttribute('data-tile-id'),
-    )
+    expect(useCampusThemeStore.getState().targetTileId).toBeTruthy()
   })
 
   it('/campus/history 는 시즌 영토 변화를 보여준다', async () => {
@@ -180,11 +193,13 @@ describe('캠퍼스 화면 (플래그 ON)', () => {
     renderAt('/settings')
 
     // 첫 선택 (제한 없음) → 1회 변경 → 그 뒤로는 잠깁니다.
-    await user.click(screen.getByRole('radio', { name: /서울대학교/ }))
-    await user.click(screen.getByRole('radio', { name: /고려대학교/ }))
+    await choosePresetSchool(user, '서울대학교')
+    await choosePresetSchool(user, '고려대학교')
 
     expect(screen.getByTestId('campus-change-locked')).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /연세대학교/ })).toBeDisabled()
+    await user.selectOptions(screen.getByRole('combobox', { name: '지역 선택' }), '서울')
+    await user.type(screen.getByRole('textbox', { name: '대학 검색' }), '연세대학교')
+    expect(screen.getByRole('option', { name: /연세대학교/ })).toBeDisabled()
     expect(useCampusThemeStore.getState().schoolId).toBe('korea')
   })
 

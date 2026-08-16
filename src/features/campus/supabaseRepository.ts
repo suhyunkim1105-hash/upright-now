@@ -60,6 +60,28 @@ interface TileEventRow {
   created_at: string
 }
 
+interface DistrictRow {
+  id: string
+  season_id: string
+  district_id: string
+  district_name: string
+  owner_school_id: string | null
+  challenger_school_id: string | null
+  defense_score: number
+  challenge_score: number
+  updated_at: string
+}
+
+interface DistrictEventRow {
+  id: string
+  season_id: string
+  district_id: string
+  kind: string
+  from_school_id: string | null
+  to_school_id: string | null
+  created_at: string
+}
+
 interface SeasonRow {
   id: string
   name: string
@@ -72,6 +94,8 @@ interface StandingRow {
   school_id: string
   total_contribution: number
   active_contributors: number
+  /** 서버 RPC가 계산한 참여 인원 보정 점수(표시 기준) */
+  adjusted_score?: number | string | null
   tiles: number
 }
 
@@ -102,6 +126,23 @@ function toTile(row: TileRow): CampusTile {
   }
 }
 
+function toDistrictTile(row: DistrictRow): CampusTile {
+  return {
+    id: row.id,
+    seasonId: row.season_id,
+    // x/y are compatibility fields; the map resolves the district from the id.
+    x: 0,
+    y: 0,
+    zone: 'lawn',
+    name: row.district_name,
+    ownerSchoolId: row.owner_school_id,
+    challengerSchoolId: row.challenger_school_id,
+    defenseScore: row.defense_score,
+    challengeScore: row.challenge_score,
+    updatedAt: new Date(row.updated_at).getTime(),
+  }
+}
+
 function toSeason(row: SeasonRow): CampusSeason {
   return {
     id: row.id,
@@ -117,6 +158,18 @@ function toTileEvent(row: TileEventRow): CampusTileEvent {
     id: row.id,
     seasonId: row.season_id,
     tileId: row.territory_id,
+    kind: row.kind as CampusTileEvent['kind'],
+    fromSchoolId: row.from_school_id,
+    toSchoolId: row.to_school_id,
+    at: new Date(row.created_at).getTime(),
+  }
+}
+
+function toDistrictEvent(row: DistrictEventRow): CampusTileEvent {
+  return {
+    id: row.id,
+    seasonId: row.season_id,
+    tileId: `${row.season_id}:${row.district_id}`,
     kind: row.kind as CampusTileEvent['kind'],
     fromSchoolId: row.from_school_id,
     toSchoolId: row.to_school_id,
@@ -205,11 +258,11 @@ export class SupabaseCampusRepository implements CampusRepository {
     const supabase = await getSupabase()
     if (!supabase) throw new Error('supabase-not-configured')
     await ensureAnonymousUser()
-    // 시즌 자동 전환 — 14일 경계에서도 새 시즌·96영토가 준비됩니다.
+    // 시즌 자동 전환 — 분기 경계에서도 새 시즌과 25개 자치구가 준비됩니다.
     try {
-      await supabase.rpc('ensure_active_campus_season')
+      await supabase.rpc('ensure_active_campus_district_territories')
     } catch {
-      /* 마이그레이션 전 — 조회는 계속 진행 */
+      /* 자치구 마이그레이션 전 — 아래 호환 조회로 계속 진행 */
     }
 
     const { data: seasonRow } = await supabase
@@ -223,7 +276,39 @@ export class SupabaseCampusRepository implements CampusRepository {
     if (!seasonRow) throw new Error('no-active-season')
     const season = toSeason(seasonRow as SeasonRow)
 
-    const [tiles, events, standings, mine, archived] = await Promise.all([
+    const [districts, districtEvents, standings, mine, archived] = await Promise.all([
+      supabase
+        .from('campus_district_territories')
+        .select(
+          'id, season_id, district_id, district_name, owner_school_id, challenger_school_id, defense_score, challenge_score, updated_at',
+        )
+        .eq('season_id', season.id),
+      supabase
+        .from('campus_district_territory_events')
+        .select('id, season_id, district_id, kind, from_school_id, to_school_id, created_at')
+        .eq('season_id', season.id)
+        .order('created_at', { ascending: false })
+        .limit(60),
+      supabase.rpc('campus_district_season_standings', { p_season_id: season.id }),
+      supabase.rpc('campus_district_my_contribution', { p_season_id: season.id }),
+      supabase
+        .from('campus_seasons')
+        .select('id, name, starts_at, ends_at, status')
+        .eq('status', 'archived')
+        .order('starts_at', { ascending: false })
+        .limit(8),
+    ])
+
+    const useDistricts = !districts.error
+    const tileList = useDistricts
+      ? ((districts.data ?? []) as DistrictRow[]).map(toDistrictTile)
+      : []
+    const eventList = useDistricts
+      ? ((districtEvents.data ?? []) as DistrictEventRow[]).map(toDistrictEvent)
+      : []
+
+    if (!useDistricts) {
+      const [tiles, events] = await Promise.all([
       supabase
         .from('campus_territories')
         .select(
@@ -236,31 +321,41 @@ export class SupabaseCampusRepository implements CampusRepository {
         .eq('season_id', season.id)
         .order('created_at', { ascending: false })
         .limit(60),
-      supabase.rpc('campus_season_standings', { p_season_id: season.id }),
-      supabase.rpc('campus_my_contribution', { p_season_id: season.id }),
-      supabase
-        .from('campus_seasons')
-        .select('id, name, starts_at, ends_at, status')
-        .eq('status', 'archived')
-        .order('starts_at', { ascending: false })
-        .limit(8),
-    ])
+      ])
+      if (tiles.error) throw new Error('tiles-load-failed:' + tiles.error.code)
+      tileList.push(...((tiles.data ?? []) as TileRow[]).map(toTile))
+      eventList.push(...((events.data ?? []) as TileEventRow[]).map(toTileEvent))
+    }
 
-    // 조용한 실패 금지 — 타일 조회가 실패하면 snapshot 을 만들지 않습니다.
-    if (tiles.error) throw new Error('tiles-load-failed:' + tiles.error.code)
+    const standingData = standings.error
+      ? await supabase.rpc('campus_season_standings', { p_season_id: season.id })
+      : standings
+    const mineData = mine.error
+      ? await supabase.rpc('campus_my_contribution', { p_season_id: season.id })
+      : mine
 
-    const tileList = ((tiles.data ?? []) as TileRow[]).map(toTile)
     const tileCounts = countTilesBySchool(tileList)
     const standingList: CampusSchoolStanding[] = (
-      (standings.data ?? []) as StandingRow[]
-    ).map((row) =>
-      withNormalizedScore({
+      (standingData.data ?? []) as StandingRow[]
+    ).map((row) => {
+      const serverAdjusted = Number(row.adjusted_score)
+      const normalized = Number.isFinite(serverAdjusted)
+        ? serverAdjusted
+        : withNormalizedScore({
+            schoolId: row.school_id,
+            totalContribution: row.total_contribution,
+            activeContributors: row.active_contributors,
+            tiles: tileCounts[row.school_id] ?? 0,
+          }).normalizedScore
+
+      return {
         schoolId: row.school_id,
         totalContribution: row.total_contribution,
         activeContributors: row.active_contributors,
+        normalizedScore: normalized,
         tiles: tileCounts[row.school_id] ?? 0,
-      }),
-    )
+      }
+    })
 
     const archivedRows = ((archived.data ?? []) as SeasonRow[]).slice(
       0,
@@ -288,14 +383,25 @@ export class SupabaseCampusRepository implements CampusRepository {
           return {
             season: archivedSeason,
             tiles: tilesOfSeason,
-            standings: ((archivedStandings.data ?? []) as StandingRow[]).map((s) =>
-              withNormalizedScore({
+            standings: ((archivedStandings.data ?? []) as StandingRow[]).map((s) => {
+              const serverAdjusted = Number(s.adjusted_score)
+              const fallback = withNormalizedScore({
                 schoolId: s.school_id,
                 totalContribution: s.total_contribution,
                 activeContributors: s.active_contributors,
                 tiles: counts[s.school_id] ?? 0,
-              }),
-            ),
+              }).normalizedScore
+
+              return {
+                schoolId: s.school_id,
+                totalContribution: s.total_contribution,
+                activeContributors: s.active_contributors,
+                normalizedScore: Number.isFinite(serverAdjusted)
+                  ? serverAdjusted
+                  : fallback,
+                tiles: counts[s.school_id] ?? 0,
+              }
+            }),
           }
         }),
       )
@@ -306,8 +412,8 @@ export class SupabaseCampusRepository implements CampusRepository {
       season,
       tiles: tileList,
       standings: standingList,
-      tileEvents: ((events.data ?? []) as TileEventRow[]).map(toTileEvent),
-      myContribution: typeof mine.data === 'number' ? mine.data : 0,
+      tileEvents: eventList,
+      myContribution: typeof mineData.data === 'number' ? mineData.data : 0,
       archived: archivedList,
     }
     this.last = snapshot
@@ -409,6 +515,16 @@ export class SupabaseCampusRepository implements CampusRepository {
       )
       .on(
         'postgres_changes',
+        { event: '*', schema: 'public', table: 'campus_district_territories' },
+        onEvent,
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'campus_district_territory_events' },
+        onEvent,
+      )
+      .on(
+        'postgres_changes',
         { event: '*', schema: 'public', table: 'campus_school_directory_entries' },
         (payload) => {
           // 디렉터리는 전체 reload 없이 그 자리에서 반영합니다.
@@ -486,19 +602,35 @@ export class SupabaseCampusRepository implements CampusRepository {
     if (!supabase) return { accepted: false, points: 0, reason: 'not_ready' }
     await ensureAnonymousUser()
 
-    /*
-      원자적 RPC (v3) — eventId 멱등성·점령 판정·모든 상한을 서버가 처리하고
-      권위값(authoritativeMyContribution·updatedTerritory)을 함께 돌려줍니다.
-      학교·멤버·점수는 클라이언트가 보내지 않습니다.
-    */
-    const { data, error } = await supabase.rpc('apply_campus_contribution', {
+    /* 자치구 RPC — 학교 인증·점수 상한·점령 판정을 서버가 처리합니다. */
+    const districtId = event.tileId?.split(':').at(-1) ?? null
+    const { data, error } = await supabase.rpc('record_campus_district_contribution', {
       p_event_id: event.eventId,
-      p_territory_id: event.tileId ?? null,
+      p_district_id: districtId,
       p_session_id: event.sessionId ?? null,
       p_kind: event.kind,
     })
 
-    if (error) return { accepted: false, points: 0, reason: 'not_ready' }
+    if (error) {
+      // 자치구 SQL 전 배포 환경에서만 기존 RPC로 한 번 호환합니다.
+      if (error.code !== '42883') return { accepted: false, points: 0, reason: 'not_ready' }
+      const legacy = await supabase.rpc('apply_campus_contribution', {
+        p_event_id: event.eventId,
+        p_territory_id: event.tileId ?? null,
+        p_session_id: event.sessionId ?? null,
+        p_kind: event.kind,
+      })
+      if (legacy.error) return { accepted: false, points: 0, reason: 'not_ready' }
+      return this.parseContributionResult(legacy.data, event)
+    }
+
+    return this.parseContributionResult(data, event)
+  }
+
+  private parseContributionResult(
+    data: unknown,
+    event: CampusContributionEvent,
+  ): CampusSubmitResult {
 
     const row = data as {
       result?: string
@@ -506,18 +638,20 @@ export class SupabaseCampusRepository implements CampusRepository {
       acceptedPoints?: number
       authoritativeMyContribution?: number
       territoryId?: string | null
+      districtId?: string | null
       updatedTerritory?: TileRow | null
+      updatedDistrict?: DistrictRow | null
       serverTime?: string | null
     } | null
     const result = row?.result ?? 'not_ready'
     const accepted =
       result === 'accepted' || result === 'captured' ||
-      result === 'contested' || result === 'defended' ||
-      result === 'territory_not_found'
+      result === 'contested' || result === 'defended'
 
     const permanentRejects = new Set([
       'duplicate_event', 'duplicate_session', 'daily_cap', 'recovery_cap',
       'recovery_cooldown', 'no_membership', 'invalid_kind', 'session_required',
+      'district_not_found',
     ])
 
     const points = row?.acceptedPoints ?? row?.points ?? 0
@@ -527,12 +661,16 @@ export class SupabaseCampusRepository implements CampusRepository {
       points: accepted ? (points || CONTRIBUTION_POINTS[event.kind]) : 0,
       captured: result === 'captured',
       contested: result === 'contested',
-      tileId: row?.territoryId ?? event.tileId,
+      tileId: row?.districtId ?? row?.territoryId ?? event.tileId,
       authoritativeMyContribution:
         typeof row?.authoritativeMyContribution === 'number'
           ? row.authoritativeMyContribution
           : undefined,
-      updatedTile: row?.updatedTerritory ? toTile(row.updatedTerritory) : null,
+      updatedTile: row?.updatedDistrict
+        ? toDistrictTile(row.updatedDistrict)
+        : row?.updatedTerritory
+          ? toTile(row.updatedTerritory)
+          : null,
       serverTime: row?.serverTime ? new Date(row.serverTime).getTime() : undefined,
       reason: accepted
         ? undefined

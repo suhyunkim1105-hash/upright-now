@@ -10,7 +10,12 @@ import { isRoomSessionActive } from '@/features/rooms/roomStore'
 import { reportSessionComplete } from '@/features/rooms/roomService'
 import { kstDateKey } from '@/lib/time/kst'
 import { sessionCompletionReward } from '@/constants/game'
-import { computeStreak, STREAK_MILESTONES } from '@/features/progression/streak'
+import {
+  computeStreak,
+  STREAK_MILESTONES,
+  streakRewardEventType,
+} from '@/features/progression/streak'
+import { syncProgressionReward } from '@/features/progression/progressionRepository'
 import { playSound } from '@/features/sound/soundEngine'
 
 /**
@@ -72,6 +77,7 @@ export function finalizeSession(reason: 'timer' | 'manual'): {
       sessionId,
       type: 'session_completed',
       override: sessionCompletionReward(Math.round(session.plannedMs / 60000)),
+      plannedMinutes: Math.round(session.plannedMs / 60000),
     })
     // 친구 방 공동 완주 추가 보너스 (세션당 1회)
     if (isRoomSessionActive()) {
@@ -95,7 +101,20 @@ export function finalizeSession(reason: 'timer' | 'manual'): {
           milestone.points,
           milestone.badge ? `streak-${milestone.days}` : undefined,
         )
-        if (granted) playSound('attendance_bonus')
+        if (granted) {
+          playSound('attendance_bonus')
+          const eventType = streakRewardEventType(milestone.days)
+          if (eventType) {
+            void syncProgressionReward({
+              eventId: `streak-${milestone.days}:${dateKey}`,
+              eventType,
+              metadata: {
+                milestone_days: milestone.days,
+                badge: milestone.badge,
+              },
+            })
+          }
+        }
       }
     }
   }

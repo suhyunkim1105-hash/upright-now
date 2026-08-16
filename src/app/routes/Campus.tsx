@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppShell, PageHeader } from '@/components/layout/AppShell'
 import { Button, Card, CardTitle } from '@/components/ui'
@@ -23,6 +24,77 @@ import {
 import { TerritoryLegend, TerritoryMap } from '@/components/campus/TerritoryMap'
 import { SchoolPicker } from '@/components/campus/SchoolPicker'
 import { SchoolVerification } from '@/components/campus/SchoolVerification'
+import { captureProgress, tileStatus } from '@/features/campus/territory'
+import { useSchoolIdentity } from '@/features/campus/schoolDirectory'
+
+function CampusCompetitionSummary({
+  tiles,
+}: {
+  tiles: ReturnType<typeof useCampusScreen>['snapshot']['tiles']
+}) {
+  const identify = useSchoolIdentity()
+  const contested = useMemo(
+    () => tiles.filter((tile) => tileStatus(tile) === 'contested'),
+    [tiles],
+  )
+
+  return (
+    <div
+      data-testid="campus-competition-summary"
+      className="mt-3 rounded-2xl border border-line bg-canvas px-3 py-2.5"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-bold text-ink">
+          <span
+            aria-hidden="true"
+            className={[
+              'inline-block h-2.5 w-2.5 rounded-full',
+              contested.length > 0 ? 'animate-pulse bg-coral' : 'bg-ink-soft/40',
+            ].join(' ')}
+          />
+          {contested.length > 0 ? `현재 경합 중 ${contested.length}곳` : '현재 경합 중인 자치구 없음'}
+        </div>
+        <span className="text-[11px] text-ink-soft">
+          {contested.length > 0 ? '공격·방어 기여가 실시간으로 반영돼요' : '기여가 쌓이면 자치구 경합으로 표시돼요'}
+        </span>
+      </div>
+
+      {contested.length > 0 && (
+        <div className="mt-2 grid gap-1.5 @[700px]:grid-cols-2">
+          {contested.slice(0, 4).map((tile) => {
+            const attacker = identify(tile.challengerSchoolId)
+            const defender = identify(tile.ownerSchoolId)
+            const progress = Math.round(captureProgress(tile) * 100)
+            return (
+              <div
+                key={tile.id}
+                className="flex min-w-0 items-center justify-between gap-2 rounded-xl bg-surface px-2.5 py-2 text-[11px]"
+              >
+                <span className="min-w-0 truncate font-semibold text-ink">
+                  {tile.name || `타일 ${tile.x + 1}-${tile.y + 1}`}
+                </span>
+                <span className="shrink-0 text-ink-soft">
+                  <span style={{ color: attacker?.color ?? '#FF6464' }}>
+                    {attacker?.shortName ?? '공격 학교'}
+                  </span>
+                  {' vs '}
+                  <span style={{ color: defender?.color ?? '#8C867A' }}>
+                    {defender?.shortName ?? '중립'}
+                  </span>
+                  {` · ${progress}%`}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {contested.length > 4 && (
+        <p className="mt-1 text-[10px] text-ink-soft">{`외 ${contested.length - 4}곳의 경합도 진행 중이에요.`}</p>
+      )}
+    </div>
+  )
+}
 
 /**
  * S-C1 캠퍼스 — 내 학교 · 이번 시즌 · 점령 타일 수 · 내 기여도 · 실시간 지도 ·
@@ -145,8 +217,9 @@ export function Campus() {
                 </div>
               </div>
               <p className="mt-1 text-xs text-ink-soft">
-                자체 제작한 12×8 가상 캠퍼스예요. 실제 지도나 학교 부지를 옮겨 놓은 것이 아니에요.
+                서울 25개 자치구와 한강을 바탕으로 만든 영토전 베이스예요. 실제 행정경계를 복제하지 않은 프로토타입이에요.
               </p>
+              <CampusCompetitionSummary tiles={snapshot.tiles} />
               <div className="mt-4">
                 <TerritoryMap tiles={snapshot.tiles} />
               </div>

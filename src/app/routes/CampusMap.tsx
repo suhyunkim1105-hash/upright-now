@@ -21,7 +21,7 @@ import { TerritoryLegend, TerritoryMap } from '@/components/campus/TerritoryMap'
 import type { CampusZoneId } from '@/features/campus/types'
 
 /**
- * S-C2 캠퍼스 지도 — 타일을 골라 다음 기여를 어디에 넣을지 정합니다.
+ * S-C2 캠퍼스 지도 — 자치구를 골라 다음 기여를 어디에 넣을지 정합니다.
  * 시험기간 배경은 시즌 종료 3일 이내에 켜집니다.
  */
 const EXAM_WINDOW_MS = 3 * 24 * 60 * 60 * 1000
@@ -56,7 +56,7 @@ export function CampusMap() {
       rail={
         <>
           <Card className="p-4">
-            <CardTitle>선택한 타일</CardTitle>
+            <CardTitle>선택한 자치구</CardTitle>
             <div className="mt-3">
               <CampusTileDetail tile={selected} />
             </div>
@@ -94,7 +94,7 @@ export function CampusMap() {
     >
       <PageHeader
         title="캠퍼스 지도"
-        description="자체 제작한 12×8 가상 캠퍼스예요. 실제 지도나 학교 부지를 복제하지 않았어요."
+        description="서울 25개 자치구와 한강을 바탕으로 만든 영토전 지도예요. 실제 행정경계를 복제하지 않은 프로토타입이에요."
         action={
           <div className="flex items-center gap-2">
             {isExamPeriod && <Badge tone="yellow">시험기간 배경</Badge>}
@@ -117,7 +117,7 @@ export function CampusMap() {
         <Card>
           <CardTitle>영토 지도</CardTitle>
           <p className="mt-1 text-xs text-ink-soft">
-            타일을 누르면 현재 점령 학교와 점령 진행도를 볼 수 있어요.
+            서울 자치구를 누르면 현재 점령 학교와 점령 진행도를 볼 수 있어요.
           </p>
           <div className="mt-4">
             <TerritoryMap

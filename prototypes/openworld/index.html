@@ -6700,13 +6700,22 @@ function fittedPath(it, slug) {
   if (!folder || !it.sprite) return null;
   return 'fitted/' + slug + '/' + it.sprite;
 }
-function itemSheetFor(it, sp) {
+/* 과잠은 sprite 가 없고 base+mask 로 그때그때 굽습니다. 그래서 위 fittedPath
+   가 null 을 돌려주고, 종별로 깎은 판을 못 탑니다 — 백조·펭귄처럼 몸이 좁은
+   종에서 소매만 몸 밖으로 나갑니다. base·mask 도 종별로 깎아 둔 것을 씁니다. */
+function fittedRecolor(it, slug) {
+  if (!it.recolor || !FITTED_CATS[it.cat]) return null;
+  const b = loadItemImg('fitted/' + slug + '/' + it.recolor.base);
+  const m = loadItemImg('fitted/' + slug + '/' + it.recolor.mask);
+  return itemReady(b) && itemReady(m) ? { base: b, mask: m } : null;
+}
+function itemSheetFor(it, sp, col) {
   const fp = fittedPath(it, sp.slug);
   if (fp) {
     const img = loadItemImg(fp);
     if (itemReady(img)) return img;
   }
-  return itemSheet(it);
+  return itemSheet(it, col, sp.slug);
 }
 
 /** 모자·안경은 머리를 따라 올라갑니다(item-spec §5). 나머지는 몸에 붙습니다. */
@@ -6728,7 +6737,7 @@ function dressedSheet() {
   g.drawImage(base, 0, 0);
   const on = Object.values(ROOM.worn || {}).map((id) => SHOP_BY_ID[id]).filter(Boolean);
   for (const it of on.sort((a, b) => a.z - b.z)) {
-    const sheet = tintedItem(itemSheetFor(it, sp), sp.line);
+    const sheet = tintedItem(itemSheetFor(it, sp, schoolColor()), sp.line);
     if (!sheet) continue;
     g.drawImage(sheet, 0, followsHead(it) ? (it.cat === 'hat' ? sp.hatDy : sp.eyeDy) : 0);
   }
@@ -6755,12 +6764,19 @@ window.GIRIN_CHAR = {
   names: Object.keys(CHAR_SPECIES),
   /** 내 캐릭터 — 입은 것이 바뀌면 알아서 다시 굽습니다. */
   mine: () => dressedSheet(),
-  /** 남의 캐릭터. worn 은 { top, bottom, shoes, hat, glasses, bag } 꼴이고 없으면 맨몸. */
-  sheetFor(name, worn) {
+  /**
+   * 남의 캐릭터.
+   *   worn   { top, bottom, shoes, hat, glasses, bag } 꼴. 없으면 맨몸.
+   *   school 그 사람의 학교. **안 넘기면 내 학교 색으로 칠해집니다** —
+   *          홍익대 사람이 내 학교 과잠을 입게 되므로 남을 그릴 때는 넘기세요.
+   *          multiplayer.js 가 이름표에 쓰는 값 그대로면 됩니다.
+   */
+  sheetFor(name, worn, school) {
     const sp = speciesOf(name);
     const base = CHAR_IMG[sp.slug];
     if (!itemReady(base)) return null;
-    const key = sp.slug + '|' + JSON.stringify(worn || {}) + '|' + schoolColor();
+    const tint = school ? schoolColorOf(school) : schoolColor();
+    const key = sp.slug + '|' + JSON.stringify(worn || {}) + '|' + tint;
     const hit = otherCache.get(key);
     if (hit) return hit;
     const c = document.createElement('canvas');
@@ -6770,7 +6786,8 @@ window.GIRIN_CHAR = {
     g.drawImage(base, 0, 0);
     const on = Object.values(worn || {}).map((id) => SHOP_BY_ID[id]).filter(Boolean);
     for (const it of on.sort((a, b) => a.z - b.z)) {
-      const sheet = tintedItem(itemSheetFor(it, sp), sp.line);
+      /* 과잠만 학교 색을 탑니다 — 남을 그릴 때는 그 사람 학교 색이어야 합니다. */
+      const sheet = tintedItem(itemSheetFor(it, sp, tint), sp.line);
       if (sheet) g.drawImage(sheet, 0, followsHead(it) ? (it.cat === 'hat' ? sp.hatDy : sp.eyeDy) : 0);
     }
     /* 종류가 아무리 많아도 24장이면 충분합니다 — 8종 x 자주 쓰는 조합 몇 개.
@@ -6788,12 +6805,18 @@ for (const it of SHOP) {
 
 /* 과잠 — 무채색 마스크에 학교 색을 곱하면 회색 2단계가 그대로 명암이
    됩니다(item-spec §7). 학교를 바꾸기 전까지는 같은 그림이라 캐시합니다. */
-let varsityCache = null, varsityCacheColor = '';
-function varsitySheet() {
-  const col = schoolColor();
-  if (varsityCache && varsityCacheColor === col) return varsityCache;
-  const r = SHOP_BY_ID['top-varsity'].recolor;
-  const base = ITEM_IMG[r.base], mask = ITEM_IMG[r.mask];
+/* 화면에 학교가 여럿일 수 있어 (종+색) 별로 담습니다. 한 칸짜리로 두면
+   학교가 다른 두 사람이 매 프레임 서로를 밀어내며 다시 굽습니다. */
+const varsityCache = new Map();
+function varsitySheet(col, slug) {
+  col = col || schoolColor();
+  const key = (slug || '-') + '|' + col;
+  const hit = varsityCache.get(key);
+  if (hit) return hit;
+  const it = SHOP_BY_ID['top-varsity'], r = it.recolor;
+  const fit = slug ? fittedRecolor(it, slug) : null;
+  const base = fit ? fit.base : ITEM_IMG[r.base];
+  const mask = fit ? fit.mask : ITEM_IMG[r.mask];
   if (!itemReady(base) || !itemReady(mask)) return null;
   const c = document.createElement('canvas');
   c.width = ITEM_W * 4; c.height = ITEM_H;
@@ -6806,13 +6829,21 @@ function varsitySheet() {
   g.drawImage(mask, 0, 0);
   g.globalCompositeOperation = 'source-over';
   g.drawImage(base, 0, 0);                            // 흰 소매·립은 학교색을 안 탑니다
-  varsityCache = c; varsityCacheColor = col;
+  /* tintedItem 의 열쇠는 sheet.src 인데 캔버스에는 그것이 없습니다. 이름을
+     안 붙이면 학교가 달라도 전부 '' 한 칸을 나눠 써서, 처음 구운 학교 색이
+     모두에게 돌아갑니다. 색과 종이 들어간 이름을 붙입니다. */
+  c.__id = 'varsity|' + key;
+  /* 종별로 깎은 판을 달라고 했는데 아직 안 왔으면 담아 두지 않습니다 —
+     담으면 이 프레임의 임시 그림이 영영 남아 실루엣이 안 맞습니다. */
+  if (slug && !fit) return c;
+  if (varsityCache.size >= 16) varsityCache.delete(varsityCache.keys().next().value);
+  varsityCache.set(key, c);
   return c;
 }
 
 /** 아이템 하나의 그림 한 장 — 과잠이면 학교색을 입힌 것. */
-function itemSheet(it) {
-  if (it.recolor) return varsitySheet();
+function itemSheet(it, col, slug) {
+  if (it.recolor) return varsitySheet(col, slug);
   const img = it.sprite && ITEM_IMG[it.sprite];
   return itemReady(img) ? img : null;
 }

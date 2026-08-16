@@ -48,7 +48,8 @@
        groundY       45 — 프레임 안에서 발바닥이 닿는 줄
        dirIndex      { right:0, up:1, left:2, down:3 }
        names         종 여덟
-       sheetFor(종, worn) -> 128x48 캔버스 (right/up/left/down) | null
+       sheetFor(종, worn, 학교) -> 128x48 캔버스 (right/up/left/down) | null
+                     학교를 안 넘기면 과잠이 **내** 학교 색으로 칠해집니다.
 
      **매 프레임 찾습니다.** 한 번 찾아 변수에 담아 두면, 이 파일이 먼저
      읽히고 GIRIN_CHAR 가 나중에 붙는 순서일 때 영영 16x16 으로 남습니다.
@@ -226,7 +227,10 @@
     if (!C) return null;
     /* 저쪽이 던지면 16x16 으로 물러납니다 — 남 그리다 난 예외로 월드
        전체가 멈추면 안 됩니다. */
-    try { return C.sheetFor(rp.species, rp.worn) || null; } catch { return null; }
+    /* 세 번째 인자가 그 사람 학교입니다. 안 넘기면 저쪽이 내 학교 색으로
+       과잠을 칠해서, 홍익대 사람이 내 학교 과잠을 입고 걸어다닙니다.
+       이름표에 이미 쓰는 rp.school 을 그대로 넘깁니다. */
+    try { return C.sheetFor(rp.species, rp.worn, rp.school) || null; } catch { return null; }
   }
 
   /* 남이 16x16 으로 물러났으면 머리 높이도 16 입니다. 사람마다 따로 봅니다 —

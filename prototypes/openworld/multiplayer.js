@@ -145,6 +145,7 @@
       /* 화면에 그릴 값 — 매 프레임 buf 에서 새로 만듭니다 */
       x: 0, y: 0, dir: 'down', flip: false, dir4: 'down', moving: false,
       anim: 0, frame: 0,
+      big: false,         // 32x48 로 그려졌는지 — drawOne 이 매 프레임 적습니다
       ready: false,       // 스냅샷을 두 개 이상 받아야 그립니다
     };
   }
@@ -210,32 +211,32 @@
 
   /* ================== 그리기 ================== */
 
-  /* 구워 둔 시트. 열쇠가 (종 + 옷)이라 **사람 수와 상관없습니다** —
-     같은 차림 스무 명이면 캔버스는 하나입니다.
+  /* 시트는 **저쪽이 캐시합니다.** 여기서 한 겹 더 받지 않습니다.
 
-     GIRIN_CHAR.sheetFor 도 안에서 캐시한다고 약속돼 있지만, 그래도 여기서
-     한 겹 더 받습니다. 매 프레임 · 사람 수만큼 남의 함수를 부르는 것보다
-     Map 조회 한 번이 싸고, 저쪽 캐시 정책이 바뀌어도 안 흔들립니다.
+     처음엔 여기도 (종 + 옷) 열쇠로 들고 있었는데, 그 열쇠가 틀렸습니다.
+     GIRIN_CHAR 쪽 열쇠에는 **학교 색**이 같이 들어갑니다(과잠). 학교를
+     바꾸면 저쪽은 새로 굽는데 여기는 옛 캔버스를 계속 돌려줘서, 남의
+     과잠만 옛 색으로 남습니다. 저쪽은 24장이 넘으면 오래된 것부터
+     버리는데 여기서 붙들고 있으면 그 한도도 뜻이 없어집니다.
 
-     못 구운 것(null)은 **담지 않습니다.** 담아 두면 GIRIN_CHAR 가 나중에
-     붙었을 때 영영 16x16 으로 남습니다. */
-  const baked = new Map();
+     "같은 (종, worn) 이면 구운 것을 돌려주므로 매 프레임 불러도 된다" 가
+     약속입니다. 캐시는 굽는 쪽이 합니다. */
   function sheetOf(rp) {
     const C = charAPI();
     if (!C) return null;
-    const hit = baked.get(rp.charKey);
-    if (hit) return hit;
-    let c = null;
-    try { c = C.sheetFor(rp.species, rp.worn) || null; } catch (e) { c = null; }
-    if (c) baked.set(rp.charKey, c);
-    return c;
+    /* 저쪽이 던지면 16x16 으로 물러납니다 — 남 그리다 난 예외로 월드
+       전체가 멈추면 안 됩니다. */
+    try { return C.sheetFor(rp.species, rp.worn) || null; } catch { return null; }
   }
 
   /* 남이 16x16 으로 물러났으면 머리 높이도 16 입니다. 사람마다 따로 봅니다 —
-     한 명만 시트를 못 구웠을 때 그 사람 이름표만 제자리에 있게. */
+     한 명만 시트를 못 구웠을 때 그 사람 이름표만 제자리에 있게.
+
+     그릴 때 적어 둔 rp.big 을 봅니다. 여기서 sheetOf 를 다시 부르면 한
+     사람이 한 프레임에 세 번(그리기·이름표·말풍선) 굽는 쪽을 두드립니다. */
   function liftOf(rp) {
     const C = charAPI();
-    return (C && sheetOf(rp)) ? C.groundY : T;
+    return (C && rp.big) ? C.groundY : T;
   }
   /* 내 캐릭터 몫. 내 그림은 index.html 이 그리므로 창구만 보고 정합니다. */
   function liftMe() {
@@ -270,6 +271,9 @@
 
   function drawOne(rp) {
     const sheet = sheetOf(rp);
+    /* 이름표·말풍선이 이 값을 봅니다 — 32x48 로 그렸는지 16x16 으로
+       물러났는지에 따라 머리 높이가 다릅니다. */
+    rp.big = !!sheet;
     if (sheet) drawBig(rp, sheet);
     else drawSmall(rp);
   }
@@ -288,7 +292,7 @@
 
     shadowAt(dx + W / 2, dy + G - 1, 6, 2.4);
 
-    const sx = (C.dirIndex && C.dirIndex[rp.dir4] != null ? C.dirIndex[rp.dir4] : 0) * W;
+    const sx = (C.dirIndex?.[rp.dir4] ?? 0) * W;
     ctx.drawImage(sheet, sx, 0, W, H, dx, dy + bobOf(rp), W, H);
   }
 
@@ -391,7 +395,7 @@
          채웁니다. 집는 자리는 **그 사람 몸 크기**입니다 — 32x48 이면
          가로 32, 머리(p)에서 발(groundY)까지. */
       const C = charAPI();
-      const bodyW = (C && sheetOf(rp)) ? C.W : T;
+      const bodyW = (C && rp.big) ? C.W : T;
       const M = window.MOUSE;
       const hov = M && Math.abs(M.x - p.x) <= bodyW * SCALE / 2 &&
                   M.y >= p.y - 4 && M.y <= p.y + lift * SCALE + 4;
@@ -487,10 +491,18 @@
       const rp = remotes.get(id);
       return !!(rp && rp.ready && rp.zone === zoneId);
     },
-    /** 눈으로 확인할 때 씁니다 — 사람이 스무 명이어도 sheets 는
-        종·옷 조합 수만큼이어야 합니다. */
+    /** 눈으로 확인할 때 씁니다. combos 는 지금 서 있는 사람들의 서로 다른
+        (종 + 옷) 가짓수 — 사람이 스무 명이어도 굽는 쪽이 실제로 만드는
+        시트는 이 수를 넘지 않습니다. */
     stats() {
-      return { people: remotes.size, sheets: baked.size, big: !!charAPI() };
+      const combos = new Set();
+      for (const r of remotes.values()) combos.add(r.charKey);
+      return {
+        people: remotes.size,
+        combos: combos.size,
+        big: [...remotes.values()].filter((r) => r.big).length,
+        api: !!charAPI(),
+      };
     },
     on(kind, fn) { listeners[kind].push(fn); },
     transport: null,

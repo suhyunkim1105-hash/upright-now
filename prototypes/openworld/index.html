@@ -3692,11 +3692,20 @@ const ZONES = {};
   ];
   prop(m, 'gateEsc', 32, 2); prop(m, 'gateA', 39, 2);
   prop(m, 'gateB', 32, 7);   prop(m, 'gateC', 39, 7);
+  /* 병합 정리: 여기서 m.things 를 한 번 더 대입하고 있어서 위에서 만든
+     목록이 통째로 사라졌습니다. 그 바람에 **게시판(arcade)** 이 그림만 서
+     있고 눌러도 아무 일이 없었습니다 — 아래에서 prop(m,'board',31,12) 로
+     실제로 그리고 있는데도요.
+     방탈출(escapeRoom)도 같이 사라졌습니다. 그건 자리를 정해야 해서
+     여기서 임의로 되살리지 않습니다 — 관문은 넷인데 게임이 다섯입니다.
+     (32,2) 은 그림상 gateEsc(청록·'방탈출')인데 지금 알 합치기가 열립니다.
+     회의에서 배치를 정하면 한 줄로 바뀝니다. */
   m.things = [
     { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
     { x: 32, y: 7, name: '기린 목 쌓기', panel: 'giraffeStack' },
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
     { x: 39, y: 7, name: '거북이 알 받기', panel: 'turtleEgg' },
+    { x: 31, y: 12, name: '미니게임 설명 보기', panel: 'arcade' },
   ];
   prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
 
@@ -6642,7 +6651,7 @@ const CHAR_BASE_PATH = 'assets/characters/';
 const CHAR_SPECIES = {
   '거북이':   { slug: 'turtle',   line: '#142814', hatDy: 0,  eyeDy: 0 },
   '기린':     { slug: 'giraffe',  line: '#82461e', hatDy: 0,  eyeDy: 0 },
-  '펭귄':     { slug: 'penguin',  line: '#1a1a24', hatDy: -1, eyeDy: 3 },
+  '펭귄':     { slug: 'penguin',  line: '#1a1a24', hatDy: -1, eyeDy: 0 },
   '햄스터':   { slug: 'hamster',  line: '#6b3d18', hatDy: -1, eyeDy: 0 },
   '개구리':   { slug: 'frog',     line: '#1e5a1e', hatDy: 1,  eyeDy: -4 },
   '고슴도치': { slug: 'hedgehog', line: '#28140a', hatDy: -2, eyeDy: 0 },
@@ -6719,7 +6728,10 @@ function itemSheetFor(it, sp, col) {
 }
 
 /** 모자·안경은 머리를 따라 올라갑니다(item-spec §5). 나머지는 몸에 붙습니다. */
-const followsHead = (it) => it.cat === 'hat' || it.cat === 'glasses';
+/* 상점의 안경 칸은 cat 이 'face' 입니다('glasses' 는 그림 폴더 이름일 뿐).
+   여기서 'glasses' 를 보고 있어서 안경은 언제나 followsHead 가 거짓이었고,
+   종별 eyeDy 가 한 번도 안 먹었습니다. */
+const followsHead = (it) => it.cat === 'hat' || it.cat === 'face';
 
 /* 옷을 입힌 시트 한 장. 종·입은 것·학교색이 그대로면 다시 굽지 않습니다 —
    60fps 로 매 프레임 합성하면 그리는 것보다 합성이 비쌉니다. */
@@ -6766,7 +6778,7 @@ window.GIRIN_CHAR = {
   mine: () => dressedSheet(),
   /**
    * 남의 캐릭터.
-   *   worn   { top, bottom, shoes, hat, glasses, bag } 꼴. 없으면 맨몸.
+   *   worn   { top, bottom, shoes, hat, face, bag } 꼴. 없으면 맨몸.
    *   school 그 사람의 학교. **안 넘기면 내 학교 색으로 칠해집니다** —
    *          홍익대 사람이 내 학교 과잠을 입게 되므로 남을 그릴 때는 넘기세요.
    *          multiplayer.js 가 이름표에 쓰는 값 그대로면 됩니다.
@@ -6898,8 +6910,8 @@ function shopPreviewHtml() {
         ${layer('hat', '모자')}${layer('face', '안경')}${layer('top', '상의')}
         ${layer('bottom', '하의')}${layer('shoes', '신발')}${layer('bag', '가방')}
       </div>
-      <p class="hint">몸은 임시 마네킹이에요 — 캐릭터 넷의 32x48 몸통이
-        나오면 그걸로 갈아끼웁니다. 옷 자리는 그때도 그대로입니다.</p>
+      <p class="hint">지금 고른 캐릭터 몸에 그대로 겹쳐 보여 줍니다.
+        옷은 종마다 몸 실루엣에 맞춰 깎인 판을 씁니다.</p>
     </div>`;
 }
 

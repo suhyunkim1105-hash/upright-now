@@ -9226,6 +9226,11 @@ function draw() {
   /* 같은 줄에 섰을 때는 플레이어가 앞에 옵니다. 동점이면 정렬이 프레임마다
      뒤바뀌어 캐릭터가 물건 앞뒤로 깜빡였습니다. */
   items.push({ sort: sortKey(player.y, player.x) + 0.5, kind: 'player' });
+  /* 다른 사람·봇을 같은 정렬 목록에 넣습니다 — multiplayer.js.
+     병합에서 이 줄이 빠져 있었습니다. 없으면 multiplayer.js 가 사람을
+     다 만들어 두고도 **한 명도 그려지지 않습니다.**
+     따로 그리면 안 됩니다. 나무 뒤에 선 사람이 나무 앞에 뜹니다. */
+  if (window.MP) MP.collect(items);
   items.sort((a, b) => a.sort - b.sort);
 
   for (const it of items) {
@@ -9265,6 +9270,7 @@ function draw() {
         ctx.fillRect(bx, by - 6 + bob, 2, 4);
         ctx.fillRect(bx, by - 1 + bob, 2, 2);
       }
+    } else if (it.kind === 'mp') { MP.drawOne(it.rp); drawCount++;
     } else { drawPlayer(); drawCount++; }
   }
 

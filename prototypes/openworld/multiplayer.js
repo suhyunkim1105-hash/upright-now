@@ -139,6 +139,12 @@
       nick: profile.nick || '누군가',
       school: profile.school || '',
       hue: profile.hue || 0,          // GIRIN_CHAR 가 없을 때만 쓰는 색
+      /* 이름표에 함께 띄우는 세션 시간. 흘러가는 숫자를 매 스냅샷마다
+         보내면 초당 열 번씩 같은 값을 다시 보내게 되므로, **시작 시각만**
+         한 번 받고 흐르는 것은 각자 화면에서 셉니다.
+         없으면 시간 줄은 그냥 안 뜹니다 — 0:00 을 띄우면 방금 온 사람과
+         시간을 안 보내는 사람이 구별되지 않습니다. */
+      sessionAt: profile.sessionAt || null,
       species, worn,
       charKey: charKeyOf(species, worn),
       buf: [],            // 받은 스냅샷 (시간순)
@@ -358,15 +364,25 @@
     if (!t) {
       const el = document.createElement('div');
       el.className = 'mp-tag';
-      el.innerHTML = '<b></b><i></i>';
+      el.innerHTML = '<b></b><i></i><u></u>';
       layer.append(el);
-      t = { el, nick: null, school: null, bubble: null };
+      t = { el, nick: null, school: null, bubble: null, clock: el.querySelector('u') };
       tags.set(rp.id, t);
     }
     if (t.nick !== rp.nick) { t.nick = rp.nick; t.el.querySelector('b').textContent = rp.nick; }
     if (t.school !== rp.school) {
       t.school = rp.school;
       t.el.querySelector('i').textContent = rp.school;
+    }
+    /* 시간은 매 프레임 바뀌므로 다른 두 줄과 달리 비교 없이 씁니다.
+       분:초 문자열이 같으면 DOM 은 어차피 안 건드립니다. */
+    if (rp.sessionAt) {
+      const sec = Math.max(0, Math.floor((Date.now() - rp.sessionAt) / 1000));
+      const txt = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+      if (t.clock.textContent !== txt) t.clock.textContent = txt;
+      t.clock.hidden = false;
+    } else {
+      t.clock.hidden = true;
     }
     return t;
   }
@@ -379,7 +395,13 @@
     return { x: rect.left + (wx - camX) * SCALE, y: rect.top + (wy - camY) * SCALE };
   }
 
+  /* 이름표 한 장이 차지하는 자리(px). 세 줄(이름·학교·시간)이라 예전보다
+     높습니다. 정확히 재려면 getBoundingClientRect 를 사람 수만큼 불러야
+     하는데, 매 프레임 레이아웃을 강제로 계산시키는 값이라 상수로 둡니다. */
+  const TAG_W = 96, TAG_H = 17;
+
   function syncTags() {
+    const placed = [];
     rect = cv.getBoundingClientRect();
     for (const rp of remotes.values()) if (rp.ready) tagFor(rp);
     for (const [id, t] of tags) {
@@ -394,19 +416,36 @@
           p.y < rect.top - 40 || p.y > rect.bottom + 40) {
         t.el.style.display = 'none'; continue;
       }
-      /* 회의 결정 — 이름표는 기본 감춤. 캐릭터에 커서를 올렸을 때만
-         닉네임·학교 툴팁으로 보여 줍니다. window.MOUSE 는 index.html 이
-         채웁니다. 집는 자리는 **그 사람 몸 크기**입니다 — 32x48 이면
-         가로 32, 머리(p)에서 발(groundY)까지. */
-      const C = charAPI();
-      const bodyW = (C && rp.big) ? C.W : T;
-      const M = window.MOUSE;
-      const hov = M && Math.abs(M.x - p.x) <= bodyW * SCALE / 2 &&
-                  M.y >= p.y - 4 && M.y <= p.y + lift * SCALE + 4;
-      if (!hov) { t.el.style.display = 'none'; continue; }
+      /* 이름표는 **항상** 띄웁니다.
+         전에는 커서를 올렸을 때만 떴습니다(회의 결정). 그런데 남을 그리는
+         일이 이 파일의 전부인데 누가 누군지 커서를 올려야만 알 수 있으면,
+         지나가는 사람은 영영 익명입니다. ZEP·Gather 도 상시 표시입니다.
+         커서 판정에 쓰던 window.MOUSE 는 다른 곳에서도 쓰므로 그대로 둡니다.
+
+         겹침은 위치로 풉니다 — 아래 syncTags 끝에서 서로 가까운 표를
+         한 줄씩 밀어 올립니다. 감추는 것보다 낫습니다. */
       t.el.style.display = 'block';
       t.el.style.left = p.x + 'px';
       t.el.style.top = (p.y - 6) + 'px';
+      placed.push({ t, x: p.x, y: p.y - 6 });
+    }
+    /* 겹침 풀기 — 사람들이 모이면 이름표가 서로 위에 쌓여 아무것도 못 읽습니다.
+       위(작은 y)에 있는 것부터 자리를 잡고, 뒤에 오는 것이 그 자리와 겹치면
+       한 칸씩 올립니다. 감추지 않는 이유는, 감추면 하필 사람이 몰린 곳에서
+       이름이 사라지기 때문입니다 — 정작 누군지 제일 궁금한 순간입니다.
+       열 번까지만 밀고 그 뒤로는 그대로 둡니다. 스무 명이 한 점에 서 있으면
+       어차피 답이 없고, 무한히 밀면 하늘로 날아갑니다. */
+    placed.sort((a, b) => a.y - b.y);
+    const done = [];
+    for (const it of placed) {
+      let y = it.y;
+      for (let k = 0; k < 10; k++) {
+        const hit = done.find((o) => Math.abs(o.x - it.x) < TAG_W && Math.abs(o.y - y) < TAG_H);
+        if (!hit) break;
+        y = hit.y - TAG_H;
+      }
+      if (y !== it.y) it.t.el.style.top = y + 'px';
+      done.push({ x: it.x, y });
     }
   }
 
@@ -578,6 +617,14 @@
   ];
   const EMOJIS = ['👍', '😂', '🔥', '💪', '👀'];
 
+  /* 봇의 "앉은 지 얼마" — id 로 정해서 새로고침해도 같은 사람이 같은
+     정도로 앉아 있게 합니다. 무작위로 두면 새로고침마다 시간이 튑니다. */
+  function botSessionMs(id) {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) | 0;
+    return (Math.abs(h) % 47 + 3) * 60000;      // 3~49분
+  }
+
   function LocalTransport(count) {
     let h = null, timer = 0, chatTimer = 0, alive = false;
     const m = ZONES.campus;
@@ -684,7 +731,11 @@
         cast.forEach((def, i) => setTimeout(() => {
           if (!alive) return;
           spawn(def);
-          h.onJoin(def.id, def);
+          /* 봇도 이름표에 시간을 띄웁니다 — 남의 표에만 시간이 없으면
+             "저 사람은 왜 없지" 가 되고, 화면에서 확인할 방법도 없습니다.
+             자리마다 다르게 보이도록 이미 얼마쯤 앉아 있던 것으로 둡니다.
+             Date.now() 를 쓰는 것은 흐름을 각자 화면에서 세기 때문입니다. */
+          h.onJoin(def.id, { ...def, sessionAt: Date.now() - botSessionMs(def.id) });
         }, 400 + i * gap));
         requestAnimationFrame(tick);
       },
@@ -730,6 +781,21 @@
     background: rgba(255,255,255,.90); color: #5A4A44;
     font-size: 9.5px; font-weight: 600;
   }
+  /* 세션 시간. 이름·학교와 성격이 달라서(흐르는 값) 따로 둡니다 —
+     앞의 점이 "지금 재는 중" 이라는 뜻입니다. 색만으로 상태를 말하지
+     않도록 점과 숫자를 같이 둡니다. */
+  .mp-tag u {
+    display: inline-block; margin-top: 2px; text-decoration: none;
+    padding: 1px 6px 1px 5px; border-radius: 999px;
+    background: rgba(255,255,255,.90); color: #4E3F39;
+    font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  }
+  .mp-tag u::before {
+    content: ''; display: inline-block; width: 5px; height: 5px;
+    margin-right: 4px; border-radius: 999px; background: #C4573B;
+    vertical-align: middle;
+  }
+  .mp-tag u[hidden] { display: none; }
   .perf .mp-tag b { box-shadow: 0 0 0 1px rgba(78,47,38,.22); }
   `;
   document.head.append(css);

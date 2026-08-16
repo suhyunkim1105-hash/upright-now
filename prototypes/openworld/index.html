@@ -2766,6 +2766,48 @@ PROP.suitcase  = paintedProp('suitcase', 1, 1);
 PROP.sideTable = paintedProp('sideTable', 1, 1);
 PROP.cushion   = paintedProp('cushion', 1, 1);
 
+/* ---- 학교 소품 — 병합에서 서버저장 판본을 살렸습니다 ----
+   벽에 거는 삼각 응원기와 학교 색 방석입니다. 색은 방 주인의 학교를
+   따르므로(roomColor), 친구 방에 가면 그 학교 색으로 다시 굽습니다.
+   굽는 것은 applySchoolColor() 가 부르는 paintSchoolProps() 입니다. */
+PAINTED.pennant = canvasOf(1, 2);
+PAINTED.schoolCushion = canvasOf(1, 1);
+function paintSchoolProps() {
+  const col = roomColor();
+  const [r, g_, b] = hexRGB(col);
+  const lit = 'rgba(255,255,255,.30)', dark = 'rgba(0,0,0,.26)';
+
+  /* 삼각 응원기 — 벽에 거는 페넌트 */
+  {
+    const c = PAINTED.pennant, g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    px(g, 2, 2, 2, 26, '#8E827C');                     // 걸이 끈
+    px(g, 2, 2, 1, 26, '#B4AAA4');
+    /* 깃발 — 오른쪽으로 갈수록 좁아지는 삼각형 */
+    for (let y = 0; y < 14; y++) {
+      const w = 13 - Math.round(y * 0.55);
+      px(g, 4, 5 + y, w, 1, y < 3 ? lit : col);
+    }
+    g.fillStyle = dark;
+    for (let y = 10; y < 14; y++) g.fillRect(4, 5 + y, 13 - Math.round(y * 0.55), 1);
+    px(g, 4, 5, 13, 1, 'rgba(255,255,255,.5)');
+    px(g, 6, 9, 5, 2, readableOn(col) === '#FFFFFF' ? '#FFFFFF' : '#2A2320');
+  }
+
+  /* 방석 — 학교 색 한 장 */
+  {
+    const c = PAINTED.schoolCushion, g = c.getContext('2d');
+    g.clearRect(0, 0, c.width, c.height);
+    px(g, 3, 5, 10, 7, col);
+    px(g, 3, 5, 10, 1, lit);
+    px(g, 3, 11, 10, 1, dark);
+    px(g, 2, 6, 1, 5, col);
+    px(g, 13, 6, 1, 5, col);
+  }
+}
+PROP.pennant       = paintedProp('pennant', 1, 2, [0, 0]);
+PROP.schoolCushion = paintedProp('schoolCushion', 1, 1, [0]);
+
 /* ==================================================================
    앉는 자리와 문 — 직접 그립니다
 
@@ -3665,6 +3707,8 @@ const ZONES = {};
   prop(m, 'desk1', 1, 3); prop(m, 'laptopN', 1, 3);
   prop(m, 'chair', 1, 5);                 // 앉는 자리. 카메라는 세션 시작에 이미 켜져 있고, 앉으면 화면만 PIP 로 줄어듭니다
   prop(m, 'bed', 5, 3);
+  prop(m, 'pennant', 4, 3);          // 벽 응원기 — 학교 색
+  prop(m, 'schoolCushion', 3, 5);    // 학교 색 방석
 
   m.things = [{ x: 2, y: 2, name: '안내', panel: 'guide' }];
 
@@ -3998,6 +4042,25 @@ const SFX = (function () {
     },
     /* 물 첨벙 */
     splash() { burst({ freq: 2200, type: 'lowpass', dur: 0.3, gain: 0.05, sweepTo: 350 }); },
+    /* 아래 셋은 병합에서 새로 만들었습니다. 서버저장 판본에는 같은 이름의
+       스펙 표(SFX)와 sfx(kind) 함수가 따로 있었는데, 창구가 둘이면 음소거가
+       한쪽에만 먹습니다. 그래서 이 모듈 하나로 모으고, 없던 소리는 여기
+       tone() 으로 만들었습니다. 주파수는 서버저장 판본의 값 그대로입니다. */
+    /* 코인 — 짧고 밝게 두 음 */
+    coin() {
+      tone({ wave: 'square', from: 880, to: 880, dur: 0.06, gain: 0.045, cut: 4000 });
+      setTimeout(() => tone({ wave: 'square', from: 1318, to: 1318, dur: 0.09, gain: 0.04, cut: 4000 }), 55);
+    },
+    /* 구매 — 세 음이 올라갑니다 */
+    buy() {
+      [523, 784, 1046].forEach((hz, i) =>
+        setTimeout(() => tone({ wave: 'triangle', from: hz, to: hz, dur: 0.12, gain: 0.05, cut: 3000 }), i * 70));
+    },
+    /* 거절 — 두 음이 내려갑니다 */
+    deny() {
+      tone({ wave: 'sawtooth', from: 220, to: 220, dur: 0.09, gain: 0.05, cut: 800 });
+      setTimeout(() => tone({ wave: 'sawtooth', from: 165, to: 165, dur: 0.14, gain: 0.045, cut: 800 }), 80);
+    },
     get muted() { return muted; },
     set muted(v) {
       muted = !!v;
@@ -4884,6 +4947,9 @@ function enterZone(id, sx, sy) {
   if (panelOpen) closePanel();
   closeDialog();
   if (player.sitting) stand();
+  /* 공간이 곧 모드라면 소리도 공간을 따라야 합니다.
+     문소리는 포탈에서 이미 울리므로 여기서는 앰비언트만 갈아 답니다. */
+  if (audioWoken) setAmbience(id);
 }
 window.__teleport = enterZone;
 
@@ -5868,6 +5934,196 @@ function esc(s) {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+/* ==================================================================
+   코인
+
+   버는 규칙이 화면에 적혀만 있고 실제로는 아무것도 쌓이지 않았습니다.
+   여기 한 곳에 규칙을 두고, 세션 쪽에서 불러 씁니다.
+
+   **자세가 좋아서 주는 코인은 없습니다.** 앉아 있던 시간과 돌아온 횟수,
+   그리고 왔다는 사실에만 줍니다 — 자세로 주면 목이 긴 사람이 유리한
+   게임이 됩니다.
+
+   코인은 세션 종료와 회복 성공처럼 실제 행동이 확정될 때만 지급합니다. */
+const COIN = {
+  perRecovery: 5,      // 회복 성공 1회
+  maxRewardedRecoveries: 5,
+  firstRecovery: 10,   // 첫 회복 — 평생 1회. 판정·차단은 서버가 합니다
+  perRetro: 3,         // 회고 확인 — 세션당 1회, 하루 3회. 차단은 서버가 합니다
+  perMinigame: 10,     // 미니게임 완료 — 게임별 하루 1회
+  dailyCap: 300,       // 하루 획득 상한 — 서버(world__grant)와 같은 값
+};
+const SESSION_COIN_REWARDS = [
+  { min: 50, points: 60 },
+  { min: 30, points: 40 },
+  { min: 15, points: 30 },
+  { min: 5, points: 10 },
+];
+const STREAK_MILESTONES = [
+  { days: 3, points: 10 },
+  { days: 7, points: 25 },
+  { days: 14, points: 50 },
+  { days: 30, points: 100 },
+  { days: 60, points: 180 },
+];
+const PRICE = { wear: [150, 250], acc: [100, 200], egg: 800, eggRare: 2000 };
+
+function kstDateKey(at = Date.now()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(at);
+}
+const today = () => kstDateKey();
+function kstDateDaysAgo(days) {
+  return kstDateKey(Date.now() - days * 86400000);
+}
+function sessionCompletionCoins(minutes) {
+  return SESSION_COIN_REWARDS.find((reward) => minutes >= reward.min)?.points || 0;
+}
+function streakMilestone(days) {
+  return STREAK_MILESTONES.find((milestone) => milestone.days === days) || null;
+}
+function loadJSON(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
+}
+function saveJSON(key, v) {
+  try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* 무시 */ }
+}
+
+/** 오늘 얼마나 벌었는지. 날짜가 바뀌면 0 부터 다시 셉니다. */
+function coinDay() {
+  const d = loadJSON('girin.coinday', null);
+  if (!d || d.date !== today()) return { date: today(), earned: 0 };
+  return d;
+}
+/** 상한에 걸리면 걸린 만큼만 줍니다. 준 액수를 돌려줍니다.
+    진짜 지급은 서버(world_coins)가 하고, 여기는 서버와 같은 규칙으로
+    화면 표시를 맞추는 것뿐입니다 — 규칙이 어긋나면 잔액이 널뜁니다. */
+function earn(amount, why) {
+  if (amount <= 0) return 0;
+  const d = coinDay();
+  const give = Math.min(amount, Math.max(0, COIN.dailyCap - d.earned));
+  if (give <= 0) return 0;
+  d.earned += give; saveJSON('girin.coinday', d);
+  ROOM.coins += give; saveRoom();
+  paintCoins(true);
+  SFX.coin();
+  if (why) coinToast(give, why);
+  return give;
+}
+function spend(amount) {
+  if (ROOM.coins < amount) return false;
+  ROOM.coins -= amount; saveRoom(); paintCoins(true);
+  return true;
+}
+
+/** 서버(world_coins)가 돌려준 잔액으로 화면을 맞춥니다. 서버가 정답입니다. */
+function applyServerBalance(balance) {
+  if (typeof balance !== 'number') return;
+  ROOM.coins = balance; saveRoom(); paintCoins(false);
+}
+
+/** 미니게임 완료 보상 — 게임별 하루 1회. 지급은 서버가 하고(사흘 밀려도
+    save.js 큐가 다시 보냅니다), 여기 로컬 기록은 표시를 맞추는 용도입니다. */
+function earnMinigame(gameId, label) {
+  const d = loadJSON('girin.gameday', null);
+  const g = (!d || d.date !== today()) ? { date: today(), done: [] } : d;
+  if (g.done.includes(gameId)) return 0;
+  g.done.push(gameId); saveJSON('girin.gameday', g);
+  if (window.WORLD_SAVE && WORLD_SAVE.configured) {
+    WORLD_SAVE.earnMinigame(gameId).then(applyServerBalance);
+  }
+  return earn(COIN.perMinigame, label);
+}
+
+/** 출석. 10분 이상 유효 집중 세션을 완료했을 때만 호출합니다. */
+function markAttendance() {
+  const a = loadJSON('girin.attend', { last: '', streak: 0, claimed: [] });
+  a.claimed = Array.isArray(a.claimed) ? a.claimed : [];
+  const t = today();
+  if (a.last === t) return { first: false, streak: a.streak, milestone: null };
+  const y = kstDateDaysAgo(1);
+  a.streak = a.last === y ? a.streak + 1 : 1;
+  a.last = t; saveJSON('girin.attend', a);
+  const milestone = streakMilestone(a.streak);
+  if (milestone && !a.claimed.includes(milestone.days)) {
+    a.claimed.push(milestone.days);
+    saveJSON('girin.attend', a);
+    return { first: true, streak: a.streak, milestone };
+  }
+  return { first: true, streak: a.streak, milestone: null };
+}
+
+/* ==================================================================
+   초대 코드
+
+   서버가 없으니 이 브라우저가 서버 노릇을 합니다. 나중에 Supabase 로
+   갈아 끼울 때 **여기 네 함수만** 바꾸면 되도록 모아 뒀습니다 —
+   publish 는 upsert, lookup 은 select, revoke 는 delete 가 됩니다.
+   부르는 쪽(패널·방문)은 저장소가 무엇인지 모릅니다.
+
+   같은 브라우저 안에서만 도는 것이 이 구현의 한계이고, 그래서 데모용
+   코드를 몇 개 심어 둡니다. 그게 없으면 이 기능은 기기 두 대가 있어야
+   눌러 볼 수 있습니다.
+   ================================================================== */
+const INVITE = {
+  KEY: 'girin.invites',
+  ABC: 'ABCDEFGHJKMNPQRSTUVWXYZ23456789',   // 0/O/1/I 는 뺐습니다 — 받아적다 틀립니다
+  LEN: 6,
+
+  all() { return loadJSON(this.KEY, {}); },
+  /** 코드를 등록합니다. → supabase.from('invites').upsert(...) */
+  publish(code, profile) {
+    const a = this.all();
+    a[code] = Object.assign({ at: Date.now() }, profile);
+    saveJSON(this.KEY, a);
+  },
+  /** 코드로 사람을 찾습니다. → supabase.from('invites').select().eq('code', code) */
+  lookup(code) { return this.all()[String(code || '').toUpperCase().trim()] || null; },
+  /** → supabase.from('invites').delete().eq('code', code) */
+  revoke(code) { const a = this.all(); delete a[code]; saveJSON(this.KEY, a); },
+
+  make() {
+    let c = '';
+    for (let i = 0; i < this.LEN; i++) c += this.ABC[Math.floor(Math.random() * this.ABC.length)];
+    return c;
+  },
+  valid(code) {
+    const c = String(code || '').toUpperCase().trim();
+    return c.length === this.LEN && [...c].every((ch) => this.ABC.includes(ch));
+  },
+  /** 내 코드를 만들고 등록합니다. 이미 있으면 프로필만 갱신합니다. */
+  mine() {
+    if (!ROOM.invite || !this.valid(ROOM.invite)) { ROOM.invite = this.make(); saveRoom(); }
+    this.publish(ROOM.invite, {
+      nickname: ROOM.nickname, school: ROOM.school, character: ROOM.character, self: true,
+    });
+    return ROOM.invite;
+  },
+};
+
+/* 데모용 이웃 둘. 기기가 하나뿐이라 이게 없으면 "유효한 코드" 를 넣어
+   볼 방법이 없습니다. 서버가 붙으면 통째로 지웁니다.
+
+   코드에 I·L·O 를 못 쓰는 것은 위 ABC 가 정한 규칙입니다 — 1·I 와 0·O 를
+   받아적다 틀리기 때문입니다. 데모 코드도 같은 규칙을 지켜야 합니다. */
+const DEMO_INVITES = ['GRN234', 'GRN567'];
+(function seedDemoInvites() {
+  const a = INVITE.all();
+  const demo = {
+    [DEMO_INVITES[0]]: { nickname: '연우', school: '연세대학교', character: '기린' },
+    [DEMO_INVITES[1]]: { nickname: '민철', school: '고려대학교', character: '미어캣' },
+  };
+  let changed = false;
+  for (const [code, p] of Object.entries(demo)) {
+    if (!a[code]) { a[code] = Object.assign({ at: Date.now(), demo: true }, p); changed = true; }
+  }
+  if (changed) saveJSON(INVITE.KEY, a);
+})();
+
+/* 지금 누구 방에 있는지. null 이면 내 방입니다. */
+const VISIT = { host: null, code: null };
+
 /** 이 기기에 쌓인 세션 기록. 없으면 없다고 말합니다. */
 /* ================== 세션 기록 ==================
    같은 기기에서만 남습니다. 서버로 아무것도 안 보냅니다 — 이 제품이
@@ -5958,15 +6214,15 @@ function myStats() {
    장부를 쓰는데, 두 장부가 같은 잔액을 건드리면 상한이 무의미해집니다. */
 /* 게임 보상. 게임마다 하루 한 번입니다 — 같은 판을 돌려 코인을 모으면
    미니게임존이 쉬는 곳이 아니라 일하는 곳이 됩니다.
-   어느 게임인지는 열려 있는 패널이 압니다. */
-function earn(amount, why) {
-  rwRoll();
-  const key = activePanelKey || 'game';
-  RW.daily.games = RW.daily.games || [];
-  if (RW.daily.games.includes(key)) return 0;    // 오늘 이미 받았습니다
-  RW.daily.games.push(key); saveRW();
-  grant(5, why || '미니게임');
-  return 5;
+
+   병합 정리: 여기 있던 earn() 은 지웠습니다. 위 코인 장부의 earn() 과
+   이름이 같아 한 파일에 둘이 설 수 없고, 무엇보다 이 판본에서는
+   호출부가 하나도 없는 죽은 코드였습니다(민철이 award() 로 우회).
+   미니게임 지급은 earnMinigame(gameId, label) 하나로 갑니다 — 게임별
+   하루 1회는 서버(world_earn_minigame)가 세고, 액수는 COIN.perMinigame
+   (10) 입니다. 어느 게임인지는 열려 있는 패널이 압니다. */
+function gameReward(label) {
+  return earnMinigame(activePanelKey || 'game', label || '미니게임');
 }
 
 /* ==================================================================
@@ -6028,12 +6284,13 @@ function finishGiraffeNeck(success) {
   const message = panelBody.querySelector('#giraffe-message');
   const button = panelBody.querySelector('[data-do="giraffe-restart"]');
   if (success) {
+    let got = 0;
     if (!GIRAFFE_NECK.rewarded) {
       GIRAFFE_NECK.rewarded = true;
-      earn(5, '기린 목 펴기 성공');
+      got = earnMinigame('neck', '기린 목 펴기 성공');
     }
-    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (message) message.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (message) {
     message.textContent = '시간이 끝났어요. 조금 더 빠르게 연속 입력해 보세요.';
   }
@@ -6122,12 +6379,13 @@ function finishEscapeRoom(success, message) {
   const stage = panelBody.querySelector('#escape-clues');
   const messageEl = panelBody.querySelector('#escape-message');
   if (success) {
+    let got = 0;
     if (!ESCAPE_ROOM.rewarded) {
       ESCAPE_ROOM.rewarded = true;
-      earn(5, '방탈출 성공');
+      got = earnMinigame('escape', '방탈출 성공');
     }
-    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
-    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (messageEl) messageEl.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (messageEl) messageEl.textContent = message || '시간이 끝났어요. 다시 도전해 보세요.';
   renderEscapeRoom();
 }
@@ -6226,12 +6484,13 @@ function finishTurtleEgg(success, message) {
   const stage = panelBody.querySelector('.egg-stage');
   const messageEl = panelBody.querySelector('#egg-message');
   if (success) {
+    let got = 0;
     if (!TURTLE_EGG.rewarded) {
       TURTLE_EGG.rewarded = true;
-      earn(5, '거북이 알 받기 성공');
+      got = earnMinigame('egg-catch', '거북이 알 받기 성공');
     }
-    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">거북이 알을 잘 받았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
-    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">거북이 알을 잘 받았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (messageEl) messageEl.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (messageEl) messageEl.textContent = message || '알을 충분히 받지 못했어요. 다시 도전해 보세요.';
   renderTurtleEgg();
 }
@@ -6369,12 +6628,13 @@ function finishEggMerge(success) {
   const board = panelBody.querySelector('#egg-merge-board');
   const message = panelBody.querySelector('#egg-merge-message');
   if (success) {
+    let got = 0;
     if (!EGG_MERGE.rewarded) {
       EGG_MERGE.rewarded = true;
-      earn(5, '거북이 알 합치기 성공');
+      got = earnMinigame('egg-merge', '거북이 알 합치기 성공');
     }
-    if (board) board.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;border-radius:10px;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">왕관 알이 탄생했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (board) board.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;border-radius:10px;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">왕관 알이 탄생했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>';
+    if (message) message.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (message) message.textContent = '더 움직일 수 없어요. 다시 도전해 보세요.';
   renderEggMerge();
 }
@@ -6475,9 +6735,10 @@ function finishGiraffeStack(success) {
   const stage = panelBody.querySelector('.stack-stage');
   const message = panelBody.querySelector('#stack-message');
   if (success) {
+    let got = 0;
     if (!GIRAFFE_STACK.rewarded) {
       GIRAFFE_STACK.rewarded = true;
-      earn(5, '기린 목 쌓기 성공');
+      got = earnMinigame('stack', '기린 목 쌓기 성공');
     }
     if (stage) {
       const topBlock = GIRAFFE_STACK.blocks[GIRAFFE_STACK.blocks.length - 1] || { visualWidth: 48 };
@@ -6495,10 +6756,10 @@ function finishGiraffeStack(success) {
             finishedBlocks +
             '<img src="assets/giraffe-head.png" alt="완성된 기린 머리" style="position:absolute;left:50%;bottom:' + headBottom + 'px;width:' + headWidth + 'px;height:' + Math.round(headWidth * .78) + 'px;transform:translateX(-50%);object-fit:contain">' +
           '</div>' +
-          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">내가 만든 기린 완성!</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">+5P</b></div>' +
+          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">내가 만든 기린 완성!</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">' + (got ? '+' + got + 'P' : '오늘 몫은 이미 받았어요') + '</b></div>' +
         '</div>';
     }
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (message) message.textContent = got ? '멋져요! 포인트 ' + got + 'P를 받았어요.' : '성공! 이 게임 코인은 하루 한 번이라 오늘은 이미 받았어요.';
   } else if (message) message.textContent = '블록이 빗나갔어요. 다시 쌓아 보세요.';
   renderGiraffeStack();
 }
@@ -6794,14 +7055,16 @@ const PANELS = {
       </div>
       <h4>어떻게 모으나</h4>
       <div class="rows">
-        <div class="row"><span>캠퍼스 체류 <em>10분마다 · 하루 6</em></span><span class="val">1</span></div>
-        <div class="row"><span>본관에서 앉기 <em>10분마다 · 끊어도 그대로</em></span><span class="val">3</span></div>
-        <div class="row"><span>도서관에서 앉기 <em>10분마다</em></span><span class="val">2</span></div>
-        <div class="row"><span>도서관 연속 <em>쉬지 않고 30분 · 60분</em></span><span class="val">+3</span></div>
-        <div class="row"><span>회복 성공 <em>한 세션에 다섯 번까지</em></span><span class="val">3</span></div>
-        <div class="row"><span>회고 확인 <em>세션당 한 번</em></span><span class="val">3</span></div>
-        <div class="row"><span>출석 <em>연속이면 하루 +3, 30일까지</em></span><span class="val">5~92</span></div>
-        <div class="row"><span>미니게임 클리어 <em>게임마다 하루 한 번</em></span><span class="val">5</span></div>
+        <div class="row"><span>세션 완주 <em>5~14분</em></span><span class="val">+10</span></div>
+        <div class="row"><span>세션 완주 <em>15~29분</em></span><span class="val">+30</span></div>
+        <div class="row"><span>세션 완주 <em>30~49분</em></span><span class="val">+40</span></div>
+        <div class="row"><span>세션 완주 <em>50분 이상</em></span><span class="val">+60</span></div>
+        <div class="row"><span>자세 회복 <em>세션당 5회까지</em></span><span class="val">+${COIN.perRecovery}</span></div>
+        <div class="row"><span>첫 회복 <em>평생 1회</em></span><span class="val">+${COIN.firstRecovery}</span></div>
+        <div class="row"><span>회고 확인 <em>세션당 1회 · 하루 3회</em></span><span class="val">+${COIN.perRetro}</span></div>
+        <div class="row"><span>미니게임 <em>게임별 하루 1회</em></span><span class="val">+${COIN.perMinigame}</span></div>
+        <div class="row"><span>연속 출석 <em>3 · 7 · 14 · 30 · 60일</em></span><span class="val">10~180</span></div>
+        <div class="row"><span>하루 획득 상한</span><span class="val">${COIN.dailyCap}</span></div>
       </div>
       <h4 style="margin-top:18px">어디에 쓰나</h4>
       <div class="rows">
@@ -7018,13 +7281,95 @@ const EDITS = {
 
 /* 도메인 → 학교. 늘려야 하는 표지만, 없으면 도메인을 그대로 보여 주고
    "(미확인)" 을 붙입니다 — 없는 학교를 지어내지 않습니다. */
-const SCHOOL_BY_DOMAIN = {
-  'mju.ac.kr': '명지대학교', 'korea.ac.kr': '고려대학교',
-  'yonsei.ac.kr': '연세대학교', 'snu.ac.kr': '서울대학교',
-  'skku.edu': '성균관대학교', 'hanyang.ac.kr': '한양대학교',
-  'cau.ac.kr': '중앙대학교', 'khu.ac.kr': '경희대학교',
-  'ewha.ac.kr': '이화여자대학교', 'sogang.ac.kr': '서강대학교',
-};
+/* ==================================================================
+   학교 색
+
+   병합 정리: 이 판본에는 학교 이름만 있고 색이 없었습니다(도메인→이름
+   표 하나). 서버저장 판본의 SCHOOLS 를 살려 색까지 한자리에 둡니다 —
+   같은 학교 열 곳이라 이름·도메인은 그대로이고, raw 색과 파생 표만
+   늘어납니다. 과잠·소품·강조색이 전부 여기에 걸려 있습니다.
+   ================================================================== */
+const SCHOOLS = [
+  { name: '서울대학교',     domain: 'snu.ac.kr',     raw: '#00468B' },
+  { name: '연세대학교',     domain: 'yonsei.ac.kr',  raw: '#0F4C81' },
+  { name: '고려대학교',     domain: 'korea.ac.kr',   raw: '#862633' },
+  { name: '성균관대학교',   domain: 'skku.edu',      raw: '#00563F' },
+  { name: '한양대학교',     domain: 'hanyang.ac.kr', raw: '#0E4A84' },
+  { name: '중앙대학교',     domain: 'cau.ac.kr',     raw: '#0B4DA2' },
+  { name: '경희대학교',     domain: 'khu.ac.kr',     raw: '#8C1D40' },
+  { name: '이화여자대학교', domain: 'ewha.ac.kr',    raw: '#00713C' },
+  { name: '서강대학교',     domain: 'sogang.ac.kr',  raw: '#8B0029' },
+  { name: '명지대학교',     domain: 'mju.ac.kr',     raw: '#003A70' },
+];
+
+function hexToHsl(hex) {
+  const [r, g, b] = hexRGB(hex).map((v) => v / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  const l = (mx + mn) / 2;
+  if (!d) return [0, 0, l];
+  const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+  const h = mx === r ? ((g - b) / d + (g < b ? 6 : 0))
+          : mx === g ? (b - r) / d + 2
+          : (r - g) / d + 4;
+  return [h / 6, s, l];
+}
+function hslToHex(h, s, l) {
+  const f = (n) => {
+    const k = (n + h * 12) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const v = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(v * 255).toString(16).padStart(2, '0');
+  };
+  return '#' + f(0) + f(8) + f(4);
+}
+/** 명도만 30~55% 구간으로 끌어옵니다. 색상·채도는 그 학교 것 그대로. */
+function normalizeSchoolColor(hex) {
+  const [h, s, l] = hexToHsl(hex);
+  return hslToHex(h, s, Math.min(0.55, Math.max(0.30, l)));
+}
+SCHOOLS.forEach((s) => { s.color = normalizeSchoolColor(s.raw); });
+
+const SCHOOL_BY_NAME = Object.fromEntries(SCHOOLS.map((s) => [s.name, s]));
+/* 도메인 → 학교. 없으면 도메인을 그대로 보여 주고 "(미확인)" 을 붙입니다 —
+   없는 학교를 지어내지 않습니다. */
+const SCHOOL_BY_DOMAIN = Object.fromEntries(SCHOOLS.map((s) => [s.domain, s.name]));
+
+const DEFAULT_SCHOOL_COLOR = '#5A6472';    // 미확인 학교 — 무채색에 가깝게
+function schoolColorOf(name) {
+  return (SCHOOL_BY_NAME[name] || {}).color || DEFAULT_SCHOOL_COLOR;
+}
+/** 내 색 — 과잠 · 마이페이지. 남의 방에 가도 내 학교입니다. */
+function schoolColor() { return schoolColorOf(ROOM.school); }
+/** 이 방 주인의 색 — 기숙사 소품. 친구 방에 가면 친구 학교 색입니다. */
+function roomColor() { return schoolColorOf((VISIT.host || ROOM).school); }
+/** 흰 판 위에 아주 옅게 까는 같은 색. 강조 칸의 바탕입니다. */
+function schoolSoft(alpha) {
+  const [r, g, b] = hexRGB(schoolColor());
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+/** 학교가 바뀌면 색이 닿는 곳을 전부 다시 칠합니다.
+    병합 정리: 원본에는 nameTagEl(머리 위 이름표) 두 줄이 더 있었지만,
+    이 판본은 이름표를 쓰지 않습니다(#nameTag 엘리먼트 자체가 없고,
+    syncPrompt 가 그 자리를 자세 말풍선에 내줬습니다). 두 줄을 그대로
+    두면 첫 호출에서 터지므로 뺐습니다. */
+function applySchoolColor() {
+  const c = schoolColor();
+  const root = document.documentElement.style;
+  root.setProperty('--school', c);
+  root.setProperty('--school-soft', schoolSoft(0.10));
+  root.setProperty('--school-line', schoolSoft(0.30));
+  paintSchoolProps();
+}
+/** 바탕색 위에서 읽히는 글자색. 코랄 위 흰 글자를 금지한 것과 같은 이유로,
+    학교 색도 밝기를 재서 잉크와 흰색 중 대비가 큰 쪽을 씁니다. */
+function readableOn(hex) {
+  const [r, g, b] = hexRGB(hex).map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return (L + 0.05) / 0.05 > (1.05) / (L + 0.05) ? '#2A2320' : '#FFFFFF';
+}
 
 function openEdit(key, row) {
   const spec = EDITS[key];
@@ -7141,6 +7486,149 @@ panelBody.addEventListener('click', (e) => {
   }
 });
 
+/* ==================================================================
+   장소별 앰비언트 — 병합에서 서버저장 판본을 살렸습니다
+
+   이 판본의 enterZone 에는 소리가 전혀 없었습니다. 공간마다 백색소음이
+   다른 것은 "공간이 곧 모드" 라는 이 제품의 뼈대이고, 코인에서 공간별
+   차등(본관3/도서관2)을 뺀 이유가 바로 "공간을 다르게 느끼게 하는 일은
+   소리·NPC·분위기가 맡는다" 였습니다. 소리를 빼면 공간이 전부 같아집니다.
+
+   효과음(SFX)과 달리 여기는 지속음이라 오디오 그래프를 따로 둡니다.
+   음소거는 SOUND.bgm 이 맡고, 효과음 음소거는 SFX.muted 가 맡습니다.
+   ================================================================== */
+const SOUND = Object.assign({ bgm: true, sfx: true }, loadJSON('girin.sound', {}));
+function saveSound() { saveJSON('girin.sound', { bgm: SOUND.bgm, sfx: SOUND.sfx }); }
+
+const AUDIO = { ctx: null, master: null, bgmGain: null, amb: null, ambId: null, noise: null };
+
+/** 분홍잡음 한 벌. 흰잡음은 이 크기에서 쉬익 소리가 세서 귀가 아픕니다. */
+function noiseBuffer(ctx) {
+  if (AUDIO.noise) return AUDIO.noise;
+  const len = ctx.sampleRate * 4;                 // 4초를 이어 붙여 씁니다
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  /* Voss-McCartney 를 줄인 판. 옥타브마다 값을 드물게 바꿔 더하면
+     저음이 두터운 분홍잡음이 납니다. */
+  let b0 = 0, b1 = 0, b2 = 0;
+  for (let i = 0; i < len; i++) {
+    const w = Math.random() * 2 - 1;
+    b0 = 0.99765 * b0 + w * 0.0990460;
+    b1 = 0.96300 * b1 + w * 0.2965164;
+    b2 = 0.57000 * b2 + w * 1.0526913;
+    d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.16;
+  }
+  AUDIO.noise = buf;
+  return buf;
+}
+
+function audioCtx() {
+  if (AUDIO.ctx) return AUDIO.ctx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  const ctx = new AC();
+  AUDIO.ctx = ctx;
+  AUDIO.master = ctx.createGain();
+  AUDIO.master.gain.value = 0.5;
+  AUDIO.master.connect(ctx.destination);
+  AUDIO.bgmGain = ctx.createGain();
+  AUDIO.bgmGain.gain.value = 0;
+  AUDIO.bgmGain.connect(AUDIO.master);
+  return ctx;
+}
+
+/* ---- 장소별 앰비언트 ----
+   같은 잡음을 필터로 다르게 깎습니다. 도서관은 위를 잘라 조용하게,
+   본관은 아주 낮은 곳만 남겨 웅웅거리게, 기숙사는 그보다 더 낮고
+   따뜻하게. 광장만 잡음 대신 화음을 얹어 밝게 둡니다. */
+const AMBIENCE = {
+  library: { cut: 900,  q: 0.6, gain: 0.16, tone: null },
+  mainhall:{ cut: 220,  q: 1.2, gain: 0.22, tone: [72, 108] },
+  dorm:    { cut: 160,  q: 1.0, gain: 0.20, tone: [64, 96] },
+  union:   { cut: 1400, q: 0.5, gain: 0.12, tone: [196, 294] },
+  campus:  { cut: 2600, q: 0.4, gain: 0.07, tone: [294, 392, 494] },
+};
+
+function syncSound() {
+  if (!AUDIO.ctx) return;
+  const g = AUDIO.bgmGain.gain, t = AUDIO.ctx.currentTime;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(SOUND.bgm ? 1 : 0, t + 0.25);
+}
+
+function stopAmbience() {
+  if (!AUDIO.amb) return;
+  const ctx = AUDIO.ctx, t = ctx.currentTime;
+  const dying = AUDIO.amb;
+  dying.gain.gain.cancelScheduledValues(t);
+  dying.gain.gain.setValueAtTime(dying.gain.gain.value, t);
+  dying.gain.gain.linearRampToValueAtTime(0, t + 0.5);
+  setTimeout(() => dying.nodes.forEach((n) => { try { n.stop(); } catch { /* 이미 멈춤 */ } }), 700);
+  AUDIO.amb = null; AUDIO.ambId = null;
+}
+
+/** 장소가 바뀌면 앞엣것을 접고 새로 답니다. 뚝 끊으면 문을 지날 때마다
+    딸깍 소리가 납니다 — 0.5초씩 겹쳐 넘깁니다. */
+function setAmbience(id) {
+  if (AUDIO.ambId === id) return;
+  const spec = AMBIENCE[id];
+  const ctx = audioCtx();
+  if (!ctx || !spec) { stopAmbience(); return; }
+  stopAmbience();
+
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  gain.connect(AUDIO.bgmGain);
+  const nodes = [];
+
+  const src = ctx.createBufferSource();
+  src.buffer = noiseBuffer(ctx);
+  src.loop = true;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass'; lp.frequency.value = spec.cut; lp.Q.value = spec.q;
+  src.connect(lp); lp.connect(gain);
+  src.start(); nodes.push(src);
+
+  /* 화음 — 잡음만이면 환풍기입니다. 아주 작게 깐 지속음이 있어야
+     "여기 있다" 는 느낌이 납니다. */
+  (spec.tone || []).forEach((hz, i) => {
+    const o = ctx.createOscillator();
+    o.type = i === 0 ? 'sine' : 'triangle';
+    o.frequency.value = hz;
+    const og = ctx.createGain();
+    og.gain.value = 0.035 / (i + 1);
+    /* 아주 느린 흔들림. 고정된 사인파는 몇 초만 지나도 기계음이 됩니다. */
+    const lfo = ctx.createOscillator(), lg = ctx.createGain();
+    lfo.frequency.value = 0.05 + i * 0.03; lg.gain.value = 0.012;
+    lfo.connect(lg); lg.connect(og.gain);
+    o.connect(og); og.connect(gain);
+    o.start(); lfo.start();
+    nodes.push(o, lfo);
+  });
+
+  gain.gain.linearRampToValueAtTime(spec.gain, ctx.currentTime + 0.6);
+  AUDIO.amb = { gain, nodes }; AUDIO.ambId = id;
+  syncSound();
+}
+
+/* 브라우저는 사용자가 건드리기 전에 소리를 못 내게 합니다. 첫 입력에서
+   깨우고, 그때 지금 있는 장소의 앰비언트를 답니다.
+   효과음 모듈(SFX)도 같은 순간에 함께 깨웁니다 — 따로 두면 앰비언트는
+   나오는데 발소리는 안 나는 상태가 됩니다. */
+let audioWoken = false;
+function wakeAudio() {
+  if (audioWoken) return;
+  const ctx = audioCtx();
+  if (!ctx) return;
+  audioWoken = true;
+  ctx.resume?.();
+  SFX.unlock();
+  setAmbience(zoneId);
+}
+addEventListener('keydown', wakeAudio, { once: false });
+addEventListener('pointerdown', wakeAudio, { once: false });
+
 /* ================== 지도 ==================
    캠퍼스는 46×42 라 한 화면에 안 들어옵니다. 어디에 무엇이 있는지
    외워야 하는 월드는 처음 온 사람에게 미로입니다. */
@@ -7148,6 +7636,51 @@ const MINI = { on: false, scale: 10, canvas: null, base: null };
 
 /* 좌표는 지도 위 자리(x,y)와 실제로 갈 곳(to)이 따로입니다 — 건물
    아이콘은 지붕 가운데에 찍고, 도착은 문 앞이어야 하기 때문입니다. */
+
+/* ---- 친구 방으로 ----
+   코드를 확인하고, 맞으면 그 사람의 기숙사로 넘어갑니다. 틀린 이유마다
+   다른 문장을 돌려줍니다 — "잘못된 코드입니다" 하나로 묶으면 오타인지
+   없는 코드인지 사용자가 알 수 없습니다. */
+function visitRoom(code) {
+  const c = String(code || '').toUpperCase().trim();
+  if (!c) return { ok: false, msg: '코드를 넣어 주세요.' };
+  if (!INVITE.valid(c))
+    return { ok: false, msg: '코드는 영문·숫자 6자예요. 0·O·1·I 는 쓰지 않습니다.' };
+  if (c === ROOM.invite)
+    return { ok: false, msg: '내 코드예요. 친구에게 받은 코드를 넣어 주세요.' };
+  const p = INVITE.lookup(c);
+  if (!p)
+    return { ok: false, msg: '그런 코드가 없어요. 오타이거나, 친구가 코드를 새로 만들었을 수 있어요.' };
+
+  VISIT.host = p; VISIT.code = c;
+  applySchoolColor();                    // 방 소품이 친구 학교 색으로
+  closePanel();
+  enterZone('dorm', 3, 5);
+  return { ok: true, msg: p.nickname + '님의 기숙사' };
+}
+function leaveVisit() {
+  if (!VISIT.host) return;
+  VISIT.host = null; VISIT.code = null;
+  applySchoolColor();
+  enterZone('dorm', 3, 5);
+}
+document.getElementById('visit-out')?.addEventListener('click', leaveVisit);
+
+/* 왜 받았는지를 그 자리에서 한 줄로 말합니다. 숫자만 늘면 어디서 받은
+   건지 모르고, 모르면 다시 하게 만들지 못합니다. */
+function coinToast(amount, why) {
+  const t = document.createElement('div');
+  t.className = 'coin-toast';
+  t.innerHTML = '<b>+' + amount + '</b>' + esc(why);
+  document.body.append(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+/* 접속 직후 save.js 가 밀린 큐를 보내고 서버 잔액을 알려 줍니다.
+   새로고침해도 코인이 유지되는 것은 이 한 줄 덕입니다. */
+window.addEventListener('worldsave:balance', (e) => applyServerBalance(e.detail.balance));
+
+/* 장소마다 지도 위의 자리와, 눌렀을 때 갈 곳. */
 const PLACES = [
   { id: 'dorm',     to: ['dorm', 3, 5],       x: 22, y: 6,  name: '기숙사',    key: '1' },
   { id: 'mainhall', to: ['mainhall', 18, 25], x: 7,  y: 19, name: '본관',      key: '2' },
@@ -7848,6 +8381,10 @@ let ready = 0;
 function maybeStart() {
   if (++ready < 3) return;
   document.getElementById('boot').classList.add('gone');
+  /* 학교 색을 한 번 입힙니다 — 페넌트·방석 캔버스는 이때 구워집니다.
+     안 부르면 두 소품이 빈 칸으로 남습니다. 여기서 부르는 것은 모든
+     선언이 끝난 뒤여야 하기 때문입니다(SCHOOLS·PAINTED 가 const). */
+  applySchoolColor();
   enterZone('dorm', 3, 5);
   requestAnimationFrame(frame);
 }
@@ -7862,3 +8399,13 @@ urban.src = 'assets/urban.png';
 city.src = 'assets/city.png';
 school.src = 'assets/school16.png';
 </script>
+
+<!-- 위 스크립트의 전역을 쓰므로 반드시 뒤에 옵니다. 순서도 이대로입니다.
+     chat 은 MP 를, comfort 는 둘 다 있다고 보고 붙습니다. -->
+<script src="../shared/config.js"></script>
+<script src="save.js"></script>
+<script src="multiplayer.js"></script>
+<script src="chat.js"></script>
+<script src="comfort.js"></script>
+</body>
+</html>

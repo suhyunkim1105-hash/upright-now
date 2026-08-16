@@ -150,15 +150,15 @@
 
   /** 세션 종료. 서버가 지급까지 마친 뒤의 잔액(숫자)이나, 오프라인이면 null.
    *
-   *  ⚠ s.chairMinutes(의자에 앉아 있던 시간)는 **아직 서버로 못 보냅니다.**
-   *  world_sessions.chair_minutes 컬럼은 20260816_coin_rule_final.sql 이
-   *  만들어 뒀지만, world_finish_session 의 인자 목록에 p_chair_minutes 가
-   *  없고(배포된 이 파일이 그대로 돌게 하려고 인자를 안 바꿨습니다), 테이블은
-   *  `revoke insert, update, delete ... from anon, authenticated` 라 REST 로
-   *  직접 넣을 수도 없습니다. 그래서 지금 chair_minutes 는 항상 기본값 0 입니다.
-   *  회고 화면의 "앉은 시간" 은 로컬 SESSION.seatedMs 로 그리므로 화면에는
-   *  영향이 없습니다. 서버에도 남기려면 RPC 에 인자를 하나 더 받는 개정이
-   *  필요합니다 — 그건 확인받고 할 일이라 여기서는 넘기지 않습니다.
+   *  숫자 둘을 따로 보냅니다. 헷갈리기 쉬워서 여기 적어 둡니다.
+   *    seatedMinutes  자세 판정이 실제로 돌아간 시간. **코인의 분모입니다.**
+   *                   카메라 앞에 사람이 없으면 안 쌓입니다.
+   *    chairMinutes   의자에 앉아 있던 시간. 회고 화면에 보여 줄 값일 뿐
+   *                   코인 계산에는 안 들어갑니다. 이 둘을 섞으면 앉혀 두고
+   *                   자리를 비우는 것을 막던 규칙이 무너집니다.
+   *
+   *  p_chair_minutes 는 RPC 의 마지막 인자이고 기본값이 있어서, 이 값을
+   *  안 보내는 옛 판본도 그대로 돕니다(안 보내면 서버가 판정 시간으로 둡니다).
    */
   function finishSession(s) {
     if (!configured) return Promise.resolve(null);
@@ -170,6 +170,7 @@
       p_recoveries: Math.max(0, Math.round(s.recoveries || 0)),
       p_started_at: new Date(s.startedAt || Date.now()).toISOString(),
       p_ended_at: new Date(s.endedAt || Date.now()).toISOString(),
+      p_chair_minutes: Math.max(0, Math.round(s.chairMinutes ?? s.seatedMinutes ?? 0)),
     });
     return flush();
   }

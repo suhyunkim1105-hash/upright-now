@@ -6428,7 +6428,7 @@ const DEMO_INVITES = ['GRN234', 'GRN567'];
   const a = INVITE.all();
   const demo = {
     [DEMO_INVITES[0]]: { nickname: '연우', school: '연세대학교', character: '기린' },
-    [DEMO_INVITES[1]]: { nickname: '민철', school: '고려대학교', character: '미어캣' },
+    [DEMO_INVITES[1]]: { nickname: '민철', school: '고려대학교', character: '햄스터' },
   };
   let changed = false;
   for (const [code, p] of Object.entries(demo)) {
@@ -6589,10 +6589,21 @@ const SHOP = [
   { id: 'bag-backpack',cat: 'bag',    name: '백팩',        price: 180, z: 50, color: '#5B8F5C', sprite: 'bags/backpack.png' },
   { id: 'bag-tote',    cat: 'bag',    name: '에코백',      price: 140, z: 50, color: '#BDB7AE', sprite: 'bags/tote.png' },
 
-  { id: 'egg-turtle',  cat: 'egg',    name: '거북이 알',   price: 800,  color: '#63B87A', sprite: null },
-  { id: 'egg-giraffe', cat: 'egg',    name: '기린 알',     price: 800,  color: '#F0C566', sprite: null },
-  { id: 'egg-meerkat', cat: 'egg',    name: '미어캣 알',   price: 800,  color: '#D8AE84', sprite: null },
-  { id: 'egg-pig',     cat: 'egg',    name: '돼지 알',     price: 2000, color: '#F2A6B2', sprite: null,
+  /* 알 여덟 — EGG_CHARACTER 와 **같은 목록이어야 합니다.** 예전에는 여기에
+     미어캣·돼지가 있었는데 그 둘은 캐릭터 표에 없어서 사도 아무 일이
+     없었고, 반대로 펭귄부터 백조까지 여섯은 표에만 있고 여기 없어서
+     살 수가 없었습니다. 색은 각 종 몸통에서 뽑은 대표색입니다(그림이
+     안 뜰 때만 쓰는 대비색). 가격 구간은 COIN_ECONOMY 의 800/2000 을
+     따릅니다 — 어느 종을 레어로 둘지는 회의에서 바꿔도 한 줄입니다. */
+  { id: 'egg-turtle',   cat: 'egg', name: '거북이 알',   price: 800,  color: '#8CD296', sprite: null },
+  { id: 'egg-giraffe',  cat: 'egg', name: '기린 알',     price: 800,  color: '#FAF0C8', sprite: null },
+  { id: 'egg-penguin',  cat: 'egg', name: '펭귄 알',     price: 800,  color: '#C8D2DC', sprite: null },
+  { id: 'egg-hamster',  cat: 'egg', name: '햄스터 알',   price: 800,  color: '#E6C8A0', sprite: null },
+  { id: 'egg-frog',     cat: 'egg', name: '개구리 알',   price: 800,  color: '#82DC3C', sprite: null },
+  { id: 'egg-hedgehog', cat: 'egg', name: '고슴도치 알', price: 800,  color: '#E6B48C', sprite: null },
+  { id: 'egg-alpaca',   cat: 'egg', name: '알파카 알',   price: 2000, color: '#FAE6D2', sprite: null,
+    rare: true, desc: '레어' },
+  { id: 'egg-swan',     cat: 'egg', name: '백조 알',     price: 2000, color: '#D2D2D2', sprite: null,
     rare: true, desc: '레어' },
 ];
 const SHOP_BY_ID = Object.fromEntries(SHOP.map((i) => [i.id, i]));

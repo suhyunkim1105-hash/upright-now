@@ -148,7 +148,18 @@
 
   /* ---------------- 공개 API ---------------- */
 
-  /** 세션 종료. 서버가 지급까지 마친 뒤의 잔액(숫자)이나, 오프라인이면 null. */
+  /** 세션 종료. 서버가 지급까지 마친 뒤의 잔액(숫자)이나, 오프라인이면 null.
+   *
+   *  ⚠ s.chairMinutes(의자에 앉아 있던 시간)는 **아직 서버로 못 보냅니다.**
+   *  world_sessions.chair_minutes 컬럼은 20260816_coin_rule_final.sql 이
+   *  만들어 뒀지만, world_finish_session 의 인자 목록에 p_chair_minutes 가
+   *  없고(배포된 이 파일이 그대로 돌게 하려고 인자를 안 바꿨습니다), 테이블은
+   *  `revoke insert, update, delete ... from anon, authenticated` 라 REST 로
+   *  직접 넣을 수도 없습니다. 그래서 지금 chair_minutes 는 항상 기본값 0 입니다.
+   *  회고 화면의 "앉은 시간" 은 로컬 SESSION.seatedMs 로 그리므로 화면에는
+   *  영향이 없습니다. 서버에도 남기려면 RPC 에 인자를 하나 더 받는 개정이
+   *  필요합니다 — 그건 확인받고 할 일이라 여기서는 넘기지 않습니다.
+   */
   function finishSession(s) {
     if (!configured) return Promise.resolve(null);
     enqueue('world_finish_session', {
@@ -170,6 +181,15 @@
     return flush();
   }
 
+  /** 회고 확인. 세션당 1회·하루 3회는 서버가 셉니다.
+      finishSession 이 만든 세션 id 를 그대로 넘겨야 합니다 — 서버가
+      "내 세션인가" 를 그걸로 확인합니다. */
+  function claimRetro(sessionId) {
+    if (!configured || !sessionId) return Promise.resolve(null);
+    enqueue('world_claim_retro', { p_session_id: sessionId });
+    return flush();
+  }
+
   /** 서버가 아는 내 잔액. 행이 아직 없으면 0, 못 물어보면 null. */
   async function balance() {
     if (!configured) return null;
@@ -184,7 +204,7 @@
     } catch { return null; }
   }
 
-  global.WORLD_SAVE = { configured, uuid, finishSession, earnMinigame, balance, flush };
+  global.WORLD_SAVE = { configured, uuid, finishSession, earnMinigame, claimRetro, balance, flush };
 
   /* 접속하면: 밀린 것부터 보내고, 서버 잔액으로 화면을 맞춥니다.
      index.html 이 'worldsave:balance' 를 받아 ROOM.coins 를 덮어씁니다. */

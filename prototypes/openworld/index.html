@@ -6328,6 +6328,21 @@ function earnMinigame(gameId, label) {
 /** 미니게임 화면들이 부르는 이름. 위 한 통로로 들어갑니다. */
 function minigameReward(game, why) { return earnMinigame(game, why); }
 
+/** 회고 확인 보상 — +COIN.perRetro(3). 세션당 1회·하루 3회는 **서버가**
+    셉니다(world_claim_retro). 클라이언트는 그냥 부르고, 서버가 준 액수를
+    화면에 반영합니다. 이미 받은 세션이면 서버가 0 을 돌려줍니다.
+    서버가 없으면(로컬로만 볼 때) 조용히 넘어갑니다 — 로컬 장부를 따로
+    두면 서버 잔액과 어긋나고, 하루 상한이 두 곳에서 세어집니다. */
+function claimRetroReward() {
+  if (!SESSION.serverId) return;                 // 서버에 안 올라간 세션
+  if (!(window.WORLD_SAVE && WORLD_SAVE.configured)) return;
+  WORLD_SAVE.claimRetro(SESSION.serverId).then((res) => {
+    if (res && typeof res.balance === 'number') applyServerBalance(res.balance);
+    else applyServerBalance(res);
+    if (res && res.granted) coinToast(res.granted, '회고 확인');
+  });
+}
+
 /** 출석. 10분 이상 유효 집중 세션을 완료했을 때만 호출합니다. */
 function markAttendance() {
   const a = loadJSON('girin.attend', { last: '', streak: 0, claimed: [] });
@@ -6473,12 +6488,34 @@ function saveSession() {
 
 /** 마이페이지 숫자. 옛 행은 새 필드가 없으므로 0 으로 셉니다 —
     형식이 바뀌었다고 지난 기록을 버리면 세션 수와 총 시간까지 잃습니다. */
+/* 병합 정리: 서버저장 판본에 이 이름의 더 단순한 함수(count·total·recov
+   셋만 돌려주는 것)가 있어서 자동병합이 그쪽을 남겼습니다. 그런데 회고
+   화면은 week·goodMs·byZone 까지 읽으므로, 그대로 두면 회고를 여는 순간
+   pastSessionsHtml 이 s.week.map 에서 터집니다. 세션 행을 자세히 남기는
+   이쪽 판본을 되살립니다 — sessionRow() 가 그 필드를 채웁니다. */
 function myStats() {
-  let rows = [];
-  try { rows = JSON.parse(localStorage.getItem('girin.sessions') || '[]'); } catch { /* 무시 */ }
-  const total = rows.reduce((a, r) => a + (r.minutes || 0), 0);
-  const recov = rows.reduce((a, r) => a + (r.recoveries || 0), 0);
-  return { count: rows.length, total, recov };
+  const rows = loadSessions();
+  const sum = (k) => rows.reduce((a, r) => a + (r[k] || 0), 0);
+  const good = sum('goodMs'), warn = sum('warnMs'), bad = sum('badMs');
+  const judged = good + warn + bad;
+  const byZone = {};
+  for (const r of rows) byZone[r.zone || '기타'] = (byZone[r.zone || '기타'] || 0) + (r.minutes || 0);
+  /* 최근 이레 — 날짜별 앉은 분 */
+  const week = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = dayKey(Date.now() - i * 86400000);
+    week.push({ d, min: rows.filter((r) => r.date === d).reduce((a, r) => a + (r.minutes || 0), 0) });
+  }
+  return {
+    count: rows.length,
+    total: sum('minutes'),
+    recov: sum('recoveries'),
+    goodMs: good, warnMs: warn, badMs: bad, judged,
+    /* 회복 시간 = 편안했던 시간. 판정이 돈 시간 대비 비율로 씁니다 */
+    goodPct: judged > 0 ? Math.round((good / judged) * 100) : 0,
+    goodMin: Math.round(good / 60000),
+    byZone, week,
+  };
 }
 
 /* ==================================================================
@@ -7977,6 +8014,11 @@ function openPanel(key) {
   if (key === 'giraffeStack') startGiraffeStack();
   if (key === 'escapeRoom') startEscapeRoom();
   if (key === 'turtleEgg') startTurtleEgg();
+  /* 회고를 실제로 연 것에 +3. 회고는 이 서비스가 보여 주고 싶은 화면인데
+     안 열면 아무 일도 일어나지 않으므로, 열 이유를 만듭니다.
+     세션당 1회·하루 3회는 서버가 셉니다 — 여기서는 그냥 부르면 되고,
+     이미 받았으면 서버가 0 을 돌려줍니다. 끝난 세션에만 겁니다. */
+  if (key === 'retro' && SESSION.ended) claimRetroReward();
   keys.clear();
   panelEl.querySelector('header button').focus();
 }
@@ -8805,35 +8847,16 @@ function award(kind, label, amount) {
   rwRoll();
   const D = RW.daily, S = RW.session;
   let v = 0;
-  if (kind === 'stay') { if (D.stay >= 6) return; D.stay += 1; v = 1; }
-  else if (kind === 'seat') {
-    /* 값은 부르는 쪽이 정합니다(공간마다 다름). 하루 18 상한은 여기서. */
-    const want = Math.max(0, Math.min(amount || 3, 18 - D.seat));
-    if (want <= 0) return;
-    D.seat += want; v = want;
-  }
-  else if (kind === 'recov') {
-    if (S.recov >= 5) return;
-    S.recov += 1; v = 3;
-    if (!RW.once.firstRecov) { RW.once.firstRecov = true; v += 10; label = '첫 회복'; }
-  }
-  else if (kind === 'retro') { if (S.retro || D.retro >= 3) return; S.retro = true; D.retro += 1; v = 3; }
-  else if (kind === 'attend') {
-    if (D.attended) return;
-    D.attended = true;
-    /* 어제 출석했으면 이어지고, 아니면 1일차부터. 기기 날짜를 되돌리면
-       last 가 미래가 되는데, 그때는 리셋만 합니다. */
-    RW.streak.days = RW.streak.last === dayKey(Date.now() - 86400000) ? RW.streak.days + 1 : 1;
-    RW.streak.last = RW.day;
-    /* 연속 보너스는 30일에서 멈춥니다 — 안 멈추면 100일차 출석 한 번이
-       다른 모든 축을 압도합니다. 30일차 = 92 고정. */
-    v = 5 + 3 * (Math.min(RW.streak.days, 30) - 1);
-    label = RW.streak.days > 1 ? '출석 · ' + RW.streak.days + '일 연속' : '출석';
-    if (!RW.season.attend.includes(RW.day)) RW.season.attend.push(RW.day);
-    if (!RW.season.first) { RW.season.first = true; grant(10, '시즌 첫 세션'); }
-    if (!RW.once.firstSession) { RW.once.firstSession = true; grant(30, '첫 세션'); }
-  }
-  else if (kind.indexOf('once:') === 0) {
+  /* 코인 규칙 단일화(COIN_RULE_DECISION.md)로 아래 갈래를 지웠습니다.
+       stay   캠퍼스 체류 10분당 1 — 걸어다니기만 해도 주므로 어뷰징 그 자체
+       seat   앉기 10분당 2~3, 공간별 차등 — "어디 앉을지" 가 계산이 됨
+     공간을 다르게 느끼게 하는 일은 소리·NPC·분위기가 맡습니다.
+     그리고 아래 셋은 서버로 옮겼습니다 — 지급 경로가 여럿이면 하루 상한
+     300 이 어긋납니다.
+       recov  회복 → earn(COIN.perRecovery) · 첫 회복은 world_finish_session
+       retro  회고 → world_claim_retro(세션id)
+       attend 출석 → world_finish_session (endSession 의 markAttendance) */
+  if (kind.indexOf('once:') === 0) {
     const k = kind.slice(5);
     if (RW.once[k]) return;
     RW.once[k] = true;
@@ -8849,39 +8872,19 @@ function award(kind, label, amount) {
    빠집니다 — 안 보고 있는 시간은 체류가 아니므로 그게 맞습니다.
    복귀 첫 프레임의 점프(수 분)는 버립니다. */
 let rwLast = 0, rwSaveAt = 0, sessSaveAt = 0, lastActivity = Date.now();
-/* 연속으로 앉아 있은 시간. 일어나면 0 으로 돌아갑니다 — 도서관 보너스가
-   이걸 봅니다. 세션 전체가 아니라 **끊기지 않은 한 덩어리**입니다. */
-let seatRunMs = 0, seatRunPaid = 0;
+/* 도서관 연속 착석 보너스(seatRunMs·seatRunPaid)는 지웠습니다 —
+   공간별 차등과 함께 사라진 규칙입니다(COIN_RULE_DECISION.md). */
 function rwTick(now) {
   if (!rwLast) { rwLast = now; return; }
   const ms = now - rwLast; rwLast = now;
   if (ms <= 0 || ms > 2000) return;
   rwRoll();
   const D = RW.daily;
-  if (player.sitting) {
-    D.seatMs += ms;
-    seatRunMs += ms;
-    const lib = zoneId === 'library';
-    while (D.seatMs >= 600000) {
-      D.seatMs -= 600000;
-      award('seat', lib ? '도서관 10분' : '앉아서 10분', lib ? 2 : 3);
-      award('attend', '출석');      // 그날 첫 10분이 곧 유효 세션 = 출석
-    }
-    /* 도서관 연속 보너스 — 30분·60분에 한 번씩. 일어나면 사라집니다. */
-    if (lib) {
-      for (const [mark, i] of [[1800000, 1], [3600000, 2]]) {
-        if (seatRunMs >= mark && seatRunPaid < i) {
-          seatRunPaid = i;
-          award('seat', '쉬지 않고 ' + (mark / 60000) + '분', 3);
-        }
-      }
-    }
-  } else if (Date.now() - lastActivity < 600000) {
-    /* 활동 게이트 — 최근 10분 안에 키 입력이 없으면 그 시간은 체류가
-       아닙니다. 탭만 열어 두는 것과 캠퍼스에 있는 것을 가릅니다. */
-    D.stayMs += ms;
-    while (D.stayMs >= 600000) { D.stayMs -= 600000; award('stay', '캠퍼스 10분'); }
-  }
+  /* 체류·착석 적산은 지웠습니다. 시간이 흐르는 것만으로 코인이 쌓이면
+     켜 두기만 해도 벌립니다 — 완주는 세션 종료에서, 그것도 판정이
+     실제로 돌아간 시간으로만 셉니다. seatMs 는 회고 화면이 "앉은 시간"
+     을 보여 주는 데만 씁니다. */
+  if (player.sitting) D.seatMs += ms;
   /* 운동장 첫 방문 — 존이 아니라 캠퍼스 북서 구역이라 여기서 봅니다 */
   if (zoneId === 'campus' && player.x < 15 * T && player.y < 13 * T) award('once:visit_track', '운동장 첫 방문');
   if (now - rwSaveAt > 10000) { rwSaveAt = now; saveRW(); }
@@ -8902,7 +8905,46 @@ function endSession() {
   if (player.sitting) stand();
   stopCamera();                 // 세션 끝 = 촬영 끝. 서 있어도 꺼집니다.
   SESSION.ended = true;
+
+  /* 보상의 분모는 **자세 판정이 실제로 돌아간 시간** 입니다.
+     의자에 앉아 있던 시간(seatedMs)으로 재면 앉혀 두고 자리를 비워도
+     쌓입니다. 카메라 앞에 사람이 없으면 판정이 안 돌고, 안 돌면 1분도
+     안 쌓입니다 — 자리를 비우면 저절로 멈추므로 감시 장치가 따로
+     필요 없습니다. good·warn·bad 를 똑같이 셉니다(자세 점수가 아닙니다).
+     docs/economy/COIN_RULE_DECISION.md "시간을 무엇으로 재는가". */
+  const judgedMs = LIVE.goodMs + LIVE.warnMs + LIVE.badMs;
+  const mins = Math.floor(judgedMs / 60000);
+
+  /* 완주·출석은 서버가 다시 계산합니다. 여기 지급은 화면 표시를 맞추는
+     것뿐이고, 돌아온 잔액이 정답입니다. */
+  const completionCoins = sessionCompletionCoins(mins);
+  if (completionCoins) earn(completionCoins, mins + '분 세션 완주');
+  if (mins >= 10) {
+    const attendance = markAttendance();
+    if (attendance.milestone) {
+      earn(attendance.milestone.points, attendance.streak + '일 연속 출석');
+    }
+  }
+
   saveSession();
+
+  /* 서버에도 남깁니다. 오프라인이면 save.js 큐에 쌓였다가 다음 접속에
+     갑니다. 세션 id 는 회고 보상(world_claim_retro)이 다시 쓰므로 여기서
+     만들어 들고 있습니다. */
+  if (window.WORLD_SAVE && WORLD_SAVE.configured) {
+    SESSION.serverId = WORLD_SAVE.uuid();
+    WORLD_SAVE.finishSession({
+      id: SESSION.serverId,
+      school: ROOM.school,
+      seatedMinutes: mins,                                   // = 판정이 돌아간 분
+      chairMinutes: Math.round(SESSION.seatedMs / 60000),    // 의자에 앉아 있던 시간
+      campusMinutes: Math.round((Date.now() - (SESSION.startedAt || Date.now())) / 60000),
+      recoveries: LIVE.recoveries,
+      startedAt: SESSION.startedAt || Date.now(),
+      endedAt: Date.now(),
+    }).then(applyServerBalance);
+  }
+
   sessBox.classList.add('done');
   sessEnd.textContent = '회고 보기';
   openPanel('retro');

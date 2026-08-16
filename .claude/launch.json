@@ -14,7 +14,7 @@
       "port": 4173
     },
     {
-      "name": "openworld-worldsave",
+      "name": "openworld",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["http-server", "prototypes", "-p", "8166", "-c-1"],
       "port": 8166

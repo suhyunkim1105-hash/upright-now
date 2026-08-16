@@ -12,6 +12,12 @@
    서버는 아직 없습니다. 그래서 LocalTransport 가 가짜 플레이어 넷을
    자기 안에서 굴리고, 진짜 서버처럼 초당 열 번만 스냅샷을 흘립니다.
    일부러 열 번입니다 — 60번 흘리면 보간이 맞는지 영영 모릅니다.
+
+   ---- 캐릭터 크기 ----
+   남도 내 캐릭터와 **같은 32x48** 로 그립니다. 그림은 index.html 이 열어
+   두는 window.GIRIN_CHAR 에서만 받습니다(아래 charAPI 참고). 그 창구가
+   아직 없으면 예전 16x16 Kenney 시트로 물러납니다 — 없다고 멈추면
+   합치는 중에 화면에서 사람이 통째로 사라집니다.
    ================================================================== */
 (function () {
   'use strict';
@@ -30,8 +36,33 @@
   const BUF_KEEP = 1200;      // 이보다 오래된 스냅샷은 버립니다
 
   /* 캐릭터 시트에서 사람 한 벌이 있는 자리. index.html 의
-     CHAR_BASE / DIR_COL / WALK_ROW 와 같은 칸을 가리킵니다. */
+     CHAR_BASE / DIR_COL / WALK_ROW 와 같은 칸을 가리킵니다.
+     GIRIN_CHAR 가 없을 때만 씁니다. */
   const SHEET_COL = 23, SHEET_W = 4, SHEET_H = 3;
+
+  /* ================================================================
+     캐릭터 그림 창구 — window.GIRIN_CHAR
+
+     index.html 이 채웁니다. 우리는 읽기만 합니다.
+       W, H          32, 48
+       groundY       45 — 프레임 안에서 발바닥이 닿는 줄
+       dirIndex      { right:0, up:1, left:2, down:3 }
+       names         종 여덟
+       sheetFor(종, worn) -> 128x48 캔버스 (right/up/left/down) | null
+
+     **매 프레임 찾습니다.** 한 번 찾아 변수에 담아 두면, 이 파일이 먼저
+     읽히고 GIRIN_CHAR 가 나중에 붙는 순서일 때 영영 16x16 으로 남습니다.
+     찾는 값은 캐시하므로(sheets) 매 프레임 하는 일은 Map 조회 하나입니다.
+     ================================================================ */
+  function charAPI() {
+    const C = window.GIRIN_CHAR;
+    return (C && typeof C.sheetFor === 'function' && C.W && C.groundY) ? C : null;
+  }
+
+  /* 종 이름. GIRIN_CHAR 가 아직 없을 때 id 로 종을 정하는 데만 씁니다 —
+     창구가 붙으면 GIRIN_CHAR.names 가 정답입니다. */
+  const FALLBACK_NAMES = ['거북이', '기린', '펭귄', '햄스터', '개구리', '고슴도치', '알파카', '백조'];
+  const WORN_SLOTS = ['top', 'bottom', 'shoes', 'hat', 'glasses', 'bag'];
 
   /* ================================================================
      Transport — 서버를 붙일 때 **이 객체만** 갈아 끼웁니다.
@@ -43,6 +74,11 @@
      오가는 것 두 가지뿐입니다.
        state { type:'state', t, zone, x, y, dir, flip, moving }
        chat  { type:'chat',  t, text, emoji }
+
+     join 프로필에 species(종 이름)와 worn({ top, bottom, shoes, hat,
+     glasses, bag })을 같이 실으면 그 모습으로 그립니다. 안 실으면 id 로
+     종을 정하고 맨몸으로 세웁니다 — 서버가 옷을 안 알려 줘도 사람은
+     여덟 종으로 흩어져 보입니다.
 
      t 는 **보낸 쪽 시계**입니다. 클라이언트가 자기 시계와의 차이를
      따로 재기 때문에(clockOffset) 서버가 시계를 맞춰 줄 필요는 없습니다.
@@ -76,17 +112,40 @@
 
   /* ================== 원격 플레이어 ================== */
 
+  /* 서버가 종을 안 알려 주면 id 로 정합니다. 무작위로 고르면 새로고침마다
+     같은 사람이 다른 동물이 되고, 다 거북이로 두면 누가 누군지 모릅니다. */
+  function speciesFor(id) {
+    const C = charAPI();
+    const names = (C && C.names && C.names.length) ? C.names : FALLBACK_NAMES;
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+    return names[h % names.length];
+  }
+
+  /* 시트 하나를 가리키는 이름. **사람이 아니라 (종 + 옷)** 입니다 —
+     같은 차림이면 스무 명이 캔버스 하나를 같이 씁니다. */
+  function charKeyOf(species, worn) {
+    let k = species;
+    for (const s of WORN_SLOTS) k += '|' + ((worn && worn[s]) || '');
+    return k;
+  }
+
   function Remote(id, profile) {
+    const species = profile.species || speciesFor(id);
+    const worn = profile.worn || null;
     return {
       id,
       nick: profile.nick || '누군가',
       school: profile.school || '',
-      hue: profile.hue || 0,
+      hue: profile.hue || 0,          // GIRIN_CHAR 가 없을 때만 쓰는 색
+      species, worn,
+      charKey: charKeyOf(species, worn),
       buf: [],            // 받은 스냅샷 (시간순)
       zone: profile.zone || 'campus',
       /* 화면에 그릴 값 — 매 프레임 buf 에서 새로 만듭니다 */
-      x: 0, y: 0, dir: 'down', flip: false, moving: false,
+      x: 0, y: 0, dir: 'down', flip: false, dir4: 'down', moving: false,
       anim: 0, frame: 0,
+      big: false,         // 32x48 로 그려졌는지 — drawOne 이 매 프레임 적습니다
       ready: false,       // 스냅샷을 두 개 이상 받아야 그립니다
     };
   }
@@ -100,6 +159,17 @@
   function noteClock(sentAt) {
     const o = performance.now() - sentAt;
     if (clockOffset === null || o < clockOffset) clockOffset = o;
+  }
+
+  /* 'side' + flip 을 left/right 로 풉니다. 32x48 시트에는 왼쪽·오른쪽이
+     **따로** 들어 있어서 뒤집을 일이 없습니다. 뒤집으면 가방끈처럼 한쪽에만
+     있는 것이 반대편으로 넘어갑니다. 옛 16x16 시트는 오른쪽 한 벌뿐이라
+     거기서는 여전히 flip 을 씁니다(drawSmall).
+     서버가 'side' 로 보내든 'left'/'right' 로 보내든 둘 다 받습니다. */
+  function dir4Of(dir, flip) {
+    if (dir === 'side') return flip ? 'left' : 'right';
+    if (dir === 'left' || dir === 'right' || dir === 'up' || dir === 'down') return dir;
+    return 'down';
   }
 
   /* ---------------- 보간 ----------------
@@ -125,6 +195,7 @@
     rp.y = c ? s.y + (c.y - s.y) * k : s.y;
     rp.zone = s.zone;
     rp.dir = s.dir; rp.flip = s.flip;
+    rp.dir4 = dir4Of(s.dir, s.flip);
 
     /* 걷는 그림은 **실제로 움직인 거리**로 넘깁니다. moving 플래그만
        믿으면 보간이 멈춘 프레임에도 다리가 움직여 미끄러져 보입니다. */
@@ -140,21 +211,51 @@
 
   /* ================== 그리기 ================== */
 
-  /* 사람마다 색을 돌려 씁니다. 시트에 사람이 한 벌뿐이라 넷이 똑같이
-     생기면 누가 누군지 구분이 안 됩니다. 한 번 구워 두고 씁니다 —
-     매 프레임 filter 를 걸면 그때마다 다시 칠합니다. */
-  const sheets = new Map();
-  function sheetFor(hue) {
-    if (sheets.has(hue)) return sheets.get(hue);
-    const c = document.createElement('canvas');
-    c.width = SHEET_W * T; c.height = SHEET_H * T;
-    const g = c.getContext('2d');
-    g.imageSmoothingEnabled = false;
-    if (hue) g.filter = 'hue-rotate(' + hue + 'deg) saturate(1.15)';
-    g.drawImage(urban, SHEET_COL * T, 0, SHEET_W * T, SHEET_H * T,
-                0, 0, SHEET_W * T, SHEET_H * T);
-    sheets.set(hue, c);
-    return c;
+  /* 시트는 **저쪽이 캐시합니다.** 여기서 한 겹 더 받지 않습니다.
+
+     처음엔 여기도 (종 + 옷) 열쇠로 들고 있었는데, 그 열쇠가 틀렸습니다.
+     GIRIN_CHAR 쪽 열쇠에는 **학교 색**이 같이 들어갑니다(과잠). 학교를
+     바꾸면 저쪽은 새로 굽는데 여기는 옛 캔버스를 계속 돌려줘서, 남의
+     과잠만 옛 색으로 남습니다. 저쪽은 24장이 넘으면 오래된 것부터
+     버리는데 여기서 붙들고 있으면 그 한도도 뜻이 없어집니다.
+
+     "같은 (종, worn) 이면 구운 것을 돌려주므로 매 프레임 불러도 된다" 가
+     약속입니다. 캐시는 굽는 쪽이 합니다. */
+  function sheetOf(rp) {
+    const C = charAPI();
+    if (!C) return null;
+    /* 저쪽이 던지면 16x16 으로 물러납니다 — 남 그리다 난 예외로 월드
+       전체가 멈추면 안 됩니다. */
+    try { return C.sheetFor(rp.species, rp.worn) || null; } catch { return null; }
+  }
+
+  /* 남이 16x16 으로 물러났으면 머리 높이도 16 입니다. 사람마다 따로 봅니다 —
+     한 명만 시트를 못 구웠을 때 그 사람 이름표만 제자리에 있게.
+
+     그릴 때 적어 둔 rp.big 을 봅니다. 여기서 sheetOf 를 다시 부르면 한
+     사람이 한 프레임에 세 번(그리기·이름표·말풍선) 굽는 쪽을 두드립니다. */
+  function liftOf(rp) {
+    const C = charAPI();
+    return (C && rp.big) ? C.groundY : T;
+  }
+  /* 내 캐릭터 몫. 내 그림은 index.html 이 그리므로 창구만 보고 정합니다. */
+  function liftMe() {
+    const C = charAPI();
+    return C ? C.groundY : T;
+  }
+
+  /* 그림자는 장식입니다. 성능 모드에서 제일 먼저 끕니다. */
+  function shadowAt(cx, cy, rx, ry) {
+    if (window.PERF && PERF.on) return;
+    ctx.save();
+    ctx.globalAlpha = 0.22; ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+
+  function bobOf(rp) {
+    return rp.moving && !(window.PERF && PERF.on)
+      ? (Math.floor(rp.anim * 2) % 2 ? -1 : 0) : 0;
   }
 
   /** index.html 의 draw() 가 y 정렬 목록을 만들 때 불러 줍니다.
@@ -169,25 +270,62 @@
   }
 
   function drawOne(rp) {
+    const sheet = sheetOf(rp);
+    /* 이름표·말풍선이 이 값을 봅니다 — 32x48 로 그렸는지 16x16 으로
+       물러났는지에 따라 머리 높이가 다릅니다. */
+    rp.big = !!sheet;
+    if (sheet) drawBig(rp, sheet);
+    else drawSmall(rp);
+  }
+
+  /* 32x48. 그릴 자리는 내 캐릭터와 같은 규칙입니다 —
+     가로는 중심에서 W/2(16), 세로는 발 위치에서 groundY(45) 를 뺍니다.
+     그림자 크기·농도도 같습니다. 다르면 바닥 높이가 달라 보입니다.
+
+     시트에 걷는 그림은 없습니다(가로 넷이 네 **방향**입니다). 그래서
+     걸을 때 표는 위아래 1px 흔들림뿐입니다 — 내 캐릭터와 같습니다. */
+  function drawBig(rp, sheet) {
+    const C = window.GIRIN_CHAR;
+    const W = C.W, H = C.H, G = C.groundY;
+    const dx = Math.round(rp.x - W / 2 - camX);
+    const dy = Math.round(rp.y - G - camY);
+
+    shadowAt(dx + W / 2, dy + G - 1, 6, 2.4);
+
+    const sx = (C.dirIndex?.[rp.dir4] ?? 0) * W;
+    ctx.drawImage(sheet, sx, 0, W, H, dx, dy + bobOf(rp), W, H);
+  }
+
+  /* 16x16 Kenney 시트. GIRIN_CHAR 가 아직 안 붙었을 때만 옵니다.
+     여기서는 사람이 한 벌뿐이라 hue 로 색을 돌려 씁니다. */
+  const sheets = new Map();
+  function tintedSheet(hue) {
+    if (sheets.has(hue)) return sheets.get(hue);
+    const c = document.createElement('canvas');
+    c.width = SHEET_W * T; c.height = SHEET_H * T;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    if (hue) g.filter = 'hue-rotate(' + hue + 'deg) saturate(1.15)';
+    g.drawImage(urban, SHEET_COL * T, 0, SHEET_W * T, SHEET_H * T,
+                0, 0, SHEET_W * T, SHEET_H * T);
+    sheets.set(hue, c);
+    return c;
+  }
+
+  function drawSmall(rp) {
     const dx = Math.round(rp.x - T / 2 - camX);
     const dy = Math.round(rp.y - T - camY);
 
-    /* 그림자는 장식입니다. 성능 모드에서 제일 먼저 끕니다. */
-    if (!(window.PERF && PERF.on)) {
-      ctx.save();
-      ctx.globalAlpha = 0.22; ctx.fillStyle = '#000';
-      ctx.beginPath(); ctx.ellipse(dx + T / 2, dy + T - 1, 5, 2.2, 0, 0, 7); ctx.fill();
-      ctx.restore();
-    }
+    shadowAt(dx + T / 2, dy + T - 1, 5, 2.2);
 
-    const sheet = sheetFor(rp.hue);
+    const sheet = tintedSheet(rp.hue);
     const col = DIR_COL[rp.dir] ?? 0;
     const row = rp.moving ? WALK_ROW[rp.frame & 3] : 0;
     const sx = col * T, sy = row * T;
-    const bob = rp.moving && !(window.PERF && PERF.on)
-      ? (Math.floor(rp.anim * 2) % 2 ? -1 : 0) : 0;
+    const bob = bobOf(rp);
 
-    if (rp.dir === 'side' && rp.flip) {
+    /* 옛 시트에는 오른쪽 한 벌뿐이라 왼쪽은 뒤집어 씁니다. */
+    if (rp.dir4 === 'left') {
       ctx.save(); ctx.translate(dx + T, dy + bob); ctx.scale(-1, 1);
       ctx.drawImage(sheet, sx, sy, T, T, 0, 0, T, T); ctx.restore();
     } else {
@@ -243,12 +381,25 @@
     for (const [id, t] of tags) {
       const rp = remotes.get(id);
       if (!rp || !rp.ready || rp.zone !== zoneId) { t.el.style.display = 'none'; continue; }
-      const p = toScreen(rp.x, rp.y - T);
+      /* 머리 위 한 점. 32x48 은 발에서 45 를 올려야 프레임 맨 위입니다 —
+         16 만 올리면 이름표가 배꼽에 붙습니다. */
+      const lift = liftOf(rp);
+      const p = toScreen(rp.x, rp.y - lift);
       /* 화면 밖이면 감춥니다. 안 그러면 지도 가장자리에서 이름만 남습니다. */
       if (p.x < rect.left - 40 || p.x > rect.right + 40 ||
           p.y < rect.top - 40 || p.y > rect.bottom + 40) {
         t.el.style.display = 'none'; continue;
       }
+      /* 회의 결정 — 이름표는 기본 감춤. 캐릭터에 커서를 올렸을 때만
+         닉네임·학교 툴팁으로 보여 줍니다. window.MOUSE 는 index.html 이
+         채웁니다. 집는 자리는 **그 사람 몸 크기**입니다 — 32x48 이면
+         가로 32, 머리(p)에서 발(groundY)까지. */
+      const C = charAPI();
+      const bodyW = (C && rp.big) ? C.W : T;
+      const M = window.MOUSE;
+      const hov = M && Math.abs(M.x - p.x) <= bodyW * SCALE / 2 &&
+                  M.y >= p.y - 4 && M.y <= p.y + lift * SCALE + 4;
+      if (!hov) { t.el.style.display = 'none'; continue; }
       t.el.style.display = 'block';
       t.el.style.left = p.x + 'px';
       t.el.style.top = (p.y - 6) + 'px';
@@ -330,15 +481,28 @@
     collect, drawOne, toScreen,
     /** 남의 머리 위 화면 좌표 — 말풍선이 씁니다 */
     headOf(id) {
-      if (id === MP.meId) return toScreen(player.x, player.y - T);
+      if (id === MP.meId) return toScreen(player.x, player.y - liftMe());
       const rp = remotes.get(id);
       if (!rp || !rp.ready || rp.zone !== zoneId) return null;
-      return toScreen(rp.x, rp.y - T);
+      return toScreen(rp.x, rp.y - liftOf(rp));
     },
     visible(id) {
       if (id === MP.meId) return true;
       const rp = remotes.get(id);
       return !!(rp && rp.ready && rp.zone === zoneId);
+    },
+    /** 눈으로 확인할 때 씁니다. combos 는 지금 서 있는 사람들의 서로 다른
+        (종 + 옷) 가짓수 — 사람이 스무 명이어도 굽는 쪽이 실제로 만드는
+        시트는 이 수를 넘지 않습니다. */
+    stats() {
+      const combos = new Set();
+      for (const r of remotes.values()) combos.add(r.charKey);
+      return {
+        people: remotes.size,
+        combos: combos.size,
+        big: [...remotes.values()].filter((r) => r.big).length,
+        api: !!charAPI(),
+      };
     },
     on(kind, fn) { listeners[kind].push(fn); },
     transport: null,
@@ -360,14 +524,49 @@
   /* ================== 가짜 서버 ==================
      진짜 서버가 붙기 전까지만 삽니다. 안에서 사람 넷을 굴리고,
      밖으로는 초당 열 번짜리 스냅샷만 흘립니다 — 실제 서버와 같은
-     굵기로 내보내야 보간이 맞는지 눈으로 볼 수 있습니다. */
+     굵기로 내보내야 보간이 맞는지 눈으로 볼 수 있습니다.
+
+     넷을 **서로 다른 종·다른 옷**으로 세웁니다. 다 거북이면 여덟 종을
+     만든 의미가 없고, 회의에서 보여 줄 때도 한 종만 보입니다.
+     옷은 index.html SHOP 의 id 그대로입니다.
+     hue 는 GIRIN_CHAR 가 없을 때(16x16) 서로 구분하는 데만 씁니다. */
   const FAKE = [
-    /* hue 0 은 내 캐릭터와 같은 색이라 안 씁니다 — 광장에서 나를 못 찾습니다 */
-    { id: 'p1', nick: '느린거북', school: '명지대학교', hue: 320, speed: 46 },
-    { id: 'p2', nick: '목긴기린', school: '홍익대학교', hue: 55,  speed: 62 },
-    { id: 'p3', nick: '서서보는미어캣', school: '명지대학교', hue: 150, speed: 40 },
-    { id: 'p4', nick: '쉬는돼지', school: '서강대학교', hue: 250, speed: 52 },
+    { id: 'p1', nick: '느린거북', school: '명지대학교', hue: 320, speed: 46,
+      species: '거북이',
+      worn: { top: 'top-hoodie', bottom: 'bot-jeans', shoes: 'sho-sneaker', hat: 'hat-cap' } },
+    { id: 'p2', nick: '목긴기린', school: '홍익대학교', hue: 55, speed: 62,
+      species: '기린',
+      worn: { top: 'top-varsity', bottom: 'bot-slacks', shoes: 'sho-dress', glasses: 'fac-round' } },
+    /* 예전 넷 중 미어캣·돼지는 종 여덟에 없습니다(알 상품으로만 남았습니다).
+       그림이 있는 종으로 바꿉니다 — 없는 종을 부르면 맨몸으로 섭니다. */
+    { id: 'p3', nick: '뒤뚱펭귄', school: '명지대학교', hue: 150, speed: 40,
+      species: '펭귄',
+      worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-slipper', bag: 'bag-tote' } },
+    { id: 'p4', nick: '폴짝개구리', school: '서강대학교', hue: 250, speed: 52,
+      species: '개구리',
+      worn: { top: 'top-shirt', bottom: 'bot-trainer', shoes: 'sho-sneaker',
+              hat: 'hat-beanie', glasses: 'fac-sun', bag: 'bag-backpack' } },
   ];
+
+  /* 사람을 늘려 볼 때 씁니다: ?bots=20.
+     차림은 위 넷을 돌려 씁니다 — 스무 명이어도 구운 시트는 넷이어야
+     한다는 것을 그대로 보이려고 일부러 그렇게 뒀습니다. */
+  function crowd(n) {
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      const base = FAKE[i % FAKE.length];
+      if (i < FAKE.length) { out.push(base); continue; }
+      out.push({
+        ...base,
+        id: 'p' + (i + 1),
+        nick: base.nick + (Math.floor(i / FAKE.length) + 1),
+        hue: (base.hue + i * 37) % 360,
+        speed: 38 + (i * 7) % 30,
+      });
+    }
+    return out;
+  }
+
   const FAKE_LINES = [
     '도서관 자리 남았어요?', '30분만 더 앉아 있을게요',
     '목이 뻐근하네요… 운동장 갔다 올게요', '본관 음악 오늘 괜찮은데요',
@@ -375,17 +574,20 @@
   ];
   const EMOJIS = ['👍', '😂', '🔥', '💪', '👀'];
 
-  function LocalTransport() {
+  function LocalTransport(count) {
     let h = null, timer = 0, chatTimer = 0, alive = false;
     const m = ZONES.campus;
     const bots = [];
+    const cast = crowd(Math.max(1, Math.min(60, count || FAKE.length)));
 
     function solidIn(px, py) {
       const tx = Math.floor(px / T), ty = Math.floor(py / T);
       if (!inMap(m, tx, ty)) return true;
       return m.solid[at(m, tx, ty)] === 1;
     }
-    /* index.html 의 BOX 와 같은 크기입니다. 다르면 남만 벽을 통과합니다. */
+    /* index.html 의 BOX 와 같은 크기입니다. 다르면 남만 벽을 통과합니다.
+       캐릭터가 32x48 로 커져도 **발이 딛는 자리는 그대로**입니다 —
+       키 큰 그림은 위로 자라지 바닥을 더 차지하지 않습니다. */
     function free(px, py) {
       const l = px - 4.5, r = px + 3.5, t = py - 6, b = py - 1;
       return !(solidIn(l, t) || solidIn(r, t) || solidIn(l, b) || solidIn(r, b));
@@ -404,7 +606,7 @@
     function spawn(def) {
       const p = pickTarget();
       bots.push({
-        ...def, x: p.x, y: p.y, dir: 'down', flip: false, moving: false,
+        ...def, x: p.x, y: p.y, dir: 'down', moving: false,
         target: pickTarget(), wait: Math.random() * 2, stuck: 0,
       });
     }
@@ -427,7 +629,9 @@
          ponytail: 길찾기 없음 — 실내나 좁은 길에 봇을 세울 거면 A* 필요 */
       if (!moved) { if (++b.stuck > 8) { b.target = pickTarget(); b.stuck = 0; } }
       else b.stuck = 0;
-      if (Math.abs(dx) > Math.abs(dy)) { b.dir = 'side'; b.flip = dx < 0; }
+      /* 네 방향 그대로 보냅니다. 'side' + flip 으로 접었다가 받는 쪽에서
+         다시 펴던 것을 그만뒀습니다 — 시트에 좌우가 다 있습니다. */
+      if (Math.abs(dx) > Math.abs(dy)) b.dir = dx < 0 ? 'left' : 'right';
       else b.dir = dy < 0 ? 'up' : 'down';
     }
 
@@ -444,7 +648,7 @@
         for (const b of bots) {
           h.onState(b.id, {
             type: 'state', t: now, zone: 'campus',
-            x: b.x, y: b.y, dir: b.dir, flip: b.flip, moving: b.moving,
+            x: b.x, y: b.y, dir: b.dir, flip: false, moving: b.moving,
           });
         }
       }
@@ -469,12 +673,15 @@
         alive = true;
         simLast = performance.now();
         /* 한꺼번에 들어오지 않습니다. 진짜 서버도 그렇고, 한 명씩
-           나타나야 join 처리가 되는지 눈으로 봅니다. */
-        FAKE.forEach((def, i) => setTimeout(() => {
+           나타나야 join 처리가 되는지 눈으로 봅니다.
+           스무 명을 700ms 씩 세우면 다 모이는 데 14초라, 사람이 많아지면
+           간격을 좁힙니다. */
+        const gap = cast.length > 8 ? 90 : 700;
+        cast.forEach((def, i) => setTimeout(() => {
           if (!alive) return;
           spawn(def);
           h.onJoin(def.id, def);
-        }, 400 + i * 700));
+        }, 400 + i * gap));
         requestAnimationFrame(tick);
       },
       send(msg) {
@@ -534,10 +741,17 @@
     requestAnimationFrame(loop);
   }
 
-  /* 시트를 굽자면 urban.png 가 있어야 합니다. 로딩이 끝난 뒤 시작합니다. */
+  /* 봇 수는 주소로 바꿉니다: ?bots=20. 기본은 넷입니다. */
+  function botCount() {
+    const n = parseInt(new URLSearchParams(location.search).get('bots'), 10);
+    return Number.isFinite(n) ? n : FAKE.length;
+  }
+
+  /* 16x16 으로 물러날 때를 대비해 urban.png 가 뜬 뒤에 시작합니다.
+     32x48 시트는 index.html 이 알아서 챙깁니다. */
   function boot() {
     if (!urban.complete || !urban.naturalWidth) { setTimeout(boot, 100); return; }
-    MP.setTransport(LocalTransport());
+    MP.setTransport(LocalTransport(botCount()));
     requestAnimationFrame(loop);
   }
   boot();

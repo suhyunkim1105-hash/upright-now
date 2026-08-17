@@ -142,6 +142,7 @@ const PALETTE = {
   D: '#b8503f', // 빨강
   d: '#8a3a2d', // 빨강 그늘
   G: '#5b8f5c', // 초록
+  g: '#3f6b46', // 초록 그늘
   B: '#d9a441', // 카키·금
   H: '#6b4a35', // 갈색
 }
@@ -341,11 +342,12 @@ const MODE = {
     if (k === MASK_SHADE) return darken(hex(schoolHex), 0.69)
     return PALETTE[k] ? hex(PALETTE[k]) : null
   },
-  /** 학교 색이 아닌 부분만 */
-  base: () => (k) => (k === MASK || k === MASK_SHADE ? null : PALETTE[k] ? hex(PALETTE[k]) : null),
-  /** 학교 색이 들어갈 부분만. 회색 2단계 → 곱셈하면 명암이 따라옵니다 */
-  mask: () => (k) =>
-    k === MASK ? [255, 255, 255, 255] : k === MASK_SHADE ? [176, 176, 176, 255] : null,
+  /** 색이 갈아끼워질 부분만 뺀 나머지 */
+  base: (on = [MASK, MASK_SHADE]) => (k) =>
+    on.includes(k) ? null : PALETTE[k] ? hex(PALETTE[k]) : null,
+  /** 색이 갈아끼워질 부분만. 회색 2단계 → 곱셈하면 명암이 따라옵니다 */
+  mask: (on = [MASK, MASK_SHADE]) => (k) =>
+    k === on[0] ? [255, 255, 255, 255] : k === on[1] ? [176, 176, 176, 255] : null,
 }
 
 function sheet(frames, resolve) {
@@ -434,6 +436,9 @@ const TOPS = {
   },
   hoodie: {
     label: '후드티',
+    /* tint 는 '이 글자가 천이다' 라는 뜻입니다. [밝은 톤, 그늘 톤] 순서.
+       조임끈(E)·테두리(O)는 빼야 색을 갈아도 옷의 짜임이 남습니다. */
+    tint: ['N', 'n'],
     base: 'N',
     bodyShade: 'n',
     sleeveC: 'N',
@@ -464,6 +469,7 @@ const TOPS = {
        배 위에서 옷인지 털인지 구분이 안 됐습니다. 색상만 살짝 넣으면
        8종 어디서도 옷으로 읽힙니다. */
     label: '셔츠',
+    tint: ['S', 's'], // 깃(E)·단추(O)는 그대로 — 셔츠는 깃이 흰 게 셔츠다움입니다
     base: 'S',
     bodyShade: 's',
     sleeveC: 'S',
@@ -491,6 +497,7 @@ const TOPS = {
   },
   tee: {
     label: '반팔티',
+    tint: ['D', 'd'], // 가슴 프린트(E)는 그대로
     base: 'D',
     bodyShade: 'd',
     sleeveC: 'D',
@@ -568,6 +575,7 @@ const BOTTOMS = {
   },
   trainers: {
     label: '트레이닝복',
+    tint: ['N', 'n'], // 옆줄(E)은 그대로 — 흰 줄이 트레이닝복의 정체성
     base: 'N',
     shade: 'n',
     length: 'long',
@@ -585,6 +593,7 @@ const BOTTOMS = {
   },
   slacks: {
     label: '슬랙스',
+    tint: ['N', 'n'], // N 은 주름, n 은 바탕
     base: 'n',
     shade: 'O',
     length: 'long',
@@ -600,6 +609,7 @@ const BOTTOMS = {
   },
   shorts: {
     label: '반바지',
+    tint: ['B', 'H'],
     base: 'B',
     shade: 'H',
     length: 'short',
@@ -656,6 +666,7 @@ function shoeFrame(dir, spec) {
 const SHOES = {
   sneakers: {
     label: '운동화',
+    tint: ['E', 'e'], // 빨간 스트라이프(D)는 그대로
     base: 'E',
     soleC: 'O',
     detail(s, { dir, top }) {
@@ -679,6 +690,8 @@ const SHOES = {
   },
   slippers: {
     label: '슬리퍼',
+    tint: ['n', 'N'], // 삼선(E)은 그대로
+    soleC: 'N', // 밑창을 밝게 — 슬리퍼는 3줄뿐이라 여기까지 천으로 세야 색이 보입니다
     base: 'n', // 반바지(카키)와 색이 겹치면 다리와 발이 한 덩어리로 보입니다
     open: true,
     detail(s, { dir, top }) {
@@ -763,6 +776,7 @@ const HATS = {
   },
   cap: {
     label: '볼캡',
+    tint: ['D', 'd'],
     frame(dir) {
       const s = new Sprite()
       // 크라운 — 위로 갈수록 좁아지는 돔
@@ -797,6 +811,7 @@ const HATS = {
   },
   beanie: {
     label: '비니',
+    tint: ['J', 'j'],
     frame(dir) {
       const s = new Sprite()
       s.hspan(12, 19, Y.hatSeat0, 'O')
@@ -928,6 +943,7 @@ const BAG_HEM = 40 // 가방 밑단. 더 내리면 발목을 가립니다
 const BAGS = {
   backpack: {
     label: '백팩',
+    tint: ['G', 'g'],
     frame(dir) {
       const s = new Sprite()
       if (dir === 'up') {
@@ -935,7 +951,7 @@ const BAGS = {
         s.hspan(11, 20, Y.collar + 1, 'O')
         for (let y = Y.collar + 2; y <= BAG_HEM - 1; y++) {
           s.set(10, y, 'O')
-          for (let x = 11; x <= 20; x++) s.set(x, y, 'G')
+          for (let x = 11; x <= 20; x++) s.set(x, y, x >= 19 ? 'g' : 'G')
           s.set(21, y, 'O')
         }
         s.hspan(10, 21, BAG_HEM, 'O')
@@ -953,8 +969,10 @@ const BAGS = {
           for (let y = Y.collar; y <= Y.fore0; y++) {
             s.set(a, y, 'O')
             s.set(a + 1, y, 'G')
+            s.set(a + 2, y, 'g')
             s.set(b, y, 'O')
             s.set(b - 1, y, 'G')
+            s.set(b - 2, y, 'g')
           }
         }
         s.hspan(12, 19, Y.upper1, 'B') // 가슴 스트랩
@@ -964,7 +982,7 @@ const BAGS = {
       s.hspan(10, 13, Y.collar + 1, 'O')
       for (let y = Y.collar + 2; y <= BAG_HEM - 1; y++) {
         s.set(9, y, 'O')
-        for (let x = 10; x <= 13; x++) s.set(x, y, 'G')
+        for (let x = 10; x <= 13; x++) s.set(x, y, x === 13 ? 'g' : 'G')
         s.set(14, y, 'O')
       }
       s.hspan(9, 14, BAG_HEM, 'O')
@@ -976,6 +994,7 @@ const BAGS = {
   },
   tote: {
     label: '에코백',
+    tint: ['E', 'e'], // 프린트(G)·끈(H)은 그대로
     /* 예전 에코백은 끈이 밝은 회색(e) 대각선 점선이라 밝은 털 위에서
        '긁힌 자국'이었고, 가방 몸통은 4x4 흰 사각형이라 이름표처럼 보였습니다.
        끈을 갈색으로 바꾸고 몸통을 배 옆으로 8x7 만큼 키웠습니다.
@@ -1284,6 +1303,8 @@ function measureSpecies(slug) {
   return { body, neckY }
 }
 
+const countKey = (sprite, k) => sprite.d.reduce((n, v) => n + (v === k ? 1 : 0), 0)
+
 function overlapTest(mannequin, items, fit) {
   const results = []
   const check = (name, ok, detail) => results.push({ name, ok, detail })
@@ -1451,6 +1472,38 @@ function overlapTest(mannequin, items, fit) {
     check('안경 알 비움', bad.length === 0, bad.length ? bad.join(', ') : '뿔테·동그란테 알 안쪽 투명')
   }
 
+  /* ── 색 갈이 마스크: base + mask 를 합치면 원래 그림과 픽셀이 딱 맞아야 합니다.
+        하나라도 비면 그 자리가 상점에서 구멍으로 보이고, 겹치면 색이 두 번 얹힙니다.
+        마스크가 통째로 비면 팔레트를 눌러도 아무 일이 안 일어납니다. */
+  {
+    let bad = []
+    let n = 0
+    for (const group of Object.values(items))
+      for (const [id, it] of Object.entries(group)) {
+        const on = it.spec.tint || (it.spec.mask ? [MASK, MASK_SHADE] : null)
+        if (!on) continue
+        n++
+        let cloth = 0
+        for (const dir of DIRS)
+          for (let y = 0; y < FRAME_H; y++)
+            for (let x = 0; x < FRAME_W; x++) {
+              const k = it.frames[dir].get(x, y)
+              if (!k) continue
+              const inMask = k === on[0] || k === on[1]
+              if (inMask) cloth++
+              /* base 와 mask 는 서로 배타적이어야 합니다 — 위 두 줄이 그것을
+                 보장하므로, 여기서는 '천이 한 톤뿐인가' 만 더 봅니다. */
+            }
+        const light = DIRS.reduce((a, d) => a + countKey(it.frames[d], on[0]), 0)
+        const dark = DIRS.reduce((a, d) => a + countKey(it.frames[d], on[1]), 0)
+        /* 24px 은 신발 한 켤레(4방향 합)의 갑피 넓이입니다. 이보다 적으면
+           팔레트를 눌러도 눈에 띄는 변화가 없습니다. */
+        if (cloth < 24) bad.push(`${id} 천 ${cloth}px`)
+        else if (!light || !dark) bad.push(`${id} 명암 ${light}/${dark}`)
+      }
+    check('색 갈이 마스크', bad.length === 0, bad.length ? bad.join(', ') : `${n}종 천 2톤 확보`)
+  }
+
   return results
 }
 
@@ -1560,7 +1613,18 @@ function main() {
       } else {
         put(folder, id, sheet(it.frames, MODE.flat('#ffffff')))
         putFitted(slot, folder, id, it.frames, MODE.flat('#ffffff'))
-        manifest.items[slot].push({ id, label: it.spec.label, file: `${folder}/${id}.png`, z: SLOT[slot].z })
+        const entry = { id, label: it.spec.label, file: `${folder}/${id}.png`, z: SLOT[slot].z }
+        if (it.spec.tint) {
+          /* 상점 팔레트용 base/mask. 과잠(학교 색)과 같은 방식이지만
+             '천이 어느 글자인가' 만 아이템마다 다릅니다. */
+          const on = it.spec.tint
+          put(folder, `${id}_base`, sheet(it.frames, MODE.base(on)))
+          put(folder, `${id}_mask`, sheet(it.frames, MODE.mask(on)))
+          putFitted(slot, folder, `${id}_base`, it.frames, MODE.base(on))
+          putFitted(slot, folder, `${id}_mask`, it.frames, MODE.mask(on))
+          entry.tint = { base: `${folder}/${id}_base.png`, mask: `${folder}/${id}_mask.png` }
+        }
+        manifest.items[slot].push(entry)
       }
     }
   }

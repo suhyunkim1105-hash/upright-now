@@ -723,6 +723,23 @@
   #panel .lay span { color: var(--ink-3); }
   #panel .lay em { font-style: normal; margin-left: auto; color: var(--ink-2); font-weight: 600; }
   #panel .shop-prev .hint { margin-top: 10px; font-size: 10.5px; line-height: 1.5; }
+  /* 색 팔레트 — 미리보기 바로 아래. 누르면 위 종이 인형이 그 자리에서 바뀝니다 */
+  #panel .pal { margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
+  #panel .pal b { display: block; font-size: 11.5px; font-weight: 700; margin-bottom: 7px; }
+  #panel .pal .hint { margin-top: 0; color: var(--ink-3); }
+  #panel .sws { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  #panel .sw {
+    aspect-ratio: 1; border-radius: 50%; cursor: pointer; padding: 0;
+    background: var(--sw, var(--surface-3));
+    border: 1px solid rgba(0,0,0,.22);
+    box-shadow: inset 0 -2px 0 rgba(0,0,0,.12);
+  }
+  /* 원래 색 칸은 색이 없으므로 사선으로 '비었음'을 표시합니다 */
+  #panel .sw[data-hex=""] {
+    background: repeating-linear-gradient(45deg, var(--surface-3) 0 3px, var(--surface) 3px 6px);
+  }
+  #panel .sw.on { outline: 2px solid var(--ink); outline-offset: 2px; }
+  #panel .sw:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
 
   #panel .shop-coin {
     font-size: 11.5px; color: var(--ink-3); text-align: right; margin-bottom: 8px;
@@ -7355,6 +7372,7 @@ const ROOM = {
   bgmTrack: 'auto',       // 'auto' = 장소마다 정해진 곡. 하나를 고르면 어디서나 그 곡
   sfxOn: 'on',
   camPeek: 'on',          // 세션 동안 웹캠 화면을 띄울지 (앉으면 작은 PIP 로 줄어듭니다)
+  tint: {},               // 아이템 id -> 고른 색. 없으면 그려진 원래 색
   sayOn: 'on',            // 자세 말풍선을 캐릭터 머리 위에 띄울지
   chatOn: 'on',           // 남의 말을 화면에 띄울지 (숨겨도 입력줄은 남습니다)
   invite: null,
@@ -7683,21 +7701,31 @@ const SHOP = [
   { id: 'top-varsity', cat: 'top',    name: '과잠',        price: 220, z: 40, color: null,
     school: true, desc: '내 학교 색이 붙습니다',
     recolor: { base: 'tops/varsity_base.png', mask: 'tops/varsity_mask.png' } },
-  { id: 'top-hoodie',  cat: 'top',    name: '후드티',      price: 150, z: 40, color: '#6B7A8F', sprite: 'tops/hoodie.png' },
-  { id: 'top-shirt',   cat: 'top',    name: '셔츠',        price: 250, z: 40, color: '#E8EDF2', sprite: 'tops/shirt.png' },
-  { id: 'top-tee',     cat: 'top',    name: '반팔티',      price: 120, z: 40, color: '#B8503F', sprite: 'tops/tee.png' },
+  { id: 'top-hoodie',  cat: 'top',    name: '후드티',      price: 150, z: 40, color: '#6B7A8F', sprite: 'tops/hoodie.png',
+    tint: { base: 'tops/hoodie_base.png', mask: 'tops/hoodie_mask.png' } },
+  { id: 'top-shirt',   cat: 'top',    name: '셔츠',        price: 250, z: 40, color: '#C3D3E4', sprite: 'tops/shirt.png',
+    tint: { base: 'tops/shirt_base.png', mask: 'tops/shirt_mask.png' } },
+  { id: 'top-tee',     cat: 'top',    name: '반팔티',      price: 120, z: 40, color: '#B8503F', sprite: 'tops/tee.png',
+    tint: { base: 'tops/tee_base.png', mask: 'tops/tee_mask.png' } },
 
   { id: 'bot-jeans',   cat: 'bottom', name: '청바지',      price: 160, z: 30, color: '#4A6180', sprite: 'bottoms/jeans.png' },
-  { id: 'bot-slacks',  cat: 'bottom', name: '슬랙스',      price: 200, z: 30, color: '#3E4450', sprite: 'bottoms/slacks.png' },
-  { id: 'bot-shorts',  cat: 'bottom', name: '반바지',      price: 150, z: 30, color: '#8A9A6B', sprite: 'bottoms/shorts.png' },
-  { id: 'bot-trainer', cat: 'bottom', name: '트레이닝복',  price: 140, z: 30, color: '#6B7385', sprite: 'bottoms/trainers.png' },
+  { id: 'bot-slacks',  cat: 'bottom', name: '슬랙스',      price: 200, z: 30, color: '#3E4450', sprite: 'bottoms/slacks.png',
+    tint: { base: 'bottoms/slacks_base.png', mask: 'bottoms/slacks_mask.png' } },
+  { id: 'bot-shorts',  cat: 'bottom', name: '반바지',      price: 150, z: 30, color: '#D9A441', sprite: 'bottoms/shorts.png',
+    tint: { base: 'bottoms/shorts_base.png', mask: 'bottoms/shorts_mask.png' } },
+  { id: 'bot-trainer', cat: 'bottom', name: '트레이닝복',  price: 140, z: 30, color: '#6B7385', sprite: 'bottoms/trainers.png',
+    tint: { base: 'bottoms/trainers_base.png', mask: 'bottoms/trainers_mask.png' } },
 
-  { id: 'sho-sneaker', cat: 'shoes',  name: '운동화',      price: 150, z: 20, color: '#F0F2F5', sprite: 'shoes/sneakers.png' },
+  { id: 'sho-sneaker', cat: 'shoes',  name: '운동화',      price: 150, z: 20, color: '#EAE6DE', sprite: 'shoes/sneakers.png',
+    tint: { base: 'shoes/sneakers_base.png', mask: 'shoes/sneakers_mask.png' } },
   { id: 'sho-dress',   cat: 'shoes',  name: '구두',        price: 230, z: 20, color: '#6B4A35', sprite: 'shoes/dress.png' },
-  { id: 'sho-slipper', cat: 'shoes',  name: '삼선 슬리퍼', price: 150, z: 20, color: '#2F3A46', sprite: 'shoes/slippers.png' },
+  { id: 'sho-slipper', cat: 'shoes',  name: '삼선 슬리퍼', price: 150, z: 20, color: '#454C5C', sprite: 'shoes/slippers.png',
+    tint: { base: 'shoes/slippers_base.png', mask: 'shoes/slippers_mask.png' } },
 
-  { id: 'hat-cap',     cat: 'hat',    name: '볼캡',        price: 100, z: 70, color: '#B8503F', sprite: 'hats/cap.png' },
-  { id: 'hat-beanie',  cat: 'hat',    name: '비니',        price: 120, z: 70, color: '#46628F', sprite: 'hats/beanie.png' },
+  { id: 'hat-cap',     cat: 'hat',    name: '볼캡',        price: 100, z: 70, color: '#B8503F', sprite: 'hats/cap.png',
+    tint: { base: 'hats/cap_base.png', mask: 'hats/cap_mask.png' } },
+  { id: 'hat-beanie',  cat: 'hat',    name: '비니',        price: 120, z: 70, color: '#46628F', sprite: 'hats/beanie.png',
+    tint: { base: 'hats/beanie_base.png', mask: 'hats/beanie_mask.png' } },
   { id: 'hat-grad',    cat: 'hat',    name: '학사모',      price: 400, z: 70, color: '#2B2438', sprite: 'hats/grad_cap.png',
     desc: '졸업은 아직입니다' },
 
@@ -7705,8 +7733,10 @@ const SHOP = [
   { id: 'fac-round',   cat: 'face',   name: '동그란테',    price: 200, z: 60, color: '#6B4A35', sprite: 'glasses/round.png' },
   { id: 'fac-sun',     cat: 'face',   name: '선글라스',    price: 260, z: 60, color: '#2B2438', sprite: 'glasses/sunglasses.png' },
 
-  { id: 'bag-backpack',cat: 'bag',    name: '백팩',        price: 180, z: 50, color: '#5B8F5C', sprite: 'bags/backpack.png' },
-  { id: 'bag-tote',    cat: 'bag',    name: '에코백',      price: 140, z: 50, color: '#BDB7AE', sprite: 'bags/tote.png' },
+  { id: 'bag-backpack',cat: 'bag',    name: '백팩',        price: 180, z: 50, color: '#5B8F5C', sprite: 'bags/backpack.png',
+    tint: { base: 'bags/backpack_base.png', mask: 'bags/backpack_mask.png' } },
+  { id: 'bag-tote',    cat: 'bag',    name: '에코백',      price: 140, z: 50, color: '#EAE6DE', sprite: 'bags/tote.png',
+    tint: { base: 'bags/tote_base.png', mask: 'bags/tote_mask.png' } },
 
   /* 알은 여덟 종 전부 있어야 합니다. 넷만 있던 판에서는 EGG_CHARACTER 가
      여덟을 아는데 상품은 넷이라, 미어캣·돼지 알을 사면 EGG_CHARACTER 에
@@ -7726,6 +7756,34 @@ const SHOP = [
 ];
 const SHOP_BY_ID = Object.fromEntries(SHOP.map((i) => [i.id, i]));
 
+/* ==================================================================
+   옷 색 팔레트
+
+   여덟 색뿐인 이유: 이 여덟은 **여덟 종 털 위에서 전부 옷으로 읽히는**
+   색입니다. 흰색은 백조·알파카에서, 검정은 펭귄에서, 밝은 초록은
+   거북이·개구리에서, 주황은 기린에서 몸과 붙어 버립니다. 그래서 명도를
+   30~55% 로 모으고 채도를 낮췄습니다 — 학교 색을 다루는 규칙과 같습니다.
+   무지개를 늘어놓으면 고르는 재미보다 어느 게 옷인지 모르는 일이 먼저 옵니다.
+   ================================================================== */
+const TINTS = [
+  { id: 'charcoal', name: '숯',     hex: '#3A3F4A' },
+  { id: 'mist',     name: '안개',   hex: '#AEB8C4' },
+  { id: 'navy',     name: '남색',   hex: '#3E5A8C' },
+  { id: 'teal',     name: '청록',   hex: '#2F6E68' },
+  { id: 'moss',     name: '이끼',   hex: '#5C7043' },
+  { id: 'mustard',  name: '겨자',   hex: '#C08A2E' },
+  { id: 'brick',    name: '벽돌',   hex: '#B0503C' },
+  { id: 'plum',     name: '자두',   hex: '#7A3E5C' },
+];
+const TINT_BY_HEX = Object.fromEntries(TINTS.map((t) => [t.hex, t]));
+/* 색을 고를 수 있는 아이템만. 과잠은 학교 색이고 학사모는 졸업식 규정이라
+   고르는 것이 아닙니다. 청바지는 데님이고 구두는 가죽입니다. 안경테는
+   2px 라 색을 바꿔도 테두리 색과 싸우기만 합니다. */
+const tintable = (it) => !!(it && it.tint);
+/* map 을 받는 이유: 남을 그릴 때는 그 사람이 고른 색이어야 합니다.
+   안 넘기면 내 옷장 색으로 칠해집니다. */
+const tintOf = (it, map) => (tintable(it) ? (map || ROOM.tint)[it.id] || null : null);
+
 /* 예전 판에서 산 아이템(니트·워커·안경)은 이제 없습니다. 그대로 두면
    `SHOP_BY_ID[id]` 가 undefined 라 입은 칸을 그릴 때 터집니다. 들어오는
    길목 하나에서 걸러야 뒤에 있는 모든 곳이 안전합니다. */
@@ -7733,6 +7791,9 @@ function pruneUnknownItems() {
   ROOM.owned = (ROOM.owned || []).filter((id) => SHOP_BY_ID[id]);
   for (const cat of Object.keys(ROOM.worn || {}))
     if (!SHOP_BY_ID[ROOM.worn[cat]]) delete ROOM.worn[cat];
+  ROOM.tint = ROOM.tint || {};
+  for (const id of Object.keys(ROOM.tint))
+    if (!tintable(SHOP_BY_ID[id]) || !TINT_BY_HEX[ROOM.tint[id]]) delete ROOM.tint[id];
 }
 pruneUnknownItems();
 
@@ -7855,7 +7916,13 @@ function fittedRecolor(it, slug) {
   const m = loadItemImg('fitted/' + slug + '/' + it.recolor.mask);
   return itemReady(b) && itemReady(m) ? { base: b, mask: m } : null;
 }
-function itemSheetFor(it, sp, col) {
+function itemSheetFor(it, sp, col, tintMap) {
+  if (it.recolor) return varsitySheet(col, sp.slug);
+  const chosen = tintOf(it, tintMap);
+  if (chosen) {
+    const t = tintedSheet(it, chosen, sp.slug);
+    if (t) return t;                     // 아직 안 왔으면 아래 원래 색으로 물러납니다
+  }
   const fp = fittedPath(it, sp.slug);
   if (fp) {
     const img = loadItemImg(fp);
@@ -7878,10 +7945,11 @@ function invalidateDressed() {
   dressedCache = null;
   otherCache.clear();
   varsityCache.clear();
+  tintCanvasCache.clear();
 }
 function dressedSheet() {
   const sp = speciesOf(ROOM.character);
-  const key = sp.slug + '|' + JSON.stringify(ROOM.worn || {}) + '|' + schoolColor();
+  const key = sp.slug + '|' + JSON.stringify(ROOM.worn || {}) + '|' + JSON.stringify(ROOM.tint || {}) + '|' + schoolColor();
   if (dressedCache && dressedKey === key) return dressedCache;
   const base = CHAR_IMG[sp.slug];
   if (!itemReady(base)) return null;
@@ -7922,16 +7990,18 @@ window.GIRIN_CHAR = {
   /**
    * 남의 캐릭터.
    *   worn   { top, bottom, shoes, hat, face, bag } 꼴. 없으면 맨몸.
+   *   colors { 아이템 id: '#rrggbb' } 그 사람이 상점에서 고른 옷 색.
+   *          안 넘기면 그려진 원래 색입니다 — 내 색이 새지는 않습니다.
    *   school 그 사람의 학교. **안 넘기면 내 학교 색으로 칠해집니다** —
    *          홍익대 사람이 내 학교 과잠을 입게 되므로 남을 그릴 때는 넘기세요.
    *          multiplayer.js 가 이름표에 쓰는 값 그대로면 됩니다.
    */
-  sheetFor(name, worn, school) {
+  sheetFor(name, worn, school, colors) {
     const sp = speciesOf(name);
     const base = CHAR_IMG[sp.slug];
     if (!itemReady(base)) return null;
     const tint = school ? schoolColorOf(school) : schoolColor();
-    const key = sp.slug + '|' + JSON.stringify(worn || {}) + '|' + tint;
+    const key = sp.slug + '|' + JSON.stringify(worn || {}) + '|' + JSON.stringify(colors || {}) + '|' + tint;
     const hit = otherCache.get(key);
     if (hit) return hit;
     const c = document.createElement('canvas');
@@ -7942,7 +8012,7 @@ window.GIRIN_CHAR = {
     const on = Object.values(worn || {}).map((id) => SHOP_BY_ID[id]).filter(Boolean);
     for (const it of on.sort((a, b) => a.z - b.z)) {
       /* 과잠만 학교 색을 탑니다 — 남을 그릴 때는 그 사람 학교 색이어야 합니다. */
-      const sheet = tintedItem(itemSheetFor(it, sp, tint), sp.line);
+      const sheet = tintedItem(itemSheetFor(it, sp, tint, colors || {}), sp.line);
       if (sheet) g.drawImage(sheet, 0, followsHead(it) ? (it.cat === 'hat' ? sp.hatDy : sp.eyeDy) : 0);
     }
     /* 종류가 아무리 많아도 24장이면 충분합니다 — 8종 x 자주 쓰는 조합 몇 개.
@@ -7960,13 +8030,13 @@ window.GIRIN_CHAR = {
 for (const it of SHOP) {
   if (it.sprite) loadItemImg(it.sprite);
   if (it.recolor) { loadItemImg(it.recolor.base); loadItemImg(it.recolor.mask); }
+  if (it.tint) { loadItemImg(it.tint.base); loadItemImg(it.tint.mask); }
   if (!FITTED_CATS[it.cat]) continue;
   for (const sp of Object.values(CHAR_SPECIES)) {
+    const pre = 'fitted/' + sp.slug + '/';
     if (it.sprite) loadItemImg(fittedPath(it, sp.slug));
-    if (it.recolor) {
-      loadItemImg('fitted/' + sp.slug + '/' + it.recolor.base);
-      loadItemImg('fitted/' + sp.slug + '/' + it.recolor.mask);
-    }
+    if (it.recolor) { loadItemImg(pre + it.recolor.base); loadItemImg(pre + it.recolor.mask); }
+    if (it.tint) { loadItemImg(pre + it.tint.base); loadItemImg(pre + it.tint.mask); }
   }
 }
 
@@ -7974,16 +8044,16 @@ for (const it of SHOP) {
    됩니다(item-spec §7). 학교를 바꾸기 전까지는 같은 그림이라 캐시합니다. */
 /* 화면에 학교가 여럿일 수 있어 (종+색) 별로 담습니다. 한 칸짜리로 두면
    학교가 다른 두 사람이 매 프레임 서로를 밀어내며 다시 굽습니다. */
-const varsityCache = new Map();
-function varsitySheet(col, slug) {
-  col = col || schoolColor();
-  const key = (slug || '-') + '|' + col;
-  const hit = varsityCache.get(key);
-  if (hit) return hit;
-  const it = SHOP_BY_ID['top-varsity'], r = it.recolor;
-  const fit = slug ? fittedRecolor(it, slug) : null;
-  const base = fit ? fit.base : ITEM_IMG[r.base];
-  const mask = fit ? fit.mask : ITEM_IMG[r.mask];
+/**
+ * base(색을 안 타는 부분) 위에 mask(무채색 천)를 색과 곱해 얹습니다.
+ * 과잠의 학교 색도 상점 팔레트도 같은 방법입니다 — 다른 것은 어느 픽셀을
+ * 천으로 볼 것인가뿐이고, 그 구분은 굽는 단계(build-items.mjs)에서 끝납니다.
+ *
+ * id 를 붙이는 이유: tintedItem 의 열쇠는 sheet.src 인데 캔버스에는 그것이
+ * 없습니다. 이름이 없으면 색이 달라도 전부 '' 한 칸을 나눠 써서, 처음 구운
+ * 색이 모두에게 돌아갑니다.
+ */
+function bakeRecolor(base, mask, col, id) {
   if (!itemReady(base) || !itemReady(mask)) return null;
   const c = document.createElement('canvas');
   c.width = ITEM_W * 4; c.height = ITEM_H;
@@ -7995,11 +8065,23 @@ function varsitySheet(col, slug) {
   g.globalCompositeOperation = 'destination-in';      // 곱하면서 번진 알파를 되돌립니다
   g.drawImage(mask, 0, 0);
   g.globalCompositeOperation = 'source-over';
-  g.drawImage(base, 0, 0);                            // 흰 소매·립은 학교색을 안 탑니다
-  /* tintedItem 의 열쇠는 sheet.src 인데 캔버스에는 그것이 없습니다. 이름을
-     안 붙이면 학교가 달라도 전부 '' 한 칸을 나눠 써서, 처음 구운 학교 색이
-     모두에게 돌아갑니다. 색과 종이 들어간 이름을 붙입니다. */
-  c.__id = 'varsity|' + key;
+  g.drawImage(base, 0, 0);
+  c.__id = id;
+  return c;
+}
+
+const varsityCache = new Map();
+function varsitySheet(col, slug) {
+  col = col || schoolColor();
+  const key = (slug || '-') + '|' + col;
+  const hit = varsityCache.get(key);
+  if (hit) return hit;
+  const it = SHOP_BY_ID['top-varsity'], r = it.recolor;
+  const fit = slug ? fittedRecolor(it, slug) : null;
+  const base = fit ? fit.base : ITEM_IMG[r.base];
+  const mask = fit ? fit.mask : ITEM_IMG[r.mask];
+  const c = bakeRecolor(base, mask, col, 'varsity|' + key);
+  if (!c) return null;
   /* 종별로 깎은 판을 달라고 했는데 아직 안 왔으면 담아 두지 않습니다 —
      담으면 이 프레임의 임시 그림이 영영 남아 실루엣이 안 맞습니다. */
   if (slug && !fit) return c;
@@ -8008,7 +8090,21 @@ function varsitySheet(col, slug) {
   return c;
 }
 
-/** 아이템 하나의 그림 한 장 — 과잠이면 학교색을 입힌 것. */
+/* 팔레트로 고른 색을 입힌 한 벌. 종·아이템·색이 그대로면 다시 굽지 않습니다. */
+const tintCanvasCache = new Map();
+function tintedSheet(it, col, slug) {
+  const key = it.id + '|' + col + '|' + (slug || '-');
+  const hit = tintCanvasCache.get(key);
+  if (hit) return hit;
+  const pre = slug && FITTED_CATS[it.cat] ? 'fitted/' + slug + '/' : '';
+  const c = bakeRecolor(loadItemImg(pre + it.tint.base), loadItemImg(pre + it.tint.mask), col, 'tint|' + key);
+  if (!c) return null;
+  if (tintCanvasCache.size >= 24) tintCanvasCache.delete(tintCanvasCache.keys().next().value);
+  tintCanvasCache.set(key, c);
+  return c;
+}
+
+/** 아이템 하나의 그림 한 장 — 깎지도 색을 갈지도 않은 원래 판입니다. */
 function itemSheet(it, col, slug) {
   if (it.recolor) return varsitySheet(col, slug);
   const img = it.sprite && ITEM_IMG[it.sprite];
@@ -8039,15 +8135,42 @@ const EGG_CHARACTER = {
   'egg-alpaca': '알파카', 'egg-swan': '백조',
 };
 
-const itemColor = (it) => (it.school ? schoolColor() : it.color);
+const itemColor = (it) => (it.school ? schoolColor() : tintOf(it) || it.color);
 const owns = (id) => ROOM.owned.includes(id);
 const wearing = (id) => {
   const it = SHOP_BY_ID[id];
   return it.cat === 'egg' ? ROOM.character === EGG_CHARACTER[id] : ROOM.worn[it.cat] === id;
 };
 
+/* 팔레트는 **지금 보고 있는 칸에 입은 옷**의 색을 바꿉니다.
+   칸마다 옷 하나만 입으므로 '무엇을 칠할지' 를 따로 고를 필요가 없습니다.
+   젭·게더도 미리보기 옆에 색을 두고 지금 입은 것에 바로 먹입니다. */
+function paletteHtml(cat) {
+  if (cat === 'egg') return ''; // 알은 입는 게 아니라 캐릭터가 바뀌는 것입니다
+  const it = SHOP_BY_ID[ROOM.worn[cat]];
+  if (!it) return `<div class="pal"><b>색</b><p class="hint">이 칸에 입은 것이 없습니다.</p></div>`;
+  if (!tintable(it)) {
+    const why = it.school ? '학교 색을 씁니다'
+      : it.cat === 'egg' ? '알은 색을 고르지 않습니다'
+      : '이 아이템은 색이 정해져 있습니다';
+    return `<div class="pal"><b>${esc(it.name)} 색</b><p class="hint">${why}.</p></div>`;
+  }
+  const now = tintOf(it);
+  const chip = (hex, name, on) =>
+    `<button class="sw${on ? ' on' : ''}" data-tint="${it.id}" data-hex="${hex}"
+       style="--sw:${hex}" title="${esc(name)}" aria-pressed="${on}"
+       aria-label="${esc(it.name)} ${esc(name)}"></button>`;
+  return `<div class="pal">
+    <b>${esc(it.name)} 색</b>
+    <div class="sws">
+      ${chip('', '원래 색', !now)}
+      ${TINTS.map((t) => chip(t.hex, t.name, now === t.hex)).join('')}
+    </div>
+  </div>`;
+}
+
 /** 왼쪽 미리보기 — 입은 것을 마네킹에 실제로 겹쳐 보여 줍니다. */
-function shopPreviewHtml() {
+function shopPreviewHtml(cat) {
   const layer = (cat, label) => {
     const id = ROOM.worn[cat];
     const it = id && SHOP_BY_ID[id];
@@ -8065,6 +8188,7 @@ function shopPreviewHtml() {
         ${layer('hat', '모자')}${layer('face', '안경')}${layer('top', '상의')}
         ${layer('bottom', '하의')}${layer('shoes', '신발')}${layer('bag', '가방')}
       </div>
+      ${paletteHtml(cat)}
       <p class="hint">지금 고른 캐릭터 몸에 그대로 겹쳐 보여 줍니다.
         옷은 종마다 몸 실루엣에 맞춰 깎인 판을 씁니다.</p>
     </div>`;
@@ -8095,7 +8219,7 @@ function shopTabHtml(cat) {
       <div class="shop-coin">가진 코인 <b>${ROOM.coins}</b></div>
       <div class="shop-grid">${items.map(card).join('')}</div>
     </div>
-    ${shopPreviewHtml()}
+    ${shopPreviewHtml(cat)}
   </div>`;
 }
 
@@ -8727,12 +8851,14 @@ function paintItemCanvases() {
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, c.width, c.height);
-    const sheet = it && itemSheet(it);
-    if (sheet) {
-      const zoom = Number(c.dataset.zoom) || 1;
-      g.drawImage(sheet, ITEM_DIR.down * ITEM_W, 0, ITEM_W, ITEM_H, 0, 0, ITEM_W * zoom, ITEM_H * zoom);
-    } else if (it && it.cat === 'egg') {
+    const zoom = Number(c.dataset.zoom) || 1;
+    if (it && it.cat === 'egg') {
       drawEggThumb(g, c.width, c.height, itemColor(it) || '#C9C4BE');
+    } else if (it && (itemReady(CHAR_IMG[speciesOf(ROOM.character).slug]) || itemReady(MANNEQUIN))) {
+      /* 옷만 따로 띄우면 32px 짜리 색 덩어리라 무엇인지 알 수 없습니다.
+         지금 고른 종에 그 한 벌만 입혀 보여 줍니다 — 젭·게더도 아이템을
+         아바타에 입혀 놓고 고르게 합니다. 고른 색도 여기 바로 반영됩니다. */
+      drawDoll(g, { [it.cat]: it.id }, 'down', zoom);
     } else if (it) {
       /* 아직 안 뜬 그림 — 색 블록으로 자리를 지킵니다 */
       g.fillStyle = itemColor(it) || '#C9C4BE';
@@ -10332,6 +10458,8 @@ panelBody.addEventListener('click', (e) => {
   if (on) { equip(on.dataset.on); saveRoom(); reopenShop(); return; }
   const off = e.target.closest('[data-off]');
   if (off) { unequip(off.dataset.off); saveRoom(); reopenShop(); return; }
+  const sw = e.target.closest('[data-tint]');
+  if (sw) { setTint(sw.dataset.tint, sw.dataset.hex); saveRoom(); reopenShop(); return; }
   const tap = e.target.closest('.row.tap');
   if (tap) return openEdit(tap.dataset.edit, tap);
   const act = e.target.closest('[data-do]');
@@ -10439,6 +10567,18 @@ function unequip(id) {
   if (!it || it.cat === 'egg') return;   // 알은 벗을 수 없습니다. 다른 알로 바꿀 뿐입니다
   if (ROOM.worn[it.cat] === id) delete ROOM.worn[it.cat];
   jacketCanvas = null; dressedCache = null;
+}
+
+/* 고른 색은 아이템마다 남습니다 — 벗었다 다시 입어도 그 색 그대로입니다.
+   빈 값(원래 색)은 저장하지 않고 지웁니다. 저장소에 '없음'을 남기면
+   나중에 팔레트가 바뀌었을 때 지워야 할 것과 구분이 안 됩니다. */
+function setTint(id, hex) {
+  const it = SHOP_BY_ID[id];
+  if (!tintable(it)) return;
+  if (hex && TINT_BY_HEX[hex]) ROOM.tint[id] = hex;
+  else delete ROOM.tint[id];
+  dressedCache = null;
+  drawCamAvatar();
 }
 
 /* ---- 장소별 앰비언트 ----

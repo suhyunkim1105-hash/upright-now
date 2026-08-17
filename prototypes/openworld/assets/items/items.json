@@ -79,6 +79,7 @@
     "D": "#b8503f",
     "d": "#8a3a2d",
     "G": "#5b8f5c",
+    "g": "#3f6b46",
     "B": "#d9a441",
     "H": "#6b4a35"
   },
@@ -135,19 +136,31 @@
         "id": "hoodie",
         "label": "후드티",
         "file": "tops/hoodie.png",
-        "z": 40
+        "z": 40,
+        "tint": {
+          "base": "tops/hoodie_base.png",
+          "mask": "tops/hoodie_mask.png"
+        }
       },
       {
         "id": "shirt",
         "label": "셔츠",
         "file": "tops/shirt.png",
-        "z": 40
+        "z": 40,
+        "tint": {
+          "base": "tops/shirt_base.png",
+          "mask": "tops/shirt_mask.png"
+        }
       },
       {
         "id": "tee",
         "label": "반팔티",
         "file": "tops/tee.png",
-        "z": 40
+        "z": 40,
+        "tint": {
+          "base": "tops/tee_base.png",
+          "mask": "tops/tee_mask.png"
+        }
       }
     ],
     "legs": [
@@ -161,19 +174,31 @@
         "id": "trainers",
         "label": "트레이닝복",
         "file": "bottoms/trainers.png",
-        "z": 30
+        "z": 30,
+        "tint": {
+          "base": "bottoms/trainers_base.png",
+          "mask": "bottoms/trainers_mask.png"
+        }
       },
       {
         "id": "slacks",
         "label": "슬랙스",
         "file": "bottoms/slacks.png",
-        "z": 30
+        "z": 30,
+        "tint": {
+          "base": "bottoms/slacks_base.png",
+          "mask": "bottoms/slacks_mask.png"
+        }
       },
       {
         "id": "shorts",
         "label": "반바지",
         "file": "bottoms/shorts.png",
-        "z": 30
+        "z": 30,
+        "tint": {
+          "base": "bottoms/shorts_base.png",
+          "mask": "bottoms/shorts_mask.png"
+        }
       }
     ],
     "feet": [
@@ -181,13 +206,21 @@
         "id": "sneakers",
         "label": "운동화",
         "file": "shoes/sneakers.png",
-        "z": 20
+        "z": 20,
+        "tint": {
+          "base": "shoes/sneakers_base.png",
+          "mask": "shoes/sneakers_mask.png"
+        }
       },
       {
         "id": "slippers",
         "label": "슬리퍼",
         "file": "shoes/slippers.png",
-        "z": 20
+        "z": 20,
+        "tint": {
+          "base": "shoes/slippers_base.png",
+          "mask": "shoes/slippers_mask.png"
+        }
       },
       {
         "id": "dress",
@@ -207,13 +240,21 @@
         "id": "cap",
         "label": "볼캡",
         "file": "hats/cap.png",
-        "z": 70
+        "z": 70,
+        "tint": {
+          "base": "hats/cap_base.png",
+          "mask": "hats/cap_mask.png"
+        }
       },
       {
         "id": "beanie",
         "label": "비니",
         "file": "hats/beanie.png",
-        "z": 70
+        "z": 70,
+        "tint": {
+          "base": "hats/beanie_base.png",
+          "mask": "hats/beanie_mask.png"
+        }
       }
     ],
     "face": [
@@ -241,13 +282,21 @@
         "id": "backpack",
         "label": "백팩",
         "file": "bags/backpack.png",
-        "z": 50
+        "z": 50,
+        "tint": {
+          "base": "bags/backpack_base.png",
+          "mask": "bags/backpack_mask.png"
+        }
       },
       {
         "id": "tote",
         "label": "에코백",
         "file": "bags/tote.png",
-        "z": 50
+        "z": 50,
+        "tint": {
+          "base": "bags/tote_base.png",
+          "mask": "bags/tote_mask.png"
+        }
       }
     ]
   }

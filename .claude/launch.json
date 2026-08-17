@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
       "port": 4173
+    },
+    {
+      "name": "openworld",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "prototypes", "-p", "8166", "-c-1"],
+      "port": 8166
     }
   ]
 }

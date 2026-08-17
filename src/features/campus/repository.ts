@@ -21,6 +21,7 @@ export type CampusPermanentReject =
   | 'no_membership'
   | 'invalid_kind'
   | 'session_required'
+  | 'district_not_found'
 
 export interface CampusSubmitResult {
   accepted: boolean

@@ -1,29 +1,24 @@
 import type { CampusSeason } from './types'
 
-/**
- * 시즌 — 14일 고정 길이.
- *
- * 프로토타입에서는 서버 없이도 "시즌 남은 시간"과 "시즌 종료 → 초기화"를
- * 확인할 수 있도록, 고정 기준 시각에서 시즌 번호를 계산합니다.
- * 실제 Supabase 로 바꿀 때는 `campus_seasons` 행이 이 함수를 대체합니다.
- */
-export const SEASON_LENGTH_MS = 14 * 24 * 60 * 60 * 1000
-
-/** 시즌 1의 시작 (UTC) */
-export const SEASON_EPOCH = Date.UTC(2026, 0, 5)
-
+/** 시즌은 UTC 기준 달력 분기(1~3월, 4~6월, 7~9월, 10~12월)입니다. */
 export function seasonIndexAt(now: number): number {
-  return Math.max(0, Math.floor((now - SEASON_EPOCH) / SEASON_LENGTH_MS))
+  const date = new Date(now)
+  const year = date.getUTCFullYear()
+  const quarter = Math.floor(date.getUTCMonth() / 3)
+  return Math.max(0, (year - 2026) * 4 + quarter)
 }
 
 export function seasonAt(now: number): CampusSeason {
-  const index = seasonIndexAt(now)
-  const startsAt = SEASON_EPOCH + index * SEASON_LENGTH_MS
+  const date = new Date(now)
+  const year = date.getUTCFullYear()
+  const quarter = Math.floor(date.getUTCMonth() / 3)
+  const startsAt = Date.UTC(year, quarter * 3, 1)
+  const endsAt = Date.UTC(year, quarter * 3 + 3, 1)
   return {
-    id: `season-${index + 1}`,
-    name: `시즌 ${index + 1}`,
+    id: `season-${year}-q${quarter + 1}`,
+    name: `${year}년 ${quarter + 1}분기`,
     startsAt,
-    endsAt: startsAt + SEASON_LENGTH_MS,
+    endsAt,
     status: 'active',
   }
 }

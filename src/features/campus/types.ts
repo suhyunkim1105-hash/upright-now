@@ -39,6 +39,8 @@ export interface CampusSchoolPreset {
   colorLabel: string
   pattern: CampusPatternId
   colorSource: CampusColorSource
+  /** 학교 인증에 사용할 대표 이메일 도메인. 공식 색상·로고와는 무관합니다. */
+  emailDomain?: string
   /** 기타 / 직접 설정 항목 */
   custom?: boolean
 }

@@ -2,9 +2,9 @@ import manifest from './campusGridSeedManifest.json'
 import type { CampusZoneId } from './types'
 
 /**
- * 캠퍼스 배경 이미지(campus-map-bg-1536.webp, viewBox 0 0 1536 1024)의
- * 실측 12×8 = 96 칸 오버레이 — 정적 좌표(개발 시 sharp 로 흰 길 경계를
- * 측정·대역별 보정, 런타임 이미지 분석 없음).
+ * 기존 1536×1024 캠퍼스 배경에서 측정한 12×8 = 96칸 레이아웃입니다.
+ * 서울 지도 렌더러는 이 좌표를 480×394 지도 좌표계로 균일 변환해 사용합니다.
+ * 실제 학교 위치는 seoulSchools.ts의 WGS84 좌표를 별도로 투영합니다.
  *
  * 매핑 규약(측정 근거는 docs/INTEGRATION_STATUS.md RC2 감사 참조):
  * - 이미지 상단 장식 테두리 행(y 119~198)은 영토가 아니다.

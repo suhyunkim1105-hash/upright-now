@@ -58,6 +58,26 @@
 
 버전과 상세는 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §2 에 있습니다.
 
+### 1.1 새 Codex 워크스페이스 인수인계 문서
+
+다른 OpenAI 계정이나 새 Codex 워크스페이스에서 이어서 작업할 때는 아래 문서를 먼저 읽습니다.
+
+1. `docs/CODEX_HANDOFF.md` - 현재 완료·진행·남은 작업과 바로 시작할 다음 단계
+2. `docs/ARCHITECTURE.md` - 앱 구조, 데이터 흐름, 환경변수, 배포 구조
+3. `docs/DECISIONS.md` - 최근 의사결정, 대안, 재검토 항목
+
+그 다음 `docs/TEAM_START.md`, `docs/AI_HANDOFF.md`를 참고합니다. `docs/AI_HANDOFF.md`는 더 긴 과거 기록이므로, 최신 상태 판단은 위 3개 문서와 현재 Git 상태를 우선합니다.
+
+새 환경에서 첫 작업을 시작하기 전에는 반드시 아래를 확인합니다.
+
+```bash
+git status --short --branch
+git log --oneline -12
+git worktree list
+```
+
+특히 `.worktrees/campus-pixel-world`가 있으면 픽셀 월드 작업물이 별도 worktree에 있을 수 있습니다. 커밋되지 않은 파일은 원격 저장소에 자동 저장되지 않으므로, 계정 이전 전에 커밋·푸시하거나 별도 백업해야 합니다.
+
 ## 2. 제품 불변조건
 
 ### 2.1 제품 우선순위

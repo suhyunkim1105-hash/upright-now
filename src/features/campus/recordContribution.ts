@@ -45,6 +45,7 @@ export type ContributionSkipReason =
   | 'no_membership'
   | 'invalid_kind'
   | 'session_required'
+  | 'district_not_found'
   | 'not_ready'
   /** 일시 실패 — outbox 에 보관됐고 연결되면 자동 반영됩니다. */
   | 'queued'
@@ -108,6 +109,7 @@ const REJECT_FEEDBACK: Partial<Record<ContributionSkipReason, string>> = {
   rate_limited: '짧은 시간에 너무 많은 이벤트가 들어왔어요.',
   invalid_kind: '반영할 수 없는 기여 종류예요.',
   session_required: '세션 정보가 없어 반영하지 못했어요.',
+  district_not_found: '선택한 자치구를 찾지 못했어요. 화면을 새로고침해 주세요.',
 }
 
 function feedbackForResult(

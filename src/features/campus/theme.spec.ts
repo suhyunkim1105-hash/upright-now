@@ -11,8 +11,8 @@ import {
 import { seasonAt, seasonIndexAt, seasonRemainingMs, formatRemaining } from './season'
 
 describe('학교 목록', () => {
-  it('1차 학교 10곳 + 기타 = 11개', () => {
-    expect(CAMPUS_SCHOOLS).toHaveLength(11)
+  it('서울 소재 1차 확장 학교 24곳 + 기타 = 25개', () => {
+    expect(CAMPUS_SCHOOLS).toHaveLength(25)
     expect(CAMPUS_SCHOOLS[CAMPUS_SCHOOLS.length - 1].id).toBe(CUSTOM_SCHOOL_ID)
   })
 
@@ -29,6 +29,20 @@ describe('학교 목록', () => {
       '경희대학교',
       '한국외국어대학교',
       '서울시립대학교',
+      '건국대학교',
+      '동국대학교',
+      '홍익대학교',
+      '이화여자대학교',
+      '숙명여자대학교',
+      '국민대학교',
+      '숭실대학교',
+      '광운대학교',
+      '세종대학교',
+      '서울과학기술대학교',
+      '성신여자대학교',
+      '서울여자대학교',
+      '동덕여자대학교',
+      '상명대학교',
       '기타 / 직접 설정',
     ]) {
       expect(names).toContain(name)
@@ -42,6 +56,14 @@ describe('학교 목록', () => {
       } else {
         // 공식 색상이라고 주장하지 않습니다.
         expect(school.colorSource).toBe('prototype-preset')
+      }
+    }
+  })
+
+  it('기타를 뺀 학교는 학교 인증용 대표 도메인을 가진다', () => {
+    for (const school of CAMPUS_SCHOOLS) {
+      if (!school.custom) {
+        expect(school.emailDomain).toMatch(/^[a-z0-9.-]+\.[a-z]{2,}$/)
       }
     }
   })
@@ -102,17 +124,16 @@ describe('테마 해석', () => {
 })
 
 describe('시즌', () => {
-  it('시즌 번호는 14일마다 올라간다', () => {
-    const base = Date.UTC(2026, 0, 5)
-    expect(seasonIndexAt(base)).toBe(0)
-    expect(seasonIndexAt(base + 13 * 24 * 60 * 60 * 1000)).toBe(0)
-    expect(seasonIndexAt(base + 14 * 24 * 60 * 60 * 1000)).toBe(1)
+  it('시즌은 달력 분기마다 올라간다', () => {
+    expect(seasonIndexAt(Date.UTC(2026, 0, 1))).toBe(0)
+    expect(seasonIndexAt(Date.UTC(2026, 2, 31, 23, 59))).toBe(0)
+    expect(seasonIndexAt(Date.UTC(2026, 3, 1))).toBe(1)
   })
 
   it('시즌은 시작·종료 시각과 남은 시간을 가진다', () => {
     const now = Date.UTC(2026, 0, 10)
     const season = seasonAt(now)
-    expect(season.id).toBe('season-1')
+    expect(season.id).toBe('season-2026-q1')
     expect(season.startsAt).toBeLessThanOrEqual(now)
     expect(season.endsAt).toBeGreaterThan(now)
     expect(seasonRemainingMs(season, now)).toBeGreaterThan(0)

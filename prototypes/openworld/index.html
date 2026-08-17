@@ -8116,170 +8116,134 @@ function pastSessionsHtml() {
    사용하고, 같은 동물 3개 이상을 이어서 없애는 짧은 퍼즐 한 판입니다.
    ================================================================== */
 const ANIMAL_MATCH3 = {
-  active: false, grid: [], selected: -1, lastTouchAt: 0,
-  score: 0, moves: 0, combo: 0, target: 300, rewarded: false,
+  active: false, state: 'READY', grid: [], selected: -1,
+  score: 0, moves: 24, combo: 0, highScore: 0, lastResult: null, lastInputAt: 0,
+  specials: new Map(), swap: null, effect: null,
 };
-const ANIMAL_MATCH3_TYPES = [
-  { name: '거북이', emoji: '🐢', color: '#77c58d' },
-  { name: '기린', emoji: '🦒', color: '#f2c65d' },
-  { name: '펭귄', emoji: '🐧', color: '#91c6e8' },
-  { name: '햄스터', emoji: '🐹', color: '#e7ae83' },
-  { name: '개구리', emoji: '🐸', color: '#82c96d' },
-  { name: '고슴도치', emoji: '🦔', color: '#c99772' },
-  { name: '알파카', emoji: '🦙', color: '#e9d9bf' },
-  { name: '백조', emoji: '🦢', color: '#c8d9ef' },
-];
-const ANIMAL_MATCH3_SIZE = 6;
-
-function animalMatch3At(index) {
-  return ANIMAL_MATCH3.grid[index];
-}
-function animalMatch3Index(row, col) {
-  return row * ANIMAL_MATCH3_SIZE + col;
+const ANIMAL_MATCH3_SIZE = 7;
+function animalMatch3Engine() { return window.ANIMAL_MATCH3_ENGINE; }
+function animalMatch3Types() {
+  const engine = animalMatch3Engine();
+  return engine ? engine.ACTIVE_TYPES : [];
 }
 function animalMatch3Adjacent(a, b) {
-  const ar = Math.floor(a / ANIMAL_MATCH3_SIZE), ac = a % ANIMAL_MATCH3_SIZE;
-  const br = Math.floor(b / ANIMAL_MATCH3_SIZE), bc = b % ANIMAL_MATCH3_SIZE;
-  return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
-}
-function animalMatch3Matches() {
-  const size = ANIMAL_MATCH3_SIZE, grid = ANIMAL_MATCH3.grid, found = new Set();
-  for (let row = 0; row < size; row++) {
-    let start = 0;
-    while (start < size) {
-      const type = grid[animalMatch3Index(row, start)]; let end = start + 1;
-      while (end < size && grid[animalMatch3Index(row, end)] === type) end++;
-      if (type !== null && end - start >= 3) for (let col = start; col < end; col++) found.add(animalMatch3Index(row, col));
-      start = end;
-    }
-  }
-  for (let col = 0; col < size; col++) {
-    let start = 0;
-    while (start < size) {
-      const type = grid[animalMatch3Index(start, col)]; let end = start + 1;
-      while (end < size && grid[animalMatch3Index(end, col)] === type) end++;
-      if (type !== null && end - start >= 3) for (let row = start; row < end; row++) found.add(animalMatch3Index(row, col));
-      start = end;
-    }
-  }
-  return found;
-}
-function animalMatch3FreshGrid() {
-  const size = ANIMAL_MATCH3_SIZE, grid = Array(size * size).fill(null);
-  for (let index = 0; index < grid.length; index++) {
-    const row = Math.floor(index / size), col = index % size;
-    const choices = ANIMAL_MATCH3_TYPES.map((_, type) => type).filter((type) => {
-      return !(col >= 2 && grid[index - 1] === type && grid[index - 2] === type)
-        && !(row >= 2 && grid[index - size] === type && grid[index - size * 2] === type);
-    });
-    grid[index] = choices[Math.floor(Math.random() * choices.length)];
-  }
-  return grid;
-}
-function resolveAnimalMatch3() {
-  let cleared = 0, chain = 0;
-  while (true) {
-    const matches = animalMatch3Matches();
-    if (!matches.size) break;
-    cleared += matches.size; chain++;
-    for (const index of matches) ANIMAL_MATCH3.grid[index] = null;
-    for (let col = 0; col < ANIMAL_MATCH3_SIZE; col++) {
-      const values = [];
-      for (let row = ANIMAL_MATCH3_SIZE - 1; row >= 0; row--) {
-        const value = ANIMAL_MATCH3.grid[animalMatch3Index(row, col)];
-        if (value !== null) values.push(value);
-      }
-      for (let row = ANIMAL_MATCH3_SIZE - 1; row >= 0; row--) {
-        ANIMAL_MATCH3.grid[animalMatch3Index(row, col)] = values[ANIMAL_MATCH3_SIZE - 1 - row] ?? Math.floor(Math.random() * ANIMAL_MATCH3_TYPES.length);
-      }
-    }
-  }
-  return { cleared, chain };
+  const engine = animalMatch3Engine();
+  return engine ? engine.isAdjacent(a, b) : false;
 }
 function animalMatch3Html() {
   return `
-    <p>같은 동물 3개 이상을 이어서 없애고 목표 점수를 달성하세요.</p>
-    <div class="rows">
-      <div class="row"><span>점수</span><span class="val" id="animal-match3-score">0 / ${ANIMAL_MATCH3.target}</span></div>
-      <div class="row"><span>콤보</span><span class="val" id="animal-match3-combo">0</span></div>
+    <style>
+      @keyframes animalMatch3Cross { 0% { transform:translate(0,0) scale(1); } 45% { transform:translate(var(--swap-x),var(--swap-y)) scale(1.08); } 100% { transform:translate(0,0) scale(1); } }
+      @keyframes animalMatch3Clear3 { 0%,100% { opacity:1; transform:scale(1); } 45% { opacity:.35; transform:scale(1.2) rotate(4deg); } }
+      @keyframes animalMatch3Clear4 { 0%,100% { opacity:1; transform:scale(1); } 45% { opacity:.25; transform:scale(1.3) rotate(10deg); box-shadow:0 0 0 6px #fff2a8,0 0 20px #ffd34d; } }
+      @keyframes animalMatch3Clear5 { 0%,100% { opacity:1; transform:scale(1); } 45% { opacity:.15; transform:scale(1.4); box-shadow:0 0 0 8px #d9c2ff,0 0 28px #a36bff; } }
+      .animal-match3-special { position:absolute; right:3px; top:3px; width:10px; height:10px; border-radius:50%; background:#fff8c7; box-shadow:0 0 0 2px rgba(255,255,255,.6); }
+      .animal-match3-special.rainbow { background:conic-gradient(#ff6b6b,#ffd166,#7bd88f,#70b7ff,#b28dff,#ff6b6b); }
+    </style>
+    <p>같은 동물 블록을 두 개 바꿔 3개 이상을 맞춰보세요.</p>
+    <div class="rows" style="grid-template-columns:repeat(3,1fr)">
+      <div class="row"><span>남은 Move</span><span class="val" id="animal-match3-moves">24</span></div>
+      <div class="row"><span>점수</span><span class="val" id="animal-match3-score">0</span></div>
+      <div class="row"><span>최고 점수</span><span class="val" id="animal-match3-high-score">0</span></div>
     </div>
     <div id="animal-match3-board" role="group" aria-label="동물 3매칭 퍼즐"
-      style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;width:min(100%,390px);aspect-ratio:1;margin:16px auto;padding:7px;border-radius:16px;background:linear-gradient(145deg,#d5f0e8,#dbe8f6);box-shadow:inset 0 0 0 3px rgba(48,103,98,.18);touch-action:manipulation"></div>
-    <p class="hint" id="animal-match3-message" aria-live="polite">바꾸고 싶은 동물 타일 두 개를 차례로 눌러보세요.</p>
-    <button class="act" data-do="animal-match3-restart">다시 시작</button>`;
+      style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;width:min(100%,430px);aspect-ratio:1;margin:16px auto;padding:7px;border-radius:16px;background:linear-gradient(145deg,#d5f0e8,#dbe8f6);box-shadow:inset 0 0 0 3px rgba(48,103,98,.18);touch-action:manipulation"></div>
+    <p class="hint" id="animal-match3-message" aria-live="polite">동물 블록 두 개를 차례로 눌러보세요.</p>
+    <button class="act" data-do="animal-match3-restart">다시 하기</button>`;
 }
 function animalMatch3IntroHtml() {
   return `
     <div style="padding:8px 0 4px">
       <h3 style="margin:0 0 10px;font-size:20px">게임 방법</h3>
       <ol style="margin:0;padding-left:22px;color:var(--ink-2);line-height:1.8">
-        <li>동물 타일 두 개를 차례로 눌러 선택합니다.</li>
-        <li>서로 붙어 있는 타일이면 위치가 바뀝니다.</li>
-        <li>같은 동물 3개 이상이 가로 또는 세로로 모이면 점수를 얻습니다.</li>
-        <li>목표 점수 <b>${ANIMAL_MATCH3.target}점</b>을 달성하면 성공입니다.</li>
+        <li>서로 붙어 있는 동물 블록 두 개를 차례로 누릅니다.</li>
+        <li>같은 동물 3개 이상을 가로 또는 세로로 맞추면 사라집니다.</li>
+        <li>위 블록이 내려오고 새 블록이 채워지며 연쇄가 이어집니다.</li>
+        <li>24번의 Move 안에 최대한 높은 점수를 얻어보세요.</li>
       </ol>
-      <div class="note" style="margin-top:14px">시간 제한 없이 천천히 플레이할 수 있어요.</div>
+      <div class="note" style="margin-top:14px">시간 제한 없이 천천히 플레이할 수 있어요. 잘못 바꾸면 Move가 줄지 않습니다.</div>
       <button class="act" data-do="animal-match3-start" style="width:100%;margin-top:16px">시작하기</button>
     </div>`;
 }
 function renderAnimalMatch3() {
   const board = panelBody.querySelector('#animal-match3-board');
   const score = panelBody.querySelector('#animal-match3-score');
-  const combo = panelBody.querySelector('#animal-match3-combo');
-  if (!board || !score || !combo) return;
+  const moves = panelBody.querySelector('#animal-match3-moves');
+  const highScore = panelBody.querySelector('#animal-match3-high-score');
+  if (!board || !score || !moves || !highScore) return;
+  const types = animalMatch3Types();
   board.innerHTML = ANIMAL_MATCH3.grid.map((type, index) => {
-    const animal = ANIMAL_MATCH3_TYPES[type];
+    const animal = types[type];
     const selected = ANIMAL_MATCH3.selected === index;
+    const special = ANIMAL_MATCH3.specials.get(index);
+    const effectSize = ANIMAL_MATCH3.effect && ANIMAL_MATCH3.effect.indices.includes(index) ? ANIMAL_MATCH3.effect.size : 0;
+    const swapStyle = ANIMAL_MATCH3.swap && ANIMAL_MATCH3.swap.indices.includes(index)
+      ? `animation:animalMatch3Cross .22s ease both;--swap-x:${ANIMAL_MATCH3.swap.x[index] || '0px'};--swap-y:${ANIMAL_MATCH3.swap.y[index] || '0px'};`
+      : '';
+    const effectStyle = effectSize >= 5 ? 'animation:animalMatch3Clear5 .3s ease both;'
+      : effectSize === 4 ? 'animation:animalMatch3Clear4 .3s ease both;'
+      : effectSize === 3 ? 'animation:animalMatch3Clear3 .24s ease both;' : '';
     return `<button type="button" data-animal-index="${index}" aria-label="${animal.name} 타일"
-      style="position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;border:0;border-radius:11px;background:${animal.color};font-size:clamp(22px,7vw,38px);cursor:pointer;box-shadow:${selected ? '0 0 0 4px #2d8f83, inset 0 -4px 0 rgba(0,0,0,.12)' : 'inset 0 -4px 0 rgba(0,0,0,.12)'};transform:${selected ? 'scale(.92)' : 'scale(1)'};transition:transform .12s ease,box-shadow .12s ease">${animal.emoji}<small style="position:absolute;right:4px;bottom:2px;font-size:9px;color:rgba(43,50,48,.5)">${index + 1}</small></button>`;
+      style="position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;border:0;border-radius:11px;background:${animal.color};font-size:clamp(22px,7vw,38px);cursor:pointer;box-shadow:${selected ? '0 0 0 4px #2d8f83, inset 0 -4px 0 rgba(0,0,0,.12)' : 'inset 0 -4px 0 rgba(0,0,0,.12)'};transform:${selected ? 'scale(.92)' : 'scale(1)'};transition:transform .12s ease,box-shadow .12s ease;${swapStyle}${effectStyle}">${animal.emoji}${special ? `<i class="animal-match3-special ${special.kind}" aria-label="${special.kind === 'rainbow' ? '무지개 블록' : '라인 제거 블록'}"></i>` : ''}</button>`;
   }).join('');
-  board.querySelectorAll('[data-animal-index]').forEach((button) => {
-    const press = (event) => {
-      if (event.type === 'pointerup' && event.pointerType === 'touch'
-          && Date.now() - ANIMAL_MATCH3.lastTouchAt < 500) return;
-      if (event.type === 'touchend') {
-        if (Date.now() - ANIMAL_MATCH3.lastTouchAt < 500) return;
-        ANIMAL_MATCH3.lastTouchAt = Date.now();
-      }
-      if (handleAnimalMatch3Press(button)) {
-        event.preventDefault(); event.stopPropagation();
-      }
-    };
-    button.addEventListener('pointerup', press);
-    button.addEventListener('touchend', press, { passive: false });
-  });
-  score.textContent = `${ANIMAL_MATCH3.score} / ${ANIMAL_MATCH3.target}`;
-  combo.textContent = `${ANIMAL_MATCH3.combo}`;
+  score.textContent = `${ANIMAL_MATCH3.score}`;
+  moves.textContent = `${ANIMAL_MATCH3.moves}`;
+  highScore.textContent = `${ANIMAL_MATCH3.highScore}`;
+  const message = panelBody.querySelector('#animal-match3-message');
+  if (message && ANIMAL_MATCH3.lastResult) message.textContent = ANIMAL_MATCH3.lastResult;
 }
 function finishAnimalMatch3(success) {
-  ANIMAL_MATCH3.active = false;
-  const message = panelBody.querySelector('#animal-match3-message');
-  if (success) {
-    if (!ANIMAL_MATCH3.rewarded) { ANIMAL_MATCH3.rewarded = true; earn(5, '동물 3매칭 성공'); }
-    if (message) message.textContent = '성공! 동물 친구들과 목표 점수를 달성했어요. +5P';
-  }
+  ANIMAL_MATCH3.active = false; ANIMAL_MATCH3.state = 'GAME_OVER';
+  ANIMAL_MATCH3.lastResult = success ? '게임 종료! 멋진 점수예요.' : 'Move를 모두 사용했어요.';
+  ANIMAL_MATCH3.highScore = Math.max(ANIMAL_MATCH3.highScore, ANIMAL_MATCH3.score);
+  try { localStorage.setItem('girin.match3.highScore', String(ANIMAL_MATCH3.highScore)); } catch { /* private mode */ }
   renderAnimalMatch3();
+  const message = panelBody.querySelector('#animal-match3-message');
+  if (message) message.innerHTML = `<strong>${success ? '게임 종료!' : '게임 종료'}</strong> 최종 점수 ${ANIMAL_MATCH3.score}점`;
 }
 function swapAnimalMatch3(first, second) {
-  if (!ANIMAL_MATCH3.active || !animalMatch3Adjacent(first, second)) return false;
-  [ANIMAL_MATCH3.grid[first], ANIMAL_MATCH3.grid[second]] = [ANIMAL_MATCH3.grid[second], ANIMAL_MATCH3.grid[first]];
-  const result = resolveAnimalMatch3();
-  if (!result.cleared) {
-    [ANIMAL_MATCH3.grid[first], ANIMAL_MATCH3.grid[second]] = [ANIMAL_MATCH3.grid[second], ANIMAL_MATCH3.grid[first]];
-    ANIMAL_MATCH3.combo = 0;
-    return false;
-  }
-  ANIMAL_MATCH3.moves++; ANIMAL_MATCH3.combo = result.chain;
-  ANIMAL_MATCH3.score += result.cleared * 10 + Math.max(0, result.chain - 1) * 25;
+  const engine = animalMatch3Engine();
+  if (!engine || ANIMAL_MATCH3.state !== 'PLAYING' || !animalMatch3Adjacent(first, second)) return false;
+  ANIMAL_MATCH3.state = 'PROCESSING';
+  const firstRow = Math.floor(first / ANIMAL_MATCH3_SIZE), firstCol = first % ANIMAL_MATCH3_SIZE;
+  const secondRow = Math.floor(second / ANIMAL_MATCH3_SIZE), secondCol = second % ANIMAL_MATCH3_SIZE;
+  const dx = `${(secondCol - firstCol) * 100}%`, dy = `${(secondRow - firstRow) * 100}%`;
+  ANIMAL_MATCH3.swap = { indices: [first, second], x: { [first]: dx, [second]: `-${(secondCol - firstCol) * 100}%` }, y: { [first]: dy, [second]: `-${(secondRow - firstRow) * 100}%` } };
   renderAnimalMatch3();
-  if (ANIMAL_MATCH3.score >= ANIMAL_MATCH3.target) finishAnimalMatch3(true);
+  setTimeout(() => {
+    ANIMAL_MATCH3.swap = null;
+    const result = engine.swapIfMatches(ANIMAL_MATCH3.grid, first, second, Math.random, ANIMAL_MATCH3.specials);
+    if (!result.valid) {
+      ANIMAL_MATCH3.state = 'PLAYING';
+      ANIMAL_MATCH3.lastResult = '매치가 되지 않아 원래 자리로 돌아왔어요.';
+      renderAnimalMatch3();
+      return;
+    }
+    ANIMAL_MATCH3.moves -= 1;
+    ANIMAL_MATCH3.combo = result.chains;
+    ANIMAL_MATCH3.score += result.score;
+    ANIMAL_MATCH3.effect = { indices: result.matches.flatMap((size) => Array.from({ length: Math.min(size, 5) }, (_, i) => (first + i) % ANIMAL_MATCH3.grid.length)), size: result.specialCreated?.kind === 'rainbow' ? 5 : result.specialCreated?.kind === 'line' ? 4 : 3 };
+    ANIMAL_MATCH3.lastResult = result.specialActivated === 'rainbow' ? '무지개 블록 발동!'
+      : result.specialActivated === 'line' ? '라인 제거 블록 발동!'
+      : result.specialCreated?.kind === 'rainbow' ? '5개 매치! 무지개 블록이 생겼어요.'
+      : result.specialCreated?.kind === 'line' ? '4개 매치! 라인 블록이 생겼어요.'
+      : result.chains > 1 ? `${result.chains}연쇄! +${result.score}점` : `+${result.score}점`;
+    ANIMAL_MATCH3.state = ANIMAL_MATCH3.moves <= 0 ? 'GAME_OVER' : 'PLAYING';
+    renderAnimalMatch3();
+    setTimeout(() => { ANIMAL_MATCH3.effect = null; renderAnimalMatch3(); }, 360);
+    if (ANIMAL_MATCH3.moves <= 0) finishAnimalMatch3(false);
+  }, 240);
   return true;
 }
 function startAnimalMatch3() {
   panelBody.innerHTML = animalMatch3Html();
-  ANIMAL_MATCH3.active = true; ANIMAL_MATCH3.selected = -1;
-  ANIMAL_MATCH3.score = 0; ANIMAL_MATCH3.moves = 0; ANIMAL_MATCH3.combo = 0; ANIMAL_MATCH3.rewarded = false;
-  ANIMAL_MATCH3.grid = animalMatch3FreshGrid(); renderAnimalMatch3();
+  const engine = animalMatch3Engine();
+  ANIMAL_MATCH3.active = true; ANIMAL_MATCH3.state = 'PLAYING'; ANIMAL_MATCH3.selected = -1;
+  ANIMAL_MATCH3.score = 0; ANIMAL_MATCH3.moves = 24; ANIMAL_MATCH3.combo = 0; ANIMAL_MATCH3.lastResult = null;
+  ANIMAL_MATCH3.specials = new Map(); ANIMAL_MATCH3.swap = null; ANIMAL_MATCH3.effect = null;
+  try { ANIMAL_MATCH3.highScore = Number(localStorage.getItem('girin.match3.highScore')) || 0; } catch { ANIMAL_MATCH3.highScore = 0; }
+  ANIMAL_MATCH3.grid = engine ? engine.createBoard() : [];
+  renderAnimalMatch3();
 }
 
 const PANELS = {
@@ -8772,6 +8736,7 @@ function handleAnimalMatch3Press(target) {
   const start = target.closest('[data-do="animal-match3-start"]');
   if (!tile && !restart && !start) return false;
   if (restart || start) { startAnimalMatch3(); return true; }
+  if (!ANIMAL_MATCH3.active || ANIMAL_MATCH3.state !== 'PLAYING') return true;
   const index = Number(tile.dataset.animalIndex);
   if (ANIMAL_MATCH3.selected < 0) {
     ANIMAL_MATCH3.selected = index; renderAnimalMatch3(); return true;
@@ -8786,9 +8751,8 @@ panelBody.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
   }
   if ((e.pointerType === 'touch' || e.pointerType === 'pen')
-      && Date.now() - ANIMAL_MATCH3.lastTouchAt > 500
       && handleAnimalMatch3Press(e.target)) {
-    ANIMAL_MATCH3.lastTouchAt = Date.now();
+    ANIMAL_MATCH3.lastInputAt = Date.now();
     e.preventDefault();
     e.stopPropagation();
   }
@@ -8801,14 +8765,21 @@ panelBody.addEventListener('touchstart', (e) => {
     e.preventDefault();
     e.stopPropagation();
   }
+});
+panelBody.addEventListener('touchstart', (e) => {
+  /* pointer events cover modern touch browsers; this legacy fallback is kept
+     only for browsers that do not dispatch pointer events. */
+  if (window.PointerEvent || activePanelKey !== 'animalMatch3') return;
+  if (!e.target.closest('[data-animal-index], [data-do="animal-match3-restart"], [data-do="animal-match3-start"]')) return;
+  ANIMAL_MATCH3.lastInputAt = Date.now();
+  if (handleAnimalMatch3Press(e.target)) { e.preventDefault(); e.stopPropagation(); }
 }, { passive: false });
 panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="privacy"]')) return openPanel('privacy');
   if (activePanelKey === 'animalMatch3' && (e.target.closest('[data-animal-index]') || e.target.closest('[data-do="animal-match3-restart"]') || e.target.closest('[data-do="animal-match3-start"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (Date.now() - ANIMAL_MATCH3.lastTouchAt < 500) return;
-    handleAnimalMatch3Press(e.target);
+    if (Date.now() - ANIMAL_MATCH3.lastInputAt >= 500) handleAnimalMatch3Press(e.target);
     return;
   }
   if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {
@@ -10251,6 +10222,11 @@ school.onload = maybeStart;  school.onerror = () => failed('school16.png');
 urban.src = 'assets/urban.png';
 city.src = 'assets/city.png';
 school.src = 'assets/school16.png';
+</script>
+
+<script type="module">
+  import * as animalMatch3Engine from './animal-match3-engine.mjs';
+  window.ANIMAL_MATCH3_ENGINE = animalMatch3Engine;
 </script>
 
 <!-- 위 스크립트의 전역을 쓰므로 반드시 뒤에 옵니다. 순서도 이대로입니다.

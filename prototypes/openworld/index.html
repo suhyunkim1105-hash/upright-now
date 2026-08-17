@@ -3038,7 +3038,9 @@ function paintSchoolProps() {
     px(g, 7, 8, 2, 2, 'rgba(255,255,255,.55)');
   }
 }
-PROP.pennant   = paintedProp('pennant', 1, 2, [0, 0]);
+/* 벽에 거는 것이라 anchor 0 입니다 — 방석과 이유는 다릅니다. 응원기 앞에
+   서면 사람이 앞에 와야 하는데, 발 줄로 정렬하면 깃발이 사람을 덮습니다. */
+PROP.pennant   = { ...paintedProp('pennant', 1, 2, [0, 0]), anchor: 0 };
 /* 방석은 밟고 지나갑니다. anchor 0 이라야 캐릭터가 그 위에 서고,
    안 그러면 방석이 사람을 가립니다(스트레칭 매트에서 겪은 것과 같은 것). */
 PROP.schoolCushion = { ...paintedProp('schoolCushion', 1, 1, [0]), anchor: 0 };
@@ -3164,12 +3166,139 @@ PROP.mirror   = paintedProp('mirror', 1, 2, [0, 1]);
   PAINTED.cushion = c;
 }
 
+/* ---- 방을 넓히면서 더한 것들 ----
+   8×8 에서는 걸을 자리가 세 줄뿐이라 큰 가구를 더 넣을 수 없었습니다.
+   14×11 이 되면서 벽을 따라 붙일 자리가 생겼고, **벽에 붙는 것부터**
+   채웁니다 - 방 한가운데에 물건을 두면 방이 아니라 창고가 됩니다.
+
+   고른 다섯은 전부 "여기 사람이 산다" 를 말하는 것들입니다. 장식용
+   오브제가 아니라 기숙사 방에 실제로 있는 물건이라야 방으로 읽힙니다. */
+
+/* 미니 냉장고 1×2 — 기숙사 방의 상징입니다 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 7, 2);
+  px(g, 2, 3, 12, 28, '#8A9099');                    // 옆면·뒷그늘
+  px(g, 3, 4, 10, 26, '#D8DCE2');                    // 앞면
+  px(g, 3, 4, 10, 2, '#EFF2F6');                     // 윗면 빛
+  px(g, 3, 12, 10, 1, '#9AA0A8');                    // 냉동칸 경계
+  px(g, 11, 7, 1, 4, '#6E757F');                     // 손잡이 둘
+  px(g, 11, 15, 1, 8, '#6E757F');
+  px(g, 3, 29, 10, 2, '#7C818A');                    // 굽
+  /* 문에 붙인 자석과 쪽지. 문이 매끈하면 전시장 물건이 됩니다 - 냉장고는
+     원래 무언가 붙어 있는 면입니다. */
+  px(g, 4, 16, 4, 5, '#F2EAD8');
+  px(g, 4, 16, 4, 1, '#FFFFFF');
+  px(g, 5, 18, 2, 1, '#8A8078');
+  px(g, 9, 17, 2, 2, '#FF6B52');
+  px(g, 9, 21, 2, 2, '#2DD4BF');
+  PAINTED.fridge = c;
+}
+
+/* 책장 1×2 — 세 단. 책등 폭과 높이를 흩어야 책으로 읽힙니다 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 7, 2);
+  px(g, 1, 2, 14, 29, '#6B4A2E');                    // 통
+  px(g, 2, 3, 12, 27, '#3A2718');                    // 안쪽 그늘
+  px(g, 2, 3, 12, 1, '#8A5F3A');
+  px(g, 2, 3, 1, 27, '#5C4029');
+  const spine = ['#B75B4C', '#52739F', '#8B9C48', '#CDC2B1', '#9C6BA0', '#C08A3E'];
+  for (let r = 0; r < 3; r++) {
+    const ry = 4 + r * 9;
+    let bx = 3, k = r * 37 + 11;
+    while (bx < 13) {
+      k = (k * 1103515245 + 12345) & 0x7fffffff;
+      const w = 2 + (k >> 8) % 2;
+      if (bx + w > 13) break;
+      const h = 5 + ((k >> 16) % 3);
+      px(g, bx, ry + (8 - h), w, h, spine[(k >> 20) % 6]);
+      px(g, bx, ry + (8 - h), w, 1, 'rgba(255,255,255,.28)');
+      px(g, bx + w, ry + (8 - h), 1, h, 'rgba(0,0,0,.30)');   // 책 사이 그늘
+      bx += w + 1;
+    }
+    px(g, 2, ry + 8, 12, 2, '#6B4A2E');              // 선반. 앞코가 있어야 판이 됩니다
+    px(g, 2, ry + 8, 12, 1, '#96693F');
+  }
+  PAINTED.bookshelf = c;
+}
+
+/* 2인 소파 2×1 — 친구가 왔을 때 앉는 자리.
+   위에서 내려다보면 소파는 넓고 얕습니다. 두 칸 높이로 그리면 침대가 됩니다. */
+{
+  const c = canvasOf(2, 1), g = c.getContext('2d');
+  shadow(g, 16, 15, 14, 2);
+  px(g, 2, 1, 28, 6, '#415D72');                     // 등받이
+  px(g, 3, 2, 26, 4, '#4E6E86');
+  px(g, 3, 2, 26, 1, '#6789A2');
+  px(g, 1, 4, 4, 9, '#415D72');                      // 팔걸이 둘
+  px(g, 27, 4, 4, 9, '#415D72');
+  px(g, 1, 4, 4, 1, '#6789A2');
+  px(g, 27, 4, 4, 1, '#6789A2');
+  px(g, 5, 6, 22, 7, '#5B7E97');                     // 앉는 자리
+  px(g, 5, 6, 22, 1, '#7FA2BC');
+  px(g, 15, 6, 2, 7, '#415D72');                     // 방석 둘로 가르는 골
+  px(g, 5, 12, 22, 1, '#375063');
+  px(g, 4, 13, 3, 2, '#3A2718');                     // 다리
+  px(g, 25, 13, 3, 2, '#3A2718');
+  PAINTED.sofa = c;
+}
+
+/* 키 큰 화분 1×2 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 6, 2);
+  px(g, 4, 22, 8, 9, '#A8654A');                     // 화분
+  px(g, 4, 22, 8, 2, '#C4805E');
+  px(g, 3, 21, 10, 2, '#8E5238');                    // 테두리
+  px(g, 4, 29, 8, 2, '#7A4632');
+  px(g, 5, 20, 6, 2, FURN.soil);
+  px(g, 7, 8, 2, 13, '#4E7A3E');                     // 줄기
+  px(g, 7, 8, 1, 13, '#639650');                     // 줄기 왼쪽 빛
+  /* 잎 여섯. 좌우 길이를 달리해야 화초가 됩니다 - 대칭이면 조화입니다. */
+  const leaf = [[-6, 10, 6, '#3E7A3D'], [5, 12, 5, '#5FA855'], [-5, 14, 5, '#4C8C46'],
+                [4, 16, 6, '#3E7A3D'], [-4, 18, 4, '#5FA855'], [3, 7, 4, '#6FBA60']];
+  for (const [dx, y, len, col] of leaf) {
+    const dir = dx < 0 ? -1 : 1;
+    for (let i = 0; i < len; i++) {
+      const h = Math.max(1, 3 - ((i / 2) | 0));
+      px(g, 8 + dir * (i + 1) - (dir < 0 ? 1 : 0), y - ((i * 3) / len | 0), 1, h, col);
+    }
+  }
+  disc(g, 8, 7, 2, '#6FBA60');
+  PAINTED.plantTall = c;
+}
+
+/* 빨래 바구니 1×1 — 옷이 삐져나와야 쓰는 물건으로 보입니다 */
+{
+  const c = canvasOf(1, 1), g = c.getContext('2d');
+  shadow(g, 8, 15, 6, 2);
+  px(g, 3, 4, 10, 11, '#B8A47E');                    // 바구니
+  px(g, 4, 5, 8, 9, '#D2BE94');
+  g.fillStyle = 'rgba(120,104,72,.45)';              // 엮은 결
+  for (let y = 6; y < 14; y += 3) g.fillRect(4, y, 8, 1);
+  for (let x = 6; x < 12; x += 3) g.fillRect(x, 5, 1, 9);
+  px(g, 3, 4, 10, 2, '#E0CFA8');                     // 테두리
+  px(g, 5, 2, 5, 3, '#E8EDF2');                      // 삐져나온 옷
+  px(g, 6, 1, 3, 2, '#C4D2E0');
+  px(g, 9, 3, 3, 2, '#F0B8B0');
+  PAINTED.laundry = c;
+}
+
 PROP.wardrobe  = paintedProp('wardrobe', 2, 2);
 PROP.floorLamp = paintedProp('floorLamp', 1, 2, [0, 1]);
 PROP.teddy     = paintedProp('teddy', 1, 1);
 PROP.suitcase  = paintedProp('suitcase', 1, 1);
 PROP.sideTable = paintedProp('sideTable', 1, 1);
-PROP.cushion   = paintedProp('cushion', 1, 1);
+/* 방석은 밟고 지나갑니다. 러그 위에 둘 물건이라 못 지나가면 러그가
+   가운데에 구멍이 난 것이 됩니다 — 학교색 방석과 같은 규칙입니다. */
+PROP.cushion   = { ...paintedProp('cushion', 1, 1, [0]), anchor: 0 };
+PROP.fridge    = paintedProp('fridge', 1, 2);
+PROP.bookshelf = paintedProp('bookshelf', 1, 2);
+/* 화분과 스탠드는 위가 튀어나온 물건입니다 — 밑동만 막습니다 */
+PROP.plantTall = paintedProp('plantTall', 1, 2, [0, 1]);
+PROP.laundry   = paintedProp('laundry', 1, 1);
+PROP.sofa      = { ...paintedProp('sofa', 2, 1), sit: true };
 
 /* ==================================================================
    앉는 자리와 문 — 직접 그립니다
@@ -3866,7 +3995,7 @@ const ZONES = {};
   fillOver(m, 6, 13, 33, 3, M.PLAZA);
 
   /* ---- 건물 넷 ---- */
-  placeBuilding(m, 'bldDorm',    17, 3,  'dorm',     3,  5,  '기숙사');
+  placeBuilding(m, 'bldDorm',    17, 3,  'dorm',     7,  8,  '기숙사');
   placeBuilding(m, 'bldMain',    1,  16, 'mainhall', 18, 25, '본관');
   placeBuilding(m, 'bldLibrary', 32, 16, 'library',  18, 25, '도서관');
   placeBuilding(m, 'bldUnion',   16, 30, 'union',    16, 21, '학생회관');
@@ -4174,58 +4303,99 @@ const ZONES = {};
   m.portals.push({ x: 17, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 6, sy: 25, label: '캠퍼스' });
 }
 
-/* ================== 기숙사 — 미니룸 ==================
-   8×7. 싸이월드 미니룸 크기입니다 — 걸을 자리가 세 줄뿐이고,
-   그게 맞습니다. 1인실은 원래 좁습니다.
+/* ================== 기숙사 — 내 방 ==================
+   8×8 이었습니다. 벽 테두리에 위쪽 두 줄이 더 벽이라 걸을 자리가
+   x1~6 · y3~5, 곧 **여섯 칸 곱하기 세 줄**뿐이었습니다. 거기에 이미
+   책상·노트북·의자·침대·응원기·방석·협탁·곰인형·캐리어·거울이 들어가
+   있어서 바닥이 남지 않았습니다. "옷장과 화분까지 넣었더니 진열장이
+   됐다" 는 것은 물건이 많아서가 아니라 **방이 작아서**였습니다.
 
-   침대 · 책상 · 의자. 이게 전부입니다. 옷장과 화분까지 넣었더니
-   방이 아니라 진열장이 됐습니다.
+   14×11 로 키웁니다. 걸을 자리는 x1~12 · y3~8, 12×6 = 72칸입니다(전 18칸).
 
-   벽에는 안내판과 시계 둘. 기능은 안내판과 마이페이지에만 있습니다. */
+   왜 이 치수인가 —
+     · 세로 11 은 화면에 방이 통째로 들어가는 한계입니다. 화면은
+       700/SCALE(2) = 350px = 10.9칸이고, 지도가 화면보다 작으면 카메라가
+       가운데에 고정됩니다(draw 의 maxY <= 0 갈래). 12줄로 만들면 한 줄이
+       넘쳐 스크롤이 생기고, 그러면 꾸며 놓은 **윗벽과 현관이 한 화면에
+       안 들어옵니다.** 내 방은 통째로 보여야 방입니다.
+     · 가로 14 는 화면 폭 19칸 안에 들어가면서, 벽을 따라 가구를 붙이고도
+       가운데에 러그 깔 자리가 남는 최소치입니다. 12칸 walkable 에 벽쪽
+       가구가 양쪽 두 줄씩 들어가면 가운데 두 줄이 통로로 남습니다.
+     · 개더는 타일 32px 에 사람당 5×5칸을 잡습니다. 1인실 + 놀러 온 친구
+       하나면 50칸이고, 가구를 뺀 자유 공간이 대략 그만큼 나옵니다.
+
+   배치 원칙은 전과 같습니다 — **벽을 따라 붙입니다.** 가운데에 두면
+   가구 카탈로그가 되고, 벽에 붙이면 사는 곳이 됩니다. */
 {
-  const m = makeMap(8, 8, F.beige);
+  const m = makeMap(14, 11, F.beige);
   ZONES.dorm = m; m.name = '기숙사'; m.sub = '내 방 · 1인실';
 
   ring(m, 0, 0, m.w, m.h, F.brickO);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickO);
   m.floor = paintFloor(m.w, m.h, 'laminate'); m.floorKind = SURF.WOOD;
-  floorInlay(m.floor, 2, 4, 3, 2, 'rug');
+  /* 러그는 방 한가운데. 가구가 벽에 붙어 있으니 가운데를 비워 두는데,
+     빈 마루는 복도로 보입니다. 러그가 깔려야 거기가 "쉬는 자리" 가 됩니다. */
+  floorInlay(m.floor, 4, 5, 5, 2, 'rug');
 
+  /* 벽이 넓어진 만큼 걸 것을 늘립니다. 벽은 이미 못 지나가므로 충돌은
+     한 칸도 안 늘어납니다 — 방이 꽉 차 보이게 하는 가장 싼 방법입니다.
+     간격은 그림 눈금으로 잽니다(x*16 이 왼쪽 끝). 겹치면 뒤에 그린 것이
+     앞엣것을 자릅니다. */
   dressRoom(m, IPAL.dorm, [
-    { k: 'guide', x: 2 },      // 아래 한 칸을 비워야 다가갈 수 있습니다
-    { k: 'clockFace', x: 5 },
+    { k: 'shelf', x: 1 },                       // 책상 위 벽 책장
+    { k: 'guide', x: 4 },                       // 아래 (4,3) 을 비워 다가갑니다
+    { k: 'clockFace', x: 7 },
     /* 개인방 창. 이 월드에서 가장 값진 창입니다 - 내 방에 앉아 밖을
-       보는 자리이고, 벽시계 옆이라 시각과 날씨를 한눈에 봅니다. */
-    { k: 'win', x: 7, style: 'grid' },
+       보는 자리이고, 벽시계 옆이라 시각과 날씨를 한눈에 봅니다.
+       침대 머리맡으로 옮겼습니다 — 누워서 보는 창이라야 값집니다. */
+    { k: 'win', x: 9, style: 'grid' },
+    { k: 'banner', x: 12, c: '#B06C42' },       // 옷장 위, 방 색과 같은 갈색
   ]);
-  m.clock = { x: 5, y: 0 };
+  m.clock = { x: 7, y: 0 };
 
-  prop(m, 'desk1', 1, 3); prop(m, 'laptopN', 1, 3);
-  prop(m, 'chair', 1, 5);                 // 앉는 자리. 카메라는 세션 시작에 이미 켜져 있고, 앉으면 화면만 PIP 로 줄어듭니다
-  prop(m, 'bed', 5, 3);
-  /* 좁은 방에도 생활감이 읽히는 작은 물건을 더합니다. 큰 가구를
-     늘리지 않고, 이동 동선과 충돌을 해치지 않는 1칸 소품만 둡니다. */
-  prop(m, 'sideTable', 3, 3);
-  /* 곰인형은 연우님이 (2,6) 에 두셨는데 그 칸이 현관문입니다 —
-     exitDoor(2,6) 가 x2~4 를 쓰고 나중에 그려져서, 인형이 문 밑에 깔려
-     보이지도 않았습니다. 침대(5,3~6,4) 옆으로 내립니다. 여기는 막다른
-     칸이라 막아도 지나다니는 길이 안 줄고, 인형은 침대 옆이 제자리입니다. */
-  prop(m, 'teddy', 6, 5);
-  prop(m, 'suitcase', 6, 6);
-  prop(m, 'mirror', 5, 5);
-  /* 학교 색이 닿는 둘. 벽에 응원기, 바닥에 방석. 과잠·마이페이지
+  /* ---- 북쪽 벽 (y3~4) : 공부 · 잠 ---- */
+  prop(m, 'desk3', 1, 3);                       // 세 칸 책상. 1칸 책상은 책상으로 안 보입니다
+  prop(m, 'laptopN', 1, 3); prop(m, 'books2', 2, 3); prop(m, 'deskLamp', 3, 3);
+  prop(m, 'chair', 2, 4);                       // 앉는 자리. 기숙사는 FOCUS 가 아니라 PIP 는 안 뜹니다
+  prop(m, 'fridge', 5, 3);
+  /* 학교 색이 닿는 둘. 벽에 응원기, 러그에 방석. 과잠·마이페이지
      강조색과 같은 색이라, 방에 들어오면 내 학교가 먼저 보입니다. */
-  prop(m, 'pennant', 4, 3);
-  prop(m, 'schoolCushion', 3, 5);
+  prop(m, 'pennant', 6, 3);
+  prop(m, 'sideTable', 7, 3);                   // 침대 머리맡 협탁
+  prop(m, 'bed', 8, 3);
+  prop(m, 'teddy', 10, 3);
+  prop(m, 'suitcase', 10, 4);
+  prop(m, 'wardrobe', 11, 3);
+
+  /* ---- 가운데 (y5~6) : 러그 위 좌식 ---- */
+  prop(m, 'sideTable', 6, 5);                   // 좌탁
+  prop(m, 'schoolCushion', 5, 6);
+  prop(m, 'cushion', 7, 6);
+
+  /* ---- 남쪽 벽 (y7~8) : 쉬는 자리 ---- */
+  prop(m, 'sofa', 1, 7);                        // 친구가 왔을 때 앉는 자리
+  /* 스탠드와 화분은 소파에서 한 칸 띄웁니다. 붙여 놓았더니 소파 앞
+     (1~2, 8) 두 칸이 사방으로 막힌 주머니가 됐습니다 — 걸어 들어갈 수
+     없는 바닥은 지도에 난 구멍이고, 화면으로는 안 보입니다. */
+  prop(m, 'floorLamp', 4, 7);                   // 밤에 방을 밝히는 유일한 등
+  prop(m, 'plantTall', 5, 7);
+  prop(m, 'bookshelf', 10, 7);
+  prop(m, 'laundry', 11, 8);
+  prop(m, 'mirror', 12, 7);
 
   m.things = [
-    { x: 2, y: 2, name: '안내', panel: 'guide' },
-    { x: 5, y: 5, name: '개인정보 안내', panel: 'privacy' },
-    { x: 3, y: m.h - 2, name: '친구 방 가기', panel: 'friendVisit' },
+    { x: 5, y: 2, name: '안내', panel: 'guide' },
+    { x: 12, y: 7, name: '개인정보 안내', panel: 'privacy' },
+    /* 초인종은 **문 옆**입니다. 전에는 문 한가운데(3, h-2)에 있어서, 다가서면
+       초인철에 닿기 전에 포탈이 먼저 걸렸습니다. 관리인 성재도 "문 옆
+       초인종" 이라고 말합니다 — 말과 자리가 같아야 합니다. */
+    { x: 9, y: m.h - 2, name: '친구 방 가기', panel: 'friendVisit' },
   ];
 
-  prop(m, 'exitDoor', 2, m.h - 2);
-  m.portals.push({ x: 2, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 21, sy: 11, label: '캠퍼스' });
+  /* 문은 가운데입니다(x6~8). 방이 넓어졌으니 구석에 두면 들어와서
+     어디로 가야 하는지가 한 번 더 생각할 일이 됩니다. */
+  prop(m, 'exitDoor', 6, m.h - 2);
+  m.portals.push({ x: 6, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 21, sy: 11, label: '캠퍼스' });
 }
 /* ================== 학생회관 ==================
    NPC 셋이 각각 기능을 맡습니다. 계산대 앞에 줄 설 공간을 비웠습니다 —
@@ -9934,7 +10104,7 @@ function visitRoom(code) {
   VISIT.host = p; VISIT.code = c;
   applySchoolColor();                    // 방 소품이 친구 학교 색으로
   closePanel();
-  enterZone('dorm', 3, 5);
+  enterZone('dorm', 7, 8);
   return { ok: true, msg: p.nickname + '님의 기숙사' };
 }
 
@@ -9956,7 +10126,7 @@ function goHome() {
   VISIT.host = null; VISIT.code = null;
   applySchoolColor();
   closePanel();
-  enterZone('dorm', 3, 5);
+  enterZone('dorm', 7, 8);
 }
 
 /* ---- 값 고치기 ----
@@ -10448,7 +10618,7 @@ const MINI_MATERIAL_COLORS = {
 /* 좌표는 지도 위 자리(x,y)와 실제로 갈 곳(to)이 따로입니다 — 건물
    아이콘은 지붕 가운데에 찍고, 도착은 문 앞이어야 하기 때문입니다. */
 const PLACES = [
-  { id: 'dorm',     to: ['dorm', 3, 5],       x: 22, y: 6,  name: '기숙사',    key: '1' },
+  { id: 'dorm',     to: ['dorm', 7, 8],       x: 22, y: 6,  name: '기숙사',    key: '1' },
   { id: 'mainhall', to: ['mainhall', 18, 25], x: 7,  y: 19, name: '본관',      key: '2' },
   { id: 'library',  to: ['library', 18, 25],  x: 38, y: 19, name: '도서관',    key: '3' },
   { id: 'union',    to: ['union', 16, 21],    x: 23, y: 33, name: '학생회관',  key: '4' },
@@ -11296,11 +11466,20 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+/* 학교 색이 닿는 것을 한 번 칠하고 시작합니다.
+
+   페넌트와 학교 방석은 canvasOf 로 **빈 캔버스만** 만들어 두고
+   paintSchoolProps 가 채우는데, 그 함수를 부르는 곳이 학교 변경 ·
+   친구 방 방문 · 내 방 복귀 셋뿐이었습니다. 그래서 처음 들어온 사람에게는
+   두 기물이 투명한 채로 서 있었습니다 — 방에 놓여 있는데 화면에는 없습니다.
+   여기서 부르는 이유는 ROOM 이 있어야 색을 알 수 있기 때문입니다. */
+applySchoolColor();
+
 let ready = 0;
 function maybeStart() {
   if (++ready < 3) return;
   document.getElementById('boot').classList.add('gone');
-  enterZone('dorm', 3, 5);
+  enterZone('dorm', 7, 8);
   requestAnimationFrame(frame);
   /* 처음 온 사람에게만. 부팅 화면이 걷힌 뒤 한 박자 두고 띄웁니다 —
      같은 순간에 겹치면 둘 다 못 읽습니다. */

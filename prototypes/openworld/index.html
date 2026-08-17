@@ -5284,7 +5284,7 @@ function enterZone(id, sx, sy) {
   if (player.sitting) stand();
   /* 공간이 곧 모드라면 소리도 공간을 따라야 합니다.
      문소리는 포탈에서 이미 울리므로 여기서는 앰비언트만 갈아 답니다. */
-  if (audioWoken) setAmbience(id);
+  if (audioWoken) { setAmbience(id); setMusic(id); }
 }
 window.__teleport = enterZone;
 
@@ -6368,7 +6368,8 @@ const ROOM = {
   wallpaper: 'cream',
   floor: 'laminate',
   music: 'none',
-  bgm: 'on',              // 지금은 곡이 없지만 선택은 남깁니다
+  bgm: 'on',
+  bgmTrack: 'auto',       // 'auto' = 장소마다 정해진 곡. 하나를 고르면 어디서나 그 곡
   sfxOn: 'on',
   camPeek: 'on',          // 세션 동안 웹캠 화면을 띄울지 (앉으면 작은 PIP 로 줄어듭니다)
   sayOn: 'on',            // 자세 말풍선을 캐릭터 머리 위에 띄울지
@@ -8177,7 +8178,10 @@ const PANELS = {
         `<div class="rows">
           <div class="row"><span>웹캠 화면 <em>도서관·본관에서 앉으면 작은 화면으로 나와요</em></span>${chips('camPeek', [['on', '보이기'], ['off', '숨기기']])}</div>
           <div class="row"><span>자세 말풍선 <em>자세가 무너지면 캐릭터가 알려줘요</em></span>${chips('sayOn', [['on', '켬'], ['off', '끔']])}</div>
-          <div class="row"><span>배경 음악 <em>아직 곡이 없어요</em></span>${chips('bgm', [['on', '켬'], ['off', '끔']])}</div>
+          <div class="row"><span>배경 음악</span>${chips('bgm', [['on', '켬'], ['off', '끔']])}</div>
+          <div class="row"><span>곡 <em>장소 따라 = 공간마다 다른 곡</em></span>${
+            chips('bgmTrack', [['auto', '장소 따라'], ['calm', '조용한 오후'],
+                               ['bright', '볕 드는 마당'], ['warm', '저녁 방'], ['night', '늦은 밤']])}</div>
           <div class="row"><span>효과음 <em>발소리·문·코인</em></span>${chips('sfxOn', [['on', '켬'], ['off', '끔']])}</div>
         </div>
         <div class="note" style="margin-top:10px">웹캠 화면을 숨겨도 자세는
@@ -8534,6 +8538,10 @@ panelBody.addEventListener('click', (e) => {
     /* 값이 바뀌면 그 자리에서 듣습니다. 저장만 하고 다음 켤 때 듣게
        하면, 눌러도 아무 일이 없는 설정이 됩니다. */
     if (group === 'sfxOn') SFX.muted = ROOM.sfxOn !== 'on';
+    /* 고른 그 자리에서 바뀝니다. 저장만 하고 다음 장소에서 바뀌게 하면
+       무엇을 고른 건지 귀로 확인할 수 없습니다. */
+    if (group === 'bgmTrack') setMusic(zoneId);
+    if (group === 'bgm') { SOUND.bgm = ROOM.bgm === 'on'; saveSound(); syncSound(); }
     if (group === 'camPeek') syncCamPeek();
     if (group === 'sayOn' && ROOM.sayOn === 'off') { sayEl.classList.remove('on'); clearTimeout(SAY.timer); }
     return;
@@ -8678,6 +8686,110 @@ function stopAmbience() {
   AUDIO.amb = null; AUDIO.ambId = null;
 }
 
+/* ================== 배경 음악 ==================
+   이 저장소의 소리는 전부 코드로 만듭니다 — 오디오 파일이 한 장도 없습니다.
+   음악도 같은 자리에서 만듭니다. 파일을 넣으면 라이선스와 용량이 따라오고,
+   무엇보다 앰비언트와 음색이 따로 놀게 됩니다.
+
+   곡은 넷입니다. 장소마다 기본 곡이 정해져 있고(auto), 사람이 하나를 고르면
+   어디를 가도 그 곡입니다. 장소 색을 소리로 옮긴 것이라 음계가 다릅니다 —
+   조용한 곳은 단조·느리게, 밝은 곳은 장조·빠르게.
+
+   앰비언트를 끄지 않습니다. 앰비언트는 "그 공간의 소음"이고 음악은 그 위에
+   얹는 것이라, 둘이 같이 있어야 도서관이 도서관으로 들립니다. */
+const MUSIC = {
+  calm:   { name: '조용한 오후', bpm: 60, wave: 'sine',     root: 220.00,
+            steps: [0, 7, 11, 7, 4, 7], pad: [0, 7],     gain: 0.055, len: 1.9 },
+  bright: { name: '볕 드는 마당', bpm: 92, wave: 'triangle', root: 293.66,
+            steps: [0, 4, 7, 9, 7, 4, 2, 4], pad: [0, 4, 7], gain: 0.042, len: 0.9 },
+  warm:   { name: '저녁 방',     bpm: 54, wave: 'sine',     root: 174.61,
+            steps: [0, 3, 7, 10, 7, 3], pad: [0, 3, 7], gain: 0.060, len: 2.2 },
+  night:  { name: '늦은 밤',     bpm: 46, wave: 'sine',     root: 146.83,
+            steps: [0, 5, 7, 12, 7, 5], pad: [0, 7],     gain: 0.055, len: 2.6 },
+};
+/* 장소별 기본 곡. 본관은 도서관과 같은 곡을 씁니다 — 둘 다 "집중하는 곳"
+   이라 음악까지 다르면 공간이 아니라 곡이 기억에 남습니다. */
+const ZONE_TRACK = {
+  library: 'calm', mainhall: 'calm', dorm: 'warm', union: 'bright', campus: 'bright',
+};
+const semi = (root, n) => root * Math.pow(2, n / 12);
+
+const BGM = { id: null, timer: 0, step: 0, next: 0, out: null, pad: null };
+
+/** 지금 울려야 할 곡. 사람이 고른 게 있으면 그것, 아니면 장소 기본. */
+function trackFor(zone) {
+  const pick = ROOM.bgmTrack || 'auto';
+  if (pick === 'off') return null;
+  if (pick !== 'auto') return MUSIC[pick] ? pick : null;
+  return ZONE_TRACK[zone] || null;
+}
+
+function stopMusic() {
+  clearTimeout(BGM.timer); BGM.timer = 0;
+  if (!AUDIO.ctx) { BGM.id = null; return; }
+  const t = AUDIO.ctx.currentTime;
+  for (const node of [BGM.out, BGM.pad]) {
+    if (!node) continue;
+    node.gain.cancelScheduledValues(t);
+    node.gain.setValueAtTime(node.gain.value, t);
+    node.gain.linearRampToValueAtTime(0, t + 0.6);
+  }
+  const dying = BGM.padOsc || [];
+  setTimeout(() => dying.forEach((o) => { try { o.stop(); } catch { /* 이미 멈춤 */ } }), 800);
+  BGM.out = null; BGM.pad = null; BGM.padOsc = null; BGM.id = null;
+}
+
+/** 음 하나. 붙였다 떼는 소리라 감쇠가 길어야 방에 남습니다. */
+function pluck(ctx, freq, at, spec) {
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = spec.wave; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, at);
+  g.gain.linearRampToValueAtTime(spec.gain, at + 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + spec.len);
+  o.connect(g); g.connect(BGM.out);
+  o.start(at); o.stop(at + spec.len + 0.05);
+}
+
+/* 앞을 내다보며 예약합니다. requestAnimationFrame 으로 음을 내면 탭이
+   가려질 때 프레임이 멈춰 음악도 끊깁니다 — 그러면 다른 탭에서 일하는
+   동안 소리가 사라집니다. WebAudio 시계에 미리 꽂아 둡니다. */
+function pumpMusic() {
+  const ctx = AUDIO.ctx, spec = MUSIC[BGM.id];
+  if (!ctx || !spec) return;
+  const beat = 60 / spec.bpm;
+  while (BGM.next < ctx.currentTime + 0.6) {
+    const n = spec.steps[BGM.step % spec.steps.length];
+    pluck(ctx, semi(spec.root, n), Math.max(BGM.next, ctx.currentTime + 0.02), spec);
+    BGM.step++; BGM.next += beat;
+  }
+  BGM.timer = setTimeout(pumpMusic, 250);
+}
+
+function setMusic(zone) {
+  const want = trackFor(zone);
+  if (BGM.id === want) return;
+  stopMusic();
+  if (!want) return;
+  const ctx = audioCtx();
+  if (!ctx) return;
+  const spec = MUSIC[want];
+
+  BGM.out = ctx.createGain(); BGM.out.gain.value = 1; BGM.out.connect(AUDIO.bgmGain);
+  /* 화음 한 겹 — 음만 있으면 방이 비어 들립니다. 아주 작게 깔아 둡니다. */
+  BGM.pad = ctx.createGain(); BGM.pad.gain.value = 0;
+  BGM.pad.connect(AUDIO.bgmGain);
+  BGM.padOsc = spec.pad.map((n) => {
+    const o = ctx.createOscillator();
+    o.type = 'sine'; o.frequency.value = semi(spec.root / 2, n);
+    o.connect(BGM.pad); o.start();
+    return o;
+  });
+  BGM.pad.gain.linearRampToValueAtTime(spec.gain * 0.5, ctx.currentTime + 1.2);
+
+  BGM.id = want; BGM.step = 0; BGM.next = ctx.currentTime + 0.15;
+  pumpMusic();
+}
+
 /** 장소가 바뀌면 앞엣것을 접고 새로 답니다. 뚝 끊으면 문을 지날 때마다
     딸깍 소리가 납니다 — 0.5초씩 겹쳐 넘깁니다. */
 function setAmbience(id) {
@@ -8735,6 +8847,7 @@ function wakeAudio() {
   ctx.resume?.();
   SFX.unlock();
   setAmbience(zoneId);
+  setMusic(zoneId);
 }
 addEventListener('keydown', wakeAudio, { once: false });
 addEventListener('pointerdown', wakeAudio, { once: false });

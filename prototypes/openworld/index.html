@@ -8116,7 +8116,7 @@ function pastSessionsHtml() {
    사용하고, 같은 동물 3개 이상을 이어서 없애는 짧은 퍼즐 한 판입니다.
    ================================================================== */
 const ANIMAL_MATCH3 = {
-  active: false, grid: [], selected: -1,
+  active: false, grid: [], selected: -1, lastTouchAt: 0,
   score: 0, moves: 0, combo: 0, target: 300, rewarded: false,
 };
 const ANIMAL_MATCH3_TYPES = [
@@ -8755,16 +8755,28 @@ panelBody.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
   }
-  if ((e.pointerType === 'touch' || e.pointerType === 'pen') && handleAnimalMatch3Press(e.target)) {
+  if ((e.pointerType === 'touch' || e.pointerType === 'pen')
+      && Date.now() - ANIMAL_MATCH3.lastTouchAt > 500
+      && handleAnimalMatch3Press(e.target)) {
     e.preventDefault();
     e.stopPropagation();
   }
 });
+panelBody.addEventListener('touchstart', (e) => {
+  if (activePanelKey !== 'animalMatch3') return;
+  if (!e.target.closest('[data-animal-index], [data-do="animal-match3-restart"]')) return;
+  ANIMAL_MATCH3.lastTouchAt = Date.now();
+  if (handleAnimalMatch3Press(e.target)) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, { passive: false });
 panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="privacy"]')) return openPanel('privacy');
   if (activePanelKey === 'animalMatch3' && (e.target.closest('[data-animal-index]') || e.target.closest('[data-do="animal-match3-restart"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();
+    if (Date.now() - ANIMAL_MATCH3.lastTouchAt < 500) return;
     handleAnimalMatch3Press(e.target);
     return;
   }

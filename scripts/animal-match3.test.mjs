@@ -13,6 +13,7 @@ assert.doesNotMatch(html, /panel: 'turtleMaze'/)
 assert.match(html, /function swapAnimalMatch3/)
 assert.match(html, /function resolveAnimalMatch3/)
 assert.match(html, /pointerdown[\s\S]*handleAnimalMatch3Press/)
+assert.match(html, /touchstart[\s\S]*handleAnimalMatch3Press/)
 assert.doesNotMatch(html, /ANIMAL_MATCH3\.timer\s*[=:]/)
 assert.doesNotMatch(html, /finishAnimalMatch3\(false\)/)
 

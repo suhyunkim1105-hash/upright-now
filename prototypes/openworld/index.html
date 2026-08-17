@@ -6071,6 +6071,35 @@ const POSTURE_BADGE = {
   warning: { icon: '\u0021', text: '주의' },
   bad:     { icon: '\u2715', text: '굽음' },
 };
+/* ================== 캐릭터가 대신 무너집니다 ==================
+   알림을 보내는 대신 내 캐릭터가 같이 처집니다. "자세가 나쁩니다" 는
+   죄책감을 주고 사흘이면 끕니다. 내 것이 힘들어하면 고치게 됩니다.
+
+   값 하나(droop 0~1)로 머리 높이·몸통 눌림·눈꺼풀을 함께 움직입니다.
+   따로 두면 셋이 각자 놀아서 사람이 아니라 부품으로 보입니다. */
+const DROOP = {
+  now: 0,        // 화면에 그려지는 값 (부드럽게 따라옵니다)
+  target: 0,     // 판정이 준 값
+  flash: 0,      // 회복 반짝임 남은 양
+  wasBad: false,
+};
+/* 지수이동평균 — 각도가 튀면 캐릭터가 경련합니다. 0.3초쯤 뒤따라옵니다.
+   올라갈 때(무너질 때)보다 내려올 때(회복)를 빠르게 둡니다: 회복은
+   바로 보상으로 느껴져야 하고, 무너짐은 천천히 와야 겁주지 않습니다. */
+function feedDroop(dev) {
+  /* 편차 1.0 이 "주의 들어감" 이라, 2.0 을 완전히 늘어진 상태로 봅니다. */
+  DROOP.target = Math.max(0, Math.min(1, (dev - 0.6) / 1.4));
+}
+function stepDroop() {
+  const d = DROOP.target - DROOP.now;
+  DROOP.now += d * (d > 0 ? 0.06 : 0.14);
+  /* 회복 순간 — 이 반짝임이 이 기능에서 제일 중요한 한 프레임입니다. */
+  const bad = DROOP.now > 0.55;
+  if (DROOP.wasBad && !bad) DROOP.flash = 1;
+  DROOP.wasBad = bad;
+  if (DROOP.flash > 0) DROOP.flash = Math.max(0, DROOP.flash - 0.05);
+}
+
 function paintPosture(kind) {
   if (!camWrap) return;
   camWrap.dataset.posture = kind || 'idle';
@@ -6097,14 +6126,74 @@ function drawCamAvatar() {
   }
   const box = camWrap.getBoundingClientRect();
   const z = Math.max(1, Math.floor(Math.min(box.width / CHAR_W, (box.height - 18) / CHAR_H)));
-  avatarCv.width = CHAR_W * z; avatarCv.height = CHAR_H * z;
+  /* 처지면 머리가 아래로 내려가므로 위에 여유를 둡니다. 캔버스를 딱 맞게
+     잡으면 고개를 숙일 때 정수리가 잘립니다. */
+  const PAD = 4;
+  avatarCv.width = CHAR_W * z; avatarCv.height = (CHAR_H + PAD) * z;
   const g = avatarCv.getContext('2d');
   g.imageSmoothingEnabled = false;
   g.clearRect(0, 0, avatarCv.width, avatarCv.height);
-  /* down 프레임 — 앞을 봅니다. 카메라 자리에 뒤통수가 서 있으면 이상합니다. */
-  g.drawImage(sheet, CHAR_W * ITEM_DIR.down, 0, CHAR_W, CHAR_H,
-              0, 0, avatarCv.width, avatarCv.height);
+
+  const d = DROOP.now;
+  const sx = CHAR_W * ITEM_DIR.down;   // down 프레임 — 앞을 봅니다
+
+  /* 목에서 자릅니다. 눈이 y14~17 이므로 y20 이 턱 아래입니다.
+     한 장으로 그리면 고개만 숙이는 것을 표현할 수 없습니다. */
+  const NECK = 20;
+
+  /* 몸 — 발을 붙인 채로 세로만 눌립니다. 발이 같이 내려가면 캐릭터가
+     바닥으로 꺼져 보입니다. */
+  const bodyH = CHAR_H - NECK;
+  const squash = 1 - d * 0.10;
+  const bodyTop = PAD + NECK + bodyH * (1 - squash);
+  g.drawImage(sheet, sx, NECK, CHAR_W, bodyH,
+              0, bodyTop * z, CHAR_W * z, bodyH * squash * z);
+
+  /* 머리 — 아래로 내려오고 살짝 넓어집니다(눌린 느낌).
+     좌우로 조금 흔들리게 두면 "축 처졌다" 가 정지화면이 아니라 상태로 읽힙니다. */
+  const sway = d > 0.15 ? Math.sin(performance.now() / 900) * d * 0.8 : 0;
+  const headDy = d * 3.4;
+  const headW = CHAR_W * (1 + d * 0.04);
+  g.drawImage(sheet, sx, 0, CHAR_W, NECK,
+              ((CHAR_W - headW) / 2 + sway) * z, (PAD + headDy) * z,
+              headW * z, NECK * z);
+
+  /* 눈꺼풀 — 많이 처졌을 때만. 눈동자 줄(y14~16) 위쪽 절반을 덮습니다.
+     스프라이트에서 눈 색을 뽑아 쓰지 않고 어두운 반투명을 얹습니다 —
+     종마다 눈 색이 달라 한 색으로 칠하면 어떤 종은 눈이 사라집니다. */
+  if (d > 0.5) {
+    const lid = (d - 0.5) / 0.5;
+    g.fillStyle = 'rgba(24,18,16,' + (0.55 * lid).toFixed(3) + ')';
+    g.fillRect(8 * z, (PAD + headDy + 13) * z, 16 * z, Math.max(1, Math.round(2 * lid)) * z);
+  }
+
+  /* 회복 반짝 — 이 한 프레임이 이 기능의 보상입니다. */
+  if (DROOP.flash > 0) {
+    g.globalCompositeOperation = 'lighter';
+    g.fillStyle = 'rgba(255,246,200,' + (0.5 * DROOP.flash).toFixed(3) + ')';
+    g.fillRect(0, 0, avatarCv.width, avatarCv.height);
+    g.globalCompositeOperation = 'source-over';
+  }
+
+  /* 세션이 안 도는 동안은 잠듭니다 — 회의 모드가 여기에 얹힙니다. */
+  if (LIVE.state === 'idle') {
+    g.fillStyle = 'rgba(90,74,68,.75)';
+    g.font = 'bold ' + (7 * z) + 'px sans-serif';
+    g.fillText('z', 23 * z, (PAD + 6) * z);
+    g.font = 'bold ' + (5 * z) + 'px sans-serif';
+    g.fillText('z', 27 * z, (PAD + 3) * z);
+  }
 }
+
+/* 캐릭터만 따로 도는 시계. 월드 루프에 얹으면 월드를 안 볼 때(다른 탭)
+   멈추고, 이 앱은 다른 탭에서 일하라고 만든 앱입니다. 20fps 면 처지는
+   움직임에 충분하고 픽셀 한 장 다시 굽는 비용도 작습니다. */
+setInterval(() => {
+  if (!faceOff) return;
+  const before = DROOP.now;
+  stepDroop();
+  if (Math.abs(DROOP.now - before) > 0.002 || DROOP.flash > 0) drawCamAvatar();
+}, 50);
 function setFaceOff(v) {
   faceOff = !!v;
   camWrap.classList.toggle('face-off', faceOff);
@@ -6302,6 +6391,11 @@ function poseLoop() {
   LIVE.arb = POSE.step(LIVE.arb, v, now);
   const s = LIVE.arb.current;
   drawSkeleton(out.landmarks, STATE_COLOR[s]);
+  /* 캐릭터가 따라 처지는 데 쓰는 값. 좋음/주의/나쁨 세 칸으로는 캐릭터가
+     계단처럼 움직여서, **가장 벗어난 축의 편차**를 그대로 씁니다.
+     절대 각도가 아니라 본인 기준선 대비라(median·MAD) 거북목인 사람이
+     켜자마자 처져 있지 않습니다 — 이게 이 값을 쓰는 이유입니다. */
+  feedDroop(v && isFinite(v.maxPrimary) ? v.maxPrimary : 0);
   setState(s);
 }
 

@@ -3708,8 +3708,8 @@ const ZONES = {};
     { x: 25, y: 11, sprite: 104, name: '기숙사 관리인 · 성재',
       lines: [
         '이 방은 혼자 쓰는 1인실이에요. 문 잠그는 건 신경 안 쓰셔도 됩니다.',
-        '곧 친구 방에 놀러 갈 수 있게 될 거예요. 초대 코드를 받아서 넣으면 그 친구 방으로 넘어갑니다.',
-        '지금은 설정에서 내 코드를 만들어 둘 수 있어요. 친구가 그 코드로 찾아옵니다.',
+        '친구 방에 놀러 갈 수 있어요. 문 옆 초인종에서 친구 코드를 넣으면 그 방으로 넘어갑니다.',
+        '내 코드는 설정에서 만들어요. 친구가 그 코드로 찾아옵니다.',
       ] },
   );
 
@@ -4017,7 +4017,14 @@ const ZONES = {};
      넣었더니 방이 아니라 진열장이 됐던 판이 있었습니다(위 주석). */
   prop(m, 'plantS', 6, 5); prop(m, 'plant', 3, 3);
 
-  m.things = [{ x: 2, y: 2, name: '안내', panel: 'guide' }];
+  /* 문 옆 초인종 — 친구 방으로 넘어가는 입구입니다.
+     visitRoom() 은 예전부터 다 만들어져 있었는데 **부르는 곳이 없어서**
+     기능 전체가 닿을 수 없는 상태였습니다. 문 옆이 맞는 자리입니다 —
+     남의 집에 가는 일이니 나가는 문 옆에 있어야 뜻이 통합니다. */
+  m.things = [
+    { x: 2, y: 2, name: '안내', panel: 'guide' },
+    { x: 3, y: m.h - 2, name: '친구 방 가기', panel: 'friendVisit' },
+  ];
 
   prop(m, 'exitDoor', 2, m.h - 2);
   m.portals.push({ x: 2, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 21, sy: 11, label: '캠퍼스' });
@@ -7938,6 +7945,44 @@ const PANELS = {
     };
   },
 
+  /* ---- 친구 방 ----
+     visitRoom() 은 있는데 부르는 곳이 없어서 닿을 수 없던 기능입니다.
+     여기가 그 입구입니다. 코드를 만드는 일은 설정이 이미 맡고 있어서
+     여기서는 **보여 주고 쓰기만** 합니다 — 만드는 자리가 둘이면 어느
+     쪽이 진짜인지 알 수 없게 됩니다. */
+  friendVisit: () => {
+    const mine = ROOM.invite && INVITE.valid(ROOM.invite) ? ROOM.invite : null;
+    const away = !!VISIT.host;
+    return {
+      title: away ? VISIT.host.nickname + '님의 기숙사' : '친구 방 가기', kind: 'ROOM',
+      html: `
+        ${away ? `
+          <p>지금 <b>${esc(VISIT.host.nickname)}</b>님의 방에 와 있어요.
+          소품 색이 ${esc(VISIT.host.school)} 색으로 바뀌어 있습니다.</p>
+          <button class="act" data-do="visit-home" style="margin-bottom:14px">내 방으로 돌아가기</button>
+          <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">` : ''}
+        <p>친구에게 받은 <b>여섯 자리 코드</b>를 넣으면 그 친구 방으로 넘어갑니다.</p>
+        <div class="rows" style="margin:12px 0">
+          <div class="row">
+            <span>친구 코드</span>
+            <span class="val"><input id="visit-code" maxlength="6" autocomplete="off"
+              inputmode="latin" placeholder="ABC123"
+              style="width:110px;text-transform:uppercase;letter-spacing:.14em;
+                     font-weight:700;padding:6px 8px;border:1px solid var(--line);
+                     border-radius:8px;background:var(--surface)"></span>
+          </div>
+        </div>
+        <button class="act" data-do="visit-go">가기</button>
+        <p id="visit-msg" role="status" style="min-height:18px;margin:10px 0 0;font-size:11.5px"></p>
+        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
+        <p>내 코드 ${mine
+          ? `— 친구에게 알려 주면 찾아옵니다.<br><b style="font-size:18px;letter-spacing:.18em">${esc(mine)}</b>`
+          : `는 아직 없어요. <b>설정</b>에서 만들 수 있습니다.`}</p>
+        <div class="note">코드는 영문·숫자 여섯 자예요. 헷갈리는 0·O·1·I 는
+        쓰지 않습니다 — 받아적다 틀리는 자리라서요.</div>`,
+    };
+  },
+
   guide: () => ({
     title: '기린캠퍼스 안내', kind: 'GUIDE',
     html: `
@@ -8271,7 +8316,30 @@ panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="escape-restart"]')) return startEscapeRoom();
   if (e.target.closest('[data-do="escape-clue"]')) return revealEscapeClue(Number(e.target.closest('[data-do="escape-clue"]').dataset.clue));
   if (e.target.closest('[data-do="escape-submit"]')) return submitEscapeCode();
+  if (e.target.closest('[data-do="visit-go"]')) return goVisit();
+  if (e.target.closest('[data-do="visit-home"]')) return goHome();
 });
+
+/* 친구 방으로. visitRoom() 이 판정과 이동을 다 하고, 여기서는 입력을
+   건네고 실패 문장을 보여 주기만 합니다 — 틀린 이유마다 다른 문장이
+   돌아오므로 그대로 씁니다. */
+function goVisit() {
+  const el = document.getElementById('visit-code');
+  const msg = document.getElementById('visit-msg');
+  if (!el) return;
+  const r = visitRoom(el.value);
+  if (r.ok) return;                       // 성공하면 패널이 닫히고 방이 바뀝니다
+  if (msg) { msg.textContent = r.msg; msg.style.color = 'var(--bad)'; }
+  el.focus(); el.select();
+}
+/* 내 방으로. 방문 상태만 지우고 같은 기숙사로 다시 들어갑니다 —
+   지도는 하나이고 달라지는 것은 소품 색과 이름표뿐입니다. */
+function goHome() {
+  VISIT.host = null; VISIT.code = null;
+  applySchoolColor();
+  closePanel();
+  enterZone('dorm', 3, 5);
+}
 
 /* ---- 값 고치기 ----
    업라이트 마이페이지의 편집 흐름을 그대로 옮겼습니다. 다만 모달을

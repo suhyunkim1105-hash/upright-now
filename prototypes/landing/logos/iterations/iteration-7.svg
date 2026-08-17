@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- it-7 v2 · Colorforms: 모니터 앞에 곧게 앉은 사람 — 머리·L몸·모니터 세 덩어리 -->
+  <g id="plate">
+    <rect x="16" y="16" width="480" height="480" rx="112" fill="#2DD4BF"/>
+  </g>
+  <g id="figure">
+    <circle id="head" cx="188" cy="140" r="50" fill="#F7F8F8"/>
+    <path id="body" fill="#101312"
+      d="M 160 204
+         L 216 204
+         L 216 312
+         L 330 312
+         A 29 29 0 0 1 330 370
+         L 189 370
+         A 29 29 0 0 1 160 341
+         Z"/>
+    <rect id="monitor" x="318" y="150" width="62" height="150" rx="26" fill="#F7F8F8"/>
+  </g>
+</svg>

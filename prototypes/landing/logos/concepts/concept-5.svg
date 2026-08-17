@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Deskfit concept 5: desk with growth -->
+  <g id="sprout" fill="#2DD4BF">
+    <rect id="stem" x="238" y="84" width="36" height="280" rx="18"/>
+    <ellipse id="leaf-left" cx="198" cy="119" rx="70" ry="38" transform="rotate(40 198 119)"/>
+    <ellipse id="leaf-right" cx="314" cy="119" rx="70" ry="38" transform="rotate(-40 314 119)"/>
+  </g>
+  <g id="desk" fill="#2B3230">
+    <path id="slab-and-legs" d="M64 356 A24 24 0 0 1 88 332 H424 A24 24 0 0 1 448 356 A24 24 0 0 1 424 380 H400 V428 A16 16 0 0 1 384 444 H372 A16 16 0 0 1 356 428 V380 H156 V428 A16 16 0 0 1 140 444 H128 A16 16 0 0 1 112 428 V380 H88 A24 24 0 0 1 64 356 Z"/>
+  </g>
+</svg>

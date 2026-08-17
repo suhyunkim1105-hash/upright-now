@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- it-12 v2 · 곁의 신호: 곧게 선 크림 기둥, 머리 곁에서 퍼지는 두 호 -->
+  <g id="plate">
+    <rect x="16" y="16" width="480" height="480" rx="112" fill="#2DD4BF"/>
+  </g>
+  <g id="upright">
+    <rect x="148" y="150" width="62" height="230" rx="31" fill="#F7F8F8"/>
+  </g>
+  <g id="arcs" fill="none" stroke="#101312" stroke-width="34" stroke-linecap="round">
+    <path d="M 262 130 A 92 92 0 0 1 342 222"/>
+    <path d="M 276 232 A 40 40 0 0 1 312 272"/>
+  </g>
+</svg>

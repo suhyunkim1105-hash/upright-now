@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- it-8 · Open Axis: 한 축 위에 정렬된 척추 — 닿지 않는 간격이 긴장을 만든다 -->
+  <g id="plate">
+    <rect x="16" y="16" width="480" height="480" rx="112" fill="#2DD4BF"/>
+  </g>
+  <g id="spine">
+    <circle id="head" cx="256" cy="124" r="48" fill="#F7F8F8"/>
+    <rect id="v1" x="204" y="196" width="104" height="74" rx="34" fill="#101312"/>
+    <rect id="v2" x="204" y="292" width="104" height="74" rx="34" fill="#101312"/>
+    <rect id="v3" x="204" y="388" width="104" height="52" rx="26" fill="#101312"/>
+  </g>
+</svg>

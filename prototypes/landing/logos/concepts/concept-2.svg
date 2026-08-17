@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Deskfit concept 2: seated figure, perfectly upright teal spine -->
+  <g id="seat">
+    <path d="M132 408H404" fill="none" stroke="#2B3230" stroke-width="64" stroke-linecap="round"/>
+  </g>
+  <g id="back">
+    <path d="M132 408V232" fill="none" stroke="#2DD4BF" stroke-width="80" stroke-linecap="round"/>
+  </g>
+  <g id="head">
+    <circle cx="132" cy="112" r="56" fill="#2B3230"/>
+  </g>
+</svg>

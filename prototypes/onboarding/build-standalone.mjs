@@ -33,7 +33,9 @@ for (const p of [src, fontCss]) {
 let html = readFileSync(src, 'utf8');
 
 /* ---- 1. 서체 — 쓰는 글자가 든 subset 만 ---- */
-const linkPattern = /(?:<!--[\s\S]*?-->\s*)?<link rel="stylesheet" href="\.\.\/\.\.\/upright-now[^>]*>/;
+/* 워크스페이스(루트 prototypes)와 저장소(upright-now/prototypes)는 서체
+   상대경로가 한 단계 다릅니다. 어느 쪽에서 돌려도 찾도록 둘 다 받습니다. */
+const linkPattern = /(?:<!--[\s\S]*?-->\s*)?<link rel="stylesheet" href="\.\.\/\.\.\/(?:upright-now\/)?public[^>]*>/;
 if (!linkPattern.test(html)) {
   console.error('폰트 link 태그를 못 찾았습니다. index.html 이 바뀌었는지 확인하세요.');
   process.exit(1);

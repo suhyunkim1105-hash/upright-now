@@ -1,5 +1,5 @@
 /* ==================================================================
-   기린캠퍼스 — 채팅
+   Deskfit — 채팅
 
    multiplayer.js 뒤에 읽힙니다. 말은 전부 MP 를 거쳐 갑니다 —
    내가 한 말도 서버가 되돌려 준 것을 그립니다(에코). 그래야 필터를
@@ -22,13 +22,14 @@
   /* ================== 화면 ================== */
   const css = document.createElement('style');
   css.textContent = `
+  /* 왼쪽 아래. 전에는 화면 한복판 아래였는데, 캐릭터 바로 밑이라
+     NPC 앞에서 뜨는 안내가 채팅에 가렸습니다. 오른쪽 아래는 세션·코인·
+     웹캠이 쓰므로 남은 자리는 왼쪽입니다. */
   #chat {
-    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
-    z-index: 7; width: min(440px, calc(100vw - 620px));
+    position: fixed; left: 20px; bottom: 18px;
+    z-index: 7; width: min(400px, calc(100vw - 420px));
     display: flex; flex-direction: column; gap: 7px; align-items: stretch;
   }
-  /* 화면이 좁으면 좌우 HUD 와 겹칩니다. 겹치느니 아래로 내립니다. */
-  @media (max-width: 1180px) { #chat { width: min(440px, calc(100vw - 40px)); bottom: 106px; } }
 
   #chat-log {
     display: flex; flex-direction: column; gap: 3px;
@@ -93,6 +94,14 @@
   .chat-bubble.emo { font-size: 22px; padding: 3px 9px; line-height: 1.1; }
   .chat-bubble.mine { background: #FFF0EB; }
   .chat-bubble.mine::after { background: #FFF0EB; }
+
+  /* ---- 숨기기 ----
+     설정에서 끄면 **읽는 것만** 닫습니다. 입력줄은 남습니다 — 쓰는 것과
+     읽는 것은 다른 결정이고, 조용히 있고 싶은 사람도 말은 걸 수 있어야
+     합니다. Enter 로 입력줄에 들어가면 그동안만 목록이 열립니다. */
+  body.chat-quiet #chat-log,
+  body.chat-quiet .chat-bubble { display: none; }
+  body.chat-quiet.chat-peek #chat-log { display: flex; }
   `;
   document.head.append(css);
 
@@ -129,6 +138,9 @@
   const CHAT = {
     /** @param {string} text @returns {string} 걸러진 문장 */
     filter(text) { return text; },
+    /** 남의 말을 화면에 띄울지. 끄면 최근 대화와 머리 위 말풍선이 닫히고,
+        입력줄은 그대로 남습니다. 설정(마이페이지)이 부릅니다. */
+    setVisible(on) { document.body.classList.toggle('chat-quiet', !on); },
   };
   window.CHAT = CHAT;
 
@@ -199,8 +211,10 @@
   function open() { inputEl.focus(); barEl.classList.add('hot'); }
   function close() { inputEl.blur(); barEl.classList.remove('hot'); }
 
-  inputEl.addEventListener('focus', () => barEl.classList.add('hot'));
-  inputEl.addEventListener('blur', () => barEl.classList.remove('hot'));
+  /* 입력줄에 들어가 있는 동안만 목록을 엽니다(숨기기를 켠 경우). */
+  const peek = (on) => document.body.classList.toggle('chat-peek', on);
+  inputEl.addEventListener('focus', () => { barEl.classList.add('hot'); peek(true); });
+  inputEl.addEventListener('blur', () => { barEl.classList.remove('hot'); peek(false); });
   box.querySelector('#chat-send').addEventListener('click', send);
 
   /* 캡처 단계입니다.

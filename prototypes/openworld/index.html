@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="ko">
 <meta charset="utf-8">
-<title>기린캠퍼스 — 오픈월드 프로토타입</title>
+<title>Deskfit — 오픈월드 프로토타입</title>
 <!-- Wanted Sans — UI 전용입니다. 월드 안의 픽셀 글자는 Malgun Gothic 을
      1비트로 잘라 만들므로 그쪽 서체 사슬은 건드리지 않습니다. -->
-<link rel="stylesheet" href="../../upright-now/public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
 
 <style>
   /* ==================================================================
-     기린캠퍼스 — 화면 색
+     Deskfit — 화면 색
 
      제품은 밝은 서비스이고, 그 안에 픽셀 세계가 들어 있습니다. ZEP 이
      그렇듯 UI 는 흰 판이고 월드만 그림입니다. 예전 다크라임은 월드와
@@ -993,7 +993,7 @@
 
 <div id="minimap">
   <div class="mini-box">
-    <header><b>기린캠퍼스</b><u>M · 눌러서 이동</u>
+    <header><b>Deskfit</b><u>M · 눌러서 이동</u>
       <button type="button" id="minimap-close" aria-label="닫기">×</button></header>
     <div class="mini-wrap">
       <canvas id="minimap-cv"></canvas>
@@ -1020,11 +1020,11 @@
     </div>
   </div>
 </div>
-<div id="boot">기린캠퍼스를 세우는 중…</div>
+<div id="boot">Deskfit을 세우는 중…</div>
 
 <script>
 /* ==================================================================
-   기린캠퍼스 — 캠퍼스 오픈월드
+   Deskfit — 캠퍼스 오픈월드
 
    세 벌의 타일을 씁니다.
      urban.png    Kenney RPG Urban Pack (CC0) · 16px · 야외·캐릭터
@@ -3635,7 +3635,7 @@ const ZONES = {};
    마주 지나가도 안 막힙니다. */
 {
   const m = makeMap(46, 42, F.grass);
-  ZONES.campus = m; m.name = '기린캠퍼스'; m.sub = '중앙 광장';
+  ZONES.campus = m; m.name = '캠퍼스'; m.sub = '중앙 광장';
 
   /* ---- 모서리 넷 ----
      처음엔 숲으로 막아 십자로 잘랐습니다. 막는 것과 채우는 것 중
@@ -7795,7 +7795,7 @@ const PANELS = {
   },
 
   guide: () => ({
-    title: '기린캠퍼스 안내', kind: 'GUIDE',
+    title: 'Deskfit 안내', kind: 'GUIDE',
     html: `
       <p>여기는 <b>거북목으로 들어와서 기린이 되는 캠퍼스</b>입니다.
       캠퍼스에 있는 동안 웹캠이 자세를 보고, 오래 굽어 있으면 알려 줍니다.

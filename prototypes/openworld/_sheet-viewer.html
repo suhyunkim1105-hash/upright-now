@@ -1,0 +1,53 @@
+<title>타일시트 색인</title>
+<style>
+  body { margin:0; padding:20px; background:#11151b; color:#E8EDF4;
+         font:12px/1.5 "Segoe UI","Malgun Gothic",sans-serif; }
+  h2 { font-size:13px; margin:22px 0 8px; color:#DEEC8D; }
+  canvas { image-rendering:pixelated; display:block; background:#222831; }
+</style>
+<div id="out"></div>
+<script>
+const SHEETS = [
+  ['urban.png', 27, 18, 6],
+  ['town.png', 12, 11, 8],
+  ['dungeon.png', 12, 11, 8],
+];
+const T = 16;
+let done = 0;
+SHEETS.forEach(([file, cols, rows, zoom], si) => {
+  const img = new Image();
+  img.onload = () => {
+    const h2 = document.createElement('h2');
+    h2.textContent = file + '  ' + cols + '×' + rows + ' 타일  (색인 = 행×' + cols + ' + 열)';
+    const pad = 22;
+    const c = document.createElement('canvas');
+    c.width = cols * T * zoom + pad;
+    c.height = rows * T * zoom + pad;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.fillStyle = '#222831'; g.fillRect(0, 0, c.width, c.height);
+    g.drawImage(img, 0, 0, img.width, img.height,
+                pad, pad, cols * T * zoom, rows * T * zoom);
+    /* 격자 */
+    g.strokeStyle = 'rgba(222,236,141,.35)'; g.lineWidth = 1;
+    for (let x = 0; x <= cols; x++) {
+      g.beginPath(); g.moveTo(pad + x * T * zoom + .5, pad);
+      g.lineTo(pad + x * T * zoom + .5, c.height); g.stroke();
+    }
+    for (let y = 0; y <= rows; y++) {
+      g.beginPath(); g.moveTo(pad, pad + y * T * zoom + .5);
+      g.lineTo(c.width, pad + y * T * zoom + .5); g.stroke();
+    }
+    /* 머리글 */
+    g.fillStyle = '#DEEC8D';
+    g.font = 'bold 11px monospace';
+    g.textAlign = 'center';
+    for (let x = 0; x < cols; x++) g.fillText(x, pad + x * T * zoom + T * zoom / 2, 15);
+    g.textAlign = 'right';
+    for (let y = 0; y < rows; y++) g.fillText(y, pad - 4, pad + y * T * zoom + T * zoom / 2 + 4);
+    document.getElementById('out').append(h2, c);
+    if (++done === SHEETS.length) document.title = 'READY';
+  };
+  img.src = 'assets/' + file;
+});
+</script>

@@ -8116,7 +8116,7 @@ function pastSessionsHtml() {
    사용하고, 같은 동물 3개 이상을 이어서 없애는 짧은 퍼즐 한 판입니다.
    ================================================================== */
 const ANIMAL_MATCH3 = {
-  active: false, timer: 45, timerId: null, grid: [], selected: -1,
+  active: false, grid: [], selected: -1,
   score: 0, moves: 0, combo: 0, target: 300, rewarded: false,
 };
 const ANIMAL_MATCH3_TYPES = [
@@ -8200,7 +8200,6 @@ function animalMatch3Html() {
   return `
     <p>같은 동물 3개 이상을 이어서 없애고 목표 점수를 달성하세요.</p>
     <div class="rows">
-      <div class="row"><span>남은 시간</span><span class="val" id="animal-match3-time">45초</span></div>
       <div class="row"><span>점수</span><span class="val" id="animal-match3-score">0 / ${ANIMAL_MATCH3.target}</span></div>
       <div class="row"><span>콤보</span><span class="val" id="animal-match3-combo">0</span></div>
     </div>
@@ -8211,28 +8210,25 @@ function animalMatch3Html() {
 }
 function renderAnimalMatch3() {
   const board = panelBody.querySelector('#animal-match3-board');
-  const time = panelBody.querySelector('#animal-match3-time');
   const score = panelBody.querySelector('#animal-match3-score');
   const combo = panelBody.querySelector('#animal-match3-combo');
-  if (!board || !time || !score || !combo) return;
+  if (!board || !score || !combo) return;
   board.innerHTML = ANIMAL_MATCH3.grid.map((type, index) => {
     const animal = ANIMAL_MATCH3_TYPES[type];
     const selected = ANIMAL_MATCH3.selected === index;
     return `<button type="button" data-animal-index="${index}" aria-label="${animal.name} 타일"
       style="position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;border:0;border-radius:11px;background:${animal.color};font-size:clamp(22px,7vw,38px);cursor:pointer;box-shadow:${selected ? '0 0 0 4px #2d8f83, inset 0 -4px 0 rgba(0,0,0,.12)' : 'inset 0 -4px 0 rgba(0,0,0,.12)'};transform:${selected ? 'scale(.92)' : 'scale(1)'};transition:transform .12s ease,box-shadow .12s ease">${animal.emoji}<small style="position:absolute;right:4px;bottom:2px;font-size:9px;color:rgba(43,50,48,.5)">${index + 1}</small></button>`;
   }).join('');
-  time.textContent = `${ANIMAL_MATCH3.timer}초`;
   score.textContent = `${ANIMAL_MATCH3.score} / ${ANIMAL_MATCH3.target}`;
   combo.textContent = `${ANIMAL_MATCH3.combo}`;
 }
 function finishAnimalMatch3(success) {
   ANIMAL_MATCH3.active = false;
-  clearInterval(ANIMAL_MATCH3.timerId); ANIMAL_MATCH3.timerId = null;
   const message = panelBody.querySelector('#animal-match3-message');
   if (success) {
     if (!ANIMAL_MATCH3.rewarded) { ANIMAL_MATCH3.rewarded = true; earn(5, '동물 3매칭 성공'); }
     if (message) message.textContent = '성공! 동물 친구들과 목표 점수를 달성했어요. +5P';
-  } else if (message) message.textContent = '시간이 끝났어요. 다시 도전해 보세요.';
+  }
   renderAnimalMatch3();
 }
 function swapAnimalMatch3(first, second) {
@@ -8251,16 +8247,10 @@ function swapAnimalMatch3(first, second) {
   return true;
 }
 function startAnimalMatch3() {
-  clearInterval(ANIMAL_MATCH3.timerId);
   panelBody.innerHTML = animalMatch3Html();
-  ANIMAL_MATCH3.active = true; ANIMAL_MATCH3.timer = 45; ANIMAL_MATCH3.selected = -1;
+  ANIMAL_MATCH3.active = true; ANIMAL_MATCH3.selected = -1;
   ANIMAL_MATCH3.score = 0; ANIMAL_MATCH3.moves = 0; ANIMAL_MATCH3.combo = 0; ANIMAL_MATCH3.rewarded = false;
   ANIMAL_MATCH3.grid = animalMatch3FreshGrid(); renderAnimalMatch3();
-  ANIMAL_MATCH3.timerId = setInterval(() => {
-    if (!ANIMAL_MATCH3.active) return;
-    ANIMAL_MATCH3.timer--; renderAnimalMatch3();
-    if (ANIMAL_MATCH3.timer <= 0) finishAnimalMatch3(false);
-  }, 1000);
 }
 
 const PANELS = {
@@ -8737,7 +8727,7 @@ function closePanel() {
     GIRAFFE_STACK.active = false; clearInterval(GIRAFFE_STACK.timer);
   }
   if (typeof ANIMAL_MATCH3 !== 'undefined' && ANIMAL_MATCH3.active) {
-    ANIMAL_MATCH3.active = false; clearInterval(ANIMAL_MATCH3.timerId); ANIMAL_MATCH3.timerId = null;
+    ANIMAL_MATCH3.active = false;
   }
   TURTLE_MAZE.active = false;
   clearInterval(TURTLE_MAZE.timerId);
@@ -8746,8 +8736,26 @@ function closePanel() {
 }
 panelEl.querySelector('header button').addEventListener('click', closePanel);
 panelEl.addEventListener('click', (e) => { if (e.target === panelEl) closePanel(); });
+function handleAnimalMatch3Press(target) {
+  if (activePanelKey !== 'animalMatch3') return false;
+  const tile = target.closest('[data-animal-index]');
+  const restart = target.closest('[data-do="animal-match3-restart"]');
+  if (!tile && !restart) return false;
+  if (restart) { startAnimalMatch3(); return true; }
+  const index = Number(tile.dataset.animalIndex);
+  if (ANIMAL_MATCH3.selected < 0) {
+    ANIMAL_MATCH3.selected = index; renderAnimalMatch3(); return true;
+  }
+  const first = ANIMAL_MATCH3.selected; ANIMAL_MATCH3.selected = -1;
+  if (!swapAnimalMatch3(first, index)) renderAnimalMatch3();
+  return true;
+}
 panelBody.addEventListener('pointerdown', (e) => {
   if (activePanelKey === 'giraffeStack' && e.target.closest('[data-do="giraffe-stack-drop"]')) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  if ((e.pointerType === 'touch' || e.pointerType === 'pen') && handleAnimalMatch3Press(e.target)) {
     e.preventDefault();
     e.stopPropagation();
   }
@@ -8757,11 +8765,7 @@ panelBody.addEventListener('click', (e) => {
   if (activePanelKey === 'animalMatch3' && (e.target.closest('[data-animal-index]') || e.target.closest('[data-do="animal-match3-restart"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (e.target.closest('[data-do="animal-match3-restart"]')) return startAnimalMatch3();
-    const index = Number(e.target.closest('[data-animal-index]').dataset.animalIndex);
-    if (ANIMAL_MATCH3.selected < 0) { ANIMAL_MATCH3.selected = index; return renderAnimalMatch3(); }
-    const first = ANIMAL_MATCH3.selected; ANIMAL_MATCH3.selected = -1;
-    if (!swapAnimalMatch3(first, index)) renderAnimalMatch3();
+    handleAnimalMatch3Press(e.target);
     return;
   }
   if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {

@@ -10,6 +10,7 @@ for (const animal of ['거북이', '기린', '펭귄', '햄스터', '개구리',
 }
 assert.match(html, /panel: 'animalMatch3'/)
 assert.doesNotMatch(html, /panel: 'turtleMaze'/)
+assert.match(html, /function openPanel\(key\)[\s\S]*activePanelKey = key/)
 assert.match(html, /function swapAnimalMatch3/)
 assert.match(html, /function resolveAnimalMatch3/)
 assert.match(html, /게임 방법/)

@@ -8701,6 +8701,7 @@ const repaintOpenPanel = () => { if (panelOpen) paintItemCanvases(); };
 function openPanel(key) {
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
+  activePanelKey = key;
   panelTitle.textContent = spec.title;
   panelKind.textContent = spec.kind;
   panelTabs.innerHTML = '';

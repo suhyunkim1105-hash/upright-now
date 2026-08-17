@@ -338,20 +338,27 @@
   #cam-wrap.face-off #cam, #cam-wrap.face-off #cam-overlay,
   #cam-wrap.face-off #cam-msg { visibility: hidden; }
   #cam-avatar canvas { image-rendering: pixelated; }
+  /* 캐릭터 위에 글자가 겹치지 않게 아래에 알약으로 깝니다. */
   #cam-avatar span {
-    position: absolute; left: 0; right: 0; bottom: 6px; text-align: center;
-    font-size: 10px; color: var(--ink-3);
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 5px;
+    padding: 1px 7px; border-radius: 999px; white-space: nowrap;
+    background: rgba(255,255,255,.92); color: #5A4A44;
+    font-size: 9.5px; font-weight: 700;
   }
 
   /* 작은 아이콘 단추 둘 — 얼굴 끄기 / 자리 옮기기 */
   #cam-btns { position: absolute; right: 6px; top: 6px; z-index: 2; display: flex; gap: 4px; }
-  #cam-btns button {
-    width: 24px; height: 24px; padding: 0; border: 0; border-radius: 7px;
-    background: rgba(20,16,14,.55); color: #fff; cursor: pointer;
-    font-size: 12px; line-height: 1; display: grid; place-items: center;
+  /* #session button 이 흰 알약 + ::before 장식을 덮어씌웁니다.
+     같은 무게로는 못 이겨서 #session 을 앞에 붙여 이깁니다. */
+  #session #cam-btns button {
+    width: 26px; height: 26px; min-width: 0; padding: 0; margin: 0;
+    border: 0; border-radius: 8px; box-shadow: none;
+    background: rgba(20,16,14,.58); color: #fff; cursor: pointer;
+    font-size: 13px; line-height: 1; display: grid; place-items: center;
   }
-  #cam-btns button:hover { background: rgba(20,16,14,.78); }
-  #cam-btns button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+  #session #cam-btns button::before { content: none; }
+  #session #cam-btns button:hover { background: rgba(20,16,14,.82); }
+  #session #cam-btns button:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
   #session h3 {
     margin: 0 0 2px; font-size: 14px; font-weight: 700;
     display: flex; align-items: center; gap: 8px; letter-spacing: -.01em;
@@ -8324,6 +8331,16 @@ panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="visit-home"]')) return goHome();
 });
 
+/* 코드 칸에서 Enter — 여섯 자를 치고 나면 손이 Enter 로 갑니다.
+   단추만 두면 다 쳐 놓고 아무 일도 안 일어나는 자리가 됩니다.
+   keydown 은 캡처 단계에서 막습니다 — 안 그러면 월드가 그 키를
+   조작으로 받아 캐릭터가 움직입니다. */
+panelBody.addEventListener('keydown', (e) => {
+  if (e.target.id !== 'visit-code') return;
+  e.stopPropagation();
+  if (e.key === 'Enter') { e.preventDefault(); goVisit(); }
+}, true);
+
 /* 친구 방으로. visitRoom() 이 판정과 이동을 다 하고, 여기서는 입력을
    건네고 실패 문장을 보여 주기만 합니다 — 틀린 이유마다 다른 문장이
    돌아오므로 그대로 씁니다. */
@@ -9658,7 +9675,11 @@ const headTimerVal = headTimerEl.querySelector('b');
 function syncPrompt() {
   const r = cv.getBoundingClientRect();
   const hx = r.left + (player.x - camX) * SCALE;
-  const hy = r.top + (player.y - T - camY) * SCALE;
+  /* 발에서 프레임 맨 위까지 올립니다. 예전엔 T(16)만큼만 올렸는데,
+     캐릭터가 32x48 이 되면서 그 높이가 배꼽입니다 — multiplayer.js 의
+     이름표가 groundY(45)를 쓰는 것과 같은 이유입니다. */
+  const lift = (window.GIRIN_CHAR && GIRIN_CHAR.groundY) || T;
+  const hy = r.top + (player.y - lift - camY) * SCALE;
   /* 타이머가 먼저 머리 위에 앉고, 안내는 그 위로 비켜 섭니다.
      같은 자리에 두면 말 걸 때마다 시간이 가려집니다. */
   const live = SESSION.startedAt && !SESSION.ended;

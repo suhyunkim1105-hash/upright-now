@@ -358,21 +358,32 @@
   roster.className = 'sr-only';
   document.body.append(roster);
 
+  /* "명지대학교" 를 그대로 쓰면 이름표가 이름보다 학교가 길어집니다.
+     머리 위에 붙는 글자는 짧아야 읽힙니다 — 정식 이름은 이름표를 눌러
+     여는 자리(명단)에 그대로 남아 있습니다. */
+  function shortSchool(name) {
+    return String(name || '').replace('여자대학교', '여대').replace('대학교', '대');
+  }
+
   const tags = new Map();     // id -> { el, nick, school }
   function tagFor(rp) {
     let t = tags.get(rp.id);
     if (!t) {
       const el = document.createElement('div');
       el.className = 'mp-tag';
-      el.innerHTML = '<b></b><i></i><u></u>';
+      /* 두 줄입니다 — 위에 "이름 / 학교", 아래에 시간.
+         셋을 옆으로 늘어놓으면 표가 캐릭터보다 넓어져서, 사람이 둘만
+         모여도 이름이 서로를 가립니다. 위로 쌓으면 폭이 캐릭터만 해집니다. */
+      el.innerHTML = '<b></b><u></u>';
       layer.append(el);
-      t = { el, nick: null, school: null, bubble: null, clock: el.querySelector('u') };
+      t = { el, nick: null, school: null, bubble: null,
+            who: el.querySelector('b'), clock: el.querySelector('u') };
       tags.set(rp.id, t);
     }
-    if (t.nick !== rp.nick) { t.nick = rp.nick; t.el.querySelector('b').textContent = rp.nick; }
-    if (t.school !== rp.school) {
-      t.school = rp.school;
-      t.el.querySelector('i').textContent = rp.school;
+    if (t.nick !== rp.nick || t.school !== rp.school) {
+      t.nick = rp.nick; t.school = rp.school;
+      const sc = shortSchool(rp.school);
+      t.who.textContent = sc ? rp.nick + ' / ' + sc : rp.nick;
     }
     /* 시간은 매 프레임 바뀌므로 다른 두 줄과 달리 비교 없이 씁니다.
        분:초 문자열이 같으면 DOM 은 어차피 안 건드립니다. */
@@ -398,7 +409,7 @@
   /* 이름표 한 장이 차지하는 자리(px). 세 줄(이름·학교·시간)이라 예전보다
      높습니다. 정확히 재려면 getBoundingClientRect 를 사람 수만큼 불러야
      하는데, 매 프레임 레이아웃을 강제로 계산시키는 값이라 상수로 둡니다. */
-  const TAG_W = 96, TAG_H = 17;
+  const TAG_W = 74, TAG_H = 15;
 
   function syncTags() {
     const placed = [];
@@ -424,7 +435,9 @@
 
          겹침은 위치로 풉니다 — 아래 syncTags 끝에서 서로 가까운 표를
          한 줄씩 밀어 올립니다. 감추는 것보다 낫습니다. */
-      t.el.style.display = 'block';
+      /* flex 여야 두 줄로 쌓입니다. block 으로 두면 알약 둘이 옆으로
+         나란히 서서, 표가 캐릭터보다 넓어집니다. */
+      t.el.style.display = 'flex';
       t.el.style.left = p.x + 'px';
       t.el.style.top = (p.y - 6) + 'px';
       placed.push({ t, x: p.x, y: p.y - 6 });
@@ -762,6 +775,7 @@
   #mp-layer { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
   .mp-tag {
     position: absolute; transform: translate(-50%, -100%);
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
     text-align: center; white-space: nowrap; line-height: 1.15;
   }
   /* 흰 알약 위 잉크. 월드 위에 얹히므로 배경 없이 두면 잔디에서
@@ -772,20 +786,13 @@
     font-size: 10.5px; font-weight: 700; letter-spacing: -.01em;
     box-shadow: 0 1px 3px rgba(78,47,38,.22), 0 0 0 1px rgba(78,47,38,.08);
   }
-  /* 학교도 알약입니다. 글자에 흰 테두리만 두르면 잔디 위에서는 읽히다가
-     밝은 포장 위에서 3.4:1 로 떨어집니다 — 9.5px 글자에는 못 씁니다.
-     바탕을 깔면 배경이 무엇이든 7.6:1 로 고정됩니다. */
-  .mp-tag i {
-    display: inline-block; margin-top: 2px; font-style: normal;
-    padding: 1px 6px; border-radius: 999px;
-    background: rgba(255,255,255,.90); color: #5A4A44;
-    font-size: 9.5px; font-weight: 600;
-  }
+  /* 학교는 이름과 한 알약에 넣습니다. 따로 두면 줄이 셋이 되어
+     캐릭터보다 표가 높아집니다. 슬래시로 가릅니다. */
   /* 세션 시간. 이름·학교와 성격이 달라서(흐르는 값) 따로 둡니다 —
      앞의 점이 "지금 재는 중" 이라는 뜻입니다. 색만으로 상태를 말하지
      않도록 점과 숫자를 같이 둡니다. */
   .mp-tag u {
-    display: inline-block; margin-top: 2px; text-decoration: none;
+    display: inline-block; text-decoration: none;
     padding: 1px 6px 1px 5px; border-radius: 999px;
     background: rgba(255,255,255,.90); color: #4E3F39;
     font-size: 9.5px; font-weight: 700; font-variant-numeric: tabular-nums;

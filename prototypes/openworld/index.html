@@ -1184,8 +1184,23 @@
    형태를 만드는데, 평균을 내면 그 선이 배경과 섞여 흐려집니다.
    ================================================================== */
 
-const T = 16;        // 월드 타일 한 변
-const SCALE = 4;     // 화면 확대 — 3 에서는 책상·의자가 너무 작았습니다
+/* 타일 한 변이 둘입니다. **섞어 쓰면 엉뚱한 칸이 잘립니다.**
+
+     TS  그림 한 칸. 시트 원본(urban·city·school)도, 코드로 그린 것도
+         전부 16px 격자에 그려져 있습니다. **자를 때 쓰는 자**입니다.
+     T   월드 한 칸. 얹을 때 쓰는 자입니다.
+
+   16 에서 32 로 올린 이유는 캐릭터입니다. 캐릭터 그림은 32x48 로 고정이라
+   타일이 16 이면 사람이 2x3 칸을 차지합니다 — 젭이 1.5x2, 스타듀가 1x2 인데
+   우리는 그보다 큽니다. 그림을 줄이면 픽셀이 뭉개지므로 **타일을 키웠습니다.**
+   그러면 사람은 1x1.5 칸이 됩니다.
+
+   보이는 칸 수는 그대로입니다: 1220/4/16 = 19칸, 1220/2/32 = 19칸.
+   SCALE 을 같이 반으로 내렸기 때문이고, 그래서 그리는 횟수도 안 늘어납니다. */
+const T = 32;        // 월드 타일 한 변
+const TS = 16;       // 그림 한 칸 — 시트 원본과 코드로 그린 그림
+const AS = T / TS;   // 그림을 월드에 얹을 때의 배율
+const SCALE = 2;     // 화면 확대 — T 를 두 배로 올린 만큼 내립니다
 const U_COLS = 27;   // urban.png
 const C_COLS = 37;   // city.png
 const K_COLS = 16;   // school (축소 후)
@@ -1302,12 +1317,12 @@ function circleLine(g, cx, cy, r, c) {
  * spec.roofRows 만큼 지붕, 나머지 두 줄이 정면입니다.
  */
 function paintBuilding(spec) {
-  const W = spec.w * T, H = spec.h * T;
+  const W = spec.w * TS, H = spec.h * TS;
   const c = document.createElement('canvas');
-  c.width = W; c.height = H;
+  c.width = W; c.height = H; c.__cell = TS;
   const g = c.getContext('2d');
   const P = spec.pal;
-  const faceY = H - T * 2;          // 정면이 시작하는 줄
+  const faceY = H - TS * 2;          // 정면이 시작하는 줄
 
   /* ---- 지붕 ---- */
   px(g, 0, 0, W, faceY, P.roof);
@@ -1331,7 +1346,7 @@ function paintBuilding(spec) {
 
   /* ---- 옥상 기물 ---- */
   (spec.features || []).forEach((f) => {
-    const fx = f.x * T, fy = f.y * T;
+    const fx = f.x * TS, fy = f.y * TS;
     if (f.k === 'dome') {
       /* 돔 — 위에서 보면 동심원입니다. 왼쪽 위가 밝습니다. */
       disc(g, fx, fy, f.r + 2, P.dark);
@@ -1393,10 +1408,10 @@ function paintBuilding(spec) {
       disc(g, fx, fy - s - 9, 2, '#FF6B52');
     }
     else if (f.k === 'deck') {
-      px(g, fx, fy, f.w * T, f.h * T, P.dark);
-      px(g, fx + 2, fy + 2, f.w * T - 4, f.h * T - 4, f.c);
+      px(g, fx, fy, f.w * TS, f.h * TS, P.dark);
+      px(g, fx + 2, fy + 2, f.w * TS - 4, f.h * TS - 4, f.c);
       g.fillStyle = f.lit;
-      for (let x = fx + 4; x < fx + f.w * T - 4; x += 5) g.fillRect(x, fy + 3, 1, f.h * T - 6);
+      for (let x = fx + 4; x < fx + f.w * TS - 4; x += 5) g.fillRect(x, fy + 3, 1, f.h * TS - 6);
     }
     else if (f.k === 'medal') {
       /* 지붕에 바로 얹는 상징. 돔이나 원뿔이 없는 건물도 문패를
@@ -1411,7 +1426,7 @@ function paintBuilding(spec) {
     else if (f.k === 'sky') {
       /* 채광창 — 열람실 위에 줄지어 앉습니다 */
       for (let i = 0; i < f.n; i++) {
-        const sx = fx + i * (f.gap * T);
+        const sx = fx + i * (f.gap * TS);
         px(g, sx, fy, 10, 14, P.dark);
         px(g, sx + 1, fy + 1, 8, 12, '#8FC6D8');
         px(g, sx + 1, fy + 1, 8, 4, '#C4E4EE');
@@ -1422,7 +1437,7 @@ function paintBuilding(spec) {
   /* ---- 정면 ----
      위 한 줄은 창문 층, 아래 한 줄은 출입구. */
   const wallY = faceY;
-  px(g, 0, wallY, W, T * 2, P.wall);
+  px(g, 0, wallY, W, TS * 2, P.wall);
   px(g, 0, wallY, W, 3, P.trim);                 // 지붕과 벽 사이 띠
   px(g, 0, wallY + 3, W, 1, P.lit);
   /* 주춧돌 — 벽이 잔디에서 바로 솟으면 세워 둔 종잇장으로 보입니다 */
@@ -1431,17 +1446,17 @@ function paintBuilding(spec) {
   px(g, 0, H - 3, W, 3, 'rgba(0,0,0,.28)');
   /* 모서리 벽기둥 — 벽의 양 끝을 잡아 줍니다 */
   [0, W - 7].forEach((x) => {
-    px(g, x, wallY, 7, T * 2 - 8, P.wallDark);
-    px(g, x + 1, wallY + 4, 5, T * 2 - 12, P.wall);
+    px(g, x, wallY, 7, TS * 2 - 8, P.wallDark);
+    px(g, x + 1, wallY + 4, 5, TS * 2 - 12, P.wall);
     for (let y = wallY + 6; y < H - 10; y += 6) px(g, x + 1, y, 5, 1, P.wallDark);
   });
 
-  const doorX = ((spec.w >> 1) - 1) * T;
+  const doorX = ((spec.w >> 1) - 1) * TS;
   /* 창문 — 건물마다 양식이 다릅니다. 색보다 형태가 성격을 말합니다. */
   const step = spec.win === 'shop' ? 16 : spec.win === 'grid' ? 11 : 13;
   let wi = 0;
   for (let x = 9; x < W - 14; x += step) {
-    if (x + 10 > doorX - 12 && x < doorX + T * 2 + 14) continue;
+    if (x + 10 > doorX - 12 && x < doorX + TS * 2 + 14) continue;
     paintWindow(g, spec.win, x, wallY, P);
     /* 셋 중 하나는 불이 켜져 있습니다. 전부 같은 유리면 벽지입니다. */
     if (wi % 3 === 1) {
@@ -1454,10 +1469,10 @@ function paintBuilding(spec) {
      들어가는 곳은 **한눈에** 보여야 합니다. 캐노피 한 겹으로는
      창 사이의 빈칸과 구분이 안 갑니다. 차양 · 유리문 · 계단 · 등,
      넷을 겹쳐 문 주변만 다른 리듬을 갖게 했습니다. */
-  const dW = T * 2, dL = doorX - 8, dR = doorX + dW + 8;
+  const dW = TS * 2, dL = doorX - 8, dR = doorX + dW + 8;
   /* 벽감 — 문 둘레를 한 단 들여 그림자를 만듭니다 */
-  px(g, dL, wallY + 3, dR - dL, T * 2 - 5, P.wallDark);
-  px(g, dL + 1, wallY + 4, dR - dL - 2, T * 2 - 7, P.wall);
+  px(g, dL, wallY + 3, dR - dL, TS * 2 - 5, P.wallDark);
+  px(g, dL + 1, wallY + 4, dR - dL - 2, TS * 2 - 7, P.wall);
   /* 청록 차양 — 캠퍼스에서 브랜드색이 벽에 닿는 유일한 자리입니다.
      밝은 청록은 어느 바닥과도 1.2~1.9 밖에 안 갈라져서, 어두운 청록을
      한 겹 깔고 그 위에 얹습니다. 테두리가 형태를 책임집니다. */
@@ -1473,15 +1488,15 @@ function paintBuilding(spec) {
     disc(g, x + 3, wallY + 12, 3, (x - dL) % 12 ? '#2DD4BF' : '#EFFBF9');
   }
   /* 유리문 두 짝 */
-  px(g, doorX - 2, wallY + 16, dW + 4, T * 2 - 22, P.frame);
-  px(g, doorX, wallY + 18, dW, T * 2 - 25, '#24384C');
+  px(g, doorX - 2, wallY + 16, dW + 4, TS * 2 - 22, P.frame);
+  px(g, doorX, wallY + 18, dW, TS * 2 - 25, '#24384C');
   px(g, doorX, wallY + 18, dW, 4, '#4E6C88');
   g.fillStyle = 'rgba(255,255,255,.30)';
   for (let i = 0; i < 9; i++) g.fillRect(doorX + 3 + i, wallY + 27 - i, 2, 1);
   for (let i = 0; i < 9; i++) g.fillRect(doorX + dW / 2 + 3 + i, wallY + 27 - i, 2, 1);
-  px(g, doorX + T - 1, wallY + 18, 2, T * 2 - 25, P.frame);
-  px(g, doorX + T - 4, wallY + 24, 2, 4, '#D8DEE4');
-  px(g, doorX + T + 2, wallY + 24, 2, 4, '#D8DEE4');
+  px(g, doorX + TS - 1, wallY + 18, 2, TS * 2 - 25, P.frame);
+  px(g, doorX + TS - 4, wallY + 24, 2, 4, '#D8DEE4');
+  px(g, doorX + TS + 2, wallY + 24, 2, 4, '#D8DEE4');
   /* 계단 — 문 아래 두 단. 바닥에 닿는 곳이 있어야 서 있는 건물입니다. */
   px(g, doorX - 5, H - 8, dW + 10, 4, '#D8D2C6');
   px(g, doorX - 7, H - 4, dW + 14, 4, '#C2BBAE');
@@ -1500,9 +1515,9 @@ function paintBuilding(spec) {
     const step = W / (n + 1);
     for (let i = 1; i <= n; i++) {
       const cx = Math.round(i * step) - 3;
-      if (cx > doorX - 8 && cx < doorX + T * 2 + 4) continue;
-      px(g, cx, wallY + 4, 6, T * 2 - 7, P.wallDark);
-      px(g, cx, wallY + 4, 4, T * 2 - 7, '#F2EDE0');
+      if (cx > doorX - 8 && cx < doorX + TS * 2 + 4) continue;
+      px(g, cx, wallY + 4, 6, TS * 2 - 7, P.wallDark);
+      px(g, cx, wallY + 4, 4, TS * 2 - 7, '#F2EDE0');
       px(g, cx - 1, wallY + 3, 8, 3, P.trim);
     }
   }
@@ -1721,29 +1736,29 @@ function paintWindow(g, style, x, y, P) {
    평평한 색면이 벽으로 보입니다. */
 function paintTopWall(w, P, decor) {
   const c = document.createElement('canvas');
-  c.width = w * T; c.height = T * 3;
+  c.width = w * TS; c.height = TS * 3; c.__cell = TS;
   const g = c.getContext('2d');
   const W = c.width;
 
-  px(g, 0, 0, W, T * 3, P.iWall);
+  px(g, 0, 0, W, TS * 3, P.iWall);
   g.fillStyle = P.iWallLit;
-  for (let x = 3; x < W; x += 7) g.fillRect(x, 10, 1, T * 2 + 2);
+  for (let x = 3; x < W; x += 7) g.fillRect(x, 10, 1, TS * 2 + 2);
   px(g, 0, 0, W, 6, P.iCeil);
   px(g, 0, 6, W, 2, P.iTrim);
   px(g, 0, 8, W, 1, P.iWallLit);
-  px(g, 0, T * 3 - 9, W, 4, P.iTrim);
-  px(g, 0, T * 3 - 5, W, 5, P.iBase);
-  px(g, 0, T * 3 - 1, W, 1, P.iShadow);
+  px(g, 0, TS * 3 - 9, W, 4, P.iTrim);
+  px(g, 0, TS * 3 - 5, W, 5, P.iBase);
+  px(g, 0, TS * 3 - 1, W, 1, P.iShadow);
 
   const wins = [];
   (decor || []).forEach((d) => {
-    const x = d.x * T, y = 12;
+    const x = d.x * TS, y = 12;
     if (d.k === 'win') {
       /* 창만 따로 한 장에 그려 벽에 붙입니다. 같은 장을 그릴 때 하늘
          위에 한 번 더 덮어 - 틀과 창살이 하늘을 가리고 유리만 비칩니다.
          양옆 여백 8px 은 상점 차양이 창틀 밖으로 나가기 때문입니다. */
       const wc = document.createElement('canvas');
-      wc.width = T * 2; wc.height = T * 3;
+      wc.width = TS * 2; wc.height = TS * 3; wc.__cell = TS;
       const wg = wc.getContext('2d');
       const gl = paintWindow(wg, d.style, 8, y, P);
       const ox = x - 8;
@@ -1752,7 +1767,7 @@ function paintTopWall(w, P, decor) {
     }
     else if (d.k === 'shelf') {
       /* 벽 책장 — 도서관. 책등 폭·높이·기울기가 갈려야 책으로 읽힙니다. */
-      const W = T * 2, SH = 3;
+      const W = TS * 2, SH = 3;
       /* 통 — 바깥 테두리, 옆널, 뒤판 */
       px(g, x - 3, y - 3, W + 6, 32, P.iTrim);
       px(g, x - 2, y - 2, W + 4, 30, '#4A3323');
@@ -1792,19 +1807,19 @@ function paintTopWall(w, P, decor) {
     }
     else if (d.k === 'board') {
       /* 칠판 — 본관 강의동 */
-      px(g, x - 2, y - 2, T * 3 + 4, 28, '#8A6A44');
-      px(g, x, y, T * 3, 24, '#2C4034');
-      px(g, x + 1, y + 1, T * 3 - 2, 4, '#3A5343');
+      px(g, x - 2, y - 2, TS * 3 + 4, 28, '#8A6A44');
+      px(g, x, y, TS * 3, 24, '#2C4034');
+      px(g, x + 1, y + 1, TS * 3 - 2, 4, '#3A5343');
       g.fillStyle = 'rgba(230,240,235,.5)';
       g.fillRect(x + 5, y + 8, 22, 1);
       g.fillRect(x + 5, y + 12, 30, 1);
       g.fillRect(x + 5, y + 16, 16, 1);
-      px(g, x + T * 3 - 12, y + 20, 8, 2, '#E8EDF2');
+      px(g, x + TS * 3 - 12, y + 20, 8, 2, '#E8EDF2');
     }
     else if (d.k === 'notice') {
       /* 게시판 — 학생회관 */
-      px(g, x - 2, y - 1, T * 2 + 4, 26, '#7A5B3C');
-      px(g, x, y + 1, T * 2, 22, '#C9A87C');
+      px(g, x - 2, y - 1, TS * 2 + 4, 26, '#7A5B3C');
+      px(g, x, y + 1, TS * 2, 22, '#C9A87C');
       const cols = ['#F2F4F7', '#FF6B52', '#F2C9C4', '#C4DDF2'];
       for (let i = 0; i < 6; i++) {
         const ax = x + 3 + (i % 3) * 9, ay = y + 4 + Math.floor(i / 3) * 9;
@@ -1814,11 +1829,11 @@ function paintTopWall(w, P, decor) {
     }
     else if (d.k === 'banner') {
       /* 현수막 */
-      px(g, x, 8, T, 30, d.c || '#3C5C82');
-      px(g, x, 8, T, 3, 'rgba(255,255,255,.28)');
-      px(g, x + 3, 16, T - 6, 3, '#FF6B52');
-      px(g, x + 4, 23, T - 8, 2, 'rgba(255,255,255,.55)');
-      px(g, x, 38, T, 3, 'rgba(0,0,0,.3)');
+      px(g, x, 8, TS, 30, d.c || '#3C5C82');
+      px(g, x, 8, TS, 3, 'rgba(255,255,255,.28)');
+      px(g, x + 3, 16, TS - 6, 3, '#FF6B52');
+      px(g, x + 4, 23, TS - 8, 2, 'rgba(255,255,255,.55)');
+      px(g, x, 38, TS, 3, 'rgba(0,0,0,.3)');
     }
     else if (d.k === 'clock' || d.k === 'clockFace') {
       /* 판만 그립니다. 바늘은 매 프레임 진짜 시각으로 덧그립니다
@@ -1841,7 +1856,7 @@ function paintTopWall(w, P, decor) {
     else if (d.k === 'guide') {
       /* 벽에 붙인 안내판. 광장 표지판과 달리 실내라 작아야 합니다 —
          같은 크기로 두면 방 안에 도로표지판이 서 있는 꼴이 됩니다. */
-      const w = T * 2, h = 22;
+      const w = TS * 2, h = 22;
       px(g, x - 1, y - 2, w + 2, h + 2, '#8A6039');
       px(g, x, y - 1, w, h, '#FFF6F3');
       px(g, x, y - 1, w, 2, '#FFFFFF');
@@ -1860,7 +1875,7 @@ function paintTopWall(w, P, decor) {
 /** 좌우·아래 테두리 벽. 얇지만 색이 이어져야 방이 닫힙니다. */
 function paintEdgeWall(w, h, P, vertical) {
   const c = document.createElement('canvas');
-  c.width = w * T; c.height = h * T;
+  c.width = w * TS; c.height = h * TS; c.__cell = TS;
   const g = c.getContext('2d');
   px(g, 0, 0, c.width, c.height, P.iWall);
   if (vertical) {
@@ -2014,9 +2029,12 @@ const FURN = {
   leaf:  '#4E9E63', leafLit: '#6FBE7F', soil: '#6B4C33',
 };
 
+/* 그림은 TS(16) 눈금으로 그립니다 — 월드 타일이 32 로 커져도 그리는
+   코드는 한 줄도 안 바뀝니다. 얹는 쪽(blitArt)이 __cell 을 보고 늘립니다. */
 function canvasOf(wTiles, hTiles) {
   const c = document.createElement('canvas');
-  c.width = wTiles * T; c.height = hTiles * T;
+  c.width = wTiles * TS; c.height = hTiles * TS;
+  c.__cell = TS;
   return c;
 }
 /** 바닥 그림자. 이게 없으면 모든 기물이 공중에 뜹니다. */
@@ -3206,7 +3224,7 @@ PAINTED.chairD = chairCanvas('#7A6A4E', '#9A8A6C', '#5A4C36');
    상판 · 앞면 · 다리 세 켜. 상판만 그리면 판때기로 보입니다. */
 function deskCanvas(wTiles, topCol, topLit) {
   const c = canvasOf(wTiles, 1), g = c.getContext('2d');
-  const P = DESKPAL, W = wTiles * T;
+  const P = DESKPAL, W = wTiles * TS;
   shadow(g, W / 2, 15, W / 2 - 2, 2);
   /* 상판 */
   px(g, 0, 1, W, 10, P.woodDeep);
@@ -3388,16 +3406,16 @@ function paintFloor(w, h, kind, P) {
 
   /* 벽에서 떨어지는 그림자. 바닥과 벽이 만나는 자리가 어두워야
      방이 닫힌 상자로 보입니다. */
-  const grad = g.createLinearGradient(0, T * 3, 0, T * 3 + 14);
+  const grad = g.createLinearGradient(0, TS * 3, 0, TS * 3 + 14);
   grad.addColorStop(0, 'rgba(0,0,0,.30)');
   grad.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = grad; g.fillRect(0, T * 3, W, 14);
-  const gl = g.createLinearGradient(T, 0, T + 10, 0);
+  g.fillStyle = grad; g.fillRect(0, TS * 3, W, 14);
+  const gl = g.createLinearGradient(TS, 0, TS + 10, 0);
   gl.addColorStop(0, 'rgba(0,0,0,.22)'); gl.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = gl; g.fillRect(T, T * 3, 10, H - T * 3);
-  const gr = g.createLinearGradient(W - T, 0, W - T - 10, 0);
+  g.fillStyle = gl; g.fillRect(TS, TS * 3, 10, H - TS * 3);
+  const gr = g.createLinearGradient(W - TS, 0, W - TS - 10, 0);
   gr.addColorStop(0, 'rgba(0,0,0,.22)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-  g.fillStyle = gr; g.fillRect(W - T - 10, T * 3, 10, H - T * 3);
+  g.fillStyle = gr; g.fillRect(W - TS - 10, TS * 3, 10, H - TS * 3);
   return c;
 }
 
@@ -3406,7 +3424,7 @@ function paintFloor(w, h, kind, P) {
     스탠드가 장식품으로 보입니다. */
 function floorGlow(c, cx, cy, r) {
   const g = c.getContext('2d');
-  const X = cx * T, Y = cy * T, R = r * T;
+  const X = cx * TS, Y = cy * TS, R = r * TS;
   for (let k = 4; k >= 1; k--) {
     g.fillStyle = 'rgba(255,214,138,' + (0.05 * k) + ')';
     g.beginPath(); g.ellipse(X, Y, R * (k / 4), R * (k / 4) * 0.72, 0, 0, 7); g.fill();
@@ -3415,18 +3433,18 @@ function floorGlow(c, cx, cy, r) {
 
 function floorInlay(c, x, y, w, h, kind) {
   const g = c.getContext('2d');
-  const X = x * T, Y = y * T, W = w * T, H = h * T;
+  const X = x * TS, Y = y * TS, W = w * TS, H = h * TS;
   if (kind === 'border') {
     /* 벽을 따라 도는 테두리 띠. 넓은 방은 이게 없으면 바닥이 아니라
        무늬 종이가 됩니다. */
-    px(g, X, Y, W, T, 'rgba(0,0,0,.10)');
-    px(g, X, Y + H - T, W, T, 'rgba(0,0,0,.10)');
-    px(g, X, Y, T, H, 'rgba(0,0,0,.10)');
-    px(g, X + W - T, Y, T, H, 'rgba(0,0,0,.10)');
-    px(g, X + T - 2, Y + T - 2, W - T * 2 + 4, 2, 'rgba(255,255,255,.20)');
-    px(g, X + T - 2, Y + H - T, W - T * 2 + 4, 2, 'rgba(255,255,255,.20)');
-    px(g, X + T - 2, Y + T - 2, 2, H - T * 2 + 4, 'rgba(255,255,255,.20)');
-    px(g, X + W - T, Y + T - 2, 2, H - T * 2 + 4, 'rgba(255,255,255,.20)');
+    px(g, X, Y, W, TS, 'rgba(0,0,0,.10)');
+    px(g, X, Y + H - TS, W, TS, 'rgba(0,0,0,.10)');
+    px(g, X, Y, TS, H, 'rgba(0,0,0,.10)');
+    px(g, X + W - TS, Y, TS, H, 'rgba(0,0,0,.10)');
+    px(g, X + TS - 2, Y + TS - 2, W - TS * 2 + 4, 2, 'rgba(255,255,255,.20)');
+    px(g, X + TS - 2, Y + H - TS, W - TS * 2 + 4, 2, 'rgba(255,255,255,.20)');
+    px(g, X + TS - 2, Y + TS - 2, 2, H - TS * 2 + 4, 'rgba(255,255,255,.20)');
+    px(g, X + W - TS, Y + TS - 2, 2, H - TS * 2 + 4, 'rgba(255,255,255,.20)');
     return;
   }
   if (kind === 'runner') {
@@ -3499,7 +3517,7 @@ function fillBase(m, x, y, w, h, tile) {
    그리기 루프가 위에 얹으므로 그대로 삽니다. */
 function paintPond(m, x, y, w, h, rim) {
   const g = m.ground.getContext('2d');
-  const X = x * T, Y = y * T, W = w * T, H = h * T, R = rim * T;
+  const X = x * TS, Y = y * TS, W = w * TS, H = h * TS, R = rim * TS;
 
   /* 1) 돌 테 — 바깥 사각형 전체를 돌로 깔고 안쪽을 물로 덮습니다.
         테를 네 조각으로 그리면 귀에서 두 번 칠해져 톤이 어긋납니다. */
@@ -3691,7 +3709,7 @@ function paintArcadeCourt(wTiles, hTiles) {
   for (let y = 7; y < H; y += 8) g.fillRect(0, y, W, 1);
 
   /* 가운데 통로 — 코랄 실선 둘로 폭을 표시합니다 */
-  const aisle = 5 * T, aw = 3 * T;
+  const aisle = 5 * TS, aw = 3 * TS;
   px(g, aisle, 0, aw, H, 'rgba(255,107,82,.10)');
   px(g, aisle, 0, 2, H, 'rgba(255,107,82,.55)');
   px(g, aisle + aw - 2, 0, 2, H, 'rgba(255,107,82,.55)');
@@ -3724,7 +3742,7 @@ function paintGrove(wTiles, hTiles, seed) {
      지도 밖으로 넘친 쪽은 어차피 잘려 나갑니다. */
   const PAD = 2;
   const c = canvasOf(wTiles + PAD * 2, hTiles + PAD * 2), g = c.getContext('2d');
-  const W = c.width, H = c.height, m = PAD * T;
+  const W = c.width, H = c.height, m = PAD * TS;
 
   /* 그늘진 바닥. 네 변을 모두 흔들어야 직선이 안 남습니다. */
   const img = g.createImageData(W, H), a = img.data;
@@ -3791,8 +3809,8 @@ const ZONES = {};
 
   {
     const gg = m.ground.getContext('2d');
-    gg.drawImage(paintTrack(14, 12), 1 * T, 1 * T);        // 북서 운동장
-    gg.drawImage(paintArcadeCourt(14, 12), 31 * T, 1 * T);        // 북동 미니게임존
+    gg.drawImage(paintTrack(14, 12), 1 * TS, 1 * TS);        // 북서 운동장
+    gg.drawImage(paintArcadeCourt(14, 12), 31 * TS, 1 * TS);        // 북동 미니게임존
   }
   /* 그림만 얹은 두 곳은 표면도 같이 칠합니다. 안 칠하면 우레탄 트랙
      위에서 잔디 소리가 납니다. 트랙은 타원이라 안쪽 잔디를 도로 살립니다. */
@@ -4382,10 +4400,22 @@ const urban = new Image(), city = new Image(), school = new Image();
    drawImage 축소로 못 바꾸는 이유 - 다수결은 보간도 최근접도 아니라서
    결과가 달라집니다. school48.png 이 바뀌면 git 히스토리의 downscale3() 를
    http 로 열어 다시 굽습니다. */
-function blitU(i, dx, dy) { ctx.drawImage(urban, (i % U_COLS) * T, ((i / U_COLS) | 0) * T, T, T, dx, dy, T, T); }
-function blitC(i, dx, dy) { ctx.drawImage(city,  (i % C_COLS) * T, ((i / C_COLS) | 0) * T, T, T, dx, dy, T, T); }
-function blitK(i, dx, dy) { ctx.drawImage(school,(i % K_COLS) * T, ((i / K_COLS) | 0) * T, T, T, dx, dy, T, T); }
+/* 자르는 자는 TS, 얹는 자는 T 입니다. 둘 다 T 로 두면 16px 시트에서
+   32px 를 잘라 오므로 한 칸 아래·오른쪽 타일까지 딸려 나옵니다. */
+function blitU(i, dx, dy) { ctx.drawImage(urban, (i % U_COLS) * TS, ((i / U_COLS) | 0) * TS, TS, TS, dx, dy, T, T); }
+function blitC(i, dx, dy) { ctx.drawImage(city,  (i % C_COLS) * TS, ((i / C_COLS) | 0) * TS, TS, TS, dx, dy, T, T); }
+function blitK(i, dx, dy) { ctx.drawImage(school,(i % K_COLS) * TS, ((i / K_COLS) | 0) * TS, TS, TS, dx, dy, T, T); }
 const BLIT = { u: blitU, c: blitC, k: blitK };
+
+/** 코드로 그린 그림 한 장을 월드에 얹습니다.
+
+    캔버스마다 자기 눈금(__cell)을 적어 두므로, 나중에 프롭 하나를 32px
+    원본으로 다시 그려 __cell 만 32 로 바꾸면 그 프롭만 확대 없이 1:1 로
+    나옵니다. 16px 짜리와 섞여 있어도 됩니다. */
+function blitArt(img, dx, dy) {
+  const k = T / (img.__cell || TS);
+  ctx.drawImage(img, dx, dy, img.width * k, img.height * k);
+}
 
 /** 이웃을 보고 테두리 타일을 고릅니다. 지도 밖은 같은 재질로 칩니다.
     모서리는 시트가 그린 대로 둥급니다 — 잔디 위 포장은 그게 맞습니다.
@@ -4410,8 +4440,8 @@ const WALK_ROW = [0, 1, 2, 1];
 
    지금은 걸어서 2.8, 뛰어서 3.7 입니다. 다리 그림도 같은 거리로 넘깁니다 -
    소리와 다리가 다른 시계를 쓰면 어긋난 것이 눈에 먼저 보입니다. */
-const STRIDE = 19;            // 걸을 때 한 걸음의 픽셀
-const STRIDE_RUN = 25;        // 뛸 때 - 보폭이 길어집니다
+const STRIDE = 19 * AS;       // 걸을 때 한 걸음의 픽셀
+const STRIDE_RUN = 25 * AS;   // 뛸 때 - 보폭이 길어집니다
 let walked = 0;               // 마지막 발소리 이후 간 거리
 let lastSurf = -1;            // 표면이 바뀌면 즉시 한 걸음 냅니다
 let doorFlash = null;         // { x, y, w, h, t } 들어온 문이 아직 열려 있습니다
@@ -4584,20 +4614,26 @@ const FX = {
   list: [],
   reduced: matchMedia('(prefers-reduced-motion: reduce)').matches,
 
+  /* 목록 안은 전부 **그림 눈금(TS)** 입니다. 월드 좌표로 받은 것은 들어올
+     때 한 번 나누고, 그릴 때 한 번 곱합니다. 자국 크기를 정한 숫자들이
+     전부 16px 격자에서 눈으로 맞춘 값이라, 여기서 단위를 바꾸면 눌린 풀
+     한 포기까지 다시 눈대중해야 합니다. */
+
   /** 밟힌 잔디. 눌렸다 펴지는 데 0.8 초 - 걸음보다 느려야 자국이 이어집니다. */
   press(x, y) {
     if (this.reduced) return;
-    this.list.push({ k: 'press', x, y, t: 0, life: 0.8, r: 5 + Math.random() * 2,
-                     a: Math.random() * Math.PI });
+    this.list.push({ k: 'press', x: x / AS, y: y / AS, t: 0, life: 0.8,
+                     r: 5 + Math.random() * 2, a: Math.random() * Math.PI });
   },
 
   /** 뛸 때 이는 먼지. 진행 반대쪽으로 밀려나며 떠오릅니다. */
   dust(x, y, dx, dy) {
     if (this.reduced) return;
     for (let i = 0; i < 2; i++) {
-      this.list.push({ k: 'dust', x: x + (Math.random() - 0.5) * 5, y: y - Math.random() * 2,
-                       vx: -dx * 7 + (Math.random() - 0.5) * 9,
-                       vy: -dy * 7 - 5 - Math.random() * 6,
+      this.list.push({ k: 'dust',
+                       x: x / AS + (Math.random() - 0.5) * 5, y: y / AS - Math.random() * 2,
+                       vx: -dx / AS * 7 + (Math.random() - 0.5) * 9,
+                       vy: -dy / AS * 7 - 5 - Math.random() * 6,
                        t: 0, life: 0.45 + Math.random() * 0.2, r: 1.6 + Math.random() * 1.4 });
     }
   },
@@ -4605,7 +4641,7 @@ const FX = {
   /** 물가 파문. 물칸 한가운데에서 고리가 퍼집니다. */
   ripple(tx, ty) {
     if (this.reduced) return;
-    this.list.push({ k: 'ripple', x: tx * T + T / 2, y: ty * T + T / 2,
+    this.list.push({ k: 'ripple', x: tx * TS + TS / 2, y: ty * TS + TS / 2,
                      t: 0, life: 1.1, r: 2 });
   },
 
@@ -4627,10 +4663,16 @@ const FX = {
 
   /** 바닥 위, 소품 아래. camX/camY 는 그리는 쪽이 넘겨 줍니다. */
   draw(g, cx, cy) {
+    /* 그림 눈금으로 그린 뒤 통째로 늘립니다. 정수로 반올림한 뒤 늘리므로
+       자국이 반 픽셀에 걸리지 않습니다. */
+    g.save();
+    g.scale(AS, AS);
+    cx /= AS; cy /= AS;
+    const vw = VIEW_W / AS, vh = VIEW_H / AS;
     for (const f of this.list) {
       const k = f.t / f.life;              // 0 -> 1
       const x = f.x - cx, y = f.y - cy;
-      if (x < -30 || y < -30 || x > VIEW_W + 30 || y > VIEW_H + 30) continue;
+      if (x < -30 || y < -30 || x > vw + 30 || y > vh + 30) continue;
 
       if (f.k === 'press') {
         /* 눌린 풀. 처음 0.15 는 눌린 채로 있다가 서서히 펴집니다 -
@@ -4675,6 +4717,7 @@ const FX = {
       }
     }
     g.globalAlpha = 1;
+    g.restore();
   },
 
   clear() { this.list.length = 0; },
@@ -4779,12 +4822,21 @@ function outsideColor(ground) {
 
    방울마다 **떨어질 높이**를 따로 가집니다. 화면 아래까지 다 내려가게
    두면 위에서 아래로 흐르는 커튼이 되는데, 위에서 내려다보는 그림에서
-   비는 화면 아무 데나 떨어져야 합니다. */
+   비는 화면 아무 데나 떨어져야 합니다.
+
+   눈금은 그림 눈금(TS)입니다. 캔버스가 몇 픽셀이든 방울 굵기가 사람과
+   같은 비로 보여야 합니다 — 캔버스 픽셀로 두면 SCALE 을 내린 만큼
+   빗줄기가 가늘어지고 수도 성기어집니다. 그릴 때 통째로 늘립니다. */
 const PRECIP = {
   drops: [], splash: [], kind: -1,
 
+  /** 그림 눈금으로 잰 화면 크기 */
+  vw() { return VIEW_W / AS; },
+  vh() { return VIEW_H / AS; },
+
   make(k, anywhere) {
     const snow = k === WX.SNOW;
+    const VIEW_W = this.vw(), VIEW_H = this.vh();
     return {
       x: Math.random() * (VIEW_W + 80) - 40,
       y: anywhere ? Math.random() * VIEW_H : -14 - Math.random() * 40,
@@ -4797,6 +4849,7 @@ const PRECIP = {
   },
 
   update(dt, kind, strength) {
+    const VIEW_W = this.vw();
     const want = (kind === WX.CLEAR || FX.reduced) ? 0
       : Math.round((kind === WX.SNOW ? 52 : 150) * strength);
     if (kind !== this.kind) { this.drops.length = 0; this.splash.length = 0; this.kind = kind; }
@@ -4828,6 +4881,7 @@ const PRECIP = {
     if (!this.drops.length) return;
     const snow = kind === WX.SNOW;
     g.save();
+    g.scale(AS, AS);
     if (snow) {
       g.fillStyle = '#FFFFFF';
       for (const d of this.drops) {
@@ -4906,10 +4960,16 @@ function drawWindows(g, m, camX, camY) {
   const sky = rgbOf(outsideColor(false)), grd = rgbOf(outsideColor(true));
   const kind = WEATHER.kind(), dark = TIME.darkness();
   const t = WIND.t;
+  /* 창틀·유리 좌표는 벽 그림(TS 눈금) 안에서 잰 값입니다. 벽과 같은
+     배율로 늘려야 하늘이 유리 자리에 정확히 들어갑니다. */
+  g.save();
+  g.scale(AS, AS);
+  camX /= AS; camY /= AS;
+  const vw = VIEW_W / AS, vh = VIEW_H / AS;
   for (const win of m.wins) {
     for (const r of win.glass) {
       const x = Math.round(r[0] - camX), y = Math.round(r[1] - camY);
-      if (x > VIEW_W || y > VIEW_H || x + r[2] < 0 || y + r[3] < 0) continue;
+      if (x > vw || y > vh || x + r[2] < 0 || y + r[3] < 0) continue;
       const hz = Math.max(1, Math.round(r[3] * 0.64));
       g.fillStyle = sky; g.fillRect(x, y, r[2], hz);
       g.fillStyle = grd; g.fillRect(x, y + hz, r[2], r[3] - hz);
@@ -4933,6 +4993,7 @@ function drawWindows(g, m, camX, camY) {
     }
   }
   for (const win of m.wins) g.drawImage(win.c, Math.round(win.x - camX), Math.round(-camY));
+  g.restore();
 }
 
 /* ==================================================================
@@ -4977,12 +5038,17 @@ const CLOUDS = {
     const sun = (1 - TIME.darkness() * 1.4) * (1 - WEATHER.strength());
     if (sun < 0.06) return;
     const b = this.blob || this.make();
-    const span = m.w * T + 520;
+    /* 구름은 지도 위를 흐르므로 크기도 지도 눈금입니다 — 타일이 커지면
+       그림자도 같이 커져야 같은 크기의 구름이 지나갑니다. */
+    const pad = 260 * AS;
+    const span = m.w * T + pad * 2;
     g.save();
     g.globalAlpha = 0.14 * sun;
     for (const c of this.set) {
-      const r = 60 * c.s;
-      const wx = frac(c.x + (WIND.t * c.v) / span) * span - 260;
+      const r = 60 * AS * c.s;
+      /* 흐르는 속도도 지도 눈금입니다 — c.v 를 그대로 두면 지도가 두 배가
+         된 만큼 구름이 느려 보입니다. */
+      const wx = frac(c.x + (WIND.t * c.v * AS) / span) * span - pad;
       const wy = c.y * m.h * T;
       const sx = wx - camX - r, sy = wy - camY - r * 0.6;
       if (sx > VIEW_W || sy > VIEW_H || sx + r * 2 < 0 || sy + r * 1.2 < 0) continue;
@@ -5046,8 +5112,8 @@ const TUFT = {
       const r = hash1(x * 73.13 + y * 151.7);
       if (r > 0.24) continue;
       out.push({
-        px: x * T + Math.floor(hash1(x * 5.1 + y * 9.3) * 12) + 2,
-        py: y * T + Math.floor(hash1(x * 2.7 + y * 17.9) * 8),
+        px: x * T + (Math.floor(hash1(x * 5.1 + y * 9.3) * 12) + 2) * AS,
+        py: y * T + Math.floor(hash1(x * 2.7 + y * 17.9) * 8) * AS,
         s: Math.floor(r * 12.5) % 3,
       });
     }
@@ -5061,9 +5127,9 @@ const TUFT = {
     const bake = this.bake || this.make();
     for (const t of m.tufts) {
       const x = t.px - camX, y = t.py - camY;
-      if (x < -16 || y < -16 || x > VIEW_W || y > VIEW_H) continue;
+      if (x < -T || y < -T || x > VIEW_W || y > VIEW_H) continue;
       const b = Math.max(0, Math.min(4, Math.round(WIND.at(t.px, t.py) * 2) + 2));
-      g.drawImage(bake[t.s][b], x, y);
+      blitArt(bake[t.s][b], x, y);
       drawCount++;
     }
   },
@@ -5150,7 +5216,9 @@ const TIME = {
 /* ---------------- 광원 ----------------
    기물 종류에서 자동으로 뽑습니다. 존마다 손으로 적으면 기물을 옮길
    때마다 빛이 제자리에 남습니다.
-   dx dy 는 기물 좌상단에서 빛이 나는 지점까지의 픽셀. */
+   dx dy 는 기물 좌상단에서 빛이 나는 지점까지의 픽셀, r 은 빛이 닿는
+   반지름입니다. 셋 다 **그림 눈금(TS)** 입니다 — 기물 그림 위에서 잰
+   값이라, 월드에 얹는 자리에서 AS 를 곱합니다. */
 const LAMPS = {
   lamp:      { dx: 8,  dy: 6,  r: 52, c: [255, 226, 172], i: 1.0 },
   floorLamp: { dx: 8,  dy: 8,  r: 40, c: [255, 224, 172], i: 0.9 },
@@ -5182,8 +5250,10 @@ function windowLights(m) {
     /* 정면 창문 줄은 건물 아래에서 두 칸 위입니다. 건물 폭에 걸쳐
        고르게 놓습니다 - 창 하나하나를 따라가지 않고 벽면이 은은하게
        빛나게 하는 편이 16px 에서 더 깨끗합니다. */
-    const y = (p.y + d.h - 2) * T + 8;
-    for (let i = 1; i < d.w - 1; i += 3) out.push({ x: (p.x + i) * T + 8, y, r: 34, c: [255, 226, 170], i: 0.62 });
+    /* 여기 나오는 값은 곧바로 월드 좌표로 쓰이므로 미리 AS 를 곱해 둡니다 */
+    const y = (p.y + d.h - 2) * T + 8 * AS;
+    for (let i = 1; i < d.w - 1; i += 3)
+      out.push({ x: (p.x + i) * T + 8 * AS, y, r: 34 * AS, c: [255, 226, 170], i: 0.62 });
   }
   return out;
 }
@@ -5270,7 +5340,8 @@ const LIGHTMAP = {
       for (const p of m.props) {
         const L = LAMPS[p.kind];
         if (!L) continue;
-        put({ x: p.x * T + L.dx, y: p.y * T + L.dy, r: L.r, c: L.c, i: L.i, live: L.live });
+        put({ x: p.x * T + L.dx * AS, y: p.y * T + L.dy * AS, r: L.r * AS,
+              c: L.c, i: L.i, live: L.live });
       }
       if (m.winLights) for (const L of m.winLights) put(L);
       g.globalAlpha = 1;
@@ -5439,7 +5510,10 @@ function solidAt(px, py) {
   if (!inMap(zone, tx, ty)) return true;
   return zone.solid[at(zone, tx, ty)] === 1;
 }
-const BOX = { w: 9, h: 6 };
+/* 발이 딛는 자리. 타일 대비 비율이 그대로여야 지나다니던 틈을 계속
+   지나갑니다 — 9/16 = 18/32. multiplayer.js 의 봇 상자와 **반드시**
+   같아야 하고, 다르면 남만 벽을 통과합니다(그 파일 주석에 경고가 있습니다). */
+const BOX = { w: 9 * AS, h: 6 * AS };
 function canStand(px, py) {
   const l = px - BOX.w / 2, r = px + BOX.w / 2 - 1, t = py - BOX.h, b = py - 1;
   return !(solidAt(l, t) || solidAt(r, t) || solidAt(l, b) || solidAt(r, b));
@@ -7500,8 +7574,9 @@ const MANNEQUIN = loadItemImg('mannequin.png');
 /* ==================================================================
    캐릭터 — 32x48 시트
 
-   월드는 타일이 16px 인데 캐릭터는 32x48 입니다. 가로 두 칸 세로 세 칸을
-   차지한다는 뜻이라, 타일 격자와 어긋나지 않습니다.
+   월드 타일이 32px 이므로 캐릭터는 가로 한 칸 세로 한 칸 반을 차지합니다.
+   젭(1.5x2)과 스타듀(1x2) 사이이고, 타일 격자와도 어긋나지 않습니다.
+   그림은 한 픽셀도 안 건드렸습니다 — 타일 쪽을 16 에서 32 로 올렸습니다.
 
    시트 한 장에 right / up / left / down 네 프레임이 가로로 붙어 있고,
    아이템(assets/items)과 프레임 순서가 같습니다 — 순서가 다르면 옷만
@@ -8419,7 +8494,7 @@ function playerSheet() {
   if (jacketCanvas) return jacketCanvas;
   const c = canvasOf(CHAR_SHEET_W, CHAR_SHEET_H), g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
-  g.drawImage(urban, CHAR_SHEET_COL * T, 0, c.width, c.height, 0, 0, c.width, c.height);
+  g.drawImage(urban, CHAR_SHEET_COL * TS, 0, c.width, c.height, 0, 0, c.width, c.height);
   g.globalCompositeOperation = 'source-atop';
   /* 몸통 줄 하나만 갈아입힙니다. 모자·하의·신발 줄까지 색으로 덮어 봤지만
      16px 안에서 다리 두 짝과 발이 한 덩어리가 되어 원본보다 나빠집니다 —
@@ -8427,9 +8502,9 @@ function playerSheet() {
      아무것도 안 입었으면 예전처럼 학교 과잠을 기본으로 입습니다. */
   const col = wornColor('top') || schoolColor();
   for (let r = 0; r < CHAR_SHEET_H; r++) {
-    px(g, 0, r * T + 8, c.width, 5, col);
-    px(g, 0, r * T + 8, c.width, 1, 'rgba(255,255,255,.28)');   // 어깨선
-    px(g, 0, r * T + 12, c.width, 1, 'rgba(0,0,0,.22)');        // 밑단 그늘
+    px(g, 0, r * TS + 8, c.width, 5, col);
+    px(g, 0, r * TS + 8, c.width, 1, 'rgba(255,255,255,.28)');   // 어깨선
+    px(g, 0, r * TS + 12, c.width, 1, 'rgba(0,0,0,.22)');        // 밑단 그늘
   }
   g.globalCompositeOperation = 'source-over';
   jacketCanvas = c;
@@ -10808,7 +10883,9 @@ function update(dt) {
   }
   if (!player.sitting && !dialogOpen && !panelOpen && !travel) {
     const run = keys.has('shift');
-    const speed = (run ? 92 : 54) * dt;
+    /* 속도도 지도 눈금입니다. 타일만 두 배로 하고 여기를 그대로 두면
+       같은 거리를 두 배 걸어야 해서 월드가 갑자기 넓게 느껴집니다. */
+    const speed = (run ? 92 : 54) * AS * dt;
     let dx = 0, dy = 0;
     if (keys.has('w') || keys.has('arrowup')) dy -= 1;
     if (keys.has('s') || keys.has('arrowdown')) dy += 1;
@@ -10888,12 +10965,12 @@ function draw() {
   if (zone.floor) {
     /* 실내는 방 전체가 한 장입니다. 타일을 반복하면 격자가 눈에 띄고,
        널판 이음새를 어긋나게 놓을 수도 없습니다. */
-    ctx.drawImage(zone.floor, -camX, -camY);
+    blitArt(zone.floor, -camX, -camY);
     drawCount++;
   } else {
     /* 캠퍼스도 바닥은 한 장입니다. 그 위에 포장 오토타일만 얹으면
        길 가장자리는 시트가 그려 주고 잔디는 격자 없이 이어집니다. */
-    if (zone.ground) { ctx.drawImage(zone.ground, -camX, -camY); drawCount++; }
+    if (zone.ground) { blitArt(zone.ground, -camX, -camY); drawCount++; }
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const dx = x * T - camX, dy = y * T - camY;
       if (!zone.ground) blitU(zone.base[at(zone, x, y)], dx, dy);
@@ -10914,8 +10991,9 @@ function draw() {
           const a = hash1(x * 13.7 + y * 29.1);
           ctx.globalAlpha = Math.min(0.42, (v - 0.62) * 0.5);
           ctx.fillStyle = '#DCF1F6';
-          ctx.fillRect(dx + Math.floor(a * 6) + 2, dy + Math.floor(a * 11) + 3,
-                       4 + Math.floor(a * 4), 1);
+          /* 반짝임 치수는 타일 한 칸 안에서 정한 것이라 타일과 같이 큽니다 */
+          ctx.fillRect(dx + Math.floor(a * 6 + 2) * AS, dy + Math.floor(a * 11 + 3) * AS,
+                       (4 + Math.floor(a * 4)) * AS, AS);
           ctx.globalAlpha = 1;
           drawCount++;
         }
@@ -10933,7 +11011,7 @@ function draw() {
      위를 덮어 겉과 속의 결을 맞춥니다. */
   if (zone.walls) {
     for (const w of zone.walls) {
-      ctx.drawImage(w.c, w.x * T - camX, w.y * T - camY);
+      blitArt(w.c, w.x * T - camX, w.y * T - camY);
       drawCount++;
     }
     /* 창밖. 벽 다음에 하늘을 칠하고 창을 한 장 더 덮습니다 - 유리만
@@ -10953,7 +11031,7 @@ function draw() {
     ctx.fillRect(x, y, w, h);
     ctx.globalAlpha = 0.26 + Math.sin(performance.now() / 400) * 0.09;
     ctx.fillStyle = '#2DD4BF';
-    ctx.fillRect(x + 1, y + 1, w - 2, h - 2);
+    ctx.fillRect(x + AS, y + AS, w - 2 * AS, h - 2 * AS);
   }
   ctx.globalAlpha = 1;
 
@@ -10969,9 +11047,9 @@ function draw() {
       ctx.fillStyle = '#FFF3DC';
       const dx = doorFlash.x * T - camX, dy = doorFlash.y * T - camY;
       /* 아래로 갈수록 좁아지는 빛 - 문틈에서 바닥으로 쏟아지는 모양 */
-      const w = doorFlash.w * T, h = doorFlash.h * T;
-      for (let i = 0; i < h + 10; i++) {
-        const t = i / (h + 10);
+      const w = doorFlash.w * T, h = doorFlash.h * T, tail = 10 * AS;
+      for (let i = 0; i < h + tail; i++) {
+        const t = i / (h + tail);
         const iw = Math.round(w * (1 - t * 0.45));
         ctx.globalAlpha = 0.5 * k * k * (1 - t);
         ctx.fillRect(Math.round(dx + (w - iw) / 2), dy + i, iw, 1);
@@ -11013,7 +11091,7 @@ function draw() {
         const img = fl
           ? fl[Math.max(0, Math.min(4, Math.round(WIND.at(p.x * T, p.y * T) * 2) + 2))]
           : d.canvas;
-        ctx.drawImage(img, p.x * T - camX, p.y * T - camY);
+        blitArt(img, p.x * T - camX, p.y * T - camY);
         drawCount++;
       } else {
         const blit = BLIT[d.s];
@@ -11029,14 +11107,14 @@ function draw() {
         /* 말 걸 수 있다는 느낌표. 머리 위 하늘에도 벽에도 뜨므로 어두운
            획을 한 겹 깔고 그 위에 청록을 얹습니다. 2px 짜리 표시가
            바탕에 묻히면 아무도 말을 못 겁니다. */
-        const bx = it.n.x * T - camX + 7, by = it.n.y * T - camY;
-        const bob = Math.sin(performance.now() / 200) * 1.5;
+        const bx = it.n.x * T - camX + 7 * AS, by = it.n.y * T - camY;
+        const bob = Math.sin(performance.now() / 200) * 1.5 * AS;
         ctx.fillStyle = '#0C5A4F';
-        ctx.fillRect(bx - 1, by - 7 + bob, 4, 6);
-        ctx.fillRect(bx - 1, by - 2 + bob, 4, 4);
+        ctx.fillRect(bx - AS, by - 7 * AS + bob, 4 * AS, 6 * AS);
+        ctx.fillRect(bx - AS, by - 2 * AS + bob, 4 * AS, 4 * AS);
         ctx.fillStyle = '#2DD4BF';
-        ctx.fillRect(bx, by - 6 + bob, 2, 4);
-        ctx.fillRect(bx, by - 1 + bob, 2, 2);
+        ctx.fillRect(bx, by - 6 * AS + bob, 2 * AS, 4 * AS);
+        ctx.fillRect(bx, by - 1 * AS + bob, 2 * AS, 2 * AS);
       }
     } else if (it.kind === 'mp') { MP.drawOne(it.rp); drawCount++;
     } else { drawPlayer(); drawCount++; }
@@ -11045,19 +11123,21 @@ function draw() {
   /* 벽시계 바늘 — 진짜 시각. 방에 있는 동안 분침이 움직입니다. */
   if (zone.clock) {
     const now = new Date();
-    const cx = zone.clock.x * T + 8 - camX;
-    const cy = zone.clock.y * T + 22 - camY;
+    /* 시계판은 벽 그림(TS 눈금)에 그려져 있습니다. 바늘만 여기서 얹으므로
+       판 안 좌표에 AS 를 곱해야 바늘이 판 한가운데에 섭니다. */
+    const cx = zone.clock.x * T + 8 * AS - camX;
+    const cy = zone.clock.y * T + 22 * AS - camY;
     const mm = (now.getMinutes() + now.getSeconds() / 60) / 60 * Math.PI * 2;
     const hh = ((now.getHours() % 12) + now.getMinutes() / 60) / 12 * Math.PI * 2;
     ctx.strokeStyle = '#2A3440'; ctx.lineCap = 'butt';
-    ctx.lineWidth = 1.6;
+    ctx.lineWidth = 1.6 * AS;
     ctx.beginPath(); ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.sin(hh) * 4.2, cy - Math.cos(hh) * 4.2); ctx.stroke();
-    ctx.lineWidth = 1;
+    ctx.lineTo(cx + Math.sin(hh) * 4.2 * AS, cy - Math.cos(hh) * 4.2 * AS); ctx.stroke();
+    ctx.lineWidth = AS;
     ctx.beginPath(); ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.sin(mm) * 6.4, cy - Math.cos(mm) * 6.4); ctx.stroke();
+    ctx.lineTo(cx + Math.sin(mm) * 6.4 * AS, cy - Math.cos(mm) * 6.4 * AS); ctx.stroke();
     ctx.fillStyle = '#C2412C';
-    ctx.fillRect(cx - 1, cy - 1, 2, 2);
+    ctx.fillRect(cx - AS, cy - AS, 2 * AS, 2 * AS);
     drawCount++;
   }
 
@@ -11087,7 +11167,7 @@ function draw() {
 }
 
 /* 캐릭터 — 종 시트 32x48 에 산 옷을 겹쳐 구운 한 장을 얹습니다.
-   타일이 16px 인데 캐릭터는 가로 두 칸 세로 세 칸입니다. 발바닥은 프레임
+   타일이 32px 이므로 캐릭터는 가로 한 칸 세로 한 칸 반입니다. 발바닥은 프레임
    안 y45 이고(y46-47 은 예전 그림자 자리), 그래서 발 위치에서 45 를 빼고
    그립니다. 정렬은 예전처럼 발 줄로 하므로 기물 앞뒤가 그대로입니다.
 
@@ -11116,14 +11196,16 @@ function drawPlayer() {
     const rowI = player.moving ? WALK_ROW[player.frame & 3] : 0;
     const idx = CHAR_BASE + rowI * U_COLS + col;
     const old = playerSheet();
-    const ox = (idx % U_COLS - CHAR_SHEET_COL) * T, oy = ((idx / U_COLS) | 0) * T;
+    /* 자르는 자는 TS(옛 시트는 16px), 얹는 자는 T 입니다 — 예비 그림도
+       한 칸을 채워야 종 시트가 왔을 때와 발 크기가 비슷하게 보입니다. */
+    const ox = (idx % U_COLS - CHAR_SHEET_COL) * TS, oy = ((idx / U_COLS) | 0) * TS;
     ctx.save();
     if (sq !== 1) { ctx.translate(fx, fy); ctx.scale(1, sq); ctx.translate(-fx, -fy); }
     if (player.dir === 'side' && player.flip) {
       ctx.translate(fx + T / 2, fy - T + bob); ctx.scale(-1, 1);
-      ctx.drawImage(old, ox, oy, T, T, 0, 0, T, T);
+      ctx.drawImage(old, ox, oy, TS, TS, 0, 0, T, T);
     } else {
-      ctx.drawImage(old, ox, oy, T, T, fx - T / 2, fy - T + bob, T, T);
+      ctx.drawImage(old, ox, oy, TS, TS, fx - T / 2, fy - T + bob, T, T);
     }
     ctx.restore();
     return;

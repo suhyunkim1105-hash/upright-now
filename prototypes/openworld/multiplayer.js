@@ -1,8 +1,10 @@
 /* ==================================================================
    Deskfit — 멀티플레이 기반
 
-   index.html 이 다 뜬 뒤에 읽힙니다. index.html 의 전역(T, ZONES,
-   player, camX/camY, ctx, urban …)을 그대로 씁니다.
+   index.html 이 다 뜬 뒤에 읽힙니다. index.html 의 전역(T, TS, AS, BOX,
+   ZONES, player, camX/camY, ctx, urban …)을 그대로 씁니다.
+   T 는 월드 타일(32), TS 는 그림 한 칸(16), AS 는 그 배율입니다 —
+   **자를 때는 TS, 얹을 때는 T** 입니다.
 
    여기서 하는 일은 셋입니다.
      1. 전송 계층을 인터페이스 하나로 좁힙니다 (Transport).
@@ -312,12 +314,14 @@
   function tintedSheet(hue) {
     if (sheets.has(hue)) return sheets.get(hue);
     const c = document.createElement('canvas');
-    c.width = SHEET_W * T; c.height = SHEET_H * T;
+    /* 옛 시트는 16px 짜리라 자를 때는 TS 를 씁니다. 월드 타일(T)로 자르면
+       한 칸 건너 엉뚱한 사람이 잘려 나옵니다. */
+    c.width = SHEET_W * TS; c.height = SHEET_H * TS;
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
     if (hue) g.filter = 'hue-rotate(' + hue + 'deg) saturate(1.15)';
-    g.drawImage(urban, SHEET_COL * T, 0, SHEET_W * T, SHEET_H * T,
-                0, 0, SHEET_W * T, SHEET_H * T);
+    g.drawImage(urban, SHEET_COL * TS, 0, SHEET_W * TS, SHEET_H * TS,
+                0, 0, SHEET_W * TS, SHEET_H * TS);
     sheets.set(hue, c);
     return c;
   }
@@ -326,20 +330,20 @@
     const dx = Math.round(rp.x - T / 2 - camX);
     const dy = Math.round(rp.y - T - camY);
 
-    shadowAt(dx + T / 2, dy + T - 1, 5, 2.2);
+    shadowAt(dx + T / 2, dy + T - 1, 5 * AS, 2.2 * AS);
 
     const sheet = tintedSheet(rp.hue);
     const col = DIR_COL[rp.dir] ?? 0;
     const row = rp.moving ? WALK_ROW[rp.frame & 3] : 0;
-    const sx = col * T, sy = row * T;
-    const bob = bobOf(rp);
+    const sx = col * TS, sy = row * TS;
+    const bob = bobOf(rp) * AS;
 
     /* 옛 시트에는 오른쪽 한 벌뿐이라 왼쪽은 뒤집어 씁니다. */
     if (rp.dir4 === 'left') {
       ctx.save(); ctx.translate(dx + T, dy + bob); ctx.scale(-1, 1);
-      ctx.drawImage(sheet, sx, sy, T, T, 0, 0, T, T); ctx.restore();
+      ctx.drawImage(sheet, sx, sy, TS, TS, 0, 0, T, T); ctx.restore();
     } else {
-      ctx.drawImage(sheet, sx, sy, T, T, dx, dy + bob, T, T);
+      ctx.drawImage(sheet, sx, sy, TS, TS, dx, dy + bob, T, T);
     }
   }
 
@@ -617,7 +621,9 @@
         id: 'p' + (i + 1),
         nick: base.nick + (Math.floor(i / FAKE.length) + 1),
         hue: (base.hue + i * 37) % 360,
-        speed: 38 + (i * 7) % 30,
+        /* 지도 눈금입니다 — 타일이 커진 만큼 같이 올려야 봇이 나와 같은
+           빠르기로 걷습니다. */
+        speed: (38 + (i * 7) % 30) * AS,
       });
     }
     return out;
@@ -651,9 +657,12 @@
     }
     /* index.html 의 BOX 와 같은 크기입니다. 다르면 남만 벽을 통과합니다.
        캐릭터가 32x48 로 커져도 **발이 딛는 자리는 그대로**입니다 —
-       키 큰 그림은 위로 자라지 바닥을 더 차지하지 않습니다. */
+       키 큰 그림은 위로 자라지 바닥을 더 차지하지 않습니다.
+
+       숫자를 베껴 적지 않고 BOX 에서 바로 계산합니다. 타일이 16 에서 32 로
+       올라갈 때 한쪽만 고치는 사고가 실제로 우려됐던 자리입니다. */
     function free(px, py) {
-      const l = px - 4.5, r = px + 3.5, t = py - 6, b = py - 1;
+      const l = px - BOX.w / 2, r = px + BOX.w / 2 - 1, t = py - BOX.h, b = py - 1;
       return !(solidIn(l, t) || solidIn(r, t) || solidIn(l, b) || solidIn(r, b));
     }
     function pickTarget() {
@@ -680,7 +689,7 @@
       if (b.wait > 0) { b.wait -= dt; b.moving = false; return; }
       let dx = b.target.x - b.x, dy = b.target.y - b.y;
       const dist = Math.hypot(dx, dy);
-      if (dist < 3) { b.target = pickTarget(); b.wait = 0.6 + Math.random() * 2.5; b.moving = false; return; }
+      if (dist < 3 * AS) { b.target = pickTarget(); b.wait = 0.6 + Math.random() * 2.5; b.moving = false; return; }
       dx /= dist; dy /= dist;
       const step = b.speed * dt;
       const nx = b.x + dx * step, ny = b.y + dy * step;

@@ -9822,16 +9822,34 @@ function bakeMinimap() {
   if (m.ground) g.drawImage(m.ground, 0, 0, c.width, c.height);
   g.imageSmoothingEnabled = false;
 
-  /* 건물은 지도 위에서 덩어리로 보여야 합니다. 축소한 그림만으로는
-     잔디와 지붕이 같은 얼룩이 됩니다. */
+  /* ground 는 잔디와 운동장처럼 한 장으로 구운 그림만 담습니다. 도로,
+     광장, 호수는 over 오토타일 레이어이므로 이 레이어도 같은 타일을
+     축소해 그려야 실제 지도와 미니맵의 지형이 일치합니다. */
+  for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    const mat = m.over[at(m, x, y)];
+    if (!mat) continue;
+    const tile = autoTile(m, x, y, mat);
+    g.drawImage(school, (tile % K_COLS) * T, ((tile / K_COLS) | 0) * T,
+      T, T, x * S, y * S, S, S);
+  }
+
+  /* 건물은 축약 사각형이 아니라 월드에서 쓰는 완성 캔버스를 축소합니다.
+     그래야 지붕 모양·창문·돔·색 구분이 지도에서도 살아납니다. 작은
+     소품은 기존처럼 생략해 장소 건물의 실루엣을 우선합니다. */
   for (const p of m.props) {
     const d = PROP[p.kind];
     if (!d || d.w < 6) continue;                   // 건물만
     const X = p.x * S, Y = p.y * S, W = d.w * S, H = (d.h - 1) * S;
-    g.fillStyle = 'rgba(255,255,255,.62)'; g.fillRect(X, Y, W, H);       // 지붕
-    g.fillStyle = 'rgba(43,50,48,.55)'; g.fillRect(X, Y + H, W, S);      // 정면
-    g.strokeStyle = 'rgba(43,50,48,.45)'; g.lineWidth = 1;
-    g.strokeRect(X + .5, Y + .5, W - 1, H + S - 1);
+    if (d.canvas) {
+      g.imageSmoothingEnabled = true;
+      g.drawImage(d.canvas, X, Y, W, d.h * S);
+      g.imageSmoothingEnabled = false;
+    } else {
+      g.fillStyle = 'rgba(255,255,255,.62)'; g.fillRect(X, Y, W, H);
+      g.fillStyle = 'rgba(43,50,48,.55)'; g.fillRect(X, Y + H, W, S);
+      g.strokeStyle = 'rgba(43,50,48,.45)'; g.lineWidth = 1;
+      g.strokeRect(X + .5, Y + .5, W - 1, H + S - 1);
+    }
   }
   MINI.base = c;
 }

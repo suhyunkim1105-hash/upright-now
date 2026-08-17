@@ -873,6 +873,26 @@
   }
   #panel .bar i { display: block; height: 100%; background: var(--teal); border-radius: 999px; }
 
+  /* ---- 축별 스트레칭 처방 ---- */
+  #panel .rx {
+    margin-top: 10px; padding: 13px 15px; border-radius: 13px;
+    background: var(--surface-2); border: 1px solid var(--line-2);
+  }
+  #panel .rx-h { display: flex; align-items: baseline; gap: 8px; }
+  #panel .rx-h b { font-size: 14px; }
+  /* 이탈 시간은 **근거**입니다. 처방만 있고 근거가 없으면 지어낸 말로 읽힙니다. */
+  #panel .rx-h u {
+    margin-left: auto; text-decoration: none; font-size: 11.5px;
+    color: var(--ink-3); font-variant-numeric: tabular-nums;
+  }
+  #panel .rx p { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.6; }
+  #panel .rx ol { margin: 8px 0 0; padding-left: 19px; font-size: 12.5px; line-height: 1.78; }
+  #panel .rx ol li::marker { color: var(--ink-3); }
+
+  /* ---- 자세 나이 계기판 ---- */
+  #panel .gauge { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+  #panel .gauge svg { flex: none; }
+
   /* 세션 표시 — 좌측 하단. 지금 세션이 돌고 있다는 사실과 얼마나
      됐는지가 늘 보여야 합니다. 종료 버튼을 옆에 두는 이유는, 회고를
      보려면 반드시 여기를 눌러야 하기 때문입니다. */
@@ -6030,6 +6050,7 @@ function setState(kind, msg) {
   LIVE.lastTick = now;
   /* 회복 — bad 를 겪고 good 으로 돌아온 것만 셉니다. 랭킹이 이걸 씁니다. */
   const changed = LIVE.state !== kind;
+  if (changed) feedRecovery(kind);          // 회복에 걸린 시간 — 자세 나이가 씁니다
   if (kind === 'bad') LIVE.wasBad = true;
   else if (kind === 'good' && LIVE.wasBad) { LIVE.recoveries++; LIVE.wasBad = false; award('recov', '회복'); }
   /* 말풍선은 **전이 순간**에만. 상태가 유지되는 동안 계속 뜨면 화면에
@@ -6098,6 +6119,143 @@ function stepDroop() {
   if (DROOP.wasBad && !bad) DROOP.flash = 1;
   DROOP.wasBad = bad;
   if (DROOP.flash > 0) DROOP.flash = Math.max(0, DROOP.flash - 0.05);
+}
+
+/* ================== 축별 누적 ==================
+   판정은 프레임마다 축 10개의 편차를 이미 다 계산합니다(POSE.votes 의
+   details). 그런데 지금까지 그중 **가장 큰 값 하나**만 쓰고 나머지는
+   버렸습니다. 여기서 축마다 "기준을 넘긴 시간"을 쌓아 둡니다.
+
+   왜 횟수가 아니라 **시간**인가 — 프레임률이 기기마다 15~30fps 로
+   달라서 횟수를 세면 빠른 기기가 두 배로 나쁘게 나옵니다.
+
+   이 값으로 두 가지를 만듭니다.
+     · 축별 스트레칭 처방 — 제일 오래 넘긴 축 한둘만 처방
+     · 자세 나이 — 유지력·회복속도와 함께 씀
+   둘 다 **코인과 무관**합니다. 코인은 여전히 "사람이 있었나" 하나만 봅니다. */
+const AXIS = { ms: {}, last: 0, recovMs: [], badAt: 0 };
+
+function resetAxis() { AXIS.ms = {}; AXIS.last = 0; AXIS.recovMs = []; AXIS.badAt = 0; }
+
+function feedAxis(v) {
+  const now = performance.now();
+  const dt = AXIS.last ? now - AXIS.last : 0;
+  AXIS.last = now;
+  /* 탭이 숨으면 rAF 가 멈춥니다. 돌아온 첫 프레임에 그 시간을 통째로
+     청구하면 축 하나가 몇 분씩 뜁니다 — goodMs 와 같은 이유로 자릅니다. */
+  if (!v || dt <= 0 || dt > 2000) return;
+  v.details.forEach((d) => { if (d.primary && d.exceeded) AXIS.ms[d.key] = (AXIS.ms[d.key] || 0) + dt; });
+}
+
+/** 나쁨에 들어간 순간과 돌아온 순간을 재서 **회복에 걸린 시간**을 모읍니다.
+    자세 나이가 정적인 각도만 보지 않게 하는 값입니다 — 훈련하면 실제로
+    짧아지는 쪽이라, 노력이 숫자에 반영됩니다. */
+function feedRecovery(kind) {
+  if (kind === 'bad') { if (!AXIS.badAt) AXIS.badAt = Date.now(); }
+  else if (kind === 'good' && AXIS.badAt) {
+    AXIS.recovMs.push(Date.now() - AXIS.badAt);
+    AXIS.badAt = 0;
+  }
+}
+
+/* 축 → 처방. 10축을 **4갈래**로 묶습니다. 정면 웹캠 한 대로 믿을 수 있는
+   갈래만 남긴 것이고, 어깨 말림(protraction)은 정면에서 앞뒤를 못 재서
+   아예 뺐습니다 — 못 재는 것을 처방하면 처방 전체의 신뢰가 깎입니다.
+
+   axes 는 그 갈래에 속한 축이고, 넘긴 시간을 합쳐서 갈래끼리 겨룹니다. */
+const STRETCH = [
+  {
+    id: 'chin', name: '고개 숙임',
+    axes: ['facePitchRatio', 'earEyeRatio', 'headPitchDeg'],
+    why: '턱이 아래로 내려가 목 뒤가 계속 당겨졌어요',
+    how: ['턱을 목 쪽으로 **당겨** 뒤통수를 위로 미세요 (5초 유지)',
+          '천천히 고개를 뒤로 젖혀 천장을 3초 보세요', '10회 반복'],
+  },
+  {
+    id: 'forward', name: '화면으로 다가감',
+    axes: ['faceScaleRatio', 'shoulderSpan', 'headDistanceCm', 'headHeightRatio'],
+    why: '몸이 조금씩 화면 쪽으로 나왔어요 — 거북목이 만들어지는 자리예요',
+    how: ['의자 등받이에 등을 **완전히** 붙이고 앉으세요',
+          '두 손을 뒤통수에 대고 팔꿈치를 뒤로 5초 여세요', '5회 반복 후 모니터를 한 뼘 뒤로'],
+  },
+  {
+    id: 'tilt', name: '어깨 좌우 기울기',
+    axes: ['shoulderTiltRatio'],
+    why: '한쪽 어깨가 계속 올라가 있었어요',
+    how: ['양 어깨를 귀까지 올렸다가 **툭** 떨어뜨리세요 (10회)',
+          '오른손으로 머리를 오른쪽으로 당겨 왼목을 15초 늘이세요', '반대쪽도 같이'],
+  },
+  {
+    id: 'lean', name: '몸통 치우침',
+    axes: ['lateralOffsetRatio', 'torsoLean'],
+    why: '몸통이 한쪽으로 기울어 앉아 있었어요',
+    how: ['앉은 채로 두 발을 바닥에 나란히 두세요',
+          '한 손을 위로 뻗어 반대쪽으로 기울여 옆구리를 15초 늘이세요', '반대쪽도 같이'],
+  },
+];
+
+/** 넘긴 시간이 긴 갈래부터. 아무 축도 안 넘겼으면 빈 배열 —
+    **처방할 게 없으면 안 합니다.** 없는데 지어내면 다음번에 안 믿습니다. */
+function stretchPlan() {
+  return STRETCH
+    .map((g) => ({ g, ms: g.axes.reduce((s, k) => s + (AXIS.ms[k] || 0), 0) }))
+    .filter((x) => x.ms > 20000)          // 20초는 넘겨야 처방합니다. 한 번 뒤척인 것은 처방거리가 아닙니다
+    .sort((a, b) => b.ms - a.ms)
+    .slice(0, 2);                          // 상위 둘까지. 넷을 다 주면 아무것도 안 합니다
+}
+
+/* ================== 자세 나이 ==================
+   **재미 요소입니다.** 코인·랭킹과 완전히 분리돼 있고, 이 값이 낮다고
+   얻는 것도 높다고 잃는 것도 없습니다(AGENTS.md §2.2 의 "자세를 점수화
+   하지 않는다" 를 지키는 선입니다 — 점수가 보상에 연결되는 순간 규칙이
+   깨집니다).
+
+   정적인 각도만 보지 않습니다. 셋을 섞습니다.
+     유지력   good 이었던 시간의 비율          (절반)
+     회복속도 나쁨에서 돌아오는 데 걸린 시간   (3/10)
+     이탈크기 축이 기준을 넘긴 시간의 비율     (2/10)
+   뒤의 둘은 **훈련하면 실제로 좋아지는 값**입니다. 각도만 쓰면 체형이
+   결정해 버려서 아무리 노력해도 안 바뀝니다.
+
+   판정 5분 미만이면 계산하지 않습니다 — 표본이 모자란 수를 보여 주면
+   그건 지어낸 값입니다. */
+function postureAge() {
+  const tot = LIVE.goodMs + LIVE.warnMs + LIVE.badMs;
+  if (tot < 5 * 60000) return null;
+  const hold = LIVE.goodMs / tot;                                   // 0~1, 클수록 좋음
+  const recov = AXIS.recovMs.length
+    ? AXIS.recovMs.reduce((a, b) => a + b, 0) / AXIS.recovMs.length / 1000
+    : (LIVE.badMs > 0 ? 120 : 0);                                   // 나빴는데 못 돌아왔으면 최악으로 봅니다
+  const over = Math.min(1, Object.values(AXIS.ms).reduce((a, b) => a + b, 0) / tot);
+  const bad = 0.5 * (1 - hold) + 0.3 * Math.min(1, recov / 120) + 0.2 * over;
+  return {
+    age: Math.round(20 + bad * 45),                                 // 20 ~ 65
+    hold: Math.round(hold * 100),
+    recovSec: Math.round(recov),
+    minutes: Math.round(tot / 60000),
+  };
+}
+
+/** 계기판 — 20~65 를 반원 눈금에 얹습니다. 숫자만 쓰면 "45세" 가 좋은지
+    나쁜지 알 수 없어서, 눈금 위 위치로 먼저 읽히게 합니다. */
+function ageGaugeSvg(age) {
+  const t = Math.max(0, Math.min(1, (age - 20) / 45));
+  const a = Math.PI * (1 - t);                                      // 왼쪽(180도)에서 오른쪽(0도)으로
+  const R = 62, cx = 78, cy = 74;
+  const px = cx + R * Math.cos(a), py = cy - R * Math.sin(a);
+  const col = age <= 30 ? '#2E9E5B' : age <= 45 ? '#D98324' : '#E0483A';
+  /* 숫자는 **바늘 아래**에 둡니다. 반원 안에 넣으면 바늘이 지나가면서
+     글자를 가로지릅니다(실제로 그렇게 나왔습니다). */
+  return `<svg viewBox="0 0 156 118" width="156" height="118" role="img" aria-label="자세 나이 ${age}세">
+    <path d="M16 74 A62 62 0 0 1 140 74" fill="none" stroke="#E3E0DC" stroke-width="13" stroke-linecap="round"/>
+    <path d="M16 74 A62 62 0 0 1 140 74" fill="none" stroke="${col}" stroke-width="13" stroke-linecap="round"
+          stroke-dasharray="${(Math.PI * R).toFixed(1)}" stroke-dashoffset="${(Math.PI * R * (1 - t)).toFixed(1)}"/>
+    <line x1="${cx}" y1="${cy}" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="#3A322E" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="${cx}" cy="${cy}" r="5" fill="#3A322E"/>
+    <text x="16" y="90" font-size="10" fill="#9A8E88">20</text>
+    <text x="130" y="90" font-size="10" fill="#9A8E88">65</text>
+    <text x="${cx}" y="112" font-size="27" font-weight="700" text-anchor="middle" fill="${col}">${age}<tspan font-size="13" font-weight="600">세</tspan></text>
+  </svg>`;
 }
 
 function paintPosture(kind) {
@@ -6536,6 +6694,7 @@ function poseLoop() {
      절대 각도가 아니라 본인 기준선 대비라(median·MAD) 거북목인 사람이
      켜자마자 처져 있지 않습니다 — 이게 이 값을 쓰는 이유입니다. */
   feedDroop(v && isFinite(v.maxPrimary) ? v.maxPrimary : 0);
+  feedAxis(v);                        // 축별 누적 — 처방과 자세 나이가 이걸 씁니다
   setState(s);
 }
 
@@ -8413,6 +8572,38 @@ const PANELS = {
     const judged = Math.round((LIVE.goodMs + LIVE.warnMs + LIVE.badMs) / 60000);
     const tot = LIVE.goodMs + LIVE.warnMs + LIVE.badMs;
     const pct = (v) => (tot > 0 ? Math.round((v / tot) * 100) : 0);
+
+    /* 축별 처방 — 넘긴 게 없으면 아무 말도 안 합니다. */
+    const plan = stretchPlan();
+    const planHtml = plan.length ? `
+      <h4>오늘 이 두 가지만</h4>
+      ${plan.map(({ g, ms }) => `
+        <div class="rx">
+          <div class="rx-h"><b>${g.name}</b><u>${Math.round(ms / 60000) || 1}분 이탈</u></div>
+          <p>${g.why}</p>
+          <ol>${g.how.map((s) => `<li>${s.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</li>`).join('')}</ol>
+        </div>`).join('')}
+      <div class="note">축 10개 중 <b>가장 오래 벗어난 것</b>만 골랐어요. 넷을 다
+      드리면 아무것도 안 하게 되니까 둘까지만 보여 줍니다. 어깨 말림은
+      정면 카메라 한 대로는 앞뒤를 못 재서 처방하지 않아요.</div>` : '';
+
+    /* 자세 나이 — 판정 5분을 못 채우면 아예 안 보여 줍니다. */
+    const pa = postureAge();
+    const ageHtml = pa ? `
+      <h4>자세 나이 <em style="font-weight:400;color:var(--ink-3)">(재미로 보는 값이에요)</em></h4>
+      <div class="gauge">
+        ${ageGaugeSvg(pa.age)}
+        <div class="rows" style="flex:1">
+          <div class="row"><span>편했던 시간 비율</span><span class="val">${pa.hold}%</span></div>
+          <div class="row"><span>굽었다 돌아오는 데</span><span class="val">${pa.recovSec}초</span></div>
+          <div class="row"><span>잰 시간</span><span class="val">${pa.minutes}분</span></div>
+        </div>
+      </div>
+      <div class="note">각도만 보는 값이 아니에요. <b>얼마나 유지했는지</b>와
+      <b>얼마나 빨리 돌아왔는지</b>를 같이 봅니다 — 체형이 아니라 습관이
+      움직이는 값이라 연습하면 실제로 내려갑니다. 코인·랭킹과는 아무
+      관계가 없어요.</div>` : '';
+
     return {
       title: '세션 회고', kind: '',
       tabs: ['이번 세션', '지난 세션'],
@@ -8435,6 +8626,8 @@ const PANELS = {
         <div class="note">이 숫자는 <b>자세 점수가 아닙니다.</b> 얼마나 앉았고 몇 번
         돌아왔는지를 셀 뿐이에요. 앉아 있든 걸어 다니든, 카메라가 얼굴과
         어깨를 볼 수 있었던 시간은 모두 셉니다.</div>
+        ${planHtml}
+        ${ageHtml}
         <div style="display:flex;gap:8px;margin-top:16px">
           <button class="act" data-do="new-session">새 세션 시작</button>
           <button class="act ghost" data-do="close">닫기</button>
@@ -9648,6 +9841,7 @@ function newSession() {
   SESSION.seatedMs = 0; SESSION.seatedAt = 0; SESSION.ended = false; SESSION.coins = 0;
   LIVE.goodMs = 0; LIVE.warnMs = 0; LIVE.badMs = 0;
   LIVE.recoveries = 0; LIVE.wasBad = false;
+  resetAxis();          // 축별 누적도 같이 비웁니다 — 안 비우면 처방이 지난 세션 것을 물고 옵니다
   /* enterZone 을 거치지 않는 유일한 세션 시작 경로라 여기서도 켭니다.
      안 켜면 "종료 → 새 세션" 이 카메라 없는 세션이 됩니다. */
   startCamera();

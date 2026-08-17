@@ -182,15 +182,6 @@
     return flush();
   }
 
-  /** 회고 확인. 세션당 1회·하루 3회는 서버가 셉니다.
-      finishSession 이 만든 세션 id 를 그대로 넘겨야 합니다 — 서버가
-      "내 세션인가" 를 그걸로 확인합니다. */
-  function claimRetro(sessionId) {
-    if (!configured || !sessionId) return Promise.resolve(null);
-    enqueue('world_claim_retro', { p_session_id: sessionId });
-    return flush();
-  }
-
   /** 서버가 아는 내 잔액. 행이 아직 없으면 0, 못 물어보면 null. */
   async function balance() {
     if (!configured) return null;
@@ -205,7 +196,7 @@
     } catch { return null; }
   }
 
-  global.WORLD_SAVE = { configured, uuid, finishSession, earnMinigame, claimRetro, balance, flush };
+  global.WORLD_SAVE = { configured, uuid, finishSession, earnMinigame, balance, flush };
 
   /* 접속하면: 밀린 것부터 보내고, 서버 잔액으로 화면을 맞춥니다.
      index.html 이 'worldsave:balance' 를 받아 ROOM.coins 를 덮어씁니다. */

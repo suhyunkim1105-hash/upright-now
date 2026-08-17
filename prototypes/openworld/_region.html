@@ -1,0 +1,29 @@
+<title>영역 색인</title>
+<style>body{margin:0;background:#161b22}canvas{image-rendering:pixelated;display:block}</style>
+<canvas id="c"></canvas>
+<script>
+const q = new URLSearchParams(location.search);
+const X0 = +(q.get('x') ?? 16), Y0 = +(q.get('y') ?? 8);
+const W = +(q.get('w') ?? 11), H = +(q.get('h') ?? 10);
+const FILE = q.get('f') ?? 'urban.png';
+const COLS = +(q.get('cols') ?? 27);
+const T = 16, Z = 5, CELL = T * Z + 16;
+const img = new Image();
+img.onload = () => {
+  const c = document.getElementById('c'), g = c.getContext('2d');
+  c.width = W * CELL; c.height = H * CELL;
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#161b22'; g.fillRect(0, 0, c.width, c.height);
+  g.font = 'bold 12px monospace'; g.textAlign = 'center';
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const tx = X0 + x, ty = Y0 + y, idx = ty * COLS + tx;
+    const px = x * CELL, py = y * CELL;
+    g.fillStyle = '#20262f'; g.fillRect(px + 2, py + 2, T * Z, T * Z);
+    g.drawImage(img, tx * T, ty * T, T, T, px + 2, py + 2, T * Z, T * Z);
+    g.fillStyle = '#DEEC8D';
+    g.fillText(idx, px + 2 + T * Z / 2, py + T * Z + 15);
+  }
+  document.title = 'READY';
+};
+img.src = 'assets/' + FILE;
+</script>

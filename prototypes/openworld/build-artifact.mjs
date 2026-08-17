@@ -10,7 +10,7 @@
  *   → artifact.html
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +22,9 @@ let html = readFileSync(src, 'utf8');
 const b64 = (rel, mime) =>
   'data:' + mime + ';base64,' + readFileSync(resolve(here, rel)).toString('base64');
 
-/* ---- 서체 ---- */
+/* ---- 서체 ----
+   Pretendard 는 @font-face 의 url(), Wanted Sans 는 <link> 로 들어옵니다.
+   후자는 CSS 파일 안에서 다시 woff2 를 부르므로 두 겹을 다 박아야 합니다. */
 const before = html.length;
 html = html.replace(
   "url('assets/fonts/PretendardVariable.woff2') format('woff2-variations')",
@@ -30,16 +32,102 @@ html = html.replace(
 );
 if (html.length === before) throw new Error('서체 경로를 못 찾았습니다');
 
-/* ---- 타일시트 셋 ----
-   school 은 빌드 타임에 구운 school16.png 을 씁니다 (다수결 축소가
-   런타임에서 빠진 것과 같은 커밋). 변수명과 파일명이 달라 짝으로 적습니다. */
-for (const [name, file] of [['urban', 'urban.png'], ['city', 'city.png'], ['school', 'school16.png']]) {
+/* Wanted Sans — CSS 안의 상대경로를 CSS 가 있던 폴더 기준으로 풀어 박습니다.
+   92개 subset 을 전부 넣으면 8MB 가 넘으므로, 한글·라틴 구간만 남기고
+   나머지 unicode-range 블록은 버립니다. */
+{
+  const m = html.match(/<link rel="stylesheet" href="([^"]*WantedSansVariable\.css)">/);
+  if (!m) throw new Error('Wanted Sans 링크를 못 찾았습니다');
+  const cssPath = resolve(here, m[1]);
+  const cssDir = dirname(cssPath);
+  let css = readFileSync(cssPath, 'utf8');
+  const faces = css.match(/@font-face\s*\{[^}]*\}/g) || [];
+  const kept = faces.filter((f) => {
+    const r = f.match(/unicode-range:\s*([^;]+);/);
+    if (!r) return true;
+    /* 한글 음절(AC00-D7A3)·자모(1100-11FF)·기본 라틴만 */
+    return /U\+AC00|U\+1100|U\+0000|U\+002[0-9A-F]|U\+00[0-9A-F]{2}-/i.test(r[1]);
+  }).map((f) => f.replace(/url\(([^)]+)\)/g, (whole, u) => {
+    const file = u.replace(/['"]/g, '').trim();
+    if (/^data:/.test(file)) return whole;
+    try {
+      return 'url(' + 'data:font/woff2;base64,'
+        + readFileSync(resolve(cssDir, file)).toString('base64') + ')';
+    } catch { return 'url()'; }
+  }));
+  html = html.replace(m[0], '<style>\n' + kept.join('\n') + '\n</style>');
+  console.log('Wanted Sans subset ' + kept.length + '/' + faces.length + '개 박음');
+}
+
+/* ---- 그림 전부 ----
+   예전에는 타일시트 셋만 이름으로 찾아 박았습니다. 캐릭터 시트 여덟 장과
+   아이템 89장이 들어오면서 그 방식이 못 따라갑니다. `assets/…png` 을
+   **문자열 그대로** 훑어 한 번에 바꿉니다 — 새 그림이 늘어도 안 빠집니다. */
+{
+  const seen = new Map();
+  const paths = [...new Set([...html.matchAll(/'(assets\/[\w./-]+\.png)'/g)].map((m) => m[1]))];
+  for (const rel of paths) {
+    try { seen.set(rel, b64(rel, 'image/png')); }
+    catch { console.log('  없음(건너뜀) ' + rel); }
+  }
+  /* 큰따옴표 안(미니게임 <img src="assets/…">)도 같이 훑습니다 */
+  for (const m of html.matchAll(/"(assets\/[\w./-]+\.png)"/g))
+    if (!seen.has(m[1])) { try { seen.set(m[1], b64(m[1], 'image/png')); } catch { /* 없음 */ } }
+  for (const [rel, uri] of seen) html = html.split(rel).join(uri);
+  console.log('그림 ' + seen.size + '장 박음');
+}
+
+/* ---- 캐릭터 시트 여덟 장 ----
+   경로를 `CHAR_BASE_PATH + slug + '.png'` 로 조립하므로 문자열로는 안 잡힙니다.
+   아이템과 같은 수법 — 표를 심고 로더가 먼저 봅니다. */
+{
+  const table = {};
+  for (const e of readdirSync(resolve(here, 'assets/characters')))
+    if (e.endsWith('.png')) table[e.replace(/\.png$/, '')] = b64('assets/characters/' + e, 'image/png');
+  html = html.replace("const CHAR_BASE_PATH = 'assets/characters/';",
+    "const CHAR_BASE_PATH = 'assets/characters/';\nconst CHAR_INLINE = " + JSON.stringify(table) + ';');
   const n0 = html.length;
-  html = html.replace(
-    name + ".src = 'assets/" + file + "';",
-    name + ".src = '" + b64('assets/' + file, 'image/png') + "';"
-  );
-  if (html.length === n0) throw new Error(name + ' 경로를 못 찾았습니다');
+  html = html.replace(/(\w+)\.src = CHAR_BASE_PATH \+ ([\w.]+) \+ '\.png';/g,
+    "$1.src = (typeof CHAR_INLINE !== 'undefined' && CHAR_INLINE[$2]) || (CHAR_BASE_PATH + $2 + '.png');");
+  if (html.length === n0) throw new Error('캐릭터 시트 로더를 못 찾았습니다');
+  console.log('캐릭터 시트 ' + Object.keys(table).length + '장 박음');
+}
+
+/* ---- 아이템 그림 ----
+   경로를 코드가 조립합니다(`ITEM_BASE + 'tops/tee.png'`). 문자열로 못 찾으므로
+   폴더를 통째로 읽어 이름→data URI 표를 만들어 심고, 로더가 그 표를 먼저
+   봅니다. 표에 없으면 원래대로 네트워크를 탑니다(원본에서는 그게 맞습니다). */
+{
+  const table = {};
+  const walk = (dir, prefix) => {
+    for (const e of readdirSync(resolve(here, dir), { withFileTypes: true })) {
+      if (e.isDirectory()) walk(dir + '/' + e.name, prefix + e.name + '/');
+      else if (e.name.endsWith('.png')) table[prefix + e.name] = b64(dir + '/' + e.name, 'image/png');
+    }
+  };
+  walk('assets/items', '');
+  html = html.replace("const ITEM_BASE = 'assets/items/';",
+    "const ITEM_BASE = 'assets/items/';\nconst ITEM_INLINE = " + JSON.stringify(table) + ';');
+  html = html.replace("img.src = ITEM_BASE + path;",
+    "img.src = (typeof ITEM_INLINE !== 'undefined' && ITEM_INLINE[path]) || (ITEM_BASE + path);");
+  console.log('아이템 ' + Object.keys(table).length + '장 박음');
+}
+
+/* ---- 옆에 붙은 스크립트 ----
+   multiplayer · chat · comfort · save · korcen · config. 링크에서는 파일을
+   못 받으므로 안 박으면 조용히 빠집니다 — 특히 korcen 이 빠지면 비속어
+   필터가 꺼진 줄도 모르고 돕니다. config 는 비밀값이라 **안 넣습니다.** */
+{
+  let n = 0;
+  html = html.replace(/<script src="([^"]+)"><\/script>/g, (whole, rel) => {
+    if (rel.includes('config.js')) return '<!-- config.js 는 배포판에 넣지 않습니다 -->';
+    try {
+      const code = readFileSync(resolve(here, rel), 'utf8');
+      n++;
+      return '<script>\n/* ' + rel + ' */\n' + code + '\n</script>';
+    } catch { return '<!-- ' + rel + ' 없음 -->'; }
+  });
+  console.log('스크립트 ' + n + '개 박음');
 }
 
 /* ---- 카메라가 막힌 곳이라는 것을 정확히 말합니다 ---- */
@@ -59,26 +147,26 @@ const card = `
 <div id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h">
   <div class="gate-card">
     <p class="gate-eyebrow"><i></i>프로토타입 · 화면과 흐름</p>
-    <h1 id="gate-h">기린캠퍼스</h1>
+    <h1 id="gate-h">Deskfit</h1>
     <p class="gate-lead">자세를 봐 주는 온라인 자습실. 캠퍼스를 걸어 다니고,
-      자리에 앉으면 세션이 시작됩니다.</p>
+      도서관·본관에 앉으면 웹캠 화면이 작게 뜹니다.</p>
 
     <div class="gate-cols">
       <section>
         <h2>여기서 도는 것</h2>
         <ul>
           <li>캠퍼스 · 건물 넷 · 실내 넷</li>
-          <li>세션 타이머와 회고</li>
-          <li>마이페이지 · 안내 · 코인</li>
-          <li>운동장 · 호수 · 동아리 거리 · 미니게임존</li>
+          <li>세션 타이머 · 회고 · 지난 세션</li>
+          <li>상점 — 캐릭터 8종에 옷 입히기</li>
+          <li>명예의 전당 · 코인 · 미니게임 넷</li>
         </ul>
       </section>
       <section>
         <h2>여기서 안 되는 것</h2>
         <ul>
           <li>웹캠 자세 판정 — 링크에서는 카메라가 막힙니다</li>
-          <li>AI 리포트 · 멀티플레이 · 상점</li>
-          <li>미니게임 — 관문만 서 있습니다</li>
+          <li>코인 서버 저장 — 이 링크에서는 기기 안에만 남습니다</li>
+          <li>AI 리포트</li>
         </ul>
       </section>
     </div>

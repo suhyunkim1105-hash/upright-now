@@ -1,5 +1,5 @@
 /* ==================================================================
-   기린캠퍼스 — 접근성 · 성능 모드
+   Deskfit — 접근성 · 저사양 모드
 
    둘을 한 파일에 둔 이유는 붙는 자리가 같기 때문입니다. 둘 다 마이페이지
    설정 탭에 줄을 하나씩 넣고, 둘 다 index.html 을 안 건드리려고 스타일을
@@ -9,8 +9,8 @@
      · 포커스 — 창 안에 가두고, 닫으면 원래 자리로 돌려놓습니다
      · 스크린리더 — 월드가 무엇이고 어떻게 움직이는지 글로 둡니다
      · 대비 — 작은 회색 글자가 AA 를 못 넘겨서 한 단계 어둡게 합니다
-     · 모션 줄이기 — OS 설정을 따르고, 손으로도 끌 수 있게 합니다
-     · 성능 모드 — 장식을 끄고 월드를 30fps 로 그립니다
+     · 모션 블러 — 기기 설정을 따르고, 손으로도 끌 수 있게 합니다
+     · 저사양 모드 — 장식을 끄고 월드를 30fps 로 그립니다
    ================================================================== */
 (function () {
   'use strict';
@@ -39,7 +39,7 @@
      있습니다. 안 걸린 것들을 여기서 받습니다. */
   :focus-visible { outline: 2px solid var(--coral-600); outline-offset: 2px; }
 
-  /* ---- 모션 줄이기 ----
+  /* ---- 모션 블러 ----
      OS 설정과 손 토글, 둘 중 하나만 켜져도 멈춥니다. */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -54,7 +54,7 @@
   /* 배너는 애니메이션이 곧 등장입니다. 멈추면 안 보이므로 그냥 띄웁니다. */
   body.calm #banner.play { opacity: 1; animation: none; }
 
-  /* ---- 성능 모드 ----
+  /* ---- 저사양 모드 ----
      그림자는 GPU 에서 매 프레임 다시 흐립니다. 큰 것 하나(캔버스
      56px 블러)가 작은 것 열보다 비쌉니다. 내장 그래픽에서 제일 먼저
      티가 나는 자리라 여기부터 끕니다. */
@@ -84,25 +84,8 @@
   }
   #perf-nag button.go { background: var(--coral); border-color: var(--coral); color: var(--on-coral); }
 
-  /* ---- 설정 토글 ---- */
-  #panel .row.sw {
-    cursor: pointer; border-radius: 10px; margin: 0 -8px; padding-left: 8px; padding-right: 8px;
-  }
-  #panel .row.sw:hover { background: var(--coral-50); }
-  #panel .row.sw:focus-visible { outline: 2px solid var(--coral-600); outline-offset: -2px; }
-  #panel .row.sw .val { position: relative; padding-left: 38px; }
-  #panel .row.sw .val::before {
-    content: ''; position: absolute; left: 0; top: 50%; margin-top: -8px;
-    width: 30px; height: 16px; border-radius: 999px;
-    background: var(--line-2); box-shadow: inset 0 0 0 1px rgba(0,0,0,.05);
-  }
-  #panel .row.sw .val::after {
-    content: ''; position: absolute; left: 3px; top: 50%; margin-top: -5px;
-    width: 10px; height: 10px; border-radius: 50%; background: #fff;
-    transition: left .14s ease;
-  }
-  #panel .row.sw[aria-checked="true"] .val::before { background: var(--coral); }
-  #panel .row.sw[aria-checked="true"] .val::after { left: 17px; }
+  /* 설정 줄은 index.html 의 칩을 그대로 씁니다 — 스타일을 여기서
+     또 만들면 옆줄과 미묘하게 달라집니다. */
   `;
   document.head.append(css);
 
@@ -115,23 +98,31 @@
   cvEl.setAttribute('role', 'application');
   cvEl.setAttribute('tabindex', '0');
   cvEl.setAttribute('aria-label',
-    '기린캠퍼스 월드. W A S D 또는 방향키로 걷고, Space 로 상호작용합니다. ' +
+    'Deskfit 월드. W A S D 또는 방향키로 걷고, Space 로 상호작용합니다. ' +
     'Shift 로 뜁니다. Enter 로 채팅을 엽니다. 현재 위치와 같은 공간에 있는 사람은 ' +
     '화면 안내로 읽어 드립니다.');
 
   /* 지금 어디인지 — 존이 바뀔 때마다 한 줄 읽어 줍니다.
-     enterZone 을 감싸는 대신 배너 글자를 봅니다. 배너는 존이 바뀔 때만
-     바뀌므로 결과가 같고, index.html 함수를 하나 덜 건드립니다. */
+     enterZone 을 감싸는 대신 **존 배너**의 글자를 봅니다. 배너는 존이
+     바뀔 때만 바뀌므로 결과가 같고, index.html 함수를 하나 덜 건드립니다.
+
+     전에는 좌측 상단 배지(#hud-zone)를 봤는데 그 배지가 없어졌습니다.
+     없는 노드를 observe 하면 그 자리에서 예외가 나고 **이 파일의 나머지가
+     통째로 안 돌았습니다** — 설정 항목도 저사양 모드도 함께 죽습니다.
+     그래서 없으면 조용히 건너뜁니다. */
   const zoneSay = document.createElement('div');
   zoneSay.className = 'sr-only';
   zoneSay.setAttribute('aria-live', 'polite');
   document.body.append(zoneSay);
   {
-    const nameEl = document.querySelector('#hud-zone b');
-    const subEl = document.querySelector('#hud-zone span');
-    new MutationObserver(() => {
-      zoneSay.textContent = nameEl.textContent + ' — ' + subEl.textContent + ' 에 들어왔습니다';
-    }).observe(nameEl, { childList: true, characterData: true, subtree: true });
+    const banner = document.getElementById('banner');
+    const nameEl = banner && banner.querySelector('b');
+    const subEl = banner && banner.querySelector('span');
+    if (nameEl && subEl) {
+      new MutationObserver(() => {
+        zoneSay.textContent = nameEl.textContent + ' — ' + subEl.textContent + ' 에 들어왔습니다';
+      }).observe(banner, { childList: true, characterData: true, subtree: true });
+    }
   }
 
   /* ================== 창 안 포커스 ==================
@@ -186,7 +177,7 @@
   };
   mq.addEventListener('change', () => { if (localStorage.getItem(LS_MOTION) === null) apply(); });
 
-  /* ================== 성능 모드 ================== */
+  /* ================== 저사양 모드 ================== */
   const PERF = {
     on: localStorage.getItem(LS_PERF) === '1',
     /* 월드를 30fps 로 그립니다. 4 를 빼는 것은 vsync 흔들림 때문입니다 —
@@ -247,7 +238,7 @@
   };
 
   /* ---- 프레임 비용 표시 ----
-     fps 는 vsync 에 걸려 60 에서 멈춥니다. 성능 모드가 실제로 일을
+     fps 는 vsync 에 걸려 60 에서 멈춥니다. 저사양 모드가 실제로 일을
      덜 하는지는 fps 로는 안 보이고 **한 프레임에 쓴 ms** 로 보입니다.
      그래서 기존 fps 줄 옆에 한 줄 더 답니다. */
   const msLine = document.createElement('div');
@@ -280,9 +271,9 @@
     n.setAttribute('role', 'status');
     n.innerHTML =
       '<b>화면이 무거워 보여요</b>' +
-      '성능 모드를 켜면 그림자와 장식을 끄고 월드를 30fps 로 그립니다. ' +
+      '저사양 모드를 켜면 그림자와 장식을 끄고 월드를 30fps 로 그립니다. ' +
       '자세 판정에 쓸 몫이 그만큼 남아요.' +
-      '<div class="btns"><button type="button" class="go">성능 모드 켜기</button>' +
+      '<div class="btns"><button type="button" class="go">저사양 모드 켜기</button>' +
       '<button type="button" class="no">괜찮아요</button></div>';
     document.body.append(n);
     n.querySelector('.go').addEventListener('click', () => { PERF.set(true); n.remove(); });
@@ -309,46 +300,54 @@
     if (!rows) return;
 
     rows.append(
-      swRow('성능 모드', '그림자·장식을 끄고 월드를 30fps 로 그립니다', PERF.on,
+      chipRow('저사양 모드', '그림자와 장식을 끄고 월드를 30fps 로 그립니다', PERF.on,
             (v) => PERF.set(v)),
-      swRow('모션 줄이기', '깜빡임과 미끄러지는 움직임을 멈춥니다', MOTION.calm,
+      chipRow('모션 블러', '화면이 움직이는 연출을 멈춥니다. 기기 설정도 따라요', MOTION.calm,
             (v) => { MOTION.calm = v; }),
     );
 
     const note = document.createElement('div');
     note.className = 'note';
     note.setAttribute(MARK, '');
-    note.textContent = '성능 모드는 fps 를 올리는 것이 아니라 한 프레임에 쓰는 '
+    note.textContent = '저사양 모드는 fps 를 올리는 것이 아니라 한 프레임에 쓰는 '
       + '시간을 줄입니다. 남는 시간은 자세 판정(MediaPipe)이 가져갑니다.';
     rows.after(note);
   }
 
-  function swRow(label, sub, on, onChange) {
+  /** 설정 한 줄 — 옆에 있는 다른 설정들과 **같은 칩**입니다.
+      전에는 이 두 줄만 스위치였습니다. 한 목록에서 조작 방식이 둘이면
+      어느 쪽이 지금 켜진 것인지 매번 다시 읽어야 합니다.
+
+      값이 ROOM 이 아니라 girin.perf · girin.motion 에 있으므로 index.html
+      의 칩 위임 처리기를 쓸 수 없습니다. 그쪽은 `ROOM[group] = v` 를
+      하는데 여기 group 은 ROOM 에 없는 이름이라 쓰레기 키가 생깁니다.
+      그래서 칩마다 직접 듣고 **stopPropagation** 으로 위임까지 못 가게
+      막습니다 — 버튼에 걸린 처리기가 먼저 돌기 때문에 이게 됩니다. */
+  function chipRow(label, sub, on, onChange) {
     const el = document.createElement('div');
-    el.className = 'row sw';
+    el.className = 'row';
     el.setAttribute(MARK, '');
-    el.setAttribute('role', 'switch');
-    el.setAttribute('aria-checked', String(on));
-    el.tabIndex = 0;
-    el.innerHTML = '<span><em></em></span><span class="val"></span>';
+    el.innerHTML = '<span><em></em></span>'
+      + '<div class="chips">'
+      + '<button type="button" class="chip" data-v="on">켬</button>'
+      + '<button type="button" class="chip" data-v="off">끔</button>'
+      + '</div>';
     const name = el.firstChild;
     name.insertBefore(document.createTextNode(label), name.firstChild);
     name.querySelector('em').textContent = sub;
-    const valEl = el.querySelector('.val');
-    const paint = () => {
-      valEl.textContent = el.getAttribute('aria-checked') === 'true' ? '켬' : '끔';
-    };
-    paint();
-    const flip = () => {
-      const next = el.getAttribute('aria-checked') !== 'true';
-      el.setAttribute('aria-checked', String(next));
-      paint();
-      onChange(next);
-    };
-    el.addEventListener('click', flip);
-    el.addEventListener('keydown', (e) => {
-      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
-    });
+
+    const chips = [...el.querySelectorAll('.chip')];
+    const paint = (v) => chips.forEach((c) =>
+      c.setAttribute('aria-pressed', String(c.dataset.v === v)));
+    paint(on ? 'on' : 'off');
+
+    for (const c of chips) {
+      c.addEventListener('click', (e) => {
+        e.stopPropagation();
+        paint(c.dataset.v);
+        onChange(c.dataset.v === 'on');
+      });
+    }
     return el;
   }
 

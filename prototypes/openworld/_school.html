@@ -1,0 +1,24 @@
+<title>Cool School 색인</title>
+<style>body{margin:0;background:#161b22}canvas{image-rendering:pixelated;display:block}</style>
+<canvas id="c"></canvas>
+<script>
+const q = new URLSearchParams(location.search);
+const T = +(q.get('t') ?? 48), Z = +(q.get('z') ?? 2), PAD = 18;
+const img = new Image();
+img.onload = () => {
+  const cols = img.width / T, rows = img.height / T;
+  const c = document.getElementById('c'), g = c.getContext('2d');
+  c.width = cols * (T * Z + PAD); c.height = rows * (T * Z + PAD);
+  g.imageSmoothingEnabled = false;
+  g.fillStyle = '#161b22'; g.fillRect(0, 0, c.width, c.height);
+  g.font = 'bold 11px monospace'; g.textAlign = 'center';
+  for (let y = 0; y < rows; y++) for (let x = 0; x < cols; x++) {
+    const px = x * (T * Z + PAD), py = y * (T * Z + PAD);
+    g.fillStyle = '#242b35'; g.fillRect(px + 2, py + 2, T * Z, T * Z);
+    g.drawImage(img, x * T, y * T, T, T, px + 2, py + 2, T * Z, T * Z);
+    g.fillStyle = '#DEEC8D'; g.fillText(x + ',' + y, px + 2 + T * Z / 2, py + T * Z + 14);
+  }
+  document.title = 'READY';
+};
+img.src = 'assets/' + (q.get('f') ?? 'school48.png');
+</script>

@@ -7939,7 +7939,7 @@ function animalFindHtml() {
     #animal-find-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(100%,420px);margin:16px auto;touch-action:manipulation;perspective:900px}
     .animal-memory-card{position:relative;min-width:0;aspect-ratio:1;padding:0;border:0;border-radius:14px;background:transparent;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
     .animal-memory-card:disabled{cursor:default}
-    .animal-memory-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .28s ease}
+    .animal-memory-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .18s ease}
     .animal-memory-card.flipped .animal-memory-card-inner,.animal-memory-card.matched .animal-memory-card-inner{transform:rotateY(180deg)}
     .animal-memory-card-face{position:absolute;inset:0;display:grid;place-items:center;border-radius:14px;backface-visibility:hidden;box-shadow:inset 0 -5px 0 rgba(0,0,0,.12)}
     .animal-memory-card-back{background:linear-gradient(145deg,#2dd4bf,#168f84);color:#eafffb;font-size:clamp(20px,7vw,34px)}
@@ -9059,8 +9059,10 @@ panelBody.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
   }
-  if ((e.pointerType === 'touch' || e.pointerType === 'pen')
-      && handleAnimalFindPress(e.target)) {
+  /* 카드 입력은 click 위임만 기다리면 일부 모바일 브라우저에서
+     300ms 안팎 늦게 반응합니다. 포인터가 눌린 즉시 처리하고, 아래 click
+     핸들러는 lastInputAt 으로 중복 실행만 막습니다. */
+  if (handleAnimalFindPress(e.target)) {
     ANIMAL_FIND.lastInputAt = Date.now();
     e.preventDefault();
     e.stopPropagation();

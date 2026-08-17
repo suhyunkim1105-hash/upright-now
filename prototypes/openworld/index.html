@@ -112,6 +112,7 @@
   }
   canvas#world {
     image-rendering: pixelated; display: block;
+    touch-action: none;
     border-radius: 12px;
     box-shadow: 0 1px 0 rgba(255,255,255,.9), var(--sh-lg);
     outline: 1px solid var(--line);
@@ -2304,7 +2305,7 @@ function paintGates() {
      이름이 들어갑니다 — 들어가 보기 전에는 무엇인지 몰랐습니다. */
   gateCanvas('gateEsc', '거북이 알 합치기', '#2DD4BF', '#8AE5D9', '#0C5A4F', '45,212,191', 'key');
   gateCanvas('gateA', '기린 목 펴기', '#E8695A', '#FFA694', '#8E2E1C', '232,105,90', 'ex');
-  gateCanvas('gateB', '목 쌓기', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
+  gateCanvas('gateB', '기억력 카드', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
   gateCanvas('gateC', '동물 매칭 퍼즐', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
 };
 paintGates();
@@ -3751,7 +3752,7 @@ const ZONES = {};
   m.things = [
     { x: 32, y: 2, name: '방탈출', panel: 'escapeRoom' },        // gateEsc
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },  // gateA
-    { x: 32, y: 7, name: '동물 찾기 챌린지', panel: 'animalFind' }, // gateB
+    { x: 32, y: 7, name: '기억력 카드', panel: 'animalFind' }, // gateB
     { x: 39, y: 7, name: '거북이 알 합치기', panel: 'eggMerge' }, // gateC
     /* 안뜰에 딱 하나 있는 게시판. 관문마다 안내를 붙이면 같은 글을 넷이
        나눠 갖게 되고, 그러면 어느 것을 읽어야 하는지가 또 문제가 됩니다. */
@@ -3769,7 +3770,7 @@ const ZONES = {};
      회의에서 배치를 정하면 한 줄로 바뀝니다. */
   m.things = [
     { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
-    { x: 32, y: 7, name: '동물 찾기 챌린지', panel: 'animalFind' },
+    { x: 32, y: 7, name: '기억력 카드', panel: 'animalFind' },
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
     { x: 39, y: 7, name: '동물 매칭 퍼즐', panel: 'animalMatch3' },
   ];
@@ -4182,6 +4183,16 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 resize();
+/* 키보드만 가능한 월드가 되지 않도록 캔버스 탭/클릭도 같은 상호작용
+   경로로 연결합니다. 이동 중의 드래그나 보조 버튼은 건드리지 않고,
+   주변 오브젝트가 있을 때만 Space와 동일하게 엽니다. */
+cv.addEventListener('pointerup', (e) => {
+  if (e.button !== undefined && e.button !== 0) return;
+  if (panelOpen || MINI.on) return;
+  e.preventDefault();
+  lastActivity = Date.now();
+  interact();
+});
 
 const urban = new Image(), city = new Image(), school = new Image();
 
@@ -8624,7 +8635,7 @@ const PANELS = {
       </ol>
       <div class="rows">
         ${row('giraffeNeck', '기린 목 펴기', '연타로 목을 폅니다')}
-        ${row('animalFind', '동물 찾기 챌린지', '목표 동물을 빠르게 찾습니다')}
+        ${row('animalFind', '기억력 카드', '같은 동물 카드 짝을 맞춥니다')}
         ${row('eggMerge', '거북이 알 합치기', '같은 알을 붙입니다')}
         ${row('escapeRoom', '방탈출', '단서를 찾아 번호를 맞춥니다')}
       </div>

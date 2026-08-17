@@ -2305,7 +2305,7 @@ function paintGates() {
   gateCanvas('gateEsc', '방탈출', '#2DD4BF', '#8AE5D9', '#0C5A4F', '45,212,191', 'key');
   gateCanvas('gateA', '목 펴기', '#E8695A', '#FFA694', '#8E2E1C', '232,105,90', 'ex');
   gateCanvas('gateB', '목 쌓기', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
-  gateCanvas('gateC', '거북이 미로', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
+  gateCanvas('gateC', '동물 3매칭', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
 };
 paintGates();
 TEXT_ART.push(paintGates);
@@ -3771,7 +3771,7 @@ const ZONES = {};
     { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
     { x: 32, y: 7, name: '기린 목 쌓기', panel: 'giraffeStack' },
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
-    { x: 39, y: 7, name: '거북이 미로 탈출', panel: 'turtleMaze' },
+    { x: 39, y: 7, name: '동물 3매칭 퍼즐', panel: 'animalMatch3' },
   ];
   prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
 
@@ -5191,12 +5191,11 @@ addEventListener('keydown', (e) => {
       dropGiraffeStack();
       return;
     }
-    if (TURTLE_MAZE.active && ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) {
+    if (ANIMAL_MATCH3.active && ['escape', ' '].includes(k)) {
       e.preventDefault();
-      turtleMazeMove(k);
       return;
     }
-    if (k === 'escape' || (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'turtleMaze'].includes(activePanelKey))) closePanel();
+    if (k === 'escape' || (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'animalMatch3'].includes(activePanelKey))) closePanel();
     return;
   }
   /* 지도가 열려 있으면 지도가 키를 먼저 먹습니다. 숫자로 바로 갑니다. */
@@ -8110,6 +8109,160 @@ function pastSessionsHtml() {
     + '<h4>세션 기록</h4>' + rows + more;
 }
 
+/* ==================================================================
+   미니게임 교체 — 동물 3매칭 퍼즐
+
+   기존 거북이 미로 슬롯을 교체합니다. 현재 월드 캐릭터 8종을 타일로
+   사용하고, 같은 동물 3개 이상을 이어서 없애는 짧은 퍼즐 한 판입니다.
+   ================================================================== */
+const ANIMAL_MATCH3 = {
+  active: false, timer: 45, timerId: null, grid: [], selected: -1,
+  score: 0, moves: 0, combo: 0, target: 300, rewarded: false,
+};
+const ANIMAL_MATCH3_TYPES = [
+  { name: '거북이', emoji: '🐢', color: '#77c58d' },
+  { name: '기린', emoji: '🦒', color: '#f2c65d' },
+  { name: '펭귄', emoji: '🐧', color: '#91c6e8' },
+  { name: '햄스터', emoji: '🐹', color: '#e7ae83' },
+  { name: '개구리', emoji: '🐸', color: '#82c96d' },
+  { name: '고슴도치', emoji: '🦔', color: '#c99772' },
+  { name: '알파카', emoji: '🦙', color: '#e9d9bf' },
+  { name: '백조', emoji: '🦢', color: '#c8d9ef' },
+];
+const ANIMAL_MATCH3_SIZE = 6;
+
+function animalMatch3At(index) {
+  return ANIMAL_MATCH3.grid[index];
+}
+function animalMatch3Index(row, col) {
+  return row * ANIMAL_MATCH3_SIZE + col;
+}
+function animalMatch3Adjacent(a, b) {
+  const ar = Math.floor(a / ANIMAL_MATCH3_SIZE), ac = a % ANIMAL_MATCH3_SIZE;
+  const br = Math.floor(b / ANIMAL_MATCH3_SIZE), bc = b % ANIMAL_MATCH3_SIZE;
+  return Math.abs(ar - br) + Math.abs(ac - bc) === 1;
+}
+function animalMatch3Matches() {
+  const size = ANIMAL_MATCH3_SIZE, grid = ANIMAL_MATCH3.grid, found = new Set();
+  for (let row = 0; row < size; row++) {
+    let start = 0;
+    while (start < size) {
+      const type = grid[animalMatch3Index(row, start)]; let end = start + 1;
+      while (end < size && grid[animalMatch3Index(row, end)] === type) end++;
+      if (type !== null && end - start >= 3) for (let col = start; col < end; col++) found.add(animalMatch3Index(row, col));
+      start = end;
+    }
+  }
+  for (let col = 0; col < size; col++) {
+    let start = 0;
+    while (start < size) {
+      const type = grid[animalMatch3Index(start, col)]; let end = start + 1;
+      while (end < size && grid[animalMatch3Index(end, col)] === type) end++;
+      if (type !== null && end - start >= 3) for (let row = start; row < end; row++) found.add(animalMatch3Index(row, col));
+      start = end;
+    }
+  }
+  return found;
+}
+function animalMatch3FreshGrid() {
+  const size = ANIMAL_MATCH3_SIZE, grid = Array(size * size).fill(null);
+  for (let index = 0; index < grid.length; index++) {
+    const row = Math.floor(index / size), col = index % size;
+    const choices = ANIMAL_MATCH3_TYPES.map((_, type) => type).filter((type) => {
+      return !(col >= 2 && grid[index - 1] === type && grid[index - 2] === type)
+        && !(row >= 2 && grid[index - size] === type && grid[index - size * 2] === type);
+    });
+    grid[index] = choices[Math.floor(Math.random() * choices.length)];
+  }
+  return grid;
+}
+function resolveAnimalMatch3() {
+  let cleared = 0, chain = 0;
+  while (true) {
+    const matches = animalMatch3Matches();
+    if (!matches.size) break;
+    cleared += matches.size; chain++;
+    for (const index of matches) ANIMAL_MATCH3.grid[index] = null;
+    for (let col = 0; col < ANIMAL_MATCH3_SIZE; col++) {
+      const values = [];
+      for (let row = ANIMAL_MATCH3_SIZE - 1; row >= 0; row--) {
+        const value = ANIMAL_MATCH3.grid[animalMatch3Index(row, col)];
+        if (value !== null) values.push(value);
+      }
+      for (let row = ANIMAL_MATCH3_SIZE - 1; row >= 0; row--) {
+        ANIMAL_MATCH3.grid[animalMatch3Index(row, col)] = values[ANIMAL_MATCH3_SIZE - 1 - row] ?? Math.floor(Math.random() * ANIMAL_MATCH3_TYPES.length);
+      }
+    }
+  }
+  return { cleared, chain };
+}
+function animalMatch3Html() {
+  return `
+    <p>같은 동물 3개 이상을 이어서 없애고 목표 점수를 달성하세요.</p>
+    <div class="rows">
+      <div class="row"><span>남은 시간</span><span class="val" id="animal-match3-time">45초</span></div>
+      <div class="row"><span>점수</span><span class="val" id="animal-match3-score">0 / ${ANIMAL_MATCH3.target}</span></div>
+      <div class="row"><span>콤보</span><span class="val" id="animal-match3-combo">0</span></div>
+    </div>
+    <div id="animal-match3-board" role="group" aria-label="동물 3매칭 퍼즐"
+      style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;width:min(100%,390px);aspect-ratio:1;margin:16px auto;padding:7px;border-radius:16px;background:linear-gradient(145deg,#d5f0e8,#dbe8f6);box-shadow:inset 0 0 0 3px rgba(48,103,98,.18);touch-action:manipulation"></div>
+    <p class="hint" id="animal-match3-message" aria-live="polite">바꾸고 싶은 동물 타일 두 개를 차례로 눌러보세요.</p>
+    <button class="act" data-do="animal-match3-restart">다시 시작</button>`;
+}
+function renderAnimalMatch3() {
+  const board = panelBody.querySelector('#animal-match3-board');
+  const time = panelBody.querySelector('#animal-match3-time');
+  const score = panelBody.querySelector('#animal-match3-score');
+  const combo = panelBody.querySelector('#animal-match3-combo');
+  if (!board || !time || !score || !combo) return;
+  board.innerHTML = ANIMAL_MATCH3.grid.map((type, index) => {
+    const animal = ANIMAL_MATCH3_TYPES[type];
+    const selected = ANIMAL_MATCH3.selected === index;
+    return `<button type="button" data-animal-index="${index}" aria-label="${animal.name} 타일"
+      style="position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;border:0;border-radius:11px;background:${animal.color};font-size:clamp(22px,7vw,38px);cursor:pointer;box-shadow:${selected ? '0 0 0 4px #2d8f83, inset 0 -4px 0 rgba(0,0,0,.12)' : 'inset 0 -4px 0 rgba(0,0,0,.12)'};transform:${selected ? 'scale(.92)' : 'scale(1)'};transition:transform .12s ease,box-shadow .12s ease">${animal.emoji}<small style="position:absolute;right:4px;bottom:2px;font-size:9px;color:rgba(43,50,48,.5)">${index + 1}</small></button>`;
+  }).join('');
+  time.textContent = `${ANIMAL_MATCH3.timer}초`;
+  score.textContent = `${ANIMAL_MATCH3.score} / ${ANIMAL_MATCH3.target}`;
+  combo.textContent = `${ANIMAL_MATCH3.combo}`;
+}
+function finishAnimalMatch3(success) {
+  ANIMAL_MATCH3.active = false;
+  clearInterval(ANIMAL_MATCH3.timerId); ANIMAL_MATCH3.timerId = null;
+  const message = panelBody.querySelector('#animal-match3-message');
+  if (success) {
+    if (!ANIMAL_MATCH3.rewarded) { ANIMAL_MATCH3.rewarded = true; earn(5, '동물 3매칭 성공'); }
+    if (message) message.textContent = '성공! 동물 친구들과 목표 점수를 달성했어요. +5P';
+  } else if (message) message.textContent = '시간이 끝났어요. 다시 도전해 보세요.';
+  renderAnimalMatch3();
+}
+function swapAnimalMatch3(first, second) {
+  if (!ANIMAL_MATCH3.active || !animalMatch3Adjacent(first, second)) return false;
+  [ANIMAL_MATCH3.grid[first], ANIMAL_MATCH3.grid[second]] = [ANIMAL_MATCH3.grid[second], ANIMAL_MATCH3.grid[first]];
+  const result = resolveAnimalMatch3();
+  if (!result.cleared) {
+    [ANIMAL_MATCH3.grid[first], ANIMAL_MATCH3.grid[second]] = [ANIMAL_MATCH3.grid[second], ANIMAL_MATCH3.grid[first]];
+    ANIMAL_MATCH3.combo = 0;
+    return false;
+  }
+  ANIMAL_MATCH3.moves++; ANIMAL_MATCH3.combo = result.chain;
+  ANIMAL_MATCH3.score += result.cleared * 10 + Math.max(0, result.chain - 1) * 25;
+  renderAnimalMatch3();
+  if (ANIMAL_MATCH3.score >= ANIMAL_MATCH3.target) finishAnimalMatch3(true);
+  return true;
+}
+function startAnimalMatch3() {
+  clearInterval(ANIMAL_MATCH3.timerId);
+  panelBody.innerHTML = animalMatch3Html();
+  ANIMAL_MATCH3.active = true; ANIMAL_MATCH3.timer = 45; ANIMAL_MATCH3.selected = -1;
+  ANIMAL_MATCH3.score = 0; ANIMAL_MATCH3.moves = 0; ANIMAL_MATCH3.combo = 0; ANIMAL_MATCH3.rewarded = false;
+  ANIMAL_MATCH3.grid = animalMatch3FreshGrid(); renderAnimalMatch3();
+  ANIMAL_MATCH3.timerId = setInterval(() => {
+    if (!ANIMAL_MATCH3.active) return;
+    ANIMAL_MATCH3.timer--; renderAnimalMatch3();
+    if (ANIMAL_MATCH3.timer <= 0) finishAnimalMatch3(false);
+  }, 1000);
+}
+
 const PANELS = {
   giraffeStack: () => ({
     title: '기린 목 쌓기', kind: 'MINI GAME',
@@ -8127,9 +8280,9 @@ const PANELS = {
     title: '방탈출', kind: 'MINI GAME',
     html: escapeRoomHtml(),
   }),
-  turtleMaze: () => ({
-    title: '거북이 미로 탈출', kind: 'MINI GAME',
-    html: turtleMazeHtml(),
+  animalMatch3: () => ({
+    title: '동물 3매칭', kind: 'MINI GAME',
+    html: animalMatch3Html(),
   }),
   /* ---- 안내 — 벽에 붙은 표지판이 여는 창 ----
      기능이 아니라 **읽을 것**입니다. 처음 온 사람이 무엇을 하는 곳인지
@@ -8559,7 +8712,7 @@ function openPanel(key) {
   if (key === 'giraffeNeck') startGiraffeNeck();
   if (key === 'eggMerge') startEggMerge();
   if (key === 'giraffeStack') startGiraffeStack();
-  if (key === 'turtleMaze') startTurtleMaze();
+  if (key === 'animalMatch3') startAnimalMatch3();
   if (key === 'escapeRoom') startEscapeRoom();
   if (key === 'turtleEgg') startTurtleEgg();
   /* 회고를 실제로 연 것에 +3. 회고는 이 서비스가 보여 주고 싶은 화면인데
@@ -8583,6 +8736,9 @@ function closePanel() {
   if (typeof GIRAFFE_STACK !== 'undefined' && GIRAFFE_STACK.active) {
     GIRAFFE_STACK.active = false; clearInterval(GIRAFFE_STACK.timer);
   }
+  if (typeof ANIMAL_MATCH3 !== 'undefined' && ANIMAL_MATCH3.active) {
+    ANIMAL_MATCH3.active = false; clearInterval(ANIMAL_MATCH3.timerId); ANIMAL_MATCH3.timerId = null;
+  }
   TURTLE_MAZE.active = false;
   clearInterval(TURTLE_MAZE.timerId);
   TURTLE_MAZE.timerId = null;
@@ -8598,11 +8754,15 @@ panelBody.addEventListener('pointerdown', (e) => {
 });
 panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="privacy"]')) return openPanel('privacy');
-  if (activePanelKey === 'turtleMaze' && (e.target.closest('[data-maze-dir]') || e.target.closest('[data-do="turtle-maze-restart"]'))) {
+  if (activePanelKey === 'animalMatch3' && (e.target.closest('[data-animal-index]') || e.target.closest('[data-do="animal-match3-restart"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (e.target.closest('[data-do="turtle-maze-restart"]')) return startTurtleMaze();
-    return turtleMazeMove(e.target.closest('[data-maze-dir]').dataset.mazeDir);
+    if (e.target.closest('[data-do="animal-match3-restart"]')) return startAnimalMatch3();
+    const index = Number(e.target.closest('[data-animal-index]').dataset.animalIndex);
+    if (ANIMAL_MATCH3.selected < 0) { ANIMAL_MATCH3.selected = index; return renderAnimalMatch3(); }
+    const first = ANIMAL_MATCH3.selected; ANIMAL_MATCH3.selected = -1;
+    if (!swapAnimalMatch3(first, index)) renderAnimalMatch3();
+    return;
   }
   if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {
     e.preventDefault();

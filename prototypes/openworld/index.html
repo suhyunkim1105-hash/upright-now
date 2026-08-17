@@ -658,7 +658,18 @@
 
   /* ---------- 상점 ----------
      왼쪽 미리보기 · 오른쪽 목록. 좁은 창에서는 위아래로 접힙니다. */
-  #panel .shop { display: grid; grid-template-columns: 168px 1fr; gap: 16px; }
+  /* 상점 — Gather 의 아바타 편집처럼 **격자 + 오른쪽 미리보기**.
+     세로 목록이던 것을 격자로 바꾼 이유: 한 칸이 가로로 길어서 그림이
+     32px 밖에 안 되고 이름만 크게 보였습니다. 사는 것은 그림인데
+     그림이 제일 작았습니다. 미리보기를 오른쪽으로 보낸 것은 시선이
+     "고른다 -> 입혀 본다" 순서로 가게 하려는 것입니다. */
+  #panel .shop { display: grid; grid-template-columns: 1fr 176px; gap: 16px; align-items: start; }
+  #panel .shop-prev { order: 2; }
+  #panel .shop-list { order: 1; }
+  @media (max-width: 620px) {
+    #panel .shop { grid-template-columns: 1fr; }
+    #panel .shop-prev { order: 1; } #panel .shop-list { order: 2; }
+  }
   #panel .shop-prev {
     background: var(--surface-2); border: 1px solid var(--line);
     border-radius: 14px; padding: 14px 12px; align-self: start;
@@ -683,33 +694,41 @@
   #panel .lay em { font-style: normal; margin-left: auto; color: var(--ink-2); font-weight: 600; }
   #panel .shop-prev .hint { margin-top: 10px; font-size: 10.5px; line-height: 1.5; }
 
-  #panel .shop-list { display: flex; flex-direction: column; gap: 6px; }
   #panel .shop-coin {
-    font-size: 11.5px; color: var(--ink-3); text-align: right; margin-bottom: 2px;
+    font-size: 11.5px; color: var(--ink-3); text-align: right; margin-bottom: 8px;
   }
   #panel .shop-coin b { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  /* auto-fill + minmax — 패널 폭이 줄면 칸 수가 알아서 줄어듭니다.
+     고정 칸 수로 두면 좁은 화면에서 그림이 뭉개집니다. */
+  #panel .shop-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px;
+    align-items: stretch;
+  }
   #panel .item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 9px 10px; border: 1px solid var(--line); border-radius: 11px;
-    background: var(--surface);
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 10px 8px 9px; border: 1px solid var(--line); border-radius: 12px;
+    background: var(--surface); position: relative;
   }
   #panel .item.on { border-color: var(--school, var(--coral)); background: var(--school-soft, var(--coral-50)); }
-  /* 목록 그림 — 32x48 프레임 한 장을 그대로. 세로가 길어 카드가 커지지
-     않도록 위아래를 잘라 보여 줍니다(옷은 가운데 모여 있습니다). */
+  /* 격자 그림 — 세로 48 을 2배로 키웁니다. 이게 이번 개편의 요점입니다. */
   #panel .item > .thumb {
-    width: 32px; height: 48px; flex: none;
+    width: 64px; height: 96px; flex: none;
     image-rendering: pixelated;
-    background: var(--surface-2); border-radius: 7px;
+    background: var(--surface-2); border-radius: 9px;
   }
-  #panel .item > span { font-size: 13px; font-weight: 600; }
+  #panel .item > span { font-size: 12.5px; font-weight: 600; text-align: center; line-height: 1.35; }
   #panel .item > span em {
-    display: block; font-style: normal; font-size: 11px; color: var(--ink-3); font-weight: 400;
+    display: block; font-style: normal; font-size: 10.5px; color: var(--ink-3); font-weight: 400;
   }
+  /* '보유' 는 칸 모서리 딱지로. 줄로 두면 이름을 아래로 밀어 칸 높이가 제각각이 됩니다. */
   #panel .item > u {
-    margin-left: auto; text-decoration: none; font-size: 11px; color: var(--ink-3);
+    position: absolute; top: 6px; right: 7px; text-decoration: none;
+    font-size: 10px; color: var(--ink-3); background: var(--surface-2);
+    padding: 1px 5px; border-radius: 999px;
   }
-  #panel .item .act { margin-left: auto; min-width: 62px; text-align: center; }
-  #panel .item > u + .act { margin-left: 8px; }
+  /* 단추를 칸 바닥에 붙입니다. 설명 줄이 있는 것과 없는 것이 섞여 있어
+     그냥 두면 같은 줄인데도 단추 높이가 제각각이 됩니다. */
+  #panel .item .act { width: 100%; min-width: 0; text-align: center; margin: auto 0 0; }
   #panel .item .act[disabled] { opacity: .4; cursor: not-allowed; }
 
   /* ---------- 명예의 전당 ---------- */
@@ -7579,19 +7598,22 @@ function shopTabHtml(cat) {
       : on
         ? `<button class="act ghost" data-off="${it.id}">벗기</button>`
         : `<button class="act" data-on="${it.id}">입기</button>`;
+    /* zoom 2 — 격자 칸의 그림을 두 배로 키웁니다. 캔버스 자체를 크게
+       잡아야(64x96) 확대해도 픽셀이 또렷합니다. CSS 로만 늘리면
+       image-rendering 이 있어도 브라우저마다 결과가 다릅니다. */
     return `<div class="item${on ? ' on' : ''}">
-      <canvas class="thumb" data-item="${it.id}" data-zoom="1"
-        width="${ITEM_W}" height="${ITEM_H}"></canvas>
+      <canvas class="thumb" data-item="${it.id}" data-zoom="2"
+        width="${ITEM_W * 2}" height="${ITEM_H * 2}"></canvas>
       <span>${esc(it.name)}${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</span>
       ${have && !on ? '<u>보유</u>' : ''}
       ${action}</div>`;
   };
   return `<div class="shop">
-    ${shopPreviewHtml()}
     <div class="shop-list">
       <div class="shop-coin">가진 코인 <b>${ROOM.coins}</b></div>
-      ${items.map(card).join('')}
+      <div class="shop-grid">${items.map(card).join('')}</div>
     </div>
+    ${shopPreviewHtml()}
   </div>`;
 }
 
@@ -8227,13 +8249,50 @@ function paintItemCanvases() {
     if (sheet) {
       const zoom = Number(c.dataset.zoom) || 1;
       g.drawImage(sheet, ITEM_DIR.down * ITEM_W, 0, ITEM_W, ITEM_H, 0, 0, ITEM_W * zoom, ITEM_H * zoom);
+    } else if (it && it.cat === 'egg') {
+      drawEggThumb(g, c.width, c.height, itemColor(it) || '#C9C4BE');
     } else if (it) {
-      /* 알처럼 그림이 없는 것과 아직 안 뜬 것 — 색 블록으로 자리를 지킵니다 */
+      /* 아직 안 뜬 그림 — 색 블록으로 자리를 지킵니다 */
       g.fillStyle = itemColor(it) || '#C9C4BE';
       g.fillRect(c.width * 0.25, c.height * 0.3, c.width * 0.5, c.height * 0.4);
     }
   }
 }
+/* 알에는 스프라이트가 없습니다(까 봐야 아는 것이라 그림이 없는 게 맞습니다).
+   그렇다고 네모난 색 블록을 두면 옆 칸의 옷 그림과 결이 안 맞아 **미완성으로
+   보입니다.** 알 모양을 픽셀로 찍고 통째로 확대합니다 — 벡터 타원으로
+   그리면 매끈해져서 이 화면에서 혼자 다른 그림체가 됩니다. */
+const EGG_ART = [
+  '....XXXX....', '..XXXXXXXX..', '.XXXXXXXXXX.', '.XXXXXXXXXX.',
+  'XXXXXXXXXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX',
+  'XXXXXXXXXXXX', 'XXXXXXXXXXXX', 'XXXXXXXXXXXX', '.XXXXXXXXXX.',
+  '.XXXXXXXXXX.', '..XXXXXXXX..', '....XXXX....',
+];
+/** #RRGGBB 를 k 배 밝게(>1)·어둡게(<1). 알 색이 종마다 달라 무늬 색을
+    표로 또 두면 종이 늘 때마다 손볼 곳이 하나 더 생깁니다. */
+function shade(hex, k) {
+  const n = parseInt(String(hex).replace('#', ''), 16);
+  const c = (v) => Math.max(0, Math.min(255, Math.round(v * k)));
+  return 'rgb(' + c((n >> 16) & 255) + ',' + c((n >> 8) & 255) + ',' + c(n & 255) + ')';
+}
+function drawEggThumb(g, W, H, color) {
+  const w = EGG_ART[0].length, h = EGG_ART.length;
+  const z = Math.max(1, Math.floor(Math.min(W / (w + 2), H / (h + 2))));
+  const ox = Math.round((W - w * z) / 2), oy = Math.round((H - h * z) / 2);
+  const put = (x, y, c) => { g.fillStyle = c; g.fillRect(ox + x * z, oy + y * z, z, z); };
+  const line = shade(color, 0.55), spot = shade(color, 0.78), lit = shade(color, 1.22);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    if (EGG_ART[y][x] !== 'X') continue;
+    /* 테두리 = 네 이웃 중 하나라도 알이 아닌 칸. 따로 표를 두지 않습니다 */
+    const edge = y === 0 || y === h - 1 || x === 0 || x === w - 1
+      || EGG_ART[y - 1][x] !== 'X' || EGG_ART[y + 1][x] !== 'X'
+      || EGG_ART[y][x - 1] !== 'X' || EGG_ART[y][x + 1] !== 'X';
+    put(x, y, edge ? line : color);
+  }
+  [[4, 6], [5, 6], [7, 9], [8, 9], [3, 10], [6, 12]].forEach(([x, y]) => put(x, y, spot));
+  [[3, 3], [4, 3], [3, 4]].forEach(([x, y]) => put(x, y, lit));      // 광택
+}
+
 const repaintOpenPanel = () => { if (panelOpen) paintItemCanvases(); };
 
 /** 창 내용을 갈아 끼울 때는 **늘 이 문을 지납니다.** 캔버스는 innerHTML

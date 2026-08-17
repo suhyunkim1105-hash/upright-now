@@ -8208,6 +8208,20 @@ function animalMatch3Html() {
     <p class="hint" id="animal-match3-message" aria-live="polite">바꾸고 싶은 동물 타일 두 개를 차례로 눌러보세요.</p>
     <button class="act" data-do="animal-match3-restart">다시 시작</button>`;
 }
+function animalMatch3IntroHtml() {
+  return `
+    <div style="padding:8px 0 4px">
+      <h3 style="margin:0 0 10px;font-size:20px">게임 방법</h3>
+      <ol style="margin:0;padding-left:22px;color:var(--ink-2);line-height:1.8">
+        <li>동물 타일 두 개를 차례로 눌러 선택합니다.</li>
+        <li>서로 붙어 있는 타일이면 위치가 바뀝니다.</li>
+        <li>같은 동물 3개 이상이 가로 또는 세로로 모이면 점수를 얻습니다.</li>
+        <li>목표 점수 <b>${ANIMAL_MATCH3.target}점</b>을 달성하면 성공입니다.</li>
+      </ol>
+      <div class="note" style="margin-top:14px">시간 제한 없이 천천히 플레이할 수 있어요.</div>
+      <button class="act" data-do="animal-match3-start" style="width:100%;margin-top:16px">시작하기</button>
+    </div>`;
+}
 function renderAnimalMatch3() {
   const board = panelBody.querySelector('#animal-match3-board');
   const score = panelBody.querySelector('#animal-match3-score');
@@ -8219,6 +8233,21 @@ function renderAnimalMatch3() {
     return `<button type="button" data-animal-index="${index}" aria-label="${animal.name} 타일"
       style="position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;border:0;border-radius:11px;background:${animal.color};font-size:clamp(22px,7vw,38px);cursor:pointer;box-shadow:${selected ? '0 0 0 4px #2d8f83, inset 0 -4px 0 rgba(0,0,0,.12)' : 'inset 0 -4px 0 rgba(0,0,0,.12)'};transform:${selected ? 'scale(.92)' : 'scale(1)'};transition:transform .12s ease,box-shadow .12s ease">${animal.emoji}<small style="position:absolute;right:4px;bottom:2px;font-size:9px;color:rgba(43,50,48,.5)">${index + 1}</small></button>`;
   }).join('');
+  board.querySelectorAll('[data-animal-index]').forEach((button) => {
+    const press = (event) => {
+      if (event.type === 'pointerup' && event.pointerType === 'touch'
+          && Date.now() - ANIMAL_MATCH3.lastTouchAt < 500) return;
+      if (event.type === 'touchend') {
+        if (Date.now() - ANIMAL_MATCH3.lastTouchAt < 500) return;
+        ANIMAL_MATCH3.lastTouchAt = Date.now();
+      }
+      if (handleAnimalMatch3Press(button)) {
+        event.preventDefault(); event.stopPropagation();
+      }
+    };
+    button.addEventListener('pointerup', press);
+    button.addEventListener('touchend', press, { passive: false });
+  });
   score.textContent = `${ANIMAL_MATCH3.score} / ${ANIMAL_MATCH3.target}`;
   combo.textContent = `${ANIMAL_MATCH3.combo}`;
 }
@@ -8272,7 +8301,7 @@ const PANELS = {
   }),
   animalMatch3: () => ({
     title: '동물 3매칭', kind: 'MINI GAME',
-    html: animalMatch3Html(),
+    html: animalMatch3IntroHtml(),
   }),
   /* ---- 안내 — 벽에 붙은 표지판이 여는 창 ----
      기능이 아니라 **읽을 것**입니다. 처음 온 사람이 무엇을 하는 곳인지
@@ -8702,7 +8731,6 @@ function openPanel(key) {
   if (key === 'giraffeNeck') startGiraffeNeck();
   if (key === 'eggMerge') startEggMerge();
   if (key === 'giraffeStack') startGiraffeStack();
-  if (key === 'animalMatch3') startAnimalMatch3();
   if (key === 'escapeRoom') startEscapeRoom();
   if (key === 'turtleEgg') startTurtleEgg();
   /* 회고를 실제로 연 것에 +3. 회고는 이 서비스가 보여 주고 싶은 화면인데
@@ -8740,8 +8768,9 @@ function handleAnimalMatch3Press(target) {
   if (activePanelKey !== 'animalMatch3') return false;
   const tile = target.closest('[data-animal-index]');
   const restart = target.closest('[data-do="animal-match3-restart"]');
-  if (!tile && !restart) return false;
-  if (restart) { startAnimalMatch3(); return true; }
+  const start = target.closest('[data-do="animal-match3-start"]');
+  if (!tile && !restart && !start) return false;
+  if (restart || start) { startAnimalMatch3(); return true; }
   const index = Number(tile.dataset.animalIndex);
   if (ANIMAL_MATCH3.selected < 0) {
     ANIMAL_MATCH3.selected = index; renderAnimalMatch3(); return true;
@@ -8758,13 +8787,14 @@ panelBody.addEventListener('pointerdown', (e) => {
   if ((e.pointerType === 'touch' || e.pointerType === 'pen')
       && Date.now() - ANIMAL_MATCH3.lastTouchAt > 500
       && handleAnimalMatch3Press(e.target)) {
+    ANIMAL_MATCH3.lastTouchAt = Date.now();
     e.preventDefault();
     e.stopPropagation();
   }
 });
 panelBody.addEventListener('touchstart', (e) => {
   if (activePanelKey !== 'animalMatch3') return;
-  if (!e.target.closest('[data-animal-index], [data-do="animal-match3-restart"]')) return;
+  if (!e.target.closest('[data-animal-index], [data-do="animal-match3-restart"], [data-do="animal-match3-start"]')) return;
   ANIMAL_MATCH3.lastTouchAt = Date.now();
   if (handleAnimalMatch3Press(e.target)) {
     e.preventDefault();
@@ -8773,7 +8803,7 @@ panelBody.addEventListener('touchstart', (e) => {
 }, { passive: false });
 panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="privacy"]')) return openPanel('privacy');
-  if (activePanelKey === 'animalMatch3' && (e.target.closest('[data-animal-index]') || e.target.closest('[data-do="animal-match3-restart"]'))) {
+  if (activePanelKey === 'animalMatch3' && (e.target.closest('[data-animal-index]') || e.target.closest('[data-do="animal-match3-restart"]') || e.target.closest('[data-do="animal-match3-start"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();
     if (Date.now() - ANIMAL_MATCH3.lastTouchAt < 500) return;

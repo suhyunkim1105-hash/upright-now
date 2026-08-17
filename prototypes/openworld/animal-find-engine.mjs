@@ -1,3 +1,15 @@
+/*
+ * Open-source adaptation note
+ *
+ * The small, array-based memory-game flow is adapted from:
+ * https://github.com/kubowania/memory-game
+ * Copyright (c) 2020 Ania Kubow. MIT License.
+ *
+ * The service version below is independently rewritten for the existing
+ * panel, timer, score, combo, and input-lock requirements. No source images
+ * or original UI are bundled.
+ */
+
 export const ANIMAL_MEMORY_TYPES = [
   { id: 'turtle', name: '거북이', emoji: '🐢', color: '#79c98b' },
   { id: 'giraffe', name: '기린', emoji: '🦒', color: '#f4c95d' },

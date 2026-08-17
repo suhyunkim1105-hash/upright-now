@@ -1,3 +1,15 @@
+/*
+ * Open-source adaptation note
+ *
+ * The always-have-a-move board-generation idea is adapted from:
+ * https://github.com/Ghamza-Jd/Match-3
+ * MIT License.
+ *
+ * This is an independent DOM-friendly engine for the service. The original
+ * Cocos Creator project and its artwork are not bundled; only the general
+ * board-solving approach is reused with our own animals and rules.
+ */
+
 export const BOARD_SIZE = 7
 export const ACTIVE_TYPES = [
   { id: 'turtle', name: '거북이', emoji: '🐢', color: '#79c98b' },

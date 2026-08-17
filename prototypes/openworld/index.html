@@ -4007,7 +4007,9 @@ const ZONES = {};
      고개를 돌리지 않아도 보이게 했습니다. 표지판(21,20)까지 걸어가야
      길을 아는 것보다, 나오자마자 말 걸 사람이 있는 편이 낫습니다. */
   m.npcs.push(
-    { x: 23, y: 12, sprite: 428, name: '안내 · 나루',
+    { x: 23, y: 12, sprite: 428, species: '햄스터', dir: 'down',
+      worn: { top: 'top-hoodie', bottom: 'bot-jeans', shoes: 'sho-sneaker', hat: 'hat-cap' },
+      name: '안내 · 나루',
       lines: [
         '처음이죠? 여기가 중앙 광장이고, 사방으로 건물 넷이 있어요.',
         '북쪽이 기숙사, 서쪽 본관, 동쪽 도서관, 남쪽이 학생회관이에요. 앉는 자리는 본관과 도서관에 있어요.',
@@ -4016,7 +4018,9 @@ const ZONES = {};
       after: startTutorial },
     /* 관리인은 기숙사 문 앞 — 방 안이 아니라. 방 안은 내 방이고,
        관리인이 내 방에 서 있으면 관리인이 아니라 불청객입니다. */
-    { x: 25, y: 11, sprite: 104, name: '기숙사 관리인 · 성재',
+    { x: 25, y: 11, sprite: 104, species: '거북이', dir: 'down',
+      worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-slipper' },
+      name: '기숙사 관리인 · 성재',
       lines: [
         '이 방은 혼자 쓰는 1인실이에요. 문 잠그는 건 신경 안 쓰셔도 됩니다.',
         '친구 방에 놀러 갈 수 있어요. 문 옆 초인종에서 친구 코드를 넣으면 그 방으로 넘어갑니다.',
@@ -4201,7 +4205,9 @@ const ZONES = {};
      북쪽(22,20)에 세워 봤더니 가로대 **바깥**이라, 창구를 등지고 복도에
      서 있는 사람으로 보였습니다. 창구는 안에 사람이 있어야 창구입니다. */
   m.npcs.push(
-    { x: 23, y: 22, sprite: 347, name: '사서 · 하람',
+    { x: 23, y: 22, sprite: 347, species: '백조', dir: 'down',
+      worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-dress', face: 'fac-round' },
+      name: '사서 · 하람',
       lines: [
         '(작은 소리로) 여기서는 조용히 해 주세요. 다들 집중하고 있어요.',
         '자리에 앉으면 웹캠\u00A0화면이 작게 떠요. 다른 탭을 봐도 자세는 계속 보고 있습니다.',
@@ -4463,13 +4469,19 @@ const ZONES = {};
   prop(m, 'bin', 30, 21);
 
   m.npcs.push(
-    { x: 6, y: 7, sprite: 266, name: '상점 · 미르', panel: 'shop',
+    { x: 6, y: 7, sprite: 266, species: '고슴도치', dir: 'down',
+      worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', face: 'fac-sun' },
+      name: '상점 · 미르', panel: 'shop',
       line: '알은 하나만 깨고 나왔죠? 다른 알도 여기서 팝니다. 비싸요.' },
     /* 남은 날은 대사에 안 적습니다 — 지도를 만들 때 굳어 버려서, 며칠이
        지나도 같은 숫자를 말하게 됩니다. 숫자는 창이 그때그때 셉니다. */
-    { x: 26, y: 8, sprite: 185, name: '명예의 전당 · 하연', panel: 'hall',
+    { x: 26, y: 8, sprite: 185, species: '알파카', dir: 'down',
+      worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-dress', hat: 'hat-grad' },
+      name: '명예의 전당 · 하연', panel: 'hall',
       line: '순위는 앉은 시간과 회복 횟수로만 매깁니다 — 자세를 점수로 매기지는 않아요.' },
-    { x: 16, y: 5, sprite: 131, name: '출석 · 도윤',
+    { x: 16, y: 5, sprite: 131, species: '개구리', dir: 'down',
+      worn: { top: 'top-tee', bottom: 'bot-trainer', shoes: 'sho-sneaker', bag: 'bag-backpack' },
+      name: '출석 · 도윤',
       line: '오늘 출석은 아직이네요. 도서관이나 본관에서 한 세션만 채우면 됩니다.' },
   );
 
@@ -11271,13 +11283,15 @@ function draw() {
         }
       }
     } else if (it.kind === 'npc') {
-      blitU(it.n.sprite, it.n.x * T - camX, it.n.y * T - camY);
+      const lift = drawNpc(it.n);
       drawCount++;
       if (nearby?.kind === 'talk' && nearby.npc === it.n) {
         /* 말 걸 수 있다는 느낌표. 머리 위 하늘에도 벽에도 뜨므로 어두운
            획을 한 겹 깔고 그 위에 청록을 얹습니다. 2px 짜리 표시가
-           바탕에 묻히면 아무도 말을 못 겁니다. */
-        const bx = it.n.x * T - camX + 7 * AS, by = it.n.y * T - camY;
+           바탕에 묻히면 아무도 말을 못 겁니다.
+           높이는 그린 그림에서 받습니다 — 종 시트(48px)와 예전 16px 사람은
+           머리 높이가 다릅니다. */
+        const bx = it.n.x * T - camX + 7 * AS, by = (it.n.y + 1) * T - lift - camY;
         const bob = Math.sin(performance.now() / 200) * 1.5 * AS;
         ctx.fillStyle = '#0C5A4F';
         ctx.fillRect(bx - AS, by - 7 * AS + bob, 4 * AS, 6 * AS);
@@ -11394,6 +11408,51 @@ function drawPlayer() {
   ctx.drawImage(sheet, sx, 0, CHAR_W, CHAR_H,
                 fx - CHAR_W / 2, fy - CHAR_GROUND_Y + bob, CHAR_W, CHAR_H);
   ctx.restore();
+}
+
+/* NPC 도 나와 **같은 규격**입니다.
+
+   전에는 urban.png 의 16px 사람을 오려 썼습니다. 타일이 16 이던 때는
+   그럭저럭 맞았는데, 타일을 32 로 올리면서 나는 한 칸 반이 되고 NPC 는
+   한 칸이 됐습니다 — 캠퍼스에 어른 하나와 아이 여섯이 서 있는 꼴입니다.
+
+   그림을 새로 그리지 않고 우리 8종 파이프라인을 그대로 씁니다.
+   sheetFor(종, 입은 것, 학교) 가 128x48 시트를 돌려주고, 굽는 것은
+   종·옷 조합마다 한 번뿐이라(otherCache) 여섯 명이 여섯 장을 쓰지
+   않습니다. 학교는 안 넘깁니다 — 우리 학교 사람들이니 내 과잠 색이 맞습니다.
+
+   시트가 아직 안 왔으면 예전 16px 사람으로 물러납니다. 돌려주는 값은
+   **발에서 머리끝까지의 높이**이고, 부르는 쪽이 느낌표를 그 위에 얹습니다. */
+function drawNpc(n) {
+  const fx = n.x * T + T / 2 - camX, fy = (n.y + 1) * T - camY;
+  /* 시트는 사람마다 한 번만 찾습니다. sheetFor 는 캐시가 있어도 부를 때마다
+     입은 것을 JSON 으로 찍어 열쇠를 만드는데, 그걸 여섯 명 × 60프레임 =
+     초당 360번 합니다. 학교 색이 바뀌면 열쇠가 달라져 저절로 다시 찾습니다.
+     아직 시트가 안 왔으면 열쇠를 안 남겨 다음 프레임에 또 시도합니다. */
+  if (n.species && window.GIRIN_CHAR) {
+    const tint = schoolColor();
+    if (n.sheetKey !== tint) {
+      n.sheet = GIRIN_CHAR.sheetFor(n.species, n.worn, null);
+      n.sheetKey = n.sheet ? tint : null;
+    }
+  }
+  const sheet = n.sheet;
+
+  if (!sheet) {
+    blitU(n.sprite, n.x * T - camX, n.y * T - camY);
+    return T;
+  }
+  /* 그림자는 플레이어와 같은 타원입니다. 다르면 같은 바닥에 안 서 있는
+     것으로 보입니다 — multiplayer.js 의 drawBig 과도 같은 값입니다. */
+  ctx.save();
+  ctx.globalAlpha = 0.22; ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.ellipse(fx, fy - 1, 6, 2.4, 0, 0, 7); ctx.fill();
+  ctx.restore();
+
+  const sx = (ITEM_DIR[n.dir] ?? ITEM_DIR.down) * CHAR_W;
+  ctx.drawImage(sheet, sx, 0, CHAR_W, CHAR_H,
+                fx - CHAR_W / 2, fy - CHAR_GROUND_Y, CHAR_W, CHAR_H);
+  return CHAR_GROUND_Y;
 }
 
 const promptEl = document.getElementById('prompt');

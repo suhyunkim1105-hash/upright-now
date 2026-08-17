@@ -2,27 +2,33 @@
 /**
  * build-items.mjs — 상점 꾸미기 아이템 픽셀 에셋 생성기
  *
- * 규격: docs/item-spec.md  (상위: docs/character-spec-common.md)
- * 결과: assets/03_items/{카테고리}/{이름}.png   — 128 x 48 (32x48 x 4방향)
- *       assets/03_items/items.js / items.json   — 매니페스트
- *       assets/03_items/_test/mannequin.png     — 겹침 검사용 마네킹
+ * 규격: assets/items/item-spec.md  (좌표의 정답은 characters/layout.json)
+ * 결과: prototypes/openworld/assets/items/{카테고리}/{이름}.png — 128 x 48 (32x48 x 4방향)
+ *       .../items/items.js / items.json      — 매니페스트
+ *       .../items/_test/mannequin.png        — 겹침 검사용 마네킹
+ *       .../items/fitted/{종}/...            — 종 실루엣에 맞춰 깎은 판
  *
- * 의존성 없음 (node 내장 zlib 로 PNG 를 직접 씁니다).
+ * 의존성 없음 (node 내장 zlib 로 PNG 를 직접 읽고 씁니다).
  *   node scripts/build-items.mjs
  *
  * 숫자를 바꾸려면 문서가 아니라 아래 Y / SLOT 상수를 고치세요.
  * 시작할 때 layout.json 과 대조해서 어긋나면 멈춥니다.
+ *
+ * 종 실루엣은 파일로 들고 있지 않고 **캐릭터 시트에서 매번 다시 잽니다.**
+ * 예전엔 silhouettes.json 을 옆에 두었는데, 그 파일이 없어지면 맞춤 단계가
+ * 조용히 꺼져서 옷이 몸 밖으로 튀어나온 판이 그대로 커밋됐습니다.
  */
 
-import { deflateSync } from 'node:zlib'
+import { deflateSync, inflateSync } from 'node:zlib'
 import { writeFileSync, mkdirSync, readFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-const OUT = resolve(ROOT, 'assets/03_items')
-const LAYOUT_JSON = resolve(ROOT, 'assets/02_character/_template/layout.json')
-const SILHOUETTE_JSON = resolve(ROOT, 'assets/02_character/_template/silhouettes.json')
+const WORLD = resolve(ROOT, 'prototypes/openworld/assets')
+const OUT = resolve(WORLD, 'items')
+const CHAR_DIR = resolve(WORLD, 'characters')
+const LAYOUT_JSON = resolve(CHAR_DIR, 'layout.json')
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. 좌표 — docs/item-spec.md §2·§3·§4
@@ -49,12 +55,17 @@ const Y = {
 
   shoulder: 25, // attachY
   collar: 26,
-  upper0: 27, // 소매
-  upper1: 29,
-  fore0: 30, // 팔뚝 — 반팔은 여기를 비운다
-  fore1: 32,
-  hand0: 33, // 손·앞발 — 어떤 상의도 덮지 않는다
-  hand1: 35,
+
+  /* 팔 좌표는 마네킹이 아니라 **실제 시안 8종에서 재서** 정했습니다.
+     예전 값(소매 27-29 / 팔뚝 30-32 / 손 33-35)은 사람 몸 비례라
+     이 치비 몸에서는 정반대였습니다. 8종 모두 y33-35 가 팔이고 y36 이
+     손이라, 옛 값으로는 긴팔이 팔을 벗겨 두고 손을 덮었습니다. */
+  upper0: 30, // 겨드랑이 위 — 팔이 아직 몸통에 붙어 있는 구간
+  upper1: 32,
+  fore0: 33, // 팔뚝 — 8종 모두 여기서 팔이 몸통 밖으로 벌어진다. 반팔은 비운다
+  fore1: 35,
+  hand0: 36, // 손 — 어떤 상의도 덮지 않는다 (y36 은 손과 몸통 사이가 1px 떠 있다)
+  hand1: 36,
   waist0: 34,
   waist1: 36,
   belt: 37, // beltY
@@ -101,6 +112,18 @@ function armCols(dir) {
   return [x0 + 1, x0 + 2, x0 + 3, x0 + 4, x1 - 4, x1 - 3, x1 - 2, x1 - 1]
 }
 
+/**
+ * 손 자리 — 팔 구간의 바깥 2px. 시안 8종의 y36 을 재 보면 손 두 덩이가
+ * 몸통에서 1px 떨어져 있고, 그 덩이가 정확히 여기입니다.
+ * 상의는 이 칸을 비워야 손이 살아남습니다.
+ */
+function handCols(dir) {
+  const [x0, x1] = clothX(dir)
+  if (dir === 'right') return [x1 - 2, x1 - 1]
+  if (dir === 'left') return [x0 + 1, x0 + 2]
+  return [x0 + 1, x0 + 2, x1 - 2, x1 - 1]
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. 팔레트 — docs/item-spec.md §8. 문자 하나 = 색 하나. null 은 투명
 //    '#' '%' 는 과잠 마스크 자리표시자라 팔레트 밖입니다.
@@ -114,6 +137,8 @@ const PALETTE = {
   n: '#454c5c', // 짙은 회청
   J: '#46628f', // 파랑
   j: '#32486b', // 파랑 그늘
+  S: '#c3d3e4', // 옅은 하늘 — 흰 털(백조·알파카) 위에서도 옷이 보이라고
+  s: '#8fa3bb', // 옅은 하늘 그늘
   D: '#b8503f', // 빨강
   d: '#8a3a2d', // 빨강 그늘
   G: '#5b8f5c', // 초록
@@ -176,6 +201,46 @@ const chunk = (type, data) => {
   const crc = Buffer.alloc(4)
   crc.writeUInt32BE(crc32(body))
   return Buffer.concat([len, body, crc])
+}
+
+/**
+ * PNG 읽기 — 우리가 쓰는 캐릭터 시트만 봅니다 (8bit RGBA · 비인터레이스).
+ * 종 실루엣을 잴 때만 필요하고, 그 외 형식이면 차라리 멈추는 편이 낫습니다.
+ */
+function readPNG(path) {
+  const b = readFileSync(path)
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20)
+  if (b[24] !== 8 || b[25] !== 6 || b[28] !== 0)
+    throw new Error(`${path}: 8bit RGBA 비인터레이스 PNG 만 읽습니다`)
+  const idat = []
+  for (let off = 8; off + 8 <= b.length; ) {
+    const len = b.readUInt32BE(off)
+    if (b.toString('latin1', off + 4, off + 8) === 'IDAT') idat.push(b.subarray(off + 8, off + 8 + len))
+    off += 12 + len
+  }
+  const raw = inflateSync(Buffer.concat(idat))
+  const stride = w * 4
+  const px = Buffer.alloc(stride * h)
+  for (let y = 0; y < h; y++) {
+    const f = raw[y * (stride + 1)]
+    const line = raw.subarray(y * (stride + 1) + 1, y * (stride + 1) + 1 + stride)
+    for (let i = 0; i < stride; i++) {
+      const a = i >= 4 ? px[y * stride + i - 4] : 0
+      const up = y > 0 ? px[(y - 1) * stride + i] : 0
+      const ul = y > 0 && i >= 4 ? px[(y - 1) * stride + i - 4] : 0
+      let v = line[i]
+      if (f === 1) v += a
+      else if (f === 2) v += up
+      else if (f === 3) v += (a + up) >> 1
+      else if (f === 4) {
+        const p = a + up - ul
+        const pa = Math.abs(p - a), pb = Math.abs(p - up), pc = Math.abs(p - ul)
+        v += pa <= pb && pa <= pc ? a : pb <= pc ? up : ul
+      }
+      px[y * stride + i] = v & 0xff
+    }
+  }
+  return { w, h, px }
 }
 
 class Canvas {
@@ -297,28 +362,23 @@ function sheet(frames, resolve) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. 상의 — docs/item-spec.md §3
+// 6. 상의
 //
 //    골격은 공통이고 style 마다 detail() 만 다릅니다.
-//    손(y33-34) 팔 기둥은 절대 찍지 않습니다.
+//    소매 = 어깨(y30-32) + 팔뚝(y33-35), 손(y36)은 절대 안 덮습니다.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function topFrame(dir, spec) {
   const s = new Sprite()
   const [x0, x1] = clothX(dir)
   const arms = armCols(dir)
-  const isArm = (x) => arms.includes(x)
-  const shadeCol = isSide(dir) ? x0 + 5 : x1 - 6 // 몸통 안쪽 (팔 구간을 피해서)
-
-  // 소매 폭. 몸통의 팔은 1px 이지만 옷소매는 더 두꺼워도 됩니다.
-  // 과잠처럼 소매 색이 정체성인 옷은 2px 로 넓혀야 알아볼 수 있습니다.
-  const sleeveW = spec.sleeveW ?? 1
+  const hands = handCols(dir)
   const sleeveEnd = spec.sleeve === 'short' ? Y.upper1 : Y.fore1
-  const sleeveCols = new Set()
-  for (const a of arms) {
-    const inward = a < 16 ? 1 : -1
-    for (let i = 0; i < sleeveW; i++) sleeveCols.add(a + inward * i)
-  }
+
+  /* 그늘 기둥 — 평평한 판때기로 안 보이게 하는 최소한입니다.
+     바깥 테두리는 종별 맞춤이 다시 그리므로, 그늘은 8종이 모두 몸을 가진
+     안쪽(x10-21)에 둬야 어느 종에서도 살아남습니다. */
+  const shadeCol = isSide(dir) ? x0 + 5 : x1 - 5
 
   // 어깨 — 아웃라인 1px 안쪽으로
   s.hspan(x0 + 1, x1 - 1, Y.shoulder, 'O')
@@ -326,22 +386,24 @@ function topFrame(dir, spec) {
   for (let y = Y.collar; y <= Y.belt; y++) {
     s.set(x0, y, 'O')
     s.set(x1, y, 'O')
-    const onSleeve = y >= Y.upper0 && y <= sleeveEnd
-
     for (let x = x0 + 1; x <= x1 - 1; x++) {
-      if (isArm(x)) {
-        if (y >= Y.hand0 && y <= Y.hand1) continue // 손 — 항상 비움
-        if (spec.sleeve === 'short' && y >= Y.fore0 && y <= Y.fore1) continue // 팔뚝
-        s.set(x, y, onSleeve ? spec.sleeveC : spec.base)
-      } else if (onSleeve && sleeveCols.has(x)) {
-        s.set(x, y, spec.sleeveC)
-      } else {
-        s.set(x, y, x === shadeCol && y > Y.collar ? spec.bodyShade : spec.base)
+      if (arms.includes(x)) {
+        if (y >= Y.hand0 && hands.includes(x)) continue // 손 — 항상 비움
+        if (spec.sleeve === 'short' && y >= Y.fore0 && y <= Y.fore1) continue // 반팔 팔뚝
+        if (y >= Y.upper0 && y <= sleeveEnd) {
+          // 소매 끝 한 줄은 어둡게 — 소매와 손의 경계가 생깁니다
+          s.set(x, y, y === sleeveEnd ? spec.cuffC || spec.bodyShade : spec.sleeveC)
+          continue
+        }
       }
+      s.set(x, y, x === shadeCol && y > Y.collar ? spec.bodyShade : spec.base)
     }
   }
+  /* 옷깃. 목이 짧은 종(거북이·고슴도치)은 이 줄이 보이고, 목이 긴 종
+     (백조·알파카)은 이 줄이 잘린 뒤 맞춤 단계가 그린 테두리가 옷깃이 됩니다. */
+  s.hspan(x0 + 1, x1 - 1, Y.collar, spec.collarC || spec.bodyShade)
 
-  spec.detail?.(s, { dir, x0, x1, arms, shadeCol, sleeveCols, spec })
+  spec.detail?.(s, { dir, x0, x1, arms, hands, shadeCol, sleeveEnd, spec })
   return s
 }
 
@@ -351,28 +413,22 @@ const TOPS = {
     mask: true,
     base: MASK,
     bodyShade: MASK_SHADE,
-    sleeveC: 'E',
-    sleeveW: 2, // 흰 소매가 과잠의 정체성 — 1px 이면 알아볼 수 없습니다
+    sleeveC: 'E', // 흰 소매가 과잠의 정체성
+    cuffC: 'e',
+    collarC: 'E',
     sleeve: 'long',
-    detail(s, { dir, x0, x1, arms, sleeveCols }) {
-      // 립 칼라 · 립 밑단 — 과잠의 흰 띠
-      s.hspan(x0 + 1, x1 - 1, Y.collar, 'E')
-      s.hspan(x0 + 1, x1 - 1, Y.belt, 'E')
-      // 소매 커프스 · 어깨 이음선
-      for (const c of sleeveCols) {
-        s.set(c, Y.fore1, 'e')
-        s.set(c, Y.upper0, 'e')
-      }
-      for (const a of arms) if (a >= 0) s.clear(a, Y.hand0), s.clear(a, Y.hand1)
-
+    detail(s, { dir, x0, x1 }) {
+      s.hspan(x0 + 1, x1 - 1, Y.belt, 'E') // 립 밑단
       if (dir === 'down') {
         s.vspan(15, Y.collar + 1, Y.belt - 1, MASK_SHADE) // 앞섶
-        s.set(16, Y.upper1, 'E') // 스냅 단추
-        s.set(16, Y.hand0, 'E')
+        s.set(16, Y.upper0, 'E') // 스냅 단추
+        s.set(16, Y.fore0, 'E')
       } else if (dir === 'up') {
         // 등판 엠블럼 — 4px 폭에 글자는 안 들어가므로 테두리 있는 패치로
-        s.box(14, Y.upper0 + 1, 17, Y.fore1, 'E')
-        s.box(15, Y.upper0 + 2, 16, Y.fore1 - 1, MASK)
+        s.box(13, Y.upper0, 18, Y.fore0, 'E')
+        s.box(14, Y.upper0 + 1, 17, Y.fore0 - 1, MASK)
+      } else {
+        s.vspan(x1 - 6, Y.collar + 1, Y.belt - 1, MASK_SHADE) // 옆선
       }
     },
   },
@@ -380,73 +436,91 @@ const TOPS = {
     label: '후드티',
     base: 'N',
     bodyShade: 'n',
-    sleeveC: 'n',
+    sleeveC: 'N',
+    cuffC: 'n',
+    collarC: 'n',
     sleeve: 'long',
     detail(s, { dir, x0, x1 }) {
-      // 목 뒤로 접힌 후드
-      s.hspan(x0 + 1, x1 - 1, Y.collar, 'n')
+      // 목 뒤로 접힌 후드 — 앞에서는 목둘레만, 뒤에서는 두툼한 덩어리
       if (dir === 'up') {
-        s.hspan(x0 + 1, x1 - 1, Y.upper0, 'n') // 뒷면은 후드가 더 두툼하다
-        s.hspan(x0 + 2, x1 - 2, Y.upper0 + 1, 'n')
+        s.box(12, Y.collar, 19, Y.collar + 2, 'n')
+        s.hspan(13, 18, Y.collar + 3, 'n')
+      } else {
+        s.hspan(x0 + 2, x1 - 2, Y.collar + 1, 'n')
       }
       if (dir === 'down') {
-        s.set(14, Y.upper0, 'E') // 조임끈
-        s.set(17, Y.upper0, 'E')
-        s.set(14, Y.upper0 + 1, 'E')
-        s.set(17, Y.upper0 + 1, 'E')
-        s.box(13, Y.waist0, 18, Y.waist1, 'n') // 배 주머니
+        s.set(14, Y.collar + 2, 'E') // 조임끈
+        s.set(17, Y.collar + 2, 'E')
+        s.set(14, Y.collar + 3, 'E')
+        s.set(17, Y.collar + 3, 'E')
+        s.box(12, Y.waist0, 19, Y.waist1, 'n') // 배 주머니
+        s.hspan(13, 18, Y.waist0, 'N')
       }
       s.hspan(x0 + 1, x1 - 1, Y.belt, 'n') // 립 밑단
     },
   },
   shirt: {
+    /* 옅은 하늘색인 이유: 예전 셔츠는 흰색(#eae6de)이라 백조·알파카·고슴도치
+       배 위에서 옷인지 털인지 구분이 안 됐습니다. 색상만 살짝 넣으면
+       8종 어디서도 옷으로 읽힙니다. */
     label: '셔츠',
-    base: 'E',
-    bodyShade: 'e',
-    sleeveC: 'e',
+    base: 'S',
+    bodyShade: 's',
+    sleeveC: 'S',
+    cuffC: 's',
+    collarC: 'E',
     sleeve: 'long',
     detail(s, { dir, x0, x1 }) {
       if (dir === 'down') {
-        s.set(13, Y.collar, 'O') // 깃
+        s.set(13, Y.collar, 'O') // 깃 끝
         s.set(18, Y.collar, 'O')
-        s.set(14, Y.collar, 'e')
-        s.set(17, Y.collar, 'e')
-        s.vspan(15, Y.collar + 1, Y.belt - 1, 'e') // 앞단
-        s.set(16, Y.upper1, 'O') // 단추
+        s.set(14, Y.collar + 1, 'E') // 깃이 벌어진 자리
+        s.set(17, Y.collar + 1, 'E')
+        s.vspan(15, Y.collar + 1, Y.belt - 1, 'E') // 앞단
+        s.set(16, Y.upper0 + 1, 'O') // 단추
         s.set(16, Y.waist0, 'O')
       } else if (dir === 'up') {
-        s.hspan(13, 18, Y.collar, 'e') // 뒷깃
-        s.hspan(x0 + 2, x1 - 2, Y.upper0, 'e') // 요크
+        s.hspan(13, 18, Y.collar, 'E') // 뒷깃
+        s.hspan(x0 + 2, x1 - 2, Y.collar + 1, 's') // 요크
       } else {
-        s.set(x1 - 3, Y.collar, 'O')
-        s.set(x1 - 4, Y.collar, 'e')
+        s.set(x1 - 4, Y.collar, 'O')
+        s.set(x1 - 5, Y.collar + 1, 'E')
       }
+      s.hspan(x0 + 1, x1 - 1, Y.belt, 's') // 셔츠 자락
     },
   },
   tee: {
     label: '반팔티',
     base: 'D',
     bodyShade: 'd',
-    sleeveC: 'd',
+    sleeveC: 'D',
+    cuffC: 'd',
+    collarC: 'd',
     sleeve: 'short',
-    detail(s, { dir, x0, x1, arms }) {
-      s.hspan(x0 + 2, x1 - 2, Y.collar, 'd') // 목 시보리
-      for (const a of arms) s.set(a, Y.upper1, 'd') // 소매 끝단
-      if (dir === 'down') s.box(14, Y.upper1, 17, Y.fore1, 'E') // 가슴 프린트
+    detail(s, { dir }) {
+      /* 가슴 프린트. 예전엔 4x4 흰 사각형이라 32px 에서 '뭔가 붙은 얼룩'
+         이었습니다. 가로로 눕히면 로고처럼 읽힙니다. */
+      if (dir === 'down') {
+        s.hspan(13, 18, Y.upper1, 'E')
+        s.hspan(14, 17, Y.fore0, 'E')
+      }
       if (dir === 'up') s.hspan(13, 18, Y.upper0, 'd')
+      s.hspan(13, 18, Y.belt, 'd') // 밑단
     },
   },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. 하의 — 벨트(37)부터. 긴바지는 신발 윗줄(44)까지 덮습니다.
+// 7. 하의 — 벨트(37)부터. 긴바지는 발목(42)까지 덮고 신발에 3줄을 남깁니다.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function bottomFrame(dir, spec) {
   const s = new Sprite()
   const [x0, x1] = legX(dir)
-  const hem = spec.length === 'long' ? Y.feet0 - 1 : Y.leg0 + 2 // 긴바지 42 / 반바지 40
-  const split = Y.leg0 + 2 // 40 부터 두 갈래
+  /* 긴바지 밑단을 41 -> 42 로 내렸습니다. 시안 8종의 다리는 y38-45 뿐이고
+     그중 42-45 는 발이라, 41 에서 끊으면 바지가 4줄짜리 속옷처럼 보였습니다. */
+  const hem = spec.length === 'long' ? Y.feet0 : Y.leg0 + 2 // 긴바지 42 / 반바지 40
+  const split = spec.length === 'long' ? Y.leg0 + 3 : Y.leg0 + 2 // 가랑이 41 / 40
 
   for (let y = Y.belt; y <= hem; y++) {
     s.set(x0, y, 'O')
@@ -477,18 +551,19 @@ const BOTTOMS = {
     base: 'J',
     shade: 'j',
     length: 'long',
-    detail(s, { dir, x0, x1 }) {
+    detail(s, { dir, x0, x1, hem }) {
       if (dir === 'down') {
-        s.set(12, Y.leg0, 'j') // 주머니
-        s.set(19, Y.leg0, 'j')
+        s.set(11, Y.leg0, 'j') // 앞주머니
+        s.set(20, Y.leg0, 'j')
         s.set(12, Y.leg0 + 1, 'j')
         s.set(19, Y.leg0 + 1, 'j')
       }
       if (dir === 'up') {
-        s.box(12, Y.leg0, 13, Y.leg0 + 1, 'j') // 뒷주머니
-        s.box(18, Y.leg0, 19, Y.leg0 + 1, 'j')
+        s.box(11, Y.leg0, 13, Y.leg0 + 1, 'j') // 뒷주머니
+        s.box(18, Y.leg0, 20, Y.leg0 + 1, 'j')
       }
-      if (isSide(dir)) s.vspan(x1 - 1, Y.leg0, Y.leg1, 'j') // 옆선
+      if (isSide(dir)) s.vspan(x1 - 1, Y.leg0, hem - 1, 'j') // 옆선
+      s.hspan(x0 + 1, x1 - 1, hem - 1, 'J') // 접어 올린 밑단이 밝게 남는다
     },
   },
   trainers: {
@@ -499,10 +574,10 @@ const BOTTOMS = {
     detail(s, { dir, x0, x1, hem }) {
       // 옆줄 — 트레이닝복의 상징
       if (isSide(dir)) {
-        s.vspan(x1 - 1, Y.belt + 1, hem - 1, 'E')
+        s.vspan(x1 - 1, Y.belt + 1, hem - 2, 'E')
       } else {
-        s.vspan(x0 + 1, Y.belt + 1, hem - 1, 'E')
-        s.vspan(x1 - 1, Y.belt + 1, hem - 1, 'E')
+        s.vspan(x0 + 1, Y.belt + 1, hem - 2, 'E')
+        s.vspan(x1 - 1, Y.belt + 1, hem - 2, 'E')
       }
       s.hspan(x0 + 1, x1 - 1, hem, 'n') // 발목 시보리
       s.hspan(x0 + 1, x1 - 1, hem - 1, 'n')
@@ -513,13 +588,13 @@ const BOTTOMS = {
     base: 'n',
     shade: 'O',
     length: 'long',
-    detail(s, { dir, x0, x1 }) {
-      // 주름 한 줄
+    detail(s, { dir, x0, x1, hem }) {
+      // 주름 한 줄 — 슬랙스를 슬랙스로 만드는 것
       if (!isSide(dir)) {
-        s.vspan(13, Y.leg0 + 1, Y.feet0 - 1, 'N')
-        s.vspan(18, Y.leg0 + 1, Y.feet0 - 1, 'N')
+        s.vspan(12, Y.leg0 + 1, hem - 1, 'N')
+        s.vspan(19, Y.leg0 + 1, hem - 1, 'N')
       } else {
-        s.vspan(x0 + 2, Y.leg0 + 1, Y.feet0 - 1, 'N')
+        s.vspan(x0 + 2, Y.leg0 + 1, hem - 1, 'N')
       }
     },
   },
@@ -530,16 +605,17 @@ const BOTTOMS = {
     length: 'short',
     detail(s, { dir, x0, x1, hem }) {
       s.hspan(x0 + 1, x1 - 1, hem, 'H') // 접힌 밑단
+      s.hspan(x0 + 1, x1 - 1, hem - 1, 'B')
       if (dir === 'down') {
-        s.set(12, Y.leg0 + 1, 'H')
-        s.set(19, Y.leg0 + 1, 'H')
+        s.set(11, Y.leg0 + 1, 'H')
+        s.set(20, Y.leg0 + 1, 'H')
       }
     },
   },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. 신발 — y44..47. 하의가 윗줄을 덮습니다.
+// 8. 신발 — y42..45. 긴바지가 윗줄(42)을 덮어 3줄이 남습니다.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function shoeFrame(dir, spec) {
@@ -555,7 +631,7 @@ function shoeFrame(dir, spec) {
       s.set(19, y, spec.base)
       s.set(20, y, 'O')
     }
-    s.hspan(11, 20, Y.ground, 'O') // 밑창
+    s.hspan(11, 20, Y.ground, spec.soleC || 'O') // 밑창
     spec.detail?.(s, { dir, spec, top })
     return s
   }
@@ -571,7 +647,7 @@ function shoeFrame(dir, spec) {
       for (let x = a + 1; x <= b - 1; x++) s.set(x, y, spec.base)
       s.set(b, y, 'O')
     }
-    s.hspan(a, b, Y.ground, 'O') // 밑창
+    s.hspan(a, b, Y.ground, spec.soleC || 'O') // 밑창
   }
   spec.detail?.(s, { dir, spec, top })
   return s
@@ -581,11 +657,14 @@ const SHOES = {
   sneakers: {
     label: '운동화',
     base: 'E',
+    soleC: 'O',
     detail(s, { dir, top }) {
       if (isSide(dir)) {
         s.hspan(12, 16, top + 1, 'D') // 사선 스트라이프
         s.set(17, top + 2, 'D')
         s.set(18, top + 2, 'D')
+        s.set(12, Y.ground - 1, 'e') // 미드솔 — 줄 전체를 덮으면 흰 갑피가 안 남습니다
+        s.set(19, Y.ground - 1, 'e')
       } else {
         for (const [a, b] of [
           [10, 14],
@@ -593,6 +672,7 @@ const SHOES = {
         ]) {
           s.set(a + 2, top + 1, 'D')
           s.set(b - 2, top + 1, 'D')
+          s.set(a + 1, Y.ground - 1, 'e')
         }
       }
     },
@@ -600,8 +680,9 @@ const SHOES = {
   slippers: {
     label: '슬리퍼',
     base: 'n', // 반바지(카키)와 색이 겹치면 다리와 발이 한 덩어리로 보입니다
+    open: true,
     detail(s, { dir, top }) {
-      // 삼선 슬리퍼 — 흰 줄은 긴바지를 입어도 보이도록 y45 에 둡니다
+      // 삼선 슬리퍼 — 발등을 가로지르는 세 줄이 정체성입니다
       if (isSide(dir)) {
         s.hspan(12, 18, top, 'n')
         s.set(13, top + 1, 'E')
@@ -625,8 +706,8 @@ const SHOES = {
     detail(s, { dir, top }) {
       if (isSide(dir)) {
         s.hspan(12, 15, top + 1, 'O') // 구두끈 자리
-        s.set(18, top + 1, 'e') // 앞코 광
-        s.set(19, top + 1, 'e')
+        s.set(18, top + 1, 'B') // 앞코 광
+        s.set(19, top + 1, 'B')
       } else {
         // 끈은 점 하나로. 줄 전체를 덮으면 긴바지 아래에서 가죽색이 한 줄도 안 남습니다
         for (const [a, b] of [
@@ -634,7 +715,7 @@ const SHOES = {
           [17, 21],
         ]) {
           s.set(a + 2, top + 1, 'O') // 끈 매듭
-          s.set(a + 1, top + 2, 'e') // 앞코 광
+          s.set(a + 1, top + 2, 'B') // 앞코 광
         }
       }
     },
@@ -642,7 +723,11 @@ const SHOES = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 9. 모자 — 목 0 기준 y14..17 안착. y14 위로 절대 못 올라갑니다 (기린 한계).
+// 9. 모자 — y8..11 안착. y8 위로 절대 못 올라갑니다 (기린 한계).
+//
+//    개구리만 예외적으로 눈을 조금 덮습니다. 개구리는 **눈이 머리 꼭대기**라
+//    (y10-13) 모자를 얹을 자리가 눈밖에 없습니다. hatDy 를 어떻게 줘도
+//    눈을 피하면 모자가 허공에 뜹니다. 눈 아랫줄 두 줄이 남도록 잡았습니다.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const HATS = {
@@ -650,25 +735,28 @@ const HATS = {
     label: '학사모',
     frame(dir) {
       const s = new Sprite()
-      // 판 — 안착면 맨 윗줄을 꽉 채운다
-      s.hspan(10, 21, Y.hatSeat0, 'O')
-      s.hspan(11, 20, Y.hatSeat0 + 1, 'O')
+      /* 판을 x8..23 으로 넓혔습니다. 예전 x10..21 은 머리 폭과 같아서
+         '판'이 아니라 '띠'로 보였습니다. 학사모는 판이 튀어나와야 합니다. */
+      s.hspan(8, 23, Y.hatSeat0, 'O')
+      s.hspan(9, 22, Y.hatSeat0 + 1, 'n')
+      s.set(8, Y.hatSeat0 + 1, 'O')
+      s.set(23, Y.hatSeat0 + 1, 'O')
       // 두상 덮개
       s.hspan(12, 19, Y.hatSeat0 + 2, 'O')
+      s.hspan(13, 18, Y.hatSeat0 + 2, 'n')
       s.hspan(12, 19, Y.hatSeat1, 'O')
-      s.hspan(13, 18, Y.hatSeat0 + 2, 'n') // 살짝 밝은 면으로 판/모자 구분
       if (dir === 'down') {
-        s.set(15, Y.hatSeat0 + 1, 'B') // 가운데 단추
-        s.set(16, Y.hatSeat0 + 1, 'B')
-        // 술은 안착면 안(y17)까지만. 더 내리면 안경 윗테(y18)를 잘라먹습니다
-        s.vspan(20, Y.hatSeat0 + 1, Y.hatSeat1, 'B')
-        s.set(21, Y.hatSeat0 + 2, 'B')
+        s.set(15, Y.hatSeat0, 'B') // 가운데 단추
+        s.set(16, Y.hatSeat0, 'B')
+        /* 술은 판 끝(x23)에서 늘어집니다. 안경 슬롯이 x9-22 이라 한 칸
+           안쪽으로 늘어뜨리면 학사모가 안경 윗테를 잘라먹습니다. */
+        s.vspan(23, Y.hatSeat0 + 1, Y.hatHangMax, 'B')
       } else if (dir === 'up') {
-        s.set(15, Y.hatSeat0 + 1, 'B')
-        s.set(16, Y.hatSeat0 + 1, 'B')
-        s.vspan(11, Y.hatSeat0 + 1, Y.hatSeat1 + 1, 'B')
+        s.set(15, Y.hatSeat0, 'B')
+        s.set(16, Y.hatSeat0, 'B')
+        s.vspan(8, Y.hatSeat0 + 1, Y.hatHangMax, 'B')
       } else {
-        s.vspan(11, Y.hatSeat0 + 1, Y.hatHangMax, 'B') // 옆모습은 뒤로 늘어진다
+        s.vspan(8, Y.hatSeat0 + 1, Y.hatHangMax, 'B') // 옆모습은 뒤로 늘어진다
       }
       return s
     },
@@ -677,26 +765,32 @@ const HATS = {
     label: '볼캡',
     frame(dir) {
       const s = new Sprite()
-      s.hspan(12, 19, Y.hatSeat0, 'O')
-      s.hspan(11, 20, Y.hatSeat0 + 1, 'O')
-      s.hspan(13, 18, Y.hatSeat0, 'D')
-      s.hspan(12, 19, Y.hatSeat0 + 1, 'D')
-      s.set(11, Y.hatSeat0 + 2, 'O')
-      s.set(20, Y.hatSeat0 + 2, 'O')
+      // 크라운 — 위로 갈수록 좁아지는 돔
+      s.hspan(13, 18, Y.hatSeat0, 'O')
+      s.hspan(14, 17, Y.hatSeat0, 'D')
+      s.hspan(12, 19, Y.hatSeat0 + 1, 'O')
+      s.hspan(13, 18, Y.hatSeat0 + 1, 'D')
+      s.hspan(11, 20, Y.hatSeat0 + 2, 'O')
       s.hspan(12, 19, Y.hatSeat0 + 2, 'D')
 
+      /* 챙. 예전엔 크라운과 같은 폭·같은 계열 색의 1px 줄이라 정면에서
+         모자가 아니라 머리띠로 보였습니다. 크라운보다 넓히고 색을 낮춥니다. */
       if (dir === 'down') {
-        s.hspan(10, 21, Y.hatSeat1, 'd') // 챙이 앞으로 — 정면에선 넓게
-        s.set(10, Y.hatSeat1, 'O')
-        s.set(21, Y.hatSeat1, 'O')
+        s.hspan(9, 22, Y.hatSeat1, 'd')
+        s.set(9, Y.hatSeat1, 'O')
+        s.set(22, Y.hatSeat1, 'O')
+        s.set(15, Y.hatSeat0, 'e') // 정수리 단추
       } else if (dir === 'up') {
         s.hspan(11, 20, Y.hatSeat1, 'D')
+        s.set(10, Y.hatSeat1, 'O')
+        s.set(21, Y.hatSeat1, 'O')
         s.set(15, Y.hatSeat1, 'e') // 뒤 조절 스트랩
         s.set(16, Y.hatSeat1, 'e')
       } else {
-        s.hspan(12, 20, Y.hatSeat1, 'd') // 옆모습 — 챙이 보는 쪽으로
-        s.set(21, Y.hatSeat1, 'O')
-        s.set(11, Y.hatSeat1, 'O')
+        s.hspan(11, 22, Y.hatSeat1, 'd') // 옆모습 — 챙이 보는 쪽으로
+        s.set(22, Y.hatSeat1, 'O')
+        s.set(10, Y.hatSeat1, 'O')
+        s.set(11, Y.hatSeat1, 'D')
       }
       return s
     },
@@ -710,13 +804,13 @@ const HATS = {
       s.set(11, Y.hatSeat0 + 1, 'O')
       s.set(20, Y.hatSeat0 + 1, 'O')
       s.hspan(12, 19, Y.hatSeat0 + 1, 'J')
-      s.set(11, Y.hatSeat0 + 2, 'O')
-      s.set(20, Y.hatSeat0 + 2, 'O')
-      s.hspan(12, 19, Y.hatSeat0 + 2, 'J')
-      // 접단 — 안착면보다 1px 넓다
+      s.set(10, Y.hatSeat0 + 2, 'O')
+      s.set(21, Y.hatSeat0 + 2, 'O')
+      s.hspan(11, 20, Y.hatSeat0 + 2, 'J')
+      // 접단 — 안착면보다 1px 넓고 한 톤 어둡다
       s.hspan(10, 21, Y.hatSeat1, 'j')
-      s.set(10, Y.hatSeat1, 'O')
-      s.set(21, Y.hatSeat1, 'O')
+      s.set(9, Y.hatSeat1, 'O')
+      s.set(22, Y.hatSeat1, 'O')
       if (dir !== 'up') {
         s.set(14, Y.hatSeat0 + 1, 'j') // 뜨개 무늬
         s.set(17, Y.hatSeat0 + 2, 'j')
@@ -727,8 +821,25 @@ const HATS = {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 10. 안경 — y18..20. 모자 안착면(14-17)과 겹치지 않습니다.
+// 10. 안경 — y14..17. 모자 안착면(8-11)과 겹치지 않습니다.
+//
+//     알 안쪽은 **비워 둡니다.** 예전엔 밝은 천(E)으로 채웠는데, 8종 전부
+//     눈이 통째로 사라져서 '안경 낀 얼굴'이 아니라 '눈 없는 얼굴'이 됐습니다.
+//     선글라스만 예외로 알을 채웁니다 — 그건 선글라스의 정의입니다.
 // ─────────────────────────────────────────────────────────────────────────────
+
+/* 눈알 자리 — 시안 8종에서 잰 값입니다.
+   옆모습도 눈이 둘 다 보이고(보는 쪽으로 몰려 있을 뿐) 알 두 개가 x17 을
+   나눠 씁니다. 예전 옆모습 안경은 알을 하나만 그려서 반대쪽 눈이 맨눈이었습니다. */
+const LENS = { front: [[9, 14], [17, 22]], right: [[13, 18], [18, 22]] }
+/* left 프레임은 right 를 x->31-x 로 뒤집어 만듭니다. 알 자리도 같이 뒤집지
+   않으면 검사만 반대쪽을 봅니다. */
+const lensOf = (dir) =>
+  dir === 'left'
+    ? LENS.right.map(([a, b]) => [FRAME_W - 1 - b, FRAME_W - 1 - a])
+    : dir === 'right'
+      ? LENS.right
+      : LENS.front
 
 /** 뒷모습은 관자놀이에 걸린 다리만 보입니다 */
 function templesOnly(s, k) {
@@ -738,32 +849,39 @@ function templesOnly(s, k) {
   s.set(21, Y.face0 + 1, k)
 }
 
+/** 알 테두리만 그리고 안쪽은 비웁니다 */
+function rimOnly(s, dir, k, { thickTop } = {}) {
+  for (const [a, b] of lensOf(dir)) {
+    s.hspan(a + 1, b - 1, Y.face0, k) // 윗테
+    if (thickTop) {
+      s.set(a, Y.face0, k)
+      s.set(b, Y.face0, k)
+    }
+    s.set(a, Y.face0 + 1, k)
+    s.set(b, Y.face0 + 1, k)
+    s.set(a, Y.face0 + 2, k)
+    s.set(b, Y.face0 + 2, k)
+    s.hspan(a + 1, b - 1, Y.face1, k) // 아랫테
+  }
+  if (!isSide(dir)) {
+    s.set(15, Y.face0 + 1, k) // 브리지
+    s.set(16, Y.face0 + 1, k)
+  }
+}
+
 const GLASSES = {
   horn: {
     label: '뿔테',
     frame(dir) {
       const s = new Sprite()
       if (dir === 'up') return templesOnly(s, 'O'), s
+      rimOnly(s, dir, 'O', { thickTop: true })
       if (isSide(dir)) {
-        s.hspan(13, 17, Y.face0, 'O') // 두꺼운 윗테
-        s.set(13, Y.face0 + 1, 'O')
-        s.set(17, Y.face0 + 1, 'O')
-        s.hspan(14, 16, Y.face0 + 1, 'E')
-        s.hspan(14, 17, Y.face1, 'O')
-        s.hspan(18, 20, Y.face0, 'O') // 안경다리
-        return s
+        s.hspan(10, 12, Y.face0 + 1, 'O') // 안경다리는 뒤로
+      } else {
+        s.set(9, Y.face0 + 1, 'O') // 관자놀이 다리
+        s.set(22, Y.face0 + 1, 'O')
       }
-      s.hspan(10, 21, Y.face0, 'O') // 뿔테 — 윗테가 눈썹처럼 굵다
-      s.set(11, Y.face0 + 1, 'O')
-      s.set(14, Y.face0 + 1, 'O')
-      s.set(17, Y.face0 + 1, 'O')
-      s.set(20, Y.face0 + 1, 'O')
-      s.hspan(12, 13, Y.face0 + 1, 'E')
-      s.hspan(18, 19, Y.face0 + 1, 'E')
-      s.set(15, Y.face0 + 1, 'O') // 브리지
-      s.set(16, Y.face0 + 1, 'O')
-      s.hspan(12, 13, Y.face1, 'O')
-      s.hspan(18, 19, Y.face1, 'O')
       return s
     },
   },
@@ -772,56 +890,40 @@ const GLASSES = {
     frame(dir) {
       const s = new Sprite()
       if (dir === 'up') return templesOnly(s, 'H'), s
-      if (isSide(dir)) {
-        s.hspan(14, 16, Y.face0, 'H')
-        s.set(13, Y.face0 + 1, 'H')
-        s.set(17, Y.face0 + 1, 'H')
-        s.hspan(14, 16, Y.face0 + 1, 'E')
-        s.hspan(14, 16, Y.face1, 'H')
-        s.hspan(18, 20, Y.face0 + 1, 'H')
-        return s
-      }
-      // 동그란 알 두 개 — 모서리를 비워 원형으로 보이게
-      for (const a of [11, 17]) {
-        s.hspan(a + 1, a + 2, Y.face0, 'H')
-        s.set(a, Y.face0 + 1, 'H')
-        s.set(a + 3, Y.face0 + 1, 'H')
-        s.hspan(a + 1, a + 2, Y.face0 + 1, 'E')
-        s.hspan(a + 1, a + 2, Y.face1, 'H')
-      }
-      s.set(15, Y.face0 + 1, 'H') // 브리지
-      s.set(16, Y.face0 + 1, 'H')
+      rimOnly(s, dir, 'H') // 모서리를 비워 동그랗게
+      if (isSide(dir)) s.hspan(10, 12, Y.face0 + 1, 'H')
       return s
     },
   },
   sunglasses: {
     label: '선글라스',
+    opaque: true, // 알을 채우는 유일한 안경
     frame(dir) {
       const s = new Sprite()
       if (dir === 'up') return templesOnly(s, 'O'), s
-      if (isSide(dir)) {
-        s.box(13, Y.face0, 17, Y.face0 + 1, 'O')
-        s.set(14, Y.face0, 'N') // 반사광
-        s.hspan(18, 20, Y.face0, 'O')
-        return s
+      for (const [a, b] of lensOf(dir)) {
+        s.box(a, Y.face0, b, Y.face0 + 2, 'O')
+        s.set(a + 1, Y.face0, 'N') // 반사광
       }
-      s.box(11, Y.face0, 14, Y.face0 + 1, 'O') // 알이 꽉 찬 검은 렌즈
-      s.box(17, Y.face0, 20, Y.face0 + 1, 'O')
-      s.set(15, Y.face0, 'O')
-      s.set(16, Y.face0, 'O')
-      s.set(12, Y.face0, 'N')
-      s.set(18, Y.face0, 'N')
+      if (isSide(dir)) s.hspan(10, 12, Y.face0 + 1, 'O')
+      else {
+        s.set(15, Y.face0, 'O') // 브리지
+        s.set(16, Y.face0, 'O')
+      }
       return s
     },
   },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 11. 가방 — z50. 등 뒤로 튀어나오므로 x8..23 을 씁니다.
+// 11. 가방 — z50.
+//
+//     가방도 종별 실루엣으로 깎입니다. 그래서 몸 밖으로 나가는 부분은
+//     8종 중 몸이 가장 좁은 종(백조)에서 통째로 잘려 사라집니다.
+//     가방 덩어리는 8종 모두가 몸을 가진 x9..22 · y30..40 안에 둡니다.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** 에코백 밑단. 슬롯 아래끝(y42)에 맞춥니다 — 더 내리면 발목을 가립니다 */
-const BAG_HEM = SLOT.bag.rect[3]
+const BAG_HEM = 40 // 가방 밑단. 더 내리면 발목을 가립니다
 
 const BAGS = {
   backpack: {
@@ -830,77 +932,87 @@ const BAGS = {
       const s = new Sprite()
       if (dir === 'up') {
         // 뒷모습 — 가방 본체가 통째로 보인다
-        s.hspan(12, 19, Y.collar, 'O')
-        for (let y = Y.upper0; y <= Y.waist1 + 2; y++) {
-          s.set(11, y, 'O')
-          for (let x = 12; x <= 19; x++) s.set(x, y, 'G')
-          s.set(20, y, 'O')
+        s.hspan(11, 20, Y.collar + 1, 'O')
+        for (let y = Y.collar + 2; y <= BAG_HEM - 1; y++) {
+          s.set(10, y, 'O')
+          for (let x = 11; x <= 20; x++) s.set(x, y, 'G')
+          s.set(21, y, 'O')
         }
-        s.hspan(11, 20, Y.waist1 + 3, 'O')
-        s.hspan(13, 18, Y.fore1, 'O') // 앞주머니 선
-        s.hspan(13, 18, Y.hand0, 'B') // 버클
+        s.hspan(10, 21, BAG_HEM, 'O')
+        s.hspan(12, 19, Y.upper1, 'O') // 앞주머니 선
+        s.hspan(13, 18, Y.upper1 + 1, 'B') // 버클
+        s.set(12, Y.fore1, 'O')
+        s.set(19, Y.fore1, 'O')
         return s
       }
       if (dir === 'down') {
         // 정면 — 어깨끈만 보인다
-        for (const x of [12, 13, 18, 19]) s.vspan(x, Y.collar, Y.hand1, 'G')
-        for (const x of [12, 19]) s.vspan(x, Y.collar, Y.hand1, 'O')
-        s.hspan(13, 18, Y.fore0, 'B') // 가슴 스트랩
+        for (const [a, b] of [[11, 13], [18, 20]]) {
+          s.set(a, Y.collar, 'O')
+          s.set(b, Y.collar, 'O')
+          for (let y = Y.collar; y <= Y.fore0; y++) {
+            s.set(a, y, 'O')
+            s.set(a + 1, y, 'G')
+            s.set(b, y, 'O')
+            s.set(b - 1, y, 'G')
+          }
+        }
+        s.hspan(12, 19, Y.upper1, 'B') // 가슴 스트랩
         return s
       }
       // 옆모습 — 등 뒤로 불룩
-      s.hspan(9, 12, Y.upper0 - 1, 'O')
-      for (let y = Y.upper0; y <= Y.waist1; y++) {
-        s.set(8, y, 'O')
-        for (let x = 9; x <= 12; x++) s.set(x, y, 'G')
-        s.set(13, y, 'O')
+      s.hspan(10, 13, Y.collar + 1, 'O')
+      for (let y = Y.collar + 2; y <= BAG_HEM - 1; y++) {
+        s.set(9, y, 'O')
+        for (let x = 10; x <= 13; x++) s.set(x, y, 'G')
+        s.set(14, y, 'O')
       }
-      s.hspan(8, 13, Y.waist1 + 1, 'O')
-      s.set(9, Y.fore1, 'B')
-      s.vspan(14, Y.collar, Y.fore1, 'G') // 어깨끈
-      s.vspan(15, Y.collar, Y.upper1, 'O')
+      s.hspan(9, 14, BAG_HEM, 'O')
+      s.set(10, Y.fore0, 'B')
+      s.vspan(15, Y.collar, Y.fore0, 'G') // 어깨끈
+      s.vspan(16, Y.collar, Y.upper1, 'O')
       return s
     },
   },
   tote: {
     label: '에코백',
+    /* 예전 에코백은 끈이 밝은 회색(e) 대각선 점선이라 밝은 털 위에서
+       '긁힌 자국'이었고, 가방 몸통은 4x4 흰 사각형이라 이름표처럼 보였습니다.
+       끈을 갈색으로 바꾸고 몸통을 배 옆으로 8x7 만큼 키웠습니다.
+       가로 x15-21 · 세로 y31-38 은 8종이 전부 몸을 가진 자리라, 종별 맞춤에
+       깎여 사라지지 않습니다. */
     frame(dir) {
       const s = new Sprite()
-      if (dir === 'down' || dir === 'up') {
-        // 한쪽 어깨에 사선으로 멘 끈 + 반대쪽 허리에 걸린 가방
-        const strap = [
-          [13, Y.collar],
-          [13, Y.upper0],
-          [14, Y.upper1],
-          [15, Y.fore0],
-          [16, Y.fore1],
-          [17, Y.hand0],
-          [17, Y.hand1],
-          [18, Y.waist0],
-          [18, Y.waist1],
-        ]
-        for (const [x, y] of strap) s.set(x, y, 'e')
-        s.hspan(17, 21, Y.belt, 'O')
-        for (let y = Y.leg0; y <= BAG_HEM - 1; y++) {
-          s.set(17, y, 'O')
-          for (let x = 18; x <= 21; x++) s.set(x, y, 'E')
-          s.set(22, y, 'O')
+      const bagBody = (a, b, y0, y1, print) => {
+        s.hspan(a, b, y0, 'O')
+        for (let y = y0 + 1; y <= y1 - 1; y++) {
+          s.set(a, y, 'O')
+          for (let x = a + 1; x <= b - 1; x++) s.set(x, y, 'E')
+          s.set(b, y, 'O')
+          s.set(b - 1, y, 'e') // 접힌 면
         }
-        s.hspan(17, 22, BAG_HEM, 'O')
-        if (dir === 'down') s.box(19, Y.leg0 + 1, 20, Y.leg0 + 2, 'G') // 프린트
+        s.hspan(a, b, y1, 'O')
+        if (print) {
+          s.hspan(a + 2, b - 2, y0 + 3, 'G')
+          s.hspan(a + 3, b - 3, y0 + 4, 'G')
+        }
+      }
+      if (dir === 'down' || dir === 'up') {
+        // 한쪽 어깨에서 반대쪽 허리로 가로지르는 끈
+        for (const [x, y] of [
+          [11, Y.collar], [12, Y.collar], [11, Y.collar + 1], [12, Y.collar + 1],
+          [12, Y.collar + 2], [13, Y.collar + 2], [12, Y.upper0], [13, Y.upper0],
+          [13, Y.upper0 + 1], [14, Y.upper0 + 1], [13, Y.upper1], [14, Y.upper1],
+          [14, Y.fore0], [15, Y.fore0],
+        ])
+          s.set(x, y, 'H')
+        bagBody(15, 21, Y.upper0 + 1, Y.waist1 + 2, dir === 'down')
         return s
       }
-      // 옆모습 — 가방이 몸 앞뒤로 살짝 나온다
-      s.vspan(14, Y.collar, Y.upper1, 'e') // 어깨끈
-      s.vspan(14, Y.fore0, Y.waist1, 'e')
-      s.hspan(12, 17, Y.belt, 'O')
-      for (let y = Y.leg0; y <= BAG_HEM - 1; y++) {
-        s.set(11, y, 'O')
-        for (let x = 12; x <= 17; x++) s.set(x, y, 'E')
-        s.set(18, y, 'O')
-      }
-      s.hspan(11, 18, BAG_HEM, 'O')
-      s.set(13, Y.leg0 + 1, 'e')
+      // 옆모습 — 끈이 어깨에서 곧게 내려오고 가방이 몸 옆에 붙는다
+      s.vspan(13, Y.collar, Y.upper1, 'H')
+      s.vspan(14, Y.collar, Y.upper1, 'H')
+      bagBody(13, 19, Y.upper0 + 1, Y.waist1 + 2, true)
       return s
     },
   },
@@ -945,14 +1057,15 @@ function mannequinFrame(dir) {
   }
 
   // ── 몸통 (기본 상의 + 팔 기둥)
+  //    팔뚝(y33-35)·손(y36) 자리는 시안 8종을 재서 맞춘 값입니다 — Y 상수 주석 참고.
+  const hands = handCols(dir)
   s.hspan(x0 + 1, x1 - 1, Y.shoulder, O)
   for (let y = Y.collar; y <= Y.belt; y++) {
     put(x0, y, O)
     put(x1, y, O)
     for (let x = x0 + 1; x <= x1 - 1; x++) {
       if (arms.includes(x)) {
-        // item-spec §3: 소매 / 팔뚝(맨살) / 손(맨살)
-        if (y >= Y.hand0 && y <= Y.hand1) put(x, y, SKIN)
+        if (y >= Y.hand0 && y <= Y.hand1) put(x, y, hands.includes(x) ? SKIN : BODY_TOP)
         else if (y >= Y.fore0 && y <= Y.fore1) put(x, y, SKIN_SHADE)
         else if (y >= Y.upper0) put(x, y, BODY_TOP_SHADE)
         else put(x, y, BODY_TOP)
@@ -1008,6 +1121,10 @@ const mannequinResolve = (k) => (k ? (k === 'O' ? hex(PALETTE.O) : hex(k)) : nul
 const errors = []
 const fail = (msg) => errors.push(msg)
 
+/** layout.json 은 좌표의 정답입니다. 읽고 나면 종 목록도 여기서 가져옵니다. */
+let LAYOUT = null
+let SPECIES = []
+
 /** 상위 규격(layout.json)과 어긋나면 여기서 잡습니다 */
 function checkAgainstLayout() {
   let L
@@ -1017,6 +1134,8 @@ function checkAgainstLayout() {
     fail(`layout.json 을 읽을 수 없습니다: ${LAYOUT_JSON}`)
     return
   }
+  LAYOUT = L
+  SPECIES = L.species.map((sp) => sp.name)
   const eq = (name, got, want) => {
     if (JSON.stringify(got) !== JSON.stringify(want))
       fail(`규격 드리프트 — ${name}: build-items=${JSON.stringify(got)} layout.json=${JSON.stringify(want)}`)
@@ -1064,7 +1183,7 @@ function checkItem(name, slot, frames) {
         for (let y = 0; y < Y.hatSeat0; y++)
           if (s.get(x, y)) fail(`${name}/${dir}: 모자가 y${y} — y${Y.hatSeat0} 위는 기린이 타이머를 침범합니다`)
     if (slot === 'torso')
-      for (const a of armCols(dir))
+      for (const a of handCols(dir))
         for (let y = Y.hand0; y <= Y.hand1; y++)
           if (s.get(a, y)) fail(`${name}/${dir}: 상의가 손을 덮었습니다 (${a},${y})`)
   }
@@ -1091,20 +1210,21 @@ function composite(mannequin, layers, dir) {
    종별 맞춤 — 옷을 몸 실루엣 안으로 깎습니다.
 
    상의는 x5-26 사각형으로 그려집니다. 그런데 시안 8종은 어깨 높이와 몸통
-   폭이 제각각이라(목 긴 종은 어깨가 8줄 아래에서 시작합니다) 그대로 얹으면
+   폭이 제각각이라(거북이는 목이 없고 백조는 목이 8줄입니다) 그대로 얹으면
    소매가 몸 밖으로 판때기처럼 튀어나옵니다.
 
    그래서 옷 한 벌만 그려두고, 종마다 그 종의 몸 실루엣으로 깎아 냅니다.
    잘린 자리에는 테두리를 다시 칠합니다 — 안 그러면 단면이 속살처럼 보입니다.
 
+   **방향마다 따로 깎습니다.** 예전엔 정면 한 장으로 잰 가로 구간을 네 방향에
+   같이 썼는데, (1) 옆모습은 몸이 1px 어긋나 있고 (2) 가로 구간은 손과 몸통
+   사이의 1px 틈을 메워 버려서, 백조 어깨와 기린 손 옆에 옷이 허공에 떠
+   있었습니다(종당 최대 14px).
+
    하의·신발·모자·안경은 8종이 이미 같은 자리라 깎지 않습니다.
    ─────────────────────────────────────────────────────────────────────────── */
-function fitToSilhouette(frame, mask) {
+function fitToSilhouette(frame, inside) {
   const out = new Sprite()
-  const inside = (x, y) => {
-    const r = mask[y]
-    return !!r && x >= r[0] && x <= r[1]
-  }
   for (let y = 0; y < FRAME_H; y++)
     for (let x = 0; x < FRAME_W; x++) {
       const k = frame.get(x, y)
@@ -1123,7 +1243,48 @@ function fitToSilhouette(frame, mask) {
   return out
 }
 
-function overlapTest(mannequin, items) {
+/**
+ * 캐릭터 시트에서 종별 몸 지도를 잽니다.
+ *   body[dir][y*32+x]  그 자리에 몸이 있는가
+ *   neckY              목이 끝나고 어깨가 시작하는 줄
+ *
+ * neckY 가 필요한 이유: 백조·알파카·기린은 y25 부터 y32 까지가 **목**입니다.
+ * 옷을 y26 부터 채우면 목까지 감싸서 터틀넥이 되고, 짧은 목을 가진 거북이와
+ * 완전히 다른 옷처럼 보입니다. 그래서 몸통 아이템은 목 위를 잘라 냅니다.
+ * 기준은 "여기부터 벨트까지 계속 14px 이상 넓은 첫 줄" — 즉 어깨입니다.
+ */
+function measureSpecies(slug) {
+  const img = readPNG(resolve(CHAR_DIR, slug + '.png'))
+  if (img.w !== FRAME_W * DIRS.length || img.h !== FRAME_H)
+    throw new Error(`${slug}.png 가 ${FRAME_W * DIRS.length}x${FRAME_H} 가 아닙니다`)
+  const body = {}
+  DIRS.forEach((dir, i) => {
+    const m = new Uint8Array(FRAME_W * FRAME_H)
+    for (let y = 0; y < FRAME_H; y++)
+      for (let x = 0; x < FRAME_W; x++)
+        m[y * FRAME_W + x] = img.px[(y * img.w + i * FRAME_W + x) * 4 + 3] > 0 ? 1 : 0
+    body[dir] = m
+  })
+  const width = (y) => {
+    let n = 0
+    for (let x = 0; x < FRAME_W; x++) if (body.down[y * FRAME_W + x]) n++
+    return n
+  }
+  /* 어깨는 "몸통에서 가장 넓은 줄에서 위로 올라가다가 좁아지는 곳" 입니다.
+     벨트(y37)에서 시작하면 안 됩니다 — 개구리·펭귄은 y37 이 이미 다리
+     너비(12px)라 첫 줄에서 멈춰 버려 상의가 통째로 잘렸습니다. */
+  const SHOULDER_W = 14 // 옷깃이 앉을 만한 최소 어깨 폭
+  let widest = Y.collar
+  for (let y = Y.collar; y <= Y.belt; y++) if (width(y) > width(widest)) widest = y
+  let neckY = widest
+  for (let y = widest; y >= Y.collar; y--) {
+    if (width(y) < SHOULDER_W) break
+    neckY = y
+  }
+  return { body, neckY }
+}
+
+function overlapTest(mannequin, items, fit) {
   const results = []
   const check = (name, ok, detail) => results.push({ name, ok, detail })
   const L = (slot, id) => ({ z: SLOT[slot].z, frames: items[slot][id].frames })
@@ -1132,7 +1293,8 @@ function overlapTest(mannequin, items) {
      예전엔 팔이 1px 기둥이고 손이 2줄이라 곱하기 2 가 박혀 있었는데,
      시안 팔은 4px 이고 손·팔뚝도 3줄이라 구간 길이에서 계산합니다. */
   const armW = DIRS.reduce((n, d) => n + armCols(d).length, 0)
-  const handPixels = armW * (Y.hand1 - Y.hand0 + 1)
+  const handW = DIRS.reduce((n, d) => n + handCols(d).length, 0)
+  const handPixels = handW * (Y.hand1 - Y.hand0 + 1)
   const forePixels = armW * (Y.fore1 - Y.fore0 + 1)
 
   // ── 손 노출: 긴팔을 입어도 마네킹 손이 남아 있어야 한다
@@ -1140,7 +1302,7 @@ function overlapTest(mannequin, items) {
     let visible = 0
     for (const dir of DIRS) {
       const c = composite(mannequin, [L('torso', id)], dir)
-      for (const a of armCols(dir))
+      for (const a of handCols(dir))
         for (let y = Y.hand0; y <= Y.hand1; y++) if (c.get(a, y) === SKIN) visible++
     }
     check(`손 노출 · ${TOPS[id].label}(긴팔)`, visible === handPixels, `손 픽셀 ${visible}/${handPixels}`)
@@ -1247,6 +1409,48 @@ function overlapTest(mannequin, items) {
     check('모자 밑 안경 생존', bad.length === 0, bad.length ? bad.slice(0, 4).join(', ') : '9조합 x 4방향 안경 온전')
   }
 
+  /* ── 허공에 뜬 옷: 종별로 깎은 판이 그 종 몸 밖에 픽셀을 남기면 안 됩니다.
+        예전 맞춤은 가로 구간만 봐서 손 옆 1px 틈과 백조 어깨 틈을 메웠고,
+        그게 "소매가 떠 있다" 로 보였습니다. */
+  {
+    let bad = []
+    let n = 0
+    for (const sp of SPECIES)
+      for (const slot of fit.FIT_SLOTS)
+        for (const [id, it] of Object.entries(items[slot])) {
+          const f = fit.fittedFrames(slot, it.frames, sp)
+          for (const dir of DIRS) {
+            n++
+            const m = fit.SIL[sp].body[dir]
+            let out = 0
+            for (let y = 0; y < FRAME_H; y++)
+              for (let x = 0; x < FRAME_W; x++)
+                if (f[dir].get(x, y) && !m[y * FRAME_W + x]) out++
+            if (out) bad.push(`${sp}/${id}/${dir} ${out}px`)
+          }
+        }
+    check('허공에 뜬 옷', bad.length === 0, bad.length ? bad.slice(0, 4).join(', ') : `${n}판 전부 몸 안`)
+  }
+
+  /* ── 눈 노출: 선글라스가 아닌 안경은 알을 비워 둬야 캐릭터 눈이 보입니다.
+        알을 밝은 천(E)으로 채웠더니 8종 전부 눈이 사라졌습니다. */
+  {
+    let bad = []
+    for (const [id, it] of Object.entries(items.face)) {
+      if (it.spec.opaque) continue
+      for (const dir of DIRS) {
+        if (dir === 'up') continue // 뒷모습은 관자놀이 다리만 있습니다
+        let filled = 0
+        for (const [a, b] of lensOf(dir))
+          for (let x = a + 1; x <= b - 1; x++)
+            for (let y = Y.face0 + 1; y <= Y.face1 - 1; y++)
+              if (it.frames[dir].get(x, y)) filled++
+        if (filled) bad.push(`${id}/${dir} ${filled}px`)
+      }
+    }
+    check('안경 알 비움', bad.length === 0, bad.length ? bad.join(', ') : '뿔테·동그란테 알 안쪽 투명')
+  }
+
   return results
 }
 
@@ -1290,6 +1494,24 @@ function main() {
     process.exit(1)
   }
 
+  /* 종별 몸 지도 — 캐릭터 시트에서 잽니다. 못 읽으면 맞춤 없는 판이
+     그대로 커밋되므로 조용히 넘어가지 않고 멈춥니다. */
+  const SIL = {}
+  for (const sp of SPECIES) SIL[sp] = measureSpecies(sp)
+
+  const FIT_SLOTS = new Set(['torso', 'bag']) // 하의·신발·모자·안경은 8종이 같은 자리
+  const fittedFrames = (_slot, frames, sp) => {
+    const { body, neckY } = SIL[sp]
+    const out = {}
+    for (const dir of DIRS) {
+      const m = body[dir]
+      /* 목 위는 잘라 냅니다. 백조·알파카는 y26-32 가 목이라, 안 자르면 옷은
+         터틀넥이 되고 가방끈은 목걸이가 됩니다. */
+      out[dir] = fitToSilhouette(frames[dir], (x, y) => y >= neckY && !!m[y * FRAME_W + x])
+    }
+    return out
+  }
+
   // 쓰기
   const DIRMAP = { torso: 'tops', legs: 'bottoms', feet: 'shoes', hat: 'hats', face: 'glasses', bag: 'bags' }
   for (const d of Object.values(DIRMAP)) mkdirSync(resolve(OUT, d), { recursive: true })
@@ -1301,21 +1523,14 @@ function main() {
     written.push(`${folder}/${file}.png`)
   }
 
-  /* 종별 실루엣. 파일이 없으면 맞춤 단계를 건너뜁니다 (기존 동작 유지). */
-  let SIL = null
-  try {
-    SIL = JSON.parse(readFileSync(SILHOUETTE_JSON, 'utf8'))
-  } catch {
-    console.log('  (silhouettes.json 이 없어 종별 맞춤을 건너뜁니다)')
-  }
-  const FIT_SLOTS = new Set(['torso', 'bag']) // 하의·신발·모자·안경은 8종이 같은 자리
   const putFitted = (slot, folder, file, frames, mode) => {
-    if (!SIL || !FIT_SLOTS.has(slot)) return
-    for (const [sp, mask] of Object.entries(SIL)) {
-      const fitted = {}
-      for (const dir of DIRS) fitted[dir] = fitToSilhouette(frames[dir], mask)
+    if (!FIT_SLOTS.has(slot)) return
+    for (const sp of SPECIES) {
       mkdirSync(resolve(OUT, 'fitted', sp, folder), { recursive: true })
-      writeFileSync(resolve(OUT, 'fitted', sp, folder, file + '.png'), sheet(fitted, mode).toPNG())
+      writeFileSync(
+        resolve(OUT, 'fitted', sp, folder, file + '.png'),
+        sheet(fittedFrames(slot, frames, sp), mode).toPNG()
+      )
     }
   }
 
@@ -1356,7 +1571,7 @@ function main() {
   written.push('_test/mannequin.png')
 
   // 겹침 테스트
-  const results = overlapTest(mannequin, items)
+  const results = overlapTest(mannequin, items, { SIL, fittedFrames, FIT_SLOTS })
 
   writeFileSync(resolve(OUT, 'items.json'), JSON.stringify(manifest, null, 2))
   writeFileSync(resolve(OUT, 'items.js'), `// 자동 생성 — scripts/build-items.mjs\n// preview.html 이 file:// 에서도 읽을 수 있게 JS 로도 냅니다.\nwindow.ITEMS = ${JSON.stringify(manifest, null, 2)}\n`)

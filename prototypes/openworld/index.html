@@ -7743,7 +7743,10 @@ function loadItemImg(path) {
   if (ITEM_IMG[path]) return ITEM_IMG[path];
   const img = new Image();
   itemsPending++;
-  img.onload = () => { if (--itemsPending === 0) repaintOpenPanel(); };
+  /* 그림이 늦게 오면 그 전에 구워 둔 시트는 '깎기 전' 판입니다. 구운 것을
+     버려야 다음 프레임에 제대로 다시 굽습니다 — 안 그러면 종 실루엣에 안 맞는
+     소매가 캐시에 눌러앉아 새로고침 전까지 그대로 남습니다. */
+  img.onload = () => { invalidateDressed(); if (--itemsPending === 0) repaintOpenPanel(); };
   img.onerror = () => { itemsPending--; };            // 그림이 없으면 색 블록으로 물러납니다
   img.src = ITEM_BASE + path;
   ITEM_IMG[path] = img;
@@ -7751,7 +7754,7 @@ function loadItemImg(path) {
 }
 const itemReady = (img) => !!img && img.complete && img.naturalWidth > 0;
 
-const MANNEQUIN = loadItemImg('mannequin.png');
+const MANNEQUIN = loadItemImg('_test/mannequin.png');
 
 /* ==================================================================
    캐릭터 — 32x48 시트
@@ -7785,7 +7788,9 @@ const CHAR_SPECIES = {
   '기린':     { slug: 'giraffe',  line: '#82461e', hatDy: 0,  eyeDy: 0 },
   '펭귄':     { slug: 'penguin',  line: '#1a1a24', hatDy: -1, eyeDy: 0 },
   '햄스터':   { slug: 'hamster',  line: '#6b3d18', hatDy: -1, eyeDy: 0 },
-  '개구리':   { slug: 'frog',     line: '#1e5a1e', hatDy: 1,  eyeDy: -4 },
+  /* 개구리만 hatDy 를 0 으로 둡니다. 개구리는 눈이 머리 꼭대기(y10-13)라
+     모자를 어디에 놔도 눈을 덮습니다. 0 이면 눈 아랫줄 두 줄이 남습니다. */
+  '개구리':   { slug: 'frog',     line: '#1e5a1e', hatDy: 0,  eyeDy: -4 },
   '고슴도치': { slug: 'hedgehog', line: '#28140a', hatDy: -2, eyeDy: 0 },
   '알파카':   { slug: 'alpaca',   line: '#785a46', hatDy: -1, eyeDy: 0 },
   '백조':     { slug: 'swan',     line: '#6e6e78', hatDy: 0,  eyeDy: 0 },
@@ -7868,6 +7873,12 @@ const followsHead = (it) => it.cat === 'hat' || it.cat === 'face';
 /* 옷을 입힌 시트 한 장. 종·입은 것·학교색이 그대로면 다시 굽지 않습니다 —
    60fps 로 매 프레임 합성하면 그리는 것보다 합성이 비쌉니다. */
 let dressedCache = null, dressedKey = '';
+/** 구워 둔 캐릭터 시트를 전부 버립니다. 그림이 늦게 도착했을 때 부릅니다. */
+function invalidateDressed() {
+  dressedCache = null;
+  otherCache.clear();
+  varsityCache.clear();
+}
 function dressedSheet() {
   const sp = speciesOf(ROOM.character);
   const key = sp.slug + '|' + JSON.stringify(ROOM.worn || {}) + '|' + schoolColor();
@@ -7942,9 +7953,21 @@ window.GIRIN_CHAR = {
   },
 };
 
+/* 종별로 깎은 판까지 미리 받습니다. 예전엔 처음 입는 순간에야 요청이
+   나가서, 그 프레임에는 안 깎인 판이 캐시에 들어갔고 새로고침 전까지
+   소매가 몸 밖으로 튀어나온 채였습니다. 한 장이 수백 바이트라 다 받아도
+   가볍습니다. */
 for (const it of SHOP) {
   if (it.sprite) loadItemImg(it.sprite);
   if (it.recolor) { loadItemImg(it.recolor.base); loadItemImg(it.recolor.mask); }
+  if (!FITTED_CATS[it.cat]) continue;
+  for (const sp of Object.values(CHAR_SPECIES)) {
+    if (it.sprite) loadItemImg(fittedPath(it, sp.slug));
+    if (it.recolor) {
+      loadItemImg('fitted/' + sp.slug + '/' + it.recolor.base);
+      loadItemImg('fitted/' + sp.slug + '/' + it.recolor.mask);
+    }
+  }
 }
 
 /* 과잠 — 무채색 마스크에 학교 색을 곱하면 회색 2단계가 그대로 명암이

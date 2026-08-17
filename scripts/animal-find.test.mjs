@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+const html = readFileSync('prototypes/openworld/index.html', 'utf8')
+
+assert.match(html, /const ANIMAL_FIND =/)
+assert.match(html, /animal-find-engine\.mjs/)
+assert.match(html, /panel: 'animalFind'/)
+assert.match(html, /title: '동물 기억력 게임'/)
+assert.match(html, /data-do="animal-find-start"/)
+assert.match(html, /data-animal-memory-index/)
+assert.match(html, /PREVIEW/)
+assert.match(html, /girin\.animalMemory\.highScore/)
+assert.match(html, /handleAnimalFindPress/)
+assert.match(html, /animal-memory-card-inner/)
+assert.match(html, /window\.ANIMAL_FIND_ENGINE/)
+assert.match(html, /clearAnimalFindTimers/)
+assert.match(html, /resolveTimerId/)
+assert.doesNotMatch(html, /x: 32, y: 7, name: '기린 목 쌓기', panel: 'giraffeStack'/)
+
+console.log('animal find wiring: OK')

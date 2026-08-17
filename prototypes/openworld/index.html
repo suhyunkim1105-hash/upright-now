@@ -382,6 +382,35 @@
   #cam-wrap[data-posture="warning"] #cam-badge { display: inline-flex; background: #D98324; }
   #cam-wrap[data-posture="bad"]     #cam-badge { display: inline-flex; background: #E0483A; }
 
+  /* ---------- 회의 모드 ----------
+     알림만 끕니다. 판정·코인·축 누적은 그대로 돕니다.
+     **꺼져 있다는 사실이 보여야 합니다.** 조용해진 것과 고장난 것을
+     구별할 방법이 없으면, 회의가 끝나고도 켜는 걸 잊습니다. */
+  #cam-wrap.quiet::after {
+    /* 자세 배지 **바로 아래**. 아래쪽에 두면 얼굴 껐을 때 '얼굴 꺼짐'
+       알약과 겹칩니다(PIP 가 160px 이라 가로로 피할 자리가 없습니다). */
+    content: '🔇 알림 끔'; position: absolute; left: 6px; top: 26px; z-index: 2;
+    padding: 2px 7px; border-radius: 999px;
+    background: rgba(20,16,14,.72); color: #fff;
+    font-size: 9.5px; font-weight: 700; letter-spacing: -.01em;
+  }
+  #session #cam-btns button[aria-pressed="true"] { background: var(--teal-600, #159); }
+  /* 회의 요약 — 회의가 끝난 그 자리에서 한 번만. 회고 화면을 세션 도중에
+     열게 하지 않으려고 카드로 둡니다. */
+  #quiet-sum {
+    margin: 8px 0 0; padding: 9px 11px; border-radius: 11px;
+    background: var(--teal-50); border-left: 3px solid var(--teal);
+    font-size: 11.5px; line-height: 1.65; color: var(--ink-2);
+  }
+  #quiet-sum b { color: var(--ink); }
+  #quiet-sum button {
+    display: block; margin: 7px 0 0; padding: 4px 10px; min-width: 0;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+    font-size: 11px; cursor: pointer; box-shadow: none;
+  }
+  #quiet-sum button::before { content: none; }
+  #session.pip #quiet-sum { font-size: 10.5px; padding: 7px 9px; }
+
   /* 얼굴을 끄면 이 자리에 내 캐릭터가 뜹니다. 빈 칸이나 사람 아이콘을
      두면 "카메라가 고장났나" 로 읽힙니다 — 내가 거기 있다는 표시가 필요합니다. */
   #cam-avatar {
@@ -1079,12 +1108,14 @@
     <div id="cam-avatar" aria-hidden="true"><span>얼굴 꺼짐</span></div>
     <div id="cam-badge" aria-hidden="true"><b id="cam-badge-i">•</b><span id="cam-badge-t"></span></div>
     <div id="cam-btns">
+      <button type="button" id="cam-quiet" aria-pressed="false" title="회의 모드 (알림만 끕니다)">🔔</button>
       <button type="button" id="cam-face" aria-pressed="false" title="얼굴 끄기 (판정은 계속 돕니다)">🙂</button>
       <button type="button" id="cam-move" title="자리 옮기기">⇕</button>
     </div>
     <div id="cam-msg">카메라를 여는 중이에요</div>
   </div>
   <p class="state" id="state-label">측정 준비</p>
+  <div id="quiet-sum" hidden role="status" aria-live="polite"></div>
   <div class="stats">
     <div class="stat"><u>세션 시간</u><b id="sit-time">0:00</b></div>
     <div class="stat"><u>회복</u><b id="lm-count">0</b></div>
@@ -6021,6 +6052,83 @@ const SAY_QUIET_MS = 30000;
 const sayEl = document.getElementById('say');
 const SAY = { until: 0, last: { warning: 0, bad: 0 }, count: { warning: 0, bad: 0 }, timer: 0 };
 
+/* ================== 회의 모드 ==================
+   회의·발표 중에는 캐릭터가 말을 걸면 안 됩니다. 그런데 **측정을 끄면
+   안 됩니다** — 코인의 분모가 판정 시간이라(AGENTS.md §2.2) 측정을 끄는
+   순간 회의 시간이 통째로 0 이 되고, 그러면 회의가 잦은 사람은 이 앱을
+   쓸 이유가 없어집니다. 그래서 **알림만** 끕니다.
+
+   구현은 스냅숏 하나입니다. 켤 때 지금까지의 누적을 적어 두고, 끌 때
+   차이를 냅니다 — 회의용 카운터를 따로 두면 두 군데서 같은 값을 세게
+   되고, 둘이 어긋나는 순간 어느 쪽이 맞는지 알 수 없습니다.
+
+   끌 때 요약을 한 번 보여 줍니다. 회고 화면을 쓰지 않는 이유는 그게
+   "세션을 끝내야 볼 수 있는" 화면이기 때문입니다 — 회의는 세션 중간에
+   끝나므로 그 규칙을 깨지 않으려고 자리에 카드로 둡니다. */
+const QUIET = { on: false, at: 0, snap: null };
+const quietBtn = document.getElementById('cam-quiet');
+const quietSum = document.getElementById('quiet-sum');
+
+function quietSnapshot() {
+  return { good: LIVE.goodMs, warn: LIVE.warnMs, bad: LIVE.badMs, axis: { ...AXIS.ms } };
+}
+
+function setQuiet(on) {
+  on = !!on;
+  if (on === QUIET.on) return;
+  if (on) {
+    QUIET.on = true; QUIET.at = Date.now(); QUIET.snap = quietSnapshot();
+    if (quietSum) quietSum.hidden = true;
+    sayEl.classList.remove('on'); clearTimeout(SAY.timer); SAY.until = 0;   // 떠 있던 말풍선도 즉시 내립니다
+  } else {
+    QUIET.on = false;
+    showQuietSummary();
+    QUIET.snap = null;
+  }
+  camWrap.classList.toggle('quiet', QUIET.on);
+  if (quietBtn) {
+    quietBtn.setAttribute('aria-pressed', String(QUIET.on));
+    quietBtn.textContent = QUIET.on ? '🔇' : '🔔';
+    quietBtn.title = QUIET.on ? '회의 모드 끄기' : '회의 모드 (알림만 끕니다)';
+  }
+  /* 새로고침 뒤로 **안 남깁니다.** 회의는 한 번 지나가는 것인데 이 상태가
+     남으면, 알림이 꺼진 줄 모르고 계속 쓰다가 자세 알림을 영구히 잃습니다. */
+}
+
+function showQuietSummary() {
+  if (!quietSum || !QUIET.snap) return;
+  const s = QUIET.snap;
+  const good = LIVE.goodMs - s.good, warn = LIVE.warnMs - s.warn, bad = LIVE.badMs - s.bad;
+  const tot = good + warn + bad;
+  const mins = Math.round((Date.now() - QUIET.at) / 60000);
+
+  /* 판정이 1분도 안 돌았으면 비율을 안 씁니다. 30초를 100% 로 부풀려
+     보여 주는 것은 지어낸 값입니다. */
+  if (tot < 60000) {
+    quietSum.innerHTML = `회의 모드를 <b>${mins || 1}분</b> 켰어요. 그동안 판정이
+      충분히 돌지 않아 요약할 값이 없어요.<button type="button" data-quiet-close>확인</button>`;
+    quietSum.hidden = false;
+    return;
+  }
+  const pct = (v) => Math.round((v / tot) * 100);
+  /* 회의 구간에서 가장 오래 벗어난 갈래 하나. 처방 표를 그대로 씁니다 —
+     회의용 문구를 따로 쓰면 같은 말이 두 군데에 생깁니다. */
+  const top = STRETCH
+    .map((g) => ({ g, ms: g.axes.reduce((a, k) => a + ((AXIS.ms[k] || 0) - (s.axis[k] || 0)), 0) }))
+    .sort((a, b) => b.ms - a.ms)[0];
+  const worst = top && top.ms > 20000
+    ? ` 제일 오래 벗어난 건 <b>${top.g.name}</b>이었어요.` : '';
+  quietSum.innerHTML = `회의 모드 <b>${mins}분</b> — 그동안도 계속 재고 있었어요.
+    편했던 시간 <b>${pct(good)}%</b> · 앞으로 나옴 ${pct(warn)}% · 오래 굽음 ${pct(bad)}%.${worst}
+    <button type="button" data-quiet-close>확인</button>`;
+  quietSum.hidden = false;
+}
+
+quietBtn?.addEventListener('click', () => setQuiet(!QUIET.on));
+quietSum?.addEventListener('click', (e) => {
+  if (e.target.closest('[data-quiet-close]')) quietSum.hidden = true;
+});
+
 /** 세션이 새로 시작하면 상한과 간격을 비웁니다. */
 function resetSay() {
   SAY.until = 0; SAY.last = { warning: 0, bad: 0 }; SAY.count = { warning: 0, bad: 0 };
@@ -6034,6 +6142,7 @@ function saySomething(kind) {
   /* 꺼 두면 아무것도 안 뜹니다. 자세 판정과 코인은 그대로 돕니다 —
      알림만 끄는 것이지 기능을 끄는 것이 아닙니다. */
   if (ROOM.sayOn === 'off') return;
+  if (QUIET.on) return;                 // 회의 중 — 여기가 회의 모드의 전부입니다
   const now = Date.now();
   /* 앉은 직후는 조용히 */
   if (SESSION.seatedAt && now - SESSION.seatedAt < SAY_QUIET_MS) return;

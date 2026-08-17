@@ -6115,22 +6115,198 @@ function paintPosture(kind) {
    고장난 것으로 읽힙니다. */
 let faceOff = false, avatarCv = null;
 /* ================== PIP 얼굴 ==================
-   전신 32x48 을 PIP 크기에 넣으면 표정이 한두 픽셀이라 다섯 상태가 전부
-   비슷해 보입니다. **머리만 잘라 크게** 키웁니다 — 모자·안경은 머리에
-   그려지므로 쓰고 있는 것이 그대로 따라옵니다.
+   전신 32x48 을 PIP 에 넣으면 표정이 한두 픽셀이라 다섯 상태가 다 비슷해
+   보입니다. 그렇다고 **고정 좌표로 머리를 자르면** 종마다 머리 높이가
+   달라서(고슴도치는 y4 에서 시작하고 개구리는 y9) 어떤 종은 턱이 잘리고
+   어떤 종은 위가 비어 보입니다. 앞 판이 그래서 잘려 보였습니다.
 
-   표정은 스프라이트에 없습니다. 그래서 눈썹·눈꺼풀·입·땀·반짝임을
-   **위에 얹어서** 만듭니다. 종마다 얼굴 색이 달라 지우고 다시 칠하지
-   않고, 더하기만 합니다 — 지우려면 종별 피부색을 알아야 하는데 그러면
-   종이 늘 때마다 표가 하나 더 생깁니다.
+   그래서 이번에는 **얼굴을 따로 굽습니다.**
 
-   눈 위치는 종별 eyeDy 로 압니다(안경을 그 값으로 맞춰 뒀습니다).
-   렌즈가 x11~20 이므로 왼눈 12~14, 오른눈 17~19, 가운데 15~16 입니다. */
-const FACE_H = 21;                       // 목(y20) 위까지가 얼굴입니다
+     1) 시트에서 머리 경계를 **재서** 잘라냅니다 (고정 crop 이 아닙니다).
+        모자를 쓰면 꼭대기가 따라 올라가고, 가로도 재서 자르므로
+        PIP 안에서 얼굴이 늘 한가운데에 꽉 찹니다.
+     2) 눈을 지워 **민얼굴 판** 하나를 만듭니다 — 이것이 "하나의 얼굴"입니다.
+     3) 그 판 위에 다섯 상태를 그립니다. 눈·눈썹·입이 상태마다 다릅니다.
 
-function faceOf(sp) {
-  const ey = 15 + (sp.eyeDy || 0);       // 눈동자 줄
-  return { ey, lx: 12, rx: 17, cx: 15, my: ey + 5 };
+   눈을 **지우고 다시 그리는** 것이 핵심입니다. 위에 얹기만 하면 원래 눈이
+   비쳐서 감은 눈·웃는 눈을 만들 수 없고, 그래서 다섯 상태가 다 비슷해집니다.
+
+   아래 표의 숫자는 assets/characters/*.png 의 down 프레임을 **직접 재서**
+   넣은 값입니다. 종이 늘면 여기 한 줄이 늘어납니다. */
+const FACE_BOTTOM = 24;                  // 머리·목 경계 (characters/layout.json 의 headBottomY)
+const FACE_PAD = { top: 4, bot: 2, side: 3 };   // 위는 zᶻ·반짝임, 아래는 처짐 자리
+/* 여백은 **아낍니다.** 머리가 17줄인데 위아래로 9줄을 비우면 PIP 안에서
+   확대 배율이 한 단계 떨어져 얼굴이 그만큼 작아집니다. */
+
+/* ex   : 눈칸 왼쪽 x 둘 (칸은 8종 모두 4x4 로 같습니다)
+   ey   : 눈칸 윗줄 y
+   skin : 눈을 지울 때 칠할 색 — 눈 둘레의 살갗 색입니다
+   my   : 입을 그릴 줄. **null 이면 안 그립니다** — 펭귄·백조는 부리가
+          얼굴의 절반이라 입을 얹으면 부리가 둘이 됩니다. 그 둘은
+          눈·눈썹·땀만으로 다섯 상태를 만듭니다
+   clear: 원래 입이 그려져 있는 종만. [x,y,w,h] 를 clearFill 로 덮고 새로 그립니다
+   brow : 눈썹 색을 따로 줘야 하는 종. 없으면 종 테두리색(sp.line)을 씁니다 —
+          펭귄만 머리가 새까매서 테두리색 눈썹이 안 보입니다 */
+const FACE_SPEC = {
+  turtle:   { ex: [10, 18], ey: 14, skin: '#8CD296', my: 19 },
+  giraffe:  { ex: [10, 18], ey: 14, skin: '#FAF0C8', my: 20, clear: [13, 19, 6, 3], clearFill: '#E6C896' },
+  penguin:  { ex: [10, 18], ey: 14, skin: '#FFFFFF', my: null, brow: '#FFFFFF' },
+  hamster:  { ex: [10, 18], ey: 14, skin: '#DCAA78', my: 19 },
+  frog:     { ex: [9,  19], ey: 10, skin: '#82DC3C', my: 19, clear: [13, 19, 6, 2], clearFill: '#FAF0A0' },
+  hedgehog: { ex: [10, 18], ey: 14, skin: '#E6B48C', my: 20 },
+  alpaca:   { ex: [10, 18], ey: 14, skin: '#FAE6D2', my: 19 },
+  swan:     { ex: [10, 18], ey: 14, skin: '#FFFFFF', my: null },
+};
+
+/* 눈 — 다섯이 **눈 모양부터** 다릅니다. 눈썹·입만 바꾸면 이 크기에서
+   좋음과 주의가 구별되지 않습니다. X 검은자 · o 하이라이트
+
+   높이가 4 → 3 → 1 로 줄어드는 것이 좋음·주의·나쁨의 뼈대입니다.
+   회복(⌒)과 잠듦(⌄)은 휘는 방향이 반대라 서로 안 헷갈립니다. */
+const FACE_EYE = {
+  good:    ['.XX.', 'XXoX', 'XXXX', '.XX.'],   // 크게 뜸
+  warn:    ['....', 'XXXX', 'XXXX', '.XX.'],   // 윗꺼풀이 내려옴 (하이라이트도 사라집니다)
+  bad:     ['....', '....', 'XXXX', '....'],   // 실눈
+  recover: ['....', '.XX.', 'X..X', '....'],   // ⌒ 웃는 눈
+  sleep:   ['....', 'X..X', '.XX.', '....'],   // ⌄ 감은 눈
+};
+
+/* 머리 경계 — 시트마다 한 번만 잽니다. 옷을 갈아입으면 시트 객체가
+   새로 만들어지므로 WeakMap 이면 저절로 다시 재고 저절로 버려집니다. */
+const faceBoxCache = new WeakMap();
+function faceBox(sheet) {
+  let b = faceBoxCache.get(sheet);
+  if (b) return b;
+  const H = FACE_BOTTOM + 1;
+  const c = document.createElement('canvas');
+  c.width = CHAR_W; c.height = H;
+  const cg = c.getContext('2d');
+  cg.imageSmoothingEnabled = false;
+  cg.drawImage(sheet, CHAR_W * ITEM_DIR.down, 0, CHAR_W, H, 0, 0, CHAR_W, H);
+  let px;
+  try { px = cg.getImageData(0, 0, CHAR_W, H).data; } catch { px = null; }
+  let x0 = CHAR_W, x1 = -1, y0 = H;
+  if (px) {
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < CHAR_W; x++) {
+        if (px[(y * CHAR_W + x) * 4 + 3] <= 40) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+      }
+    }
+  }
+  if (x1 < 0) { x0 = 4; x1 = 27; y0 = 6; }      // 빈 시트 방어 — 없는 값으로 나누지 않게
+  b = { x0, x1, y0 };
+  faceBoxCache.set(sheet, b);
+  return b;
+}
+
+/** 얼굴 한 장을 1x 격자에 굽습니다. 확대한 화면에 직접 그리면 선 굵기가
+    픽셀 격자에 안 맞아 표정만 매끈해지므로, 작게 그린 뒤 통째로 키웁니다.
+    state: good / warn / bad / recover / sleep — 이 함수가 유일한 그리는 곳입니다. */
+function bakeFace(sheet, sp, state, droop, flash) {
+  const F = FACE_SPEC[sp.slug] || FACE_SPEC.turtle;
+  const bx = faceBox(sheet);
+  const hw = bx.x1 - bx.x0 + 1, hh = FACE_BOTTOM - bx.y0 + 1;
+  const W = hw + FACE_PAD.side * 2, H = hh + FACE_PAD.top + FACE_PAD.bot;
+
+  const t = document.createElement('canvas');
+  t.width = W; t.height = H;
+  const g = t.getContext('2d');
+  g.imageSmoothingEnabled = false;
+
+  /* 처짐 — 나쁠수록 내려가고, 회복하는 순간 한 번 튀어오릅니다. */
+  const drop = Math.round(droop * 2) + (state === 'sleep' ? 1 : 0) - (state === 'recover' ? 1 : 0);
+  const ox = FACE_PAD.side - bx.x0, oy = FACE_PAD.top + drop - bx.y0;
+  g.drawImage(sheet, CHAR_W * ITEM_DIR.down + bx.x0, bx.y0, hw, hh,
+              FACE_PAD.side, FACE_PAD.top + drop, hw, hh);
+
+  const ink = sp.line;
+  const px = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x + ox, y + oy, w, h); };
+
+  /* ① 민얼굴 — 눈을 지웁니다. 여기까지가 다섯 상태가 공유하는 "하나의 얼굴". */
+  F.ex.forEach((x) => px(x, F.ey, 4, 4, F.skin));
+  if (F.clear) px(F.clear[0], F.clear[1], F.clear[2], F.clear[3], F.clearFill);
+
+  /* ② 눈 — 상태별 모양표를 그대로 찍습니다. */
+  const eye = FACE_EYE[state] || FACE_EYE.good;
+  F.ex.forEach((ex) => {
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      const ch = eye[r][c];
+      if (ch === 'X') px(ex + c, F.ey + r, 1, 1, ink);
+      else if (ch === 'o') px(ex + c, F.ey + r, 1, 1, '#FFFFFF');
+    }
+  });
+
+  /* ③ 눈썹 — 주의·나쁨만. 안쪽 끝이 내려간 팔자입니다.
+     개구리는 눈이 머리 꼭대기에 붙어 있어 눈썹 자리가 없습니다.
+     자리가 없으면 그리지 않습니다 — 억지로 그리면 머리 위에 뜹니다. */
+  const lift = state === 'bad' ? 4 : 3;
+  if ((state === 'warn' || state === 'bad') && F.ey - lift >= bx.y0) {
+    const bi = F.brow || ink;
+    px(F.ex[0], F.ey - lift, 2, 1, bi);         px(F.ex[0] + 2, F.ey - lift + 1, 2, 1, bi);
+    px(F.ex[1] + 2, F.ey - lift, 2, 1, bi);     px(F.ex[1], F.ey - lift + 1, 2, 1, bi);
+  }
+
+  /* ④ 입 — 부리 있는 종(펭귄·백조)은 건너뜁니다. */
+  if (F.my != null) {
+    const mx = 15, my = F.my;
+    if (state === 'good') {                       // 살짝 ∪
+      px(mx, my, 2, 1, ink); px(mx - 1, my - 1, 1, 1, ink); px(mx + 2, my - 1, 1, 1, ink);
+    } else if (state === 'warn') {                // 일자
+      px(mx - 1, my, 4, 1, ink);
+    } else if (state === 'bad') {                 // ∧ — 양 끝이 내려갑니다
+      px(mx, my, 2, 1, ink); px(mx - 1, my + 1, 1, 1, ink); px(mx + 2, my + 1, 1, 1, ink);
+    } else if (state === 'recover') {             // 활짝
+      px(mx - 1, my, 4, 1, ink); px(mx, my + 1, 2, 1, ink);
+      px(mx - 2, my - 1, 1, 1, ink); px(mx + 3, my - 1, 1, 1, ink);
+    } else {                                      // 잠듦 — 작게
+      px(mx, my, 2, 1, ink);
+    }
+  }
+
+  /* ⑤ 부가 — 땀·반짝임·zᶻ. 상태를 하나 더 겹쳐 읽게 합니다. */
+  const drip = (x, y) => { px(x, y, 1, 2, '#7EC8F0'); px(x, y + 2, 1, 1, '#BFE6FA'); };
+  if (state === 'warn') drip(F.ex[1] + 4, F.ey + 2);
+  if (state === 'bad') { drip(F.ex[1] + 4, F.ey + 1); drip(F.ex[0] - 1, F.ey + 3); }
+  if (state === 'recover') {
+    [[F.ex[0] - 3, F.ey - 1], [F.ex[1] + 6, F.ey - 2]].forEach(([x, y]) => {
+      px(x, y - 1, 1, 3, '#FFE9A8'); px(x - 1, y, 3, 1, '#FFE9A8');
+    });
+  }
+  if (state === 'sleep') {
+    /* zᶻ 를 글자로 찍으면 안티에일리어싱이 껴서 이 배율에서 뭉갭니다.
+       픽셀로 그리고, 밝은 얼굴에도 어두운 얼굴에도 보이도록 흰 테를 두릅니다. */
+    const zed = (x, y) => {
+      g.fillStyle = '#5A4A44';
+      g.fillRect(x, y, 3, 1);                           // 윗줄
+      g.fillRect(x + 1, y + 1, 1, 1);                   // 대각
+      g.fillRect(x, y + 2, 3, 1);                       // 아랫줄
+    };
+    /* **왼쪽** 위로 올립니다 — 오른쪽 위는 얼굴끄기·자리옮기기 단추 자리라
+       거기 두면 zᶻ 가 단추에 걸립니다. */
+    zed(4, 2); zed(0, 0);
+  }
+
+  if (flash > 0) {
+    /* 회복 섬광. source-atop 이라야 **그려진 픽셀에만** 얹힙니다 —
+       source-over/lighter 로 사각형을 덮으면 투명한 배경까지 밝아져서
+       얼굴 주위에 네모난 판이 생기고 표정이 하얗게 날아갑니다. */
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = 'rgba(255,244,190,' + (0.2 * flash).toFixed(3) + ')';
+    g.fillRect(0, 0, W, H);
+    g.globalCompositeOperation = 'source-over';
+  }
+  return t;
+}
+
+function faceState(droop, flash) {
+  if (LIVE.state === 'idle') return 'sleep';      // 회의·자리비움 — 판정이 안 도는 시간
+  if (flash > 0) return 'recover';                // 막 좋아진 순간이 이 기능의 보상입니다
+  if (droop > 0.55) return 'bad';
+  if (droop > 0.22) return 'warn';
+  return 'good';
 }
 
 function drawCamAvatar() {
@@ -6142,79 +6318,16 @@ function drawCamAvatar() {
   if (!avatarCv) { avatarCv = document.createElement('canvas'); host.prepend(avatarCv); }
 
   const sp = speciesOf(ROOM.character);
-  const F = faceOf(sp);
-  const d = DROOP.now;
-  const sleep = LIVE.state === 'idle';
-  const flash = DROOP.flash;
+  const t = bakeFace(sheet, sp, faceState(DROOP.now, DROOP.flash), DROOP.now, DROOP.flash);
 
-  /* 1x 격자에 먼저 그리고 통째로 확대합니다. 확대한 화면에 직접 그리면
-     선 굵기가 픽셀 격자에 안 맞아 표정만 매끈해집니다. */
-  const W = CHAR_W, H = FACE_H + 4;      // 위 여유 4 — 처지면 내려오고 zᶻ 가 뜹니다
-  const t = document.createElement('canvas');
-  t.width = W; t.height = H;
-  const g = t.getContext('2d');
-  g.imageSmoothingEnabled = false;
-
-  const dy = 4 + Math.round(d * 2) - (flash > 0.5 ? 1 : 0);   // 처지면 내려가고 회복 순간엔 튑니다
-  g.drawImage(sheet, CHAR_W * ITEM_DIR.down, 0, W, FACE_H, 0, dy, W, FACE_H);
-
-  const ink = sp.line, EY = F.ey + dy, MY = F.my + dy;
-  const px2 = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
-
-  if (sleep) {
-    /* 감은 눈 — 아래로 휜 선 둘. 눈을 덮어야 감긴 것으로 보입니다. */
-    [F.lx, F.rx].forEach((x) => {
-      px2(x, EY, 3, 1, ink); px2(x - 1, EY - 1, 1, 1, ink); px2(x + 3, EY - 1, 1, 1, ink);
-    });
-    px2(F.cx, MY, 2, 1, ink);                       // 작은 입
-    g.fillStyle = 'rgba(90,74,68,.85)';
-    g.font = 'bold 6px sans-serif'; g.fillText('z', 24, dy + 5);
-    g.font = 'bold 4px sans-serif'; g.fillText('z', 27, dy + 2);
-  } else if (d > 0.55) {
-    /* 나쁨 — 눈꺼풀이 눈을 절반 덮고, 눈썹이 안쪽으로 처지고, 입이 ∧,
-       땀 둘. 넷을 겹쳐야 "힘들다" 로 읽힙니다. 하나만 바꾸면 못 알아봅니다. */
-    [F.lx, F.rx].forEach((x) => px2(x, EY - 1, 3, 2, ink));
-    px2(F.lx - 1, EY - 4, 4, 1, ink); px2(F.lx + 2, EY - 3, 1, 1, ink);
-    px2(F.rx, EY - 3, 1, 1, ink);      px2(F.rx + 1, EY - 4, 4, 1, ink);
-    px2(F.cx, MY + 1, 2, 1, ink); px2(F.cx - 1, MY, 1, 1, ink); px2(F.cx + 2, MY, 1, 1, ink);
-    px2(26, EY - 1, 1, 2, '#7EC8F0'); px2(26, EY + 1, 1, 1, '#BFE6FA');
-    px2(5, EY + 1, 1, 2, '#7EC8F0');
-  } else if (d > 0.22) {
-    /* 주의 — 눈은 그대로 두고 눈썹만 처집니다. 입은 일자. 땀 하나.
-       나쁨과 달리 **눈을 안 건드립니다** — 그 차이가 두 상태를 가릅니다. */
-    px2(F.lx - 1, EY - 4, 4, 1, ink); px2(F.lx + 2, EY - 3, 1, 1, ink);
-    px2(F.rx, EY - 3, 1, 1, ink);      px2(F.rx + 1, EY - 4, 4, 1, ink);
-    px2(F.cx - 1, MY, 4, 1, ink);
-    px2(26, EY, 1, 2, '#7EC8F0');
-  } else if (flash > 0) {
-    /* 회복 — 눈 위 하이라이트를 키우고 입을 활짝, 양옆에 반짝.
-       이 한 프레임이 이 기능의 보상입니다. */
-    [F.lx, F.rx].forEach((x) => px2(x, EY - 1, 1, 1, '#FFFFFF'));
-    px2(F.cx - 1, MY, 4, 1, ink); px2(F.cx - 2, MY - 1, 1, 1, ink); px2(F.cx + 3, MY - 1, 1, 1, ink);
-    [[4, EY - 3], [26, EY - 4]].forEach(([x, y]) => {
-      px2(x, y - 1, 1, 3, '#FFE9A8'); px2(x - 1, y, 3, 1, '#FFE9A8');
-    });
-  } else {
-    /* 좋음 — 눈 하이라이트 하나와 살짝 올라간 입. 아무것도 안 얹으면
-       "좋음" 이 "판정이 꺼짐" 과 구별되지 않습니다. */
-    px2(F.lx, EY - 1, 1, 1, '#FFFFFF');
-    px2(F.cx, MY, 2, 1, ink); px2(F.cx - 1, MY - 1, 1, 1, ink); px2(F.cx + 2, MY - 1, 1, 1, ink);
-  }
-
-  if (flash > 0) {
-    g.globalCompositeOperation = 'lighter';
-    g.fillStyle = 'rgba(255,246,200,' + (0.45 * flash).toFixed(3) + ')';
-    g.fillRect(0, 0, W, H);
-    g.globalCompositeOperation = 'source-over';
-  }
-
+  /* PIP 안에 꽉 채워 가운데 둡니다. 아래 20 은 이름 알약 자리입니다. */
   const box = camWrap.getBoundingClientRect();
-  const z = Math.max(2, Math.floor(Math.min(box.width / W, (box.height - 18) / H)));
-  avatarCv.width = W * z; avatarCv.height = H * z;
+  const z = Math.max(2, Math.floor(Math.min(box.width / t.width, (box.height - 14) / t.height)));
+  avatarCv.width = t.width * z; avatarCv.height = t.height * z;
   const o = avatarCv.getContext('2d');
   o.imageSmoothingEnabled = false;
   o.clearRect(0, 0, avatarCv.width, avatarCv.height);
-  o.drawImage(t, 0, 0, W, H, 0, 0, W * z, H * z);
+  o.drawImage(t, 0, 0, t.width, t.height, 0, 0, avatarCv.width, avatarCv.height);
 }
 function setFaceOff(v) {
   faceOff = !!v;

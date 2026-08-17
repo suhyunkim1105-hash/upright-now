@@ -4028,9 +4028,9 @@ const ZONES = {};
       worn: { top: 'top-hoodie', bottom: 'bot-jeans', shoes: 'sho-sneaker', hat: 'hat-cap' },
       name: '안내 · 나루',
       lines: [
-        '처음이죠? 여기가 중앙 광장이고, 사방으로 건물 넷이 있어요.',
-        '북쪽이 기숙사, 서쪽 본관, 동쪽 도서관, 남쪽이 학생회관이에요. 앉는 자리는 본관과 도서관에 있어요.',
-        '길을 잃으면 M 을 눌러 지도를 보세요. 처음 안내를 다시 보시겠어요?',
+        '처음 왔지? 얼굴 보면 알아.',
+        '앉을 데는 도서관이랑 본관. 나머지 둘은 자는 데랑 볼일 보는 데야.',
+        '헤매면 M 눌러. 지도 뜨고, 누르면 바로 가져다줘. 아까 그 설명 다시 볼래?',
       ],
       after: startTutorial },
     /* 관리인은 기숙사 문 앞 — 방 안이 아니라. 방 안은 내 방이고,
@@ -4039,9 +4039,9 @@ const ZONES = {};
       worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-slipper' },
       name: '기숙사 관리인 · 성재',
       lines: [
-        '이 방은 혼자 쓰는 1인실이에요. 문 잠그는 건 신경 안 쓰셔도 됩니다.',
-        '친구 방에 놀러 갈 수 있어요. 문 옆 초인종에서 친구 코드를 넣으면 그 방으로 넘어갑니다.',
-        '내 코드는 설정에서 만들어요. 친구가 그 코드로 찾아옵니다.',
+        '1인실이야. 문은 안 잠가도 돼. 훔쳐 갈 것도 없고.',
+        '초인종은 문 옆. 친구 코드 찍으면 그쪽 방으로 넘어가.',
+        '네 코드는 설정에 있어. 나한테 묻지 말고.',
       ] },
   );
 
@@ -4126,7 +4126,7 @@ const ZONES = {};
    뒤에 사람이 앉아 있어도 지나갈 수 있습니다. */
 {
   const m = makeMap(38, 28, F.beige);
-  ZONES.library = m; m.name = '도서관'; m.sub = '집중 공간 · 백색소음';
+  ZONES.library = m; m.name = '도서관'; m.sub = '백색소음 · 오래 앉는 자리';
 
   ring(m, 0, 0, m.w, m.h, F.brickR);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickR);
@@ -4226,9 +4226,9 @@ const ZONES = {};
       worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-dress', face: 'fac-round' },
       name: '사서 · 하람',
       lines: [
-        '(작은 소리로) 여기서는 조용히 해 주세요. 다들 집중하고 있어요.',
-        '자리에 앉으면 웹캠\u00A0화면이 작게 떠요. 다른 탭을 봐도 자세는 계속 보고 있습니다.',
-        '중간에 일어나도 판정은 안 멈춰요. 코인은 세션을 끝낼 때, 판정이 돌아간 시간만큼 들어옵니다.',
+        '…조용히. 다들 붙잡고 있는 중이야.',
+        '앉으면 웹캠\u00A0화면이 구석에 작게 떠. 다른 탭 봐도 돼, 계속 보고 있으니까.',
+        '일어나도 안 멈춰. 코인은 세션 끝낼 때 한 번에 — 앉은 시간이 아니라 판정이 돌아간 시간만큼.',
       ] },
   );
 
@@ -4242,7 +4242,7 @@ const ZONES = {};
    강의실. 칠판을 향해 줄지어 앉습니다. 가운데 통로 2칸을 비웁니다. */
 {
   const m = makeMap(38, 28, F.gray);
-  ZONES.mainhall = m; m.name = '본관'; m.sub = '집중 공간 · 대중음악';
+  ZONES.mainhall = m; m.name = '본관'; m.sub = '대중음악 · 끊어 앉는 자리';
 
   ring(m, 0, 0, m.w, m.h, F.brickR);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickR);
@@ -4425,7 +4425,7 @@ const ZONES = {};
    여러 명이 동시에 말을 걸 수 있어야 합니다. */
 {
   const m = makeMap(34, 24, F.gray);
-  ZONES.union = m; m.name = '학생회관'; m.sub = '상점 · 명예의 전당 · 출석';
+  ZONES.union = m; m.name = '학생회관'; m.sub = '볼일 보는 곳';
 
   ring(m, 0, 0, m.w, m.h, F.brickO);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickO);
@@ -4489,17 +4489,17 @@ const ZONES = {};
     { x: 6, y: 7, sprite: 266, species: '고슴도치', dir: 'down',
       worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', face: 'fac-sun' },
       name: '상점 · 미르', panel: 'shop',
-      line: '알은 하나만 깨고 나왔죠? 다른 알도 여기서 팝니다. 비싸요.' },
+      line: '알 하나 깨고 나온 얼굴이네. 나머지 일곱도 여기 있어. 안 싸.' },
     /* 남은 날은 대사에 안 적습니다 — 지도를 만들 때 굳어 버려서, 며칠이
        지나도 같은 숫자를 말하게 됩니다. 숫자는 창이 그때그때 셉니다. */
     { x: 26, y: 8, sprite: 185, species: '알파카', dir: 'down',
       worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-dress', hat: 'hat-grad' },
       name: '명예의 전당 · 하연', panel: 'hall',
-      line: '순위는 앉은 시간과 회복 횟수로만 매깁니다 — 자세를 점수로 매기지는 않아요.' },
+      line: '여기 순위는 앉은 시간이랑 회복 횟수야. 자세에는 점수 안 매겨. 그건 안 하기로 했어.' },
     { x: 16, y: 5, sprite: 131, species: '개구리', dir: 'down',
       worn: { top: 'top-tee', bottom: 'bot-trainer', shoes: 'sho-sneaker', bag: 'bag-backpack' },
       name: '출석 · 도윤',
-      line: '오늘 출석은 아직이네요. 도서관이나 본관에서 한 세션만 채우면 됩니다.' },
+      line: '오늘 거 아직 안 찍혔는데. 도서관이든 본관이든 한 세션만 채우고 와.' },
   );
 
   /* 북쪽 벽은 창만. 시계·현수막·공지를 걸어 봤는데 검수에서 전부
@@ -5877,16 +5877,16 @@ function closeDialog() {
    ================================================================== */
 const TUT_STEPS = [
   { keys: ['W', 'A', 'S', 'D'], title: '걸어서 다녀요',
-    desc: '방향키나 WASD 로 움직여요. Shift 를 누른 채면 뜁니다.' },
+    desc: '방향키나 WASD 로 걸어요. Shift 를 누른 채로 있으면 뛰어요.' },
   { keys: ['Space'], title: '자리에 앉아요',
     /* U+00A0 = 안 끊기는 빈칸. '웹캠 화면' 은 한 덩어리로 읽히는 말이라
        사이에서 줄이 바뀌면 눈이 한 번 멈춥니다. 어절 단위로만 끊는
        keep-all 도 이건 못 막습니다 — 둘은 별개 어절이니까요. */
-    desc: '도서관과 본관에 자리가 있어요. 앉으면 웹캠\u00A0화면이 작게 떠서, 다른 탭을 봐도 됩니다.' },
+    desc: '도서관과 본관에 자리가 있어요. 앉으면 웹캠\u00A0화면이 작게 떠요. 그대로 다른 탭으로 가도 돼요.' },
   { keys: ['M'], title: '지도를 열어요',
-    desc: '건물이 멀면 M 을 누르세요. 가고 싶은 곳을 누르면 바로 갑니다.' },
+    desc: '건물이 멀면 M 을 눌러 주세요. 가고 싶은 곳을 누르면 그 앞으로 옮겨 드릴게요.' },
   { coin: true, title: '코인으로 꾸며요',
-    desc: '세션을 끝내면 판정이 돌아간 만큼 코인이 들어와요. 학생회관\u00A0상점에서 씁니다.' },
+    desc: '세션을 끝내면 판정이 돌아간 만큼 코인이 들어와요. 학생회관\u00A0상점에서 쓸 수 있어요.' },
 ];
 const tutEl = document.getElementById('tutorial');
 const tutCard = tutEl.querySelector('.tut-card');
@@ -6402,9 +6402,9 @@ const STATE_TEXT  = { good: '좋아요', warning: '조금 앞으로 나왔어요
    원칙이지만(girin-copy-voice), 자세 알림은 캐릭터의 잡담이 아니라
    제품이 사용자에게 하는 말이라 존대로 갑니다. */
 const SAY_TEXT = {
-  warning: '점점 거북이가 될 것 같아요',
-  bad: '목이 거북목이 됐어요! 어깨 한 번 펴봐요',
-  good: '좋아요! 그 자세가 건강한 자세에요',
+  warning: '처음 잡은 자세에서 조금 내려왔어요',
+  bad: '많이 내려왔어요. 어깨 한 번 펴 주세요',
+  good: '기준 자세로 돌아왔어요',
 };
 /* 얼마나 보여 줄지 */
 const SAY_SHOW = { warning: 3500, bad: 5000, good: 3000 };
@@ -8233,15 +8233,25 @@ function shopTabHtml(cat) {
 /* 게임 보상. 게임마다 하루 한 번입니다 — 같은 판을 돌려 코인을 모으면
    미니게임존이 쉬는 곳이 아니라 일하는 곳이 됩니다.
    어느 게임인지는 열려 있는 패널이 압니다. */
+/* 게임 아홉 개가 저마다 '멋져요! 포인트 5P를 받았어요.' 라고 적어 두었는데,
+   실제로는 코인이고 액수도 COIN_MINIGAME(10)이었습니다. 아홉 군데를 각자
+   고치면 다음에 또 어긋나므로, 지급하는 쪽이 문구도 만듭니다. */
+let lastEarned = 0;
+const gameWinMsg = () =>
+  lastEarned
+    ? '오늘 몫 ' + lastEarned + '코인이 들어왔어요.'
+    : '오늘은 이 게임 코인을 이미 받았어요. 기록만 남습니다.';
+
 function earn(amount, why) {
   rwRoll();
   const key = activePanelKey || 'game';
   RW.daily.games = RW.daily.games || [];
-  if (RW.daily.games.includes(key)) return 0;    // 오늘 이미 받았습니다
+  if (RW.daily.games.includes(key)) { lastEarned = 0; return 0; }   // 오늘 이미 받았습니다
   RW.daily.games.push(key); saveRW();
   /* 서버도 게임별 하루 1회를 따로 셉니다. 로컬은 표시를 즉시 맞추는
      용도이고, 돌아온 잔액이 정답입니다. */
   if (window.WORLD_SAVE && WORLD_SAVE.configured) WORLD_SAVE.earnMinigame(key).then(applyServerBalance);
+  lastEarned = COIN_MINIGAME;
   return grant(COIN_MINIGAME, why || '미니게임');
 }
 
@@ -8306,10 +8316,10 @@ function finishGiraffeNeck(success) {
   if (success) {
     if (!GIRAFFE_NECK.rewarded) {
       GIRAFFE_NECK.rewarded = true;
-      earn(5, '기린 목 펴기 성공');
+      earn(COIN_MINIGAME, '기린 목 펴기 성공');
     }
-    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1;letter-spacing:-.08em">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">기린이 바른 자세를 찾았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+' + COIN_MINIGAME + '코인</b></div>';
+    if (message) message.textContent = gameWinMsg();
   } else if (message) {
     message.textContent = '시간이 끝났어요. 조금 더 빠르게 연속 입력해 보세요.';
   }
@@ -8400,10 +8410,10 @@ function finishEscapeRoom(success, message) {
   if (success) {
     if (!ESCAPE_ROOM.rewarded) {
       ESCAPE_ROOM.rewarded = true;
-      earn(5, '방탈출 성공');
+      earn(COIN_MINIGAME, '방탈출 성공');
     }
-    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+5P</b></div>';
-    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+' + COIN_MINIGAME + '코인</b></div>';
+    if (messageEl) messageEl.textContent = gameWinMsg();
   } else if (messageEl) messageEl.textContent = message || '시간이 끝났어요. 다시 도전해 보세요.';
   renderEscapeRoom();
 }
@@ -8504,10 +8514,10 @@ function finishTurtleEgg(success, message) {
   if (success) {
     if (!TURTLE_EGG.rewarded) {
       TURTLE_EGG.rewarded = true;
-      earn(5, '거북이 알 받기 성공');
+      earn(COIN_MINIGAME, '거북이 알 받기 성공');
     }
-    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">거북이 알을 잘 받았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
-    if (messageEl) messageEl.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (stage) stage.innerHTML = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">거북이 알을 잘 받았어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+' + COIN_MINIGAME + '코인</b></div>';
+    if (messageEl) messageEl.textContent = gameWinMsg();
   } else if (messageEl) messageEl.textContent = message || '알을 충분히 받지 못했어요. 다시 도전해 보세요.';
   renderTurtleEgg();
 }
@@ -8647,11 +8657,11 @@ function finishEggMerge(success) {
   if (success) {
     if (!EGG_MERGE.rewarded) {
       EGG_MERGE.rewarded = true;
-      earn(5, '거북이 알 합치기 성공');
+      earn(COIN_MINIGAME, '거북이 알 합치기 성공');
     }
-    if (board) board.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;border-radius:10px;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">왕관 알이 탄생했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+5P</b></div>';
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
-  } else if (message) message.textContent = '더 움직일 수 없어요. 다시 도전해 보세요.';
+    if (board) board.innerHTML = '<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:260px;border-radius:10px;background:linear-gradient(145deg,#5cb177,#3f9960);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">왕관 알이 탄생했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#3f9960;font-size:15px">+' + COIN_MINIGAME + '코인</b></div>';
+    if (message) message.textContent = gameWinMsg();
+  } else if (message) message.textContent = '더 붙일 자리가 없어요. 다시 해 볼까 싶으면 아래 버튼을.';
   renderEggMerge();
 }
 function startEggMerge() {
@@ -8741,7 +8751,7 @@ function dropGiraffeStack() {
     if (GIRAFFE_STACK.level >= 6) return finishGiraffeStack(true);
     GIRAFFE_STACK.timer = setInterval(tickGiraffeStack, 50);
     const message = panelBody.querySelector('#stack-message');
-    if (message) message.textContent = GIRAFFE_STACK.width < 35 ? '조심하세요! 목 블록이 많이 좁아졌어요.' : '좋아요! 다음 블록도 맞춰 보세요.';
+    if (message) message.textContent = GIRAFFE_STACK.width < 35 ? '목이 꽤 좁아졌어요. 천천히.' : '좋아요. 다음 블록도 같은 자리에.';
     renderGiraffeStack();
   }, 300);
 }
@@ -8753,7 +8763,7 @@ function finishGiraffeStack(success) {
   if (success) {
     if (!GIRAFFE_STACK.rewarded) {
       GIRAFFE_STACK.rewarded = true;
-      earn(5, '기린 목 쌓기 성공');
+      earn(COIN_MINIGAME, '기린 목 쌓기 성공');
     }
     if (stage) {
       const topBlock = GIRAFFE_STACK.blocks[GIRAFFE_STACK.blocks.length - 1] || { visualWidth: 48 };
@@ -8771,10 +8781,10 @@ function finishGiraffeStack(success) {
             finishedBlocks +
             '<img src="assets/giraffe-head.png" alt="완성된 기린 머리" style="position:absolute;left:50%;bottom:' + headBottom + 'px;width:' + headWidth + 'px;height:' + Math.round(headWidth * .78) + 'px;transform:translateX(-50%);object-fit:contain">' +
           '</div>' +
-          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">내가 만든 기린 완성!</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">+5P</b></div>' +
+          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">기린이 다 쌓였어요</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">+' + COIN_MINIGAME + '코인</b></div>' +
         '</div>';
     }
-    if (message) message.textContent = '멋져요! 포인트 5P를 받았어요.';
+    if (message) message.textContent = gameWinMsg();
   } else if (message) message.textContent = '블록이 빗나갔어요. 다시 쌓아 보세요.';
   renderGiraffeStack();
 }
@@ -9172,10 +9182,10 @@ function finishShellSlide(success) {
   if (success) {
     if (!SHELL_SLIDE.rewarded) {
       SHELL_SLIDE.rewarded = true;
-      earn(5, '거북이 등껍질 퍼즐 성공');
+      earn(COIN_MINIGAME, '거북이 등껍질 퍼즐 성공');
     }
     if (board) board.innerHTML = `<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;padding:9px;border-radius:12px;background:#3f8c82">${SHELL_SOLVED.map((tile, index) => shellSlideTileMarkup(tile, index, true)).join('')}</div>`;
-    if (message) message.textContent = '성공! 거북이 등껍질을 완성했어요. +5P';
+    if (message) message.textContent = '등껍질을 맞췄어요. ' + gameWinMsg();
   } else if (message) {
     message.textContent = '시간이 끝났어요. 다시 도전해 보세요.';
   }
@@ -9290,9 +9300,9 @@ function finishTurtleMaze(success) {
   if (success) {
     if (!TURTLE_MAZE.rewarded) {
       TURTLE_MAZE.rewarded = true;
-      earn(5, '거북이 미로 탈출 성공');
+      earn(COIN_MINIGAME, '거북이 미로 탈출 성공');
     }
-    if (message) message.textContent = '성공! 거북이가 미로를 탈출했어요. +5P';
+    if (message) message.textContent = '미로를 빠져나왔어요. ' + gameWinMsg();
   } else if (message) message.textContent = '시간이 끝났어요. 다시 도전해 보세요.';
 }
 function startTurtleMaze() {
@@ -9682,19 +9692,21 @@ const PANELS = {
      무엇인지, 코인이 어떻게 들어오는지. 그 밖은 안 씁니다. */
   arcade: () => {
     const done = (RW.daily.games || []);
+    /* 숫자를 글에 박아 두면 상수만 바뀌었을 때 조용히 거짓말이 됩니다.
+       실제로 여기 '5' 와 COIN_MINIGAME(10) 이 어긋나 있었습니다. */
     const row = (key, name, line) =>
       `<div class="row"><span>${name} <em>${line}</em></span>` +
-      `<span class="val">${done.includes(key) ? '오늘 받음' : '5'}</span></div>`;
+      `<span class="val">${done.includes(key) ? '오늘 받음' : COIN_MINIGAME}</span></div>`;
     return {
       title: '미니게임존', kind: 'GUIDE',
       html: `
-      <p>오래 앉아 있으면 자세도 집중도 같이 무너집니다. 그럴 때
-      <b>세션을 끊는 대신</b> 여기로 오세요. 짧게 몸을 움직이고 돌아가는
-      자리입니다.</p>
+      <p>한 시간쯤 앉아 있으면 자세가 먼저 무너집니다. 그때
+      <b>세션을 끊는 대신</b> 여기로 오세요. 3분 놀고 자리로 돌아가는
+      자리예요.</p>
       <ol>
-        <li>관문 앞에서 <b>Space</b> 를 누르면 게임이 열려요.</li>
-        <li>제한 시간은 <b>3분</b>. 그 안에 끝낼 수 있는 난이도예요.</li>
-        <li>시간 안에 깨면 <b>5코인</b>을 드려요.</li>
+        <li>관문 앞에서 <b>Space</b> 를 눌러 주세요.</li>
+        <li>제한 시간은 <b>3분</b>이에요.</li>
+        <li>시간 안에 깨면 <b>${COIN_MINIGAME}코인</b>이 들어와요.</li>
       </ol>
       <div class="rows">
         ${row('giraffeNeck', '기린 목 펴기', '연타로 목을 폅니다')}
@@ -9702,9 +9714,9 @@ const PANELS = {
         ${row('eggMerge', '거북이 알 합치기', '같은 알을 붙입니다')}
         ${row('escapeRoom', '방탈출', '단서를 찾아 번호를 맞춥니다')}
       </div>
-      <div class="note">코인은 <b>게임마다 하루 한 번</b>까지예요. 같은
-      게임을 반복해서 코인을 모을 수는 없어요 — 여기는 벌러 오는 곳이
-      아니라 쉬러 오는 곳이니까요. 코인이 끝나도 게임은 계속 할 수 있어요.</div>`,
+      <div class="note">코인은 <b>게임마다 하루 한 번</b>까지예요. 오늘 받은
+      게임을 또 깨도 코인은 안 들어와요 — 여기는 벌러 오는 곳이 아니니까요.
+      물론 계속 놀아도 됩니다.</div>`,
     };
   },
 
@@ -9749,22 +9761,20 @@ const PANELS = {
   guide: () => ({
     title: 'Deskfit 안내', kind: 'GUIDE',
     html: `
-      <p>여기는 <b>거북목으로 들어와서 기린이 되는 캠퍼스</b>입니다.
-      캠퍼스에 있는 동안 웹캠이 자세를 보고, 오래 굽어 있으면 알려 줍니다.
+      <p>여기는 <b>거북목으로 들어와서 기린이 되는 캠퍼스</b>예요.
+      캠퍼스에 있는 동안 웹캠이 자세를 보고, 오래 굽어 있으면 알려 줘요.
       세션을 끝내면 카메라가 꺼져요.</p>
       <ol>
-        <li>캠퍼스에 들어온 순간 세션이 시작돼요. 카메라가 켜지고
-        <b>10초</b> 동안 지금 자세를 기준으로 잡습니다.</li>
-        <li><b>도서관</b>(동쪽)이나 <b>본관</b>(서쪽)에 걸어 들어갑니다.
-        공간이 곧 모드예요 — <b>도서관</b>은 쉬지 않고 오래 앉을수록 많이,
-        <b>본관</b>은 끊어 가도 손해가 없어요. 같은 시간을 앉으면 받는
-        코인은 같아요.</li>
-        <li>빈 자리 앞에서 <b>Space</b> 를 누르면 앉아요. 웹캠 화면이
-        작게 나타나고, 다른 탭을 봐도 판정은 계속 돌아갑니다.</li>
-        <li>다 했으면 왼쪽 아래 <b>세션 종료</b>를 눌러요. 그때 카메라가
-        꺼지고 회고가 열립니다.</li>
-        <li><b>학생회관</b>(남쪽)에서 알을 사고 캐릭터를 꾸밉니다.
-        명예의 전당은 학교끼리 겨루는 곳이에요.</li>
+        <li>들어온 순간 세션이 시작돼요. 카메라가 켜지고 <b>10초</b> 동안
+        지금 앉은 자세를 기준으로 잡을게요.</li>
+        <li><b>도서관</b>(동쪽)이나 <b>본관</b>(서쪽)으로 들어가 주세요.
+        한 시간을 앉으면 받는 코인은 같고, 도서관은 중간에 일어나면
+        연속이 처음부터예요.</li>
+        <li>빈 자리 앞에서 <b>Space</b>. 웹캠 화면이 작게 뜨고, 그대로
+        다른 탭으로 가도 판정은 계속 돌아가요.</li>
+        <li>다 했으면 왼쪽 아래 <b>세션 종료</b>를 눌러 주세요. 그때
+        카메라가 꺼지고 회고가 열려요.</li>
+        <li><b>학생회관</b>(남쪽)에는 상점과 명예의 전당이 있어요.</li>
       </ol>
       <div class="rows">
         <div class="row"><span>이동 <em>WASD 또는 방향키</em></span><span class="val">걷기</span></div>
@@ -9958,11 +9968,11 @@ const PANELS = {
       자리를 비우면 시계는 흐르지만 판정은 안 돕니다.</div>
       <h4 style="margin-top:18px">어디에 쓰나</h4>
       <div class="rows">
-        <div class="row"><span>꾸미기 아이템 <em>학생회관 상점</em></span><span class="val">준비 중</span></div>
-        <div class="row"><span>새 알 <em>다른 캐릭터</em></span><span class="val">준비 중</span></div>
+        <div class="row"><span>옷·모자·가방 <em>학생회관 상점</em></span><span class="val">100~400</span></div>
+        <div class="row"><span>새 알 <em>다른 종으로 바꾸기</em></span><span class="val">800</span></div>
       </div>
-      <div class="note">코인은 <b>행동</b>으로만 쌓입니다. 자세를 잘 잡았다고 더 주지
-      않아요 — 그러면 목이 긴 사람이 유리한 게임이 됩니다.</div>`,
+      <div class="note">코인은 <b>행동</b>으로만 쌓여요. 자세를 잘 잡았다고 더 주지
+      않습니다 — 그러면 목이 긴 사람이 유리한 게임이 됩니다.</div>`,
   }),
 
   /* ---- 마이페이지 — 기능은 전부 여기 ----

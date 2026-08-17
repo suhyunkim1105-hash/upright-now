@@ -9644,6 +9644,13 @@ addEventListener('pointerdown', wakeAudio, { once: false });
    캠퍼스는 46×42 라 한 화면에 안 들어옵니다. 어디에 무엇이 있는지
    외워야 하는 월드는 처음 온 사람에게 미로입니다. */
 const MINI = { on: false, scale: 10, canvas: null, base: null };
+const MINI_MATERIAL_COLORS = {
+  [M.PLAZA]: '#AAA9BA',
+  [M.BEIGE]: '#DCE5D8',
+  [M.GRAY]: '#C5CCCE',
+  [M.WATER]: '#62C4DE',
+  [M.GRASS]: '#72B36A',
+};
 
 /* 좌표는 지도 위 자리(x,y)와 실제로 갈 곳(to)이 따로입니다 — 건물
    아이콘은 지붕 가운데에 찍고, 도착은 문 앞이어야 하기 때문입니다. */
@@ -9822,15 +9829,30 @@ function bakeMinimap() {
   if (m.ground) g.drawImage(m.ground, 0, 0, c.width, c.height);
   g.imageSmoothingEnabled = false;
 
-  /* ground 는 잔디와 운동장처럼 한 장으로 구운 그림만 담습니다. 도로,
-     광장, 호수는 over 오토타일 레이어이므로 이 레이어도 같은 타일을
-     축소해 그려야 실제 지도와 미니맵의 지형이 일치합니다. */
+  /* ground 는 잔디와 운동장처럼 한 장으로 구운 그림만 담습니다. 일반
+     길은 실제 시트의 보라색 타일을 그대로 줄이지 않고, 사진처럼 하나의
+     회색 포장면으로 통일합니다. 호수는 별도 파란 영역으로 그려 경계와
+     물 그림이 미니맵에서도 분명하게 보이게 합니다. */
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const mat = m.over[at(m, x, y)];
     if (!mat) continue;
-    const tile = autoTile(m, x, y, mat);
-    g.drawImage(school, (tile % K_COLS) * T, ((tile / K_COLS) | 0) * T,
-      T, T, x * S, y * S, S, S);
+    g.fillStyle = MINI_MATERIAL_COLORS[mat] || '#AAA9BA';
+    g.fillRect(x * S, y * S, S, S);
+
+    /* 재질이 바뀌는 가장자리에만 선을 그려 길은 매끈하게 유지하고,
+       호수·건물 주변은 지도처럼 또렷하게 구분합니다. */
+    const same = (nx, ny) => inMap(m, nx, ny) && m.over[at(m, nx, ny)] === mat;
+    g.strokeStyle = mat === M.WATER ? '#8CA5AD' : 'rgba(255,255,255,.42)';
+    g.lineWidth = 1;
+    if (!same(x, y - 1)) { g.beginPath(); g.moveTo(x * S, y * S + .5); g.lineTo((x + 1) * S, y * S + .5); g.stroke(); }
+    if (!same(x + 1, y)) { g.beginPath(); g.moveTo((x + 1) * S - .5, y * S); g.lineTo((x + 1) * S - .5, (y + 1) * S); g.stroke(); }
+    if (!same(x, y + 1)) { g.beginPath(); g.moveTo(x * S, (y + 1) * S - .5); g.lineTo((x + 1) * S, (y + 1) * S - .5); g.stroke(); }
+    if (!same(x - 1, y)) { g.beginPath(); g.moveTo(x * S + .5, y * S); g.lineTo(x * S + .5, (y + 1) * S); g.stroke(); }
+
+    if (mat === M.WATER) {
+      g.fillStyle = 'rgba(224,249,255,.42)';
+      g.fillRect(x * S + 2, y * S + 2, Math.max(2, S - 5), 1);
+    }
   }
 
   /* 건물은 축약 사각형이 아니라 월드에서 쓰는 완성 캔버스를 축소합니다.

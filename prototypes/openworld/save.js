@@ -102,11 +102,20 @@
      서버가 4xx 로 거절한 항목은 버립니다 — 다시 보내도 똑같이 거절되므로
      안 버리면 큐가 영영 막힙니다. */
 
-  function enqueue(fn, args) {
-    const q = load(QUEUE_STORE, []);
-    q.push({ fn, args, at: Date.now() });
+  /** replaceKey 를 주면 큐에 있던 같은 열쇠의 항목을 지우고 새것만 남깁니다.
+      옷을 열 번 갈아입으면 큐에 열 개가 쌓이는데, 이 RPC 들은 "지금 상태를
+      통째로" 보내는 것이라 마지막 하나만 보내면 결과가 같습니다. 세션
+      종료(world_finish_session)에는 절대 쓰면 안 됩니다 — 그건 사건이라
+      하나하나가 다른 뜻입니다. */
+  function enqueue(fn, args, replaceKey) {
+    let q = load(QUEUE_STORE, []);
+    if (replaceKey) q = q.filter((it) => it.key !== replaceKey);
+    q.push({ fn, args, at: Date.now(), key: replaceKey || null });
     save(QUEUE_STORE, q);
   }
+
+  /** 아직 못 보낸 것이 있나. 화면이 "저장됨" 이라고 거짓말하지 않으려고 씁니다. */
+  function pending() { return load(QUEUE_STORE, []).length; }
 
   let flushing = null;
   function flush() {
@@ -196,16 +205,104 @@
     } catch { return null; }
   }
 
-  global.WORLD_SAVE = { configured, uuid, finishSession, earnMinigame, balance, flush };
+  /* ---------------- 상점 ----------------
+     큐를 안 거치고 **그 자리에서** 부르는 것이 하나 있습니다: 사기.
+     이유는 아래 buyItem 주석에 적었습니다. */
 
-  /* 접속하면: 밀린 것부터 보내고, 서버 잔액으로 화면을 맞춥니다.
-     index.html 이 'worldsave:balance' 를 받아 ROOM.coins 를 덮어씁니다. */
+  /** 큐를 안 쓰는 RPC 한 번. 실패는 던지지 않고 { ok:false, reason } 로 돌려줍니다 —
+      부르는 쪽이 화면에 뭐라고 쓸지 정해야 하기 때문입니다. */
+  async function callRpc(fn, args) {
+    if (!configured) return { ok: false, reason: 'unconfigured' };
+    let t;
+    try { t = await token(); }
+    catch { return { ok: false, reason: 'offline' }; }
+    let r;
+    try {
+      r = await fetch(URL_BASE + '/rest/v1/rpc/' + fn, {
+        method: 'POST',
+        headers: {
+          apikey: ANON,
+          Authorization: 'Bearer ' + t,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(args || {}),
+      });
+    } catch { return { ok: false, reason: 'offline' }; }
+    if (!r.ok) return { ok: false, reason: 'server', status: r.status };
+    try { return { ok: true, data: await r.json() }; }
+    catch { return { ok: false, reason: 'server' }; }
+  }
+
+  /** 상점에서 삽니다.
+   *
+   *  **오프라인이면 큐에 안 넣고 그 자리에서 거절합니다.** 세션 종료와
+   *  다릅니다 — 세션 종료는 이미 일어난 사실을 알리는 것이라 나중에 보내도
+   *  뜻이 같지만, 사기는 **부탁**이고 결과를 모릅니다. 큐에 넣으면 화면은
+   *  "샀다"고 해 놓고 몇 시간 뒤 서버가 "잔액 부족" 이라고 답할 수 있습니다.
+   *  그때 아이템을 도로 뺏는 화면을 만들거나, 안 만들면 화면이 거짓말을
+   *  계속합니다. 둘 다 나쁘므로 못 사는 동안은 못 산다고 말합니다.
+   *
+   *  금액은 **안 보냅니다.** 보내는 것은 item_id 하나이고 값은 서버 값표가
+   *  정합니다. 못 보내는 값은 못 속입니다.
+   *
+   *  돌려주는 것: { ok, reason, balance, price }
+   *    reason  null | 'poor' | 'already' | 'unknownItem'   서버가 거절
+   *            'offline' | 'server' | 'unconfigured'        못 물어봄
+   */
+  async function buyItem(itemId) {
+    const r = await callRpc('world_buy_item', { p_item_id: itemId });
+    if (!r.ok) return { ok: false, reason: r.reason, balance: null };
+    const d = r.data || {};
+    return { ok: !!d.ok, reason: d.reason || null, balance: d.balance ?? null, price: d.price ?? null };
+  }
+
+  /** 입은 것·색·종을 통째로 저장합니다. 큐를 씁니다 —
+      입기는 잔액을 안 건드리므로 나중에 보내도 결과가 같고, 오프라인에서
+      옷을 못 갈아입게 할 이유가 없습니다. 안 산 것은 서버가 걸러 냅니다. */
+  function setLoadout(worn, tint, character) {
+    if (!configured) return Promise.resolve(null);
+    enqueue('world_set_loadout', {
+      p_worn: worn || {},
+      p_tint: tint || {},
+      p_character: character || null,
+    }, 'loadout');
+    return flush();
+  }
+
+  /** 방에 놓은 가구 목록을 통째로 저장합니다. 같은 이유로 큐를 씁니다. */
+  function setDecor(list) {
+    if (!configured) return Promise.resolve(null);
+    enqueue('world_set_decor', {
+      p_items: (Array.isArray(list) ? list : []).map((d) => ({ id: d.id, x: d.x, y: d.y })),
+    }, 'decor');
+    return flush();
+  }
+
+  /** 접속할 때 한 번. 잔액·산 것·입은 것·놓은 것·값표를 한 왕복으로 받습니다.
+      못 물어봤으면 null — 부르는 쪽은 이 기기에 남은 것으로 계속 돕니다. */
+  async function roomState() {
+    const r = await callRpc('world_room_state', {});
+    return r.ok ? r.data : null;
+  }
+
+  global.WORLD_SAVE = {
+    configured, uuid, finishSession, earnMinigame, balance, flush, pending,
+    buyItem, setLoadout, setDecor, roomState,
+  };
+
+  /* 접속하면: 밀린 것부터 보내고, 서버가 아는 방으로 화면을 맞춥니다.
+     index.html 이 'worldsave:room' 을 받아 ROOM 을 덮어씁니다.
+
+     'worldsave:balance' 도 그대로 쏩니다. 잔액만 보던 옛 판본이 아직 있고,
+     한 줄 남겨 두는 값이 그것을 찾아 고치는 값보다 쌉니다. */
   if (configured) {
     flush()
-      .then(() => balance())
-      .then((b) => {
-        if (b !== null) {
-          global.dispatchEvent(new CustomEvent('worldsave:balance', { detail: { balance: b } }));
+      .then(() => roomState())
+      .then((st) => {
+        if (!st) return;
+        global.dispatchEvent(new CustomEvent('worldsave:room', { detail: st }));
+        if (typeof st.balance === 'number') {
+          global.dispatchEvent(new CustomEvent('worldsave:balance', { detail: { balance: st.balance } }));
         }
       });
   }

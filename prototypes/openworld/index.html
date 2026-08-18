@@ -830,6 +830,13 @@
     font-size: 11.5px; color: var(--ink-3); text-align: right; margin-bottom: 8px;
   }
   #panel .shop-coin b { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  /* 못 산 이유 · 못 보낸 저장. 색만으로 말하지 않도록 글로 씁니다 —
+     안 뜨는 것이 정상이고, 뜨면 무엇이 안 됐는지가 그대로 적혀 있습니다. */
+  #panel .shop-state {
+    margin: 0 0 8px; padding: 7px 10px; border-radius: 9px;
+    background: var(--surface-3); border: 1px solid var(--line-2);
+    font-size: 11.5px; line-height: 1.45; color: var(--ink-2);
+  }
   /* auto-fill + minmax — 패널 폭이 줄면 칸 수가 알아서 줄어듭니다.
      고정 칸 수로 두면 좁은 화면에서 그림이 뭉개집니다. */
   #panel .shop-grid {
@@ -8333,6 +8340,7 @@ function decorCommit() {
   ROOM.decor = ROOM.decor.filter((d) => d.id !== DECOR.it.id);
   ROOM.decor.push({ id: DECOR.it.id, x: DECOR.x, y: DECOR.y });
   saveRoom();
+  pushDecor();
   applyDecor();
   /* 'once:decorate' 를 쓰지 않습니다 — 그 열쇠는 openPanel('settings') 가
      이미 씁니다(마이페이지를 열면 '첫 꾸미기' 가 들어옵니다). 같이 쓰면
@@ -8344,6 +8352,7 @@ function decorCommit() {
 function decorTake(id) {
   ROOM.decor = ROOM.decor.filter((d) => d.id !== id);
   saveRoom();
+  pushDecor();
   applyDecor();
 }
 function decorEnd(reopen) {
@@ -8784,6 +8793,27 @@ function shopPreviewHtml(cat) {
     </div>`;
 }
 
+/* 상점 맨 위 한 줄. 없는 상태를 지어내지 않으려고 세 가지만 말합니다 —
+   방금 못 산 이유 · 아직 못 보낸 저장 · 서버가 아예 없는 판본.
+   평소(다 잘 되는 때)에는 아무것도 안 뜹니다.
+
+   let 을 여기 두는 이유: 이 값을 읽는 곳이 closePanel 에도 있는데, 그쪽이
+   이 파일에서 더 위입니다. 선언을 아래(서버 동기화 묶음)에 두면 부팅 중에
+   창이 한 번이라도 닫힐 때 TDZ 로 터집니다. */
+let shopNote = '';          // 못 산 이유 한 줄. 비어 있으면 안 뜹니다
+
+function shopStateHtml() {
+  const lines = [];
+  if (shopNote) lines.push(esc(shopNote));
+  if (serverShop()) {
+    const n = WORLD_SAVE.pending ? WORLD_SAVE.pending() : 0;
+    if (n) lines.push('아직 서버에 못 보낸 저장이 ' + n + '개 있어요. 연결되면 저절로 갑니다.');
+  } else {
+    lines.push('서버가 없는 판본이라 산 것이 이 브라우저에만 남아요.');
+  }
+  return lines.length ? `<p class="shop-state">${lines.join('<br>')}</p>` : '';
+}
+
 function shopTabHtml(cat) {
   const items = SHOP.filter((i) => i.cat === cat);
   const card = (it) => {
@@ -8816,6 +8846,7 @@ function shopTabHtml(cat) {
   return `<div class="shop${pal ? '' : ' nopal'}">
     <div class="shop-list">
       <div class="shop-coin">가진 코인 <b>${ROOM.coins}</b></div>
+      ${shopStateHtml()}
       <div class="shop-grid">${items.map(card).join('')}</div>
     </div>
     ${pal}
@@ -10747,6 +10778,8 @@ function openPanel(key, tab) {
   /* 회고를 열었다고 주던 코인은 없앴습니다 — 단일 규칙에 없는 축이고,
      자기 기록을 보는 일에 값을 매기면 보러 오는 이유가 바뀝니다. */
   if (key === 'settings') award('once:decorate', '첫 꾸미기');
+  /* 값을 치르는 화면이라 서버 숫자를 다시 받아 옵니다(refreshShopCoins 주석) */
+  if (key === 'shop') refreshShopCoins();
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
   activePanelKey = key;
@@ -10814,6 +10847,9 @@ function closePanel() {
   clearInterval(TURTLE_MAZE.timerId);
   TURTLE_MAZE.timerId = null;
   panelEl.classList.remove('on'); panelOpen = false; activePanelKey = '';
+  /* 못 산 이유도 같이 지웁니다. 안 지우면 다음에 상점을 열 때 아까 그
+     빨간 줄이 그대로 떠 있어서, 방금 뭔가 실패한 줄 압니다. */
+  shopNote = '';
   /* 닫을 때 지웁니다. 남겨 두면 다음에 여는 창이 닫히는 동안 상점
      격자 모양을 한 프레임 입습니다. */
   delete panelEl.dataset.panel;
@@ -11109,23 +11145,17 @@ panelBody.addEventListener('click', (e) => {
     return;
   }
 
-  /* ---- 상점 ---- */
+  /* ---- 상점 ----
+     사는 것만 서버 왕복이라 async 로 빠집니다. 나머지 셋(입기·벗기·색)은
+     잔액을 안 건드리므로 그 자리에서 화면을 바꾸고 서버에는 뒤따라 올립니다. */
   const buy = e.target.closest('[data-buy]');
-  if (buy) {
-    const it = SHOP_BY_ID[buy.dataset.buy];
-    if (!it) return;
-    if (!spend(it.price)) { SFX.deny && SFX.deny(); return; }
-    ROOM.owned.push(it.id);
-    equip(it.id);                        // 산 것은 바로 입혀 줍니다
-    saveRoom(); reopenShop();
-    return;
-  }
+  if (buy) { buyItem(buy.dataset.buy, buy); return; }
   const on = e.target.closest('[data-on]');
-  if (on) { equip(on.dataset.on); saveRoom(); reopenShop(); return; }
+  if (on) { equip(on.dataset.on); saveRoom(); pushLoadout(); reopenShop(); return; }
   const off = e.target.closest('[data-off]');
-  if (off) { unequip(off.dataset.off); saveRoom(); reopenShop(); return; }
+  if (off) { unequip(off.dataset.off); saveRoom(); pushLoadout(); reopenShop(); return; }
   const sw = e.target.closest('[data-tint]');
-  if (sw) { setTint(sw.dataset.tint, sw.dataset.hex); saveRoom(); reopenShop(); return; }
+  if (sw) { setTint(sw.dataset.tint, sw.dataset.hex); saveRoom(); pushLoadout(); reopenShop(); return; }
 
   /* ---- 방 꾸미기 ---- */
   const put = e.target.closest('[data-decor-put]');
@@ -11740,8 +11770,10 @@ function grant(v, label) {
 
 /** 쓰기 — 모자라면 아무것도 안 하고 false. 하루 상한은 **버는 쪽에만**
     겁니다. 쓴 액수를 오늘 번 것에서 빼면 상한이 늘어납니다.
-    ponytail: 서버에는 아직 소비 RPC 가 없어 잔액 차감이 로컬입니다.
-    상점을 실서버에 붙일 때 world_spend 를 만들어 여기서 부릅니다. */
+
+    서버가 붙은 판본에서는 이 길로 안 옵니다. 상점은 world_buy_item 이
+    값을 정하고 잔액을 깎습니다(buyItem 참고). 여기 남은 것은 서버가 아예
+    없는 판본 — config.js 가 없거나 file:// 로 연 경우 — 몫입니다. */
 function spend(amount) {
   if (ROOM.coins < amount) return false;
   ROOM.coins -= amount; saveRoom(); paintCoins(true);
@@ -11863,6 +11895,146 @@ function endSession() {
 function applyServerBalance(balance) {
   if (typeof balance !== 'number') return;
   ROOM.coins = balance; saveRoom(); paintCoins(true);
+}
+
+/* ==================================================================
+   상점을 서버와 맞춥니다
+
+   여기까지는 산 것·입은 것·놓은 것이 전부 이 브라우저에만 있었습니다.
+   기기를 바꾸면 800코인짜리 알이 사라졌고, 콘솔에서 ROOM.owned 에 한 줄
+   밀어 넣으면 공짜로 가질 수 있었습니다. spend() 에 달려 있던
+   "서버에 아직 소비 RPC 가 없어…" 주석이 그 자리입니다.
+
+   나눠 맡는 규칙은 코인과 같습니다 — **서버가 정하고 여기는 보여 줍니다.**
+     · 값은 서버 값표에 있습니다. 여기서 보내는 것은 item_id 하나입니다.
+     · 잔액을 깎는 것도 서버입니다. 돌아온 잔액이 정답입니다.
+     · 산 목록도 서버 것이 정답입니다. 접속하면 서버 것으로 덮습니다 —
+       **이 기기에만 있던 목록은 그때 사라집니다.** 남기려면 "로컬에 있던
+       것은 서버에도 넣어 준다"를 해야 하는데, 그 순간 localStorage 를
+       고쳐 공짜로 갖는 길이 다시 열립니다. 서버를 붙이는 목적 자체가
+       그것을 막는 것이라 남기지 않습니다.
+
+   서버가 아예 없는 판본(config.js 없음 · file:// 로 열기)은 예전처럼
+   이 기기에서만 삽니다. "서버가 없는 것" 과 "서버가 있는데 못 닿는 것" 은
+   다릅니다 — 후자에서 로컬로 깎으면 장부가 두 벌이 됩니다.
+   ================================================================== */
+/* function 선언인 이유: 상점 화면(shopStateHtml)과 가구 놓기(pushDecor)가
+   이 파일에서 훨씬 위인데 둘 다 이걸 봅니다. const 로 두면 그 위에서
+   부르는 순간 TDZ 입니다. */
+function serverShop() { return !!(window.WORLD_SAVE && WORLD_SAVE.configured); }
+
+/* 못 산 이유를 사람 말로. 서버가 주는 것은 'poor' 같은 낱말이라
+   그대로 띄우면 아무 말도 안 한 것과 같습니다. */
+const BUY_FAIL = {
+  poor:        '코인이 모자라요.',
+  already:     '이미 가지고 있어요.',
+  unknownItem: '지금은 안 파는 물건이에요.',
+  offline:     '인터넷이 끊겨서 못 샀어요. 연결되면 다시 눌러 주세요.',
+  server:      '서버가 답을 안 해서 못 샀어요. 잠시 뒤에 다시 눌러 주세요.',
+  unconfigured:'서버 설정이 없어서 못 샀어요.',
+};
+
+/** 서버가 돌려준 방 상태로 화면을 맞춥니다. */
+function applyServerRoom(st) {
+  if (!st || typeof st !== 'object') return;
+  /* 값표가 먼저입니다. 화면에 220 이라 적어 놓고 250 이 빠지면 안 됩니다.
+     어긋나면 **서버 쪽으로** 맞춥니다 — 실제로 빠지는 액수가 그것입니다. */
+  if (st.prices) {
+    for (const it of SHOP) {
+      const p = st.prices[it.id];
+      if (typeof p === 'number') it.price = p;
+    }
+  }
+  if (Array.isArray(st.owned)) ROOM.owned = st.owned.slice();
+  if (st.worn && typeof st.worn === 'object') ROOM.worn = Object.assign({}, st.worn);
+  if (st.tint && typeof st.tint === 'object') ROOM.tint = Object.assign({}, st.tint);
+  if (st.character) ROOM.character = st.character;
+  if (Array.isArray(st.decor)) ROOM.decor = st.decor.map((d) => ({ id: d.id, x: d.x, y: d.y }));
+  if (typeof st.balance === 'number') ROOM.coins = st.balance;
+
+  /* 서버에 없는 상품·못 놓을 자리는 여기서 한 번 더 거릅니다. 값표가
+     앞서 나가고 클라이언트가 아직 옛 판본일 때(배포 시차) 실제로 생깁니다. */
+  pruneUnknownItems();
+  saveRoom();
+  applyDecor();
+  invalidateDressed();
+  jacketCanvas = null;
+  drawCamAvatar();
+  paintCoins(false);
+  /* 상점이나 꾸미기를 열어 둔 채로 응답이 오면 그 화면도 새로 그립니다 */
+  if (panelOpen && activePanelKey === 'shop') reopenShop();
+  else if (panelOpen && activePanelKey === 'decor') openPanel('decor');
+}
+window.addEventListener('worldsave:room', (e) => applyServerRoom(e.detail));
+
+/** 상점을 열 때 서버 잔액을 다시 물어봅니다.
+
+    이 판본에는 서버가 모르는 지역 보상이 남아 있습니다 — 첫 방문·NPC 첫
+    만남·첫 방 꾸미기(award('once:…')). 이것들은 코인 규칙 확정본
+    (docs/economy/COIN_RULE_DECISION.md)의 표에 없는 축이라 서버가 안 줍니다.
+    그래서 화면 잔액이 서버보다 클 수 있고, 그대로 두면 "살 수 있어 보이는데
+    서버가 거절" 이 됩니다.
+
+    ponytail: 그 보상들을 서버에 넣을지 없앨지는 **규칙을 고치는 일**이라
+    여기서 임의로 정하지 않았습니다. 대신 값을 치르는 화면에서는 서버 숫자만
+    보이게 맞춥니다 — 화면이 거짓말하지 않는 것이 먼저입니다.
+    못 물어보면(오프라인) 그냥 둡니다. */
+function refreshShopCoins() {
+  if (!serverShop()) return;
+  WORLD_SAVE.balance().then((b) => {
+    if (typeof b !== 'number' || b === ROOM.coins) return;
+    ROOM.coins = b; saveRoom(); paintCoins(false);
+    if (panelOpen && activePanelKey === 'shop') reopenShop();
+  });
+}
+
+/** 입은 것·색·종을 서버에 올립니다. 오프라인이면 큐에 쌓였다가 나중에 갑니다 —
+    입기는 잔액을 안 건드리므로 늦게 도착해도 결과가 같습니다. */
+function pushLoadout() {
+  if (serverShop()) WORLD_SAVE.setLoadout(ROOM.worn, ROOM.tint, ROOM.character);
+}
+/** 방에 놓은 가구 목록을 통째로 올립니다. 같은 이유로 큐를 씁니다. */
+function pushDecor() {
+  if (serverShop()) WORLD_SAVE.setDecor(ROOM.decor);
+}
+
+/* 누른 순간부터 답이 올 때까지 잠급니다. 안 잠그면 두 번 눌러 두 번
+   보내는데, 서버는 두 번째를 'already' 로 막지만 화면이 두 번 깜빡입니다. */
+let buying = false;
+async function buyItem(id, btn) {
+  const it = SHOP_BY_ID[id];
+  if (!it || buying || owns(id)) return;
+
+  if (!serverShop()) {
+    /* 서버가 아예 없는 판본 — 예전 그대로 이 기기에서만 삽니다 */
+    if (!spend(it.price)) { SFX.deny && SFX.deny(); return; }
+    ROOM.owned.push(id);
+    equip(id);
+    saveRoom(); reopenShop();
+    return;
+  }
+
+  buying = true;
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  const r = await WORLD_SAVE.buyItem(id);
+  buying = false;
+
+  /* 서버가 잔액을 알려 줬으면 성공이든 실패든 그것으로 맞춥니다.
+     실패한 김에 화면 잔액도 바로잡는 것이라, 여기가 유일한 기회입니다. */
+  if (typeof r.balance === 'number' && r.balance !== ROOM.coins) {
+    ROOM.coins = r.balance; saveRoom(); paintCoins(false);
+  }
+  if (r.ok) {
+    shopNote = '';
+    ROOM.owned.push(id);
+    equip(id);                          // 산 것은 바로 입혀 줍니다
+    saveRoom(); paintCoins(true);
+    pushLoadout();
+  } else {
+    SFX.deny && SFX.deny();
+    shopNote = BUY_FAIL[r.reason] || '지금은 살 수 없어요.';
+  }
+  reopenShop();
 }
 function newSession() {
   /* 마이페이지 경유로 회고가 세션 도중에도 열리므로, 이 버튼도 도중에

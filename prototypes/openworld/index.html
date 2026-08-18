@@ -160,113 +160,79 @@
   #hud-perf .warn { color: var(--warn); }
 
   /* ==================================================================
-     첫 진입 안내
+     첫 안내 — 그림 넉 장
 
-     네 장을 아래쪽 카드 하나로 넘깁니다. 화면 가운데를 덮는 모달로 두면
-     배우는 동안 캠퍼스가 안 보이고, 배울 대상이 사라진 설명이 됩니다.
+     예전 판은 아래쪽 띠에 제목 한 줄 · 설명 한 줄이었습니다. 줄글이라
+     읽는 사람이 적었고, "학생회관 상점" 이라고 써 놔도 그게 어느
+     건물인지는 결국 걸어 다니며 찾아야 했습니다.
 
-     줄바꿈 — 한국어는 `word-break: normal` 이면 어절 중간에서 끊깁니다.
-     `keep-all` 로 어절을 지키고, 폭을 **글자 수로** 묶습니다(max-width 를
-     ch 로). 그래야 "도서관·본관에 앉을 / 자리가 있어요" 처럼 뜻 단위로
-     떨어집니다. 제목 한 줄 + 설명 한 줄로 나눈 것도 같은 이유입니다 —
-     한 문단에 다 넣으면 넉 줄이 되고 그러면 아무도 안 읽습니다.
+     지금은 **우리 월드를 그대로 찍은 그림**에 동그라미와 화살표를 얹습니다.
+     그림이 본문이고 글은 한 줄짜리 제목과 한 줄짜리 설명뿐입니다.
+     그림이 주인공이므로 화면 가운데 모달입니다 — 예전에 모달을 피한
+     이유가 "배우는 동안 캠퍼스가 안 보인다" 였는데, 이제는 카드 안에
+     캠퍼스가 들어 있습니다.
      ================================================================== */
-  /* 아래쪽 가운데는 채팅 입력줄이 씁니다(chat.js). 그 위로 올려야
-     둘이 안 겹칩니다 — 겹치면 안내를 읽는 동안 채팅을 못 칩니다. */
-  #tutorial {
-    position: fixed; left: 50%; bottom: 104px; z-index: 7;
-    transform: translate(-50%, 14px); opacity: 0; pointer-events: none;
-    transition: opacity .22s ease, transform .28s cubic-bezier(.2, .9, .3, 1);
+  #tour {
+    position: fixed; inset: 0; z-index: 40;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(30, 38, 36, .46);
+    padding: 20px;
   }
-  #tutorial.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
-
-  .tut-card {
-    display: grid; grid-template-columns: 64px 1fr; gap: 4px 16px;
-    align-items: center;
-    width: max-content; max-width: 560px;
-    padding: 18px 20px;
+  #tour.on { display: flex; }
+  .tour-card {
+    position: relative;
+    width: min(620px, 100%); max-height: calc(100vh - 40px); overflow: auto;
     background: var(--surface); border: 1px solid var(--line);
-    border-radius: 18px; box-shadow: var(--sh-lg);
+    border-radius: 18px; box-shadow: 0 18px 50px rgba(43, 50, 48, .28);
+    padding: 18px 22px 16px;
+    animation: tourUp .22s cubic-bezier(.2, .9, .3, 1) both;
   }
-
-  /* 왼쪽 — 그 장에서 누를 키. 그림 대신 실물 키캡을 보여 줍니다.
-     이모지를 쓰면 픽셀 월드 위에 혼자 다른 화풍이 얹힙니다. */
-  .tut-keys {
-    grid-row: 1 / span 2; align-self: center;
-    display: flex; flex-wrap: wrap; gap: 3px;
-    justify-content: center; align-content: center;
-    width: 64px;
+  @keyframes tourUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  #tour-pic {
+    display: block; width: 100%; height: auto;
+    border-radius: 12px; background: #EFF1F1;
+    border: 1px solid var(--line);
   }
-  .tut-keys kbd {
-    display: block; min-width: 20px; text-align: center;
-    padding: 3px 6px;
-    background: var(--surface-3); border: 1px solid var(--line-2);
-    border-bottom-width: 2px; border-radius: 5px;
-    font: 700 11px/1.4 ui-monospace, monospace; color: var(--ink);
+  .tour-text { margin: 14px 2px 0; }
+  .tour-text b {
+    display: block; font-size: 16px; font-weight: 800; color: var(--ink);
+    letter-spacing: -.01em;
   }
-  .tut-keys kbd.wide { min-width: 46px; }
-  .tut-keys .coin {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: var(--teal-200); border: 2px solid var(--teal-600);
-    display: grid; place-items: center;
-    font: 800 13px/1 sans-serif; color: var(--teal-800);
+  .tour-text p {
+    margin: 5px 0 0; font-size: 13px; line-height: 1.55; color: var(--ink-2);
+    word-break: keep-all;
   }
-
-  .tut-text { min-width: 0; }
-  .tut-text b {
-    display: block; font-size: 15px; font-weight: 800; color: var(--ink);
-    letter-spacing: -.01em; margin-bottom: 3px;
-  }
-  .tut-text p {
-    margin: 0; font-size: 13px; line-height: 1.7; color: var(--ink-2);
-    /* keep-all 이 어절을 지키고, balance 가 두 줄 길이를 맞춥니다.
-       pretty 는 마지막 줄에 한 낱말만 남는 것만 막아서, 두 줄짜리
-       짧은 글에서는 앞줄이 꽉 차고 뒷줄이 헐거워집니다. */
-    word-break: keep-all; text-wrap: balance; max-width: 32ch;
-  }
-
-  .tut-foot {
-    grid-column: 2; display: flex; align-items: center; gap: 8px;
-    margin-top: 14px;
-  }
-  /* 몇 장 중 몇 장째인지. 숫자로 적으면 읽어야 알고, 점은 보면 압니다. */
-  .tut-dots { display: flex; gap: 5px; margin-right: auto; }
-  .tut-dots i {
-    width: 6px; height: 6px; border-radius: 50%;
-    background: var(--line-2);
+  .tour-foot { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+  .tour-dots { display: flex; gap: 5px; margin-right: auto; }
+  .tour-dots i {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--line-2);
     transition: background .18s ease, transform .18s cubic-bezier(.2, .9, .3, 1);
   }
-  .tut-dots i.on { background: var(--teal); transform: scale(1.34); }
-  .tut-dots i.done { background: var(--teal-300); }
-
-  .tut-btn {
+  .tour-dots i.on { background: var(--teal); transform: scale(1.34); }
+  .tour-dots i.done { background: var(--teal-300); }
+  .tour-btn {
     background: var(--teal); border: 1px solid var(--teal-600);
     border-radius: 9px; color: var(--on-teal);
     font: inherit; font-size: 12.5px; font-weight: 700;
     padding: 8px 16px; cursor: pointer;
     transition: filter .14s ease, transform .09s ease;
   }
-  .tut-btn:hover { filter: brightness(1.04); }
-  .tut-btn:active { transform: scale(.97); }
-  .tut-btn.ghost {
-    background: var(--surface); border-color: var(--line-2); color: var(--ink-3);
+  .tour-btn:hover { filter: brightness(1.04); }
+  .tour-btn:active { transform: scale(.97); }
+  .tour-btn.ghost { background: var(--surface); border-color: var(--line-2); color: var(--ink-3); }
+  .tour-btn.ghost:hover { background: var(--teal-50); color: var(--ink-2); }
+  .tour-btn:disabled { opacity: .38; cursor: default; }
+  .tour-btn:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 2px; }
+  #tour-x {
+    position: absolute; right: 12px; top: 12px; z-index: 1;
+    width: 30px; height: 30px; padding: 0; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 9px;
+    background: var(--surface); color: var(--ink-3);
+    font: inherit; font-size: 17px; line-height: 1;
   }
-  .tut-btn.ghost:hover { background: var(--teal-50); color: var(--ink-2); }
-  .tut-btn:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 2px; }
-
-  /* 장이 바뀔 때 — 글자만 갈아 끼우면 바뀐 줄 모릅니다. 왼쪽에서 한 뼘
-     들어오게 해서 "다음 장" 이라는 사실을 몸이 먼저 압니다. */
-  @keyframes tutIn {
-    from { opacity: 0; transform: translateX(10px); }
-    to   { opacity: 1; transform: none; }
-  }
-  .tut-card.turn .tut-keys { animation: tutIn .26s cubic-bezier(.2, .9, .3, 1) both; }
-  .tut-card.turn .tut-text b { animation: tutIn .26s cubic-bezier(.2, .9, .3, 1) 40ms both; }
-  .tut-card.turn .tut-text p { animation: tutIn .26s cubic-bezier(.2, .9, .3, 1) 80ms both; }
-  @media (prefers-reduced-motion: reduce) {
-    #tutorial, .tut-card.turn .tut-keys,
-    .tut-card.turn .tut-text b, .tut-card.turn .tut-text p { animation: none; transition: none; }
-  }
+  #tour-x:hover { background: var(--teal-50); color: var(--ink); }
+  #tour-x:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .tour-card { animation: none; } }
 
   /* 상호작용 안내 — 코랄 알약. 글자는 잉크입니다. */
   #prompt {
@@ -1316,22 +1282,24 @@
 
 <div id="dialog"><b></b><p></p><small>Space 로 닫기</small></div>
 
-<!-- 첫 진입 안내. 월드를 가리지 않고 아래쪽에 얹습니다 — 배우는 동안에도
-     캠퍼스가 보여야 무엇을 배우는지 압니다. -->
-<div id="tutorial" role="dialog" aria-labelledby="tut-title" aria-live="polite">
-  <div class="tut-card">
-    <div class="tut-keys" id="tut-keys" aria-hidden="true"></div>
-    <div class="tut-text">
-      <b id="tut-title"></b>
-      <p id="tut-desc"></p>
+<!-- 첫 안내 — 기숙사에 처음 들어오면 뜹니다. 그림 넉 장을 넘깁니다. -->
+<div id="tour" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+  <div class="tour-card">
+    <button type="button" id="tour-x" aria-label="안내 닫기">×</button>
+    <canvas id="tour-pic" width="576" height="360" role="img" aria-labelledby="tour-title"></canvas>
+    <div class="tour-text">
+      <b id="tour-title"></b>
+      <p id="tour-desc"></p>
     </div>
-    <div class="tut-foot">
-      <div class="tut-dots" id="tut-dots" aria-hidden="true"></div>
-      <button type="button" id="tut-skip" class="tut-btn ghost">건너뛰기</button>
-      <button type="button" id="tut-next" class="tut-btn">다음</button>
+    <div class="tour-foot">
+      <div class="tour-dots" id="tour-dots" aria-hidden="true"></div>
+      <button type="button" id="tour-skip" class="tour-btn ghost">건너뛰기</button>
+      <button type="button" id="tour-back" class="tour-btn ghost">이전</button>
+      <button type="button" id="tour-next" class="tour-btn">다음</button>
     </div>
   </div>
 </div>
+
 <div id="boot">Deskfit을 세우는 중…</div>
 
 <script>
@@ -4603,7 +4571,7 @@ const ZONES = {};
         '앉을 데는 도서관이랑 본관. 나머지 둘은 자는 데랑 볼일 보는 데야.',
         '헤매면 M 눌러. 지도 뜨고, 누르면 바로 가져다줘. 아까 그 설명 다시 볼래?',
       ],
-      after: startTutorial },
+      after: startTour },
     /* 관리인은 기숙사 문 앞 — 방 안이 아니라. 방 안은 내 방이고,
        관리인이 내 방에 서 있으면 관리인이 아니라 불청객입니다. */
     { x: 25, y: 11, sprite: 104, species: '거북이', dir: 'down',
@@ -6422,6 +6390,14 @@ function enterZone(id, sx, sy) {
   /* 공간이 곧 모드라면 소리도 공간을 따라야 합니다.
      문소리는 포탈에서 이미 울리므로 여기서는 앰비언트만 갈아 답니다. */
   if (audioWoken) { setAmbience(id); setMusic(id); }
+  /* 첫 안내 — 기숙사에 처음 들어올 때 한 번. 부팅 직후에도 이 길로
+     들어오므로 처음 온 사람은 방에 서자마자 보게 됩니다. 한 박자 두는
+     것은 문 넘어가는 어둠이 걷힌 뒤에 띄우기 위해서입니다. */
+  if (id === 'dorm') {
+    let seen = true;
+    try { seen = localStorage.getItem('girin.tour') === 'seen'; } catch { /* 막혀 있으면 안 띄웁니다 */ }
+    if (!seen) setTimeout(() => { if (zoneId === 'dorm' && !panelOpen) startTour(); }, 700);
+  }
 }
 window.__teleport = enterZone;
 
@@ -6533,77 +6509,311 @@ function closeDialog() {
 }
 
 /* ==================================================================
-   첫 진입 안내
+   첫 안내 — 그림 넉 장
 
-   처음 온 사람에게만 네 장. 한 번 보면(끝까지 보든 건너뛰든) 다시 안
-   나오고, 다시 보려면 광장의 나루에게 말을 걸면 됩니다.
+   **기숙사에 처음 들어왔을 때** 뜹니다. 이 월드는 자기 방에서 시작하고,
+   방에서 나가기 전에 캠퍼스가 어떻게 생겼는지 한 번은 봐야 합니다.
 
-   문구는 제목 한 줄 · 설명 한 줄입니다. 한 문단으로 쓰면 폭이 좁아
-   넉 줄이 되고, 넉 줄짜리 안내는 안 읽힙니다.
+   그림은 **우리 월드를 그 자리에서 찍습니다.** 손으로 그린 삽화를 넣으면
+   가구를 옮길 때마다 그림이 거짓말이 되고, 캡처를 파일로 넣으면 저장소가
+   무거워지고 존을 고칠 때 같이 안 바뀝니다. draw() 가 이미 다섯 존을 다
+   그릴 줄 아니, 카메라만 옮겨 한 장씩 떠서 동그라미와 화살표를 얹습니다.
 
-   **"앉으면 세션이 시작된다" 고 쓰지 않습니다.** 이 판본에서 세션과
-   카메라는 월드에 들어온 순간 함께 시작하고, 앉기는 웹캠 화면을 띄우는
-   동작입니다. 원본 문구를 그대로 옮기면 제품 설명이 거짓이 됩니다.
+   넉 장인 이유 — 사람들이 실제로 첫 1분에 하는 질문이 넷입니다.
+   어디로 가나 · 어디서 세션을 하나 · 코인은 어디서 쓰나 · 내 방에서
+   뭘 할 수 있나. 다섯 장째부터는 건너뛰기를 누릅니다. 조작(WASD·Space)은
+   따로 한 장을 쓰지 않고 그림 안에 키 모양으로 얹었습니다.
+
+   한 번 보면 다시 안 뜹니다(girin.tour). 다시 보려면 마이페이지 설정이나
+   방 안 안내 입간판에서 엽니다.
    ================================================================== */
-const TUT_STEPS = [
-  { keys: ['W', 'A', 'S', 'D'], title: '걸어서 다녀요',
-    desc: '방향키나 WASD 로 걸어요. Shift 를 누른 채로 있으면 뛰어요.' },
-  { keys: ['Space'], title: '자리에 앉아요',
-    /* U+00A0 = 안 끊기는 빈칸. '웹캠 화면' 은 한 덩어리로 읽히는 말이라
-       사이에서 줄이 바뀌면 눈이 한 번 멈춥니다. 어절 단위로만 끊는
-       keep-all 도 이건 못 막습니다 — 둘은 별개 어절이니까요. */
-    desc: '도서관과 본관에 자리가 있어요. 앉으면 웹캠\u00A0화면이 작게 떠요. 그대로 다른 탭으로 가도 돼요.' },
-  { keys: ['M'], title: '지도를 열어요',
-    desc: '건물이 멀면 M 을 눌러 주세요. 가고 싶은 곳을 누르면 그 앞으로 옮겨 드릴게요.' },
-  { coin: true, title: '코인으로 꾸며요',
-    desc: '세션을 끝내면 판정이 돌아간 만큼 코인이 들어와요. 학생회관\u00A0상점에서 쓸 수 있어요.' },
+const tourEl = document.getElementById('tour');
+const tourPic = document.getElementById('tour-pic');
+const tourG = tourPic.getContext('2d');
+const tourTitle = document.getElementById('tour-title');
+const tourDesc = document.getElementById('tour-desc');
+const tourDots = document.getElementById('tour-dots');
+const tourNext = document.getElementById('tour-next');
+const tourBack = document.getElementById('tour-back');
+const PIC_W = 576, PIC_H = 360;
+
+/* ---- 그림 위에 얹는 것 ----
+   월드는 픽셀 그림이라 정수 배로만 늘리고, 표시(동그라미·글자)는 카드
+   해상도에서 곧바로 그립니다. 표시까지 픽셀로 그리면 작은 글자가
+   무너지고, 월드를 매끄럽게 늘리면 픽셀 그림이 흐려집니다. 둘은 서로
+   다른 층이고, 층마다 다른 규칙을 씁니다. */
+function tourRound(g, x, y, w, h, r) {
+  if (g.roundRect) { g.beginPath(); g.roundRect(x, y, w, h, r); return; }
+  g.beginPath();
+  g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+/** 여기를 보라는 동그라미. 흰 무리 · 먹 테 · 청록 순서라 밝은 바닥에도
+    어두운 가구 위에도 남습니다. */
+function tourRing(g, x, y, r) {
+  g.save();
+  g.lineWidth = 7; g.strokeStyle = 'rgba(255,255,255,.9)';
+  g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke();
+  g.lineWidth = 4; g.strokeStyle = '#0C5A4F';
+  g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke();
+  g.lineWidth = 2; g.strokeStyle = '#2DD4BF';
+  g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke();
+  g.restore();
+}
+/** 이름표. dark 면 청록 알약에 흰 글자(가장 중요한 하나에만). */
+function tourChip(g, x, y, text, dark) {
+  g.save();
+  g.font = '700 12.5px "Wanted Sans Variable", system-ui, sans-serif';
+  const w = Math.round(g.measureText(text).width) + 18, h = 23;
+  const rx = Math.round(x - w / 2), ry = Math.round(y - h / 2);
+  g.fillStyle = 'rgba(30,38,36,.22)';
+  tourRound(g, rx + 1, ry + 2, w, h, 11); g.fill();
+  g.fillStyle = dark ? '#0C5A4F' : '#FFFFFF';
+  tourRound(g, rx, ry, w, h, 11); g.fill();
+  g.strokeStyle = dark ? 'rgba(255,255,255,.22)' : 'rgba(43,50,48,.14)';
+  g.lineWidth = 1; g.stroke();
+  g.fillStyle = dark ? '#FFFFFF' : '#2B3230';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, x, y + 1);
+  g.restore();
+}
+/** 자판 한 알. 조작을 글로 쓰지 않고 눌러야 할 모양 그대로 보여 줍니다. */
+function tourKey(g, x, y, text) {
+  g.save();
+  g.font = '700 12px "Wanted Sans Variable", system-ui, sans-serif';
+  const w = Math.max(26, Math.round(g.measureText(text).width) + 16), h = 25;
+  const rx = Math.round(x - w / 2), ry = Math.round(y - h / 2);
+  g.fillStyle = '#0C5A4F'; tourRound(g, rx, ry + 2, w, h, 7); g.fill();
+  g.fillStyle = '#FFFFFF'; tourRound(g, rx, ry, w, h, 7); g.fill();
+  g.strokeStyle = '#0C5A4F'; g.lineWidth = 1.5; g.stroke();
+  g.fillStyle = '#0C5A4F'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, x, y + 1);
+  g.restore();
+}
+/** 화살표. 먹 획 위에 청록을 얹어 어느 바탕에서도 보이게 합니다. */
+function tourArrow(g, x1, y1, x2, y2) {
+  const a = Math.atan2(y2 - y1, x2 - x1);
+  /* 먹 획 위에 청록을 얹습니다. 촉도 먹이 한 겹 크게 깔려야 밝은 바닥
+     에서 청록 삼각형이 바닥에 녹지 않습니다. */
+  const one = (col, w, L, back) => {
+    g.strokeStyle = col; g.lineWidth = w; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2 - Math.cos(a) * back, y2 - Math.sin(a) * back); g.stroke();
+    g.fillStyle = col;
+    g.beginPath();
+    g.moveTo(x2 + Math.cos(a) * (L - 12), y2 + Math.sin(a) * (L - 12));
+    g.lineTo(x2 - Math.cos(a - 0.44) * L, y2 - Math.sin(a - 0.44) * L);
+    g.lineTo(x2 - Math.cos(a + 0.44) * L, y2 - Math.sin(a + 0.44) * L);
+    g.closePath(); g.fill();
+  };
+  g.save();
+  one('#0C5A4F', 8, 18, 10);
+  one('#2DD4BF', 3.5, 13, 12);
+  g.restore();
+}
+
+/* ---- 월드 한 장 뜨기 ----
+   전역(존·카메라·사람 자리·시각)을 잠깐 바꾸고 draw() 를 한 번 돌린 뒤
+   화면 캔버스에서 필요한 만큼 잘라 옵니다. 한 호출 안에서 끝나므로
+   화면에는 중간 상태가 한 번도 안 보입니다(브라우저는 자바스크립트가
+   멈춘 사이에 화면을 안 그립니다). 끝나면 전부 제자리에 돌려 놓습니다.
+
+   시각은 11시로 고정합니다. 밤에 처음 들어온 사람에게 새까만 안내
+   그림을 보여 줄 수는 없습니다. */
+function worldShot(g, dx, dy, dw, dh, id, cxTile, cyTile, at) {
+  const keep = {
+    id: zoneId, z: zone, cx: camX, cy: camY,
+    px: player.x, py: player.y, dir: player.dir, flip: player.flip, sit: player.sitting,
+    near: nearby, flash: doorFlash, tv: travel, t: TIME.override, w: WEATHER.override,
+    scale: SCALE,
+  };
+  /* 넓은 장면(방 하나가 통째로 들어가야 하는 장)은 화면 배율을 1 로
+     내려 찍습니다. ×2 로는 화면 캔버스가 610×350 칸밖에 안 되어 14칸
+     짜리 방이 안 들어갑니다. 찍고 나서 곧바로 되돌립니다. */
+  const zoom = at && at.wide ? 1 : 2;
+  if (zoom === 1 && SCALE !== 1) { SCALE = 1; resize(); }
+  const cw = Math.min(dw / zoom, VIEW_W), ch = Math.min(dh / zoom, VIEW_H);
+  zoneId = id; zone = ZONES[id];
+  TIME.override = 11; WEATHER.override = 0;
+  doorFlash = null; travel = null; nearby = null;
+  player.sitting = !!(at && at.sit);
+  if (at) { player.x = at.x * T + T / 2; player.y = (at.y + 1) * T; player.dir = at.dir || 'down'; player.flip = !!at.flip; }
+  else { player.x = -9999; player.y = -9999; }         // 사람이 없는 장면
+  camX = Math.round(cxTile * T + T / 2 - VIEW_W / 2);
+  camY = Math.round(cyTile * T + T / 2 - VIEW_H / 2);
+  draw();
+  g.imageSmoothingEnabled = false;
+  g.drawImage(cv, Math.round((VIEW_W - cw) / 2), Math.round((VIEW_H - ch) / 2), cw, ch,
+              dx, dy, cw * zoom, ch * zoom);
+  g.imageSmoothingEnabled = true;
+  if (SCALE !== keep.scale) { SCALE = keep.scale; resize(); }
+  zoneId = keep.id; zone = keep.z; camX = keep.cx; camY = keep.cy;
+  player.x = keep.px; player.y = keep.py; player.dir = keep.dir; player.flip = keep.flip;
+  player.sitting = keep.sit;
+  nearby = keep.near; doorFlash = keep.flash; travel = keep.tv;
+  TIME.override = keep.t; WEATHER.override = keep.w;
+  /* 화면은 다음 프레임이 어차피 다시 그립니다. 여기서 한 번 더 그려
+     두는 것은 카드가 열리는 동안 뒤가 남의 방으로 보이지 않게 하려는
+     것입니다. */
+  draw();
+  return { x: dx, y: dy, w: cw * zoom, h: ch * zoom, zoom, cxTile, cyTile };
+}
+/** 잘라 온 그림 안에서 월드 칸 좌표가 어디인지. 동그라미를 찍는 데 씁니다. */
+function shotAt(box, tx, ty) {
+  return {
+    x: box.x + box.w / 2 + (tx - box.cxTile) * T * box.zoom,
+    y: box.y + box.h / 2 + (ty - box.cyTile) * T * box.zoom,
+  };
+}
+
+/* ---- 넉 장 ---- */
+const TOUR = [
+  {
+    title: '캠퍼스 한 바퀴',
+    desc: '건물마다 하는 일이 달라요. 걷다가 멀면 M 을 눌러 지도로 건너뛰세요.',
+    draw(g) {
+      /* 지도는 미니맵과 **같은 그림**입니다. 지도를 열었을 때 보는 것과
+         안내에서 본 것이 달라 보이면 둘을 따로 외워야 합니다. */
+      if (!MINI.base) bakeMinimap();
+      const k = Math.min((PIC_H - 16) / MINI.base.height, (PIC_W - 16) / MINI.base.width);
+      const w = MINI.base.width * k, h = MINI.base.height * k;
+      const ox = Math.round((PIC_W - w) / 2), oy = Math.round((PIC_H - h) / 2);
+      g.fillStyle = '#EFF1F1'; g.fillRect(0, 0, PIC_W, PIC_H);
+      g.imageSmoothingEnabled = true;
+      g.drawImage(MINI.base, ox, oy, w, h);
+      const at = (tx, ty) => ({ x: ox + tx * MINI.scale * k, y: oy + ty * MINI.scale * k });
+      const mark = (tx, ty, text, dark) => { const q = at(tx, ty); tourChip(g, q.x, q.y, text, dark); };
+      mark(22, 7, '기숙사 · 내 방', true);
+      mark(8, 20, '본관 · 앉는 곳');
+      mark(38, 20, '도서관 · 앉는 곳');
+      mark(23, 34, '학생회관 · 상점');
+      mark(38, 7, '미니게임');
+      /* 지금 서 있는 곳 — 방에서 나오면 여기입니다 */
+      const me = at(21, 12);
+      tourRing(g, me.x, me.y, 13);
+      tourChip(g, me.x + 4, me.y + 26, '지금 여기');
+      tourKey(g, 44, 26, 'W');
+      tourKey(g, 22, 52, 'A'); tourKey(g, 44, 52, 'S'); tourKey(g, 66, 52, 'D');
+      tourChip(g, 44, 78, '걷기');
+      tourKey(g, PIC_W - 52, 26, 'M');
+      tourChip(g, PIC_W - 52, 52, '지도');
+    },
+  },
+  {
+    title: '앉으면 세션',
+    desc: '도서관과 본관에만 자리가 있어요. 앉으면 웹캠 화면이 작게 뜨고, 다른 탭으로 가도 판정은 계속 돌아요.',
+    draw(g) {
+      /* 앉은 모습으로 찍습니다. "빈 의자 앞에서 Space" 를 글로 쓰는 것보다
+         앉아 있는 그림 하나가 짧습니다. */
+      const box = worldShot(g, 0, 0, PIC_W, PIC_H, 'library', 10.5, 9.9, { x: 9, y: 10, dir: 'up', sit: true });
+      const seat = shotAt(box, 9, 10);
+      tourRing(g, seat.x, seat.y - 26, 44);
+      tourKey(g, seat.x - 122, seat.y - 26, 'Space');
+      tourArrow(g, seat.x - 90, seat.y - 26, seat.x - 52, seat.y - 26);
+      tourChip(g, seat.x, seat.y + 40, '빈 자리 앞에서 앉기', true);
+      tourChip(g, PIC_W - 92, 26, '도서관 · 본관');
+    },
+  },
+  {
+    title: '코인과 상점',
+    desc: '세션을 마치면 판정이 돌아간 만큼 코인이 들어와요. 학생회관 상점에서 옷과 가구를 삽니다.',
+    draw(g) {
+      const box = worldShot(g, 0, 0, PIC_W, PIC_H, 'union', 7, 8, { x: 6, y: 9, dir: 'up' });
+      const shop = shotAt(box, 6, 7);
+      tourRing(g, shop.x, shop.y + 4, 32);
+      tourChip(g, shop.x, shop.y - 46, '상점 · 미르', true);
+      /* 코인 — HUD 에 있는 것과 같은 그림입니다. 화면 구석에서 본 것과
+         같아야 "저기 있는 그것" 이라고 따로 안 알려 줘도 됩니다. */
+      const cx = PIC_W - 92, cy = 42;
+      g.save();
+      g.fillStyle = '#FFFFFF'; tourRound(g, cx - 56, cy - 21, 112, 42, 21); g.fill();
+      g.strokeStyle = 'rgba(43,50,48,.16)'; g.lineWidth = 1; g.stroke();
+      g.strokeStyle = '#0C5A4F'; g.lineWidth = 2.6; g.lineCap = 'round'; g.lineJoin = 'round';
+      g.beginPath(); g.arc(cx - 32, cy - 4, 9, 0, 7); g.stroke();
+      g.beginPath(); g.arc(cx - 22, cy + 5, 9, -0.9, 3.6); g.stroke();
+      g.fillStyle = '#2B3230';
+      g.font = '800 17px "Wanted Sans Variable", system-ui, sans-serif';
+      g.textAlign = 'left'; g.textBaseline = 'middle';
+      g.fillText('코인', cx - 6, cy);
+      g.restore();
+      tourArrow(g, cx - 54, cy + 26, shop.x + 54, shop.y + 2);
+    },
+  },
+  {
+    title: '내 방에서 되는 것',
+    desc: '윗벽 한 줄이 전부예요. 물건 위에 삼각형이 뜨면 다가가서 Space 를 누르면 됩니다.',
+    draw(g) {
+      /* 방 하나가 통째로 들어가야 "한 줄로 모여 있다" 가 보입니다.
+         14칸짜리 방이라 ×1 로 찍습니다(wide). */
+      const box = worldShot(g, 64, 4, 448, 352, 'dorm', 7, 5.5, { x: 6, y: 6, dir: 'up', wide: true });
+      const spot = (tx) => {
+        const q = shotAt(box, tx, 3.5);
+        tourRing(g, q.x, q.y, 21);
+        return q;
+      };
+      const chip = (tx, y, text) => tourChip(g, spot(tx).x, y, text);
+      chip(2, 176, '시간표');
+      chip(4.5, 214, '안내');
+      chip(7, 176, '개인정보');
+      chip(9.5, 214, '창밖 날씨');
+      chip(11.5, 176, '방 꾸미기');
+      tourKey(g, 108, 316, 'Space');
+      tourChip(g, 108, 344, '다가가서 누르기');
+    },
+  },
 ];
-const tutEl = document.getElementById('tutorial');
-const tutCard = tutEl.querySelector('.tut-card');
-const tutKeys = document.getElementById('tut-keys');
-const tutTitle = document.getElementById('tut-title');
-const tutDesc = document.getElementById('tut-desc');
-const tutDots = document.getElementById('tut-dots');
-const tutNext = document.getElementById('tut-next');
-let tutStep = 0;
 
-function paintTut() {
-  const s = TUT_STEPS[tutStep];
-  /* 코인 장은 키가 없습니다. HUD 코인 버튼과 **같은 아이콘**을 씁니다 —
-     설명에서 본 그림이 화면 구석에 그대로 있어야 어디를 보라는 말인지
-     따로 안 알려 줘도 됩니다. */
-  tutKeys.innerHTML = s.coin
-    ? '<span class="coin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"'
-      + ' stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">'
-      + '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/>'
-      + '<path d="M7 6h1v4"/><path d="m16.71 13.88.7.71-2.82 2.82"/></svg></span>'
-    : s.keys.map((k) => '<kbd' + (k.length > 1 ? ' class="wide"' : '') + '>' + k + '</kbd>').join('');
-  tutTitle.textContent = s.title;
-  tutDesc.textContent = s.desc;
-  tutDots.innerHTML = TUT_STEPS
-    .map((_, i) => '<i class="' + (i === tutStep ? 'on' : i < tutStep ? 'done' : '') + '"></i>').join('');
-  tutNext.textContent = tutStep === TUT_STEPS.length - 1 ? '시작하기' : '다음';
-  /* 한 프레임 껐다 켜야 같은 애니메이션이 다시 돕니다 */
-  tutCard.classList.remove('turn');
-  void tutCard.offsetWidth;
-  tutCard.classList.add('turn');
+let tourStep = 0, tourOn = false;
+
+function paintTour() {
+  const s = TOUR[tourStep];
+  tourG.setTransform(1, 0, 0, 1, 0, 0);
+  tourG.clearRect(0, 0, PIC_W, PIC_H);
+  tourG.fillStyle = '#EFF1F1'; tourG.fillRect(0, 0, PIC_W, PIC_H);
+  try { s.draw(tourG); } catch (e) { /* 그림 한 장이 못 떠도 안내는 계속됩니다 */ }
+  tourTitle.textContent = s.title;
+  tourDesc.textContent = s.desc;
+  tourDots.innerHTML = TOUR
+    .map((_, i) => '<i class="' + (i === tourStep ? 'on' : i < tourStep ? 'done' : '') + '"></i>').join('');
+  tourNext.textContent = tourStep === TOUR.length - 1 ? '시작하기' : '다음';
+  tourBack.disabled = tourStep === 0;
 }
 
-function startTutorial() {
-  tutStep = 0;
-  paintTut();
-  tutEl.classList.add('on');
+function startTour() {
+  if (tourOn) return;
+  tourStep = 0; tourOn = true;
+  tourEl.classList.add('on');
+  paintTour();
+  tourNext.focus();
 }
-function endTutorial() {
-  tutEl.classList.remove('on');
-  try { localStorage.setItem('girin.tutorial', 'seen'); } catch { /* 무시 */ }
+/** 끝까지 봤든 건너뛰었든 같습니다 — 본 것으로 칩니다. */
+function endTour() {
+  tourOn = false;
+  tourEl.classList.remove('on');
+  try { localStorage.setItem('girin.tour', 'seen'); } catch { /* 무시 */ }
 }
-document.getElementById('tut-skip').addEventListener('click', endTutorial);
-tutNext.addEventListener('click', () => {
-  if (tutStep >= TUT_STEPS.length - 1) return endTutorial();
-  tutStep++;
-  paintTut();
-});
+function tourGo(d) {
+  const next = tourStep + d;
+  if (next < 0) return;
+  if (next >= TOUR.length) return endTour();
+  tourStep = next;
+  paintTour();
+}
+tourNext.addEventListener('click', () => tourGo(1));
+tourBack.addEventListener('click', () => tourGo(-1));
+document.getElementById('tour-skip').addEventListener('click', endTour);
+document.getElementById('tour-x').addEventListener('click', endTour);
+/* 바깥을 눌러도 닫힙니다 — 카드 밖은 이미 안내가 아닙니다 */
+tourEl.addEventListener('click', (e) => { if (e.target === tourEl) endTour(); });
+/* 키는 캡처 단계에서 받습니다. 월드가 같은 키를 조작으로 쓰기 때문에
+   여기서 먼저 삼키지 않으면 안내를 넘기면서 캐릭터가 걷습니다. */
+addEventListener('keydown', (e) => {
+  if (!tourOn) return;
+  const k = controlKey(e.key);
+  if (['arrowright', 'd', 'enter', ' '].includes(k)) { e.preventDefault(); e.stopPropagation(); tourGo(1); }
+  else if (['arrowleft', 'a'].includes(k)) { e.preventDefault(); e.stopPropagation(); tourGo(-1); }
+  else if (k === 'escape') { e.preventDefault(); e.stopPropagation(); endTour(); }
+}, true);
 
 const FOCUS = { library: '도서관 · 백색소음', mainhall: '본관 · 대중음악' };
 
@@ -11025,7 +11235,7 @@ const PANELS = {
       서버로 가는 것은 “몇 분 앉았는지” 같은 숫자뿐이에요.
       자세에 점수를 매기지도 않습니다.</div>
       <button class="act ghost" data-do="privacy">개인정보처리방침 보기</button>
-      <button class="act ghost" data-do="tutorial-replay" style="margin-top:12px">처음 안내 다시 보기</button>`,
+      <button class="act ghost" data-do="tour-replay" style="margin-top:12px">처음 안내 다시 보기</button>`,
   }),
 
   /* ---- 세션 회고 ----
@@ -11355,7 +11565,9 @@ const PANELS = {
           <div class="row"><span>지도</span><span class="val">M</span></div>
         </div>
         <div class="note">카메라 영상과 관절 좌표는 어떤 서버에도 보내지 않습니다.
-        나가는 것은 “몇 분 앉았는지” 같은 숫자뿐이에요.</div>`,
+        나가는 것은 “몇 분 앉았는지” 같은 숫자뿐이에요.</div>
+
+        <button class="act ghost" data-do="tour-replay" style="margin-top:14px">처음 안내 다시 보기</button>`,
       ],
     };
   },
@@ -11519,7 +11731,7 @@ panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="egg-right"]')) return moveEggMerge('arrowright');
   if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
   if (e.target.closest('[data-do="giraffe-stack-drop"]')) return dropGiraffeStack();
-  if (e.target.closest('[data-do="tutorial-replay"]')) { closePanel(); return startTutorial(); }
+  if (e.target.closest('[data-do="tour-replay"]')) { closePanel(); return startTour(); }
   if (e.target.closest('[data-do="escape-restart"]')) return startEscapeRoom();
   if (e.target.closest('[data-do="escape-clue"]')) return revealEscapeClue(Number(e.target.closest('[data-do="escape-clue"]').dataset.clue));
   if (e.target.closest('[data-do="escape-submit"]')) return submitEscapeCode();
@@ -13282,11 +13494,10 @@ function maybeStart() {
   document.getElementById('boot').classList.add('gone');
   enterZone('dorm', 7, 8);
   requestAnimationFrame(frame);
-  /* 처음 온 사람에게만. 부팅 화면이 걷힌 뒤 한 박자 두고 띄웁니다 —
-     같은 순간에 겹치면 둘 다 못 읽습니다. */
-  try {
-    if (localStorage.getItem('girin.tutorial') !== 'seen') setTimeout(startTutorial, 700);
-  } catch { /* 저장소가 막혀 있으면 안 띄웁니다 */ }
+  /* 첫 안내는 여기서 안 띄웁니다 — enterZone 이 기숙사에 들어올 때
+     띄웁니다. 부팅 직후에도 결국 기숙사로 들어오므로 처음 온 사람은
+     똑같이 보게 되고, 저장소를 지우고 다시 온 사람도 방에 들어서는
+     순간에 봅니다. */
 }
 function failed(name) {
   document.getElementById('boot').textContent =

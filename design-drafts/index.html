@@ -2,7 +2,7 @@
 <html lang="ko">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deskfit — 로컬 디자인 시안 다섯</title>
+<title>Deskfit — 로컬 디자인 시안 다섯 + 시안 A 색 사다리</title>
 
 <!--
   로컬 디자인 시안 목록.
@@ -11,9 +11,12 @@
   않습니다. prototypes/ · src/ · vercel.json · scripts/ 는 손대지
   않았고, 빌드(npm run build)도 이 폴더를 담지 않습니다.
 
-  다섯 파일 모두 그 자체로 열립니다 — 두 번 눌러서 브라우저로 열면
+  모든 파일이 그 자체로 열립니다 — 두 번 눌러서 브라우저로 열면
   되고, 서버도 빌드도 인터넷도 필요 없습니다. 아래 미리보기는 같은
   파일을 그대로 띄운 것이라, 보이는 것과 눌러서 여는 것이 같습니다.
+
+  시안 A 는 고른 뒤 한 번 더 손봤습니다(민트 #40DDCA). 같이 나온
+  palette.html 이 그 색 사다리와 대비 숫자를 담고 있습니다.
 -->
 
 <style>
@@ -81,6 +84,8 @@
     font-size: 11px; font-weight: 700; color: var(--ink-2);
     background: #F2F0F6; border-radius: 99px; padding: 2px 9px;
   }
+  .item .go-row { margin-top: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+  .item .go-row .go { margin-top: 0; }
   .item .go {
     margin-top: auto; align-self: flex-start;
     display: inline-flex; align-items: center; gap: 6px;
@@ -88,6 +93,21 @@
     background: #1E1B26; color: #fff; padding: 9px 16px; border-radius: 99px;
   }
   .item .go:hover { background: #37324A; }
+  /* 고른 시안만 표시가 다릅니다 — 목록에서 어느 것이 살아 있는지 한눈에. */
+  .item .go-2 { background: #0A564C; }
+  .item .go-2:hover { background: #0D7769; }
+  .item h2 .pick {
+    font-family: var(--font); font-style: normal; font-size: 11px; font-weight: 800;
+    color: #073A34; background: #40DDCA; border: 1.5px solid #0A564C;
+    border-radius: 99px; padding: 2px 9px; margin-left: 7px; letter-spacing: -0.01em;
+  }
+  .head .picked {
+    margin-top: 10px; font-size: 13px; color: var(--ink);
+    background: #EFFBF9; border: 1.5px solid #0D7769; border-radius: 12px;
+    padding: 10px 14px;
+  }
+  .head .picked b { color: #073A34; }
+  .head .picked a { font-weight: 800; color: #0A564C; }
 
   .foot {
     max-width: 1320px; margin: 26px auto 0; font-size: 12.5px; color: var(--ink-2);
@@ -107,6 +127,11 @@
 <header class="head">
   <span class="flag">로컬 전용 · 배포하지 않습니다</span>
   <h1>Deskfit 디자인 시안 다섯</h1>
+  <p class="picked">
+    <b>고른 것 · 시안 A</b> — 수현이 고른 민트 <code>#40DDCA</code> 로 다시 만들었습니다.
+    랜딩·월드에서 실제로 색을 뽑아 톤을 맞췄고, 색 사다리와 대비 숫자는
+    <a href="palette.html">색 사다리 한 장</a>에 정리했습니다.
+  </p>
   <p>
     현재 앱 셸(<code>prototypes/room-flow</code>)의 화면·정보·기능을 그대로 두고 겉모습만 바꾼
     시안입니다. 탭 다섯(방 만들기 · 성장 · 캠퍼스 · 월드 · 마이페이지)과 세션 카드가 모두 들어 있고,
@@ -123,11 +148,15 @@
       <span class="cover"></span>
     </div>
     <div class="item-body">
-      <h2><span>A</span>미니홈피</h2>
-      <p>두 칸 배치 · 가운데 링 · 오른쪽 세로 탭 · 좌상단 TODAY / TOTAL. 왼쪽 칸은 미니룸과 프로필이고,
-         월드 탭이 미니룸으로 이어집니다.</p>
-      <dl><span>하늘색 + 흰색</span><span>점선 테두리</span><span>아이소메트릭 미니룸</span></dl>
-      <a class="go" href="a-minihompy.html">열기 →</a>
+      <h2><span>A</span>미니홈피 <i class="pick">고른 시안 · 디벨롭본</i></h2>
+      <p>두 칸 배치 · 트윈링 제본 · 오른쪽 세로 탭 · 좌상단 TODAY / TOTAL 계기판. 왼쪽 칸은 미니룸과
+         프로필이고, 월드 탭이 미니룸으로 이어집니다. 색은 민트 <code>#40DDCA</code> 를 앵커로 두고
+         랜딩의 모래·크림을 바탕에 깔아 톤을 맞췄습니다.</p>
+      <dl><span>민트 #40DDCA + 모래</span><span>비트맵 서체</span><span>월드와 같은 시점 미리보기</span></dl>
+      <div class="go-row">
+        <a class="go" href="a-minihompy.html">열기 →</a>
+        <a class="go go-2" href="palette.html">색 사다리 →</a>
+      </div>
     </div>
   </li>
 
@@ -201,6 +230,9 @@
         그 형태에 맞게 눕습니다(세로 탭 → 가로 줄, 물리 키 → 화면 아래, 스프링 → 위쪽).</li>
     <li>캠퍼스 지도는 서울 25개 구를 블록으로 줄인 시안용 그림입니다. 실제 화면은 행정동 423개를
         실제 좌표로 그립니다.</li>
+    <li>시안 A 만 한 번 더 손봤습니다. 색은 짐작이 아니라 잰 것입니다 — 랜딩 스틸을 디코딩해
+        우세색을 뽑고, 월드를 띄워 화면에서 픽셀을 읽었습니다. 사다리와 대비 숫자는
+        <a href="palette.html" style="font-weight:800">palette.html</a> 에 있습니다.</li>
   </ul>
 </div>
 <script>

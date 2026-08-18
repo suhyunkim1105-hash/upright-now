@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deskfit 시안 A — 색 사다리 한 장 (#40DDCA)</title>
+
+<!--
+  시안 A 의 색을 한 장에 모은 것입니다. 회의에서 이 숫자를 두고
+  이야기하려고 만들었습니다.
+
+  여기 적힌 랜딩·월드 색은 눈으로 고른 것이 아니라 잰 것입니다.
+    · 랜딩: prototypes/landing/index.html 의 :root 변수 + assets 의
+      webp 스틸을 디코딩해 k-평균으로 뽑은 우세색
+    · 월드: prototypes/openworld/index.html 의 :root 변수 + 실제로
+      띄워 놓고 찍은 화면에서 뽑은 픽셀값
+  대비는 WCAG 2.x 상대휘도 식으로 계산했고, 시안을 브라우저에 띄워
+  실제 계산값과 맞는지 다시 확인했습니다.
+-->
+
+<style>
+  @font-face {
+    font-family: 'Galmuri11';
+    src: url(data:font/woff2;base64,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) format('woff2');
+    font-weight: 400; font-style: normal; font-display: block;
+  }
+  * { box-sizing: border-box; }
+  :root {
+    --mint-50:#EFFBF9; --mint-100:#D6F6F0; --mint-200:#B4EFE6; --mint-300:#86E6D9;
+    --mint-400:#40DDCA; --mint-500:#1FC7B2; --mint-600:#12A592; --mint-700:#0D7769;
+    --mint-800:#0A564C; --mint-900:#073A34;
+    --sand-50:#FCF8F0; --sand-100:#F4E9D6; --sand-200:#E7D5B4; --sand-300:#D8BE94;
+    --sand-500:#AE8A5E; --sand-700:#78563A;
+    --coral-100:#FDE9E2; --coral-300:#F5AE99; --coral-500:#E4705C; --coral-700:#A8402C;
+    --ink:#1E2B28; --ink-2:#4B5854; --ink-3:#64716D; --ink-4:#9AA6A2;
+    --paper:#FFFFFF; --desk:#EFE7D8;
+    --font: Pretendard, "Pretendard Variable", "Apple SD Gothic Neo",
+            "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+    --bit: 'Galmuri11', ui-monospace, Menlo, Consolas, monospace;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  body {
+    margin: 0; padding: 20px 16px 40px;
+    font-family: var(--font); font-size: 14px; line-height: 1.62;
+    letter-spacing: -0.012em; color: var(--ink); word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+    background:
+      radial-gradient(circle at 2px 2px, rgba(18,165,146,.16) 1.2px, transparent 1.8px) 0 0 / 14px 14px,
+      radial-gradient(120% 80% at 50% 0%, var(--sand-50) 0%, var(--desk) 62%, #E4DAC6 100%);
+    background-attachment: fixed;
+  }
+  h1, h2, h3, p, ul, ol, dl, dd, table { margin: 0; padding: 0; }
+  ul, ol { list-style: none; }
+  a { color: var(--mint-800); }
+
+  .sheet {
+    max-width: 1100px; margin: 0 auto; background: var(--paper);
+    border: 1.5px solid var(--mint-800); border-radius: 3px;
+    box-shadow: 6px 6px 0 rgba(10,86,76,.13), 0 18px 40px rgba(30,43,40,.10);
+    overflow: hidden;
+  }
+  .top {
+    background: linear-gradient(180deg, #55E3D2, var(--mint-400) 58%, #35D2BE);
+    border-bottom: 1.5px solid var(--mint-800);
+    padding: 14px 18px;
+  }
+  .top h1 { font-family: var(--bit); font-size: 22px; font-weight: 400; color: var(--mint-900); }
+  .top p { font-size: 12.5px; color: var(--mint-900); margin-top: 5px; max-width: 78ch; }
+  .dither {
+    height: 8px;
+    background: repeating-conic-gradient(var(--mint-400) 0% 25%, var(--mint-200) 0% 50%) 0 0 / 8px 8px;
+    border-bottom: 1.5px solid var(--mint-800);
+  }
+  .body { padding: 20px 18px 26px; }
+
+  section + section { margin-top: 26px; }
+  h2 {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 16px; font-weight: 800; letter-spacing: -0.04em;
+    padding-bottom: 7px; border-bottom: 1.5px solid var(--mint-700);
+  }
+  h2 b {
+    font-family: var(--bit); font-size: 11px; font-weight: 400;
+    background: var(--mint-400); color: var(--mint-900);
+    border: 1.5px solid var(--mint-800); border-radius: 2px; padding: 3px 6px 2px;
+  }
+  h2 em { margin-left: auto; font-style: normal; font-family: var(--bit); font-size: 11px; color: var(--ink-3); }
+  .lead { font-size: 12.5px; color: var(--ink-2); margin: 9px 0 12px; max-width: 88ch; }
+  .lead b { color: var(--ink); }
+
+  /* ---- 앵커 ---- */
+  .anchor { display: flex; gap: 16px; align-items: stretch; flex-wrap: wrap; margin-top: 12px; }
+  .anchor-chip {
+    flex: none; width: 190px; height: 132px;
+    background: var(--mint-400);
+    border: 1.5px solid var(--mint-800); border-radius: 3px;
+    box-shadow: 4px 4px 0 var(--mint-200);
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 10px; color: var(--mint-900);
+  }
+  .anchor-chip b { font-family: var(--bit); font-size: 22px; font-weight: 400; }
+  .anchor-chip span { font-family: var(--bit); font-size: 11px; }
+  .anchor-note { flex: 1; min-width: 320px; font-size: 12.5px; color: var(--ink-2); }
+  .anchor-note b { color: var(--ink); }
+  .kin { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .kin div {
+    border: 1.5px solid var(--mint-700); border-radius: 3px; overflow: hidden;
+    font-family: var(--bit); font-size: 11px; min-width: 150px;
+  }
+  .kin i { display: block; height: 26px; }
+  .kin span { display: block; padding: 4px 7px 3px; background: var(--paper); color: var(--ink-2); }
+
+  /* ---- 사다리 표 ---- */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px dashed var(--mint-300); vertical-align: top; }
+  th {
+    font-family: var(--bit); font-size: 11px; font-weight: 400; color: var(--mint-900);
+    background: var(--mint-100); border-bottom: 1.5px solid var(--mint-700); white-space: nowrap;
+  }
+  td.sw { width: 84px; }
+  td.sw i {
+    display: block; height: 30px; border: 1.5px solid rgba(30,43,40,.28); border-radius: 2px;
+  }
+  td.hex { font-family: var(--bit); font-size: 11px; white-space: nowrap; }
+  td.num { font-family: var(--bit); font-size: 11px; white-space: nowrap; text-align: right; }
+  td.use { color: var(--ink-2); }
+  tr.key td { background: var(--mint-50); }
+  tr.key td.use { font-weight: 700; color: var(--ink); }
+  .fail { color: var(--coral-700); }
+  .pass { color: #1E7A4A; }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px; margin-top: 12px; }
+
+  /* ---- 잰 색 ---- */
+  .meas { display: grid; grid-template-columns: repeat(auto-fill, minmax(154px, 1fr)); gap: 8px; margin-top: 12px; }
+  .meas div {
+    border: 1.5px solid var(--mint-700); border-radius: 3px; overflow: hidden; background: var(--paper);
+  }
+  .meas i { display: block; height: 42px; }
+  .meas b { display: block; font-family: var(--bit); font-size: 11px; font-weight: 400; padding: 5px 7px 0; }
+  .meas span { display: block; font-size: 11.5px; color: var(--ink-3); padding: 0 7px 6px; }
+
+  .rule {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: var(--sand-50); border: 1.5px solid var(--mint-700); border-radius: 3px;
+    box-shadow: 3px 3px 0 var(--mint-200);
+    padding: 11px 13px; margin-top: 12px; font-size: 12.5px;
+  }
+  .rule b {
+    flex: none; font-family: var(--bit); font-size: 11px; font-weight: 400;
+    background: var(--mint-400); color: var(--mint-900);
+    border: 1.5px solid var(--mint-800); border-radius: 2px; padding: 3px 7px 2px;
+  }
+
+  .warn {
+    background: var(--coral-100); border: 1.5px solid var(--coral-500);
+    border-radius: 3px; padding: 11px 13px; margin-top: 12px; font-size: 12.5px; color: #6B2417;
+  }
+  .warn b { color: var(--coral-700); }
+
+  .foot {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    padding: 9px 18px; background: var(--sand-100);
+    border-top: 1.5px solid var(--mint-800);
+    font-family: var(--bit); font-size: 11px; color: var(--ink-2);
+  }
+  .foot a { margin-left: auto; }
+
+  @media (max-width: 640px) {
+    td.sw { width: 56px; }
+    th, td { padding: 5px 5px; }
+  }
+</style>
+
+<div class="sheet">
+  <div class="top">
+    <h1>시안 A 색 사다리 — 민트 #40DDCA</h1>
+    <p>
+      수현이 고른 #40DDCA 를 앵커로 두고, 랜딩(3D 점토 캠퍼스)과 월드(16px 타일) 사이에
+      앉도록 만든 한 벌입니다. 아래 랜딩·월드 색은 눈으로 고른 것이 아니라
+      소스의 변수와 실제 이미지·화면에서 뽑아낸 값입니다.
+    </p>
+  </div>
+  <div class="dither" aria-hidden="true"></div>
+  <div class="body">
+
+    <!-- ============================================ 앵커 -->
+    <section>
+      <h2><b>앵커</b> #40DDCA 는 제품에 이미 있는 색과 한 가족입니다 <em>재어 본 것</em></h2>
+      <div class="anchor">
+        <div class="anchor-chip"><b>#40DDCA</b><span>hsl(173, 70%, 56%)</span></div>
+        <div class="anchor-note">
+          <p>
+            운이 좋았습니다. 랜딩의 <code>--teal</code> 과 월드의 <code>--teal</code> 은 둘 다
+            <b>#2DD4BF = hsl(172, 66%, 50%)</b> 입니다. 수현이 고른 #40DDCA 는
+            <b>hsl(173, 70%, 56%)</b> — <b>색상각이 1도 차이</b>이고 명도만 여섯 칸 밝습니다.
+            즉 새 색을 들여오는 게 아니라 <b>있던 청록의 밝은 칸</b>을 앵커로 올리는 일입니다.
+            그래서 사다리를 만들 때 600·700 은 새로 뽑지 않고 제품 값을 그대로 썼습니다.
+          </p>
+          <div class="kin">
+            <div><i style="background:#40DDCA"></i><span>#40DDCA · 수현 · 173°</span></div>
+            <div><i style="background:#2DD4BF"></i><span>#2DD4BF · 랜딩·월드 · 172°</span></div>
+            <div><i style="background:#12A592"></i><span>#12A592 · 월드 600 · 172°</span></div>
+            <div><i style="background:#0D7769"></i><span>#0D7769 · 랜딩 deep · 172°</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="warn">
+        <b>주의 — 앵커는 글자색이 될 수 없습니다.</b>
+        #40DDCA 는 흰 바탕과 <b>1.69:1</b> 입니다. 본문 기준(4.5)은 물론이고 굵은 큰 글자
+        기준(3.0)에도 못 미치고, 1px 선으로 그으면 흰 화면에서 사라집니다.
+        이 시안은 그래서 규칙을 하나로 통일했습니다 —
+        <b>앵커는 면, 600 은 선, 700 은 글자.</b> 앵커 면 위 글자는 늘 먹(#1E2B28, 8.67:1)입니다.
+      </div>
+    </section>
+
+    <!-- ============================================ 민트 사다리 -->
+    <section>
+      <h2><b>사다리 1</b> 민트 아홉 칸 <em>색상각 169~173° 고정, 명도만 이동</em></h2>
+      <p class="lead">
+        대비는 WCAG 2.x 상대휘도로 계산했습니다. <b>흰</b>은 #FFFFFF, <b>크림</b>은 랜딩과 같은
+        #F7F8F8, <b>먹</b>은 이 시안의 본문색 #1E2B28 입니다.
+      </p>
+      <table>
+        <thead>
+          <tr><th>칸</th><th></th><th>hex / hsl</th><th class="num">흰</th><th class="num">크림</th><th class="num">먹</th><th>쓰는 자리</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="hex">mint-50</td><td class="sw"><i style="background:#EFFBF9"></i></td><td class="hex">#EFFBF9<br>hsl(170,60%,96%)</td><td class="num">1.06</td><td class="num">1.01</td><td class="num">14.07</td><td class="use">히어로 바탕, 내 자리 타일, 안내 문구 상자</td></tr>
+          <tr><td class="hex">mint-100</td><td class="sw"><i style="background:#D6F6F0"></i></td><td class="hex">#D6F6F0<br>hsl(169,64%,90%)</td><td class="num">1.15</td><td class="num">1.08</td><td class="num">12.98</td><td class="use">카드 제목띠, 비활성 탭 면, 지도 중립 칸</td></tr>
+          <tr><td class="hex">mint-200</td><td class="sw"><i style="background:#B4EFE6"></i></td><td class="hex">#B4EFE6<br>hsl(171,65%,82%)</td><td class="num">1.28</td><td class="num">1.20</td><td class="num">11.65</td><td class="use">딱딱한 그림자, 디더 띠 밝은 칸, 계기판 라벨 면</td></tr>
+          <tr><td class="hex">mint-300</td><td class="sw"><i style="background:#86E6D9"></i></td><td class="hex">#86E6D9<br>hsl(172,66%,71%)</td><td class="num">1.47</td><td class="num">1.38</td><td class="num">10.17</td><td class="use">점선 괘선, 구멍 테이프, 계기판 숫자(민트 900 위 8.62)</td></tr>
+          <tr class="key"><td class="hex">mint-400</td><td class="sw"><i style="background:#40DDCA"></i></td><td class="hex">#40DDCA<br>hsl(173,70%,56%)</td><td class="num">1.69</td><td class="num">1.59</td><td class="num">8.80</td><td class="use"><b>앵커.</b> 머리띠, 주 버튼, 활성 탭, 경험치 막대, 연속 출석 도장 — 전부 <b>면</b></td></tr>
+          <tr><td class="hex">mint-500</td><td class="sw"><i style="background:#1FC7B2"></i></td><td class="hex">#1FC7B2<br>hsl(172,73%,45%)</td><td class="num">2.13</td><td class="num">2.00</td><td class="num">7.00</td><td class="use">앵커 면 안의 줄무늬, 눌림 상태, 탭 밑동</td></tr>
+          <tr><td class="hex">mint-600</td><td class="sw"><i style="background:#12A592"></i></td><td class="hex">#12A592<br>hsl(172,80%,36%)</td><td class="num">3.08</td><td class="num">2.89</td><td class="num">4.84</td><td class="use">흰 바탕 위 1px 선·아이콘의 하한. <span class="fail">크림 위에서는 2.89 라 못 씁니다</span> — 크림 위 선은 700</td></tr>
+          <tr class="key"><td class="hex">mint-700</td><td class="sw"><i style="background:#0D7769"></i></td><td class="hex">#0D7769<br>hsl(172,80%,26%)</td><td class="num">5.44</td><td class="num">5.11</td><td class="num">2.74</td><td class="use"><b>민트 글자는 여기부터.</b> 레벨 표기, 카드 테두리, 포커스 링. 랜딩 <code>--deep</code> 과 같은 값</td></tr>
+          <tr><td class="hex">mint-800</td><td class="sw"><i style="background:#0A564C"></i></td><td class="hex">#0A564C<br>hsl(172,79%,19%)</td><td class="num">8.58</td><td class="num">8.06</td><td class="num">1.74</td><td class="use">판 테두리, 앵커 면의 가장자리, 큰 숫자</td></tr>
+          <tr><td class="hex">mint-900</td><td class="sw"><i style="background:#073A34"></i></td><td class="hex">#073A34<br>hsl(173,78%,13%)</td><td class="num">12.62</td><td class="num">11.86</td><td class="num">1.18</td><td class="use">계기판 바탕, 세션 머리 바탕, 제목띠 글자</td></tr>
+        </tbody>
+      </table>
+      <div class="rule">
+        <b>규칙 1</b>
+        <span>
+          앵커(400)를 선으로 그으면 사라지고, 글자로 쓰면 안 읽힙니다. 그래서 400 아래는
+          <b>면</b>, 600 은 <b>선</b>, 700 이상은 <b>글자</b>로 자리를 나눴습니다.
+          자리마다 규칙이 달라지는 순간부터 화면이 어긋나기 시작합니다.
+        </span>
+      </div>
+      <div class="rule">
+        <b>규칙 2</b>
+        <span>
+          <b>민트는 누르는 것에만.</b> 처음 만들 때는 카드 제목띠·탭·속지 상자를 전부 민트로
+          칠했는데, 랜딩 화면과 나란히 놓고 보니 셸만 민트투성이였습니다. 랜딩은 민트가
+          화면의 2% 도 안 되고 월드도 문 하나뿐입니다. 그래서 <b>왼쪽 속지(읽기만 하는 것)는
+          모래, 비활성 탭도 모래</b>로 내리고, 민트는 머리띠·주 버튼·지금 열린 탭·진행 막대에만
+          남겼습니다. 색을 바꾼 게 아니라 <b>면적을 바꾼 것</b>이 톤을 맞춘 실제 작업입니다.
+        </span>
+      </div>
+    </section>
+
+    <!-- ============================================ 모래 -->
+    <section>
+      <h2><b>사다리 2</b> 모래 — 민트만으로는 랜딩과 붙지 않습니다 <em>스틸에서 뽑은 값</em></h2>
+      <p class="lead">
+        랜딩 스틸(<code>still-*.webp</code>, <code>collage-*.webp</code>, <code>panel-*.webp</code>)을 디코딩해
+        k-평균으로 우세색을 뽑으면, <b>화면의 절반 이상이 hsl 25~45도의 모래·나무색</b>입니다.
+        월드도 같습니다 — 건물 외벽 #DEBDA4, 중앙 광장 앞 보도, 실내 마루가 전부 이 대역입니다.
+        민트를 앵커로 쓰되 <b>바탕은 모래</b>로 깔아야 랜딩 → 셸 → 월드가 한 제품으로 읽힙니다.
+      </p>
+      <table>
+        <thead><tr><th>칸</th><th></th><th>hex / hsl</th><th class="num">흰</th><th class="num">먹</th><th>쓰는 자리 · 어디서 왔는지</th></tr></thead>
+        <tbody>
+          <tr><td class="hex">sand-50</td><td class="sw"><i style="background:#FCF8F0"></i></td><td class="hex">#FCF8F0<br>hsl(40,67%,96%)</td><td class="num">1.06</td><td class="num">13.85</td><td class="use">왼쪽 속지, 목표 막대 상자 — 랜딩 스틸의 밝은 바닥(#F2EEEA)</td></tr>
+          <tr><td class="hex">sand-100</td><td class="sw"><i style="background:#F4E9D6"></i></td><td class="hex">#F4E9D6<br>hsl(38,58%,90%)</td><td class="num">1.20</td><td class="num">12.21</td><td class="use">푸터, 탭 레일, 바인더 바탕 — 랜딩 <code>--sand #E8DCC8</code> 의 밝은 칸</td></tr>
+          <tr><td class="hex">sand-200</td><td class="sw"><i style="background:#E7D5B4"></i></td><td class="hex">#E7D5B4<br>hsl(39,52%,81%)</td><td class="num">1.44</td><td class="num">10.18</td><td class="use">미니룸 마루 — 랜딩 도서관 실내의 나무 바닥(#C6B29C~#DDBB93)</td></tr>
+          <tr><td class="hex">sand-300</td><td class="sw"><i style="background:#D8BE94"></i></td><td class="hex">#D8BE94<br>hsl(37,47%,71%)</td><td class="num">1.79</td><td class="num">8.18</td><td class="use">월드 미리보기의 길·벤치 — 월드 외벽 #DEBDA4 와 같은 대역</td></tr>
+          <tr><td class="hex">sand-500</td><td class="sw"><i style="background:#AE8A5E"></i></td><td class="hex">#AE8A5E<br>hsl(33,33%,53%)</td><td class="num">3.18</td><td class="num">4.61</td><td class="use">키캡 그림자, 미니룸 마루 이음선 — 랜딩 나무 벽(#A8753F)</td></tr>
+          <tr><td class="hex">sand-700</td><td class="sw"><i style="background:#78563A"></i></td><td class="hex">#78563A<br>hsl(27,35%,35%)</td><td class="num">6.58</td><td class="num">2.23</td><td class="use">미니룸 책상 그늘, 나무 줄기 — 랜딩 캠퍼스 땅 테두리(#6D4E35)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ============================================ 산호 + 먹 -->
+    <div class="cols">
+      <section style="margin-top:26px">
+        <h2><b>사다리 3</b> 산호 <em>두 번째 강조</em></h2>
+        <p class="lead">
+          그 시절 화면의 분홍 자리를 <b>사탕색이 아니라 벽돌색</b>으로 채웁니다.
+          월드 운동장 트랙(#BA5B43)·기숙사 지붕(#D07A4C)에서 왔습니다.
+        </p>
+        <table>
+          <thead><tr><th>칸</th><th></th><th>hex</th><th class="num">흰</th><th>쓰는 자리</th></tr></thead>
+          <tbody>
+            <tr><td class="hex">coral-100</td><td class="sw"><i style="background:#FDE9E2"></i></td><td class="hex">#FDE9E2</td><td class="num">1.17</td><td class="use">회복 기회 배지 면, 목업 표시 면</td></tr>
+            <tr><td class="hex">coral-300</td><td class="sw"><i style="background:#F5AE99"></i></td><td class="hex">#F5AE99</td><td class="num">1.84</td><td class="use">미니룸 러그, 배지 테두리</td></tr>
+            <tr><td class="hex">coral-500</td><td class="sw"><i style="background:#E4705C"></i></td><td class="hex">#E4705C</td><td class="num">3.10</td><td class="use">종이 왼쪽 여백선, 목업 표시 테두리</td></tr>
+            <tr><td class="hex">coral-700</td><td class="sw"><i style="background:#A8402C"></i></td><td class="hex">#A8402C</td><td class="num">6.11</td><td class="use">산호 글자는 여기부터 (산호-100 위 5.22)</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section style="margin-top:26px">
+        <h2><b>사다리 4</b> 먹 <em>무채색이 아닙니다</em></h2>
+        <p class="lead">
+          완전한 회색은 민트 옆에서 누렇게 보입니다. 랜딩 <code>--ink #2B3230</code> 처럼
+          초록을 아주 조금 머금게 했습니다.
+        </p>
+        <table>
+          <thead><tr><th>칸</th><th></th><th>hex</th><th class="num">흰</th><th class="num">앵커</th><th>쓰는 자리</th></tr></thead>
+          <tbody>
+            <tr><td class="hex">ink</td><td class="sw"><i style="background:#1E2B28"></i></td><td class="hex">#1E2B28</td><td class="num">14.67</td><td class="num">8.67</td><td class="use">본문, 앵커 면 위 글자</td></tr>
+            <tr><td class="hex">ink-2</td><td class="sw"><i style="background:#4B5854"></i></td><td class="hex">#4B5854</td><td class="num">7.44</td><td class="num">4.40</td><td class="use">보조 설명, 비활성 탭 글자</td></tr>
+            <tr><td class="hex">ink-3</td><td class="sw"><i style="background:#64716D"></i></td><td class="hex">#64716D</td><td class="num">5.09</td><td class="num">3.01</td><td class="use">11~12px 캡션. 크림 위에서도 4.76 이 남게 잡았습니다</td></tr>
+            <tr><td class="hex">ink-4</td><td class="sw"><i style="background:#9AA6A2"></i></td><td class="hex">#9AA6A2</td><td class="num">2.51</td><td class="num">1.49</td><td class="use">아직 오지 않은 단계 숫자. <span class="fail">글자로 읽혀야 하는 곳에는 금지</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <!-- ============================================ 잰 값: 랜딩 -->
+    <section>
+      <h2><b>잰 값 1</b> 랜딩에서 뽑은 색 <em>prototypes/landing</em></h2>
+      <p class="lead">
+        위 넷은 <code>index.html</code> 의 <code>:root</code> 변수를 그대로 옮긴 것이고,
+        아래는 <code>assets/*.webp</code> 를 디코딩해 k-평균(k=6)으로 뽑은 우세색입니다.
+      </p>
+      <div class="meas">
+        <div><i style="background:#2DD4BF"></i><b>#2DD4BF</b><span>--teal · CTA 버튼, 제목 강조</span></div>
+        <div><i style="background:#0D7769"></i><b>#0D7769</b><span>--deep · 진한 청록</span></div>
+        <div><i style="background:#F7F8F8"></i><b>#F7F8F8</b><span>--cream · 페이지 바탕</span></div>
+        <div><i style="background:#E8DCC8"></i><b>#E8DCC8</b><span>--sand · 따뜻한 중성</span></div>
+        <div><i style="background:#CFF2ED"></i><b>#CFF2ED</b><span>--sky · 옅은 청록 면</span></div>
+        <div><i style="background:#2B3230"></i><b>#2B3230</b><span>--ink · 본문 먹</span></div>
+        <div><i style="background:#86A856"></i><b>#86A856</b><span>스틸 잔디 28%</span></div>
+        <div><i style="background:#C8C391"></i><b>#C8C391</b><span>스틸 모래길 14%</span></div>
+        <div><i style="background:#83A9B8"></i><b>#83A9B8</b><span>스틸 호수 12%</span></div>
+        <div><i style="background:#6D4E35"></i><b>#6D4E35</b><span>스틸 땅 테두리 6%</span></div>
+        <div><i style="background:#D7E8E2"></i><b>#D7E8E2</b><span>스틸 카드 바탕 15%</span></div>
+        <div><i style="background:#B98D62"></i><b>#B98D62</b><span>도서관 실내 나무 11%</span></div>
+      </div>
+      <p class="lead" style="margin-top:12px">
+        읽는 법 — 랜딩은 <b>크림 바탕 + 흙·나무·잔디의 점토 캠퍼스 + 민트 CTA</b> 입니다.
+        민트가 차지하는 면적은 아주 작고, 대신 <b>다른 어떤 색도 그만큼 채도가 높지 않아서</b>
+        눈이 거기로 갑니다. 이 시안이 민트를 머리띠·버튼·활성 탭에만 쓰고 나머지를 모래와
+        흰 종이로 채운 이유가 이것입니다.
+      </p>
+    </section>
+
+    <!-- ============================================ 잰 값: 월드 -->
+    <section>
+      <h2><b>잰 값 2</b> 월드에서 뽑은 색 <em>prototypes/openworld</em></h2>
+      <p class="lead">
+        위 여섯은 소스에 박혀 있는 값이고, 아래는 월드를 실제로 띄워 놓고 찍은 화면에서
+        영역별로 뽑은 픽셀값입니다.
+      </p>
+      <div class="meas">
+        <div><i style="background:#2DD4BF"></i><b>#2DD4BF</b><span>--teal · 주색 (랜딩과 같은 값)</span></div>
+        <div><i style="background:#12A592"></i><b>#12A592</b><span>--teal-600 · 눌림·호버</span></div>
+        <div><i style="background:#CFF2ED"></i><b>#CFF2ED</b><span>--teal-100</span></div>
+        <div><i style="background:#3C5C82"></i><b>#3C5C82</b><span>본관 남색 지붕</span></div>
+        <div><i style="background:#5CB177"></i><b>#5CB177</b><span>학생회관 초록 지붕</span></div>
+        <div><i style="background:#D07A4C"></i><b>#D07A4C</b><span>기숙사 주황 지붕</span></div>
+        <div><i style="background:#537D3D"></i><b>#537D3D</b><span>바깥 잔디 (화면에서 잼)</span></div>
+        <div><i style="background:#A08991"></i><b>#A08991</b><span>중앙 광장 바닥</span></div>
+        <div><i style="background:#DEBDA4"></i><b>#DEBDA4</b><span>건물 외벽</span></div>
+        <div><i style="background:#2FB698"></i><b>#2FB698</b><span>가게 차양 — 화면에서 유일한 민트 면</span></div>
+        <div><i style="background:#BA5B43"></i><b>#BA5B43</b><span>운동장 트랙</span></div>
+        <div><i style="background:#6A7176"></i><b>#6A7176</b><span>창문</span></div>
+      </div>
+      <p class="lead" style="margin-top:12px">
+        읽는 법 — 월드도 배분이 같습니다. 화면의 대부분은 잔디·모래·나무이고,
+        민트는 <b>들어갈 수 있는 문</b> 하나에만 칠해져 있습니다. 그래서 이 시안의 월드
+        미리보기도 같은 시점(위에서 내려다보기)·같은 색·같은 배분으로 다시 그렸습니다.
+      </p>
+    </section>
+
+    <!-- ============================================ 대비 실측 -->
+    <section>
+      <h2><b>확인</b> 시안을 띄워 놓고 잰 대비 <em>1440×900, Chromium</em></h2>
+      <p class="lead">
+        계산이 아니라 <b>렌더된 화면에서 요소별로 실제 글자색·바탕색을 읽어</b> 계산한 값입니다.
+        반투명 바탕은 위 조상까지 합성해서 잽니다. 본문 기준 4.5, 큰 글자·UI 기준 3.0.
+      </p>
+      <table>
+        <thead><tr><th>자리</th><th>글자</th><th>바탕</th><th class="num">크기</th><th class="num">대비</th><th class="num">기준</th></tr></thead>
+        <tbody>
+          <tr><td class="use">본문 · 안내 문구 / 흰 종이</td><td class="hex">#64716D</td><td class="hex">#FFFFFF</td><td class="num">11.5</td><td class="num pass">5.09</td><td class="num">4.5</td></tr>
+          <tr><td class="use">방 이름 (굵게) / 흰 종이</td><td class="hex">#1E2B28</td><td class="hex">#FFFFFF</td><td class="num">13.5</td><td class="num pass">14.67</td><td class="num">4.5</td></tr>
+          <tr><td class="use">비트맵 부제 11px / 흰 종이</td><td class="hex">#64716D</td><td class="hex">#FFFFFF</td><td class="num">11</td><td class="num pass">5.09</td><td class="num">4.5</td></tr>
+          <tr class="key"><td class="use">탭 라벨 / 비활성 탭 면(모래 50)</td><td class="hex">#4B5854</td><td class="hex">#FCF8F0</td><td class="num">11</td><td class="num pass">7.02</td><td class="num">4.5</td></tr>
+          <tr class="key"><td class="use">탭 라벨 / 활성 탭 면(앵커)</td><td class="hex">#1E2B28</td><td class="hex">#40DDCA</td><td class="num">11</td><td class="num pass">8.67</td><td class="num">4.5</td></tr>
+          <tr class="key"><td class="use">주 버튼 글자 / 앵커 면</td><td class="hex">#1E2B28</td><td class="hex">#40DDCA</td><td class="num">14 · 700</td><td class="num pass">8.67</td><td class="num">3.0</td></tr>
+          <tr class="key"><td class="use">카드 제목띠 / 민트 100</td><td class="hex">#073A34</td><td class="hex">#D6F6F0</td><td class="num">11</td><td class="num pass">11.00</td><td class="num">4.5</td></tr>
+          <tr><td class="use">속지 상자 제목 / 모래 100</td><td class="hex">#78563A</td><td class="hex">#F4E9D6</td><td class="num">11</td><td class="num pass">5.48</td><td class="num">4.5</td></tr>
+          <tr><td class="use">속지 상자 부제 / 모래 100</td><td class="hex">#835E3C</td><td class="hex">#F4E9D6</td><td class="num">11</td><td class="num pass">4.81</td><td class="num">4.5</td></tr>
+          <tr><td class="use">목표 부제 (11.5px) / 모래 50</td><td class="hex">#64716D</td><td class="hex">#FCF8F0</td><td class="num">11.5</td><td class="num pass">4.81</td><td class="num">4.5</td></tr>
+          <tr><td class="use">보조 버튼 글자 / 흰 면</td><td class="hex">#1E2B28</td><td class="hex">#FFFFFF</td><td class="num">13 · 700</td><td class="num pass">14.67</td><td class="num">4.5</td></tr>
+          <tr><td class="use">레벨 표기 (민트 글자) / 흰 면</td><td class="hex">#0D7769</td><td class="hex">#FFFFFF</td><td class="num">11</td><td class="num pass">5.44</td><td class="num">4.5</td></tr>
+          <tr><td class="use">계기판 숫자 / 민트 900</td><td class="hex">#86E6D9</td><td class="hex">#073A34</td><td class="num">11</td><td class="num pass">8.62</td><td class="num">4.5</td></tr>
+          <tr><td class="use">머리띠 제목 / 앵커 면</td><td class="hex">#073A34</td><td class="hex">#40DDCA</td><td class="num">22 · 700</td><td class="num pass">7.46</td><td class="num">3.0</td></tr>
+          <tr><td class="use">푸터 / 모래 100</td><td class="hex">#4B5854</td><td class="hex">#F4E9D6</td><td class="num">11</td><td class="num pass">6.19</td><td class="num">4.5</td></tr>
+          <tr><td class="use">목업 표시 / 산호 100</td><td class="hex">#A8402C</td><td class="hex">#FDE9E2</td><td class="num">11</td><td class="num pass">5.22</td><td class="num">4.5</td></tr>
+          <tr><td class="use">판 테두리 (선) / 크림 책상</td><td class="hex">#0A564C</td><td class="hex">#F7F8F8</td><td class="num">1.5px</td><td class="num pass">8.06</td><td class="num">3.0</td></tr>
+          <tr><td class="use">카드 테두리 (선) / 흰 종이</td><td class="hex">#0D7769</td><td class="hex">#FFFFFF</td><td class="num">1.5px</td><td class="num pass">5.44</td><td class="num">3.0</td></tr>
+        </tbody>
+      </table>
+      <div class="warn">
+        <b>남은 한 가지.</b> mint-600 #12A592 는 흰 위 3.08 로 아슬아슬하게 통과하지만
+        크림(#F7F8F8) 위에서는 2.89 로 <b>떨어집니다</b>. 그래서 이 시안은 600 을
+        <b>흰 종이 위 선·아이콘에만</b> 쓰고, 모래·크림 면 위의 선은 전부 700 으로 올렸습니다.
+        나중에 어두운 화면을 만들 때는 이 칸을 다시 재야 합니다.
+      </div>
+    </section>
+
+  </div>
+  <div class="foot">
+    <span>Deskfit · 로컬 디자인 시안 A 색 사다리 · 서비스에 들어가지 않습니다</span>
+    <a href="a-minihompy.html">시안 A 열기 →</a>
+    <a href="index.html" style="margin-left:0">← 시안 목록</a>
+  </div>
+</div>
+</html>

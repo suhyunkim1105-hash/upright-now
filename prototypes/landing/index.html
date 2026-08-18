@@ -24,6 +24,14 @@
   --teal:#2DD4BF;
   --deep:#1A7F72;       /* 글자용 — teal 172°/66%, 크림 위 4.57:1 */
   --deep-face:#0D7769;  /* 면용 — 위에 크림 글자를 얹는 곳 */
+  /* 카드·표처럼 크림 위에 **얹히는** 면은 순백입니다. 크림 위 크림은
+     경계가 안 생기고, 순백이면 얹힌 것으로 읽히며 대비도 12.32 → 13.11
+     로 올라갑니다. 그동안 #fff 를 다섯 군데에 직접 적어 두고 있었습니다. */
+  --paper:#FFFFFF;
+  /* 큰 어두운 면(카메라 약속·랭킹전·마감)에 쓰는 먹. ink(#2B3230) 보다
+     더 내려 크림 글자 대비가 12.32 → 17.56 이 됩니다. 채도를 살짝 남겨
+     (160°/9%) 완전한 검정보다 차분합니다. */
+  --ink-black:#101312;
   --sand:#E8DCC8;
   --sky:#CFF2ED;
   --muted:#5F6764;
@@ -159,7 +167,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 .hero-typo{
   position:relative;height:100svh;min-height:640px;overflow:hidden;
   display:grid;place-items:center;text-align:center;
-  background:var(--ink);color:var(--cream);
+  background:var(--ink-black);color:var(--cream);
 }
 /* 밤이 내리는 캠퍼스가 뒤에 깔립니다 — 낮으로 열린 페이지가 밤으로 닫혀요 */
 .ht-bg{
@@ -208,11 +216,11 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   position:absolute;left:0;right:0;bottom:2vh;z-index:5;margin:0;
   display:flex;justify-content:space-between;align-items:baseline;
   padding:0 clamp(24px,4vw,64px);
-  color:#fff;font-weight:800;letter-spacing:-.02em;line-height:1;
+  color:var(--paper);font-weight:800;letter-spacing:-.02em;line-height:1;
   font-size:clamp(3rem,6.4vw,6rem);white-space:nowrap;
   text-shadow:0 6px 36px rgba(32,38,36,.45);
 }
-.hf-line .hf-brand{color:#101312;text-shadow:none}
+.hf-line .hf-brand{color:var(--ink-black);text-shadow:none}
 /* 온보딩의 낙서 버튼을 그대로 가져왔습니다 — 글자는 흔들리지 않고,
    뒤에 깔린 판(::before)만 wobble 필터로 손그림이 됩니다.
    그림자도 번짐이 아니라 한 번 더 그은 선입니다. */
@@ -230,7 +238,9 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   filter:url(#wobble);
   transition:background .16s var(--ease);
 }
-.btn-primary:hover::before{background:#43decb}
+/* 호버는 주색을 밝힌 값이 아니라 **주색 그대로**입니다 — 43decb 는
+   토큰에 없는 네 번째 청록이었습니다. 밝기 변화는 그림자가 맡습니다. */
+.btn-primary:hover::before{background:var(--teal)}
 .btn-primary .tail{
   width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--cream);
   display:grid;place-items:center;font-size:.9rem;
@@ -345,10 +355,6 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   display:grid;grid-template-columns:1fr 1fr;align-items:center;
   padding:0 clamp(24px,4vw,64px);gap:4vw;
 }
-.intro-label{
-  position:absolute;top:clamp(90px,12vh,140px);left:clamp(24px,4vw,64px);
-  font-size:.8rem;font-weight:700;letter-spacing:.1em;color:var(--deep);
-}
 .intro-copy{max-width:640px}
 .intro-eb{
   display:block;margin-bottom:14px;
@@ -393,7 +399,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 .chap-tiles figure:nth-child(2){margin-top:66px}
 .chap-tiles figure:nth-child(3){margin-top:33px}
 /* ---------------- 카메라 약속 ---------------- */
-.story{background:var(--ink);color:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
+.story{background:var(--ink-black);color:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
 .story-head{max-width:680px;margin:0 auto;text-align:center}
 .story-head .eyebrow{color:var(--teal)}
 .story-head h2{font-size:clamp(2rem,3vw,2.75rem);font-weight:800;letter-spacing:-.02em}
@@ -448,7 +454,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 }
 .deck-nav button{
   width:44px;height:44px;border-radius:50%;cursor:pointer;
-  border:1.5px solid var(--line);background:#fff;color:var(--ink);
+  border:1.5px solid var(--line);background:var(--paper);color:var(--ink);
   font-size:1rem;font-weight:700;
   transition:background .3s var(--ease),border-color .3s var(--ease),transform .3s var(--ease);
 }
@@ -456,7 +462,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 .deck-nav button:active{transform:scale(.96)}
 .deck{position:relative;width:min(24vw,340px);aspect-ratio:3/4.3}
 .card{
-  position:absolute;inset:0;border-radius:26px;background:#fff;
+  position:absolute;inset:0;border-radius:26px;background:var(--paper);
   border:1px solid var(--line-soft);
   box-shadow:0 24px 70px rgba(43,50,48,.16);
   display:flex;flex-direction:column;align-items:center;
@@ -485,7 +491,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 /* ---------------- 주간 랭킹전 ----------------
    영상이 한 번 물러나며 다섯 섬을 보여 주고, 멈춘 프레임 위에
    HTML 로고가 얹힙니다 — 생성 모델은 로고를 뭉개므로 로고는 DOM 이 맡습니다. */
-.league{background:var(--ink);color:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
+.league{background:var(--ink-black);color:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
 .lg-head{max-width:680px;margin:0 auto;text-align:center}
 .lg-head .eyebrow{color:var(--teal)}
 .lg-head h2{font-size:clamp(2rem,3vw,2.75rem);font-weight:800;letter-spacing:-.02em}
@@ -596,7 +602,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 .qa-body .sum{
   color:var(--ink);font-weight:700;font-size:1.06rem;line-height:1.62;
   margin:0 0 22px;padding:16px 20px;
-  background:#fff;border:1px solid var(--line-soft);border-radius:14px;
+  background:var(--paper);border:1px solid var(--line-soft);border-radius:14px;
 }
 .qa-body h4{
   margin:24px 0 8px;font-size:.94rem;font-weight:800;color:var(--deep);
@@ -614,7 +620,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   background:rgba(45,212,191,.08);border-radius:12px;
   color:var(--muted);font-size:.96rem;line-height:1.66;
 }
-.qa-body .tw{overflow-x:auto;margin:0 0 16px;border:1px solid var(--line-soft);border-radius:12px;background:#fff}
+.qa-body .tw{overflow-x:auto;margin:0 0 16px;border:1px solid var(--line-soft);border-radius:12px;background:var(--paper)}
 .qa-body table{border-collapse:collapse;width:100%;font-size:.92rem}
 .qa-body th,.qa-body td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft)}
 .qa-body thead th{font-weight:800;color:var(--ink);background:rgba(43,50,48,.03);white-space:nowrap}
@@ -705,7 +711,6 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 <!-- 4. 인트로 폴드 -->
 <section class="intro" id="about" aria-label="소개">
   <div class="intro-stage">
-    <span class="intro-label">소개</span>
     <div class="intro-copy">
       <span class="intro-eb" id="introEyebrow">거북목 자세교정과 함께</span>
       <p class="statement" id="introStatement">집중 시작은 Deskfit에서 시작해요<br>
@@ -1706,7 +1711,6 @@ const ONBOARD = '../onboarding/index.html';
     ['#introStatement', {
       ko: '집중 시작은 Deskfit에서 시작해요<br>집중할수록 내 캐릭터를 꾸미고<br><span class="serif">학교 랭킹전에 기여해요</span>',
       en: 'Focus starts at Deskfit.<br>The more you focus, the more you dress up your character<br><span class="serif">and lift your school in the league.</span>' }, 1],
-    ['.intro-label', { ko: '소개', en: 'About' }],
     ['.story-head .eyebrow', { ko: '카메라의 약속', en: 'The camera’s promise' }],
     ['.story-head h2', {
       ko: '카메라는 <span class="serif">곁에 있을 뿐이에요.</span>',

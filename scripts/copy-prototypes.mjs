@@ -31,7 +31,11 @@ function copyDir(src, dst, onHtml) {
    폴더가 없습니다 — 고치지 않으면 배포본에서만 서체가 없는 화면이 됩니다. */
 const fixFonts = (html) => html.replaceAll('../../public/fonts/', '/fonts/');
 
-for (const name of ['landing', 'onboarding', 'openworld', 'room-flow']) {
+/* shared 도 함께 옮깁니다. 온보딩과 월드가 `../shared/…` 로 부르는데
+   목록에 없어서 배포본에서만 404 였고, 그러면 SPA 리라이트가 대신
+   app.html 을 돌려줘 브라우저가 HTML 을 스크립트로 읽습니다
+   ("Unexpected token '<'"). 로컬에서는 파일이 옆에 있어 안 드러납니다. */
+for (const name of ['landing', 'onboarding', 'openworld', 'room-flow', 'shared']) {
   copyDir(`prototypes/${name}`, `dist/prototypes/${name}`, fixFonts);
 }
 

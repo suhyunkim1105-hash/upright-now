@@ -3089,10 +3089,10 @@ function calFinish() {
 $('enter').addEventListener('click', () => {
   const btn = $('enter');
   busy(btn, true);
-  /* 앱 셸로 넘깁니다. 알에서 나온 사람이 처음 보는 화면은 방 만들기이고,
-     월드는 그 안 레일의 한 탭입니다 — 여기서 월드로 바로 보내면 방·성장·
-     캠퍼스를 한 번도 못 보고 픽셀 화면에 떨어집니다. */
-  setTimeout(() => { location.href = '../room-flow/index.html'; }, 500);
+  /* 메인으로 넘깁니다. 월드로 바로 보내면 두 가지가 무너집니다 — 진행이
+     이 기기에만 남는다는 사실을 말할 화면이 없고, 마이페이지·옷장·회고·
+     랭킹전이 전부 월드 안 NPC 뒤에 숨습니다. 월드는 메인의 한 입구입니다. */
+  setTimeout(() => { location.href = '../home/index.html'; }, 500);
 });
 
 /* 이어서 하기로 들어온 사람의 화면을 미리 채워 둡니다 */

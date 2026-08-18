@@ -35,7 +35,7 @@ const fixFonts = (html) => html.replaceAll('../../public/fonts/', '/fonts/');
    목록에 없어서 배포본에서만 404 였고, 그러면 SPA 리라이트가 대신
    app.html 을 돌려줘 브라우저가 HTML 을 스크립트로 읽습니다
    ("Unexpected token '<'"). 로컬에서는 파일이 옆에 있어 안 드러납니다. */
-for (const name of ['landing', 'onboarding', 'openworld', 'room-flow', 'shared']) {
+for (const name of ['landing', 'onboarding', 'home', 'openworld', 'room-flow', 'shared']) {
   copyDir(`prototypes/${name}`, `dist/prototypes/${name}`, fixFonts);
 }
 
@@ -92,7 +92,8 @@ writeFileSync('dist/demo.html', `<!doctype html>
 <ul>
   <li><a href="/">랜딩</a><br><small>여기서 시작합니다 — CTA 가 온보딩으로 이어집니다</small></li>
   <li><a href="/prototypes/onboarding/index.html">온보딩</a><br><small>알 고르기 · 학교 인증 · 기준 잡기 → 끝나면 앱 셸</small></li>
-  <li><a href="/prototypes/room-flow/index.html">앱 셸</a><br><small>방 만들기 · 성장 · 캠퍼스 · <b>월드</b> · 마이페이지</small></li>
+  <li><a href="/prototypes/home/index.html">메인</a><br><small>방 만들기 · <b>월드 입장</b> · 기록 · 캐릭터 · 랭킹전 · 마이페이지</small></li>
+  <li><a href="/prototypes/room-flow/index.html">앱 셸 (옛 판본)</a><br><small>라임 시절. 방 만들기 마법사를 메인으로 옮길 때 참고합니다</small></li>
 </ul>
 
 <h2>따로 열어 보기</h2>

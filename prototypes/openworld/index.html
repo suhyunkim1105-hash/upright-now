@@ -2572,9 +2572,9 @@ function paintGates() {
   /* 문에 붙은 이름이 곧 그 안의 게임입니다. 이름과 열리는 게임이 어긋나
      있던 것을 연우님 판본에서 맞췄습니다 — 넷 다 m.things 의 panel 과
      같은 이름입니다(캠퍼스 북동 미니게임존). */
-  gateCanvas('gateEsc', '거북이 알 합치기', '#2DD4BF', '#8AE5D9', '#0C5A4F', '45,212,191', 'key');
+  gateCanvas('gateEsc', '동물 달리기', '#2DD4BF', '#8AE5D9', '#0C5A4F', '45,212,191', 'key');
   gateCanvas('gateA', '기린 목 펴기', '#E8695A', '#FFA694', '#8E2E1C', '232,105,90', 'ex');
-  gateCanvas('gateB', '기억력 카드', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
+  gateCanvas('gateB', '동물 기억력 카드', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
   gateCanvas('gateC', '동물 매칭 퍼즐', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
 }
 paintGates();
@@ -4391,9 +4391,9 @@ const ZONES = {};
   /* 관문 안에 서서 Space 를 누르면 열립니다. 자리는 관문과 같습니다 —
      문이 서 있는데 아무 일도 안 일어나던 것을 채웁니다. */
   m.things = [
-    { x: 32, y: 2, name: '방탈출', panel: 'escapeRoom' },        // gateEsc
+    { x: 32, y: 2, name: '동물 달리기', panel: 'animalRunner' },  // gateEsc
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },  // gateA
-    { x: 32, y: 7, name: '기억력 카드', panel: 'animalFind' }, // gateB
+    { x: 32, y: 7, name: '동물 기억력 카드', panel: 'animalFind' }, // gateB
     { x: 39, y: 7, name: '거북이 알 합치기', panel: 'eggMerge' }, // gateC
     /* 안뜰에 딱 하나 있는 게시판. 관문마다 안내를 붙이면 같은 글을 넷이
        나눠 갖게 되고, 그러면 어느 것을 읽어야 하는지가 또 문제가 됩니다. */
@@ -4418,8 +4418,8 @@ const ZONES = {};
      빠졌는데, 바로 아래에서 prop(m,'board',31,12) 로 그리고 있어서
      그림만 서 있고 눌러도 아무 일이 없는 상태였습니다. */
   m.things = [
-    { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
-    { x: 32, y: 7, name: '기억력 카드', panel: 'animalFind' },
+    { x: 32, y: 2, name: '동물 달리기', panel: 'animalRunner' },
+    { x: 32, y: 7, name: '동물 기억력 카드', panel: 'animalFind' },
     { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
     { x: 39, y: 7, name: '동물 매칭 퍼즐', panel: 'animalMatch3' },
     { x: 31, y: 12, name: '미니게임 설명 보기', panel: 'arcade' },
@@ -6014,7 +6014,7 @@ addEventListener('keydown', (e) => {
        닫아 버리면 판을 짜다가 화면이 사라집니다. 위 주석의 "Space 가
        게임 대신 창을 닫았습니다" 가 이 줄까지 와야 없어집니다. */
     if (k === 'escape' ||
-        (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'animalFind', 'animalMatch3'].includes(activePanelKey)))
+        (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'animalFind', 'animalMatch3', 'animalRunner'].includes(activePanelKey)))
       closePanel();
     return;
   }
@@ -10518,6 +10518,73 @@ function watchEmbeds() {
   }
 }
 
+/* ---- 동물 달리기 ---- */
+let animalRunnerInstance = null;
+let animalRunnerRewarded = false;
+
+function mountAnimalRunner(options) {
+  if (typeof window.MOUNT_ANIMAL_RUNNER !== 'function') return null;
+  return window.MOUNT_ANIMAL_RUNNER(options);
+}
+
+function animalRunnerIntroHtml() {
+  return `<div style="padding:8px 0 4px">
+    <h3 style="margin:0 0 10px;font-size:20px">동물 달리기</h3>
+    <p>장애물을 피하고 코인을 모으며 3분 동안 달려보세요.</p>
+    <div class="note" style="margin-top:14px">PC: A/D 또는 ←/→ 이동 · Space/↑ 점프<br>모바일: 아래의 ← · → · JUMP 버튼</div>
+    <button class="act" data-do="animal-runner-start" style="width:100%;margin-top:16px">게임 시작</button>
+  </div>`;
+}
+
+function animalRunnerHtml() {
+  return '<div id="animal-runner-mount" style="position:relative;width:min(100%,390px);min-height:260px;margin:0 auto;border-radius:16px;overflow:hidden;background:#dff2f0;touch-action:none"></div>';
+}
+
+function runnerCharacter() {
+  const species = speciesOf(ROOM.character);
+  return { id: species.slug, name: ROOM.character, image: window.GIRIN_CHAR?.mine?.() || null };
+}
+
+function renderAnimalRunnerResult(result) {
+  let got = 0;
+  if (!animalRunnerRewarded) {
+    animalRunnerRewarded = true;
+    got = gameReward('동물 달리기 성공');
+  }
+  const reward = got ? `+${got}P` : '오늘 보상 완료';
+  panelBody.innerHTML = `<div style="padding:24px 4px;text-align:center">
+    <strong style="display:block;font-size:32px;line-height:1">RUN COMPLETE!</strong>
+    <p style="margin:12px 0 18px;color:var(--ink-2)">3분 달리기를 완료했어요.</p>
+    <div class="rows" style="text-align:left">
+      <div class="row"><span>최종 점수</span><span class="val">${result.score}</span></div>
+      <div class="row"><span>획득 코인</span><span class="val">${result.coins}</span></div>
+      <div class="row"><span>장애물 충돌</span><span class="val">${result.hitCount}회</span></div>
+      <div class="row"><span>최대 Combo</span><span class="val">${result.maxCombo}</span></div>
+    </div>
+    <div class="note" style="margin-top:16px">보상: <b>${reward}</b></div>
+    <button class="act" data-do="animal-runner-restart" style="width:100%;margin-top:16px">다시 하기</button>
+  </div>`;
+}
+
+function startAnimalRunner() {
+  animalRunnerInstance?.destroy();
+  animalRunnerInstance = null;
+  animalRunnerRewarded = false;
+  panelBody.innerHTML = animalRunnerHtml();
+  const container = panelBody.querySelector('#animal-runner-mount');
+  if (!container) return;
+  animalRunnerInstance = mountAnimalRunner({
+    container,
+    character: runnerCharacter(),
+    onGameComplete: (result) => {
+      animalRunnerInstance?.destroy();
+      animalRunnerInstance = null;
+      renderAnimalRunnerResult(result);
+    },
+  });
+  if (!animalRunnerInstance) container.innerHTML = '<p class="hint" style="padding:24px">게임을 불러오지 못했어요. Vite 개발 서버에서 다시 열어 주세요.</p>';
+}
+
 const PANELS = {
   /* ---- 창밖 날씨 — 기숙사 창 ---- */
   weather: () => {
@@ -10594,12 +10661,8 @@ const PANELS = {
   },
 
   animalFind: () => ({
-    title: '동물 기억력 게임', kind: 'MINI GAME',
+    title: '동물 기억력 카드', kind: 'MINI GAME',
     html: animalFindIntroHtml(),
-  }),
-  giraffeStack: () => ({
-    title: '기린 목 쌓기', kind: 'MINI GAME',
-    html: giraffeStackHtml(),
   }),
   eggMerge: () => ({
     title: '거북이 알 합치기', kind: 'MINI GAME',
@@ -10609,13 +10672,13 @@ const PANELS = {
     title: '기린 목 펴기', kind: 'MINI GAME',
     html: giraffeNeckHtml(),
   }),
-  escapeRoom: () => ({
-    title: '방탈출', kind: 'MINI GAME',
-    html: escapeRoomHtml(),
-  }),
   animalMatch3: () => ({
     title: '동물 매칭 퍼즐', kind: 'MINI GAME',
     html: animalMatch3IntroHtml(),
+  }),
+  animalRunner: () => ({
+    title: '동물 달리기', kind: 'MINI GAME',
+    html: animalRunnerIntroHtml(),
   }),
   /* ---- 안내 — 벽에 붙은 표지판이 여는 창 ----
      기능이 아니라 **읽을 것**입니다. 처음 온 사람이 무엇을 하는 곳인지
@@ -10688,10 +10751,11 @@ const PANELS = {
         <li>시간 안에 깨면 <b>${COIN_MINIGAME}코인</b>이 들어와요.</li>
       </ol>
       <div class="rows">
+        ${row('animalRunner', '동물 달리기', '장애물을 피하고 코인을 모읍니다')}
         ${row('giraffeNeck', '기린 목 펴기', '연타로 목을 폅니다')}
-        ${row('animalFind', '기억력 카드', '같은 동물 카드 짝을 맞춥니다')}
+        ${row('animalFind', '동물 기억력 카드', '같은 동물 카드 짝을 맞춥니다')}
         ${row('eggMerge', '거북이 알 합치기', '같은 알을 붙입니다')}
-        ${row('escapeRoom', '방탈출', '단서를 찾아 번호를 맞춥니다')}
+        ${row('animalMatch3', '동물 매칭 퍼즐', '동물 블록을 3개 이상 맞춥니다')}
       </div>
       <div class="note">코인은 <b>게임마다 하루 한 번</b>까지예요. 오늘 받은
       게임을 또 깨도 코인은 안 들어와요 — 여기는 벌러 오는 곳이 아니니까요.
@@ -11177,6 +11241,10 @@ function closePanel() {
   if (typeof ANIMAL_MATCH3 !== 'undefined' && ANIMAL_MATCH3.active) {
     ANIMAL_MATCH3.active = false;
   }
+  if (animalRunnerInstance) {
+    animalRunnerInstance.destroy();
+    animalRunnerInstance = null;
+  }
   TURTLE_MAZE.active = false;
   clearInterval(TURTLE_MAZE.timerId);
   TURTLE_MAZE.timerId = null;
@@ -11233,6 +11301,11 @@ panelBody.addEventListener('touchstart', (e) => {
   if (handleAnimalMatch3Press(e.target)) { e.preventDefault(); e.stopPropagation(); }
 }, { passive: false });
 panelBody.addEventListener('click', (e) => {
+  if (activePanelKey === 'animalRunner' && (e.target.closest('[data-do="animal-runner-start"]') || e.target.closest('[data-do="animal-runner-restart"]'))) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return startAnimalRunner();
+  }
   if (e.target.closest('[data-do="privacy"]')) return openPanel('privacy');
   if (activePanelKey === 'animalFind' && (e.target.closest('[data-animal-memory-index]') || e.target.closest('[data-do="animal-find-start"]'))) {
     e.preventDefault();
@@ -12991,8 +13064,10 @@ school.src = 'assets/school16.png';
 </script>
 
 <script type="module">
+  import { mountAnimalRunner } from './animal-runner-game.mjs';
   import * as animalMatch3Engine from './animal-match3-engine.mjs';
   import * as animalFindEngine from './animal-find-engine.mjs';
+  window.MOUNT_ANIMAL_RUNNER = mountAnimalRunner;
   window.ANIMAL_MATCH3_ENGINE = animalMatch3Engine;
   window.ANIMAL_FIND_ENGINE = animalFindEngine;
 </script>

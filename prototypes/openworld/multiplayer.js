@@ -9,11 +9,12 @@
    여기서 하는 일은 셋입니다.
      1. 전송 계층을 인터페이스 하나로 좁힙니다 (Transport).
      2. 남의 위치를 **띄엄띄엄** 받아 **부드럽게** 그립니다 (보간).
-     3. 서버가 아직 없으니 가짜 서버를 하나 붙여 둡니다.
+     3. 진짜 서버(Supabase Realtime)에 붙이고, 못 붙으면 봇으로 물러납니다.
 
-   서버는 아직 없습니다. 그래서 LocalTransport 가 가짜 플레이어 넷을
-   자기 안에서 굴리고, 진짜 서버처럼 초당 열 번만 스냅샷을 흘립니다.
-   일부러 열 번입니다 — 60번 흘리면 보간이 맞는지 영영 모릅니다.
+   진짜 서버가 붙었습니다. SupabaseTransport 가 존별 채널 하나에
+   presence(누가 있나 · 어떤 모습인가)와 broadcast(어디 있나)를 같이
+   씁니다. LocalTransport(봇 넷)는 남겨 뒀습니다 — 언제 사는지는
+   아래 "봇을 왜 남겼나" 를 보세요.
 
    ---- 캐릭터 크기 ----
    남도 내 캐릭터와 **같은 32x48** 로 그립니다. 그림은 index.html 이 열어
@@ -36,6 +37,18 @@
   const SEND_MS = 1000 / SEND_HZ;
   const INTERP_DELAY = 120;
   const BUF_KEEP = 1200;      // 이보다 오래된 스냅샷은 버립니다
+
+  /* presence 를 다시 올리는 최소 간격.
+     presence 는 "누가 있고 어떤 모습인가" 라 자주 보낼 것이 아닙니다.
+     다만 x/y 를 같이 실어야 **늦게 들어온 사람**이 서 있는 사람을 봅니다 —
+     안 움직이는 사람은 broadcast 를 한 줄도 안 보내므로, presence 에 든
+     좌표가 그 사람의 유일한 자리입니다. 5초면 늦게 온 사람이 최대 5초
+     묵은 자리를 잠깐 보고, 그 사람이 걷기 시작하면 곧바로 맞춰집니다. */
+  const PRESENCE_MS = 5000;
+
+  /* 붙는 데 이만큼 걸리면 포기하고 봇으로 물러납니다. 무한정 기다리면
+     "사람이 없는 건지 못 붙은 건지" 를 화면이 영영 말 못 합니다. */
+  const CONNECT_TIMEOUT_MS = 8000;
 
   /* 캐릭터 시트에서 사람 한 벌이 있는 자리. index.html 의
      CHAR_BASE / DIR_COL / WALK_ROW 와 같은 칸을 가리킵니다.
@@ -89,28 +102,31 @@
      chat 은 보낸 사람에게도 되돌려 줘야 합니다(에코). 그래야 내 말풍선이
      남의 말풍선과 같은 길로 오고, 필터·차단을 한 군데서만 걸면 됩니다.
 
-     Supabase Realtime 으로 바꾼다면 이 정도입니다:
-
-       const ch = supabase.channel('campus');
-       return {
-         name: 'supabase',
-         connect(h) {
-           ch.on('broadcast', { event: 'state' }, ({ payload }) =>
-                 h.onState(payload.id, payload))
-             .on('broadcast', { event: 'chat' }, ({ payload }) =>
-                 h.onChat(payload.id, payload))
-             .on('presence', { event: 'join' },  ({ newPresences }) =>
-                 newPresences.forEach((p) => h.onJoin(p.id, p)))
-             .on('presence', { event: 'leave' }, ({ leftPresences }) =>
-                 leftPresences.forEach((p) => h.onLeave(p.id)))
-             .subscribe();
-         },
-         send(m) { ch.send({ type: 'broadcast', event: m.type, payload: m }); },
-         disconnect() { ch.unsubscribe(); },
-       };
-
      주의: 위치는 broadcast 로 흘리고 **DB 에 쓰지 않습니다.** 초당 열 번
      × 사람 수만큼 insert 하면 비용도 지연도 감당이 안 됩니다.
+     ================================================================ */
+
+  /* ================================================================
+     내보내는 것 — 이 목록이 전부입니다
+
+     presence(느림 · 사람이 들어오거나 모습이 바뀔 때)
+       id · nick · school · species · worn · zone · x · y · dir · moving · sessionMs
+     broadcast 'm' (초당 최대 열 번 · 움직일 때만)
+       id · t · x · y · dir · flip · moving
+     broadcast 'say' (사람이 말할 때만)
+       id · t · text · emoji
+
+     **여기 없는 것은 안 나갑니다.** 특히 카메라 프레임 · 랜드마크 좌표 ·
+     자세 판정 상태(good/warn/bad) · 회복 횟수는 한 글자도 안 나갑니다.
+     world_sessions 표 주석에 "영상·프레임·랜드마크는 절대 없습니다" 라고
+     적어 두었고, 개인정보 안내(dorm 의 privacy 패널)도 같은 말을 합니다.
+     화면에 뜨는 세션 시간(sessionMs)만 예외인데, 그건 이름표에 이미
+     띄우기로 한 값이고 "얼마나 앉아 있었나" 이지 "어떻게 앉아 있나" 가
+     아닙니다.
+
+     sessionMs 를 보내는 이유(sessionAt 이 아니라): 남의 시계가 틀어져
+     있으면 시작 시각은 그대로 틀린 값이 됩니다. **얼마나 지났나**를
+     보내면 받는 쪽이 자기 시계로 시작 시각을 되돌립니다.
      ================================================================ */
 
   /* ================== 원격 플레이어 ================== */
@@ -145,8 +161,12 @@
          보내면 초당 열 번씩 같은 값을 다시 보내게 되므로, **시작 시각만**
          한 번 받고 흐르는 것은 각자 화면에서 셉니다.
          없으면 시간 줄은 그냥 안 뜹니다 — 0:00 을 띄우면 방금 온 사람과
-         시간을 안 보내는 사람이 구별되지 않습니다. */
-      sessionAt: profile.sessionAt || null,
+         시간을 안 보내는 사람이 구별되지 않습니다.
+
+         sessionMs(얼마나 지났나)로 오면 **내 시계로** 시작 시각을 되돌립니다.
+         남의 시계가 틀어져 있어도 이름표 숫자는 맞습니다. */
+      sessionAt: profile.sessionAt
+        || (typeof profile.sessionMs === 'number' ? Date.now() - profile.sessionMs : null),
       species, worn,
       charKey: charKeyOf(species, worn),
       buf: [],            // 받은 스냅샷 (시간순)
@@ -472,23 +492,75 @@
     const here = [...remotes.values()]
       .filter((r) => r.ready && r.zone === zoneId)
       .map((r) => r.nick + ' · ' + r.school);
-    const key = here.join('|');
+    const key = MP.mode + '|' + MP.link + '|' + here.join('|');
     if (key === rosterKey) return;
     rosterKey = key;
+    /* 봇이면 봇이라고 말합니다 — 화면 왼쪽 위 안내와 같은 말이어야
+       스크린리더로 듣는 사람도 같은 사실을 압니다. */
+    const kind = MP.mode === 'bots' ? '연습용 캐릭터 ' : '';
     roster.textContent = here.length
-      ? '같은 공간에 ' + here.length + '명 — ' + here.join(', ')
-      : '같은 공간에 다른 사람이 없습니다';
+      ? '같은 공간에 ' + kind + here.length + '명 — ' + here.join(', ')
+      : (MP.link === 'live' ? '같은 공간에 다른 사람이 없습니다'
+                            : '아직 서버에 못 붙었습니다');
   }
 
-  /* ================== 내 위치 올리기 ================== */
+  /* ================== 내 것 올리기 ==================
+     둘을 따로 보냅니다.
+       위치   broadcast · 초당 최대 열 번 · **움직일 때만**
+       모습   presence  · 들어올 때 한 번 + 바뀔 때 + 5초에 한 번
+
+     이 앱은 앉아 있는 시간이 대부분이라, "움직일 때만" 이 요금과 배터리를
+     거의 다 줄여 줍니다. 건물 사이를 걷는 30초 남짓만 초당 열 번이고
+     나머지는 0 입니다. */
+
+  /* 내 이름표·모습에 들어갈 것. index.html 의 ROOM 을 그대로 봅니다 —
+     여기 한 벌을 또 만들면 옷을 갈아입어도 남에게는 안 바뀝니다.
+     **여기 없는 값은 안 나갑니다**(위 "내보내는 것" 목록 참고). */
+  function myProfile() {
+    const R = (typeof ROOM !== 'undefined' && ROOM) || {};
+    const started = (typeof SESSION !== 'undefined' && SESSION && SESSION.startedAt) || 0;
+    return {
+      id: MP.meId,
+      nick: R.nickname || '누군가',
+      school: R.school || '',
+      species: R.character || '거북이',
+      worn: Object.assign({}, R.worn || {}),
+      zone: zoneId,
+      x: player.x, y: player.y, dir: player.dir, flip: player.flip,
+      moving: player.moving,
+      /* 시작 시각이 아니라 흐른 시간. 남의 시계가 틀어져 있어도 맞습니다. */
+      sessionMs: started ? Math.max(0, Date.now() - started) : 0,
+    };
+  }
+
+  let myZone = null;
   let lastSent = 0, lastSentKey = '';
+  let lastPresence = 0, lastProfileKey = '', lastPresPos = '';
   function pushSelf(now) {
+    /* 존이 바뀌면 채널을 갈아탑니다. index.html 의 enterZone 은 아무것도
+       쏘지 않으므로 여기서 봅니다 — 그 파일을 안 건드리는 것이 이 파일의
+       규칙이고, 매 프레임 문자열 비교 하나는 공짜입니다. */
+    if (zoneId !== myZone) {
+      myZone = zoneId;
+      lastSentKey = ''; lastProfileKey = ''; lastPresPos = '';
+      if (MP.transport && MP.transport.setZone) MP.transport.setZone(myZone);
+    }
+
     if (now - lastSent < SEND_MS) return;
     lastSent = now;
-    /* 안 움직이면 안 보냅니다. 서 있는 사람 몫으로 초당 열 번을 쓰는 건
-       낭비입니다. 다만 한 번은 더 보내 "멈췄다"를 알립니다. */
-    const key = [zoneId, Math.round(player.x), Math.round(player.y),
-                 player.dir, player.flip, player.moving].join(',');
+
+    /* 모습 — 바뀌었거나, 5초가 지났는데 그동안 움직였을 때만 */
+    const prof = myProfile();
+    const pkey = [prof.nick, prof.school, prof.species, JSON.stringify(prof.worn)].join('|');
+    const ppos = Math.round(prof.x) + ',' + Math.round(prof.y);
+    if (pkey !== lastProfileKey || (now - lastPresence > PRESENCE_MS && ppos !== lastPresPos)) {
+      lastProfileKey = pkey; lastPresence = now; lastPresPos = ppos;
+      MP.send(Object.assign({ type: 'profile' }, prof));
+    }
+
+    /* 위치 — 안 움직이면 안 보냅니다. 서 있는 사람 몫으로 초당 열 번을
+       쓰는 건 낭비입니다. 다만 한 번은 더 보내 "멈췄다"를 알립니다. */
+    const key = [zoneId, ppos, player.dir, player.flip, player.moving].join(',');
     if (key === lastSentKey) return;
     lastSentKey = key;
     MP.send({
@@ -504,8 +576,42 @@
 
   const handlers = {
     onJoin(id, profile) {
-      if (!remotes.has(id)) remotes.set(id, Remote(id, profile || {}));
-      emit('join', remotes.get(id));
+      const p = profile || {};
+      if (!remotes.has(id)) remotes.set(id, Remote(id, p));
+      const rp = remotes.get(id);
+      const fresh = !rp.seen; rp.seen = true;
+      /* 이미 있던 사람이 모습을 바꿨을 수도 있습니다(옷을 갈아입었거나
+         닉네임을 고쳤거나). presence 는 그때마다 다시 옵니다. */
+      if (p.nick) rp.nick = p.nick;
+      if (p.school !== undefined) rp.school = p.school || '';
+      if (p.species && p.species !== rp.species) rp.species = p.species;
+      if (p.worn !== undefined) rp.worn = p.worn || null;
+      rp.charKey = charKeyOf(rp.species, rp.worn);
+      if (typeof p.sessionMs === 'number') rp.sessionAt = Date.now() - p.sessionMs;
+
+      /* **자리를 하나 심어 둡니다.** 이게 없으면 가만히 서 있는 사람은
+         영영 안 보입니다 — 안 움직이면 broadcast 를 한 줄도 안 보내므로
+         버퍼가 비고, 버퍼가 비면 ready 가 안 되고, ready 가 아니면
+         collect 가 건너뜁니다. presence 에 실려 온 좌표가 그 답입니다.
+
+         **버퍼에 넣지 않고 그릴 값에 바로 씁니다.** presence 에는 보낸 쪽
+         시계가 없어서 t 를 지어내야 하는데, 내 시계로 지어 넣으면 그 뒤에
+         오는 진짜 스냅샷이 전부 "그것보다 옛날 것" 으로 걸러집니다
+         (onState 의 t 비교). 실제로 그렇게 만들었다가 남이 제자리에서
+         얼어붙는 것을 봤습니다. buf 가 비어 있으면 resolve 는 아무것도
+         안 하므로 이 값이 그대로 남고, 진짜 스냅샷이 한 줄이라도 오면
+         그때부터 보간이 맡습니다. */
+      if (!rp.buf.length && typeof p.x === 'number' && typeof p.y === 'number') {
+        rp.x = p.x; rp.y = p.y;
+        rp.dir = p.dir || 'down'; rp.flip = !!p.flip;
+        rp.dir4 = dir4Of(rp.dir, rp.flip);
+        rp.zone = p.zone || rp.zone;
+        rp.moving = false;
+        rp.ready = true;
+      }
+      /* presence 는 누가 뭘 할 때마다 명단 전체가 다시 옵니다. 그때마다
+         join 을 알리면 "누가 왔다" 가 초당 몇 번씩 울립니다. */
+      if (fresh) emit('join', rp);
     },
     onLeave(id) {
       remotes.delete(id);
@@ -536,7 +642,14 @@
 
   /* ================== 공개 ================== */
   const MP = {
-    meId: 'me',
+    /* 이 탭만의 id 입니다. **로그인 uid 가 아닙니다.**
+       두 가지 이유입니다. (1) 한 사람이 탭 두 개를 열 수 있는데 presence
+       열쇠가 같으면 둘이 서로를 지웁니다. (2) 화면에 사람을 그리는 데
+       계정 id 는 필요 없고, 필요 없는 값을 같은 존의 모두에게 뿌릴 이유가
+       없습니다. 새로고침하면 다른 사람으로 다시 들어옵니다 — presence 가
+       나감/들어옴을 알려 주므로 명단은 안 어긋납니다. */
+    meId: (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+      : 'me-' + Math.random().toString(36).slice(2),
     remotes,
     collect, drawOne, toScreen,
     /** 남의 머리 위 화면 좌표 — 말풍선이 씁니다 */
@@ -562,8 +675,14 @@
         combos: combos.size,
         big: [...remotes.values()].filter((r) => r.big).length,
         api: !!charAPI(),
+        /* 지금 무엇에 붙어 있나. 화면이 "혼자" 와 "못 붙음" 을 구별해
+           말하려면 이 값이 필요합니다.
+             mode  'supabase' | 'bots' | 'none'
+             link  'connecting' | 'live' | 'down'    (bots 일 때는 'live') */
+        mode: MP.mode, link: MP.link, zone: myZone,
       };
     },
+    mode: 'none', link: 'connecting',
     on(kind, fn) { listeners[kind].push(fn); },
     transport: null,
     setTransport(t) {
@@ -574,12 +693,167 @@
       t.connect(handlers);
     },
     send(msg) { if (MP.transport) MP.transport.send(msg); },
-    /** 채팅에서 부릅니다. 서버가 나에게도 되돌려 주므로 여기서는 안 그립니다. */
+    /** 채팅에서 부릅니다. 전송 계층이 나에게도 되돌려 주므로(에코)
+        여기서는 안 그립니다. */
     say(text, emoji) {
       MP.send({ type: 'chat', t: performance.now(), text: text || '', emoji: emoji || '' });
     },
   };
   window.MP = MP;
+
+  /* ================== Supabase Realtime ==================
+     존마다 채널 하나입니다: 'world:<zone>'. 존을 옮기면 옛 채널에서 나가고
+     새 채널에 듭니다 — 도서관에 앉아 있는데 운동장 사람들 좌표가 초당 열 번씩
+     날아오면 받을 이유도 없고 요금만 씁니다.
+
+     한 채널 안에서 둘을 같이 씁니다.
+       presence   누가 있나 · 어떤 모습인가 · 마지막으로 본 자리
+       broadcast  어디 있나 (초당 최대 열 번 · 움직일 때만)
+
+     왜 위치를 DB 에 안 쓰나: 초당 열 번 × 사람 수만큼 insert 하면 비용도
+     지연도 감당이 안 됩니다. broadcast 는 지나가면 사라지는 값이고,
+     위치는 원래 그런 값입니다.
+
+     왜 broadcast self:false 인가: 내 캐릭터는 index.html 이 그립니다.
+     되돌아오면 두 겹으로 보이기도 하지만, 그보다 **내가 보낸 초당 열 번이
+     그대로 나에게 돌아옵니다.** 채팅만 에코가 필요한데 그건 send 안에서
+     직접 만듭니다.
+
+     ---- 보안에 대해 솔직히 ----
+     지금은 **공개 채널**입니다. anon 키를 아는 사람은 누구나 이 채널에
+     들어와 아무 닉네임·아무 학교로 설 수 있습니다. 막으려면 Supabase
+     대시보드에서 Realtime Authorization(private channel + realtime.messages
+     RLS)을 켜야 하는데, 그건 코드가 아니라 프로젝트 설정입니다.
+     README 의 "수현이 할 일" 에 적어 두었습니다.
+     ================================================================ */
+
+  /* SDK 는 **설정이 있을 때만** 그 자리에서 불러옵니다.
+     index.html 의 <script src> 목록에 넣지 않는 이유는 build-supabase-js.mjs
+     머리말에 있습니다 — 단독본에 쓰지도 않을 200KB 를 박게 됩니다. */
+  let sdkPromise = null;
+  function loadSdk() {
+    if (window.supabase && window.supabase.createClient) return Promise.resolve(window.supabase);
+    if (sdkPromise) return sdkPromise;
+    sdkPromise = new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = '../shared/supabase.js';
+      s.onload = () => (window.supabase && window.supabase.createClient
+        ? res(window.supabase) : rej(new Error('supabase.js 가 이상합니다')));
+      s.onerror = () => rej(new Error('supabase.js 를 못 받았습니다'));
+      document.head.append(s);
+    });
+    return sdkPromise;
+  }
+
+  function SupabaseTransport(client) {
+    let h = null, ch = null, zone = null, alive = false, lastProfile = null;
+
+    function leave() {
+      if (!ch) return;
+      const old = ch; ch = null;
+      try { old.unsubscribe(); client.removeChannel(old); } catch { /* 이미 닫힘 */ }
+    }
+
+    /* presence 는 누가 뭘 할 때마다 **명단 전체**가 다시 옵니다(sync).
+       join/leave 를 따로 듣지 않는 이유: sync 하나만 보면 늘 지금 명단이라
+       두 길이 어긋날 일이 없습니다. */
+    function syncPresence(c) {
+      if (c !== ch) return;
+      let st = {};
+      try { st = c.presenceState() || {}; } catch { return; }
+      const here = new Set();
+      for (const key of Object.keys(st)) {
+        if (key === MP.meId) continue;
+        const meta = (st[key] || [])[0];
+        if (!meta) continue;
+        here.add(key);
+        h.onJoin(key, meta);
+      }
+      /* 목록을 먼저 복사합니다 — onLeave 가 remotes 를 지우면서 도는 것을
+         피하려는 것이고, Array.from 을 쓰는 것은 spread 로 쓰면 lint 가
+         "쓸데없는 복사" 로 봅니다(여기서는 쓸데 있습니다). */
+      for (const id of Array.from(remotes.keys())) if (!here.has(id)) h.onLeave(id);
+    }
+
+    function track() {
+      if (!ch || MP.link !== 'live' || !lastProfile) return;
+      /* type 은 우리 내부 봉투라 빼고 보냅니다 */
+      const p = Object.assign({}, lastProfile);
+      delete p.type;
+      Promise.resolve(ch.track(p)).catch(() => { /* 끊긴 중 — 다음 5초에 다시 */ });
+    }
+
+    function join(z) {
+      leave();
+      zone = z;
+      MP.link = 'connecting';
+      /* 존을 옮기면 저쪽 사람들은 더 이상 내 화면에 있을 이유가 없습니다 */
+      [...remotes.keys()].forEach(h.onLeave);
+
+      const c = client.channel('world:' + z, {
+        config: { broadcast: { self: false, ack: false }, presence: { key: MP.meId } },
+      });
+      ch = c;
+      c.on('broadcast', { event: 'm' }, (msg) => {
+        const p = msg && msg.payload;
+        if (!p || !p.id || p.id === MP.meId) return;
+        /* zone 은 채널이 이미 말해 줍니다. 보내는 쪽 말을 믿지 않는 편이
+           낫습니다 — 남의 존으로 자기를 그려 넣을 수 있습니다. */
+        h.onState(p.id, {
+          t: p.t, zone, x: p.x, y: p.y, dir: p.dir, flip: !!p.flip, moving: !!p.moving,
+        });
+      });
+      c.on('broadcast', { event: 'say' }, (msg) => {
+        const p = msg && msg.payload;
+        if (!p || !p.id || p.id === MP.meId) return;
+        h.onChat(p.id, p);
+      });
+      c.on('presence', { event: 'sync' }, () => syncPresence(c));
+      c.subscribe((status) => {
+        if (c !== ch || !alive) return;
+        if (status === 'SUBSCRIBED') {
+          MP.link = 'live';
+          /* 붙자마자 내 모습을 올립니다. 안 그러면 이미 와 있던 사람들
+             화면에 내가 안 뜹니다 — 내가 걷기 시작할 때까지. */
+          track();
+          syncPresence(c);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          MP.link = 'down';
+          /* 못 받는 동안 남을 화면에 그대로 두면 "다들 멈춰 있네" 가 됩니다.
+             지우는 쪽이 정직합니다 — 다시 붙으면 presence 가 명단을 줍니다.
+             (SDK 가 알아서 물러났다 다시 붙습니다.) */
+          [...remotes.keys()].forEach(h.onLeave);
+        }
+      });
+    }
+
+    return {
+      name: 'supabase',
+      connect(handlersIn) {
+        h = handlersIn; alive = true;
+        join(zoneId);
+      },
+      setZone(z) { if (alive && z !== zone) join(z); },
+      send(m) {
+        if (!alive) return;
+        if (m.type === 'profile') { lastProfile = m; return track(); }
+        if (!ch || MP.link !== 'live') return;
+        if (m.type === 'state') {
+          ch.send({ type: 'broadcast', event: 'm', payload: {
+            id: MP.meId, t: m.t, x: m.x, y: m.y,
+            dir: m.dir, flip: !!m.flip, moving: !!m.moving,
+          } });
+        } else if (m.type === 'chat') {
+          const p = { id: MP.meId, t: m.t, text: m.text || '', emoji: m.emoji || '' };
+          ch.send({ type: 'broadcast', event: 'say', payload: p });
+          /* 에코를 여기서 만듭니다. self:false 라 서버가 안 돌려주는데,
+             chat.js 는 내 말도 같은 길로 와야 말풍선을 띄웁니다. */
+          h.onChat(MP.meId, p);
+        }
+      },
+      disconnect() { alive = false; leave(); },
+    };
+  }
 
   /* ================== 가짜 서버 ==================
      진짜 서버가 붙기 전까지만 삽니다. 안에서 사람 넷을 굴리고,
@@ -824,21 +1098,122 @@
     pushSelf(now);
     syncTags();
     syncRoster();
+    syncNote();
     requestAnimationFrame(loop);
   }
 
-  /* 봇 수는 주소로 바꿉니다: ?bots=20. 기본은 넷입니다. */
-  function botCount() {
-    const n = parseInt(new URLSearchParams(location.search).get('bots'), 10);
+  /* 봇 수는 주소로 바꿉니다: ?bots=20. 안 쓰면 null 이고, null 이면
+     진짜 서버를 먼저 시도합니다. */
+  function botParam() {
+    const raw = new URLSearchParams(location.search).get('bots');
+    if (raw === null) return null;
+    const n = parseInt(raw, 10);
     return Number.isFinite(n) ? n : FAKE.length;
+  }
+
+  /* ================== 봇을 왜 남겼나 ==================
+     Gather 에는 봇이 없습니다. 그래도 남깁니다 — 다만 **진짜 서버에 못
+     붙었을 때만** 삽니다.
+
+     남긴 이유: 이 월드의 전제가 "캠퍼스" 인데, 서버 설정이 없는 사람이
+     열면 아무도 없는 벌판입니다. 그러면 이 프로토타입이 무엇을 만들려는
+     것인지가 화면에서 사라집니다. 시연도 대부분 혼자 합니다.
+
+     남기면서 지킨 것: **봇을 사람인 척하지 않습니다.** 봇이 도는 동안에는
+     화면 왼쪽 위에 "연습용" 이라고 적어 두고, 스크린리더용 명단도 같은
+     말을 합니다. 그리고 진짜 서버에 붙은 뒤에는 아무도 없어도 봇을 안
+     넣습니다 — 비어 있는 것이 사실이면 비어 있어야 합니다.
+     ================================================================ */
+  const note = document.createElement('div');
+  note.id = 'mp-note';
+  note.hidden = true;
+  document.body.append(note);
+
+  const NOTE_CSS = document.createElement('style');
+  NOTE_CSS.textContent = `
+  #mp-note {
+    position: fixed; left: 12px; top: 12px; z-index: 6; pointer-events: none;
+    padding: 5px 10px; border-radius: 999px;
+    background: rgba(255,255,255,.92); color: #4E3F39;
+    font-size: 11px; font-weight: 700; letter-spacing: -.01em;
+    box-shadow: 0 1px 3px rgba(78,47,38,.18), 0 0 0 1px rgba(78,47,38,.08);
+  }
+  #mp-note[hidden] { display: none; }
+  `;
+  document.head.append(NOTE_CSS);
+
+  /* 감출 때 글자도 같이 비웁니다. 남겨 두면 hidden 인 채로 옛 문장을 들고
+     있어서, 화면 밖에서 읽는 도구나 검사 스크립트가 지난 상태를 봅니다. */
+  function setNote(text) {
+    if (note.textContent !== text) note.textContent = text;
+    note.hidden = !text;
+  }
+
+  /** why 는 사람에게 보여 줄 한 줄, detail 은 개발자용 원문입니다.
+      'Failed to fetch' 같은 영어 원문을 화면에 그대로 띄우면, 읽는 사람이
+      할 수 있는 일이 없는 문장이 됩니다. 원문은 MP.why 로만 남깁니다. */
+  function useBots(n, why, detail) {
+    MP.mode = 'bots'; MP.link = 'live'; MP.why = detail || why || '';
+    MP.setTransport(LocalTransport(n));
+    setNote('연습용 캐릭터 ' + n + '명 · ' + (why || '서버에 못 붙었어요'));
+  }
+
+  /** 진짜 서버에 붙습니다. 못 붙으면 던집니다 — 부르는 쪽이 봇으로 갑니다. */
+  async function connectReal() {
+    if (!window.WORLD_SAVE || !WORLD_SAVE.configured) throw new Error('설정 없음');
+    const sdk = await loadSdk();
+    /* 토큰은 save.js 것을 그대로 씁니다. 로그인 갈래(학교 이메일 → 익명)를
+       두 곳에서 따로 만들면 같은 사람이 두 사람이 됩니다. */
+    const token = await WORLD_SAVE.accessToken();
+    const client = sdk.createClient(GIRIN_SUPABASE.url, GIRIN_SUPABASE.anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      /* 초당 12 — 위치가 초당 열 번이고 그 위에 presence 와 채팅이 얹힙니다.
+         딱 10 으로 두면 걸으면서 말할 때 밀립니다. */
+      realtime: { params: { eventsPerSecond: 12 } },
+    });
+    client.realtime.setAuth(token);
+
+    MP.mode = 'supabase'; MP.link = 'connecting';
+    MP.setTransport(SupabaseTransport(client));
+
+    /* 붙었는지 눈으로 확인될 때까지 기다립니다. 안 기다리면 "봇도 없고
+       사람도 없는" 화면이 8초쯤 이어집니다. */
+    await new Promise((res, rej) => {
+      const t0 = Date.now();
+      (function wait() {
+        if (MP.link === 'live') return res();
+        if (Date.now() - t0 > CONNECT_TIMEOUT_MS) return rej(new Error('시간 초과'));
+        setTimeout(wait, 120);
+      })();
+    });
+  }
+
+  /* 화면 왼쪽 위 한 줄. 없는 상태를 지어내지 않습니다 —
+     "혼자" 와 "못 붙음" 과 "연습용" 은 서로 다른 말입니다. */
+  function syncNote() {
+    if (MP.mode !== 'supabase') return;             // 봇 안내는 useBots 가 씁니다
+    if (MP.link === 'connecting') return setNote('접속 중…');
+    if (MP.link === 'down') return setNote('연결이 끊겼어요 · 다시 붙는 중');
+    setNote(remotes.size ? '' : '지금 이 공간에 혼자 있어요');
   }
 
   /* 16x16 으로 물러날 때를 대비해 urban.png 가 뜬 뒤에 시작합니다.
      32x48 시트는 index.html 이 알아서 챙깁니다. */
   function boot() {
     if (!urban.complete || !urban.naturalWidth) { setTimeout(boot, 100); return; }
-    MP.setTransport(LocalTransport(botCount()));
     requestAnimationFrame(loop);
+
+    const forced = botParam();
+    if (forced !== null) return useBots(forced, '?bots= 로 켠 시연용');
+
+    connectReal().catch((e) => {
+      /* 여기 오는 길 셋: 설정 없음 · SDK 못 받음 · 채널이 안 붙음.
+         셋 다 "서버가 없는 것처럼" 굴어야 월드가 안 멈춥니다. */
+      if (MP.transport) { MP.transport.disconnect(); MP.transport = null; }
+      [...remotes.keys()].forEach(handlers.onLeave);
+      const detail = String((e && e.message) || e);
+      useBots(FAKE.length, detail === '설정 없음' ? '서버 설정이 없어요' : '서버에 못 붙었어요', detail);
+    });
   }
   boot();
 })();

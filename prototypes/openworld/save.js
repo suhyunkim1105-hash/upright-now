@@ -288,6 +288,10 @@
   global.WORLD_SAVE = {
     configured, uuid, finishSession, earnMinigame, balance, flush, pending,
     buyItem, setLoadout, setDecor, roomState,
+    /** 지금 쓰는 액세스 토큰. multiplayer.js 가 Realtime 에 붙일 때 씁니다 —
+        여기 로그인 갈래(학교 이메일 → 익명)를 두 곳에서 따로 쓰면 언젠가
+        서로 다른 사람으로 붙습니다. 없으면 만들어 옵니다. */
+    accessToken: token,
   };
 
   /* 접속하면: 밀린 것부터 보내고, 서버가 아는 방으로 화면을 맞춥니다.

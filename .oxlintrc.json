@@ -15,5 +15,5 @@
     "no-underscore-dangle": ["warn", { "allow": ["__upright", "__uprightCampus"] }],
     "react/react-in-jsx-scope": "off"
   },
-  "ignorePatterns": ["dist", "node_modules", "docs", "references", "supabase", "templates", "scripts", "public/assets", "public/mediapipe", "prototypes/shared/korcen.js"]
+  "ignorePatterns": ["dist", "node_modules", "docs", "references", "supabase", "templates", "scripts", "public/assets", "public/mediapipe", "prototypes/shared/korcen.js", "prototypes/shared/supabase.js"]
 }

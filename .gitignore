@@ -30,8 +30,6 @@ public/assets/*.css
 # 프로토타입 단독 시연본은 빌드 산출물입니다. 원본은 index.html 입니다.
 prototypes/**/standalone.html
 prototypes/**/artifact.html
-# Supabase anon key 가 들어가는 자리. config.example.js 를 복사해서 씁니다.
-prototypes/shared/config.js
 
 # 세션 중 만든 임시 검증 스크립트
 _*.mjs

@@ -1,5 +1,5 @@
 /**
- * UpRight Now 핵심 타입
+ * Deskfit 핵심 타입
  * 기준: AGENTS.md §4 권장 타입, docs/06 §12, docs/15 §5
  */
 

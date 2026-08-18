@@ -6,7 +6,7 @@ import type { PostureState, CharacterVisualState } from '@/types'
  */
 
 export const BRAND = {
-  name: 'UpRight Now',
+  name: 'Deskfit',
   slogan: '자세를 펴고, 오늘의 목표를 끝내는 시간',
   oneLiner:
     '노트북 공부 중 흐트러진 자세를 조용히 알아차리고, 회복할 때마다 캐릭터와 게임이 성장해요.',

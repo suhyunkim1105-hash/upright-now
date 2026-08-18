@@ -1,4 +1,4 @@
-# ARCHITECTURE — UpRight Now 시스템 구조
+# ARCHITECTURE — Deskfit 시스템 구조
 
 > 마지막 갱신: 2026-08-04 · 브랜치 `feat/wanted-sans-font`
 >

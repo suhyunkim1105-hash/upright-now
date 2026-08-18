@@ -72,7 +72,7 @@ writeFileSync('dist/demo.html', `<!doctype html>
 <html lang="ko">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UpRight Now — 팀 데모</title>
+<title>Deskfit — 팀 데모</title>
 <style>
   body { font-family: 'Pretendard Variable', Pretendard, sans-serif; max-width: 40rem;
          margin: 4rem auto; padding: 0 1.5rem; line-height: 1.7; color: #3B2F2A; }
@@ -82,7 +82,7 @@ writeFileSync('dist/demo.html', `<!doctype html>
   a { color: #C4573B; font-weight: 600; }
   small { color: #7A6C66; }
 </style>
-<h1>UpRight Now — 팀 데모</h1>
+<h1>Deskfit — 팀 데모</h1>
 
 <h2>출시 흐름</h2>
 <ul>

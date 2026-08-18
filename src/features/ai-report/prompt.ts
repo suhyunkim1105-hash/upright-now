@@ -13,7 +13,7 @@ function humanize(input: AiReportInput): Record<string, unknown> {
 }
 
 export function buildAiReportPrompt(input: AiReportInput): string {
-  return `당신은 UpRight Now의 세션 회고 도우미입니다.
+  return `당신은 Deskfit의 세션 회고 도우미입니다.
 
 ## 무엇을 받았는가
 

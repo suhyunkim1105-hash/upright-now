@@ -127,7 +127,7 @@ export async function openPip(stream: MediaStream | null = null): Promise<OpenPi
     pipWindow = win
     copyStyles(win)
 
-    win.document.title = 'UpRight Now'
+    win.document.title = 'Deskfit'
     win.document.body.style.margin = '0'
     const container = win.document.createElement('div')
     container.style.height = '100vh'

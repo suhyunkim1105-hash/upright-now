@@ -17,7 +17,7 @@
 | 대상 | 하루 4시간 이상 PC 를 쓰는 대학생 |
 | 플랫폼 | 데스크톱 웹 (Chrome·Edge 116+) |
 
-이 문서는 Claude Code·Codex가 UpRight Now를 구현할 때 제품 방향, 개인정보 경계, 화면 디자인을 임의로 바꾸지 않도록 하는 최상위 작업 계약입니다.
+이 문서는 Claude Code·Codex가 Deskfit를 구현할 때 제품 방향, 개인정보 경계, 화면 디자인을 임의로 바꾸지 않도록 하는 최상위 작업 계약입니다.
 
 ## 1. Source of truth
 

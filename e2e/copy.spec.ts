@@ -60,7 +60,7 @@ test('서비스명과 기본 세션이 올바르다', async ({ page }) => {
   await page.goto('/?demo=1')
   const text = await page.locator('body').innerText()
 
-  expect(text).toContain('UpRight Now')
+  expect(text).toContain('Deskfit')
   expect(text).toContain('25분 집중')
   expect(text).toContain('회복 휴식')
 })

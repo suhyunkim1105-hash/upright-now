@@ -76,6 +76,11 @@ const Y = {
   ground: 45, // groundY — 시안 y46 은 바닥 그림자라 뺐습니다
 }
 
+/** 어깨로 볼 최소 폭 — 그 종 몸통 최대폭에 대한 비율.
+    절대 픽셀 수로 두면 몸이 한 종만 가늘 때(백조 21px vs 나머지 22px)
+    그 종의 어깨가 목으로 잡혀 상의가 통째로 잘립니다. measureSpecies 참고. */
+const SHOULDER_RATIO = 0.55
+
 /** 슬롯 사각형 [x0, y0, x1, y1] — 양 끝 포함 */
 const SLOT = {
   feet: { z: 20, rect: [10, 42, 21, 45] },
@@ -1169,6 +1174,7 @@ function checkAgainstLayout() {
   eq('feetTopY', Y.feet0, L.feetTopY)
   eq('groundY', Y.ground, L.groundY)
   eq('clothX', CLOTH_FRONT, L.clothX)
+  eq('shoulderRatio', SHOULDER_RATIO, L.shoulderRatio)
   eq('slots.torso', SLOT.torso.rect, L.slots.torso.rect)
   eq('slots.legs', SLOT.legs.rect, L.slots.legs.rect)
   eq('slots.feet', SLOT.feet.rect, L.slots.feet.rect)
@@ -1291,13 +1297,20 @@ function measureSpecies(slug) {
   }
   /* 어깨는 "몸통에서 가장 넓은 줄에서 위로 올라가다가 좁아지는 곳" 입니다.
      벨트(y37)에서 시작하면 안 됩니다 — 개구리·펭귄은 y37 이 이미 다리
-     너비(12px)라 첫 줄에서 멈춰 버려 상의가 통째로 잘렸습니다. */
-  const SHOULDER_W = 14 // 옷깃이 앉을 만한 최소 어깨 폭
+     너비(12px)라 첫 줄에서 멈춰 버려 상의가 통째로 잘렸습니다.
+
+     기준을 절대값 14px 에서 **그 종 몸통 최대폭의 비율**로 바꿉니다.
+     14px 은 22px 몸(7종)을 재던 값이라 21px 몸인 백조에는 너무 엄해서,
+     백조 어깨(y30-31, 12px)를 목으로 보고 잘라 냈습니다. 그래서 백조만
+     상의가 y32-37 여섯 줄짜리 띠였습니다(다른 종은 y26-37 열두 줄).
+     0.55 를 쓰면 백조만 neckY 32 -> 30 으로 내려가고 나머지 7종은 잰 값이
+     그대로입니다(측정표는 커밋 메시지에). */
   let widest = Y.collar
   for (let y = Y.collar; y <= Y.belt; y++) if (width(y) > width(widest)) widest = y
+  const shoulderW = width(widest) * SHOULDER_RATIO // 옷깃이 앉을 만한 최소 어깨 폭
   let neckY = widest
   for (let y = widest; y >= Y.collar; y--) {
-    if (width(y) < SHOULDER_W) break
+    if (width(y) < shoulderW) break
     neckY = y
   }
   return { body, neckY }

@@ -7853,9 +7853,11 @@ const CHAR_SPECIES = {
   '기린':     { slug: 'giraffe',  line: '#82461e', hatDy: 0,  eyeDy: 0 },
   '펭귄':     { slug: 'penguin',  line: '#1a1a24', hatDy: -1, eyeDy: 0 },
   '햄스터':   { slug: 'hamster',  line: '#6b3d18', hatDy: -1, eyeDy: 0 },
-  /* 개구리만 hatDy 를 0 으로 둡니다. 개구리는 눈이 머리 꼭대기(y10-13)라
-     모자를 어디에 놔도 눈을 덮습니다. 0 이면 눈 아랫줄 두 줄이 남습니다. */
-  '개구리':   { slug: 'frog',     line: '#1e5a1e', hatDy: 0,  eyeDy: -4 },
+  /* 개구리는 눈이 머리 꼭대기(y10-14)라 모자가 눈을 덮습니다. 4방향 x 모자
+     석 장을 재 보면 0 은 눈 71px 중 45~59px 만 남고, -2 는 71px 전부
+     남으면서 모자 밑에 빈 줄도 안 생깁니다(-3 은 모자가 뜹니다).
+     학사모만 판 모서리가 머리 밖으로 나오는데, 학사모는 원래 그런 모양입니다. */
+  '개구리':   { slug: 'frog',     line: '#1e5a1e', hatDy: -2, eyeDy: -4 },
   '고슴도치': { slug: 'hedgehog', line: '#28140a', hatDy: -2, eyeDy: 0 },
   '알파카':   { slug: 'alpaca',   line: '#785a46', hatDy: -1, eyeDy: 0 },
   '백조':     { slug: 'swan',     line: '#6e6e78', hatDy: 0,  eyeDy: 0 },

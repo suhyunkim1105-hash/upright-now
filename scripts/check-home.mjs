@@ -22,12 +22,18 @@
 
 import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
+import sharp from 'sharp';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BASE = process.env.HOME_URL || 'http://localhost:8177/prototypes/home/index.html';
 const SHOTS = 'scripts/__shots__';
 const UPDATE = process.argv.includes('--update');
+
+/* 시계를 못 박습니다. 세션 기록이 "지금" 기준으로 그려지므로, 안 박으면
+   기준 그림이 실행할 때마다 달라지고 — 늘 다른 기준 그림은 아무도 안
+   봅니다. 2026-08-19 12:00 KST. */
+const NOW = Date.parse('2026-08-19T03:00:00Z');
 
 /* 1280 은 가장 낮은 지원 화면입니다 — 넘침이 여기서 먼저 납니다.
    1440 이 기준이고, 1680 은 위쪽 여백이 벌어지는 쪽입니다. */
@@ -75,23 +81,56 @@ async function walkWizard(page) {
   await page.waitForTimeout(900);
 }
 
-async function shot(page, name) {
+async function shot(page, name, mask) {
   mkdirSync(SHOTS, { recursive: true });
   const path = join(SHOTS, name + '.png');
-  const buf = await page.screenshot({ animations: 'disabled' });
+  /* 무작위로 그려지는 것은 가립니다 — 발급 코드가 그렇습니다. 값 자체는
+     문자표 검사가 따로 봅니다. 안 가리면 기준 그림이 매번 달라지고,
+     늘 달라지는 기준은 아무도 안 봅니다. */
+  /* 서체가 다 오기를 기다립니다. Wanted Sans 는 유니코드 구간별로 92개
+     로 쪼개져 있어서, 어느 조각이 아직 안 왔느냐에 따라 같은 화면이
+     다르게 그려집니다 — 두 번 돌리면 두 번 다른 기준 그림이 나옵니다. */
+  await page.evaluate(() => document.fonts.ready);
+  const buf = await page.screenshot({
+    animations: 'disabled',
+    mask: mask ? mask.map((s) => page.locator(s)) : undefined,
+  });
   if (UPDATE || !existsSync(path)) {
     writeFileSync(path, buf);
     pass('그림 저장 ' + name);
     return;
   }
-  /* 픽셀 비교까지는 안 합니다. 바이트가 같으면 확실히 안 바뀐 것이고,
-     다르면 사람이 봐야 합니다 — 폰트 힌팅 하나로도 바이트는 달라지므로
-     여기서 자동 판정하면 거짓 실패가 쏟아집니다. */
-  if (!buf.equals(readFileSync(path))) {
+  /* **바이트가 아니라 픽셀을 셉니다.** 처음엔 바이트로 비교했는데 세 번
+     연달아 돌려도 매번 다른 파일이 달라졌습니다 — 서체 서브셋이 오는
+     순서, 안티에일리어싱 한 픽셀만으로도 바이트는 바뀝니다. 매번 우는
+     경보는 사람이 곧 안 읽습니다.
+
+     지금은 채널값 차이가 8을 넘는 픽셀만 세고, 그런 픽셀이 전체의 0.05%
+     를 넘을 때만 말합니다. 글자 한 줄이 바뀌어도 그 선은 넘습니다. */
+  const prev = readFileSync(path);
+  const diff = await pixelDiff(prev, buf);
+  if (diff === null) {
+    console.log('  ! 그림 크기가 달라졌어요 ' + name);
+  } else if (diff > 0.0005) {
     const out = join(SHOTS, name + '.new.png');
     writeFileSync(out, buf);
-    console.log('  ! 그림이 달라졌어요 ' + name + ' → ' + out + ' 을 열어 확인하세요');
+    console.log('  ! 그림이 달라졌어요 ' + name + ' (' + (diff * 100).toFixed(2) + '%) → ' + out);
   }
+}
+
+/** 다른 픽셀의 비율. 크기가 다르면 null. */
+async function pixelDiff(a, b) {
+  const raw = (buf) => sharp(buf).raw().toBuffer({ resolveWithObject: true });
+  const [x, y] = await Promise.all([raw(a), raw(b)]);
+  if (x.data.length !== y.data.length) return null;
+  const ch = x.info.channels;
+  let bad = 0;
+  for (let i = 0; i < x.data.length; i += ch) {
+    if (Math.abs(x.data[i] - y.data[i]) > 8
+      || Math.abs(x.data[i + 1] - y.data[i + 1]) > 8
+      || Math.abs(x.data[i + 2] - y.data[i + 2]) > 8) bad++;
+  }
+  return bad / (x.data.length / ch);
 }
 
 const browser = await chromium.launch();
@@ -100,6 +139,16 @@ for (const [w, h] of SIZES) {
   console.log('\n=== ' + w + '×' + h + ' ===');
   const ctx = await browser.newContext({ viewport: { width: w, height: h } });
   const page = await ctx.newPage();
+  /* Date 를 통째로 못 박습니다. page.clock 은 타이머까지 멈춰서 전환·
+     스프링이 안 도므로 쓰지 않습니다 — 필요한 건 **시각**뿐입니다. */
+  await page.addInitScript((t) => {
+    const Real = Date;
+    const Fixed = class extends Real {
+      constructor(...a) { super(...(a.length ? a : [t])); }
+      static now() { return t; }
+    };
+    globalThis.Date = Fixed;
+  }, NOW);
 
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));
@@ -218,7 +267,7 @@ for (const [w, h] of SIZES) {
   await page.waitForTimeout(800);
   if (w === 1440) await scan('위저드1');
   await walkWizard(page);
-  if (w === 1440) { await scan('대기실'); await shot(page, 'lobby-' + w); }
+  if (w === 1440) { await scan('대기실'); await shot(page, 'lobby-' + w, ['#lobbyCode']); }
 
   const code = await page.$eval('#lobbyCode', (e) => e.textContent.trim());
   if (!/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test(code)) {

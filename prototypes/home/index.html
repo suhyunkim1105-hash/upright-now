@@ -1092,6 +1092,41 @@ function importSave() {
 .lobby-status { font-size: var(--fs-sm); color: var(--ink-3); }
 .lobby-status[data-blocked] { color: var(--warn-700); }
 .lobby-foot .btn:last-child { margin-left: auto; }
+
+/* ==================================================================
+   사람이 켜 둔 선호
+   여기가 파일 **맨 끝**인 이유: 같은 무게의 선언이 뒤에 오면 조용히
+   덮습니다. .card 의 `border: 1px solid var(--line)` 단축이 정확히
+   그렇게 대비 규칙을 지웠습니다.
+   ================================================================== */
+/* 흐림을 줄여 달라고 한 사람에게는 **서리를 걷고 불투명하게** 줍니다.
+   흐림 자체가 읽기를 방해하는 조건(난독·저시력)이라, 투명도를 낮추는
+   게 아니라 재료를 바꿔야 합니다. */
+@media (prefers-reduced-transparency: reduce) {
+  .topbar, .wiz-nav, .wiz-bar {
+    background: var(--bg);
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  .topbar { background: var(--surface-2); }
+  .topbar::after, .wiz-nav::after, .wiz-bar::before { display: none; }
+  .topbar { border-bottom: 1px solid var(--line); }
+  .wiz-nav { border-bottom: 1px solid var(--line); }
+  .wiz-bar { border-top: 1px solid var(--line); }
+  .codepop { background: var(--night); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .veil { background: rgba(20, 30, 28, .72); backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+/* 대비를 높여 달라고 한 사람에게는 **테두리를 세웁니다.** 옅은 면으로만
+   구분하던 것들이 그 설정에서 제일 먼저 사라집니다. */
+@media (prefers-contrast: more) {
+  .card, .tile, .codecard, .switchrow, .preview { border-color: var(--ink-3); }
+  .navitem[aria-current="page"] { box-shadow: inset 0 0 0 2px var(--teal-700); }
+  .btn-light, .btn-ghost { box-shadow: inset 0 0 0 1.5px var(--ink-2); }
+  .seg button[aria-selected="true"] { box-shadow: inset 0 0 0 1.5px var(--ink-2); }
+  .stat { border-color: var(--ink-3); }
+  .note { box-shadow: inset 0 0 0 1px var(--line-2); }
+}
+
 </style>
 </head>
 <body>
@@ -2000,11 +2035,15 @@ function paintStep() {
   if (nameInput) nameInput.addEventListener('input', () => { W.roomName = nameInput.value || '이름 없는 방'; });
 }
 
+let stageTimer = 0;
+
 function renderWizard(immediate) {
   if (minting) return;
   const hasContent = wizStage.childElementCount > 0;
-  if (immediate || !hasContent || REDUCED) { paintStep(); return; }
-  if (stageBusy) return;
+  if (immediate || !hasContent || REDUCED) { clearTimeout(stageTimer); paintStep(); return; }
+  /* 이미 넘어가는 중이면 **기다리게 하지 않고** 지금 그립니다. 나가는
+     동작을 끝까지 보여 주는 것보다 손을 따라가는 게 먼저입니다. */
+  if (stageBusy) { clearTimeout(stageTimer); paintStep(); return; }
   stageBusy = true;
 
   /* 진행 막대와 뒤로 버튼이 먼저 움직입니다 — "지금 넘어가는 중" 이라는
@@ -2015,7 +2054,7 @@ function renderWizard(immediate) {
   wizStage.classList.remove('back');
   wizStage.classList.add('leaving');
   if (goingBack) wizStage.classList.add('to-back');
-  setTimeout(paintStep, STAGE_OUT_MS);
+  stageTimer = setTimeout(paintStep, STAGE_OUT_MS);
 }
 
 /* ---- 자리 슬라이더 ---- */
@@ -2108,7 +2147,12 @@ function swapSummary() {
 }
 
 /* ---- 열기와 닫기 ---- */
+let closeTimer = 0;
+
 function openWizard() {
+  /* 닫히는 중이었으면 예약된 비우기를 취소합니다. 안 그러면 방금 그린
+     1단계가 400ms 뒤에 지워지고 창이 숨습니다. */
+  clearTimeout(closeTimer);
   stepIndex = 0; goingBack = false; minting = false;
   W.visibility = null;
   wizGo.hidden = false;
@@ -2137,7 +2181,8 @@ function closeWizard(instant) {
     wizStage.innerHTML = '';
     wizStage.classList.remove('leaving', 'to-back', 'back');
   };
-  if (instant || REDUCED) clear(); else setTimeout(clear, 520);
+  clearTimeout(closeTimer);
+  if (instant || REDUCED) clear(); else closeTimer = setTimeout(clear, 520);
 }
 
 /** 1단계에서는 버릴 것이 없으니 바로 닫습니다. 그 뒤로는 채운 것이
@@ -2154,7 +2199,6 @@ function tryCloseWizard() {
 }
 $('wizClose').addEventListener('click', tryCloseWizard);
 wizBack.addEventListener('click', () => {
-  if (stageBusy) return;
   if (stepIndex === 0) { tryCloseWizard(); return; }
   goingBack = true; stepIndex -= 1; renderWizard();
 });
@@ -2251,10 +2295,6 @@ wizard.addEventListener('click', (e) => {
   }
 
   const a = t.getAttribute('data-act');
-  /* 넘어가는 중에는 단계를 더 올리지 않습니다. renderWizard 안에서만
-     막으면 stepIndex 만 앞서가 화면과 어긋납니다. */
-  if (a === 'next' && stageBusy) return;
-
   if (a === 'next' && stepIndex < TOTAL - 1) {
     goingBack = false; stepIndex += 1; renderWizard();
   } else if (a === 'persist') {
@@ -2755,14 +2795,18 @@ const MY = {
   },
 };
 
-/* 칸을 바꿀 때 잠깐 뼈대를 보여 줍니다. 지금은 값이 이미 손에 있어
-   기다릴 것이 없지만, **서버가 붙는 자리가 여기**입니다 — 그때 화면이
-   비어 있으면 고장으로 읽힙니다. 260ms 는 room-flow 가 쓰던 값입니다. */
-let myTimer = 0;
-function paintMy(tab, instant) {
+/** 마이페이지 칸을 그립니다.
+
+    **기다릴 것이 없으면 기다리게 하지 않습니다.** 여기 값은 전부 시작할
+    때 읽어 둔 것이라 지금 당장 그릴 수 있습니다. 전에는 260ms 뼈대를
+    거쳐 갔는데, 그건 아무것도 안 하면서 손을 늦추는 것이었습니다.
+
+    뼈대는 지우지 않고 `load` 를 받는 형태로 남깁니다 — 서버가 붙어
+    **정말 기다리는 구간**이 생기면 그때 이 자리가 씁니다. 그때 화면이
+    비어 있으면 고장으로 읽힙니다. */
+function paintMy(tab, load) {
   const key = tab || 'info';
   const pane = $('myPane');
-  clearTimeout(myTimer);
 
   const draw = () => {
     pane.innerHTML = '<div class="view" style="padding:0">' + MY[key]() + '</div>';
@@ -2772,17 +2816,16 @@ function paintMy(tab, instant) {
     });
   };
 
-  if (instant || REDUCED) { draw(); return; }
-  pane.innerHTML = '<div class="card"><div class="skel tall">'
-    + '<i></i><i></i><i></i></div></div>';
-  myTimer = setTimeout(draw, 260);
+  if (!load) { draw(); return; }
+  pane.innerHTML = '<div class="card"><div class="skel tall"><i></i><i></i><i></i></div></div>';
+  Promise.resolve(load).then(draw);
 }
 
 /* ---- 시작 ---- */
 paintRail();
 paintChar();
 paintLeague();
-paintMy('info', true);
+paintMy('info');
 show('start');
 </script>
 </body>

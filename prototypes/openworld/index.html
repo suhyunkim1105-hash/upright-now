@@ -4451,8 +4451,7 @@ const ZONES = {};
       name: '기숙사 관리인 · 성재',
       lines: [
         '1인실이야. 문은 안 잠가도 돼. 훔쳐 갈 것도 없고.',
-        '초인종은 문 옆. 친구 코드 찍으면 그쪽 방으로 넘어가.',
-        '네 코드는 설정에 있어. 나한테 묻지 말고.',
+        '방에 있는 건 윗벽에 다 모아 뒀어. 시간표부터 옷장까지 한 줄이야.',
       ] },
   );
 
@@ -4840,10 +4839,6 @@ const ZONES = {};
        물건이 든 곳이 옷장이라 찾을 자리도 여기입니다. 버튼을 하나 더
        띄우면 방 안에서 화면을 누르는 일이 또 생깁니다. */
     { x: 11, y: 3, name: '방 꾸미기', panel: 'decor' },
-    /* 초인종은 **문 옆**입니다. 전에는 문 한가운데(3, h-2)에 있어서, 다가서면
-       초인철에 닿기 전에 포탈이 먼저 걸렸습니다. 관리인 성재도 "문 옆
-       초인종" 이라고 말합니다 — 말과 자리가 같아야 합니다. */
-    { x: 9, y: m.h - 2, name: '친구 방 가기', panel: 'friendVisit' },
   ];
 
   /* 문은 가운데입니다(x6~8). 방이 넓어졌으니 구석에 두면 들어와서
@@ -7942,10 +7937,8 @@ function schoolColorOf(name) {
 }
 /** 내 색 — 과잠 · 이름표 · 마이페이지. 남의 방에 가도 내 학교입니다. */
 function schoolColor() { return schoolColorOf(ROOM.school); }
-/** 이 방 주인의 색 — 기숙사 소품.
-    ponytail: 원래는 친구 방 방문(VISIT.host)이면 친구 학교 색이었습니다.
-    이 판본에는 아직 방문 기능이 없어 늘 내 색입니다. 방문을 옮겨 올 때
-    `(VISIT.host || ROOM).school` 로 되돌리면 됩니다. */
+/** 이 방 주인의 색 — 기숙사 소품. 기숙사는 늘 내 방이므로 내 학교 색입니다.
+    (친구 방 방문 기능은 본 서비스의 화상 기능으로 대체되어 없앴습니다.) */
 function roomColor() { return schoolColorOf(ROOM.school); }
 /** 흰 판 위에 아주 옅게 까는 같은 색. 강조 칸의 바탕입니다. */
 function schoolSoft(alpha) {
@@ -8006,6 +7999,13 @@ function saveJSON(key, v) {
   try { localStorage.setItem(key, JSON.stringify(v)); } catch { /* 무시 */ }
 }
 
+/* 초대 코드 헬퍼.
+
+   지금 월드에서 부르는 곳이 없습니다 — 코드를 쓰던 곳(친구 방 가기)을
+   없앴고, 마이페이지의 초대 탭은 코드를 그 자리에서 직접 만듭니다.
+   그래도 남겨 둡니다: 초대 코드는 본 서비스 기능이고, 서버(invites 표)에
+   붙일 때 쓸 자리 표시가 각 메서드 주석에 적혀 있습니다. 지우면 그
+   설계도까지 같이 사라집니다. */
 const INVITE = {
   KEY: 'girin.invites',
   ABC: 'ABCDEFGHJKMNPQRSTUVWXYZ23456789',   // 0/O/1/I 는 뺐습니다 — 받아적다 틀립니다
@@ -8042,27 +8042,9 @@ const INVITE = {
   },
 };
 
-/* 데모용 이웃 둘. 기기가 하나뿐이라 이게 없으면 "유효한 코드" 를 넣어
-   볼 방법이 없습니다. 서버가 붙으면 통째로 지웁니다.
-
-   코드에 I·L·O 를 못 쓰는 것은 위 ABC 가 정한 규칙입니다 — 1·I 와 0·O 를
-   받아적다 틀리기 때문입니다. 데모 코드도 같은 규칙을 지켜야 합니다. */
-const DEMO_INVITES = ['GRN234', 'GRN567'];
-(function seedDemoInvites() {
-  const a = INVITE.all();
-  const demo = {
-    [DEMO_INVITES[0]]: { nickname: '연우', school: '연세대학교', character: '기린' },
-    [DEMO_INVITES[1]]: { nickname: '민철', school: '고려대학교', character: '햄스터' },
-  };
-  let changed = false;
-  for (const [code, p] of Object.entries(demo)) {
-    if (!a[code]) { a[code] = Object.assign({ at: Date.now(), demo: true }, p); changed = true; }
-  }
-  if (changed) saveJSON(INVITE.KEY, a);
-})();
-
-/* 지금 누구 방에 있는지. null 이면 내 방입니다. */
-const VISIT = { host: null, code: null };
+/* 데모용 이웃 둘(DEMO_INVITES)과 방문 상태(VISIT)는 지웠습니다. 월드에서
+   친구 방으로 넘어가는 기능이 없어졌고, 그 둘은 그 기능만 쓰던 것입니다.
+   초대 코드 자체는 마이페이지에 남습니다 — 그쪽은 본 서비스가 씁니다. */
 
 /** 이 기기에 쌓인 세션 기록. 없으면 없다고 말합니다. */
 /* ================== 세션 기록 ==================
@@ -8469,7 +8451,7 @@ function decorCheck(it, x, y) {
 /* ---- 배치 모드 ---- */
 function decorStart(id) {
   const it = SHOP_BY_ID[id];
-  if (!isFurniture(it) || !owns(id) || zoneId !== 'dorm' || VISIT.host) return;
+  if (!isFurniture(it) || !owns(id) || zoneId !== 'dorm') return;
   if (player.sitting) stand();
   closePanel();
   const had = decorEntry(id);
@@ -10801,44 +10783,6 @@ const PANELS = {
     };
   },
 
-  /* ---- 친구 방 ----
-     visitRoom() 은 있는데 부르는 곳이 없어서 닿을 수 없던 기능입니다.
-     여기가 그 입구입니다. 코드를 만드는 일은 설정이 이미 맡고 있어서
-     여기서는 **보여 주고 쓰기만** 합니다 — 만드는 자리가 둘이면 어느
-     쪽이 진짜인지 알 수 없게 됩니다. */
-  friendVisit: () => {
-    const mine = ROOM.invite && INVITE.valid(ROOM.invite) ? ROOM.invite : null;
-    const away = !!VISIT.host;
-    return {
-      title: away ? VISIT.host.nickname + '님의 기숙사' : '친구 방 가기', kind: 'ROOM',
-      html: `
-        ${away ? `
-          <p>지금 <b>${esc(VISIT.host.nickname)}</b>님의 방에 와 있어요.
-          소품 색이 ${esc(VISIT.host.school)} 색으로 바뀌어 있습니다.</p>
-          <button class="act" data-do="visit-home" style="margin-bottom:14px">내 방으로 돌아가기</button>
-          <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">` : ''}
-        <p>친구에게 받은 <b>여섯 자리 코드</b>를 넣으면 그 친구 방으로 넘어갑니다.</p>
-        <div class="rows" style="margin:12px 0">
-          <div class="row">
-            <span>친구 코드</span>
-            <span class="val"><input id="visit-code" maxlength="6" autocomplete="off"
-              inputmode="latin" placeholder="ABC123"
-              style="width:110px;text-transform:uppercase;letter-spacing:.14em;
-                     font-weight:700;padding:6px 8px;border:1px solid var(--line);
-                     border-radius:8px;background:var(--surface)"></span>
-          </div>
-        </div>
-        <button class="act" data-do="visit-go">가기</button>
-        <p id="visit-msg" role="status" style="min-height:18px;margin:10px 0 0;font-size:11.5px"></p>
-        <hr style="border:0;border-top:1px solid var(--line);margin:16px 0">
-        <p>내 코드 ${mine
-          ? `— 친구에게 알려 주면 찾아옵니다.<br><b style="font-size:18px;letter-spacing:.18em">${esc(mine)}</b>`
-          : `는 아직 없어요. <b>설정</b>에서 만들 수 있습니다.`}</p>
-        <div class="note">코드는 영문·숫자 여섯 자예요. 헷갈리는 0·O·1·I 는
-        쓰지 않습니다 — 받아적다 틀리는 자리라서요.</div>`,
-    };
-  },
-
   guide: () => ({
     title: 'Deskfit 안내', kind: 'GUIDE',
     html: `
@@ -11029,25 +10973,21 @@ const PANELS = {
      방에서만 합니다 — 방을 보면서 놓아야 어디가 비었는지 알 수 있습니다. */
   decor: () => {
     const mine = SHOP.filter((i) => isFurniture(i) && owns(i.id));
-    const away = !!VISIT.host;
     const card = (it) => {
       const e = decorEntry(it.id);
       return `<div class="item${e ? ' on' : ''}">
         <canvas class="thumb furn" data-item="${it.id}" width="64" height="64"></canvas>
         <span>${esc(it.name)}${e ? `<em>${e.x}, ${e.y}</em>` : ''}</span>
-        ${away ? `<span class="act ghost" aria-hidden="true">${e ? '놓음' : '보관'}</span>`
-          : e
-            ? `<button class="act" data-decor-move="${it.id}">옮기기</button>
-               <button class="act ghost" data-decor-take="${it.id}">치우기</button>`
-            : `<button class="act" data-decor-put="${it.id}">놓기</button>`}
+        ${e
+          ? `<button class="act" data-decor-move="${it.id}">옮기기</button>
+             <button class="act ghost" data-decor-take="${it.id}">치우기</button>`
+          : `<button class="act" data-decor-put="${it.id}">놓기</button>`}
       </div>`;
     };
     return {
       title: '방 꾸미기', kind: '옷장',
       html: `
         <div class="shop-coin">놓은 가구 <b>${(ROOM.decor || []).length}</b> · 보관 <b>${mine.length - (ROOM.decor || []).length}</b></div>
-        ${away ? `<div class="note" style="margin-bottom:12px">여기는
-          <b>${esc(VISIT.host.nickname)}</b>님의 방이에요. 남의 방 가구는 못 옮깁니다.</div>` : ''}
         ${mine.length
           ? `<div class="shop-grid">${mine.map(card).join('')}</div>`
           : `<p>아직 가진 가구가 없어요. <b>학생회관 상점</b>의 <b>가구</b> 칸에서
@@ -11368,65 +11308,7 @@ panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="escape-restart"]')) return startEscapeRoom();
   if (e.target.closest('[data-do="escape-clue"]')) return revealEscapeClue(Number(e.target.closest('[data-do="escape-clue"]').dataset.clue));
   if (e.target.closest('[data-do="escape-submit"]')) return submitEscapeCode();
-  if (e.target.closest('[data-do="visit-go"]')) return goVisit();
-  if (e.target.closest('[data-do="visit-home"]')) return goHome();
 });
-
-/* 코드 칸에서 Enter — 여섯 자를 치고 나면 손이 Enter 로 갑니다.
-   단추만 두면 다 쳐 놓고 아무 일도 안 일어나는 자리가 됩니다.
-   keydown 은 캡처 단계에서 막습니다 — 안 그러면 월드가 그 키를
-   조작으로 받아 캐릭터가 움직입니다. */
-panelBody.addEventListener('keydown', (e) => {
-  if (e.target.id !== 'visit-code') return;
-  e.stopPropagation();
-  if (e.key === 'Enter') { e.preventDefault(); goVisit(); }
-}, true);
-
-/* ---- 친구 방으로 ----
-   코드를 확인하고, 맞으면 그 사람의 기숙사로 넘어갑니다. 틀린 이유마다
-   다른 문장을 돌려줍니다 — "잘못된 코드입니다" 하나로 묶으면 오타인지
-   없는 코드인지 사용자가 알 수 없습니다.
-
-   병합 정리: 민철 판본에는 초대 코드 자체가 없어서 이 함수도 같이
-   지워져 있었습니다. 입구(초인종)와 창은 남아 있었으므로 본체만 되살립니다. */
-function visitRoom(code) {
-  const c = String(code || '').toUpperCase().trim();
-  if (!c) return { ok: false, msg: '코드를 넣어 주세요.' };
-  if (!INVITE.valid(c))
-    return { ok: false, msg: '코드는 영문·숫자 6자예요. 0·O·1·I 는 쓰지 않습니다.' };
-  if (c === ROOM.invite)
-    return { ok: false, msg: '내 코드예요. 친구에게 받은 코드를 넣어 주세요.' };
-  const p = INVITE.lookup(c);
-  if (!p)
-    return { ok: false, msg: '그런 코드가 없어요. 오타이거나, 친구가 코드를 새로 만들었을 수 있어요.' };
-
-  VISIT.host = p; VISIT.code = c;
-  applySchoolColor();                    // 방 소품이 친구 학교 색으로
-  closePanel();
-  enterZone('dorm', 7, 8);
-  return { ok: true, msg: p.nickname + '님의 기숙사' };
-}
-
-/* 친구 방으로. visitRoom() 이 판정과 이동을 다 하고, 여기서는 입력을
-   건네고 실패 문장을 보여 주기만 합니다 — 틀린 이유마다 다른 문장이
-   돌아오므로 그대로 씁니다. */
-function goVisit() {
-  const el = document.getElementById('visit-code');
-  const msg = document.getElementById('visit-msg');
-  if (!el) return;
-  const r = visitRoom(el.value);
-  if (r.ok) return;                       // 성공하면 패널이 닫히고 방이 바뀝니다
-  if (msg) { msg.textContent = r.msg; msg.style.color = 'var(--bad)'; }
-  el.focus(); el.select();
-}
-/* 내 방으로. 방문 상태만 지우고 같은 기숙사로 다시 들어갑니다 —
-   지도는 하나이고 달라지는 것은 소품 색과 이름표뿐입니다. */
-function goHome() {
-  VISIT.host = null; VISIT.code = null;
-  applySchoolColor();
-  closePanel();
-  enterZone('dorm', 7, 8);
-}
 
 /* ---- 값 고치기 ----
    업라이트 마이페이지의 편집 흐름을 그대로 옮겼습니다. 다만 모달을

@@ -8279,11 +8279,13 @@ function decorCheck(it, x, y) {
         return { ok: false, why: SHOP_BY_ID[o.id].name + ' 과 겹칩니다' };
   }
 
-  /* 사람 발밑. 자기 발 아래 옷장을 놓으면 그 자리에서 못 빠져나옵니다 */
+  /* 사람 발밑. 자기 발 아래 옷장을 놓으면 그 자리에서 못 빠져나옵니다.
+     배치 모드에서는 걸을 수 없으므로 비키는 법까지 적어 줍니다 —
+     "안 됩니다" 만 뜨면 왜 안 되는지 알아도 어떻게 해야 할지 모릅니다. */
   if (zoneId === 'dorm') {
     const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 1) / T);
     if (tiles.some((t) => t.x === ptx && t.y === pty) && PROP[it.prop].c.some((r) => r.some(Boolean)))
-      return { ok: false, why: '내가 서 있는 자리입니다' };
+      return { ok: false, why: '내가 서 있어요 · Esc 로 나가 비켜 주세요' };
   }
 
   /* 마지막으로 실제로 놓아 보고 방이 이어져 있는지 봅니다. 앞의 규칙을

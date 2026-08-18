@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>기린캠퍼스 — 앉는 시간이 세계가 돼요</title>
+<title>Deskfit — 앉는 시간이 세계가 돼요</title>
 <meta name="description" content="웹캠이 앉은 자세를 조용히 봐 주는 온라인 자습실. 캠퍼스를 걸어 다니고, 자리에 앉아 공부해요. 영상은 브라우저 밖으로 나가지 않아요.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="기린캠퍼스 — 앉는 시간이 세계가 돼요">
+<meta property="og:title" content="Deskfit — 앉는 시간이 세계가 돼요">
 <meta property="og:description" content="웹캠이 앉은 자세를 조용히 봐 주는 온라인 자습실. 영상은 브라우저 밖으로 나가지 않아요.">
 <meta property="og:image" content="assets/still-campus.webp">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦒</text></svg>">
+<link rel="icon" href="assets/favicon.ico">
 <link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
 <style>
 /* ============================================================
-   기린캠퍼스 랜딩 — VANTA/LOOP 골격 × 기린캠퍼스 결
+   Deskfit 랜딩 — 토스 골격 × Deskfit 결
    데스크톱 전용. 색·서체 외 골격은 슈퍼 프롬프트 이식.
    ============================================================ */
 :root{
@@ -22,7 +22,8 @@
   --ink-deep:#202624;
   --cream:#F7F8F8;
   --teal:#2DD4BF;
-  --deep:#0D7769;
+  --deep:#1A7F72;       /* 글자용 — teal 172°/66%, 크림 위 4.57:1 */
+  --deep-face:#0D7769;  /* 면용 — 위에 크림 글자를 얹는 곳 */
   --sand:#E8DCC8;
   --sky:#CFF2ED;
   --muted:#5F6764;
@@ -31,6 +32,7 @@
   --gutter:1.25rem;
   --ease:cubic-bezier(.32,.72,0,1);
   --font-sans:"Wanted Sans Variable","Wanted Sans","Segoe UI",system-ui,sans-serif;
+  --head-h:76px;
 }
 
 *{box-sizing:border-box}
@@ -42,6 +44,7 @@ body{
   font-family:var(--font-sans);
   overflow-x:hidden;
   word-break:keep-all;
+  font-weight:500;
   min-width:1100px;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
@@ -73,46 +76,14 @@ p{text-wrap:pretty}
   }
 }
 
-/* ---------------- 로더 ---------------- */
-#loader{
-  position:fixed;inset:0;z-index:300;background:var(--ink);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
-}
-#loader .mark{
-  color:var(--cream);font-weight:800;font-size:clamp(1.6rem,2.8vw,2.4rem);letter-spacing:-.02em;
-}
-#loader .bar{
-  width:min(280px,30vw);height:2px;background:rgba(247,248,248,.18);overflow:hidden;border-radius:2px;
-}
-#loader .bar i{
-  display:block;height:100%;width:100%;background:var(--teal);
-  transform:scaleX(0);transform-origin:0 50%;transition:transform .4s var(--ease);
-}
-#loader.done{
-  clip-path:inset(0 0 100% 0);
-  transition:clip-path .9s var(--ease);
-  pointer-events:none;
-}
-body.lock{overflow:hidden}
-
-/* ---------------- 커서 ---------------- */
-#cursor{
-  position:fixed;left:0;top:0;z-index:350;width:18px;height:18px;
-  border:1.5px solid #fff;border-radius:50%;pointer-events:none;
-  mix-blend-mode:difference;
-  transform:translate(-50%,-50%);
-  transition:width .35s var(--ease),height .35s var(--ease),opacity .3s;
-  opacity:0;
-}
-body.cursor-on #cursor{opacity:1}
-#cursor.big{width:54px;height:54px}
-@media (hover:none),(pointer:coarse){#cursor{display:none}}
 
 /* ---------------- 헤더 ---------------- */
 .header{
   position:fixed;top:0;left:0;right:0;z-index:200;
   display:flex;align-items:center;justify-content:space-between;
-  padding:26px clamp(24px,4vw,64px);
+  padding:18px clamp(24px,4vw,64px);
+  background:var(--cream);
+  box-shadow:0 1px 0 var(--line-soft);
   transition:padding .5s var(--ease),background .5s var(--ease),
              box-shadow .5s var(--ease),color .5s var(--ease);
 }
@@ -120,10 +91,8 @@ body.cursor-on #cursor{opacity:1}
    상단에 시작 버튼이 없으면 전환 지점이 스크롤 끝 하나뿐입니다. */
 .header.stuck{
   padding:12px clamp(24px,4vw,64px);
-  background:rgba(247,248,248,.86);
+  background:rgba(247,248,248,.92);
   backdrop-filter:blur(14px);
-  box-shadow:0 1px 0 var(--line-soft);
-  color:var(--ink);
 }
 .header.hide{transform:translateY(-100%);transition:transform .4s var(--ease)}
 .header .brand{
@@ -137,6 +106,41 @@ body.cursor-on #cursor{opacity:1}
   transition:background .3s var(--ease),color .3s var(--ease);
 }
 .header nav a:hover{background:rgba(43,50,48,.07)}
+.h-right{display:flex;align-items:center;gap:18px}
+.pill-cta{
+  display:inline-flex;align-items:center;
+  border:1.5px solid var(--ink);border-radius:999px;
+  padding:10px 20px;font-weight:700;font-size:.92rem;
+  transition:background .3s var(--ease),color .3s var(--ease),transform .3s var(--ease);
+}
+.pill-cta:hover{background:var(--ink);color:var(--cream)}
+.pill-cta:active{transform:scale(.96)}
+/* 롤링 라벨(토스) — 라벨 두 벌이 마스크 안에서 위로 말려 올라갑니다 */
+.roll{display:inline-block;overflow:hidden;height:1.25em;vertical-align:bottom}
+.roll i{
+  display:block;font-style:normal;line-height:1.25;
+  transition:transform .22s cubic-bezier(.22,1,.36,1);
+}
+a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%)}
+/* 챕터 레일(토스) — 페이지 유일의 진행 표시 */
+/* 전체 진행 레일은 오른쪽, 체인 경로 점은 왼쪽 — 둘이 겹치지 않습니다 */
+.rail{
+  position:fixed;right:clamp(14px,1.6vw,26px);top:50%;transform:translateY(-50%);
+  z-index:180;display:flex;flex-direction:column;gap:14px;
+}
+.rail button{
+  width:34px;height:14px;border:0;background:transparent;cursor:pointer;padding:0;
+  display:flex;align-items:center;justify-content:flex-end;
+}
+.rail button i{
+  display:block;width:16px;height:2px;background:rgba(43,50,48,.25);
+  transition:width .3s var(--ease),background .3s var(--ease);
+}
+.rail button:hover i{background:rgba(43,50,48,.55)}
+.rail button.on i{width:34px;background:var(--ink)}
+.rail.dark button i{background:rgba(247,248,248,.3)}
+.rail.dark button:hover i{background:rgba(247,248,248,.6)}
+.rail.dark button.on i{background:var(--cream)}
 .lang-toggle{
   display:flex;align-items:center;gap:8px;
   font-size:.92rem;font-weight:700;letter-spacing:.04em;
@@ -151,33 +155,64 @@ body.cursor-on #cursor{opacity:1}
 .lang-toggle button[aria-pressed="true"]{opacity:1}
 .lang-toggle button:active{transform:scale(.96)}
 
-/* ---------------- 히어로 ---------------- */
-.hero{
-  position:relative;height:100svh;min-height:700px;overflow:hidden;
+/* ---------------- 히어로 A: 타이포 스테이지 (토스 흰 캔버스) ---------------- */
+.hero-typo{
+  position:relative;height:100svh;min-height:640px;overflow:hidden;
+  display:grid;place-items:center;text-align:center;
   background:var(--ink);color:var(--cream);
 }
-.hero video,.hero .hero-poster{
-  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%;
+/* 밤이 내리는 캠퍼스가 뒤에 깔립니다 — 낮으로 열린 페이지가 밤으로 닫혀요 */
+.ht-bg{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 44%;
 }
-.hero .wash{
+.ht-wash{
   position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(32,38,36,.78) 0%,rgba(32,38,36,.55) 32%,rgba(32,38,36,.14) 62%,rgba(32,38,36,.06) 100%);
+  background:linear-gradient(180deg,rgba(16,19,18,.34) 0%,rgba(16,19,18,.5) 55%,rgba(16,19,18,.72) 100%);
 }
-.hero-inner{
-  position:relative;z-index:5;height:100%;
-  display:flex;flex-direction:column;justify-content:center;
-  padding:0 clamp(24px,4vw,64px);
-}
-.hero-mid{max-width:640px}
+.ht-mid{position:relative;z-index:2;max-width:820px;padding:0 24px}
 .eyebrow{
   display:inline-block;font-size:.78rem;font-weight:700;letter-spacing:.12em;
-  color:var(--teal);margin-bottom:18px;
+  color:var(--deep);margin-bottom:20px;
 }
-.hero h1{
-  font-size:clamp(2.9rem,4.6vw,4.2rem);line-height:1.14;font-weight:800;letter-spacing:-.02em;
+.hero-typo .eyebrow{color:var(--teal)}
+.hero-typo h1{
+  font-size:clamp(3rem,5vw,4.6rem);line-height:1.14;font-weight:800;letter-spacing:-.02em;
+  text-shadow:0 4px 30px rgba(16,19,18,.5);
 }
-.hero h1 .serif{color:var(--teal)}
-.hero-actions{margin-top:36px}
+.hero-typo h1 .serif{color:var(--teal)}
+.ht-sub{
+  margin:22px 0 0;font-size:1.06rem;line-height:1.6;color:rgba(247,248,248,.88);
+  text-shadow:0 2px 16px rgba(16,19,18,.5);
+}
+.hero-actions{margin-top:40px;display:flex;justify-content:center}
+/* ---------------- 히어로 B: 인셋 필름 카드 (토스 히어로 이식) ---------------- */
+.hero-film{position:relative;height:100svh;background:var(--cream)}
+.hf-stage{position:relative;height:100svh;overflow:hidden;display:grid;place-items:center}
+/* 처음부터 화면을 꽉 채웁니다. 위쪽만 헤더 높이를 비워 두어 흰 바와 필름의
+   경계가 또렷하게 나뉩니다. */
+.hf-card{
+  position:absolute;inset:0;margin:0;border-radius:0;overflow:hidden;
+  background:var(--ink);
+}
+/* 필름은 1.2배로 깔려 넘칩니다 — 커서 반대 방향으로 미세하게 패닝(토스 히어로 실측) */
+.hf-card video,.hf-card .hf-poster{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 44%;
+  transform:scale(1.2);will-change:transform;
+}
+.hf-wash{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(32,38,36,.14) 0%,transparent 40%,rgba(32,38,36,.05) 62%,rgba(32,38,36,.6) 100%);
+}
+/* 하단 거대 한 줄 — 토스처럼 화면 폭에 단어를 벌립니다 */
+.hf-line{
+  position:absolute;left:0;right:0;bottom:2vh;z-index:5;margin:0;
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:0 clamp(24px,4vw,64px);
+  color:#fff;font-weight:800;letter-spacing:-.02em;line-height:1;
+  font-size:clamp(3rem,6.4vw,6rem);white-space:nowrap;
+  text-shadow:0 6px 36px rgba(32,38,36,.45);
+}
+.hf-line .hf-brand{color:#101312;text-shadow:none}
 /* 온보딩의 낙서 버튼을 그대로 가져왔습니다 — 글자는 흔들리지 않고,
    뒤에 깔린 판(::before)만 wobble 필터로 손그림이 됩니다.
    그림자도 번짐이 아니라 한 번 더 그은 선입니다. */
@@ -219,23 +254,6 @@ body.cursor-on #cursor{opacity:1}
   .rv{opacity:1;transform:none;filter:none}
 }
 
-/* ---------------- 포털 ---------------- */
-.portal{position:relative;height:300vh;background:var(--cream)}
-.portal-stage{
-  position:sticky;top:0;height:100vh;overflow:hidden;
-  display:grid;place-items:center;
-}
-.portal-frame{
-  position:relative;width:26vw;height:17vw;min-width:340px;min-height:224px;
-  border-radius:18px;overflow:hidden;
-  box-shadow:0 30px 80px rgba(43,50,48,.28);
-  will-change:width,height,border-radius;
-}
-.portal-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.06)}
-.portal-duotone{
-  position:absolute;inset:0;background:var(--teal);mix-blend-mode:multiply;opacity:.12;
-  transition:opacity .4s;
-}
 /* ---------------- 월드 체인 (scroll-world) ---------------- */
 .world{position:relative;background:var(--ink)}
 .world-track{position:relative}
@@ -248,30 +266,38 @@ body.cursor-on #cursor{opacity:1}
 }
 .w-scene img{will-change:transform}
 .w-scene.has-clip img{opacity:0}
+/* 워시 두 겹 — 가로 한 겹만으로는 밝은 장면(캠퍼스 부감)에서 좌측 상단이
+   회색 위 흰 글자가 됩니다. 카피가 놓이는 세로 대역을 한 번 더 받칩니다. */
 .w-copywash{
   position:absolute;inset:0;z-index:8;pointer-events:none;
-  background:linear-gradient(90deg,rgba(32,38,36,.72) 0%,rgba(32,38,36,.42) 34%,rgba(32,38,36,.08) 62%,transparent 100%);
+  background:
+    radial-gradient(58% 46% at 22% 50%,rgba(32,38,36,.5) 0%,transparent 100%),
+    linear-gradient(90deg,rgba(32,38,36,.84) 0%,rgba(32,38,36,.58) 34%,rgba(32,38,36,.16) 62%,transparent 100%);
 }
+/* 영상 위 좌측 오버레이 — 색은 그대로, 읽히게만 다듬었습니다:
+   워시를 진하게, 본문 명도를 올리고, 글자에 얇은 어둠 그림자를 받쳤습니다 */
+/* 세로 중앙 + 시작점 통일 — 고정 높이 프레임을 가운데 두고 내용은 프레임
+   상단부터 흘립니다. 줄 수가 달라도 네 장의 아이브로가 같은 높이에서 시작합니다.
+   왼쪽 여백은 경로 점 기둥(28px 폭)과 라벨 팝이 지나가는 자리를 비워 둔 값입니다. */
 .w-copy{
-  position:absolute;left:clamp(28px,5vw,72px);top:50%;transform:translateY(-50%);
+  position:absolute;left:clamp(110px,10vw,150px);top:50%;transform:translateY(-50%);
+  height:min(44vh,400px);
   z-index:10;width:min(40vw,480px);opacity:0;color:var(--cream);
   will-change:opacity,transform;pointer-events:none;
 }
-.w-copy .num{
-  font-family:ui-monospace,Consolas,monospace;font-size:.76rem;letter-spacing:.14em;
-  color:rgba(247,248,248,.55);
-}
-.w-copy .eyebrow{margin:16px 0 14px;display:block}
+.w-copy .eyebrow{margin:0 0 14px;display:block;color:var(--teal);text-shadow:0 1px 10px rgba(32,38,36,.6)}
 .w-copy h2{
-  font-size:clamp(1.9rem,3vw,2.6rem);line-height:1.16;font-weight:800;letter-spacing:-.02em;
+  font-size:clamp(1.9rem,3vw,2.6rem);line-height:1.22;font-weight:800;letter-spacing:-.02em;
+  text-shadow:0 2px 18px rgba(32,38,36,.6);
 }
 .w-copy h2 .serif{color:var(--sky)}
 .w-copy p{
-  margin:18px 0 0;font-size:1.05rem;line-height:1.62;color:rgba(247,248,248,.82);max-width:38ch;
+  margin:16px 0 0;font-size:1.05rem;line-height:1.72;color:rgba(247,248,248,.94);max-width:42ch;
+  text-shadow:0 1px 12px rgba(32,38,36,.6);
 }
 .w-copy .cta{margin-top:28px;pointer-events:auto;display:flex;gap:12px}
 .w-route{
-  position:absolute;right:clamp(20px,3vw,42px);top:50%;transform:translateY(-50%);
+  position:absolute;left:clamp(14px,1.8vw,28px);top:50%;transform:translateY(-50%);
   z-index:12;display:flex;flex-direction:column;gap:20px;
 }
 .w-route::before{
@@ -290,8 +316,9 @@ body.cursor-on #cursor{opacity:1}
 .w-route button.on i{
   background:var(--teal);transform:scale(1.45);box-shadow:0 0 0 5px rgba(45,212,191,.22);
 }
+/* 점이 왼쪽 벽에 붙었으니 라벨은 점의 오른쪽으로 나옵니다 */
 .w-route .lbl{
-  position:absolute;right:26px;top:50%;transform:translateY(-50%) translateX(6px);
+  position:absolute;left:26px;top:50%;transform:translateY(-50%) translateX(-6px);
   white-space:nowrap;font-size:.8rem;font-weight:700;color:var(--cream);
   background:rgba(32,38,36,.72);border:1px solid rgba(45,212,191,.25);
   padding:5px 12px;border-radius:999px;opacity:0;
@@ -323,6 +350,10 @@ body.cursor-on #cursor{opacity:1}
   font-size:.8rem;font-weight:700;letter-spacing:.1em;color:var(--deep);
 }
 .intro-copy{max-width:640px}
+.intro-eb{
+  display:block;margin-bottom:14px;
+  font-size:.85rem;font-weight:700;letter-spacing:.08em;color:var(--deep);
+}
 .intro-copy .statement{
   font-size:clamp(1.7rem,2.6vw,2.4rem);line-height:1.36;font-weight:700;letter-spacing:-.015em;
   clip-path:inset(0 0 100% 0);
@@ -335,35 +366,36 @@ body.cursor-on #cursor{opacity:1}
   will-change:transform;
 }
 
-/* ---------------- 매니페스토 ---------------- */
-.manifesto{position:relative;height:380vh;background:var(--ink-deep);color:var(--cream)}
-.mani-stage{position:sticky;top:0;height:100vh;overflow:hidden;display:grid;place-items:center}
-.mani-lines{position:relative;z-index:8;text-align:center;padding:0 24px}
-.mani-lines .ln{
-  font-size:clamp(2.2rem,3.8vw,3.3rem);font-weight:800;letter-spacing:-.02em;line-height:1.22;
+/* ---------------- 챕터 콜라주 (토스 "토스가 바꾼 일상" 실측 이식) ----------------
+   1000px 중앙 칼럼 · 타일 4장 · 간격 15px · 오른쪽으로 33px씩 오르는 계단 ·
+   비율 3:4 · 헤드라인 48/800 좌측 정렬. 두 블록이 지금/앞으로 대구를 이룹니다. */
+.chapters{background:var(--cream);color:var(--ink);padding:clamp(96px,14vh,160px) 24px}
+.chap{max-width:1000px;margin:0 auto}
+.chap + .chap{margin-top:clamp(110px,16vh,180px)}
+.chap .eyebrow{color:var(--deep)}
+.chap h2{
+  margin-top:14px;font-size:clamp(2.1rem,3.34vw,3rem);font-weight:800;
+  letter-spacing:-.02em;line-height:1.27;
 }
-.mani-lines .ln .w{opacity:.16;transition:opacity .5s var(--ease);display:inline-block}
-.mani-lines .ln .w.lit{opacity:1}
-.mani-lines .ln .w.accent{color:var(--teal)}
-.mani-idx{
-  position:absolute;right:clamp(24px,4vw,60px);top:50%;transform:translateY(-50%) rotate(90deg);
-  transform-origin:center;font-size:.78rem;letter-spacing:.3em;text-transform:uppercase;
-  color:rgba(247,248,248,.4);white-space:nowrap;z-index:9;
+.chap h2 .serif{color:var(--deep)}
+.chap p{
+  margin:16px 0 0;max-width:62ch;font-size:1rem;line-height:1.63;
+  letter-spacing:-.01em;color:var(--muted);
 }
-.mani-item{
-  position:absolute;border-radius:18px;overflow:hidden;
-  box-shadow:0 24px 70px rgba(0,0,0,.4);will-change:transform,opacity;opacity:0;
+.chap-tiles{display:flex;gap:15px;margin-top:56px}
+.chap-tiles figure{
+  flex:1;margin:0;aspect-ratio:3/4;border-radius:16px;overflow:hidden;
+  background:var(--line-soft);
 }
-.mani-item img{width:100%;height:100%;object-fit:cover}
-.mani-item{background:var(--cream)}
-.mani-item.i1{left:7vw;top:12vh;width:20vw;aspect-ratio:3/2}
-.mani-item.i2{right:8vw;top:9vh;width:15vw;aspect-ratio:2/3}
-.mani-item.i3{left:11vw;bottom:9vh;width:19vw;aspect-ratio:3/2}
-.mani-item.i4{right:13vw;bottom:12vh;width:15vw;aspect-ratio:1/1}
-.mani-item.i5{left:45vw;top:6vh;width:11vw;aspect-ratio:2/3}
+.chap-tiles figure img{width:100%;height:100%;object-fit:cover}
+/* 계단 — 토스처럼 오른쪽 타일이 33px씩 높습니다. 왼쪽 여백이 그만큼 자랍니다 */
+.chap-tiles figure:nth-child(1){margin-top:99px}
+.chap-tiles figure:nth-child(2){margin-top:66px}
+.chap-tiles figure:nth-child(3){margin-top:33px}
 /* ---------------- 카메라 약속 ---------------- */
 .story{background:var(--ink);color:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
 .story-head{max-width:680px;margin:0 auto;text-align:center}
+.story-head .eyebrow{color:var(--teal)}
 .story-head h2{font-size:clamp(2rem,3vw,2.75rem);font-weight:800;letter-spacing:-.02em}
 .story-head h2 .serif{color:var(--teal)}
 .story-head p{margin:20px auto 0;font-size:1.06rem;line-height:1.65;color:rgba(247,248,248,.8);max-width:52ch}
@@ -385,7 +417,7 @@ body.cursor-on #cursor{opacity:1}
 .reel .play:hover{transform:translateY(-2px)}
 .reel .play:active{transform:scale(.96)}
 .stat-card{
-  border-radius:24px;background:var(--deep);color:var(--cream);
+  border-radius:24px;background:var(--deep-face);color:var(--cream);
   padding:30px 26px;display:flex;flex-direction:column;justify-content:space-between;gap:20px;
 }
 .stat-card .lbl{font-size:.85rem;font-weight:700;letter-spacing:.08em;color:var(--sky)}
@@ -394,7 +426,7 @@ body.cursor-on #cursor{opacity:1}
   font-variant-numeric:tabular-nums;
 }
 .stat-card .num small{font-size:.35em;font-weight:700;margin-left:6px}
-.stat-card .sub{font-size:.96rem;line-height:1.55;color:rgba(247,248,248,.85)}
+.stat-card .sub{font-size:.96rem;line-height:1.55;color:rgba(247,248,248,.95)}
 
 /* ---------------- 캐릭터 덱 ---------------- */
 .deck-sec{background:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px);overflow:hidden}
@@ -444,15 +476,90 @@ body.cursor-on #cursor{opacity:1}
   font-weight:700;font-size:.9rem;
   transition:background .3s var(--ease),transform .3s var(--ease);
 }
-.card .go:hover{background:var(--deep);transform:translateY(-2px)}
+.card .go:hover{background:var(--deep-face);transform:translateY(-2px)}
 .card .band{
   position:absolute;left:0;right:0;top:0;height:8px;border-radius:26px 26px 0 0;
   background:var(--teal);
 }
 
+/* ---------------- 주간 랭킹전 ----------------
+   영상이 한 번 물러나며 다섯 섬을 보여 주고, 멈춘 프레임 위에
+   HTML 로고가 얹힙니다 — 생성 모델은 로고를 뭉개므로 로고는 DOM 이 맡습니다. */
+.league{background:var(--ink);color:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
+.lg-head{max-width:680px;margin:0 auto;text-align:center}
+.lg-head .eyebrow{color:var(--teal)}
+.lg-head h2{font-size:clamp(2rem,3vw,2.75rem);font-weight:800;letter-spacing:-.02em}
+.lg-head h2 .serif{color:var(--teal)}
+.lg-head p{margin:20px auto 0;font-size:1.06rem;line-height:1.65;color:rgba(247,248,248,.8);max-width:52ch}
+.lg-stage{
+  position:relative;max-width:1080px;margin:56px auto 0;aspect-ratio:16/9;
+  border-radius:20px;overflow:hidden;background:var(--ink-deep);
+  box-shadow:0 30px 80px rgba(0,0,0,.45);
+}
+.lg-stage .lg-poster,.lg-stage video{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+}
+.lg-stage video{opacity:0;transition:opacity .4s var(--ease)}
+.lg-stage.playing video{opacity:1}
+/* 로고 오버레이 — 좌표는 완성 영상의 마지막 프레임 실측값입니다 */
+.lg-logos{position:absolute;inset:0;opacity:0;transition:opacity .9s var(--ease)}
+.lg-stage.settled .lg-logos{opacity:1}
+.lg-logo{
+  position:absolute;transform:translate(-50%,-100%);
+  display:grid;place-items:center;
+}
+.lg-logo img,.lg-logo .dot{
+  width:clamp(34px,4.4vw,52px);height:auto;border-radius:50%;
+  background:rgba(247,248,248,.92);padding:5px;
+  box-shadow:0 6px 24px rgba(0,0,0,.4);
+  filter:brightness(.62) saturate(.72);
+  transition:filter .6s var(--ease),transform .6s var(--ease);
+}
+.lg-logo.first img,.lg-logo.first .dot{
+  filter:none;transform:scale(1.22);
+  box-shadow:0 0 0 3px var(--teal),0 10px 34px rgba(45,212,191,.35);
+}
+.lg-logo .beam{
+  width:2px;height:clamp(18px,2.6vw,30px);margin:6px auto 0;
+  background:linear-gradient(180deg,rgba(247,248,248,.7),transparent);
+}
+/* 순위 리스트 — 로고와 같은 데이터에서 그립니다 */
+.lg-list{
+  list-style:none;max-width:640px;margin:48px auto 0;padding:0;
+  border-top:1px solid rgba(247,248,248,.14);
+}
+.lg-list li{
+  display:grid;grid-template-columns:44px 40px 1fr auto;align-items:center;gap:14px;
+  padding:14px 6px;border-bottom:1px solid rgba(247,248,248,.14);
+}
+.lg-list .rank{
+  font-variant-numeric:tabular-nums;font-size:1.05rem;font-weight:800;
+  color:rgba(247,248,248,.55);text-align:center;
+}
+.lg-list li:first-child .rank{color:var(--teal)}
+.lg-list img{
+  width:32px;height:32px;object-fit:contain;border-radius:50%;
+  background:rgba(247,248,248,.92);padding:3px;
+}
+.lg-list .school{font-weight:700;letter-spacing:-.01em}
+.lg-list .hours{
+  font-variant-numeric:tabular-nums;font-weight:700;color:rgba(247,248,248,.82);
+}
+.lg-list .hours small{font-weight:500;color:rgba(247,248,248,.55);margin-left:4px}
+.lg-list li:first-child .hours{color:var(--teal)}
+/* 로고 파일이 없을 때의 학교색 원판 */
+.lg-logo .dot,.lg-list .dot{
+  display:grid;place-items:center;border-radius:50%;
+  color:var(--cream);font-weight:800;
+  box-shadow:0 6px 24px rgba(0,0,0,.4);
+}
+.lg-logo .dot{width:clamp(34px,4.4vw,52px);aspect-ratio:1;font-size:1rem}
+.lg-list .dot{width:32px;height:32px;font-size:.8rem;box-shadow:none}
+
 /* ---------------- FAQ ---------------- */
 .faq{background:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
-.faq-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:6vw;max-width:1200px;margin:0 auto}
+.faq-grid{display:grid;grid-template-columns:.8fr 1.6fr;gap:5vw;max-width:1240px;margin:0 auto}
+.faq-copy{position:sticky;top:110px;align-self:start}
 .faq-copy .lbl{font-size:.8rem;font-weight:700;letter-spacing:.1em;color:var(--deep)}
 .faq-copy h2{margin-top:16px;font-size:clamp(2rem,3vw,2.75rem);font-weight:800;letter-spacing:-.02em;line-height:1.2}
 .faq-copy p{margin-top:16px;color:var(--muted);line-height:1.6;font-size:1.02rem;max-width:38ch}
@@ -465,8 +572,8 @@ body.cursor-on #cursor{opacity:1}
   transition:background .2s var(--ease);
 }
 .qa-btn:hover{background:rgba(43,50,48,.04)}
-.qa-btn .no{font-family:ui-monospace,Consolas,monospace;font-size:.85rem;color:var(--teal);font-weight:700}
-.qa-btn .q{font-size:1.2rem;font-weight:700;letter-spacing:-.01em}
+.qa-btn .no{font-variant-numeric:tabular-nums;font-size:.85rem;color:var(--deep);font-weight:800}
+.qa-btn .q{font-size:1.2rem;font-weight:700;letter-spacing:-.01em;line-height:1.4}
 .qa-btn .ic{
   width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);
   display:grid;place-items:center;position:relative;
@@ -482,34 +589,37 @@ body.cursor-on #cursor{opacity:1}
 .qa.open .qa-btn .ic::before{background:var(--cream)}
 .qa.open .qa-btn .ic::after{transform:scaleY(0);background:var(--cream)}
 .qa-a{height:0;overflow:hidden;opacity:0}
-.qa-a p{
-  margin:0;padding:0 6px 28px 72px;color:var(--muted);line-height:1.65;font-size:1rem;max-width:56ch;
+/* 답변이 길어졌습니다. 들여쓰기는 유지하되 안쪽에서 서식을 만듭니다. */
+.qa-body{padding:2px 6px 34px 72px;max-width:62ch}
+.qa-body p{margin:0 0 14px;color:var(--muted);line-height:1.72;font-size:1rem}
+/* 핵심 요약 — 눌러서 처음 보이는 2~3줄. 여기만 진하게 둡니다. */
+.qa-body .sum{
+  color:var(--ink);font-weight:700;font-size:1.06rem;line-height:1.62;
+  margin:0 0 22px;padding:16px 20px;
+  background:#fff;border:1px solid var(--line-soft);border-radius:14px;
 }
-
-/* ---------------- CTA ---------------- */
-.contact{
-  position:relative;min-height:88vh;background:var(--ink);color:var(--cream);
-  display:grid;place-items:center;text-align:center;overflow:hidden;
-  padding:120px 24px;
+.qa-body h4{
+  margin:24px 0 8px;font-size:.94rem;font-weight:800;color:var(--deep);
+  letter-spacing:-.01em;
 }
-.contact::before{
-  content:"";position:absolute;inset:0;opacity:.05;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.6'/%3E%3C/svg%3E");
+.qa-body h4:first-of-type{margin-top:0}
+.qa-body b{color:var(--ink);font-weight:800}
+.qa-body i{font-style:normal;color:var(--ink);font-weight:600}
+.qa-body ul,.qa-body ol{margin:0 0 14px;padding-left:20px;color:var(--muted);line-height:1.72}
+.qa-body li{margin-bottom:7px}
+.qa-body li::marker{color:var(--teal)}
+.qa-body a{color:var(--deep);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.qa-body blockquote{
+  margin:18px 0 0;padding:14px 18px;
+  background:rgba(45,212,191,.08);border-radius:12px;
+  color:var(--muted);font-size:.96rem;line-height:1.66;
 }
-.contact .circle{
-  position:absolute;border-radius:50%;border:1.5px solid rgba(45,212,191,.25);pointer-events:none;
-}
-.contact .circle.c1{width:56vw;height:56vw;left:-18vw;top:-24vw}
-.contact .circle.c2{width:44vw;height:44vw;right:-16vw;bottom:-20vw}
-.contact-inner{position:relative;z-index:3;max-width:840px}
-.contact h2{
-  font-size:clamp(2.6rem,4.4vw,3.9rem);font-weight:800;letter-spacing:-.02em;line-height:1.16;
-}
-.contact h2 .serif{color:var(--teal)}
-.contact-actions{display:flex;align-items:center;justify-content:center;gap:20px;margin-top:40px}
-.contact .promise{
-  margin-top:26px;font-size:.95rem;color:var(--sky);font-weight:600;letter-spacing:.02em;
-}
+.qa-body .tw{overflow-x:auto;margin:0 0 16px;border:1px solid var(--line-soft);border-radius:12px;background:#fff}
+.qa-body table{border-collapse:collapse;width:100%;font-size:.92rem}
+.qa-body th,.qa-body td{padding:10px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line-soft)}
+.qa-body thead th{font-weight:800;color:var(--ink);background:rgba(43,50,48,.03);white-space:nowrap}
+.qa-body tbody tr:last-child td{border-bottom:0}
+.qa-body td:first-child{font-weight:600;color:var(--ink);white-space:nowrap}
 
 /* ---------------- 푸터 ---------------- */
 .footer{background:var(--cream);border-top:1px solid var(--line)}
@@ -519,68 +629,65 @@ body.cursor-on #cursor{opacity:1}
 }
 .footer-grid .f-brand{font-weight:800;font-size:1.2rem}
 .footer-grid .f-brand small{display:block;margin-top:8px;color:var(--muted);font-weight:500;font-size:.88rem;max-width:30ch;line-height:1.55}
-.footer-grid nav{display:flex;gap:26px}
-.footer-grid nav a{font-weight:600;font-size:.95rem;color:var(--muted);transition:color .3s}
-.footer-grid nav a:hover{color:var(--ink)}
+/* 법적 링크 — 토스처럼 푸터 아래에 한 줄로 늘어놓되, 개인정보처리방침만
+   굵게 둡니다(법정 표시 관행) */
+.footer-legal{
+  max-width:1200px;margin:0 auto;padding:0 clamp(24px,4vw,64px) 22px;
+  display:flex;flex-wrap:wrap;gap:8px 22px;
+  border-top:1px solid var(--line-soft);padding-top:24px;
+}
+.footer-legal a{
+  font-size:.85rem;color:var(--muted);font-weight:500;
+  transition:color .3s var(--ease);
+}
+.footer-legal a b{font-weight:800;color:var(--ink)}
+.footer-legal a:hover{color:var(--ink)}
 .footer-meta{
   max-width:1200px;margin:0 auto;padding:0 clamp(24px,4vw,64px) 40px;
-  display:flex;justify-content:space-between;color:var(--muted);font-size:.85rem;
+  display:flex;justify-content:space-between;gap:24px;color:var(--muted);font-size:.85rem;
 }
 </style>
 </head>
-<body class="lock">
+<body>
 
 <a class="skip" href="#main">본문으로 건너뛰기</a>
-<div id="cursor" aria-hidden="true"></div>
-
-<!-- 로더 -->
-<div id="loader" role="status" aria-label="불러오는 중">
-  <div class="mark">기린캠퍼스</div>
-  <div class="bar"><i id="loadbar"></i></div>
-</div>
 
 <!-- 헤더 -->
 <header class="header">
   <a class="brand" href="#top" data-mag>
-    <img src="assets/char-giraffe.png" alt="" width="22" height="33">
-    기린캠퍼스
+    <img src="assets/logo.svg" alt="" width="26" height="26" style="border-radius:7px">
+    Deskfit
   </a>
   <nav aria-label="주요 섹션">
-    <a href="#world">둘러보기</a>
+    <a href="#world" data-nav="world">서비스</a>
+    <a href="#camera" data-nav="camera">카메라</a>
+    <a href="#league" data-nav="league">랭킹전</a>
+    <a href="#privacy" data-nav="privacy">개인정보</a>
     <a href="#faq">FAQ</a>
   </nav>
+  <div class="h-right">
   <div class="lang-toggle" role="group" aria-label="언어 선택">
     <button type="button" data-lang="ko" aria-pressed="true">KOR</button><i aria-hidden="true">/</i><button type="button" data-lang="en" aria-pressed="false">ENG</button>
+  </div>
+  <a class="pill-cta" href="../onboarding/index.html">
+    <span class="roll"><i id="pillLabel">시작하기<br>시작하기</i></span>
+  </a>
   </div>
 </header>
 
 <main id="main">
 
-<!-- 1. 히어로 -->
-<section class="hero" id="top" aria-label="기린캠퍼스 소개">
-  <img class="hero-poster" src="assets/still-campus.webp" alt="클레이 디오라마로 만든 기린캠퍼스 전경 — 네 건물과 광장, 호수" >
-  <video id="heroVideo" src="assets/video-hero.mp4" muted loop playsinline preload="metadata" aria-hidden="true"></video>
-  <div class="wash" aria-hidden="true"></div>
-
-  <div class="hero-inner">
-    <div class="hero-mid">
-      <span class="eyebrow">웹캠이 자세를 봐 주는 온라인 자습실</span>
-      <h1>앉는 시간이<br><span class="serif">세계가 돼요</span></h1>
-<div class="hero-actions">
-        <a class="btn-primary" href="../onboarding/index.html" data-mag>내 자리 잡으러 가기 <span class="tail" aria-hidden="true">↗</span></a></span>
-      </div>
-    </div>
-  </div>
-
-</section>
-
-<!-- 2. 포털 -->
-<section class="portal" aria-label="월드 열기">
-  <div class="portal-stage">
-    <figure class="portal-frame" id="portalFrame">
-      <img src="assets/still-campus.webp" alt="작은 프레임 속 기린캠퍼스 — 스크롤하면 프레임이 화면 가득 열려요">
-      <div class="portal-duotone" id="portalDuo" aria-hidden="true"></div>
-</figure>
+<!-- 1. 메인 — 인셋 필름 카드 (토스 히어로 구조: 14px 인셋 → 풀스크린, 커서 시차 팬) -->
+<section class="hero-film" id="top" aria-label="Deskfit — 캠퍼스 필름">
+  <div class="hf-stage">
+    <figure class="hf-card" id="hfCard">
+      <img class="hf-poster" src="assets/still-campus.webp" alt="클레이 디오라마로 만든 캠퍼스 전경 — 네 건물과 광장, 호수">
+      <video id="hfVideo" src="assets/video-hero.mp4" muted loop playsinline preload="metadata" aria-hidden="true"></video>
+      <div class="hf-wash" aria-hidden="true"></div>
+      <p class="hf-line" id="hfLine" aria-label="자세교정과 공부를 Deskfit에서">
+        <span>자세교정과 공부를</span><span class="hf-brand">Deskfit에서</span>
+      </p>
+    </figure>
   </div>
 </section>
 
@@ -596,13 +703,14 @@ body.cursor-on #cursor{opacity:1}
 </section>
 
 <!-- 4. 인트로 폴드 -->
-<section class="intro" aria-label="소개">
+<section class="intro" id="about" aria-label="소개">
   <div class="intro-stage">
     <span class="intro-label">소개</span>
     <div class="intro-copy">
-      <p class="statement" id="introStatement">기린캠퍼스에 오면 카메라가 함께 앉아요.
-        카메라가 봐 준 시간만큼 <span class="serif">코인이 되고,</span>
-        코인은 내 캐릭터의 하루가 돼요.</p>
+      <span class="intro-eb" id="introEyebrow">거북목 자세교정과 함께</span>
+      <p class="statement" id="introStatement">집중 시작은 Deskfit에서 시작해요<br>
+        집중할수록 내 캐릭터를 꾸미고<br>
+        <span class="serif">학교 랭킹전에 기여해요</span></p>
     </div>
     <div class="intro-float">
       <img id="introFloat" src="assets/char-giraffe-3d.webp" alt="클레이로 빚은 기린 캐릭터가 손을 흔들어요">
@@ -610,31 +718,40 @@ body.cursor-on #cursor{opacity:1}
   </div>
 </section>
 
-<!-- 5. 매니페스토 -->
-<section class="manifesto" aria-label="우리의 약속">
-  <div class="mani-stage" id="maniStage">
-    <figure class="mani-item i1"><img src="assets/collage-trio.webp" alt="거북·기린·펭귄이 광장을 함께 걸어요"></figure>
-    <figure class="mani-item i2"><img src="assets/feat-webcam.webp" alt="웹캠이 달린 책상 — 렌즈가 청록으로 켜져 있어요"></figure>
-    <figure class="mani-item i3"><img src="assets/feat-minigame.webp" alt="게시판 앞에서 두 팔을 든 햄스터"></figure>
-    <figure class="mani-item i4"><img src="assets/feat-trophy.webp" alt="명예의 전당 선반에 놓인 트로피 셋"></figure>
-    <figure class="mani-item i5"><img src="assets/feat-shop.webp" alt="상점 진열대 — 선물 상자와 과잠"></figure>
-    <div class="mani-lines" id="maniLines">
-      <p class="ln">자세는 점수가 아니에요</p>
-      <p class="ln">앉아 있는 시간이 쌓여요</p>
-      <p class="ln" data-accent>쌓인 만큼 세계가 자라요</p>
+<!-- 5. 챕터 콜라주 — 지금 / 앞으로 -->
+<section class="chapters" id="promise" aria-label="Deskfit이 바꾸는 것">
+  <div class="chap" id="chapNow">
+    <h2 class="rv" style="--d:.05s">Deskfit이 없던 <span class="serif">대학생</span></h2>
+    <p class="rv" style="--d:.1s">PC 앞에서 대학생은 잠을 줄이면서
+      건강한 자세도 함께 잃어 왔어요.</p>
+    <div class="chap-tiles">
+      <figure class="rv" style="--d:.05s"><img src="assets/chap-1.webp" alt="밤늦게 노트북 앞에서 목을 앞으로 뺀 거북 캐릭터" loading="lazy"></figure>
+      <figure class="rv" style="--d:.13s"><img src="assets/chap-2.webp" alt="웹캠이 달린 책상 — 렌즈가 청록으로 은은하게 켜져 있어요" loading="lazy"></figure>
+      <figure class="rv" style="--d:.21s"><img src="assets/chap-3.webp" alt="허리를 곧게 펴고 앉은 기린 캐릭터" loading="lazy"></figure>
+      <figure class="rv" style="--d:.29s"><img src="assets/chap-4.webp" alt="선반 위 세 개의 상태 등 — 초록·호박·꺼진 등" loading="lazy"></figure>
     </div>
-    <span class="mani-idx">01 · 점수 없이</span>
+  </div>
+  <div class="chap" id="chapNext">
+    <h2 class="rv" style="--d:.05s">Deskfit이 바꿀 <span class="serif">대학생</span></h2>
+    <p class="rv" style="--d:.1s">자세를 교정하며 집중해요.
+      집중하며 친구들과 교류하고 내 캐릭터와 방을 꾸며요.</p>
+    <div class="chap-tiles">
+      <figure class="rv" style="--d:.05s"><img src="assets/chap-5.webp" alt="건물이 새싹처럼 자라는 작은 캠퍼스 섬" loading="lazy"></figure>
+      <figure class="rv" style="--d:.13s"><img src="assets/chap-6.webp" alt="아기자기하게 꾸민 기숙사 미니룸 단면" loading="lazy"></figure>
+      <figure class="rv" style="--d:.21s"><img src="assets/chap-7.webp" alt="명예의 전당 선반 — 금빛 트로피 셋과 월계관" loading="lazy"></figure>
+      <figure class="rv" style="--d:.29s"><img src="assets/chap-8.webp" alt="거북·기린·펭귄이 나란히 앉아 함께 공부해요" loading="lazy"></figure>
+    </div>
   </div>
 </section>
 
 <!-- 7. 카메라 약속 -->
-<section class="story" aria-label="카메라의 약속">
+<section class="story" id="camera" aria-label="카메라의 약속">
   <div class="story-head">
     <span class="eyebrow">카메라의 약속</span>
     <h2 class="rv">카메라는 <span class="serif">곁에 있을 뿐이에요.</span></h2>
-    <p class="rv" style="--d:.08s">월드에 들어오면 10초 동안 내 평소 자세를 익혀요.
-      그다음엔 조용히 볼 뿐, 점수도 등급도 매기지 않아요.
-      좋음·주의·나쁨 세 가지 상태만 세어 두었다가, 세션이 끝나면 숫자로만 보여 줘요.</p>
+    <p class="rv" style="--d:.08s">월드에 들어오기 전 나만의 자세 기준을 맞춰요.<br>
+      그 다음엔 조용히 관찰하고 피드백만 할 뿐이에요.<br>
+      세션이 끝나면 AI가 평소 자세 습관에 대해 분석해요.</p>
   </div>
   <div class="story-grid">
     <figure class="reel rv" style="--d:.12s">
@@ -645,20 +762,20 @@ body.cursor-on #cursor{opacity:1}
     <div class="stat-card rv" style="--d:.2s">
       <span class="lbl">서버로 간 프레임</span>
       <span class="num"><span id="frameCount">0</span><small>장</small></span>
-      <p class="sub">분석은 브라우저 안에서 끝나요.
+      <p class="sub">분석은 브라우저 안에서 끝나요.<br>
         영상도, 좌표도 밖으로 나가지 않아요.</p>
     </div>
   </div>
 </section>
 
 <!-- 9. 캐릭터 덱 -->
-<section class="deck-sec" aria-label="캐릭터 고르기">
+<section class="deck-sec" id="friends" aria-label="캐릭터 고르기">
   <div class="deck-grid">
     <div class="deck-copy">
-      <span class="lbl">함께 앉을 친구</span>
-      <h2 class="rv">오늘의 나를 <span class="serif">골라요.</span></h2>
-      <p class="rv" style="--d:.08s">여덟 캐릭터 중 하나로 캠퍼스를 걸어요.
-        상점 아이템은 종마다 다르게 어울려요 — 시작은 누구여도 괜찮아요.</p>
+      <span class="lbl">내 캐릭터</span>
+      <h2 class="rv">내 <span class="serif">캐릭터</span>를 뽑아요.</h2>
+      <p class="rv" style="--d:.08s">여덟 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>
+        집중만 하면 모두 내 캐릭터가 될 수 있어요.</p>
       <p class="deck-hint rv" style="--d:.14s" aria-hidden="true">← 카드를 넘겨 보세요 →</p>
     </div>
     <div class="deck-wrap">
@@ -667,99 +784,276 @@ body.cursor-on #cursor{opacity:1}
   </div>
 </section>
 
+<!-- 9.5 주간 랭킹전 -->
+<section class="league" id="league" aria-label="주간 랭킹전">
+  <div class="lg-head">
+    <span class="eyebrow rv">이번 시즌 랭킹전</span>
+    <h2 class="rv" style="--d:.05s">우리 학교가 <span class="serif">제일 오래 집중했어요</span></h2>
+    <p class="rv" style="--d:.1s">이번 시즌, 다섯 캠퍼스가 함께 앉았어요.<br>
+      제일 오래 앉은 학교의 섬이 가장 밝게 빛나요.</p>
+  </div>
+  <figure class="lg-stage rv" style="--d:.12s">
+    <img class="lg-poster" src="assets/league-poster.webp" alt="다섯 캠퍼스 섬이 각자의 학교색으로 빛나요 — 가장 밝은 섬이 이번 시즌 1위">
+    <video id="lgVideo" src="assets/video-league.mp4" muted playsinline preload="metadata" aria-hidden="true"></video>
+    <div class="lg-logos" id="lgLogos" aria-hidden="true"></div>
+  </figure>
+  <ol class="lg-list" id="lgList" aria-label="이번 시즌 순위"></ol>
+</section>
+
 <!-- 10. FAQ -->
 <section class="faq" id="faq" aria-label="자주 묻는 질문">
   <div class="faq-grid">
     <div class="faq-copy">
       <span class="lbl">자주 묻는 질문</span>
-      <h2 class="rv">궁금한 건<br>여기서 풀어요.</h2>
-      <p class="rv" style="--d:.08s">가장 많이 받는 일곱 가지예요.
-        더 궁금한 건 캠퍼스 안 게시판에서 만나요.</p>
+      <h2 class="rv">FAQ</h2>
     </div>
     <div class="faq-list rv" style="--d:.1s" id="faqList">
       <div class="qa">
         <button class="qa-btn" aria-expanded="false">
-          <span class="no">01</span><span class="q">카메라 영상은 어디로 가요?</span><span class="ic" aria-hidden="true"></span>
+          <span class="no">01</span><span class="q">자세를 어떻게 판정하나요?</span><span class="ic" aria-hidden="true"></span>
         </button>
-        <div class="qa-a"><p>아무 데도 안 가요. 분석은 브라우저 안에서 끝나고,
-          영상도 좌표도 서버로 보내지 않아요. 세션이 끝나면 카메라도 함께 꺼져요.</p></div>
+        <div class="qa-a"><div class="qa-body">
+<p class="sum">어깨선을 자로 삼아 머리의 위치와 거리를 재고, 세션 시작 10초 동안 등록한
+      내 평소 자세와의 차이만 봅니다. 정답 자세와 비교하는 게 아니라, 오직 나와 나를 비교합니다.</p>
+    <h4>① 몸에서 점을 찾습니다</h4>
+    <p>웹캠 화면에서 어깨·눈·귀·코·엉덩이의 위치를 찾아냅니다. 얼굴을 알아보는 게 아니라
+      뼈대 몇 개의 좌표만 잡습니다.</p>
+    <h4>② 어깨 너비를 1로 놓고 나머지를 잽니다</h4>
+    <p>사람마다 몸도 카메라 거리도 다릅니다. 그래서 두 어깨 사이 거리를 자로 삼고, 나머지 값을
+      전부 그 비율로 환산합니다. 책상에서 30cm 떨어져 앉든 60cm든 같은 기준이 되도록.
+      이렇게 <b>10가지 값</b>을 매 프레임 계산합니다.</p>
+    <div class="tw"><table>
+      <thead><tr><th>무엇을 재나</th><th>무너지면</th></tr></thead>
+      <tbody>
+        <tr><td>얼굴 크기 비율</td><td>커짐 = 화면 쪽으로 다가옴</td></tr>
+        <tr><td>눈–어깨 세로 거리</td><td>줄어듦 = 고개가 파묻힘</td></tr>
+        <tr><td>눈–코 세로 간격</td><td>벌어짐 = 고개 숙임</td></tr>
+        <tr><td>귀와 눈의 높이 차</td><td>귀가 올라감 = 고개 숙임</td></tr>
+        <tr><td>어깨 너비</td><td>넓어짐 = 몸 전체가 앞으로</td></tr>
+        <tr><td>머리의 좌우 치우침</td><td>한쪽으로 쏠림</td></tr>
+        <tr><td>어깨 기울기</td><td>한쪽 어깨가 내려감</td></tr>
+        <tr><td>상체 기울기</td><td>골반 대비 상체가 쏠림</td></tr>
+        <tr><td>머리까지의 거리(cm)</td><td>가까워짐 = 머리가 앞으로</td></tr>
+        <tr><td>고개 각도(도)</td><td>턱을 내림</td></tr>
+      </tbody></table></div>
+    <h4>③ 10초 동안 내 기준을 만듭니다</h4>
+    <p>세션을 시작하면 10초간 지금 앉은 모습을 수백 번 재서, 각 값의 <b>중앙값</b>과
+      <b>흔들림 폭</b>을 기록합니다. 평균이 아니라 중앙값을 쓰는 이유는, 중간에 한 번 크게
+      움직여도 기준이 끌려가지 않게 하기 위해서예요.</p>
+    <h4>④ 차이가 얼마나 벌어졌는지 봅니다</h4>
+    <p>지금 값이 내 중앙값에서 얼마나 벗어났는지를 <b>내 평소 흔들림 폭 대비</b>로 계산합니다.
+      원래 자주 움직이는 사람은 기준이 넉넉해지고, 거의 고정된 사람은 좁아집니다.</p>
+    <h4>⑤ 여러 값이 동시에 벗어나야 인정합니다</h4>
+    <p>하나만 벗어나면 <b>주의</b>, 둘 이상이 벗어나면 <b>나쁨</b>입니다. 한 프레임 튀었다고 바로
+      바뀌지도 않아요 — 주의는 1.5초, 나쁨은 5초, 좋음 복귀는 2초 동안 그 상태가 이어져야
+      확정됩니다. 기침 한 번, 물 한 모금에 화면이 요란해지지 않게 하려는 장치예요.</p>
+    <h4>세션이 끝나면</h4>
+    <p>좋음·주의·나쁨 세 상태에 머문 시간과 회복 횟수가 남습니다. 여기에 <b>AI 리포트</b>를 열면
+      오늘 어느 시간대에 무너졌는지, 어떤 흐름이 반복됐는지를 문장으로 읽을 수 있어요.
+      리포트는 무료이고, 리포트를 열지 않아도 숫자는 그대로 볼 수 있습니다.</p>
+    <blockquote>리포트는 자세에 점수나 등급을 매기지 않습니다. 의학적 판단도 하지 않아요.
+      언제·어떻게 무너졌는지의 <b>패턴</b>만 보여 줍니다.</blockquote>
+        </div></div>
+      </div>
+      <div class="qa" id="privacy">
+        <button class="qa-btn" aria-expanded="false">
+          <span class="no">02</span><span class="q">개인정보와 영상은 어떻게 다뤄요?</span><span class="ic" aria-hidden="true"></span>
+        </button>
+        <div class="qa-a"><div class="qa-body">
+<p class="sum">영상은 이 브라우저 밖으로 나가지 않습니다. 판정은 기기 안에서 끝나고 프레임은
+      즉시 버려져요. 서버로 가는 건 "몇 분 앉았는가" 같은 숫자 몇 개뿐입니다.</p>
+    <h4>어디서 계산하나</h4>
+    <p>자세 판정 모델을 처음 한 번 내려받은 뒤로는 <b>브라우저 안에서</b> 돕니다.
+      계산하려고 영상을 어디로 보내지 않아요.</p>
+    <h4>서버로 가지 않는 것</h4>
+    <p>영상·사진·스냅샷, 자세 좌표 원본, 10초 동안 만든 내 기준값, 얼굴에서 뽑은 어떤 값도.</p>
+    <h4>세션이 끝날 때 서버로 가는 것 (전부)</h4>
+    <p>세션 ID, 앉은 시간(분), 캠퍼스에 머문 시간(분), 회복 횟수, 시작·종료 시각, 선택한 학교.
+      이 여섯 줄이 전부입니다.</p>
+    <h4>직접 확인해 보세요</h4>
+    <p>말보다 확실합니다.</p>
+    <ol>
+      <li><b>Network 탭</b> — F12로 개발자도구를 열고 세션을 돌려 보세요. 오가는 요청이 전부
+        보입니다. 영상 업로드가 없다는 걸 눈으로 확인하실 수 있어요.</li>
+      <li><b>인터넷 끊기</b> — 모델을 한 번 받은 뒤 랜선을 뽑거나 와이파이를 꺼 보세요.
+        <b>자세 판정은 그대로 돕니다.</b> 계산이 기기 안에서 돈다는 증거예요.</li>
+    </ol>
+    <h4>회원가입이 없습니다</h4>
+    <p>이메일·전화번호·비밀번호를 받지 않아요. 다른 사람에게 보이는 건 닉네임과 캐릭터뿐이고,
+      카메라 화면은 누구에게도 보이지 않습니다. 화면 공유 기능 자체가 없어요.</p>
+    <p>더 자세한 내용은 <a href="legal/privacy.html">개인정보처리방침</a>과
+      <a href="legal/camera.html">카메라 사용 고지</a>에 적어 두었습니다.</p>
+        </div></div>
       </div>
       <div class="qa">
         <button class="qa-btn" aria-expanded="false">
-          <span class="no">02</span><span class="q">자세에 점수를 매기나요?</span><span class="ic" aria-hidden="true"></span>
+          <span class="no">03</span><span class="q">자리에서 일어나면 어떻게 되나요?</span><span class="ic" aria-hidden="true"></span>
         </button>
-        <div class="qa-a"><p>아니요. 좋음·주의·나쁨 세 가지 상태만 조용히 셀 뿐,
-          점수도 등급도 없어요. 회고에서도 해석 없이 숫자만 보여 줘요.</p></div>
+        <div class="qa-a"><div class="qa-body">
+<p class="sum">세션은 멈추지 않지만, 카메라에 몸이 안 보이는 동안은 자세 판정이 서 있습니다.
+      그 시간은 코인으로도 리포트로도 잡히지 않아요.</p>
+    <h4>세션은 계속됩니다</h4>
+    <p>자리에서 일어나도 세션이 끝나지 않고 캠퍼스도 그대로예요. 스트레칭하러 다녀오는 걸
+      벌주지 않습니다.</p>
+    <h4>다만 판정은 멈춥니다</h4>
+    <p>화면에서 벗어나면 상태가 <b>측정 준비</b>로 돌아가고, 그동안은 좋음·주의·나쁨 어느 쪽으로도
+      세지 않아요. 아래 경우가 그렇습니다.</p>
+    <ul>
+      <li>몸이 화면 밖으로 나감 — <i>화면에서 벗어났어요</i></li>
+      <li>너무 멀리 있어 어깨가 안 잡힘 — <i>조금 더 가까이 앉아 주세요</i></li>
+      <li>두 사람 이상이 잡힘 — <i>두 명 이상 보여요</i></li>
+    </ul>
+    <h4>그래서 생기는 일 두 가지</h4>
+    <p><b>① 코인이 그만큼 줄어듭니다.</b> 코인은 의자에 앉은 벽시계 시간이 아니라
+      <b>판정이 실제로 돈 시간</b>으로 계산해요. 자리를 오래 비우면 그 시간은 빠집니다.
+      카메라를 가려 두고 코인만 쌓는 걸 막기 위한 설계예요.</p>
+    <p><b>② AI 리포트가 그 구간을 읽지 못합니다.</b> 자세 값이 없는 구간이라 흐름이 끊깁니다.
+      자주 오래 비운 세션일수록 리포트가 볼 수 있는 게 줄어들어요.</p>
+    <h4>앉는 것과 카메라는 별개입니다</h4>
+    <p>카메라는 캠퍼스에 들어온 순간부터 세션이 끝날 때까지 계속 켜져 있어요. 도서관·본관 의자에
+      앉으면 화면 구석에 작은 카메라 창이 뜨는데, 그건 <b>표시 방식이 바뀌는 것</b>이지
+      그때 카메라가 켜지는 게 아닙니다.</p>
+        </div></div>
       </div>
       <div class="qa">
         <button class="qa-btn" aria-expanded="false">
-          <span class="no">03</span><span class="q">어떤 장비가 필요해요?</span><span class="ic" aria-hidden="true"></span>
+          <span class="no">04</span><span class="q">어떤 장비가 필요한가요?</span><span class="ic" aria-hidden="true"></span>
         </button>
-        <div class="qa-a"><p>웹캠 달린 PC와 크롬이면 돼요. 설치할 것도, 결제할 것도 없어요.
-          데스크톱 화면에 맞춰 만들었어요.</p></div>
+        <div class="qa-a"><div class="qa-body">
+<p class="sum">웹캠 달린 PC와 크롬, 그리고 인터넷이면 끝입니다.
+      설치할 것도 결제할 것도 없어요.</p>
+    <div class="tw"><table>
+      <thead><tr><th>필요한 것</th><th>설명</th></tr></thead>
+      <tbody>
+        <tr><td>데스크톱·노트북</td><td>책상 앞에서 쓰는 서비스라 데스크톱 화면만 지원합니다</td></tr>
+        <tr><td>웹캠</td><td>노트북 내장 캠으로 충분해요. 외장 웹캠도 좋습니다</td></tr>
+        <tr><td>크롬</td><td>최신 크롬 권장. 엣지·웨일 등 같은 계열도 됩니다</td></tr>
+        <tr><td>인터넷</td><td>첫 실행 때 판정 모델을 받을 때 필요합니다</td></tr>
+      </tbody></table></div>
+    <h4>설치할 게 없습니다</h4>
+    <p>앱도 확장 프로그램도 없어요. 주소만 열면 시작됩니다.</p>
+    <h4>카메라 위치 잡기</h4>
+    <p>상반신이 화면에 들어오면 됩니다. 어깨 양쪽이 보이는 정도가 좋고, 화면과 너무 멀면
+      <i>조금 더 가까이 앉아 주세요</i>가 떠요.</p>
+    <h4>조명</h4>
+    <p>역광이면 인식률이 떨어집니다. 창을 등지고 앉았다면 화면 쪽 조명을 밝게 해 주세요.</p>
+    <h4>성능이 걱정된다면</h4>
+    <p>설정에서 <b>저사양 모드</b>를 켜면 그림자와 장식을 끄고 30fps로 그립니다.
+      렌더링 부담이 줄어 카메라 판정에 여유가 생겨요.</p>
+    <h4>카메라 없이도</h4>
+    <p>권한을 거부해도 캠퍼스는 걸어 다닐 수 있습니다. 자세 판정과 그에 따른 코인만
+      동작하지 않아요.</p>
+        </div></div>
       </div>
       <div class="qa">
         <button class="qa-btn" aria-expanded="false">
-          <span class="no">04</span><span class="q">자리에서 일어나면 어떻게 돼요?</span><span class="ic" aria-hidden="true"></span>
+          <span class="no">05</span><span class="q">개인 기록은 어떻게 하나요?</span><span class="ic" aria-hidden="true"></span>
         </button>
-        <div class="qa-a"><p>기록은 계속 이어져요. 앉기는 화면 전환일 뿐이라,
-          스트레칭하러 다녀와도 기록이 끊기지 않아요.</p></div>
+        <div class="qa-a"><div class="qa-body">
+<p class="sum">회원가입 없이도 기록이 남습니다. 기록은 기본적으로 내 브라우저 안에 쌓이고,
+      서버 저장을 쓸 때는 이름 없는 임의 ID에만 묶여요.</p>
+    <h4>어떻게 가입 없이 기록이 되나</h4>
+    <p>브라우저에는 사이트마다 쓸 수 있는 저장 공간이 있습니다. 닉네임·캐릭터·코인·세션 기록을
+      전부 여기에 둬요. 서버에 계정을 만들 필요가 없는 이유입니다.</p>
+    <h4>브라우저에 남는 것</h4>
+    <p>닉네임과 캐릭터, 10초로 만든 내 자세 기준, 지난 세션 요약(최근 12개), 코인과 아이템,
+      방 꾸미기 상태, 환경 설정.</p>
+    <h4>랭킹에 참여하면</h4>
+    <p>세션 기록이 서버에도 쌓입니다. 이때도 이메일 같은 건 받지 않고,
+      <b>자동으로 발급되는 임의의 문자열 ID</b> 하나에만 묶여요. 그 ID는 누구인지 알 수 없는
+      값입니다.</p>
+    <h4>그래서 생기는 한계 — 솔직히 말씀드립니다</h4>
+    <ul>
+      <li>브라우저 저장소를 지우면 <b>복구할 수 없습니다.</b> 되돌릴 열쇠(이메일·비밀번호)를
+        애초에 받지 않기 때문이에요.</li>
+      <li>시크릿 모드로 쓰면 창을 닫는 순간 사라집니다.</li>
+      <li>다른 브라우저나 다른 기기로 접속하면 <b>다른 사람</b>이 됩니다.</li>
+    </ul>
+    <h4>지우고 싶을 때</h4>
+    <p>설정의 <b>전체 데이터 초기화</b> 한 번이면 이 기기의 모든 기록이 사라집니다.
+      서버 기록까지 지우고 싶으면 <a href="mailto:ikmc554@mju.ac.kr">ikmc554@mju.ac.kr</a> 로
+      ID를 알려 주세요.</p>
+    <h4>네트워크가 끊겨도</h4>
+    <p>서버로 못 보낸 기록은 대기열에 남아 있다가, 다시 연결되면 알아서 올라갑니다.</p>
+        </div></div>
       </div>
       <div class="qa">
         <button class="qa-btn" aria-expanded="false">
-          <span class="no">05</span><span class="q">코인은 어떻게 모아요?</span><span class="ic" aria-hidden="true"></span>
+          <span class="no">06</span><span class="q">랭킹전 참여와 보상은 무엇인가요?</span><span class="ic" aria-hidden="true"></span>
         </button>
-        <div class="qa-a"><p>카메라가 봐 준 시간만큼 들어와요. 5분에 10코인부터 시작해서
-          하루 최대 300코인이에요. 자세가 좋다고 더 주지는 않아요.</p></div>
-      </div>
-      <div class="qa">
-        <button class="qa-btn" aria-expanded="false">
-          <span class="no">06</span><span class="q">친구와 같이 쓸 수 있어요?</span><span class="ic" aria-hidden="true"></span>
-        </button>
-        <div class="qa-a"><p>같은 캠퍼스에서 만나요. 서로에게 보이는 건 닉네임과 캐릭터뿐이고,
-          카메라 화면은 누구에게도 보이지 않아요.</p></div>
-      </div>
-      <div class="qa">
-        <button class="qa-btn" aria-expanded="false">
-          <span class="no">07</span><span class="q">정말 무료예요?</span><span class="ic" aria-hidden="true"></span>
-        </button>
-        <div class="qa-a"><p>네, 지금은 전부 무료예요. 가입도 필요 없어요 — 웹캠 하나면 오늘부터 앉을 수 있어요.</p></div>
+        <div class="qa-a"><div class="qa-body">
+<p class="sum">학교끼리 겨룹니다. 개인 순위는 없고, 같은 학교 사람들이 앉은 시간과 회복 횟수가
+      학교 점수로 모여요. 시즌은 90일입니다.</p>
+    <h4>어떻게 참여하나</h4>
+    <p>처음 시작할 때 학교를 고르면 그때부터 내 세션이 그 학교의 기록에 더해집니다.
+      따로 신청할 게 없어요.</p>
+    <h4>무엇으로 순위를 매기나</h4>
+    <div class="tw"><table>
+      <thead><tr><th>지표</th><th>뜻</th></tr></thead>
+      <tbody>
+        <tr><td>참여 시간</td><td>그 학교 사람들이 카메라 앞에서 실제로 앉아 있던 시간의 합</td></tr>
+        <tr><td>회복 횟수</td><td>자세가 무너졌다가 다시 돌아온 횟수의 합</td></tr>
+      </tbody></table></div>
+    <p>회복을 함께 세는 이유가 있어요. 앉은 시간만 보면 <b>오래 버틴 사람만 이깁니다.</b>
+      회복은 무너졌다는 걸 전제로 하는 지표라, 자세를 고쳐 앉는 행동 자체에 값을 매깁니다.</p>
+    <h4>개인 순위는 만들지 않습니다</h4>
+    <p>자세로 사람을 줄 세우지 않겠다는 게 이 서비스의 원칙이에요. 순위는 학교 단위로만
+      존재합니다.</p>
+    <h4>보상</h4>
+    <ul>
+      <li>시즌이 끝나면 <b>권역별 1위 학교</b>를 가립니다.</li>
+      <li>그 학교에서 <b>가장 많이 기여한 두 명</b>(참여 시간·회복 횟수 기준)에게 소정의 상품을
+        드립니다.</li>
+      <li>시즌 기록은 학생회관 명예의 전당에 남습니다.</li>
+    </ul>
+    <blockquote><b>아직 베타입니다.</b> 보상의 내용·규모·지급 방식은 확정되지 않았고 바뀔 수
+      있어요. 정해지는 대로 서비스 안에 공지하겠습니다.</blockquote>
+    <h4>어뷰징은 막습니다</h4>
+    <p>학교 점수에 들어가는 시간은 <b>판정이 실제로 돈 시간</b>뿐이에요. 카메라를 가려 두거나
+      사진을 비춰 두는 방식은 점수가 되지 않습니다.</p>
+        </div></div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 13. CTA -->
-<section class="contact" aria-label="시작하기">
-  <i class="circle c1" aria-hidden="true"></i>
-  <i class="circle c2" aria-hidden="true"></i>
-  <div class="contact-inner">
-    <h2 class="rv">오늘 앉을 자리가<br><span class="serif">여기 있어요.</span></h2>
-    <div class="contact-actions rv" style="--d:.14s">
-      <a class="btn-primary" href="../onboarding/index.html" data-mag>내 자리 잡으러 가기 <span class="tail" aria-hidden="true">↗</span></a>
+<!-- 마무리 — 흰 캔버스 가운데 타이포 (토스식 클로저) -->
+<section class="hero-typo" id="start" aria-label="시작하기">
+  <img class="ht-bg" src="assets/night-poster.webp" alt="" aria-hidden="true">
+  <video class="ht-bg" id="htVideo" src="assets/video-night.mp4" muted playsinline preload="metadata" aria-hidden="true"></video>
+  <div class="ht-wash" aria-hidden="true"></div>
+  <div class="ht-mid">
+    <span class="eyebrow rv">랭킹전</span>
+    <h1 class="rv" style="--d:.07s">오늘 집중 시간이<br><span class="serif">우리 학교 이름으로 쌓여요</span></h1>
+    <p class="ht-sub rv" style="--d:.1s">세션을 시작하고, 집중만 하면 돼요.</p>
+    <div class="hero-actions rv" style="--d:.14s">
+      <a class="btn-primary" href="../onboarding/index.html" data-mag><span class="roll"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span></a>
     </div>
-    <p class="promise rv" style="--d:.2s">가입 없이 무료예요 · 웹캠 영상은 브라우저 밖으로 나가지 않아요.</p>
   </div>
 </section>
+
 
 </main>
 
 <!-- 14. 푸터 -->
 <footer class="footer">
   <div class="footer-grid">
-    <div class="f-brand">기린캠퍼스
-      <small>웹캠이 자세를 조용히 봐 주는 온라인 자습실.
-        개인정보는 모으지 않아요 — 기록은 내 브라우저에만 남아요.</small>
+    <div class="f-brand">Deskfit
+      <small>웹캠이 자세를 판정하는 온라인 자습실
+        개인정보는 로컬에만 남아요</small>
     </div>
-    <nav aria-label="푸터 내비게이션">
-      <a href="#world">둘러보기</a>
-        <a href="#faq">FAQ</a>
-      <a href="../onboarding/index.html">시작하기</a>
-    </nav>
   </div>
+  <nav class="footer-legal" aria-label="정책과 고지">
+    <a href="legal/privacy.html"><b>개인정보처리방침</b></a>
+    <a href="legal/terms.html">서비스 이용약관</a>
+    <a href="legal/camera.html">카메라 사용 고지</a>
+    <a href="legal/security.html">보안 정책</a>
+    <a href="legal/accessibility.html">접근성 고지</a>
+    <a href="legal/licenses.html">오픈소스 라이선스</a>
+    <a href="legal/support.html">서비스 상태·문의</a>
+  </nav>
   <div class="footer-meta">
-    <span>데스크톱 · 웹캠과 함께</span>
-    <span>© 2026 UPRIGHT · 기린캠퍼스</span>
+    <span>© Monkeyz. All rights reserved.</span>
   </div>
 </footer>
 
@@ -777,7 +1071,7 @@ body.cursor-on #cursor{opacity:1}
 <script src="vendor/ScrollTrigger.min.js"></script>
 <script>
 /* ============================================================
-   기린캠퍼스 랜딩 스크립트
+   Deskfit 랜딩 스크립트
    ============================================================ */
 gsap.registerPlugin(ScrollTrigger);
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -785,47 +1079,11 @@ let LANG = localStorage.getItem('girin.landing.lang') || 'ko';
 const FINE = matchMedia('(hover: hover) and (pointer: fine)').matches;
 const ONBOARD = '../onboarding/index.html';
 
-/* ---------- 로더 ---------- */
+/* ---------- 첫 화면 타이포 진입 — 로더 없이 바로 올라옵니다 ---------- */
 (() => {
-  const loader = document.getElementById('loader');
-  const bar = document.getElementById('loadbar');
-  let done = false;
-  const finish = () => {
-    if (done) return; done = true;
-    bar.style.transform = 'scaleX(1)';
-    setTimeout(() => {
-      loader.classList.add('done');
-      document.body.classList.remove('lock');
-      /* 로더가 걷힌 뒤에야 히어로 텍스트가 올라와요 */
-      gsap.fromTo('.hero-mid > *', { y: 48, opacity: 0 },
-        { y: 0, opacity: 1, duration: .9, ease: 'power3.out', stagger: .09, delay: .35 });
-      setTimeout(() => loader.remove(), 1200);
-    }, 260);
-  };
-  /* 진행 표시 — 히어로 포스터 한 장만 기다려요 */
-  bar.style.transform = 'scaleX(.4)';
-  window.addEventListener('load', finish);
-  setTimeout(finish, 3500);            /* 실패해도 3.5초 뒤엔 무조건 열려요 */
-})();
-
-/* ---------- 커서 ---------- */
-(() => {
-  if (!FINE || REDUCE) return;
-  const c = document.getElementById('cursor');
-  let x = innerWidth / 2, y = innerHeight / 2, tx = x, ty = y;
-  document.body.classList.add('cursor-on');
-  addEventListener('mousemove', e => { tx = e.clientX; ty = e.clientY; }, { passive: true });
-  (function loop(){
-    x += (tx - x) * .2; y += (ty - y) * .2;
-    c.style.transform = `translate(${x - 0}px, ${y - 0}px) translate(-50%,-50%)`;
-    requestAnimationFrame(loop);
-  })();
-  const grow = () => c.classList.add('big');
-  const shrink = () => c.classList.remove('big');
-  document.querySelectorAll('a, button, .r-row, .qa-btn, .card').forEach(el => {
-    el.addEventListener('mouseenter', grow);
-    el.addEventListener('mouseleave', shrink);
-  });
+  if (REDUCE) return;
+  gsap.fromTo('.hf-line span', { y: 70, opacity: 0 },
+    { y: 0, opacity: 1, duration: 1, ease: 'power3.out', stagger: .12, delay: .25 });
 })();
 
 /* ---------- 자석 버튼 ---------- */
@@ -843,81 +1101,111 @@ const ONBOARD = '../onboarding/index.html';
   });
 })();
 
-/* ---------- 히어로 영상 ---------- */
+/* ---------- 히어로 B: 필름 카드 (토스 이식) ---------- */
 (() => {
-  const hero = document.querySelector('.hero');
-  const video = document.getElementById('heroVideo');
+  const film = document.querySelector('.hero-film');
+  const card = document.getElementById('hfCard');
+  const video = document.getElementById('hfVideo');
+  const line = document.getElementById('hfLine');
   let hasVideo = false;
   video.addEventListener('loadeddata', () => { hasVideo = true; video.play().catch(()=>{}); });
   video.addEventListener('error', () => { video.remove(); });
-
-  /* 안 보이면 멈춰요 */
   new IntersectionObserver(([e]) => {
     if (!hasVideo) return;
     e.isIntersecting ? video.play().catch(()=>{}) : video.pause();
-  }, { threshold: .2 }).observe(hero);
+  }, { threshold: .2 }).observe(film);
+
+  /* 커서 시차 팬 — 토스 히어로 실측 그대로: 1.2배 필름이 커서 반대로 흐릅니다 */
+  if (FINE && !REDUCE) {
+    const layers = [video, card.querySelector('.hf-poster')].filter(Boolean);
+    const qs = layers.map(el => ({
+      x: gsap.quickTo(el, 'xPercent', { duration: .9, ease: 'power2.out' }),
+      y: gsap.quickTo(el, 'yPercent', { duration: .9, ease: 'power2.out' }),
+    }));
+    card.addEventListener('mousemove', e => {
+      const r = card.getBoundingClientRect();
+      const nx = (e.clientX - r.left) / r.width - .5;
+      const ny = (e.clientY - r.top) / r.height - .5;
+      qs.forEach(q => { q.x(-nx * 3); q.y(-ny * 2); });
+    });
+    card.addEventListener('mouseleave', () => qs.forEach(q => { q.x(0); q.y(0); }));
+  }
+
 })();
 
 /* ---------- 스티키 헤더 ---------- */
 (() => {
   const header = document.querySelector('.header');
-  const hero = document.querySelector('.hero');
   let last = 0;
   addEventListener('scroll', () => {
     const y = scrollY;
-    header.classList.toggle('stuck', y > hero.offsetHeight - 80);
+    header.classList.toggle('stuck', y > innerHeight - 80);
     /* 내려갈 때는 숨기고 올라올 때 되돌아옵니다 — 읽는 동안 가리지 않게 */
-    header.classList.toggle('hide', y > hero.offsetHeight && y > last + 4);
+    header.classList.toggle('hide', y > innerHeight && y > last + 4);
     last = y;
   }, { passive: true });
 })();
 
-/* ---------- 포털 ---------- */
+/* ---------- 챕터 레일 (토스) ---------- */
 (() => {
-  if (REDUCE) {           /* 모션을 줄인 사용자에게는 프레임을 처음부터 열어 둡니다 */
-    gsap.set('#portalFrame', { width: '100vw', height: '100vh', borderRadius: 0 });
-    gsap.set('#portalFrame img', { scale: 1 });
-    return;
-  }
-  const tl = gsap.timeline({
-    scrollTrigger: {
-      trigger: '.portal', start: 'top top', end: 'bottom bottom',
-      scrub: 1, invalidateOnRefresh: true,
-    }
+  const CHAPTERS = [
+    ['top', '처음'], ['world', '캠퍼스'], ['about', '소개'], ['promise', '약속'],
+    ['camera', '카메라'], ['friends', '친구들'], ['league', '랭킹전'], ['faq', 'FAQ'], ['start', '시작'],
+  ];
+  const rail = document.createElement('nav');
+  rail.className = 'rail'; rail.setAttribute('aria-label', '페이지 진행');
+  const els = [], btns = [];
+  CHAPTERS.forEach(([id, label]) => {
+    const sec = document.getElementById(id);
+    if (!sec) return;
+    const b = document.createElement('button');
+    b.innerHTML = '<i></i>';
+    b.setAttribute('aria-label', label);
+    b.addEventListener('click', () => sec.scrollIntoView({ behavior: REDUCE ? 'auto' : 'smooth' }));
+    rail.appendChild(b); els.push(sec); btns.push(b);
   });
-  /* 앞 1/4 은 가만히 — 작은 프레임을 읽을 틈을 주고, 그다음 두 번에 나눠 엽니다 */
-  tl.to('#portalFrame', { width: '58vw', height: '38vw', borderRadius: 12, ease: 'power1.inOut', duration: .3 }, .3)
-    .to('#portalFrame', { width: '100vw', height: '100vh', borderRadius: 0, ease: 'power3.inOut', duration: .34 }, .62)
-    .to('#portalFrame img', { scale: 1, ease: 'none', duration: .34 }, .62)
-    .to('#portalDuo', { opacity: .04, duration: .3 }, .62);
+  document.body.appendChild(rail);
+  let tick = false;
+  function update(){
+    const y = scrollY + innerHeight * .45;
+    let on = 0;
+    els.forEach((sec, i) => { if (sec.offsetTop <= y) on = i; });
+    btns.forEach((b, i) => b.classList.toggle('on', i === on));
+    /* 어두운 섹션 위에서는 틱을 밝게 뒤집습니다 */
+    const dark = ['world', 'camera', 'start', 'league'].includes(els[on].id);
+    rail.classList.toggle('dark', dark);
+    tick = false;
+  }
+  addEventListener('scroll', () => { if (!tick) { tick = true; requestAnimationFrame(update); } }, { passive: true });
+  update();
 })();
 
 /* ---------- 월드 체인 (scroll-world 각색 — 섹션 스코프 스크러버) ---------- */
 (() => {
   const SECTIONS = [
-    { id:'campus', still:'assets/still-campus.webp', clip:'assets/video-dive-campus.mp4', num:'01 / 04',
-      ko:{ label:'캠퍼스', eyebrow:'캠퍼스가 열려요', title:'오늘은 어디서<br>앉을까요',
-           body:'도서관·본관·학생회관·기숙사. 공간을 고르는 게 오늘의 공부 방식이에요.' },
-      en:{ label:'Campus', eyebrow:'The campus opens', title:'Where will you<br>sit today?',
-           body:'Library, main hall, student union, dorm. Choosing a space is choosing how you study.' } },
-    { id:'library', still:'assets/still-library.webp', clip:'assets/video-dive-library.mp4', num:'02 / 04',
-      ko:{ label:'도서관', eyebrow:'오래 앉는 곳', title:'쉬지 않고 <span class="serif">길게</span>',
-           body:'백색소음이 깔린 열람실이에요. 앉으면 웹캠이 작게 떠서, 다른 탭을 봐도 기록이 이어져요.' },
-      en:{ label:'Library', eyebrow:'For the long sit', title:'Long, unbroken <span class="serif">focus</span>',
-           body:'A reading room laid with white noise. Sit down and a small cam window opens — switch tabs, the record keeps going.' } },
-    { id:'mainhall', still:'assets/still-mainhall.webp', clip:'assets/video-dive-mainhall.mp4', num:'03 / 04',
-      ko:{ label:'본관', eyebrow:'끊어 가도 괜찮은 곳', title:'쉬었다 다시<br>앉아도',
-           body:'일어나도 기록은 멈추지 않아요. 코인은 카메라가 봐 준 시간만큼만 들어와요.' },
-      en:{ label:'Main hall', eyebrow:'Breaks welcome', title:'Step away,<br>sit back down',
-           body:'Standing up never stops the record. Coins come only from the time the camera actually watched.' } },
-    { id:'dorm', still:'assets/still-dorm.webp', clip:'assets/video-dive-dorm.mp4', num:'04 / 04',
-      ko:{ label:'기숙사', eyebrow:'하루의 끝', title:'내 방에서 <span class="serif">마무리해요</span>',
-           body:'오늘 앉은 시간과 자세 흐름을 돌아봐요. 해석은 붙이지 않고, 숫자만 보여 줘요.' },
-      en:{ label:'Dorm', eyebrow:'End of the day', title:'Wind down in <span class="serif">your room</span>',
-           body:'Look back on today\'s hours and posture flow. No interpretations — just the numbers.' },
+    { id:'campus', still:'assets/still-campus.webp', clip:'assets/video-dive-campus.mp4',
+      ko:{ label:'캠퍼스', eyebrow:'캠퍼스에 입학하세요', title:'자세교정과 함께<br>집중을 시작하세요',
+           body:'월드에 머물러<br>캐릭터를 꾸며요' },
+      en:{ label:'Campus', eyebrow:'Enroll in the campus', title:'Start focusing<br>with posture care',
+           body:'Stay in the world<br>and dress up your character' } },
+    { id:'library', still:'assets/still-library.webp', clip:'assets/video-dive-library.mp4',
+      ko:{ label:'도서관', eyebrow:'백색소음', title:'길게 <span class="serif">집중해봐요</span>',
+           body:'세션과 함께<br>몰입해요' },
+      en:{ label:'Library', eyebrow:'White noise', title:'Focus <span class="serif">long and deep</span>',
+           body:'Sink in<br>with a session' } },
+    { id:'mainhall', still:'assets/still-mainhall.webp', clip:'assets/video-dive-mainhall.mp4',
+      ko:{ label:'본관', eyebrow:'대중음악', title:'편안한 작업을 위해',
+           body:'세션과 함께<br>오늘의 목표에 다가가요' },
+      en:{ label:'Main hall', eyebrow:'Popular music', title:'For easy, relaxed work',
+           body:'Move toward today’s goal<br>with a session' } },
+    { id:'dorm', still:'assets/still-dorm.webp', clip:'assets/video-dive-dorm.mp4',
+      ko:{ label:'기숙사', eyebrow:'하루의 끝', title:'내 방에서<br><span class="serif">마무리해요</span>',
+           body:'AI가 분석한 내 자세를 돌아보고<br>나만의 온라인 자습실을 꾸며요' },
+      en:{ label:'Dorm', eyebrow:'End of the day', title:'Wind down in<br><span class="serif">your room</span>',
+           body:'Revisit the posture AI read for you<br>and furnish a study room of your own' },
       cta:true },
   ];
-  const CTA_TXT = { ko:'내 자리 잡으러 가기', en:'Claim my seat' };
+  const CTA_TXT = { ko:'시작하기', en:'Get started' };
   const CONNECTORS = ['assets/video-conn-1.mp4','assets/video-conn-2.mp4','assets/video-conn-3.mp4'];
   const DIVE_W = 1.4, CONN_W = .9, FADE = .14;
 
@@ -955,10 +1243,9 @@ const ONBOARD = '../onboarding/index.html';
     SECTIONS.forEach((s, i) => {
       const t = s[LANG];
       copies[i].innerHTML =
-        `<span class="num">${s.num}</span>` +
         `<span class="eyebrow">${t.eyebrow}</span>` +
         `<h2>${t.title}</h2><p>${t.body}</p>` +
-        (s.cta ? `<div class="cta"><a class="btn-primary" href="${ONBOARD}">${CTA_TXT[LANG]} <span class="tail" aria-hidden="true">↗</span></a></div>` : '');
+        (s.cta ? `<div class="cta"><a class="btn-primary" href="${ONBOARD}"><span class="roll"><i>${CTA_TXT[LANG]}<br>${CTA_TXT[LANG]}</i></span> <span class="tail" aria-hidden="true">↗</span></a></div>` : '');
     });
   }
   fillCopies();
@@ -1045,8 +1332,7 @@ const ONBOARD = '../onboarding/index.html';
       let cop;
       if (i === 0) cop = after ? 0 : smooth(1 - pr / .6);
       else if (i === SECTIONS.length - 1) cop = before ? 0 : smooth(pr / .42);
-      /* 가운데는 **평평하게** 유지합니다 — 삼각형으로 만들면 딱 한 점에서만
-         온전히 읽히고, 스크롤이 조금만 빨라도 카피를 놓칩니다. */
+      /* 가운데는 평평하게 — 삼각형이면 딱 한 점에서만 온전히 읽힙니다 */
       else cop = (before || after) ? 0 : smooth((.5 - Math.abs(pr - .5)) / .18);
       const c = copies[i];
       c.style.opacity = cop;
@@ -1107,44 +1393,98 @@ const ONBOARD = '../onboarding/index.html';
 })();
 
 /* ---------- 매니페스토 ---------- */
+/* 챕터 콜라주 진입은 공통 .rv 리빌이 처리합니다 — 타일 계단 순서대로 --d 가 커집니다 */
+
+/* ---------- 마감 — 밤이 한 번 내리고 그대로 멈춥니다 ---------- */
 (() => {
-  /* 단어 쪼개기 — 줄 단위 밝힘 + 단어 단위 계단. 언어가 바뀌면 다시 쪼갭니다 */
-  const MANI = {
-    ko: ['자세는 점수가 아니에요', '앉아 있는 시간이 쌓여요', '쌓인 만큼 세계가 자라요'],
-    en: ['Posture is not a score', 'Sitting time simply adds up', 'And the world grows with it'],
-  };
-  const lines = [...document.querySelectorAll('#maniLines .ln')];
-  let words = [];
-  function splitMani(){
-    lines.forEach((ln, li) => {
-      const accent = ln.hasAttribute('data-accent');
-      const ws = MANI[LANG][li].split(' ');
-      ln.innerHTML = ws.map((w, i) =>
-        `<span class="w${accent && i >= ws.length - 2 ? ' accent' : ''}">${w}</span>`).join(' ');
-    });
-    words = [...document.querySelectorAll('#maniLines .w')];
+  const v = document.getElementById('htVideo');
+  if (!v) return;
+  if (REDUCE) { v.remove(); return; }   /* 밤 포스터만 남습니다 */
+  let played = false;
+  new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting || played) return;
+    played = true;
+    v.play().catch(() => v.remove());
+  }, { threshold: .4 }).observe(v);
+})();
+
+/* ---------- 주간 랭킹전 ---------- */
+(() => {
+  /* 가상의 다섯 학교. 좌표(%)는 완성 영상 마지막 프레임에서 잰 섬 위치입니다.
+     로고는 DOM 오버레이 — 생성 모델에 넣으면 반드시 뭉개지고, 여기서는
+     순위가 바뀌어도 코드 한 줄이면 됩니다. */
+  /* 좌표는 video-league.mp4 마지막 프레임(1280×720) 실측 — 섬 정수리 지점입니다.
+     섬 색과 로고 색을 맞췄습니다: 가운데 앞(청록 광륜)이 1위. */
+  const LEAGUE = [
+    { slug:'univ-1', ko:'한빛대',   en:'Hanbit Univ.',    color:'#1F3A6E', hours:'12,480', x:49.2, y:53.5 },
+    { slug:'univ-2', ko:'서령대',   en:'Seoryeong Univ.', color:'#1F6B4A', hours:'11,930', x:34,   y:23.6 },
+    { slug:'univ-3', ko:'아라대',   en:'Ara Univ.',       color:'#1565C0', hours:'11,210', x:66.8, y:22.2 },
+    { slug:'univ-4', ko:'미리내대', en:'Mirinae Univ.',   color:'#233D8F', hours:'10,660', x:16.8, y:39.6 },
+    { slug:'univ-5', ko:'두루대',   en:'Duru Univ.',      color:'#6E1F2E', hours:'9,870',  x:81.3, y:39.6 },
+  ];
+  const stage = document.querySelector('.lg-stage');
+  const video = document.getElementById('lgVideo');
+  const logos = document.getElementById('lgLogos');
+  const list  = document.getElementById('lgList');
+  if (!stage) return;
+
+  /* 로고 파일이 없으면 학교색 원판으로 대신합니다.
+     HTML에 박힌 이미지는 리스너가 붙기 전에 error 가 이미 지나갔을 수 있어
+     complete 상태도 같이 봅니다. */
+  function fallback(img, s){
+    const swap = () => {
+      const dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.style.background = s.color;
+      dot.textContent = s.ko[0];
+      img.replaceWith(dot);
+    };
+    if (img.complete && !img.naturalWidth) swap();
+    else img.addEventListener('error', swap);
   }
-  splitMani();
-  addEventListener('girin:lang', splitMani);
 
-  ScrollTrigger.create({
-    trigger: '.manifesto', start: 'top top', end: 'bottom bottom', scrub: true,
-    onUpdate(self){
-      const n = Math.round(self.progress * 1.35 * words.length);
-      words.forEach((w, i) => w.classList.toggle('lit', i < n));
-    }
+  LEAGUE.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'lg-logo' + (i === 0 ? ' first' : '');
+    d.style.left = s.x + '%'; d.style.top = s.y + '%';
+    const img = document.createElement('img');
+    img.src = `assets/univ/${s.slug}.png`; img.alt = '';
+    fallback(img, s);
+    d.appendChild(img);
+    d.insertAdjacentHTML('beforeend', '<span class="beam"></span>');
+    logos.appendChild(d);
   });
 
-  const tl = gsap.timeline({
-    scrollTrigger: { trigger: '.manifesto', start: 'top top', end: 'bottom bottom', scrub: 1 }
-  });
-  const items = ['.mani-item.i1','.mani-item.i2','.mani-item.i3','.mani-item.i4','.mani-item.i5'];
-  items.forEach((sel, i) => {
-    tl.fromTo(sel,
-      { opacity: 0, y: 90, scale: .82, rotate: (i % 2 ? 5 : -5) },
-      { opacity: 1, y: 0, scale: 1, rotate: (i % 2 ? 2 : -2), ease: 'power2.out', duration: .5 },
-      .08 + i * .16);
-  });
+  function fillList(){
+    list.innerHTML = '';
+    LEAGUE.forEach((s, i) => {
+      const li = document.createElement('li');
+      const img = document.createElement('img');
+      img.src = `assets/univ/${s.slug}.png`; img.alt = '';
+      fallback(img, s);
+      li.insertAdjacentHTML('beforeend', `<span class="rank">${i + 1}</span>`);
+      li.appendChild(img);
+      li.insertAdjacentHTML('beforeend',
+        `<span class="school">${s[LANG]}</span>` +
+        `<span class="hours">${s.hours}<small>${LANG === 'en' ? 'hrs' : '시간'}</small></span>`);
+      list.appendChild(li);
+    });
+  }
+  fillList();
+  addEventListener('girin:lang', fillList);
+
+  /* 화면에 들어오면 한 번만 재생 — 끝나면 멈춘 프레임 위로 로고가 내려앉습니다 */
+  let armed = false;
+  const settle = () => stage.classList.add('settled');
+  video.addEventListener('ended', settle);
+  video.addEventListener('error', settle);
+  new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting || armed) return;
+    armed = true;
+    if (REDUCE) { settle(); return; }
+    stage.classList.add('playing');
+    video.play().then(() => {}, settle);
+  }, { threshold: .45 }).observe(stage);
 })();
 
 /* ---------- 서버로 간 프레임 0장 카운터 ---------- */
@@ -1273,6 +1613,19 @@ const ONBOARD = '../onboarding/index.html';
 (() => {
   const list = document.getElementById('faqList');
   const qas = [...list.querySelectorAll('.qa')];
+  /* #privacy 앵커로 오면 8번 문항을 펼쳐 줍니다 */
+  addEventListener('hashchange', () => {
+    if (location.hash === '#privacy') {
+      const qa = document.getElementById('privacy');
+      const btn = qa?.querySelector('.qa-btn');
+      if (btn && !qa.classList.contains('open')) btn.click();
+      /* 펼침 애니메이션이 자리를 잡은 뒤, 헤더에 안 가리게 맞춰 내립니다 */
+      setTimeout(() => {
+        const y = qa.getBoundingClientRect().top + scrollY - 96;
+        scrollTo({ top: y, behavior: REDUCE ? 'auto' : 'smooth' });
+      }, 350);
+    }
+  });
   qas.forEach((qa, qi) => {
     const btn = qa.querySelector('.qa-btn');
     const panel = qa.querySelector('.qa-a');
@@ -1292,6 +1645,12 @@ const ONBOARD = '../onboarding/index.html';
       if (!isOpen) {
         gsap.set(panel, { height: 'auto', opacity: 1 });
         gsap.from(panel, { height: 0, opacity: 0, duration: .4, ease: 'power3.out' });
+        /* 답변이 길어서, 펼친 문항이 화면 위쪽에 오지 않으면 읽기 시작할 지점을
+           놓칩니다. 헤더 높이만큼 띄워 맞춰 줍니다. */
+        if (!REDUCE) {
+          const top = qa.getBoundingClientRect().top + scrollY - 110;
+          setTimeout(() => scrollTo({ top, behavior: 'smooth' }), 120);
+        }
       } else {
         gsap.to(panel, { height: 0, opacity: 0, duration: .3, ease: 'power2.in' });
       }
@@ -1304,83 +1663,278 @@ const ONBOARD = '../onboarding/index.html';
   /* 정적 텍스트 사전 — 동적 영역(체인·덱·매니페스토)은 각자 girin:lang 을 듣습니다 */
   const T = [
     ['title', {
-      ko: '기린캠퍼스 — 앉는 시간이 세계가 돼요',
-      en: 'Girin Campus — The hours you sit become a world' }],
-    ['.header nav a[href="#world"]', { ko: '둘러보기', en: 'Explore' }],
-    ['.hero .eyebrow', { ko: '웹캠이 자세를 봐 주는 온라인 자습실', en: 'The online study room that minds your posture' }],
-    ['.hero h1', {
-      ko: '앉는 시간이<br><span class="serif">세계가 돼요</span>',
-      en: 'The hours you sit<br><span class="serif">become a world</span>' }, 1],
-    ['.hero .btn-primary', {
-      ko: '내 자리 잡으러 가기 <span class="tail" aria-hidden="true">↗</span>',
-      en: 'Claim my seat <span class="tail" aria-hidden="true">↗</span>' }, 1],
+      ko: 'Deskfit — 앉는 시간이 세계가 돼요',
+      en: 'Deskfit — The hours you sit become a world' }],
+    ['.header nav a[href="#world"]', { ko: '서비스', en: 'Services' }],
+    ['.header nav a[href="#camera"]', { ko: '카메라', en: 'Camera' }],
+    ['.header nav a[href="#league"]', { ko: '랭킹전', en: 'League' }],
+    ['.header nav a[href="#privacy"]', { ko: '개인정보', en: 'Privacy' }],
+    ['#pillLabel', { ko: '시작하기<br>시작하기', en: 'Get started<br>Get started' }, 1],
+    ['.hero-typo .eyebrow', { ko: '랭킹전', en: 'The league' }],
+    ['.hero-typo h1', {
+      ko: '오늘 집중 시간이<br><span class="serif">우리 학교 이름으로 쌓여요</span>',
+      en: 'Today’s focus time<br><span class="serif">counts for your school</span>' }, 1],
+    ['.ht-sub', {
+      ko: '세션을 시작하고, 집중만 하면 돼요.',
+      en: 'Start a session and just focus.' }],
+    ['#chapNow h2', {
+      ko: 'Deskfit이 없던 <span class="serif">대학생</span>',
+      en: 'The college student <span class="serif">without Deskfit</span>' }, 1],
+    ['#chapNow p', {
+      ko: 'PC 앞에서 대학생은 잠을 줄이면서 건강한 자세도 함께 잃어 왔어요.',
+      en: 'In front of a PC, students traded away sleep — and healthy posture went with it.' }],
+    ['#chapNext h2', {
+      ko: 'Deskfit이 바꿀 <span class="serif">대학생</span>',
+      en: 'The college student <span class="serif">Deskfit will change</span>' }, 1],
+    ['#chapNext p', {
+      ko: '자세를 교정하며 집중해요. 집중하며 친구들과 교류하고 내 캐릭터와 방을 꾸며요.',
+      en: 'Fix your posture as you focus. Hang out with friends while focusing, and dress up your character and room.' }],
+    ['.lg-head .eyebrow', { ko: '이번 시즌 랭킹전', en: 'This season’s league' }],
+    ['.lg-head h2', {
+      ko: '우리 학교가 <span class="serif">제일 오래 집중했어요</span>',
+      en: 'Our school <span class="serif">focused the longest</span>' }, 1],
+    ['.lg-head p', {
+      ko: '이번 시즌, 다섯 캠퍼스가 함께 앉았어요.<br>제일 오래 앉은 학교의 섬이 가장 밝게 빛나요.',
+      en: 'Five campuses sat together this season.<br>The island that sat the longest glows the brightest.' }, 1],
+    ['.hero-typo .btn-primary', {
+      ko: '<span class="roll"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
+      en: '<span class="roll"><i>Get started<br>Get started</i></span> <span class="tail" aria-hidden="true">↗</span>' }, 1],
+    ['#hfLine', {
+      ko: '<span>자세교정과 공부를</span><span class="hf-brand">Deskfit에서</span>',
+      en: '<span>Posture and study,</span><span class="hf-brand">at Deskfit</span>' }, 1],
+    ['#introEyebrow', { ko: '거북목 자세교정과 함께', en: 'With turtle-neck posture care' }],
     ['#introStatement', {
-      ko: '기린캠퍼스에 오면 카메라가 함께 앉아요.\n        카메라가 봐 준 시간만큼 <span class="serif">코인이 되고,</span>\n        코인은 내 캐릭터의 하루가 돼요.',
-      en: 'At Girin Campus, the camera sits with you.\n        The time it watches <span class="serif">becomes coins,</span>\n        and coins become your character’s day.' }, 1],
+      ko: '집중 시작은 Deskfit에서 시작해요<br>집중할수록 내 캐릭터를 꾸미고<br><span class="serif">학교 랭킹전에 기여해요</span>',
+      en: 'Focus starts at Deskfit.<br>The more you focus, the more you dress up your character<br><span class="serif">and lift your school in the league.</span>' }, 1],
     ['.intro-label', { ko: '소개', en: 'About' }],
     ['.story-head .eyebrow', { ko: '카메라의 약속', en: 'The camera’s promise' }],
     ['.story-head h2', {
       ko: '카메라는 <span class="serif">곁에 있을 뿐이에요.</span>',
       en: 'The camera <span class="serif">only sits beside you.</span>' }, 1],
     ['.story-head p', {
-      ko: '월드에 들어오면 10초 동안 내 평소 자세를 익혀요. 그다음엔 조용히 볼 뿐, 점수도 등급도 매기지 않아요. 좋음·주의·나쁨 세 가지 상태만 세어 두었다가, 세션이 끝나면 숫자로만 보여 줘요.',
-      en: 'When you enter the world, it learns your usual posture in ten seconds. After that it just quietly watches — no scores, no grades. It counts three states, good · careful · poor, and shows you plain numbers when the session ends.' }],
+      ko: '월드에 들어오기 전 나만의 자세 기준을 맞춰요.<br>그 다음엔 조용히 관찰하고 피드백만 할 뿐이에요.<br>세션이 끝나면 AI가 평소 자세 습관에 대해 분석해요.',
+      en: 'Before entering the world, set your own posture baseline.<br>After that it only watches quietly and gives gentle feedback.<br>When the session ends, AI reviews your usual posture habits.' }, 1],
     ['.reel .play', { ko: '▶ 함께 앉기', en: '▶ Sit with us' }],
     ['.stat-card .lbl', { ko: '서버로 간 프레임', en: 'Frames sent to a server' }],
     ['.stat-card .num small', { ko: '장', en: 'frames' }],
     ['.stat-card .sub', {
-      ko: '분석은 브라우저 안에서 끝나요.\n        영상도, 좌표도 밖으로 나가지 않아요.',
-      en: 'Analysis ends inside your browser.\n        No video, no coordinates ever leave.' }, 1],
-    ['.deck-copy .lbl', { ko: '함께 앉을 친구', en: 'A friend to sit with' }],
+      ko: '분석은 브라우저 안에서 끝나요.<br>영상도, 좌표도 밖으로 나가지 않아요.',
+      en: 'Analysis ends inside your browser.<br>No video, no coordinates ever leave.' }, 1],
+    ['.deck-copy .lbl', { ko: '내 캐릭터', en: 'My character' }],
     ['.deck-copy h2', {
-      ko: '오늘의 나를 <span class="serif">골라요.</span>',
-      en: 'Pick <span class="serif">today’s you.</span>' }, 1],
+      ko: '내 <span class="serif">캐릭터</span>를 뽑아요.',
+      en: 'Draw your <span class="serif">character</span>.' }, 1],
     ['.deck-copy > p', {
-      ko: '여덟 캐릭터 중 하나로 캠퍼스를 걸어요.\n        상점 아이템은 종마다 다르게 어울려요 — 시작은 누구여도 괜찮아요.',
-      en: 'Walk the campus as one of eight characters.\n        Shop items fit each species differently — anyone is a fine start.' }, 1],
+      ko: '여덟 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>집중만 하면 모두 내 캐릭터가 될 수 있어요.',
+      en: 'Eight characters are waiting. Start with one —<br>keep focusing, and they can all be yours.' }, 1],
     ['.deck-hint', { ko: '← 카드를 넘겨 보세요 →', en: '← Swipe the cards →' }],
     ['.faq-copy .lbl', { ko: '자주 묻는 질문', en: 'FAQ' }],
-    ['.faq-copy h2', { ko: '궁금한 건<br>여기서 풀어요.', en: 'Good questions,<br>answered here.' }, 1],
-    ['.faq-copy > p', {
-      ko: '가장 많이 받는 일곱 가지예요.\n        더 궁금한 건 캠퍼스 안 게시판에서 만나요.',
-      en: 'The seven we hear most.\n        For the rest, meet us at the campus board.' }, 1],
+    ['.faq-copy h2', { ko: 'FAQ', en: 'FAQ' }],
     ['.contact h2', {
       ko: '오늘 앉을 자리가<br><span class="serif">여기 있어요.</span>',
       en: 'Your seat for today<br><span class="serif">is right here.</span>' }, 1],
     ['.contact .btn-primary', {
-      ko: '내 자리 잡으러 가기 <span class="tail" aria-hidden="true">↗</span>',
-      en: 'Claim my seat <span class="tail" aria-hidden="true">↗</span>' }, 1],
+      ko: '<span class="roll"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
+      en: '<span class="roll"><i>Get started<br>Get started</i></span> <span class="tail" aria-hidden="true">↗</span>' }, 1],
     ['.contact .promise', {
       ko: '가입 없이 무료예요 · 웹캠 영상은 브라우저 밖으로 나가지 않아요.',
       en: 'Free, no sign-up · your webcam video never leaves the browser.' }],
     ['.f-brand small', {
-      ko: '웹캠이 자세를 조용히 봐 주는 온라인 자습실.\n        개인정보는 모으지 않아요 — 기록은 내 브라우저에만 남아요.',
-      en: 'An online study room where the webcam quietly minds your posture.\n        We collect nothing — records live only in your browser.' }, 1],
-    ['.footer-grid nav a[href="#world"]', { ko: '둘러보기', en: 'Explore' }],
-    ['.footer-grid nav a[href="../onboarding/index.html"]', { ko: '시작하기', en: 'Start' }],
-    ['.footer-meta span:first-child', { ko: '데스크톱 · 웹캠과 함께', en: 'Desktop · with a webcam' }],
+      ko: '웹캠이 자세를 판정하는 온라인 자습실\n        개인정보는 로컬에만 남아요',
+      en: 'An online study room where the webcam reads your posture.\n        Personal data stays local only.' }, 1],
+    ['.footer-legal a[href="legal/privacy.html"]', { ko: '<b>개인정보처리방침</b>', en: '<b>Privacy Policy</b>' }, 1],
+    ['.footer-legal a[href="legal/terms.html"]', { ko: '서비스 이용약관', en: 'Terms of Service' }],
+    ['.footer-legal a[href="legal/camera.html"]', { ko: '카메라 사용 고지', en: 'Camera Notice' }],
+    ['.footer-legal a[href="legal/security.html"]', { ko: '보안 정책', en: 'Security' }],
+    ['.footer-legal a[href="legal/accessibility.html"]', { ko: '접근성 고지', en: 'Accessibility' }],
+    ['.footer-legal a[href="legal/licenses.html"]', { ko: '오픈소스 라이선스', en: 'Open Source Licenses' }],
+    ['.footer-legal a[href="legal/support.html"]', { ko: '서비스 상태·문의', en: 'Status & Contact' }],
     ['.w-hint span', { ko: '스크롤', en: 'Scroll' }],
   ];
-  const FAQ = {
-    ko: [
-      ['카메라 영상은 어디로 가요?', '아무 데도 안 가요. 분석은 브라우저 안에서 끝나고, 영상도 좌표도 서버로 보내지 않아요. 세션이 끝나면 카메라도 함께 꺼져요.'],
-      ['자세에 점수를 매기나요?', '아니요. 좋음·주의·나쁨 세 가지 상태만 조용히 셀 뿐, 점수도 등급도 없어요. 회고에서도 해석 없이 숫자만 보여 줘요.'],
-      ['어떤 장비가 필요해요?', '웹캠 달린 PC와 크롬이면 돼요. 설치할 것도, 결제할 것도 없어요. 데스크톱 화면에 맞춰 만들었어요.'],
-      ['자리에서 일어나면 어떻게 돼요?', '기록은 계속 이어져요. 앉기는 화면 전환일 뿐이라, 스트레칭하러 다녀와도 기록이 끊기지 않아요.'],
-      ['코인은 어떻게 모아요?', '카메라가 봐 준 시간만큼 들어와요. 5분에 10코인부터 시작해서 하루 최대 300코인이에요. 자세가 좋다고 더 주지는 않아요.'],
-      ['친구와 같이 쓸 수 있어요?', '같은 캠퍼스에서 만나요. 서로에게 보이는 건 닉네임과 캐릭터뿐이고, 카메라 화면은 누구에게도 보이지 않아요.'],
-      ['정말 무료예요?', '네, 지금은 전부 무료예요. 가입도 필요 없어요 — 웹캠 하나면 오늘부터 앉을 수 있어요.'],
-    ],
-    en: [
-      ['Where does my camera video go?', 'Nowhere. Analysis ends inside your browser — no video, no coordinates are ever sent to a server. When the session ends, the camera turns off with it.'],
-      ['Do you score my posture?', 'No. It quietly counts three states — good, careful, poor — and that’s all. Even the recap shows plain numbers, no interpretations.'],
-      ['What do I need?', 'A PC with a webcam and Chrome. Nothing to install, nothing to pay. Built for desktop screens.'],
-      ['What happens when I stand up?', 'The record keeps going. Sitting is just a screen change, so a stretch break never cuts your session.'],
-      ['How do I earn coins?', 'By the time the camera actually watched. From 10 coins per 5 minutes, up to 300 a day. Good posture doesn’t pay extra.'],
-      ['Can I study with friends?', 'You meet on the same campus. Others see only your nickname and character — your camera view is never shown to anyone.'],
-      ['Is it really free?', 'Yes, everything is free for now. No sign-up either — one webcam and you can sit down today.'],
-    ],
-  };
+  /* 한국어 답변은 HTML 이 원본입니다. 사전에 또 적어 두면 둘이 갈라지므로,
+     처음 한 번 DOM 에서 떠서 보관합니다. 영어만 아래에 둡니다. */
+  const KO_SNAP = [...document.querySelectorAll('#faqList .qa')].map(qa => ({
+    q: qa.querySelector('.q').innerHTML,
+    body: qa.querySelector('.qa-body').innerHTML,
+  }));
+  const FAQ_EN = [
+    ['How does it judge my posture?',
+     `<p class="sum">It uses your shoulder line as a ruler to measure where your head sits and how far
+        away it is, then compares that against the posture you registered in the first 10 seconds.
+        It never compares you to a "correct" posture — only you against you.</p>
+      <h4>1. Find points on the body</h4>
+      <p>From the webcam frame it locates your shoulders, eyes, ears, nose and hips. It does not
+        recognise your face — just a handful of skeletal coordinates.</p>
+      <h4>2. Treat shoulder width as 1 and measure everything against it</h4>
+      <p>Every body and every camera distance differs. So the distance between your shoulders becomes
+        the ruler, and every other value is expressed as a ratio of it — whether you sit 30cm or 60cm
+        from the desk, the baseline holds. <b>Ten values</b> are computed every frame.</p>
+      <div class="tw"><table>
+        <thead><tr><th>What it measures</th><th>When posture slips</th></tr></thead>
+        <tbody>
+          <tr><td>Face scale ratio</td><td>Larger = leaning toward the screen</td></tr>
+          <tr><td>Eye-to-shoulder height</td><td>Shrinking = head sinking down</td></tr>
+          <tr><td>Eye-to-nose spacing</td><td>Widening = chin dropping</td></tr>
+          <tr><td>Ear vs eye height</td><td>Ear rising = head tilting down</td></tr>
+          <tr><td>Shoulder width</td><td>Widening = whole body moving forward</td></tr>
+          <tr><td>Head lateral offset</td><td>Drifting to one side</td></tr>
+          <tr><td>Shoulder tilt</td><td>One shoulder dropping</td></tr>
+          <tr><td>Torso lean</td><td>Upper body leaning off the hips</td></tr>
+          <tr><td>Head distance (cm)</td><td>Closer = head pushing forward</td></tr>
+          <tr><td>Head pitch (deg)</td><td>Chin tucking down</td></tr>
+        </tbody></table></div>
+      <h4>3. Build your baseline in 10 seconds</h4>
+      <p>When a session starts it samples how you are sitting hundreds of times over 10 seconds and
+        records the <b>median</b> and the <b>spread</b> of each value. Median rather than average, so
+        one big movement mid-way cannot drag the baseline with it.</p>
+      <h4>4. Measure how far the gap has opened</h4>
+      <p>It checks how far the current value sits from your median, <b>relative to your own natural
+        spread</b>. Someone who fidgets gets a wider tolerance; someone who barely moves gets a
+        tighter one.</p>
+      <h4>5. Several values must slip at once</h4>
+      <p>One value out of range is <b>careful</b>; two or more is <b>poor</b>. Nor does a single frame
+        flip it — careful holds for 1.5s, poor for 5s, and returning to good takes 2s of steady
+        readings. That is what keeps a cough or a sip of water from lighting up the screen.</p>
+      <h4>When the session ends</h4>
+      <p>You are left with time spent in good, careful and poor, plus how many times you recovered.
+        Open the <b>AI report</b> and you can read, in sentences, when things slipped today and which
+        patterns repeated. The report is free, and the numbers are there with or without it.</p>
+      <blockquote>The report never scores or grades your posture, and makes no medical judgement.
+        It only shows <b>patterns</b> — when and how posture slipped.</blockquote>`],
+
+    ['How do you handle my data and video?',
+     `<p class="sum">Video never leaves this browser. Judgement finishes on your machine and frames are
+        discarded immediately. What reaches a server is a handful of numbers like "how many minutes
+        you sat".</p>
+      <h4>Where the computing happens</h4>
+      <p>After downloading the posture model once, everything runs <b>inside your browser</b>.
+        No video is sent anywhere to be analysed.</p>
+      <h4>What never reaches a server</h4>
+      <p>Video, photos, snapshots, raw posture coordinates, the baseline built in those 10 seconds,
+        or any value derived from your face.</p>
+      <h4>What is sent when a session ends (all of it)</h4>
+      <p>Session ID, minutes seated, minutes on campus, recovery count, start and end times, and the
+        school you picked. Those six lines are the whole payload.</p>
+      <h4>Check it yourself</h4>
+      <p>Better than taking our word for it.</p>
+      <ol>
+        <li><b>Network tab</b> — open DevTools with F12 and run a session. Every request is visible.
+          You can see for yourself that no video is uploaded.</li>
+        <li><b>Pull the plug</b> — once the model is cached, disconnect your network.
+          <b>Posture judgement keeps working.</b> That is the proof it runs locally.</li>
+      </ol>
+      <h4>There is no sign-up</h4>
+      <p>No email, phone number or password. Others see only your nickname and character, and your
+        camera view is shown to nobody — there is no screen-sharing feature at all.</p>
+      <p>The details live in our <a href="legal/privacy.html">Privacy Policy</a> and
+        <a href="legal/camera.html">Camera Notice</a>.</p>`],
+
+    ['What happens when I stand up?',
+     `<p class="sum">The session keeps running, but posture judgement pauses while your body is out of
+        frame. That time counts toward neither coins nor the report.</p>
+      <h4>The session continues</h4>
+      <p>Standing up does not end the session and the campus stays as it was. Going for a stretch is
+        never punished.</p>
+      <h4>But judgement pauses</h4>
+      <p>Once you leave the frame the state returns to <b>ready</b>, and nothing is counted as good,
+        careful or poor. That happens when:</p>
+      <ul>
+        <li>your body leaves the frame — <i>you have moved out of view</i></li>
+        <li>you are too far for shoulders to register — <i>please sit a little closer</i></li>
+        <li>two or more people are detected — <i>more than one person visible</i></li>
+      </ul>
+      <h4>Two consequences</h4>
+      <p><b>1. Coins drop accordingly.</b> Coins come from <b>time actually judged</b>, not wall-clock
+        time in the chair. Long absences simply fall out of the total — that is what stops anyone
+        covering the camera and farming coins.</p>
+      <p><b>2. The AI report cannot read that stretch.</b> With no posture values the flow breaks.
+        The more often you step away, the less the report has to work with.</p>
+      <h4>Sitting and the camera are separate</h4>
+      <p>The camera runs from the moment you enter campus until the session ends. Sitting at a desk in
+        the library or main hall opens a small camera window in the corner — that is
+        <b>a change in how it is displayed</b>, not the camera switching on.</p>`],
+
+    ['What equipment do I need?',
+     `<p class="sum">A PC with a webcam, Chrome, and an internet connection. Nothing to install,
+        nothing to pay.</p>
+      <div class="tw"><table>
+        <thead><tr><th>What you need</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Desktop or laptop</td><td>Built for desk use, so desktop screens only</td></tr>
+          <tr><td>Webcam</td><td>A built-in laptop camera is plenty. External ones work too</td></tr>
+          <tr><td>Chrome</td><td>Latest Chrome recommended; Edge and other Chromium browsers work</td></tr>
+          <tr><td>Internet</td><td>Needed the first time, to fetch the posture model</td></tr>
+        </tbody></table></div>
+      <h4>Nothing to install</h4>
+      <p>No app, no extension. Open the address and you have started.</p>
+      <h4>Positioning the camera</h4>
+      <p>Your upper body should be in frame — ideally with both shoulders visible. Sit too far back and
+        you will see <i>please sit a little closer</i>.</p>
+      <h4>Lighting</h4>
+      <p>Backlight hurts detection. If a window is behind you, brighten the light facing you.</p>
+      <h4>If you are worried about performance</h4>
+      <p>Turn on <b>low-spec mode</b> in settings: shadows and decoration switch off and the world
+        draws at 30fps, freeing headroom for posture judgement.</p>
+      <h4>Even without the camera</h4>
+      <p>Deny the permission and you can still walk the campus. Only posture judgement and the coins
+        tied to it stop working.</p>`],
+
+    ['How are my records kept?',
+     `<p class="sum">Records survive without a sign-up. They live in your browser by default, and when
+        server saving is used they are tied only to an anonymous, meaningless ID.</p>
+      <h4>How records work without an account</h4>
+      <p>Browsers give each site its own storage. Nickname, character, coins and session records all
+        live there — which is why no server account is needed.</p>
+      <h4>What stays in the browser</h4>
+      <p>Your nickname and character, the posture baseline from those 10 seconds, summaries of past
+        sessions (the last 12), coins and items, your room decoration, and your settings.</p>
+      <h4>When you join the rankings</h4>
+      <p>Session records also accumulate on the server. Still no email — everything is tied to a single
+        <b>automatically issued random string ID</b>, a value that identifies no one.</p>
+      <h4>The limits, plainly</h4>
+      <ul>
+        <li>Clear your browser storage and it is <b>unrecoverable</b>, because we never took the key
+          (email, password) that would bring it back.</li>
+        <li>In private browsing it disappears the moment the window closes.</li>
+        <li>Another browser or another machine makes you <b>a different person</b>.</li>
+      </ul>
+      <h4>Erasing it</h4>
+      <p>One <b>reset all data</b> in settings clears everything on this device. To erase server records
+        too, send your ID to <a href="mailto:ikmc554@mju.ac.kr">ikmc554@mju.ac.kr</a>.</p>
+      <h4>If the network drops</h4>
+      <p>Records that could not be sent wait in a queue and upload themselves once you are back
+        online.</p>`],
+
+    ['How do rankings and rewards work?',
+     `<p class="sum">Schools compete, not individuals. Seated time and recovery counts from everyone at
+        your school pool into one school score. A season runs 90 days.</p>
+      <h4>How to take part</h4>
+      <p>Pick a school when you start and your sessions count toward it from then on. There is nothing
+        to apply for.</p>
+      <h4>What the ranking measures</h4>
+      <div class="tw"><table>
+        <thead><tr><th>Metric</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>Time</td><td>Total time your school actually spent seated in front of the camera</td></tr>
+          <tr><td>Recoveries</td><td>Total times posture slipped and came back</td></tr>
+        </tbody></table></div>
+      <p>Recoveries are counted for a reason. Time alone means <b>whoever endures longest wins</b>.
+        Recovery presupposes slipping, so it puts value on the act of correcting itself.</p>
+      <h4>No individual ranking</h4>
+      <p>Not lining people up by posture is a principle here. Rankings exist only at school level.</p>
+      <h4>Rewards</h4>
+      <ul>
+        <li>At season end, the <b>top school in each region</b> is decided.</li>
+        <li>The <b>two biggest contributors</b> at that school (by time and recoveries) receive a small
+          prize.</li>
+        <li>Season records are kept in the student union hall of fame.</li>
+      </ul>
+      <blockquote><b>This is still beta.</b> The nature, scale and delivery of rewards are not final
+        and may change. We will announce them in the service once settled.</blockquote>
+      <h4>Abuse is blocked</h4>
+      <p>Only <b>time actually judged</b> counts toward a school score. Covering the camera or pointing
+        it at a photo earns nothing.</p>`],
+  ];
 
   const toggle = document.querySelector('.lang-toggle');
   function apply(){
@@ -1392,9 +1946,10 @@ const ONBOARD = '../onboarding/index.html';
       if (html) el.innerHTML = tr[LANG]; else el.textContent = tr[LANG];
     });
     document.querySelectorAll('#faqList .qa').forEach((qa, i) => {
-      const f = FAQ[LANG][i]; if (!f) return;
-      qa.querySelector('.q').textContent = f[0];
-      qa.querySelector('.qa-a p').textContent = f[1];
+      const en = FAQ_EN[i], ko = KO_SNAP[i];
+      if (!en || !ko) return;
+      qa.querySelector('.q').innerHTML = LANG === 'en' ? en[0] : ko.q;
+      qa.querySelector('.qa-body').innerHTML = LANG === 'en' ? en[1] : ko.body;
     });
     toggle.querySelectorAll('button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));

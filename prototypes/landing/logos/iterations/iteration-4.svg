@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- iteration 4: mascot colors — warm giraffe body, ink details, teal eye -->
+  <g id="giraffe-mark">
+    <g id="neck" fill="#F0B762">
+      <rect x="170" y="150" width="124" height="314" rx="62"/>
+    </g>
+    <g id="head" fill="#F0B762">
+      <ellipse id="ear" cx="150" cy="96" rx="44" ry="20" transform="rotate(32 150 96)"/>
+      <rect id="ossicone" x="204" y="48" width="40" height="84" rx="20"/>
+      <rect id="skull" x="170" y="84" width="228" height="112" rx="56"/>
+    </g>
+    <g id="eye" fill="#2B3230">
+      <circle cx="322" cy="124" r="16"/>
+    </g>
+    <g id="spots" fill="#2B3230">
+      <circle cx="222" cy="246" r="30"/>
+      <circle cx="246" cy="330" r="26"/>
+      <circle cx="224" cy="408" r="22"/>
+    </g>
+  </g>
+</svg>

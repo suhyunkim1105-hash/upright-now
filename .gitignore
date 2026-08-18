@@ -33,3 +33,7 @@ prototypes/**/artifact.html
 
 # 세션 중 만든 임시 검증 스크립트
 _*.mjs
+
+# 점검 스크립트가 남기는 것. 기준 그림은 커밋하고(회귀를 잡는 근거),
+# 달라졌을 때 새로 찍히는 .new.png 만 뺍니다.
+scripts/__shots__/*.new.png

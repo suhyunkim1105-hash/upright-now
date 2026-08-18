@@ -97,15 +97,21 @@
 html, body { height: 100%; }
 body {
   margin: 0;
-  font-family: 'Wanted Sans Variable', 'Wanted Sans', system-ui, sans-serif;
-  font-variation-settings: 'wght' 420;
+  /* 온보딩과 **같은 선언**입니다. 500 은 취향이 아니라 바닥이에요 —
+     한국어는 400 대에서 획이 얇아지는 게 아니라 흐려집니다. 온보딩에서
+     여기로 넘어오는 길이라, 그 사이에서 굵기가 바뀌면 서체가 바뀐
+     것으로 읽힙니다. (prototypes/DESIGN.md §2) */
+  font: 500 15px/1.62 'Wanted Sans Variable', 'Wanted Sans', system-ui, sans-serif;
   background: var(--surface-2);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
 }
 button, input, select { font: inherit; color: inherit; }
 button { border: 0; background: none; cursor: pointer; }
-h1, h2, h3, h4 { margin: 0; font-variation-settings: 'wght' 800; letter-spacing: -.02em; }
+/* 700 · 자간 0. 토스식(자간 −0.02em · 800)은 글자를 덩어리로 뭉치는
+   방식이고, 이 제품은 반대로 갑니다 — 글자가 각자 서고, 제목과 본문의
+   낙차를 무게로 벌리지 않습니다. (DESIGN.md §2) */
+h1, h2, h3, h4 { margin: 0; font-variation-settings: 'wght' 700; letter-spacing: 0; }
 p { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 :focus-visible { outline: 2px solid var(--teal-700); outline-offset: 2px; border-radius: var(--r-sm); }
@@ -135,7 +141,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .brand { display: flex; align-items: center; gap: var(--sp-md); padding: var(--sp-md) var(--sp-md) var(--sp-lg); }
 /* 랜딩과 **같은 파일**을 씁니다. 로고를 두 번 그리면 곧 두 개가 됩니다. */
 .brand .mark { width: 34px; height: 34px; border-radius: 9px; flex: none; }
-.brand b { font-size: 20px; font-variation-settings: 'wght' 800; letter-spacing: -.03em; }
+.brand b { font-size: 20px; font-variation-settings: 'wght' 800; }
 
 .me {
   display: flex; align-items: center; gap: var(--sp-md);
@@ -279,7 +285,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
    읽혀서, 넉 자가 판을 감당할 만큼 키웁니다. */
 .gate h2 {
   font-size: clamp(44px, min(6vw, 9vh), 88px);
-  letter-spacing: -.05em; line-height: 1;
+  /* 히어로만 800 입니다. 낙차를 이미 **크기**가 만들고 있어서 무게를
+     낮출 이유가 없고, 44~88px 에서 700 은 획이 가늘어 판이 비어
+     보입니다. 자간은 계약대로 0. */
+  font-variation-settings: 'wght' 800;
+  letter-spacing: 0; line-height: 1;
   margin: 0;
 }
 .gate .gact {
@@ -287,6 +297,16 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   display: flex; flex-direction: column; gap: var(--sp-sm); min-width: 200px;
 }
 .gate .gact .btn { justify-content: center; }
+
+/* 판 안 위계 — 아이브로우는 제목보다 작고 흐려야 아이브로우입니다.
+   세션 시작 두 판은 제목만 쓰지만 랭킹전 판은 머리말이라 세 층을
+   씁니다. 두 규칙을 지웠다가 랭킹전 판이 통째로 평문이 됐습니다. */
+.gate .gkind {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-variation-settings: 'wght' 800;
+  letter-spacing: .04em; opacity: .72;
+}
+.gate .gsub { font-size: 14px; line-height: 1.55; opacity: .8; max-width: 42ch; }
 
 .gate-teal { background: var(--teal); color: var(--on-teal); }
 .gate-teal::after {
@@ -339,7 +359,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .stat { padding: var(--sp-lg) var(--sp-xl); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 .card .stat { border: 0; background: var(--surface-2); padding: var(--sp-lg); }
 .stat u { display: block; text-decoration: none; font-size: 12px; color: var(--ink-3); font-variation-settings: 'wght' 600; }
-.stat b { display: block; margin-top: var(--sp-sm); font-size: 30px; letter-spacing: -.035em; font-variation-settings: 'wght' 800; font-variant-numeric: tabular-nums; line-height: 1; }
+.stat b { display: block; margin-top: var(--sp-sm); font-size: 30px; font-variation-settings: 'wght' 800; font-variant-numeric: tabular-nums; line-height: 1; }
 .stat b span { font-size: 13px; font-variation-settings: 'wght' 700; margin-left: 2px; }
 
 .week { display: flex; align-items: flex-end; gap: var(--sp-sm); height: 116px; }
@@ -462,7 +482,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .wiz-stage.leaving.to-back { transform: translateY(10px); }
 
 .wiz-lede { margin-bottom: var(--sp-xl); }
-.wiz-lede h3 { font-size: 26px; letter-spacing: -.035em; }
+.wiz-lede h3 { font-size: 26px; }
 .wiz-lede p { margin-top: var(--sp-sm); font-size: 14px; line-height: 1.6; color: var(--ink-2); }
 
 .wiz-bar { border-top: 1px solid var(--line); background: var(--bg); }
@@ -509,7 +529,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 /* ---- 2단계: 자리 ---- */
 .seatslider { padding: var(--sp-xl); border-radius: var(--r-lg); background: var(--surface-2); }
 .seatslider-head { display: flex; align-items: baseline; gap: var(--sp-md); margin-bottom: var(--sp-xl); }
-.seatslider-head b { font-size: 30px; letter-spacing: -.04em; font-variation-settings: 'wght' 800; font-variant-numeric: tabular-nums; }
+.seatslider-head b { font-size: 30px; font-variation-settings: 'wght' 800; font-variant-numeric: tabular-nums; }
 .seatslider-head span { font-size: 13px; color: var(--ink-3); }
 .seatslider-rail { position: relative; height: 22px; }
 .seatslider-track { position: absolute; left: 0; right: 0; top: 9px; height: 4px; border-radius: var(--r-pill); background: var(--line-2); }
@@ -571,7 +591,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .wheel-list li[data-on="true"] { color: var(--ink); font-variation-settings: 'wght' 800; font-size: 17px; }
 
 .dial-sum { margin-top: var(--sp-lg); padding: var(--sp-xl); border-radius: var(--r-lg); background: var(--teal-50); animation: settle .3s var(--ease) both; }
-.dial-sum-big { display: block; font-size: 22px; line-height: 1.35; letter-spacing: -.03em; font-variation-settings: 'wght' 800; color: var(--teal-800); }
+.dial-sum-big { display: block; font-size: 22px; line-height: 1.35; font-variation-settings: 'wght' 800; color: var(--teal-800); }
 .dial-sum p { margin-top: var(--sp-md); font-size: 12.5px; line-height: 1.6; color: var(--teal-800); opacity: .8; }
 
 /* ---- 4단계: 모드 ---- */
@@ -886,7 +906,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 
     <!-- ---------- 랭킹전 ---------- -->
     <section class="view" id="v-league" hidden>
-      <div class="gate gate-teal" style="min-height:166px">
+      <div class="gate gate-teal">
         <div class="gtext">
           <span class="gkind">이번 시즌</span>
           <h2 style="font-size:32px">가을 시즌</h2>
@@ -896,7 +916,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
         <div class="gact">
           <div style="text-align:right">
             <div style="font-size:12px;opacity:.72;font-variation-settings:'wght' 700">남은 날</div>
-            <div class="tnum" style="font-size:34px;font-variation-settings:'wght' 800;letter-spacing:-.04em">23일</div>
+            <div class="tnum" style="font-size:34px;font-variation-settings:'wght' 800">23일</div>
           </div>
         </div>
       </div>

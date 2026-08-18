@@ -1382,6 +1382,9 @@ const PROP = {
   bushAut:  { s:'u', w:1, h:1, t:[[373]], c:[[1]] },
   bench:    { s:'u', w:1, h:1, t:[[223]], c:[[1]] },
   benchAlt: { s:'u', w:1, h:1, t:[[250]], c:[[1]] },
+  lotus:    { s:'draw', w:2, h:1, c:[[0,0]] },
+  fish:     { s:'draw', w:2, h:1, c:[[0,0]] },
+  fishR:    { s:'draw', w:2, h:1, c:[[0,0]] },
   lamp:     { s:'u', w:1, h:2, t:[[1],[28]], c:[[0],[1]] },
   bin:      { s:'u', w:1, h:1, t:[[254]], c:[[1]] },
   vending:  { s:'u', w:1, h:2, t:[[251],[278]], c:[[1],[1]] },
@@ -4014,6 +4017,64 @@ function paintPond(m, x, y, w, h, rim) {
   for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++)
     if (inMap(m, i, j)) m.painted[at(m, i, j)] = 1;
 }
+/* 호수 장식 — 외부 이미지 대신 기존 월드와 같은 16px 픽셀 격자로
+   그립니다. x/y는 월드 좌표, 내부 숫자는 16px 원본 격자입니다. */
+function drawLakeLotus(x, y, variant = 0) {
+  const bob = Math.round(Math.sin(WIND.t * 0.8 + variant) * AS * 0.35);
+  const p = (dx, dy, w, h, color) => px(ctx, x + dx * AS, y + dy * AS + bob, w * AS, h * AS, color);
+  const leaf = variant % 2 ? '#2B8A45' : '#31994B';
+  const leafDark = '#176334';
+  const petal = variant % 3 === 1 ? '#F28BB8' : variant % 3 === 2 ? '#FFD36A' : '#F49BC5';
+  const petalLight = '#FFD3E8';
+  p(1, 7, 9, 2, 'rgba(12,54,70,.22)');
+  p(0, 4, 11, 4, leafDark);
+  p(2, 2, 7, 6, leaf);
+  p(1, 4, 3, 2, '#45AE58');
+  p(5, 2, 2, 6, leafDark);
+  p(8, 4, 2, 2, '#45AE58');
+  /* 꽃은 작은 5瓣 실루엣으로, 잎 중앙에 얹습니다. */
+  p(4, 0, 3, 2, petalLight);
+  p(2, 2, 3, 3, petal);
+  p(6, 2, 3, 3, petal);
+  p(4, 3, 4, 3, petal);
+  p(5, 2, 2, 3, '#FFE36E');
+  p(5, 3, 1, 1, '#E49A32');
+}
+
+function drawLakeFish(x, y, variant = 0, facing = 'left') {
+  const bob = Math.round(Math.sin(WIND.t * 1.05 + variant * 1.4) * AS * 0.3);
+  const mirrored = facing === 'right';
+  const originX = mirrored ? x + 12 * AS : x;
+  const p = (dx, dy, w, h, color) => px(
+    ctx,
+    originX + (mirrored ? -dx * AS - w * AS : dx * AS),
+    y + dy * AS + bob,
+    w * AS,
+    h * AS,
+    color,
+  );
+  const palettes = [
+    ['#F08B4B', '#B94E3B', '#FFD17A'],
+    ['#4F8FEA', '#24518B', '#9FD7F2'],
+    ['#78B7B0', '#276B74', '#C4EEE2'],
+    ['#B7B8C8', '#5C617B', '#E7E8F4'],
+    ['#F0B94E', '#9B5730', '#FFE39A'],
+  ];
+  const [body, dark, light] = palettes[variant % palettes.length];
+  /* 연꽃보다 작은 픽셀 실루엣입니다. 머리와 꼬리를 넓혀
+     물고기 방향이 한눈에 보이게 합니다. */
+  p(1, 3, 9, 4, dark);
+  p(3, 2, 7, 5, body);
+  p(0, 4, 3, 2, body);
+  p(10, 2, 2, 2, dark);
+  p(10, 5, 2, 2, dark);
+  p(4, 2, 3, 1, light);
+  p(4, 3, 1, 1, '#24343A');
+  /* 수면 아래쪽을 다시 칠해 몸통의 절반만 남깁니다. */
+  p(0, 4, 12, 3, '#2F6BA8');
+  p(2, 4, 8, 1, '#3A7CBB');
+}
+
 function fillOver(m, x, y, w, h, mat) {
   for (let j = y; j < y + h; j++) for (let i = x; i < x + w; i++)
     if (inMap(m, i, j)) m.over[at(m, i, j)] = mat;
@@ -4319,6 +4380,11 @@ const ZONES = {};
   fillOver(m, 1, 30, 10, 10, M.GRAY);
   fillOver(m, 2, 31, 8, 8, M.WATER);
   paintPond(m, 1, 30, 10, 10, 1);
+  /* 물 위 장식은 전부 물 칸 안에만 둡니다. 장식 prop 자체는 충돌 칸이
+     아니므로 물의 solid 판정과 걷기 규칙을 바꾸지 않습니다. */
+  prop(m, 'lotus', 3, 32); prop(m, 'lotus', 7, 33);
+  prop(m, 'lotus', 4, 36); prop(m, 'lotus', 8, 37);
+  prop(m, 'fish', 5, 35); prop(m, 'fish', 7, 37); prop(m, 'fishR', 5, 32);
   /* 남동 — 동아리 거리. 천막이 설 자리라 바닥은 포석입니다.
      모서리를 깎아야 잔디에 붙인 색종이로 안 보입니다. */
   fillOver(m, 35, 30, 11, 11, M.GRAY);
@@ -8556,6 +8622,12 @@ function invalidateDressed() {
   varsityCache.clear();
   tintCanvasCache.clear();
 }
+/* 이미지가 늦게 도착해도 상점 패널을 다시 그리는 호출이 안전하게
+   끝나야 합니다. 현재 프로토타입에는 별도의 캔버스 페인터가 없으므로
+   해당 함수가 존재할 때만 실행합니다. */
+function repaintOpenPanel() {
+  if (panelOpen && typeof paintItemCanvases === 'function') paintItemCanvases();
+}
 function dressedSheet() {
   const sp = speciesOf(ROOM.character);
   const key = sp.slug + '|' + JSON.stringify(ROOM.worn || {}) + '|' + JSON.stringify(ROOM.tint || {}) + '|' + schoolColor();
@@ -11084,6 +11156,17 @@ addEventListener('load', syncChat);
    전에는 여기에 42일짜리 창이 따로 있어서, 명예의 전당은 "시즌 4" 를
    보여 주는데 코인 장부는 "시즌 1" 을 세고 있었습니다. 두 화면이 같은
    낱말로 다른 것을 가리키면 둘 다 못 믿습니다. */
+function seasonInfo() {
+  const LEN = 90;
+  const START = Date.UTC(2026, 0, 5);
+  const days = Math.floor((Date.now() - START) / 86400000);
+  const no = 4 + Math.floor(days / LEN);
+  const into = ((days % LEN) + LEN) % LEN;
+  const from = new Date(START + (no - 4) * LEN * 86400000);
+  const to = new Date(from.getTime() + (LEN - 1) * 86400000);
+  const fmt = (d) => (d.getUTCMonth() + 1) + '월 ' + d.getUTCDate() + '일';
+  return { no, daysLeft: LEN - into, progress: into / LEN, from: fmt(from), to: fmt(to) };
+}
 const seasonNow = () => seasonInfo().no;
 function dayKey(t) {
   const d = t ? new Date(t) : new Date();
@@ -11675,7 +11758,12 @@ function draw() {
   for (const it of items) {
     if (it.kind === 'prop') {
       const { p, d } = it;
-      if (d.s === 'img') {
+      if (d.s === 'draw') {
+        if (p.kind === 'lotus') drawLakeLotus(p.x * T - camX, p.y * T - camY, p.x + p.y);
+        if (p.kind === 'fish') drawLakeFish(p.x * T - camX, p.y * T - camY, p.x + p.y, 'left');
+        if (p.kind === 'fishR') drawLakeFish(p.x * T - camX, p.y * T - camY, p.x + p.y, 'right');
+        drawCount++;
+      } else if (d.s === 'img') {
         /* 직접 그린 건물은 한 장이라 drawImage 한 번이면 끝납니다.
            타일로 쌓으면 큰 건물 하나에 100 번이 넘게 듭니다.
            천막은 바람 세기에 맞는 자세를 골라 씁니다 - 미리 구워 뒀으니

@@ -47,7 +47,7 @@
   --bg:        #FFFFFF;
   --ink:       #2B3230;
   --ink-2:     #5C6663;
-  --ink-3:     #6E7876;
+  --ink-3:     #656E6C;   /* 흰 5.25 · surface-3 4.63 · teal-50 4.96 — 쓰이는 모든 면에서 AA */
   --line:      #E8EBEB;
   --line-2:    #DCE0E0;
   --surface:   #FFFFFF;
@@ -146,7 +146,39 @@ p, .note, .empty p { text-wrap: pretty; }
 p { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 :focus-visible { outline: 2px solid var(--teal-700); outline-offset: 2px; border-radius: var(--r-sm); }
+/* 건너뛰기의 목적지입니다. 알림은 남기고 상자만 지웁니다 — 키보드로
+   가는 곳이 아닌데 테두리를 그리면 누른 적 없는 자리에 상자가 생깁니다. */
+#viewTitle:focus { outline: none; }
 .tnum { font-variant-numeric: tabular-nums; }
+
+.skip {
+  position: fixed; left: var(--sp-lg); top: var(--sp-lg); z-index: 100;
+  padding: 10px var(--sp-lg); border-radius: var(--r-pill);
+  background: var(--night); color: var(--on-night);
+  font-size: 13px; font-variation-settings: 'wght' 700; text-decoration: none;
+  transform: translateY(-200%);
+  transition: transform var(--t-quick) var(--settle);
+}
+.skip:focus { transform: none; }
+
+/* 다른 페이지로 나갈 때. 월드는 카메라를 켜고 판정 모델을 내려받는
+   무거운 화면이라, 누르고 나서 흰 화면이 길게 남습니다. 무엇을 기다리는
+   중인지는 떠나기 전에 말해야 합니다. */
+.leaving {
+  position: fixed; inset: 0; z-index: 99;
+  display: grid; place-items: center; gap: var(--sp-lg);
+  background: var(--night); color: var(--on-night);
+  animation: fade-in 180ms var(--ease) both;
+}
+.leaving .lv { display: flex; flex-direction: column; align-items: center; gap: var(--sp-md); }
+.leaving b { font-size: 17px; font-variation-settings: 'wght' 800; }
+.leaving span { font-size: 13px; opacity: .7; }
+.leaving i {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.16); border-top-color: var(--teal);
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 /* ==================================================================
    껍데기
@@ -627,10 +659,34 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .save .ic { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: var(--r-md); background: #fff; color: #1F6B41; }
 .save .tt b { display: block; font-size: 14px; font-variation-settings: 'wght' 800; color: #1F6B41; }
 .save .tt span { display: block; font-size: 12px; color: #2F7A50; margin-top: 2px; }
-.save .btn { margin-left: auto; }
+.save > span { margin-left: auto; }
 
 /* 들어올 때는 스프링, 나갈 때는 ease. 비대칭입니다 — 나타나는 것은
    사람이 기다린 것이고, 사라지는 것은 이미 읽은 것입니다. */
+.veil {
+  position: fixed; inset: 0; z-index: 95;
+  display: grid; place-items: center;
+  padding: var(--sp-xl);
+  background: rgba(20, 30, 28, .42);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  animation: fade-in 220ms var(--ease) both;
+}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+.sheet {
+  width: min(400px, 100%);
+  padding: var(--sp-xl); border-radius: var(--r-xl);
+  background: var(--bg); box-shadow: var(--sh-lg);
+  animation: sheet-up 420ms var(--spring) both;
+}
+@keyframes sheet-up {
+  from { opacity: 0; transform: translate3d(0, 14px, 0) scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
+.sheet h3 { font-size: 19px; }
+.sheet p { margin-top: var(--sp-sm); font-size: 14px; line-height: 1.6; color: var(--ink-2); }
+.sheet-act { display: flex; gap: var(--sp-sm); margin-top: var(--sp-xl); }
+.sheet-act .btn { flex: 1; justify-content: center; }
+
 .toast {
   position: fixed; left: 50%; bottom: 28px;
   padding: 12px 20px; border-radius: var(--r-pill);
@@ -647,6 +703,54 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .toast.off {
   opacity: 0; transform: translate(-50%, -6px);
   transition: opacity var(--t-quick) var(--ease), transform var(--t-quick) var(--ease);
+}
+
+/** 불러오기 — 내보내기의 짝입니다. 백업을 받아 두라고 해 놓고 되돌릴
+    길이 없으면 그건 백업이 아닙니다.
+
+    **덮어쓰기는 되돌릴 수 없습니다.** 지금 기기에 있는 것을 통째로
+    바꾸므로 반드시 묻고, 무엇이 몇 개 들어오는지를 먼저 보여 줍니다. */
+function importSave() {
+  const f = document.createElement('input');
+  f.type = 'file'; f.accept = 'application/json,.json';
+  f.addEventListener('change', () => {
+    const file = f.files && f.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let dump;
+      try { dump = JSON.parse(r.result); }
+      catch { toast('읽을 수 없는 파일이에요. Deskfit 에서 내보낸 파일인지 봐 주세요'); return; }
+      if (!dump || dump.app !== 'deskfit' || !dump.data) {
+        toast('Deskfit 저장 파일이 아니에요'); return;
+      }
+      const keys = Object.keys(dump.data).filter((k) => Object.values(K).includes(k));
+      if (!keys.length) { toast('안에 들어 있는 게 없어요'); return; }
+
+      let count = 0;
+      try { count = (JSON.parse(dump.data[K.sessions] || '[]') || []).length; } catch { /* 옛 형식 */ }
+      const at = dump.at
+        ? new Date(dump.at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' })
+        : '날짜 모름';
+
+      ask({
+        title: '이 파일로 바꿀까요?',
+        body: at + ' 에 내보낸 파일이고 세션 ' + count + '개가 들어 있어요. '
+            + '지금 이 기기에 있는 기록은 사라지고 되돌릴 수 없어요.',
+        yes: '바꾸기',
+        onYes: () => {
+          try {
+            for (const k of keys) localStorage.setItem(k, dump.data[k]);
+          } catch { toast('저장 공간이 모자라요'); return; }
+          /* 페이지를 다시 엽니다. 화면에 그려진 값이 전부 시작할 때 읽은
+             것이라, 다시 안 읽으면 새 기록 위에 옛 화면이 남습니다. */
+          leaveTo(location.pathname + location.search, '기록을 불러왔어요', '화면을 다시 그릴게요');
+        },
+      });
+    };
+    r.readAsText(file);
+  });
+  f.click();
 }
 
 /* ==================================================================
@@ -974,6 +1078,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 </head>
 <body>
 
+<!-- 레일 메뉴 넷을 매번 지나야 본문에 닿습니다. 키보드로 오는 사람에게는
+     그 넷이 매 화면 반복되는 통행세입니다. -->
+<a class="skip" href="#viewTitle">본문으로 건너뛰기</a>
+
 <div class="app" id="app">
 
   <!-- ================= 왼쪽 레일 ================= -->
@@ -1037,9 +1145,9 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   </nav>
 
   <!-- ================= 오른쪽 ================= -->
-  <div class="main">
+  <main class="main">
     <div class="topbar">
-      <h1 id="viewTitle">세션 시작</h1>
+      <h1 id="viewTitle" tabindex="-1">세션 시작</h1>
       <span class="sub" id="viewSub">혼자 앉든 같이 앉든, 여기서 시작해요</span>
       <span class="spacer"></span>
       <button class="iconbtn" type="button" data-nav="my" aria-label="마이페이지">
@@ -1212,7 +1320,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
           <div class="cardhead"><h2>내 기여</h2></div>
           <div class="rows" id="myLeague"></div>
           <div class="note">
-            <b>자세에는 점수를 매기지 않습니다.</b> 순위에 들어가는 것은 앉은
+            <b>자세에는 점수를 안 매겨요.</b> 순위에 들어가는 것은 앉은
             시간과 회복 횟수뿐이에요.
           </div>
         </div>
@@ -1232,7 +1340,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
       </div>
       <div id="myPane"></div>
     </section>
-  </div>
+  </main>
 </div>
 
 <!-- ================= 방 만들기 위저드 ================= -->
@@ -1272,6 +1380,19 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
     </div>
   </footer>
 </section>
+
+<!-- 되돌릴 수 없는 것을 하기 전에 한 번 묻습니다. 묻는 자리는 둘뿐이라
+     범용 대화상자를 만들지 않고 이 하나를 돌려 씁니다. -->
+<div class="veil" id="veil" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="askTitle">
+    <h3 id="askTitle">그만둘까요?</h3>
+    <p id="askBody"></p>
+    <div class="sheet-act">
+      <button class="btn btn-ghost" type="button" id="askNo">계속 쓰기</button>
+      <button class="btn btn-dark" type="button" id="askYes">그만두기</button>
+    </div>
+  </div>
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -1443,7 +1564,7 @@ function show(key) {
   if (v) v.querySelectorAll(':scope > *').forEach((c) => {
     c.style.animation = 'none'; void c.offsetWidth; c.style.animation = '';
   });
-  document.querySelector('.main').scrollTop = 0;
+  document.querySelector('main.main').scrollTop = 0;
 }
 
 let toastT = 0, toastT2 = 0;
@@ -1490,16 +1611,59 @@ document.addEventListener('click', (e) => {
   }
 });
 
+/** 되돌릴 수 없는 것 앞에서 한 번 묻습니다. 예/아니오가 아니라 **무엇이
+    일어나는지**를 버튼에 적습니다 — 제품이 말하는 쪽입니다. */
+let askYes = null;
+function ask({ title, body, yes, onYes }) {
+  $('askTitle').textContent = title;
+  $('askBody').textContent = body;
+  $('askYes').textContent = yes;
+  askYes = onYes;
+  $('veil').hidden = false;
+  $('askNo').focus();
+}
+function askClose() { $('veil').hidden = true; askYes = null; }
+$('askNo').addEventListener('click', askClose);
+$('askYes').addEventListener('click', () => { const f = askYes; askClose(); if (f) f(); });
+$('veil').addEventListener('click', (e) => { if (e.target === $('veil')) askClose(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('veil').hidden) askClose();
+});
+
+/** 떠나기 전에 무엇을 기다리는지 말합니다. 월드는 카메라를 켜고 판정
+    모델을 내려받으므로, 빈 화면이 몇 초씩 남습니다. */
+function leaveTo(url, title, sub) {
+  const el = document.createElement('div');
+  el.className = 'leaving';
+  el.innerHTML = '<div class="lv"><i></i><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div>';
+  document.body.appendChild(el);
+  setTimeout(() => { location.href = url; }, 60);
+}
+
 function act(what) {
   switch (what) {
     case 'wizard':      openWizard(); break;
-    case 'world':       location.href = '../openworld/index.html'; break;
-    case 'recal':       location.href = '../onboarding/index.html#cal'; break;
+    case 'world':
+      leaveTo('../openworld/index.html', '월드로 들어가는 중이에요',
+              '카메라를 켜고 자세 판정을 준비해요. 몇 초 걸릴 수 있어요');
+      break;
+    case 'recal':
+      leaveTo('../onboarding/index.html#cal', '자세 기준 화면으로 가요',
+              '10초 동안 평소처럼 앉은 모습을 읽어요');
+      break;
     case 'export':      exportSave(); break;
-    case 'leave-lobby': show('start'); break;
+    case 'import':      importSave(); break;
+    case 'leave-lobby':
+      ask({
+        title: '방에서 나갈까요?',
+        body: '초대 코드 ' + W.code + ' 는 사라져요. 다시 만들면 새 코드가 나와요.',
+        yes: '나가기',
+        onYes: () => show('start'),
+      });
+      break;
 
     case 'shop':        toast('상점 — 월드 학생회관의 상점 창을 여기로 옮깁니다'); break;
-    case 'undress':     toast('전부 벗기 — 옷장 저장이 붙으면 동작합니다'); break;
+    case 'undress':     toast('전부 벗기 — 옷장 저장이 붙으면 동작해요'); break;
     default: toast('아직 안 이어진 곳이에요');
   }
 }
@@ -1539,13 +1703,13 @@ const W = {
 };
 
 const MODES = {
-  library: { name: '도서관', desc: '소리를 내지 않아요. 앉은 채로 하는 동작만 안내합니다.',
+  library: { name: '도서관', desc: '소리를 내지 않아요. 앉은 채로 하는 동작만 안내해요.',
     tts: false, posture: '앉아서',
     icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>' },
-  home: { name: '내 공간', desc: '부드러운 음성으로 알려요. 일어나서 하는 동작까지 안내합니다.',
+  home: { name: '내 공간', desc: '부드러운 음성으로 알려요. 일어나서 하는 동작까지 안내해요.',
     tts: true, posture: '일어나서',
     icon: '<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/>' },
-  team: { name: '팀플', desc: '함께 쉬는 시간을 맞춰요. 앉는 동작과 서는 동작을 섞습니다.',
+  team: { name: '팀플', desc: '함께 쉬는 시간을 맞춰요. 앉는 동작과 서는 동작을 섞어요.',
     tts: true, posture: '섞어서',
     icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>' },
   custom: { name: '내 모드', desc: '소리와 동작 목록을 직접 정한 설정을 그대로 씁니다.',
@@ -1584,7 +1748,7 @@ function stepRoomKind() {
       + '<p>방을 만들면 초대 코드가 나와요. 혼자 시작해도 나중에 사람을 부를 수 있어요.</p></div>'
       + '<div class="pick-grid">'
       + pickCard('private', IC.lock, '프라이빗 방',
-          '초대 코드를 아는 사람만 들어와요. 혼자 시작해도 됩니다.',
+          '초대 코드를 아는 사람만 들어와요. 혼자 시작해도 돼요.',
           ['코드로만 입장', '자유 채팅'])
       + pickCard('public', IC.globe, '공개 방',
           '같은 학교로 설정한 사람에게만 목록에 보여요. 코드 없이 들어옵니다.',
@@ -1665,7 +1829,7 @@ function stepSeats() {
   return {
     stage:
       '<div class="wiz-lede"><h3>몇 자리를 열어 둘까요?</h3>'
-      + '<p>고른 만큼 방에 자리가 생기고, 그 자리들이 함께 채울 시간이 이 방의 목표가 됩니다.</p></div>'
+      + '<p>고른 만큼 방에 자리가 생기고, 그 자리들이 함께 채울 시간이 이 방의 목표가 돼요.</p></div>'
       + seatSlider() + seatPreview(),
     bar: { label: '다음', act: 'next' },
   };
@@ -1680,8 +1844,8 @@ function focusOptions() {
 function wheelCol(label, key, options, current) {
   return '<div class="dial"><label>' + label + '</label>'
     + '<div class="wheelbox"><span class="wheel-rail" aria-hidden="true"></span>'
-    + '<div class="wheel" data-wheel="' + key + '" tabindex="0" role="listbox" aria-label="' + label + ' 시간 선택">'
-    + '<ul class="wheel-list">'
+    + '<div class="wheel" data-wheel="' + key + '">'
+    + '<ul class="wheel-list" tabindex="0" role="listbox" aria-label="' + label + ' 시간 선택">'
     + options.map((o) => '<li role="option" data-val="' + o + '" data-on="' + (o === current) + '" '
         + 'aria-selected="' + (o === current) + '">' + o + '분</li>').join('')
     + '</ul></div></div></div>';
@@ -1690,13 +1854,13 @@ function timeSummary() {
   return '<div class="dial-sum">'
     + '<span class="dial-sum-big">' + W.focusMin + '분 앉고<br>' + W.restMin + '분 회복</span>'
     + '<p>' + W.seats + '자리가 다 차면 이 방의 목표는 ' + (W.seats * W.focusMin)
-    + '분이 됩니다. 회복 휴식은 5분과 10분 둘 중 하나예요.</p></div>';
+    + '분이 돼요. 회복 휴식은 5분과 10분 둘 중 하나예요.</p></div>';
 }
 function stepTime() {
   return {
     stage:
       '<div class="wiz-lede"><h3>얼마나 앉아 있을까요?</h3>'
-      + '<p>계획한 시간의 80%를 넘기면 완주로 인정해요. 10분을 넘기면 출석이 남습니다.</p></div>'
+      + '<p>계획한 시간의 80%를 넘기면 완주로 인정해요. 10분을 넘기면 출석이 남아요.</p></div>'
       + '<div class="dials">' + wheelCol('집중', 'focus', focusOptions(), W.focusMin)
       + wheelCol('회복 휴식', 'rest', [5, 10], W.restMin) + '</div>'
       + timeSummary(),
@@ -1720,7 +1884,7 @@ function stepMode() {
     stage:
       '<div class="wiz-lede"><h3>어디에서 하나요?</h3>'
       + '<p>소리를 낼지, 스트레칭을 앉아서 할지 일어나서 할지가 달라져요. '
-      + '자세 판정 기준과 경험치는 모드와 상관없이 같습니다.</p></div>'
+      + '자세 판정 기준과 경험치는 모드와 상관없이 같아요.</p></div>'
       + '<div class="mode-grid">' + Object.keys(MODES).map(modeCell).join('') + '</div>',
     bar: { label: '다음', act: 'next' },
   };
@@ -1732,7 +1896,7 @@ function stepConfirm() {
   return {
     stage:
       '<div class="wiz-lede"><h3>이대로 열까요?</h3>'
-      + '<p>방 이름은 지금 바꿀 수 있어요. 상시방으로 두면 세션이 끝나도 방이 사라지지 않습니다.</p></div>'
+      + '<p>방 이름은 지금 바꿀 수 있어요. 상시방으로 두면 세션이 끝나도 방이 안 사라져요.</p></div>'
       + '<div class="summary"><ul class="rowlist">'
       + '<li><label for="roomname">방 이름</label>'
       + '<input id="roomname" class="field" value="' + esc(W.roomName) + '" maxlength="20" placeholder="무엇을 하는 방인가요" /></li>'
@@ -1957,14 +2121,26 @@ function closeWizard(instant) {
   if (instant || REDUCED) clear(); else setTimeout(clear, 520);
 }
 
-$('wizClose').addEventListener('click', () => closeWizard());
+/** 1단계에서는 버릴 것이 없으니 바로 닫습니다. 그 뒤로는 채운 것이
+    있으므로 묻습니다 — 되돌리기가 없는 자리입니다. */
+function tryCloseWizard() {
+  if (minting) { closeWizard(); return; }
+  if (stepIndex === 0 && !W.visibility) { closeWizard(); return; }
+  ask({
+    title: '방 만들기를 그만둘까요?',
+    body: '여기까지 고른 것은 저장되지 않아요. 다시 열면 처음부터 시작해요.',
+    yes: '그만두기',
+    onYes: () => closeWizard(),
+  });
+}
+$('wizClose').addEventListener('click', tryCloseWizard);
 wizBack.addEventListener('click', () => {
   if (stageBusy) return;
-  if (stepIndex === 0) { closeWizard(); return; }
+  if (stepIndex === 0) { tryCloseWizard(); return; }
   goingBack = true; stepIndex -= 1; renderWizard();
 });
 document.addEventListener('keydown', (e) => {
-  if (!wizard.hidden && e.key === 'Escape') closeWizard();
+  if (!wizard.hidden && e.key === 'Escape' && $('veil').hidden) tryCloseWizard();
 });
 
 /* ---- 코드 발급 ---- */
@@ -2166,7 +2342,14 @@ function renderLobby() {
   const waiting = others.filter((p) => !p.ready);
   const btn = $('lobbyStart'), status = $('lobbyStatus');
 
-  if (joined <= 1) {
+  /* **내 기준이 먼저입니다.** 남을 기다리는 것보다 앞에 옵니다 — 남이
+     다 준비돼도 내 기준이 없으면 이 방은 시작할 수 없습니다. */
+  if (!axes) {
+    btn.disabled = true;
+    btn.textContent = '지금 시작하기';
+    status.textContent = '내 자세 기준을 먼저 잡아 주세요';
+    status.setAttribute('data-blocked', 'true');
+  } else if (joined <= 1) {
     btn.disabled = false;
     btn.textContent = '지금 시작하기';
     /* 초대 코드 줄이 이미 같은 말을 합니다. 발판에서 한 번 더 하면
@@ -2237,7 +2420,7 @@ $('lobbyCopy').addEventListener('click', () => copyCode(W.code, toast));
     go.disabled = true;
     setTimeout(() => {
       go.disabled = false;
-      say('그런 방이 없어요. 서버가 붙으면 실제로 찾습니다', true);
+      say('그런 방이 없어요. 서버가 붙으면 실제로 찾아요', true);
     }, 700);
   });
 })();
@@ -2316,7 +2499,7 @@ function paintChar() {
     + (worn ? '<button class="btn btn-line btn-sm" type="button" data-go="undress">전부 벗기</button>' : '')
     + '</div>'
     + '<div class="note">옷은 <b>학생회관 상점</b>에서 코인으로 삽니다. 코인은 앉은 '
-    + '시간과 회복 횟수로 쌓여요. 여기서는 가진 것을 갈아입기만 합니다.</div>';
+    + '시간과 회복 횟수로 쌓여요. 여기서는 가진 것을 갈아입기만 해요.</div>';
 }
 
 const LEAGUE = [
@@ -2381,8 +2564,8 @@ const MY = {
           <div class="stat"><u>연속 출석</u><b>${S.streak}<span>일</span></b></div>
         </div>
         <div class="note">
-          코인은 <b>앉은 시간과 회복 횟수</b>로 쌓입니다. 쓰는 곳은 학생회관
-          상점이에요. 자세가 좋다고 더 주지 않습니다.
+          코인은 <b>앉은 시간과 회복 횟수</b>로 쌓여요. 쓰는 곳은 학생회관
+          상점이에요. 자세가 좋다고 더 주지 않아요.
         </div>
       </div>
     </div>`,
@@ -2407,7 +2590,7 @@ const MY = {
       ? `<div class="empty">
           <span class="empty-fig">${icon(IC.chart, 22, 2)}</span>
           <div class="ttl">아직 앉은 기록이 없어요</div>
-          <p>도서관이나 본관에서 한 세션만 채우면 여기에 쌓입니다.</p>
+          <p>도서관이나 본관에서 한 세션만 채우면 여기에 쌓여요.</p>
           <button class="btn btn-teal" type="button" data-go="world">월드 입장</button></div>`
       : '<div class="rows">' + SESSIONS.slice().reverse().slice(0, 12).map((r) => {
           const d = new Date(r.at);
@@ -2440,10 +2623,10 @@ const MY = {
           ${IS_DEMO ? '<span class="demo">예시 · 아직 내 기록이 없어요</span>' : ''}
           <span class="spacer"></span><span class="count">${S.count}개</span></div>
         ${sessList}
-        <div class="note">앉은 시간·회복 횟수·판정이 돈 시간만 셉니다.
+        <div class="note">세는 건 앉은 시간·회복 횟수·판정이 돈 시간뿐이에요.
           <b>자세에 점수나 등급을 매기지 않아요</b> — 목이 긴 사람이 유리한
           게임이 되지 않게 하려는 것이고, 여기 있는 숫자는 전부 이 기기
-          안에만 있습니다.</div>
+          안에만 있어요.</div>
       </div>`;
   },
 
@@ -2471,11 +2654,11 @@ const MY = {
         <div class="card">
           <div class="cardhead"><h2>기준이 하는 일</h2></div>
           <p style="font-size:13.5px;line-height:1.7;color:var(--ink-2)">
-            세션을 시작하면 <b>평소처럼 앉은 모습</b>을 10초 동안 읽습니다.
+            세션을 시작하면 <b>평소처럼 앉은 모습</b>을 10초 동안 읽어요.
             이 기준이 세션 내내 쓰여요 — 기준이 있어야 “평소보다 앞으로
-            나왔다”를 판단할 수 있습니다.</p>
+            나왔다”를 판단할 수 있어요.</p>
           <div class="note">자리나 조명이 크게 바뀌면 다시 잡아 주세요.
-            기준도 <b>이 기기에만</b> 있고 어디로도 보내지 않습니다.</div>
+            기준도 <b>이 기기에만</b> 있고 어디로도 보내지 않아요.</div>
         </div>
       </div>`;
   },
@@ -2484,7 +2667,7 @@ const MY = {
     const n = SESSIONS.length;
     const title = IS_DEMO ? '아직 저장된 기록이 없어요' : '이 기기에 저장돼 있어요';
     const sub = IS_DEMO
-      ? '세션을 한 번 마치면 여기에 쌓입니다'
+      ? '세션을 한 번 마치면 여기에 쌓여요'
       : '세션 ' + n + '개 · 마지막 저장 ' + new Date(S.lastAt).toLocaleString('ko-KR',
           { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     const keys = Object.values(K).map((k) => {
@@ -2498,10 +2681,13 @@ const MY = {
         <div class="save">
           <span class="ic" aria-hidden="true">${icon(IC.disk, 20, 2.2)}</span>
           <span class="tt"><b>${title}</b><span>${sub}</span></span>
-          <button class="btn btn-line btn-sm" type="button" data-go="export">내보내기</button>
+          <span style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-line btn-sm" type="button" data-go="import">불러오기</button>
+            <button class="btn btn-line btn-sm" type="button" data-go="export">내보내기</button>
+          </span>
         </div>
         <div class="note note-warn">
-          <b>지금은 이 브라우저에만 남습니다.</b> 다른 기기나 시크릿 창에서
+          <b>지금은 이 브라우저에만 남아요.</b> 다른 기기나 시크릿 창에서
           열면 처음부터 시작해요. 브라우저 기록을 지우면 같이 지워집니다 —
           중요한 기록은 내보내기로 파일을 받아 두세요.
         </div>
@@ -2509,9 +2695,9 @@ const MY = {
       <div class="card">
         <div class="cardhead"><h2>무엇이 저장돼 있나</h2></div>
         <div class="rows">${keys}</div>
-        <div class="note">월드가 쓰는 것과 <b>같은 칸</b>입니다. 이 화면은 따로
+        <div class="note">월드가 쓰는 것과 <b>같은 칸</b>이에요. 이 화면은 따로
           쌓지 않고 월드가 남긴 것을 읽기만 해요 — 두 군데에 쌓으면 곧
-          둘이 갈라집니다.</div>
+          둘이 갈라져요.</div>
       </div>`;
   },
 
@@ -2532,7 +2718,7 @@ const MY = {
               <span class="val">${ROOM[k] === 'off' ? '꺼짐' : '켜짐'}</span></div>`).join('')}
           </div>
           <div class="note">지금은 월드 안에서만 바꿀 수 있어요. 여기서 바꾸는
-            것은 옷장 저장과 함께 붙입니다.</div>
+            것은 옷장 저장과 함께 붙일게요.</div>
         </div>
         <div class="card">
           <div class="cardhead"><h2>개인정보</h2></div>
@@ -2544,7 +2730,7 @@ const MY = {
           </div>
           <div class="note"><b>분석은 브라우저 안에서 끝납니다.</b> 영상도
             프레임도 좌표도 어떤 서버로도 보내지 않아요. 서버로 가는 것은
-            닉네임·학교·랭킹 숫자뿐입니다.</div>
+            닉네임·학교·랭킹 숫자뿐이에요.</div>
         </div>
       </div>`;
   },

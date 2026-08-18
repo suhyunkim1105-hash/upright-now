@@ -1821,8 +1821,18 @@ function roofIcon(g, kind, cx, cy, R) {
     비치는 유리 자리를 사각형으로 돌려줍니다. 하늘을 그리는 쪽이 씁니다. */
 const GLASS_A = 0.42;
 
-function paintWindow(g, style, x, y, P) {
-  const glass = (fn) => { g.globalAlpha = GLASS_A; fn(); g.globalAlpha = 1; };
+function paintWindow(g, style, x, y, P, cut) {
+  /* cut — 유리 자리를 **뚫고** 나서 반투명 유리를 얹습니다.
+
+     틀을 통째로 칠한 위에 42% 유리를 덮으면 그 자리의 합성 알파가 1 이
+     됩니다. 그러면 drawWindows 가 뒤에 그려 둔 하늘이 한 점도 안 비쳐,
+     위 주석이 말하는 "유리만 비친다" 가 실제로는 안 되고 있었습니다.
+     실내 벽(paintTopWall)만 뚫습니다 — 건물 겉면은 유리 뒤에 아무것도
+     없어서, 뚫으면 벽에 구멍이 납니다. */
+  const glass = (fn) => {
+    if (cut) { g.save(); g.globalCompositeOperation = 'destination-out'; fn(); g.restore(); }
+    g.globalAlpha = GLASS_A; fn(); g.globalAlpha = 1;
+  };
   if (style === 'arch') {
     /* 아치창 — 도서관. 위가 둥글면 오래된 열람실이 됩니다. */
     px(g, x, y + 3, 10, 14, P.frame);
@@ -1847,12 +1857,20 @@ function paintWindow(g, style, x, y, P) {
     return [[x, y + 2, 10, 15]];
   }
   if (style === 'grid') {
-    /* 작은 창이 규칙적으로 — 기숙사 */
-    px(g, x, y + 4, 8, 7, P.frame);
-    glass(() => px(g, x + 1, y + 5, 6, 5, P.glass));
-    px(g, x, y + 12, 8, 7, P.frame);
-    glass(() => px(g, x + 1, y + 13, 6, 5, P.glass));
-    return [[x + 1, y + 5, 6, 5], [x + 1, y + 13, 6, 5]];
+    /* 기숙사 개인방 창 — 여닫이 두 짝에 유리 넷.
+       전에는 8×7 짜리 작은 창 둘이었습니다. 벽에 붙은 갈색 사각형 둘로
+       보였고, 그 아래 창가 선반이 '창밖 날씨' 를 여는 자리가 되면서
+       무엇을 보는 자리인지가 안 읽혔습니다. 창은 이 방에서 밖이
+       보이는 유일한 자리라 크게 냅니다. 밑에 창턱을 대야 벽에 뚫린
+       구멍이 아니라 창이 됩니다. */
+    px(g, x - 1, y - 3, 18, 25, P.frame);
+    glass(() => px(g, x, y - 2, 16, 22, P.glass));
+    px(g, x, y - 2, 16, 3, P.glassLit);            // 유리에 앉은 빛 — 얇게, 하늘을 덜 덮게
+    px(g, x + 7, y - 2, 2, 22, P.frame);           // 세로 창살
+    px(g, x, y + 8, 16, 2, P.frame);               // 가로 창살
+    px(g, x - 3, y + 22, 22, 3, P.trim);           // 창턱
+    px(g, x - 3, y + 22, 22, 1, '#FFFFFF');
+    return [[x, y - 2, 16, 22]];
   }
   if (style === 'shop') {
     /* 넓은 상점 창에 차양 — 학생회관 */
@@ -1900,7 +1918,7 @@ function paintTopWall(w, P, decor) {
       const wc = document.createElement('canvas');
       wc.width = TS * 2; wc.height = TS * 3; wc.__cell = TS;
       const wg = wc.getContext('2d');
-      const gl = paintWindow(wg, d.style, 8, y, P);
+      const gl = paintWindow(wg, d.style, 8, y, P, true);
       const ox = x - 8;
       g.drawImage(wc, ox, 0);
       wins.push({ c: wc, x: ox, glass: gl.map((r) => [r[0] + ox, r[1], r[2], r[3]]) });
@@ -3300,23 +3318,131 @@ PROP.mirror   = paintedProp('mirror', 1, 2, [0, 1]);
    여기 있는 것들은 전부 장식입니다 — 기능은 마이페이지 한 곳에 모았고,
    물건마다 창을 달면 사용자가 어디를 눌러야 할지 모릅니다. */
 
-/* 옷장 2×2 */
+/* 옷장 2×2 — 기숙사 기능 줄의 '방 꾸미기'.
+   문 한 짝을 열어 둡니다. 닫힌 장은 그냥 가구지만, 열려서 안이 보이면
+   "여기서 꺼내 놓는다" 가 그림만으로 읽힙니다. 안에는 옷걸이에 걸린 옷
+   셋과 상자 하나 — 산 것이 옷과 가구 둘이라 둘 다 보여야 합니다. */
 {
   const c = canvasOf(2, 2), g = c.getContext('2d');
   shadow(g, 16, 30, 14, 2);
   px(g, 1, 2, 30, 29, '#6B4A2E');
   px(g, 2, 3, 28, 27, '#9A6C42');
   px(g, 2, 3, 28, 3, '#B98756');
-  px(g, 2, 3, 3, 27, '#B08050');
-  px(g, 15, 4, 2, 25, '#6B4A2E');
-  [6, 21].forEach((x) => {
-    px(g, x, 8, 6, 16, '#8A5F3A');
-    px(g, x, 8, 6, 2, '#A97A4C');
-  });
-  px(g, 13, 15, 2, 4, '#E2C88A');
+  /* 왼쪽 — 열린 칸. 안쪽은 늘 그늘입니다 */
+  px(g, 4, 6, 12, 22, '#4A3323');
+  px(g, 4, 6, 12, 1, '#3A2718');
+  px(g, 5, 9, 10, 1, '#C9B48E');                     // 옷걸이 봉
+  [['#2DD4BF', '#8AE5D9'], ['#D8442C', '#F0836E'], ['#E8C34A', '#F6DE92']]
+    .forEach(([col, lit], i) => {
+      const x = 5 + i * 3;
+      px(g, x, 10, 3, 8, col);
+      px(g, x, 10, 3, 1, lit);
+      px(g, x + 1, 8, 1, 2, '#C9B48E');               // 고리
+    });
+  px(g, 5, 21, 9, 6, '#B8834A');                     // 상자 — 사 둔 가구
+  px(g, 5, 21, 9, 1, '#D6A165');
+  px(g, 5, 23, 9, 1, '#8A6039');
+  /* 열린 문짝 — 바깥으로 젖혀져 옆에 섭니다 */
+  px(g, 1, 5, 3, 24, '#8A5F3A');
+  px(g, 1, 5, 1, 24, '#A97A4C');
+  /* 오른쪽 — 닫힌 문 */
+  px(g, 17, 5, 12, 23, '#8A5F3A');
+  px(g, 17, 5, 12, 2, '#A97A4C');
   px(g, 18, 15, 2, 4, '#E2C88A');
   px(g, 2, 29, 28, 2, '#5A3C24');
   PAINTED.wardrobe = c;
+}
+
+/* ---- 기숙사 기능 줄에 새로 서는 것 셋 ----
+   방 안 물건이 곧 메뉴라는 규칙은 그대로입니다. 다만 흩어져 있던 것을
+   윗벽 한 줄로 모으면서, 무엇을 하는 자리인지 그림만으로 갈리게
+   다시 그렸습니다 — 다섯이 나란히 서면 생김새가 곧 이름표입니다. */
+
+/* 노트북 1×1 — 화면에 달력. 책상 위 노트북이 시간표를 여는 자리인데
+   화면이 파란 판이면 무엇을 여는 자리인지 알 수 없습니다. */
+{
+  const c = canvasOf(1, 1), g = c.getContext('2d');
+  px(g, 3, 1, 10, 7, '#4A525C');
+  px(g, 4, 2, 8, 5, '#F4F7FA');
+  px(g, 4, 2, 8, 1, '#2DD4BF');                      // 달력 머리띠
+  g.fillStyle = '#9AA7B4';
+  for (let r = 0; r < 2; r++) for (let k = 0; k < 3; k++) g.fillRect(5 + k * 3, 4 + r * 2, 2, 1);
+  px(g, 8, 4, 2, 1, '#D8442C');                      // 오늘
+  px(g, 2, 8, 12, 3, '#6B747E');
+  px(g, 2, 8, 12, 1, '#98A2AC');
+  px(g, 4, 9, 8, 1, '#4A525C');
+  PAINTED.laptopCal = c;
+}
+
+/* 안내 입간판 2×2 — 벽에 붙어 있던 안내판이 바닥으로 내려왔습니다.
+   기능 줄이 한 줄로 서려면 표시가 같은 높이에 떠야 하는데, 벽에 붙은
+   것만 혼자 두 칸 위에 뜹니다. 글자는 벽판과 **같은 '안내'** 입니다. */
+function paintNoticeStand() {
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  shadow(g, 16, 30, 11, 2);
+  px(g, 5, 22, 3, 9, '#6B4A2E');
+  px(g, 24, 22, 3, 9, '#6B4A2E');
+  px(g, 3, 2, 26, 22, '#8A6039');
+  px(g, 4, 3, 24, 20, '#B08050');
+  px(g, 6, 5, 20, 16, '#FFF6F3');
+  px(g, 6, 5, 20, 2, '#FFFFFF');
+  px(g, 6, 19, 20, 2, '#E4D3CC');
+  px(g, 8, 8, 16, 3, '#2DD4BF');
+  stamp(g, '안내', 9, '#2A2320', 16, 12, 'center');
+  px(g, 7, 4, 2, 2, '#6B5F5A');
+  px(g, 23, 4, 2, 2, '#6B5F5A');
+  PAINTED.noticeStand = c;
+}
+paintNoticeStand();
+TEXT_ART.push(paintNoticeStand);
+
+/* 개인정보 보관함 1×2 — 잠긴 서류함.
+   자물쇠와 방패는 "네 것이고 잠겨 있다" 는 뜻으로 어디서나 통합니다.
+   거울로 두었을 때는 옷매무새를 보는 자리로 읽혔습니다. */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 6, 2);
+  px(g, 1, 5, 14, 26, '#5F6874');
+  px(g, 2, 6, 12, 24, '#AEB7C0');
+  px(g, 2, 6, 12, 2, '#CFD6DC');
+  px(g, 2, 6, 2, 24, '#C2CAD2');
+  px(g, 2, 28, 12, 2, '#7C848E');
+  /* 서랍 둘 */
+  [18, 24].forEach((y) => {
+    px(g, 3, y, 10, 5, '#8E97A1');
+    px(g, 3, y, 10, 1, '#C2CAD2');
+    px(g, 6, y + 2, 4, 1, '#5F6874');
+  });
+  /* 방패 자물쇠 — 청록. 방에서 청록이 나오는 곳은 여기와 표시뿐입니다 */
+  px(g, 5, 9, 6, 5, '#2DD4BF');
+  px(g, 6, 14, 4, 1, '#2DD4BF');
+  px(g, 7, 15, 2, 1, '#2DD4BF');
+  px(g, 5, 9, 6, 1, '#8AE5D9');
+  px(g, 7, 11, 2, 2, '#0C5A4F');
+  px(g, 7, 12, 1, 2, '#0C5A4F');
+  PAINTED.safeBox = c;
+}
+
+/* 창가 선반 1×1 — 창 바로 밑. 화분과 온도계.
+   창밖 날씨를 여는 자리라 **온도계**를 세웠습니다. 화분만 두면 화분입니다. */
+{
+  const c = canvasOf(1, 1), g = c.getContext('2d');
+  shadow(g, 8, 15, 6, 2);
+  px(g, 1, 9, 14, 3, '#B08050');
+  px(g, 1, 9, 14, 1, '#C99A64');
+  px(g, 3, 12, 2, 3, '#8A6039');
+  px(g, 11, 12, 2, 3, '#8A6039');
+  px(g, 3, 5, 5, 4, '#B4643C');                      // 화분
+  px(g, 3, 5, 5, 1, '#D07A4C');
+  px(g, 4, 2, 3, 3, '#4E9E63');                      // 잎
+  px(g, 5, 1, 2, 2, '#6FBA60');
+  px(g, 3, 3, 1, 2, '#3E7A3D');
+  px(g, 11, 1, 2, 8, '#E8EDF2');                     // 온도계
+  px(g, 11, 1, 1, 8, '#FFFFFF');
+  px(g, 11, 6, 2, 3, '#D8442C');
+  px(g, 13, 3, 1, 1, '#8FA0AE');
+  px(g, 13, 5, 1, 1, '#8FA0AE');
+  PAINTED.windowSill = c;
 }
 
 /* 플로어 스탠드 1×2 */
@@ -3517,6 +3643,12 @@ PROP.mirror   = paintedProp('mirror', 1, 2, [0, 1]);
 }
 
 PROP.wardrobe  = paintedProp('wardrobe', 2, 2);
+PROP.laptopCal = { ...paintedProp('laptopCal', 1, 1), c: [[0]] };
+/* 입간판은 두 줄 다 막습니다. 뒤로 걸어 들어가지면 벽과 판 사이에
+   사람이 낄 자리가 생기고, 그 자리는 지도에 난 주머니가 됩니다. */
+PROP.noticeStand = paintedProp('noticeStand', 2, 2);
+PROP.safeBox   = paintedProp('safeBox', 1, 2);
+PROP.windowSill = paintedProp('windowSill', 1, 1);
 PROP.floorLamp = paintedProp('floorLamp', 1, 2, [0, 1]);
 PROP.teddy     = paintedProp('teddy', 1, 1);
 PROP.suitcase  = paintedProp('suitcase', 1, 1);
@@ -4779,65 +4911,89 @@ const ZONES = {};
   /* 벽이 넓어진 만큼 걸 것을 늘립니다. 벽은 이미 못 지나가므로 충돌은
      한 칸도 안 늘어납니다 — 방이 꽉 차 보이게 하는 가장 싼 방법입니다.
      간격은 그림 눈금으로 잽니다(x*16 이 왼쪽 끝). 겹치면 뒤에 그린 것이
-     앞엣것을 자릅니다. */
+     앞엣것을 자릅니다.
+
+     벽 그림은 아래 기능 줄과 짝을 맞춥니다 — 책장 위에 책상, 창 밑에
+     창가 선반. 벽에 붙였던 '안내' 판은 뺐습니다. 안내가 바닥 입간판으로
+     내려왔는데 벽에도 같은 판이 있으면 같은 것이 둘이 됩니다. */
   dressRoom(m, IPAL.dorm, [
     { k: 'shelf', x: 1 },                       // 책상 위 벽 책장
-    { k: 'guide', x: 4 },                       // 아래 (4,3) 을 비워 다가갑니다
-    { k: 'clockFace', x: 7 },
-    /* 개인방 창. 이 월드에서 가장 값진 창입니다 - 내 방에 앉아 밖을
-       보는 자리이고, 벽시계 옆이라 시각과 날씨를 한눈에 봅니다.
-       침대 머리맡으로 옮겼습니다 — 누워서 보는 창이라야 값집니다. */
+    { k: 'clockFace', x: 6 },                   // 기능 둘 사이의 빈 칸 위
+    /* 개인방 창. 이 월드에서 가장 값진 창입니다 — 내 방에서 밖을 보는
+       자리입니다. 바로 밑(9,3)에 창가 선반이 서고, 그 선반이 창밖 날씨를
+       엽니다. 창은 벽 그림이라 다가갈 칸이 없어 혼자서는 못 엽니다. */
     { k: 'win', x: 9, style: 'grid' },
     { k: 'banner', x: 12, c: '#B06C42' },       // 옷장 위, 방 색과 같은 갈색
   ]);
-  m.clock = { x: 7, y: 0 };
+  m.clock = { x: 6, y: 0 };
 
-  /* ---- 북쪽 벽 (y3~4) : 공부 · 잠 ---- */
+  /* ==================================================================
+     ---- 북쪽 벽 (y3~4) : 기능 줄 ----
+
+     방에서 할 수 있는 일이 다섯인데 책상·거울·협탁·옷장으로 사방에
+     흩어져 있었습니다. 뭐가 되는 방인지 알려면 방을 한 바퀴 돌아야 했고,
+     돌다 보면 그냥 가구인 것(냉장고·곰인형)도 하나씩 눌러 보게 됩니다.
+
+     다섯을 **윗벽 한 줄로** 모읍니다. 윗벽인 이유 —
+       · 들어오는 문이 아랫벽 가운데라, 방에 들어서면 정면으로 보는 벽이
+         윗벽입니다. 첫 화면에 기능이 전부 들어옵니다.
+       · 캐릭터가 절대 가리지 않는 유일한 벽입니다. 사람은 늘 물건보다
+         아래(y가 큰 쪽)에 서서 위를 보므로, 아랫벽 물건은 등으로 가립니다.
+       · 방이 화면에 통째로 들어오는 크기(14×11)라 한 줄이 곧 목록입니다.
+
+     생김새가 곧 이름입니다 — 달력 켜진 노트북 · 안내 입간판 · 잠긴
+     보관함 · 온도계 놓인 창가 선반 · 문 열린 옷장. 다섯 사이는 한 칸씩
+     띄웁니다. 붙여 놓으면 어느 것 앞에 선 것인지 발끝으로 재게 됩니다.
+     ================================================================== */
   prop(m, 'desk3', 1, 3);                       // 세 칸 책상. 1칸 책상은 책상으로 안 보입니다
-  prop(m, 'laptopN', 1, 3); prop(m, 'books2', 2, 3); prop(m, 'deskLamp', 3, 3);
+  prop(m, 'laptopCal', 2, 3); prop(m, 'deskLamp', 3, 3);
   /* 의자는 뺐습니다. 세션 자리는 도서관·본관뿐이라, 앉을 수 없는 의자가
      책상 앞에 있으면 눌러 보고 아무 일도 안 일어나는 자리가 됩니다. */
-  prop(m, 'fridge', 5, 3);
-  /* 학교 색이 닿는 둘. 벽에 응원기, 러그에 방석. 과잠·마이페이지
-     강조색과 같은 색이라, 방에 들어오면 내 학교가 먼저 보입니다. */
-  prop(m, 'pennant', 6, 3);
-  prop(m, 'sideTable', 7, 3);                   // 침대 머리맡 협탁
-  prop(m, 'bed', 8, 3);
-  prop(m, 'teddy', 10, 3);
-  prop(m, 'suitcase', 10, 4);
-  prop(m, 'wardrobe', 11, 3);
+  prop(m, 'noticeStand', 4, 3);                 // 안내
+  prop(m, 'safeBox', 7, 3);                     // 개인정보
+  prop(m, 'windowSill', 9, 3);                  // 창밖 날씨 — 창 바로 밑
+  prop(m, 'wardrobe', 11, 3);                   // 방 꾸미기
+  /* 학교 색이 닿는 응원기. 기능 둘 사이 빈 칸에 걸어 벽을 채웁니다 —
+     밟고 지나갈 수 있어 다가서는 길은 안 막습니다. 바닥에 두면 벽걸이가
+     방바닥에 떨어져 있는 것으로 보입니다. */
+  prop(m, 'pennant', 8, 3);
 
-  /* ---- 가운데 (y5~6) : 러그 위 좌식 ---- */
-  prop(m, 'sideTable', 6, 5);                   // 좌탁
-  prop(m, 'schoolCushion', 5, 6);
-  prop(m, 'cushion', 7, 6);
+  /* ---- 가운데 (y5~6) : 러그 위 좌식 · 잠 ---- */
+  prop(m, 'mirror', 1, 5);                      // 전신 거울 — 이제 장식입니다
+  /* 좌탁은 러그 왼쪽입니다. 가운데(6,5)에 두면 그 칸이 막히면서 안내
+     입간판 뒤 (6,3)·(6,4) 가 사방으로 닫힌 주머니가 됐습니다 — 걸어
+     들어갈 수 없는 바닥은 지도에 난 구멍입니다. */
+  prop(m, 'sideTable', 5, 5);                   // 좌탁
+  prop(m, 'schoolCushion', 4, 6);
+  prop(m, 'cushion', 6, 6);
+  /* 침대는 오른쪽 벽으로 갔습니다. 윗벽을 기능 줄이 다 쓰기 때문이고,
+     여기 두면 옷장 바로 아래라 옷장 앞에 설 자리가 남습니다(10,3~4). */
+  prop(m, 'sideTable', 10, 5);                  // 머리맡 협탁
+  prop(m, 'bed', 11, 5);
 
   /* ---- 남쪽 벽 (y7~8) : 쉬는 자리 ---- */
-  prop(m, 'sofa', 1, 7);                        // 친구가 왔을 때 앉는 자리
+  prop(m, 'sofa', 1, 7);
   /* 스탠드와 화분은 소파에서 한 칸 띄웁니다. 붙여 놓았더니 소파 앞
      (1~2, 8) 두 칸이 사방으로 막힌 주머니가 됐습니다 — 걸어 들어갈 수
      없는 바닥은 지도에 난 구멍이고, 화면으로는 안 보입니다. */
   prop(m, 'floorLamp', 4, 7);                   // 밤에 방을 밝히는 유일한 등
   prop(m, 'plantTall', 5, 7);
-  prop(m, 'bookshelf', 10, 7);
+  prop(m, 'bookshelf', 9, 7);
+  prop(m, 'teddy', 11, 7);
   prop(m, 'laundry', 11, 8);
-  prop(m, 'mirror', 12, 7);
+  prop(m, 'fridge', 12, 7);
+  /* 캐리어는 오른쪽 구석. (3,8) 에 두었더니 소파 앞 (1,8)·(2,8) 이
+     막힌 주머니가 됐습니다. */
+  prop(m, 'suitcase', 10, 8);
 
+  /* 창을 여는 자리는 창가 선반, 안내는 입간판 — 전부 y3 한 줄입니다.
+     머리 위 표시(drawMarks)가 같은 높이에 다섯 개 뜨고, 그 줄이 곧
+     "이 방에서 할 수 있는 일" 목록이 됩니다. */
   m.things = [
-    { x: 5, y: 2, name: '안내', panel: 'guide' },
-    { x: 12, y: 7, name: '개인정보 안내', panel: 'privacy' },
-    /* 창밖 날씨. 창(x=9) 자체에는 못 붙입니다 — 그 아래가 침대라 다가갈
-       칸이 없습니다. 창 바로 옆 머리맡 협탁(7,3)에 붙였습니다.
-       벽(7,2)이 아니라 협탁인 이유: (6,3) 에서 벽 자리는 안내판(5,2)과
-       거리가 똑같아서, 서 있는 자리에 따라 뭐가 열릴지 모르게 됩니다.
-       협탁은 (6,3)·(7,4) 둘 다에서 한 칸이라 헷갈리지 않습니다. */
-    { x: 7, y: 3, name: '창밖 보기', panel: 'weather' },
-    /* 책상 위 노트북. 시간표를 보는 자리는 책상이지 설정 화면이 아닙니다.
-       desk3 가 세 칸이라 (0~4, 2~4) 어디서나 닿습니다. */
-    { x: 1, y: 3, name: '노트북 · 시간표', panel: 'calendar' },
-    /* 꾸미기는 옷장이 맡습니다. 방 안 물건이 곧 메뉴라는 규칙이고, 산
-       물건이 든 곳이 옷장이라 찾을 자리도 여기입니다. 버튼을 하나 더
-       띄우면 방 안에서 화면을 누르는 일이 또 생깁니다. */
+    { x: 2, y: 3, name: '노트북 · 시간표', panel: 'calendar' },
+    { x: 4, y: 3, name: '안내', panel: 'guide' },
+    { x: 7, y: 3, name: '개인정보', panel: 'privacy' },
+    { x: 9, y: 3, name: '창밖 보기', panel: 'weather' },
     { x: 11, y: 3, name: '방 꾸미기', panel: 'decor' },
   ];
 
@@ -4971,6 +5127,14 @@ function bake(m) {
     }
   }
   m.sitSpots = [];
+  /* 만질 수 있는 물건이 몇 칸을 차지하는지 여기서 한 번만 잽니다.
+     예전에는 findNearby 가 프레임마다 props 를 훑어 같은 답을 냈습니다 —
+     한 존에 소품이 이백 개가 넘고 그걸 60번 반복했습니다. */
+  for (const t of m.things || []) {
+    const d = PROP[(m.props.find((q) => q.x === t.x && q.y === t.y) || {}).kind];
+    t.w = d ? d.w : 1; t.h = d ? d.h : 1;
+    t.top = d && d.anchor === 0 ? 1 : 0;      // 밟고 지나가는 물건은 표시를 낮게
+  }
   for (const p of m.props) {
     const d = PROP[p.kind];
     for (let j = 0; j < d.h; j++) for (let i = 0; i < d.w; i++) {
@@ -5887,6 +6051,7 @@ const LAMPS = {
      화면빛은 차갑고 좁습니다 - 등불과 색이 달라야 둘이 구분됩니다.
      live: false 는 안 떠는 불입니다. 모니터는 흔들리지 않습니다. */
   laptopN:   { dx: 8,  dy: 4,  r: 22, c: [176, 214, 255], i: 0.72, live: false },
+  laptopCal: { dx: 8,  dy: 4,  r: 22, c: [200, 226, 255], i: 0.72, live: false },
   laptop:    { dx: 8,  dy: 4,  r: 22, c: [176, 214, 255], i: 0.72, live: false },
   monitor:   { dx: 8,  dy: 4,  r: 24, c: [176, 214, 255], i: 0.75, live: false },
   pc:        { dx: 8,  dy: 6,  r: 18, c: [176, 214, 255], i: 0.6,  live: false },
@@ -6249,12 +6414,15 @@ function findNearby() {
   const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 1) / T);
   let best = null, bestD = 99;
   for (const t of zone.things || []) {
-    const d2 = PROP[zone.props.find((q) => q.x === t.x && q.y === t.y)?.kind];
-    const tw = d2 ? d2.w : 1, th = d2 ? d2.h : 1;
+    const tw = t.w || 1, th = t.h || 1;
     const nx = Math.max(t.x - ptx, 0, ptx - (t.x + tw - 1));
     const ny = Math.max(t.y - pty, 0, pty - (t.y + th - 1));
     if (nx > 1 || ny > 1) continue;
-    const dist = nx + ny;
+    /* 같은 거리에 둘이 걸리면 **보고 있는 쪽**이 이깁니다. 기숙사 기능
+       줄처럼 물건이 한 칸 간격으로 서면 사이에 섰을 때 둘 다 한 칸이라,
+       거리만 보면 목록 순서가 정하게 됩니다 — 사람이 고른 것이 아니라. */
+    const facing = f.x >= t.x && f.x < t.x + tw && f.y >= t.y && f.y < t.y + th;
+    const dist = nx + ny - (facing ? 0.5 : 0);
     if (dist < bestD) { bestD = dist; best = t; }
   }
   if (best) return { kind: 'talk', npc: best };
@@ -8351,6 +8519,21 @@ function applyDecor(list) {
    놓이거나, 옮기는 중인 자기 자신 때문에 자기 자리에 못 돌아옵니다. */
 applyDecor([]);
 DORM.baseSolid = DORM.solid.slice();
+/* 방 배치를 바꾸면 예전에 놓아 둔 가구가 새 가구 **안**에 들어갑니다.
+   그대로 두면 겹쳐 그려지고 방이 막힐 수도 있으므로, 겹치는 것만
+   보관함으로 되돌립니다 — 산 것은 그대로 남고 자리만 잃습니다. */
+{
+  const before = (ROOM.decor || []).length;
+  ROOM.decor = (ROOM.decor || []).filter((d) => {
+    const q = PROP[SHOP_BY_ID[d.id].prop];
+    for (let j = 0; j < q.h; j++) for (let i = 0; i < q.w; i++) {
+      if (!inMap(DORM, d.x + i, d.y + j)) return false;
+      if (DORM.baseSolid[at(DORM, d.x + i, d.y + j)]) return false;
+    }
+    return true;
+  });
+  if (ROOM.decor.length !== before) saveRoom();
+}
 applyDecor();
 
 /** 가구가 덮는 칸들 */
@@ -12678,23 +12861,10 @@ function draw() {
         }
       }
     } else if (it.kind === 'npc') {
-      const lift = drawNpc(it.n);
+      /* 머리 위 표시는 여기서 안 그립니다 — 조명 뒤에 한 번에 그립니다
+         (drawMarks). 여기서 그리면 뒤에 오는 소품이 표시를 덮습니다. */
+      drawNpc(it.n);
       drawCount++;
-      if (nearby?.kind === 'talk' && nearby.npc === it.n) {
-        /* 말 걸 수 있다는 느낌표. 머리 위 하늘에도 벽에도 뜨므로 어두운
-           획을 한 겹 깔고 그 위에 청록을 얹습니다. 2px 짜리 표시가
-           바탕에 묻히면 아무도 말을 못 겁니다.
-           높이는 그린 그림에서 받습니다 — 종 시트(48px)와 예전 16px 사람은
-           머리 높이가 다릅니다. */
-        const bx = it.n.x * T - camX + 7 * AS, by = (it.n.y + 1) * T - lift - camY;
-        const bob = Math.sin(performance.now() / 200) * 1.5 * AS;
-        ctx.fillStyle = '#0C5A4F';
-        ctx.fillRect(bx - AS, by - 7 * AS + bob, 4 * AS, 6 * AS);
-        ctx.fillRect(bx - AS, by - 2 * AS + bob, 4 * AS, 4 * AS);
-        ctx.fillStyle = '#2DD4BF';
-        ctx.fillRect(bx, by - 6 * AS + bob, 2 * AS, 4 * AS);
-        ctx.fillRect(bx, by - 1 * AS + bob, 2 * AS, 2 * AS);
-      }
     } else if (it.kind === 'mp') { MP.drawOne(it.rp); drawCount++;
     } else { drawPlayer(); drawCount++; }
   }
@@ -12752,6 +12922,9 @@ function draw() {
      한 공간에 있는 것으로 보입니다. HUD 는 캔버스 밖이라 안 어두워집니다. */
   LIGHTMAP.apply(ctx, zone, camX, camY, VIEW_W, VIEW_H);
 
+  /* 만질 수 있다는 표시. 조명 뒤입니다 — 위 함수 주석 참고. */
+  drawMarks();
+
   /* 존 전환. 조명보다도 나중입니다 - 화면을 덮는 것이지 공간 안의
      빛이 아닙니다. 새까만 대신 따뜻한 어둠을 씁니다. 순검정은 전원이
      꺼진 느낌이고, 이건 문을 지나는 동안입니다. */
@@ -12764,6 +12937,76 @@ function draw() {
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     ctx.globalAlpha = 1;
   }
+}
+
+/* ==================================================================
+   만질 수 있다는 표시 — 역삼각형 하나
+
+   기호는 **아래를 가리키는 삼각형**입니다. 셋을 놓고 골랐습니다.
+
+     · `!` — RPG 문법에서 "새 일감" 입니다. 여기 물건은 늘 만질 수 있어서
+       항상 떠 있는 `!` 는 안 읽은 알림처럼 보이고, 며칠이면 눈이 지나칩니다.
+       글자라서 크기를 줄이면 획이 먼저 무너지기도 합니다.
+     · `✦` — 예쁘지만 무엇을 가리키는지는 안 말합니다.
+     · `▼` — **가리키는 도구**입니다. 개더·ZEP 이 상호작용 물건 위에 띄우는
+       것과 같고, 글꼴이 필요 없어 어떤 크기에서도 무너지지 않으며,
+       언어가 없습니다. 밑변이 넓어 멀리서도 눈에 걸립니다.
+
+   두 가지 상태로 말합니다 — 그냥 있으면 작고 청록, **스페이스가 닿는
+   거리**면 커지고 밝아집니다. 크기와 밝기를 같이 바꾸는 이유는 어두운
+   가구 위에서는 크기가, 밝은 벽 위에서는 밝기가 먼저 보이기 때문입니다.
+   어느 바탕에서도 하나는 남습니다. 테두리는 늘 어두운 청록이라 흰 벽에
+   흰 표시가 묻히는 일이 없습니다.
+
+   조명(LIGHTMAP) **뒤에** 그립니다. 밤에 어두워지는 것은 공간이지
+   "여기를 누르세요" 가 아닙니다. */
+function drawMark(cx, baseY, active, phase) {
+  if (cx < -40 || cx > VIEW_W + 40 || baseY < -40 || baseY > VIEW_H + 40) return;
+  const wAS = active ? 12 : 8;                 // 밑변, 그림 눈금
+  const rows = wAS / 2;
+  const bob = Math.round(Math.sin(performance.now() / 420 + phase) * (active ? 2 : 1.4)) * AS;
+  const y = Math.round(baseY - (rows + 3) * AS + bob);
+  const x = Math.round(cx);
+
+  ctx.fillStyle = active ? '#083B34' : '#0C5A4F';
+  ctx.fillRect(x - (wAS / 2 + 1) * AS, y - AS, (wAS + 2) * AS, AS);
+  for (let j = 0; j < rows; j++) {
+    const w = (wAS - 2 * j) * AS;
+    ctx.fillRect(x - w / 2 - AS, y + j * AS, w + 2 * AS, AS);
+  }
+  ctx.fillRect(x - AS, y + rows * AS, 2 * AS, AS);
+
+  ctx.fillStyle = active ? '#A8FBF0' : '#2DD4BF';
+  for (let j = 0; j < rows; j++) {
+    const w = (wAS - 2 * j) * AS;
+    ctx.fillRect(x - w / 2, y + j * AS, w, AS);
+  }
+  /* 윗면 한 줄만 더 밝게 — 삼각형이 판이 아니라 덩어리로 보입니다 */
+  ctx.fillStyle = active ? '#FFFFFF' : 'rgba(255,255,255,.55)';
+  ctx.fillRect(x - (wAS / 2 - 1) * AS, y, (wAS - 2) * AS, AS);
+  drawCount++;
+}
+
+/** 이 존에서 만질 수 있는 것 위에 표시를 답니다. 사람도 물건도 같은 표시입니다 —
+    둘이 다르면 "무엇을 누를 수 있는가" 를 두 번 배워야 합니다. */
+function drawMarks() {
+  /* 가구를 놓는 중이거나 대화 중에는 안 답니다. 지금 할 일이 하나로
+     정해져 있는데 화면이 다른 것을 가리키면 방해입니다. */
+  if (DECOR.on || dialogOpen) return;
+  for (const t of zone.things || []) {
+    const cx = (t.x + (t.w || 1) / 2) * T - camX;
+    const top = (t.y + (t.top || 0)) * T - camY;
+    drawMark(cx, top, nearby?.kind === 'talk' && nearby.npc === t, t.x * 0.6);
+  }
+  for (const n of zone.npcs) {
+    const lift = n.species && n.sheet ? CHAR_GROUND_Y : T;
+    drawMark(n.x * T + T / 2 - camX, (n.y + 1) * T - lift - camY,
+             nearby?.kind === 'talk' && nearby.npc === n, n.x * 0.6);
+  }
+  /* 앉는 자리는 **지금 앞에 있는 하나만** 답니다. 도서관 의자가 쉰넷이라
+     전부에 달면 표시가 아니라 무늬가 됩니다 — 개더도 의자에는 안 답니다. */
+  if (nearby?.kind === 'sit')
+    drawMark(nearby.spot.x * T + T / 2 - camX, nearby.spot.y * T - camY, true, 0);
 }
 
 /* 캐릭터 — 종 시트 32x48 에 산 옷을 겹쳐 구운 한 장을 얹습니다.

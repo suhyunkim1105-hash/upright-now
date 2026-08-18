@@ -53,7 +53,6 @@
   --surface:   #FFFFFF;
   --surface-2: #F7F8F8;
   --surface-3: #EFF1F1;
-  --stroke:    #4A5451;
 
   /* 월드 판만 어둡습니다. 방과 월드를 같은 색으로 두면 두 입구가 한
      덩어리로 읽혀서, 어느 쪽이 온라인 서버인지 구분이 안 됩니다. */
@@ -61,13 +60,10 @@
   --night-2:   #202B29;
   --on-night:  #F4F7F6;
 
-  --good:     #2E9E5B;
   --good-50:  #EAF7EF;
-  --warn:     #D98324;
   --warn-50:  #FFF6E8;
   --warn-700: #7A5417;
 
-  --sp-2xs:  2px;
   --sp-xs:   4px;
   --sp-sm:   8px;
   --sp-md:  12px;
@@ -96,11 +92,12 @@
   --fs-3xl: 30px;   /* 수치 */
   /* 히어로 판 제목은 화면 높이를 따라가므로 계단 밖입니다. */
 
+  /* DESIGN.md §4 — 모양만 보고도 무엇인지 알 수 있어야 합니다.
+     알약이면 누르는 것, 16 이면 담는 판, 12 면 글자를 받는 것. */
   --r-pill: 999px;
-  --r-lg:    16px;
-  --r-md:    12px;
-  --r-sm:     8px;
-  --r-xl:    22px;
+  --r-lg:    16px;   /* 담는 판 — 카드 · 입구 판 */
+  --r-md:    12px;   /* 글자를 받는 것 — 입력칸 · 아이콘 판 */
+  --r-sm:     8px;   /* 칩 */
 
   --sh:    0 8px 24px rgba(20, 40, 38, .10);
   --sh-lg: 0 24px 56px rgba(20, 40, 38, .16);
@@ -224,7 +221,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .brand { display: flex; align-items: center; gap: var(--sp-md); padding: var(--sp-md) var(--sp-md) var(--sp-lg); }
 /* 랜딩과 **같은 파일**을 씁니다. 로고를 두 번 그리면 곧 두 개가 됩니다. */
-.brand .mark { width: 34px; height: 34px; border-radius: 9px; flex: none; }
+.brand .mark { width: 34px; height: 34px; border-radius: var(--r-sm); flex: none; }
 .brand b { font-size: var(--fs-xl); font-weight: 800; }
 
 .me {
@@ -276,13 +273,10 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .navitem[aria-current="page"] {
   background: var(--teal-50); color: var(--teal-800); font-weight: 800;
 }
-/* 지금 있는 칸의 왼쪽에 짧은 막대. 면이 커지면서 "옅게 칠해진 칸" 과
-   "골라진 칸" 이 비슷해졌습니다. */
-.navitem[aria-current="page"]::before {
-  content: ''; position: absolute; left: 0; top: 50%;
-  width: 3px; height: 22px; transform: translateY(-50%);
-  border-radius: 0 var(--r-pill) var(--r-pill) 0; background: var(--teal-600);
-}
+/* 아이콘이 상태를 나릅니다. 옅은 청록 면만으로는 칸이 커지면서 "골라진
+   칸" 과 "그냥 옅은 칸" 이 비슷해졌는데, 답은 새 장식을 얹는 게 아니라
+   이미 있는 것에 싣는 것입니다 — 아이콘 색과 굵기가 그 자리에 있습니다. */
+.navitem[aria-current="page"] svg { opacity: 1; color: var(--teal-600); stroke-width: 2.4; }
 .railfoot {
   margin-top: auto;
   display: flex; align-items: center; gap: var(--sp-sm);
@@ -362,7 +356,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 /* ==================================================================
    조각
    ================================================================== */
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-xl); padding: var(--sp-xl); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--sp-xl); }
 .cardhead { display: flex; align-items: center; gap: var(--sp-md); margin-bottom: var(--sp-lg); }
 .cardhead h2 { font-size: var(--fs-lg); }
 .cardhead .spacer { margin-left: auto; }
@@ -432,7 +426,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   cursor: pointer;
   transition: transform var(--t-press) var(--press),
               box-shadow var(--t-quick) var(--ease);
-  border-radius: var(--r-xl);
+  border-radius: var(--r-lg);
   /* 화면 높이를 따라갑니다. 판이 화면 절반이라 여백을 고정하면 낮은
      화면에서 글이 밀려 나갑니다. */
   padding: clamp(20px, 3.4vh, 40px) var(--sp-2xl);
@@ -654,7 +648,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .empty-fig {
   width: 44px; height: 44px; display: grid; place-items: center;
-  border-radius: 14px; background: var(--surface-3); color: var(--ink-3);
+  border-radius: var(--r-md); background: var(--surface-3); color: var(--ink-3);
   margin-bottom: var(--sp-xs);
 }
 .empty .ttl { font-size: var(--fs); font-weight: 800; }
@@ -698,7 +692,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 .sheet {
   width: min(400px, 100%);
-  padding: var(--sp-xl); border-radius: var(--r-xl);
+  padding: var(--sp-xl); border-radius: var(--r-lg);
   background: var(--bg); box-shadow: var(--sh-lg);
   animation: sheet-up 420ms var(--spring) both;
 }

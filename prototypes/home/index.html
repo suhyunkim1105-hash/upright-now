@@ -137,7 +137,12 @@ button { border: 0; background: none; cursor: pointer; }
 /* 700 · 자간 0. 토스식(자간 −0.02em · 800)은 글자를 덩어리로 뭉치는
    방식이고, 이 제품은 반대로 갑니다 — 글자가 각자 서고, 제목과 본문의
    낙차를 무게로 벌리지 않습니다. (DESIGN.md §2) */
-h1, h2, h3, h4 { margin: 0; font-variation-settings: 'wght' 700; letter-spacing: 0; }
+h1, h2, h3, h4 {
+  margin: 0; font-variation-settings: 'wght' 700; letter-spacing: 0;
+  /* 제목은 줄 길이를 고르게, 본문은 마지막 줄에 한 낱말만 남지 않게. */
+  text-wrap: balance;
+}
+p, .note, .empty p { text-wrap: pretty; }
 p { margin: 0; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 :focus-visible { outline: 2px solid var(--teal-700); outline-offset: 2px; border-radius: var(--r-sm); }
@@ -154,7 +159,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 /* 위저드가 올라오면 뒤 화면이 살짝 물러납니다. 덮인 것이지 사라진 것이
    아니라는 표시라, 되돌아갈 곳이 있다는 게 읽힙니다. */
-.app.covered { transform: scale(.985); filter: brightness(.96); }
+.app.covered { transform: scale(.96); filter: brightness(.96); }
 
 .rail {
   display: flex; flex-direction: column; gap: var(--sp-sm);
@@ -177,7 +182,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: background var(--t-press) var(--ease), transform var(--t-press) var(--ease);
 }
 .me:hover { background: var(--surface-3); }
-.me:active { transform: scale(.98); }
+.me:active { transform: scale(.96); }
 .me canvas {
   width: 40px; height: 60px; flex: none;
   image-rendering: pixelated; align-self: flex-end; margin-bottom: -6px;
@@ -213,7 +218,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .navitem svg { flex: none; opacity: .75; width: 22px; height: 22px;
   transition: opacity var(--t-press) var(--ease); }
-.navitem:active { transform: scale(.975); background: var(--surface-3); }
+.navitem:active { transform: scale(.96); background: var(--surface-3); }
 .navitem:hover { background: var(--surface-2); color: var(--ink); }
 .navitem[aria-current="page"] {
   background: var(--teal-50); color: var(--teal-800); font-variation-settings: 'wght' 800;
@@ -254,6 +259,13 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .topbar h1 { font-size: 19px; }
 .topbar .sub { font-size: 13px; color: var(--ink-3); }
 .topbar .spacer { margin-left: auto; }
+/* 보이는 크기는 36 그대로 두고 **누를 수 있는 영역만** 40 으로 넓힙니다.
+   조밀한 데스크톱 화면의 하한이 40 입니다. 디자인은 그대로고 손만
+   편해집니다. */
+.iconbtn { position: relative; }
+.iconbtn::before {
+  content: ''; position: absolute; inset: -2px; border-radius: inherit;
+}
 .iconbtn {
   width: 36px; height: 36px; display: grid; place-items: center;
   border-radius: var(--r-md); color: var(--ink-2);
@@ -261,7 +273,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
               transform var(--t-press) var(--ease);
 }
 .iconbtn:hover { background: var(--surface-3); color: var(--ink); }
-.iconbtn:active { transform: scale(.9); background: var(--line); }
+.iconbtn:active { transform: scale(.96); background: var(--line); }
 
 .view { padding: 0 var(--sp-2xl) var(--sp-2xl); display: flex; flex-direction: column; gap: var(--sp-lg); }
 
@@ -278,14 +290,21 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 
 @keyframes settle { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.view > * { animation: settle .42s var(--settle) both; }
+.view > * { animation: settle .42s var(--settle) backwards; }
 .view > *:nth-child(2) { animation-delay: .06s; }
 .view > *:nth-child(3) { animation-delay: .12s; }
 .view > *:nth-child(4) { animation-delay: .18s; }
 
+/* 전환만 껐더니 키프레임이 그대로 돌았습니다 — 뼈대·튐·발급 링·접속
+   점멸이 전부 애니메이션입니다. 둘 다 끕니다. 없애는 게 아니라 즉시
+   끝내는 것이라, 마지막 상태(밝기·색·자리)는 그대로 남습니다. */
 @media (prefers-reduced-motion: reduce) {
-  .view > * { animation-duration: .01ms; animation-delay: 0s; }
-  * { transition-duration: .01ms !important; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
 
 /* ==================================================================
@@ -339,7 +358,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .btn-line:hover:not(:disabled) { background: var(--surface-2); }
 .btn-light:active:not(:disabled),
 .btn-ghost:active:not(:disabled),
-.btn-line:active:not(:disabled) { transform: scale(.965); }
+.btn-line:active:not(:disabled) { transform: scale(.96); }
 
 /* 비활성은 두께를 잃습니다 — 눌러도 안 내려간다는 것을 형태가 먼저
    말합니다. */
@@ -348,8 +367,19 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .btn-lg { padding: 15px var(--sp-2xl); font-size: 16px; }
 
 /* ---- 입구 판 ---- */
+/* ---- 입구 판 ----
+   **판 전체가 버튼입니다.** 화면에 고를 것이 둘뿐인데 반응하는 데가
+   구석의 알약뿐이면, 큰 면적이 배경으로 읽혀서 어디를 눌러야 하는지
+   매번 찾게 됩니다. 판을 누르면 주 동작이 돕니다.
+
+   마크업은 여전히 div 입니다 — 버튼 안에 버튼을 넣을 수 없고, 키보드
+   경로는 안에 있는 진짜 버튼이 그대로 담당합니다. 판은 마우스를 위한
+   넓은 과녁이지 두 번째 컨트롤이 아닙니다. */
 .gate {
   position: relative; overflow: hidden;
+  cursor: pointer;
+  transition: transform var(--t-press) var(--press),
+              box-shadow var(--t-quick) var(--ease);
   border-radius: var(--r-xl);
   /* 화면 높이를 따라갑니다. 판이 화면 절반이라 여백을 고정하면 낮은
      화면에서 글이 밀려 나갑니다. */
@@ -358,6 +388,21 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   display: flex; align-items: center; gap: var(--sp-xl);
 }
 .gate .gtext { position: relative; z-index: 2; align-self: center; }
+
+/* 판이 떠오르면 안쪽 버튼도 같이 올라옵니다 — 판과 버튼이 한 덩어리라는
+   것을 움직임이 말합니다. */
+#v-start .gate:hover { transform: translateY(-3px); box-shadow: var(--sh-lg); }
+#v-start .gate:active { transform: translateY(0); box-shadow: var(--sh); }
+/* 안쪽 버튼 위에서는 판이 안 움직입니다. 둘이 동시에 반응하면 무엇을
+   누르는 중인지가 흐려집니다. */
+#v-start .gate:has(.gact:hover) { transform: none; box-shadow: none; }
+#v-start .gate:has(.codepop:not([hidden])) { transform: none; cursor: default; }
+
+/* 판을 누를 때 주 버튼도 같이 내려앉습니다. */
+#v-start .gate:active .btn-dark,
+#v-start .gate:active .btn-teal { transform: translateY(1px); box-shadow: 0 0 0 0 currentColor; }
+#v-start .gate:has(.gact:hover):active .btn-dark,
+#v-start .gate:has(.gact:hover):active .btn-teal { box-shadow: none; }
 /* 제목만 남았습니다. 판이 화면 절반인데 글자가 작으면 판이 빈 것으로
    읽혀서, 넉 자가 판을 감당할 만큼 키웁니다. */
 .gate h2 {
@@ -477,7 +522,16 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .week { display: flex; align-items: flex-end; gap: var(--sp-sm); height: 116px; }
 .week .bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--sp-sm); height: 100%; }
 .week .fillwrap { width: 100%; flex: 1; display: flex; align-items: flex-end; border-radius: var(--r-sm); background: var(--surface-3); overflow: hidden; }
-.week .fill { width: 100%; background: var(--teal); border-radius: var(--r-sm); min-height: 3px; transition: height .6s var(--ease); }
+.week .fill {
+  width: 100%; height: 100%; min-height: 0;
+  background: var(--teal); border-radius: var(--r-sm);
+  /* height 가 아니라 scaleY 입니다 — height 를 애니메이션하면 막대 일곱이
+     매 프레임 레이아웃을 다시 잽니다. 아래를 축으로 자랍니다. */
+  transform-origin: bottom;
+  transform: scaleY(var(--h, 0));
+  transition: transform .6s var(--settle);
+}
+
 .week .bar.today .fill { background: var(--teal-600); }
 .week .d { font-size: 11px; color: var(--ink-3); font-variation-settings: 'wght' 600; }
 .week .bar.today .d { color: var(--teal-700); font-variation-settings: 'wght' 800; }
@@ -508,7 +562,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
               transform var(--t-press) var(--press);
 }
 .slot:hover { border-color: var(--teal-400); background: var(--teal-50); }
-.slot:active { transform: scale(.975); }
+.slot:active { transform: scale(.96); }
 .slot u { display: block; text-decoration: none; font-size: 11px; color: var(--ink-3); font-variation-settings: 'wght' 700; }
 .slot b { display: block; margin-top: var(--sp-xs); font-size: 13px; font-variation-settings: 'wght' 700; }
 .slot.on { border-style: solid; border-color: var(--teal-200); background: var(--teal-50); }
@@ -637,6 +691,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .wiz-track { display: flex; gap: 5px; margin: 0 auto; }
 .wiz-track i { width: 34px; height: 4px; border-radius: var(--r-pill); background: var(--surface-3); transition: background .3s var(--ease); }
 .wiz-track i[data-fill="true"] { background: var(--teal); }
+.wiz-track i { transform-origin: left; }
+/* 방금 채워진 칸만 왼쪽에서 오른쪽으로 자랍니다. 전부 다시 그리면
+   지나온 단계까지 매번 새로 칠해집니다. */
+.wiz-track i.grew { animation: track-grow 320ms var(--spring) both; }
+@keyframes track-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 .wiz-scroll { flex: 1; overflow-y: auto; margin: -16px 0; padding: 16px 0; }
 .wiz-stage { max-width: 620px; margin: 0 auto; padding: var(--sp-2xl) var(--sp-xl) var(--sp-3xl); }
@@ -690,7 +749,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
 }
 .pick:hover { border-color: var(--teal-300); transform: translateY(-1px); }
-.pick:active { transform: scale(.99); }
+.pick:active { transform: scale(.96); }
 .pick[aria-pressed="true"] { border-color: var(--teal); background: var(--teal-50); }
 .pick-fig { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink-2); }
 .pick[aria-pressed="true"] .pick-fig { background: var(--teal); color: var(--on-teal); }
@@ -706,14 +765,25 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   position: absolute; top: var(--sp-lg); right: var(--sp-lg);
   width: 22px; height: 22px; display: grid; place-items: center;
   border-radius: 50%; background: var(--teal); color: var(--on-teal);
-  opacity: 0; transform: scale(.7); transition: opacity .18s var(--ease), transform .18s var(--ease);
+  /* 켜고 끄기가 아니라 나타나고 사라집니다. 0.25 에서 자라고 흐림이
+     걷힙니다 — 아무 데서도 안 나온 것처럼 보이지 않게. */
+  opacity: 0; transform: scale(.25); filter: blur(4px);
+  transition: opacity 220ms cubic-bezier(.2, 0, 0, 1),
+              transform 220ms cubic-bezier(.2, 0, 0, 1),
+              filter 220ms cubic-bezier(.2, 0, 0, 1);
 }
-.pick[aria-pressed="true"] .pick-check { opacity: 1; transform: none; }
+.pick[aria-pressed="true"] .pick-check { opacity: 1; transform: none; filter: blur(0); }
 
 /* ---- 2단계: 자리 ---- */
 .seatslider { padding: var(--sp-xl); border-radius: var(--r-lg); background: var(--surface-2); }
 .seatslider-head { display: flex; align-items: baseline; gap: var(--sp-md); margin-bottom: var(--sp-xl); }
-.seatslider-head b { font-size: 30px; font-variation-settings: 'wght' 800; font-variant-numeric: tabular-nums; }
+.seatslider-head b {
+  font-size: 30px; font-variation-settings: 'wght' 800; font-variant-numeric: tabular-nums;
+  /* 고정폭이라 숫자가 바뀌어도 자리가 안 흔들립니다. 그 위에 아주
+     짧은 튐 하나만 얹습니다 — 손이 밀어낸 값이라 감쇠 0.8 쪽입니다. */
+  display: inline-block; transition: transform var(--spring-bounce-t) var(--spring-bounce);
+}
+.seatslider-head b.bump { transform: scale(1.1); }
 .seatslider-head span { font-size: 13px; color: var(--ink-3); }
 .seatslider-rail { position: relative; height: 22px; }
 .seatslider-track { position: absolute; left: 0; right: 0; top: 9px; height: 4px; border-radius: var(--r-pill); background: var(--line-2); }
@@ -751,7 +821,12 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .goalbar-top b { font-variation-settings: 'wght' 700; }
 .goalbar-top span { font-variant-numeric: tabular-nums; color: var(--teal-700); font-variation-settings: 'wght' 800; }
 .goalbar-track { height: 6px; margin: var(--sp-sm) 0 var(--sp-md); border-radius: var(--r-pill); background: var(--surface-3); overflow: hidden; }
-.goalbar-track i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--teal); transition: width .4s var(--ease); }
+.goalbar-track i {
+  display: block; width: 100%; height: 100%;
+  border-radius: var(--r-pill); background: var(--teal);
+  transform-origin: left; transform: scaleX(var(--w, 0));
+  transition: transform .4s var(--settle);
+}
 .goalbar p { font-size: 12.5px; line-height: 1.6; color: var(--ink-3); }
 
 /* ---- 3단계: 시간 ---- */
@@ -788,7 +863,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
               transform var(--t-press) var(--press);
 }
 .mode:hover { border-color: var(--teal-300); }
-.mode:active { transform: scale(.98); }
+.mode:active { transform: scale(.96); }
 .mode[aria-pressed="true"] { border-color: var(--teal); background: var(--teal-50); }
 .mode-fig { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink-2); }
 .mode[aria-pressed="true"] .mode-fig { background: var(--teal); color: var(--on-teal); }
@@ -839,7 +914,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .mint-code.copyable { cursor: pointer; background: var(--surface-2); }
 .mint-code.copyable:hover { background: var(--surface-3); }
-.mint-code.copyable:active { transform: scale(.98); }
+.mint-code.copyable:active { transform: scale(.96); }
 .mint-code.copied { background: var(--teal-100); }
 .minting h3 { font-size: 20px; }
 .minting p { font-size: 13.5px; color: var(--ink-2); }
@@ -874,10 +949,22 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .gtile.empty { background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--line); color: var(--ink-3); font-size: 13px; }
 .gtile-lv { position: absolute; top: 8px; left: 9px; font-size: 11px; font-variation-settings: 'wght' 800; color: var(--teal-700); }
 .gtile-name { font-size: 13.5px; font-variation-settings: 'wght' 700; }
-.gtile-state { font-size: 11.5px; padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink-3); font-variation-settings: 'wght' 700; }
+/* 준비 상태가 바뀌는 순간. 색과 글자가 이미 바뀌므로 움직임은 **덧붙는
+   신호**입니다 — 움직임만으로 말하지 않습니다. */
+.gtile-state {
+  font-size: 11.5px; padding: 2px 8px; border-radius: var(--r-pill);
+  background: var(--surface); color: var(--ink-3); font-variation-settings: 'wght' 700;
+}
 .gtile-state.ready { background: var(--good-50); color: #1F6B41; }
+.gtile-state.bump { animation: pop 320ms var(--spring-bounce) both; }
+@keyframes pop {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) { .gtile-state.bump { animation: none; } }
 .gtile:not(.empty):not(.self) { cursor: pointer; transition: transform var(--t-press) var(--press); }
-.gtile:not(.empty):not(.self):active { transform: scale(.98); }
+.gtile:not(.empty):not(.self):active { transform: scale(.96); }
 
 .lobby-foot { display: flex; align-items: center; gap: var(--sp-lg); margin-top: var(--sp-xl); }
 .lobby-status { font-size: 13px; color: var(--ink-3); }
@@ -969,7 +1056,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
          월드는 장소입니다. 색으로 갈라 두 입구가 한 덩어리로 안 읽히게
          합니다. -->
     <section class="view" id="v-start">
-      <div class="gate gate-teal">
+      <div class="gate gate-teal" data-primary="wizard">
         <div class="gtext">
           <h2>방 만들기</h2>
         </div>
@@ -977,7 +1064,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
           <button class="btn btn-dark" type="button" data-go="wizard">
             시작하기
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
             </svg>
           </button>
@@ -1007,7 +1094,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
         </div>
       </div>
 
-      <div class="gate gate-night">
+      <div class="gate gate-night" data-primary="world">
         <div class="gtext">
           <h2>월드 입장</h2>
         </div>
@@ -1015,7 +1102,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
           <button class="btn btn-teal" type="button" data-go="world">
             들어가기
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
             </svg>
           </button>
@@ -1036,7 +1123,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
           <div class="codecard">
             <span class="codecard-fig" aria-hidden="true">
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
               </svg>
             </span>
@@ -1056,7 +1143,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
           <div class="codecard">
             <span class="codecard-fig" aria-hidden="true">
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/>
               </svg>
             </span>
@@ -1153,7 +1240,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   <nav class="wiz-nav">
     <button class="wiz-back" type="button" id="wizBack" data-hidden="true">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg>
       이전
     </button>
     <span class="wiz-track" id="wizTrack" role="progressbar"
@@ -1177,7 +1264,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
         <span class="wiz-go-label" id="wizGoLabel">다음</span>
         <span id="wizGoArrow" hidden aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>
           </svg>
         </span>
@@ -1288,6 +1375,15 @@ const icon = (path, size, w) =>
 
 const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/** 값이 바뀐 순간을 한 번 표시합니다. 같은 표시가 연달아 걸리면
+    애니메이션이 안 다시 도므로 한 프레임 떼었다 붙입니다. */
+function bump(el, ms) {
+  if (!el || REDUCED) return;
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  clearTimeout(el.__bump);
+  el.__bump = setTimeout(() => el.classList.remove('bump'), ms || 340);
+}
+
 /* ==================================================================
    캐릭터 그리기
    시트는 128×48, 32×48 네 컷. 앞모습(프레임 0)만 씁니다.
@@ -1366,6 +1462,12 @@ function toast(msg) {
 }
 
 document.addEventListener('click', (e) => {
+  /* 판 아무 데나 누르면 주 동작. 안쪽 컨트롤을 누른 것이면 그쪽이
+     먼저이므로 여기서는 아무 일도 안 합니다. */
+  const gate = e.target.closest('#v-start .gate[data-primary]');
+  if (gate && !e.target.closest('button, input, label, .codepop')) {
+    act(gate.dataset.primary); return;
+  }
   const nav = e.target.closest('[data-nav]');
   if (nav) {
     show(nav.dataset.nav);
@@ -1554,7 +1656,7 @@ function seatPreview() {
     + '<div class="preview-head"><b>방 미리보기</b><span>' + seats + '자리</span></div>'
     + '<div class="preview-grid">' + tiles + '</div>' + more
     + '<div class="goalbar"><div class="goalbar-top"><b>함께 채울 시간</b><span>' + goal + '분</span></div>'
-    + '<div class="goalbar-track"><i style="width:' + Math.min(100, (goal / 250) * 100) + '%"></i></div>'
+    + '<div class="goalbar-track"><i style="--w:' + Math.min(1, goal / 250).toFixed(3) + '"></i></div>'
     + '<p>' + seats + '자리가 각자 ' + W.focusMin + '분씩 앉으면 채워집니다. '
     + '한 사람이 빠져도 남은 사람 시간은 그대로 쌓여요.</p></div></div>';
 }
@@ -1663,6 +1765,19 @@ let stepIndex = 0, goingBack = false, minting = false, stageBusy = false, labelT
 /* 나가는 애니메이션이 끝나고 눈이 한 번 쉬기까지. CSS 의 .leaving 과 맞춥니다. */
 const STAGE_OUT_MS = 200;
 
+/** 진행 막대. **방금 채워진 칸만** 자랍니다 — 전부 다시 칠하면 지나온
+    단계까지 매 걸음 새로 그려져서, 어디가 바뀌었는지가 안 보입니다. */
+function markTrack() {
+  trackCells.forEach((c, i) => {
+    const was = c.getAttribute('data-fill') === 'true';
+    const now = i <= stepIndex;
+    c.setAttribute('data-fill', String(now));
+    c.classList.remove('grew');
+    if (now && !was && !REDUCED) { void c.offsetWidth; c.classList.add('grew'); }
+  });
+  $('wizTrack').setAttribute('aria-valuenow', String(stepIndex + 1));
+}
+
 function paintBar(spec) {
   if (!spec) return;
   wizGo.setAttribute('data-act', spec.act);
@@ -1684,8 +1799,7 @@ function paintBar(spec) {
 
 function paintStep() {
   const view = STEPS[stepIndex]();
-  trackCells.forEach((c, i) => c.setAttribute('data-fill', String(i <= stepIndex)));
-  $('wizTrack').setAttribute('aria-valuenow', String(stepIndex + 1));
+  markTrack();
   wizBack.setAttribute('data-hidden', String(stepIndex === 0));
 
   wizStage.classList.remove('leaving', 'to-back');
@@ -1712,8 +1826,7 @@ function renderWizard(immediate) {
 
   /* 진행 막대와 뒤로 버튼이 먼저 움직입니다 — "지금 넘어가는 중" 이라는
      신호가 내용보다 앞서야 기다림이 설명됩니다. */
-  trackCells.forEach((c, i) => c.setAttribute('data-fill', String(i <= stepIndex)));
-  $('wizTrack').setAttribute('aria-valuenow', String(stepIndex + 1));
+  markTrack();
   wizBack.setAttribute('data-hidden', String(stepIndex === 0));
 
   wizStage.classList.remove('back');
@@ -1731,8 +1844,16 @@ function bindSeatSlider() {
 
   range.addEventListener('input', () => {
     const n = Number(range.value);
+    if (n === W.seats) return;          // 같은 칸을 다시 짚은 것은 변화가 아닙니다
     W.seats = n;
     count.textContent = n + '명';
+    /* 손이 민 값이라 튐(감쇠 0.8)을 씁니다. transition 이라 드래그 중에
+       끊기고 다시 잡힙니다 — 키프레임이면 매 칸마다 처음부터 다시 돕니다. */
+    if (!REDUCED) {
+      count.classList.add('bump');
+      clearTimeout(count.__t);
+      count.__t = setTimeout(() => count.classList.remove('bump'), 140);
+    }
     note.textContent = seatNote(n);
     fill.style.width = seatPos(n);
     thumb.style.left = seatPos(n);
@@ -1861,7 +1982,7 @@ function mintCode() {
   W.code = target;
 
   wizBack.setAttribute('data-hidden', 'true');
-  trackCells.forEach((c) => c.setAttribute('data-fill', 'true'));
+  stepIndex = TOTAL - 1; markTrack();
 
   wizStage.classList.remove('back');
   wizStage.innerHTML =
@@ -2130,6 +2251,10 @@ $('lobbyGallery').addEventListener('click', (e) => {
   if (!who) return;
   who.ready = !who.ready;
   renderLobby();
+  /* 다시 그린 뒤의 새 노드를 찾아 표시합니다. 색과 글자가 이미 바뀌었고
+     여기에 짧은 튐 하나가 얹힙니다. */
+  const fresh = $('lobbyGallery').querySelector('.gtile[data-who="' + who.n + '"] .gtile-state');
+  bump(fresh);
 });
 
 $('lobbyStart').addEventListener('click', function () {
@@ -2269,7 +2394,7 @@ const MY = {
     const bars = S.week.map((w) => {
       const d = new Date(w.d + 'T00:00');
       return `<div class="bar${w.d === today ? ' today' : ''}">
-        <span class="fillwrap"><span class="fill" style="height:${Math.round((w.min / max) * 100)}%" title="${w.min}분"></span></span>
+        <span class="fillwrap"><span class="fill" style="--h:${(w.min / max).toFixed(3)}" title="${w.min}분"></span></span>
         <span class="d">${DAY[d.getDay()]}</span></div>`;
     }).join('');
 
@@ -2437,7 +2562,7 @@ function paintMy(tab, instant) {
   const draw = () => {
     pane.innerHTML = '<div class="view" style="padding:0">' + MY[key]() + '</div>';
     pane.querySelectorAll('.view > *').forEach((c, i) => {
-      c.style.animation = 'settle .42s var(--settle) both';
+      c.style.animation = 'settle .42s var(--settle) backwards';
       c.style.animationDelay = (i * 60) + 'ms';
     });
   };

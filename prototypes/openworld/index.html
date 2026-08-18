@@ -68,6 +68,12 @@
     --teal-700: #0D7769;   /* 크림 위 청록 글자 5.25 — AA */
     --teal-800: #0C5A4F;
 
+    /* 민트 — design-drafts/palette.html 의 앵커(#40DDCA, 시안 A).
+       --teal(#2DD4BF)과 색상이 1도 차이라 나란히 놓아도 안 어긋납니다.
+       가구 서랍과 놓을 자리 표시에만 씁니다 — 나머지 UI 를 통째로
+       옮기는 것은 이 작업의 범위가 아닙니다. */
+    --mint: #40DDCA;
+
     /* 중성 — 흰 무대. 온보딩과 **같은 값**입니다. 알을 깨고 들어온
        순간 바탕색이 바뀌면 다른 제품에 온 것처럼 보입니다.
        완전한 무채색은 청록 옆에서 누렇게 보여 아주 조금 차갑습니다. */
@@ -340,6 +346,87 @@
     font-style: normal; color: var(--ink-3); font-size: 11px;
     padding-left: 10px; border-left: 1px solid var(--line);
   }
+
+  /* ---------- 가구 서랍 ----------
+     동물의 숲 수납 서랍을 우리 격자로 옮긴 것입니다. 창(#panel)으로 안
+     만든 이유 — 창은 방을 통째로 가리고 키를 가져갑니다. 서랍은 오른쪽
+     끝에 붙어 있고 열려 있는 동안에도 방을 걸어 다닐 수 있어야
+     "어디 놓을지 보면서 고르기" 가 됩니다.
+     테두리 2px · 어긋난 그림자 · 모서리 3px 은 시안 A 의 문법입니다
+     (design-drafts/palette.html). */
+  #furn {
+    position: fixed; right: 18px; top: 50%; z-index: 7;
+    transform: translate(16px, -50%);
+    width: 244px; max-height: min(600px, 84vh);
+    display: none; flex-direction: column; overflow: hidden;
+    background: var(--surface);
+    border: 2px solid var(--teal-800); border-radius: 3px;
+    box-shadow: 5px 5px 0 var(--teal-100), var(--sh-lg);
+    opacity: 0; transition: opacity .14s ease, transform .14s ease;
+  }
+  #furn.on { display: flex; opacity: 1; transform: translate(0, -50%); }
+  #furn > header {
+    display: flex; align-items: center; gap: 8px; flex: none;
+    padding: 7px 7px 6px 11px;
+    background: var(--mint); border-bottom: 2px solid var(--teal-800);
+  }
+  /* 픽셀 글꼴은 짧은 이름표에만 씁니다. 문장까지 갈무리로 두면 두 줄만
+     넘어가도 읽는 속도가 떨어집니다. */
+  #furn > header b { font: 400 13px/1.4 'Galmuri11', monospace; color: var(--ink); }
+  #furn > header button {
+    margin-left: auto; width: 22px; height: 22px; padding: 0; flex: none;
+    border: 2px solid var(--teal-800); border-radius: 2px;
+    background: var(--surface); color: var(--ink);
+    font: 400 12px/1 'Galmuri11', monospace; cursor: pointer;
+  }
+  /* 위 칸막이 — 동물의 숲은 여기에 가구 **종류** 아이콘이 섭니다. 우리는
+     가구가 한 종류뿐이라 종류로 나눌 것이 없어서, 대신 지금 어디 있는지로
+     나눕니다. 이 화면에서 실제로 궁금한 구분이 그것입니다. */
+  #furn nav { display: flex; flex: none; border-bottom: 2px solid var(--teal-800); }
+  #furn nav button {
+    flex: 1; padding: 7px 2px 6px; border: 0; border-right: 1px solid var(--line-2);
+    background: var(--surface-2); color: var(--ink-3); cursor: pointer;
+    font: 400 11px/1.2 'Galmuri11', monospace;
+  }
+  #furn nav button:last-child { border-right: 0; }
+  #furn nav button[aria-selected="true"] { background: var(--mint); color: var(--ink); }
+  #furn .grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    padding: 10px; overflow-y: auto; align-content: start;
+  }
+  #furn .cell {
+    position: relative; aspect-ratio: 1; padding: 0;
+    border: 2px solid var(--line-2); border-radius: 3px;
+    background: var(--surface-2); cursor: grab; touch-action: none;
+  }
+  #furn .cell canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+  #furn .cell:hover, #furn .cell:focus-visible {
+    border-color: var(--mint); background: var(--teal-50); outline: none;
+  }
+  /* 놓여 있는 것은 모서리에 점 하나. 칸을 통째로 물들이면 정작 그림이
+     안 보입니다. */
+  #furn .cell.set::after {
+    content: ''; position: absolute; right: 3px; top: 3px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--mint); border: 1px solid var(--teal-800);
+  }
+  #furn .cell.dragging { opacity: .3; }
+  #furn .empty { grid-column: 1 / -1; padding: 20px 8px; color: var(--ink-3); font-size: 12px; text-align: center; }
+  #furn > p {
+    margin: 0; flex: none; padding: 8px 11px 9px;
+    border-top: 2px solid var(--teal-800); background: var(--surface-2);
+    color: var(--ink-3); font-size: 11px; line-height: 1.55;
+  }
+  /* 이름표 — 동물의 숲의 그 알약입니다. 칸 위에 떠서 칸을 안 가립니다. */
+  #furn-pill {
+    position: fixed; z-index: 8; display: none; pointer-events: none;
+    padding: 4px 9px 3px;
+    border: 2px solid var(--teal-800); border-radius: 999px;
+    background: var(--mint); color: var(--ink);
+    font: 400 11px/1.3 'Galmuri11', monospace; white-space: nowrap;
+    box-shadow: 2px 2px 0 rgba(12, 90, 79, .32);
+  }
+  #furn-pill.on { display: block; }
 
   /* ---------- 집중 세션 ---------- */
   /* 세션 카드 자리. 기본은 오른쪽 아래인데, 앉아서 PIP 로 줄어들면
@@ -1229,10 +1316,19 @@
 <div id="headTimer"><i></i><b>0:00</b></div>
 <div id="banner"><span></span><b></b></div>
 
-<!-- 배치 모드 안내줄. 이 모드에서만 키가 달라지므로 화면에 적어 둡니다 -->
+<!-- 끄는 동안 뜨는 안내줄. 놓을 수 있는지, 안 되면 왜 안 되는지를 여기 적습니다 -->
 <div id="decor-bar" role="status" aria-live="polite">
-  <b></b><u></u><em>방향키로 옮기고 · Space 놓기 · Esc 취소</em>
+  <b></b><u></u><em></em>
 </div>
+
+<!-- 가구 서랍. 기숙사에서만 열리고, 열려 있는 동안에도 방을 걸어 다닐 수 있습니다 -->
+<aside id="furn" aria-label="가구 서랍">
+  <header><b>방 꾸미기</b><button type="button" id="furn-close" aria-label="서랍 닫기">×</button></header>
+  <nav id="furn-tabs"></nav>
+  <div class="grid" id="furn-grid"></div>
+  <p id="furn-hint"></p>
+</aside>
+<div id="furn-pill" role="status" aria-live="polite"></div>
 
 <div id="session">
   <h3><i id="cam-dot"></i> 집중 세션</h3>
@@ -5427,6 +5523,9 @@ resize();
 cv.addEventListener('pointerup', (e) => {
   if (e.button !== undefined && e.button !== 0) return;
   if (panelOpen || MINI.on) return;
+  /* 가구를 끌다 손을 뗀 것이면 그건 '놓기' 이지 '말 걸기' 가 아닙니다.
+     이 줄이 없으면 가구를 놓을 때마다 옆에 있던 물건 창이 같이 뜹니다. */
+  if (DECOR.it) return;
   e.preventDefault();
   lastActivity = Date.now();
   interact();
@@ -6533,15 +6632,22 @@ addEventListener('keydown', (e) => {
   }
   /* 배치 모드는 키가 다릅니다 — 방향키가 사람이 아니라 가구를 옮깁니다.
      지도(M)보다 먼저 봐야 합니다. 안 그러면 가구를 든 채로 지도가 열립니다. */
-  if (DECOR.on) {
-    if (k === 'escape') { decorEnd(true); return; }
-    if (k === ' ') { decorCommit(); return; }
-    if (k === 'w' || k === 'arrowup') { decorNudge(0, -1); return; }
-    if (k === 's' || k === 'arrowdown') { decorNudge(0, 1); return; }
-    if (k === 'a' || k === 'arrowleft') { decorNudge(-1, 0); return; }
-    if (k === 'd' || k === 'arrowright') { decorNudge(1, 0); return; }
+  /* 끌고 있는 동안은 키가 통째로 여기로 옵니다. 자판으로 집었으면
+     방향키가 커서 노릇을 하고, 마우스로 집었으면 Esc 만 받습니다 —
+     한 손은 이미 마우스에 있습니다. */
+  if (DECOR.it) {
+    if (k === 'escape') { decorCancel(); return; }
+    if (!DECOR.byKey) return;
+    if (k === 'enter' || k === ' ') { decorDrop(); return; }
+    if (k === 'w' || k === 'arrowup') { decorMoveTo(DECOR.x, DECOR.y - 1); return; }
+    if (k === 's' || k === 'arrowdown') { decorMoveTo(DECOR.x, DECOR.y + 1); return; }
+    if (k === 'a' || k === 'arrowleft') { decorMoveTo(DECOR.x - 1, DECOR.y); return; }
+    if (k === 'd' || k === 'arrowright') { decorMoveTo(DECOR.x + 1, DECOR.y); return; }
     return;
   }
+  /* 서랍이 열려 있으면 Esc 로 닫습니다. 걷기는 그대로 됩니다 — 어디가
+     비었는지 보면서 고르는 것이 이 서랍의 요점입니다. */
+  if (DECOR.drawer && k === 'escape') { decorDrawer(false); return; }
   /* 지도가 열려 있으면 지도가 키를 먼저 먹습니다. 숫자로 바로 갑니다. */
   if (MINI.on) {
     if (k === 'escape' || k === 'm' || k === ' ') { toggleMinimap(false); return; }
@@ -6648,6 +6754,9 @@ function enterZone(id, sx, sy) {
   document.getElementById('gear').classList.toggle('on', id === 'dorm');
   document.getElementById('session-place').textContent = FOCUS[id] || zone.name;
   if (panelOpen) closePanel();
+  /* 서랍은 기숙사 물건입니다. 방을 나가면 같이 닫습니다 — 안 닫으면
+     광장 한복판에서 가구를 끄는 창이 떠 있습니다. */
+  if (DECOR.drawer) decorDrawer(false);
   closeDialog();
   if (player.sitting) stand();
   /* 공간이 곧 모드라면 소리도 공간을 따라야 합니다.
@@ -8990,7 +9099,21 @@ pruneUnknownItems();
        문 앞에 옷장을 놓아 스스로를 가둘 수 있습니다.
      · 놓는 동안 보여 줘야 합니다. 목록에서 고르고 끝나면 어디에 놓일지
        모르는 채로 확인을 누르게 됩니다.
-   그래서 배치 모드(유령 미리보기 + 방향키 + Space)를 같이 만듭니다.
+
+   **끌어다 놓기.** 앞 판은 방향키로 유령을 밀고 Space 로 놓았습니다.
+   그 모드에서는 배치 중에 걸을 수 없어서, 내가 서 있는 자리에는 영영 못
+   놓았습니다 — 방이 열한 칸 세로인데 그중 한 칸이 늘 막혀 있는 셈입니다.
+   마우스로 끌면 서 있는 자리와 놓는 자리가 갈라집니다.
+
+   방향키는 **지우지 않고 같은 드래그의 두 번째 입력으로 접었습니다.**
+   서랍에서 Enter 를 누르면 마우스와 똑같은 드래그가 시작되고, 방향키가
+   커서 대신 유령을 옮깁니다. 마우스만 남기면 자판만 쓰는 사람이 가구를
+   영영 못 놓습니다.
+
+   **놓을 수 있는 칸을 전부 켭니다.** 커서 밑 한 칸만 색이 바뀌면 어디가
+   되는지 한 칸씩 찍어 봐야 압니다. 끌기 시작할 때 방 전체를 한 번 재서
+   되는 칸을 통째로 켜 둡니다(decorSpots) — 동물의 숲이 좋은 이유가
+   이것이고, 우리 방은 14x11 이라 한 번 재는 값이 쌉니다.
 
    막히는지 검사 —
      bake(m) 이 m.solid 를 통째로 새로 만드므로(확인함: 함수 첫 줄이
@@ -9004,11 +9127,21 @@ pruneUnknownItems();
    ================================================================== */
 
 const DORM_SPAWN = { x: 7, y: 8 };          // 문으로 들어오면 서는 자리
+/* 놓을 자리 표시와 서랍이 같은 색을 씁니다 — CSS 의 --mint 와 같은 값
+   입니다. 캔버스에서는 CSS 변수를 못 읽으므로 여기 한 번 더 적습니다. */
+const MINT = '#40DDCA';
 const DECOR = {
-  on: false,      // 배치 모드
-  it: null,       // 놓는 중인 상품
+  drawer: false,  // 오른쪽 서랍이 열려 있나
+  tab: 'all',     // 서랍 칸막이 — all · set · box
+  it: null,       // 끌고 있는 상품
   x: 0, y: 0,     // 유령 왼쪽 위 칸
+  gx: 0, gy: 0,   // 잡은 지점 — 커서가 물건 어디를 쥐고 있나
+  back: null,     // 원래 자리. 거절하면 여기로 되돌립니다
   ok: false, why: '',
+  came: false,    // 끄는 동안 커서가 방 안까지 왔나
+  spots: null,    // 놓을 수 있는 칸 (Uint8Array, 지도와 같은 크기)
+  byKey: false,   // 자판으로 끌고 있나 — 안내 문구가 달라집니다
+  hold: 0,        // 거절 문구를 남겨 둘 시각
 };
 
 const decorEntry = (id) => (ROOM.decor || []).find((d) => d.id === id) || null;
@@ -9137,40 +9270,89 @@ function decorCheck(it, x, y) {
   return { ok: true, why: '' };
 }
 
-/* ---- 배치 모드 ---- */
-function decorStart(id) {
+/* ---- 놓을 수 있는 칸 ----
+   끌기 시작할 때 한 번만 잽니다. 프레임마다 다시 재면 방 하나에
+   decorCheck 를 154번 부르는 일을 초당 60번 하게 됩니다.
+   끄는 동안에는 걷기를 막으므로(사람 자리도 판정에 들어갑니다) 답이
+   바뀌지 않습니다. */
+function decorSpots(it) {
+  const m = DORM, d = PROP[it.prop];
+  const out = new Uint8Array(m.w * m.h);
+  for (let y = 0; y + d.h <= m.h; y++)
+    for (let x = 0; x + d.w <= m.w; x++)
+      if (decorCheck(it, x, y).ok) out[at(m, x, y)] = 1;
+  return out;
+}
+
+/* ---- 끌기 ---- */
+/** 끌기를 시작합니다. gx gy 는 물건의 어디를 쥐었는지 — 이미 놓인 것을
+    집어 들 때 그림이 커서로 튀지 않게 하는 값입니다. */
+function decorPick(id, gx, gy, byKey) {
   const it = SHOP_BY_ID[id];
-  if (!isFurniture(it) || !owns(id) || zoneId !== 'dorm') return;
+  if (!isFurniture(it) || !owns(id) || zoneId !== 'dorm' || DECOR.it) return false;
   if (player.sitting) stand();
-  closePanel();
   const had = decorEntry(id);
   const d = PROP[it.prop];
-  /* 놓여 있던 것은 그 자리에서, 새 것은 내 앞에서 시작합니다 —
-     방 가운데에서 시작하면 놓고 싶은 자리까지 매번 걸어가야 합니다. */
-  const px0 = Math.floor(player.x / T), py0 = Math.floor((player.y - 1) / T);
-  DECOR.on = true;
+  /* 집어 든 순간 지도에서 뺍니다. 남겨 두면 자기 자신 위에 유령이 겹쳐
+     보이고, 되는 칸을 셀 때도 제 그림자를 밟습니다. */
+  DECOR.back = had ? { x: had.x, y: had.y } : null;
+  if (had) {
+    ROOM.decor = ROOM.decor.filter((q) => q.id !== id);
+    applyDecor();
+  }
   DECOR.it = it;
-  DECOR.x = had ? had.x : Math.max(0, Math.min(DORM.w - d.w, px0));
-  DECOR.y = had ? had.y : Math.max(0, Math.min(DORM.h - d.h, py0));
-  keys.clear();                                     // 걷다가 들어와도 안 미끄러집니다
-  decorRecheck();
-  decorBar();
+  DECOR.byKey = !!byKey;
+  DECOR.gx = Math.max(0, Math.min(d.w - 1, gx | 0));
+  DECOR.gy = Math.max(0, Math.min(d.h - 1, gy | 0));
+  /* 시작 자리 — 놓여 있던 것은 그 자리, 새 것은 사람 앞입니다. */
+  const px0 = Math.floor(player.x / T), py0 = Math.floor((player.y - 1) / T);
+  DECOR.x = had ? had.x : px0 - DECOR.gx;
+  DECOR.y = had ? had.y : py0 - DECOR.gy;
+  DECOR.spots = decorSpots(it);
+  DECOR.came = false;
+  keys.clear();                                     // 걷다가 집어도 안 미끄러집니다
+  decorMoveTo(DECOR.x, DECOR.y);
+  paintDrawer();
+  return true;
 }
-function decorRecheck() {
+
+/** 유령을 이 칸으로. 지도 밖으로는 안 나갑니다. */
+function decorMoveTo(x, y) {
+  if (!DECOR.it) return;
+  const d = PROP[DECOR.it.prop];
+  DECOR.x = Math.max(0, Math.min(DORM.w - d.w, x));
+  DECOR.y = Math.max(0, Math.min(DORM.h - d.h, y));
   const r = decorCheck(DECOR.it, DECOR.x, DECOR.y);
   DECOR.ok = r.ok; DECOR.why = r.why;
-}
-function decorNudge(dx, dy) {
-  const d = PROP[DECOR.it.prop];
-  DECOR.x = Math.max(0, Math.min(DORM.w - d.w, DECOR.x + dx));
-  DECOR.y = Math.max(0, Math.min(DORM.h - d.h, DECOR.y + dy));
-  decorRecheck();
   decorBar();
 }
-function decorCommit() {
-  if (!DECOR.ok) { SFX.deny && SFX.deny(); return; }
-  ROOM.decor = ROOM.decor.filter((d) => d.id !== DECOR.it.id);
-  ROOM.decor.push({ id: DECOR.it.id, x: DECOR.x, y: DECOR.y });
+
+/** 커서가 가리키는 칸으로. 화면 좌표를 월드 칸으로 옮깁니다.
+    방 밖(서랍 위)에 있는 동안은 아무것도 안 합니다 — 서랍에서 누르기만
+    하고 떼는 것은 '잘못 놓았다' 가 아니라 '아직 안 끌었다' 입니다. */
+function decorMoveToPointer(e) {
+  const r = cv.getBoundingClientRect();
+  if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+  DECOR.came = true;
+  const tx = Math.floor(((e.clientX - r.left) / SCALE + camX) / T);
+  const ty = Math.floor(((e.clientY - r.top) / SCALE + camY) / T);
+  decorMoveTo(tx - DECOR.gx, ty - DECOR.gy);
+}
+
+/** 놓습니다. 안 되면 왜 안 되는지를 남기고 원래 자리로 되돌립니다 —
+    조용히 제자리로 돌아가면 "왜 안 놓였지" 만 남습니다. */
+function decorDrop() {
+  if (!DECOR.it) return;
+  if (!DECOR.ok) {
+    SFX.deny && SFX.deny();
+    const why = DECOR.why;
+    decorCancel();
+    decorBar(why, true);
+    return;
+  }
+  const it = DECOR.it;
+  ROOM.decor = ROOM.decor.filter((d) => d.id !== it.id);
+  ROOM.decor.push({ id: it.id, x: DECOR.x, y: DECOR.y });
   saveRoom();
   pushDecor();
   applyDecor();
@@ -9179,32 +9361,240 @@ function decorCommit() {
      마이페이지를 먼저 연 사람은 정작 가구를 놓고 아무것도 못 받습니다. */
   award('once:roomDecor', '첫 방 꾸미기');
   SFX.chair && SFX.chair(false);
-  decorEnd(true);
+  decorClear();
+  decorBar(it.name + ' 놓았어요', false);
+  paintDrawer();
 }
+
+/** 집어 든 것을 원래 자리로 돌려놓고 끌기를 끝냅니다. */
+function decorCancel() {
+  if (!DECOR.it) return;
+  if (DECOR.back) {
+    ROOM.decor.push({ id: DECOR.it.id, x: DECOR.back.x, y: DECOR.back.y });
+    applyDecor();
+  }
+  decorClear();
+  paintDrawer();
+}
+
+function decorClear() {
+  DECOR.it = null; DECOR.back = null; DECOR.spots = null;
+  DECOR.byKey = false; DECOR.ok = false; DECOR.why = '';
+  keys.clear();
+}
+
+/** 보관함으로. 우클릭이 부르는 길입니다. */
 function decorTake(id) {
+  const had = decorEntry(id);
+  if (!had) return;
   ROOM.decor = ROOM.decor.filter((d) => d.id !== id);
   saveRoom();
   pushDecor();
   applyDecor();
-}
-function decorEnd(reopen) {
-  DECOR.on = false; DECOR.it = null;
-  keys.clear();
-  decorBar();
-  if (reopen) openPanel('decor');
+  decorBar((SHOP_BY_ID[id] || {}).name + ' 치웠어요', false);
+  paintDrawer();
 }
 
-/* 아래쪽 안내줄. 무엇을 누르면 되는지 화면에 있어야 합니다 — 배치
-   모드는 평소와 키가 다르므로 짐작하게 두면 안 됩니다. */
-function decorBar() {
+/** 이 칸을 덮고 있는, 내가 놓은 가구. 우클릭·집어 들기가 씁니다. */
+function decorAt(tx, ty) {
+  for (const o of ROOM.decor) {
+    const d = PROP[SHOP_BY_ID[o.id].prop];
+    if (tx >= o.x && tx < o.x + d.w && ty >= o.y && ty < o.y + d.h) return o;
+  }
+  return null;
+}
+/** 화면 좌표가 가리키는 월드 칸 */
+function tileAtPointer(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: Math.floor(((e.clientX - r.left) / SCALE + camX) / T),
+           y: Math.floor(((e.clientY - r.top) / SCALE + camY) / T) };
+}
+
+/* 위쪽 안내줄. 끄는 동안에는 지금 놓을 수 있는지를, 놓거나 거절된
+   뒤에는 그 결과를 적습니다 — 거절 이유를 안 적으면 물건이 제자리로
+   돌아간 것만 보이고 왜인지는 안 남습니다. */
+function decorBar(msg, bad) {
   const el = document.getElementById('decor-bar');
   if (!el) return;
-  el.classList.toggle('on', DECOR.on);
-  if (!DECOR.on) return;
+  if (msg !== undefined) {
+    /* 끄는 중이 아닐 때 뜬 글은 잠깐 남깁니다. 바로 지우면 놓자마자
+       사라져서 읽을 시간이 없습니다. */
+    DECOR.hold = Date.now() + 2600;
+    el.querySelector('b').textContent = msg;
+    el.querySelector('u').textContent = '';
+    el.querySelector('em').textContent = '';
+    el.classList.toggle('bad', !!bad);
+    el.classList.add('on');
+    clearTimeout(decorBar.timer);
+    decorBar.timer = setTimeout(() => { if (!DECOR.it) el.classList.remove('on'); }, 2600);
+    return;
+  }
+  if (!DECOR.it) { if (Date.now() > DECOR.hold) el.classList.remove('on'); return; }
+  el.classList.add('on');
   el.querySelector('b').textContent = DECOR.it.name;
   el.querySelector('u').textContent = DECOR.ok ? '여기 놓을 수 있어요' : DECOR.why;
+  el.querySelector('em').textContent = DECOR.byKey
+    ? '방향키로 옮기고 · Enter 놓기 · Esc 취소'
+    : '놓을 자리에서 손을 떼세요 · Esc 취소';
   el.classList.toggle('bad', !DECOR.ok);
 }
+
+/* ==================================================================
+   가구 서랍
+
+   동물의 숲 수납 서랍을 우리 격자로 옮긴 것입니다. 창이 아니라 오른쪽에
+   붙는 서랍인 이유는 §방 꾸미기 머리말에 적었습니다 — 열어 둔 채로
+   방을 걸어 다닐 수 있어야 합니다.
+   ================================================================== */
+const furnEl = document.getElementById('furn');
+const furnTabsEl = document.getElementById('furn-tabs');
+const furnGridEl = document.getElementById('furn-grid');
+const furnHintEl = document.getElementById('furn-hint');
+const furnPillEl = document.getElementById('furn-pill');
+
+/* 칸막이 셋. 동물의 숲은 여기가 가구 종류인데 우리는 가구가 한 종류라
+   나눌 것이 없어서, 지금 어디 있는지로 나눕니다. */
+const FURN_TABS = [
+  { id: 'all', name: '전체' },
+  { id: 'set', name: '놓은 것' },
+  { id: 'box', name: '보관함' },
+];
+
+function decorDrawer(on) {
+  if (on && zoneId !== 'dorm') return;
+  DECOR.drawer = !!on;
+  if (!DECOR.drawer && DECOR.it) decorCancel();
+  furnEl.classList.toggle('on', DECOR.drawer);
+  furnPillEl.classList.remove('on');
+  if (DECOR.drawer) { closePanel(); paintDrawer(); }
+}
+
+function paintDrawer() {
+  if (!DECOR.drawer) return;
+  const mine = SHOP.filter((i) => isFurniture(i) && owns(i.id));
+  const set = new Set((ROOM.decor || []).map((d) => d.id));
+  /* role 을 붙이는 이유 — aria-selected 는 tab 에만 뜻이 있습니다.
+     역할 없이 붙이면 화면 낭독기가 무시하거나 잘못 읽습니다. */
+  furnTabsEl.setAttribute('role', 'tablist');
+  furnTabsEl.innerHTML = FURN_TABS
+    .map((t) => `<button type="button" role="tab" data-tab="${t.id}" aria-selected="${t.id === DECOR.tab}">${t.name}</button>`)
+    .join('');
+  const list = mine.filter((i) =>
+    DECOR.tab === 'set' ? set.has(i.id) : DECOR.tab === 'box' ? !set.has(i.id) : true);
+  furnGridEl.innerHTML = list.length
+    ? list.map((it) => {
+        const cls = 'cell' + (set.has(it.id) ? ' set' : '')
+                  + (DECOR.it && DECOR.it.id === it.id ? ' dragging' : '');
+        return `<button type="button" class="${cls}" data-furn="${it.id}"
+          aria-label="${esc(it.name)}${set.has(it.id) ? ' · 놓여 있음' : ''}">
+          <canvas class="thumb furn" data-item="${it.id}" width="48" height="48"></canvas></button>`;
+      }).join('')
+    : `<p class="empty">${mine.length
+        ? '이 칸은 비어 있어요.'
+        : '아직 가진 가구가 없어요.<br>학생회관 상점의 <b>가구</b> 칸에서 살 수 있어요.'}</p>`;
+  for (const c of furnGridEl.querySelectorAll('canvas[data-item]')) {
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    g.clearRect(0, 0, c.width, c.height);
+    drawFurnThumb(g, c.width, c.height, PROP[SHOP_BY_ID[c.dataset.item].prop]);
+  }
+  furnHintEl.innerHTML = '끌어서 놓기 · 놓은 것도 다시 끌면 옮겨져요<br>'
+    + '<b>우클릭</b>으로 치우기 · 자판만 쓸 때는 <b>Enter</b>';
+}
+
+/** 이름표. 동물의 숲의 그 알약입니다 — 칸 위에 뜨고 칸을 안 가립니다. */
+function furnPill(cell) {
+  if (!cell) { furnPillEl.classList.remove('on'); return; }
+  const it = SHOP_BY_ID[cell.dataset.furn];
+  if (!it) return;
+  const placed = !!decorEntry(it.id);
+  furnPillEl.textContent = it.name + (placed ? ' · 놓임' : '');
+  furnPillEl.classList.add('on');
+  const r = cell.getBoundingClientRect();
+  const w = furnPillEl.offsetWidth;
+  furnPillEl.style.left = Math.round(Math.max(8, r.left + r.width / 2 - w / 2)) + 'px';
+  furnPillEl.style.top = Math.round(r.top - furnPillEl.offsetHeight - 7) + 'px';
+}
+
+furnEl.addEventListener('pointerdown', (e) => {
+  const tab = e.target.closest('[data-tab]');
+  if (tab) { DECOR.tab = tab.dataset.tab; paintDrawer(); return; }
+  const cell = e.target.closest('[data-furn]');
+  if (!cell) return;
+  /* 오른쪽 단추는 치우기입니다. 방에서 우클릭하는 것과 같은 일이라
+     같은 손버릇으로 됩니다. */
+  if (e.button === 2) { e.preventDefault(); decorTake(cell.dataset.furn); return; }
+  if (e.button !== 0) return;
+  e.preventDefault();
+  const d = PROP[SHOP_BY_ID[cell.dataset.furn].prop];
+  /* 서랍에서 꺼낸 것은 가운데를 쥔 것으로 칩니다 — 어디를 눌렀는지가
+     아니라 어디에 놓을지가 관심입니다. */
+  decorPick(cell.dataset.furn, (d.w - 1) >> 1, (d.h - 1) >> 1, false);
+  furnPillEl.classList.remove('on');
+});
+furnEl.addEventListener('contextmenu', (e) => {
+  if (e.target.closest('[data-furn]')) e.preventDefault();
+});
+furnEl.addEventListener('pointermove', (e) => {
+  if (DECOR.it) return;
+  furnPill(e.target.closest('[data-furn]'));
+});
+furnEl.addEventListener('pointerleave', () => furnPill(null));
+furnEl.addEventListener('focusin', (e) => furnPill(e.target.closest('[data-furn]')));
+furnEl.addEventListener('focusout', () => furnPill(null));
+/* 자판만 쓰는 길 — Enter 로 집어 들면 그 다음은 마우스와 같은 드래그라,
+   방향키가 커서 노릇을 합니다(keydown). */
+furnEl.addEventListener('keydown', (e) => {
+  const cell = e.target.closest('[data-furn]');
+  if (!cell) return;
+  if (e.key === 'Enter' || e.key === ' ') {
+    /* 여기서 전파를 끊습니다. 안 끊으면 같은 keydown 이 window 까지 올라가
+       DECOR.it 가 방금 생겼다는 이유로 곧바로 '놓기' 가 됩니다 —
+       집자마자 제자리에 떨어집니다. */
+    e.preventDefault(); e.stopPropagation();
+    const d = PROP[SHOP_BY_ID[cell.dataset.furn].prop];
+    decorPick(cell.dataset.furn, (d.w - 1) >> 1, (d.h - 1) >> 1, true);
+  }
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    e.preventDefault(); e.stopPropagation(); decorTake(cell.dataset.furn);
+  }
+});
+document.getElementById('furn-close').addEventListener('click', () => decorDrawer(false));
+
+/* ---- 방 안에서 직접 집기 ----
+   서랍을 거치지 않고 놓여 있는 가구를 바로 끌 수 있어야 합니다. 서랍에서
+   찾아 누르는 것보다 눈에 보이는 것을 잡는 편이 짧습니다. */
+cv.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || zoneId !== 'dorm' || panelOpen || MINI.on || DECOR.it) return;
+  const t = tileAtPointer(e);
+  const o = decorAt(t.x, t.y);
+  if (!o) return;
+  e.preventDefault();
+  decorPick(o.id, t.x - o.x, t.y - o.y, false);
+});
+cv.addEventListener('contextmenu', (e) => {
+  if (zoneId !== 'dorm') return;
+  e.preventDefault();
+  if (DECOR.it) { decorCancel(); return; }
+  const t = tileAtPointer(e);
+  const o = decorAt(t.x, t.y);
+  if (o) decorTake(o.id);
+});
+window.addEventListener('pointermove', (e) => {
+  if (!DECOR.it || DECOR.byKey) return;
+  decorMoveToPointer(e);
+});
+window.addEventListener('pointerup', (e) => {
+  if (!DECOR.it || DECOR.byKey || e.button !== 0) return;
+  decorMoveToPointer(e);
+  /* 방까지 끌고 오지도 않고 뗐으면 조용히 되돌립니다. 여기서 거절
+     문구를 띄우면 서랍을 잘못 눌렀을 뿐인데 야단맞은 것이 됩니다. */
+  if (!DECOR.came) { decorCancel(); return; }
+  decorDrop();
+});
+/* 창 밖으로 끌고 나갔다 놓는 경우. 안 받으면 물건이 커서에 붙은 채로
+   남습니다. */
+window.addEventListener('pointercancel', () => { if (DECOR.it && !DECOR.byKey) decorCancel(); });
 
 /* ---- 스프라이트 한 장씩 — 다 뜨면 열린 상점을 다시 그립니다 ---- */
 const ITEM_IMG = {};
@@ -11657,36 +12047,10 @@ const PANELS = {
     tabHtml: SHOP_CATS.map((c) => shopTabHtml(c.id)),
   }),
 
-  /* ---- 방 꾸미기 — 기숙사 옷장 ----
-     사는 곳과 놓는 곳을 나눕니다. 상점은 학생회관에 있고, 놓는 것은
-     방에서만 합니다 — 방을 보면서 놓아야 어디가 비었는지 알 수 있습니다. */
-  decor: () => {
-    const mine = SHOP.filter((i) => isFurniture(i) && owns(i.id));
-    const card = (it) => {
-      const e = decorEntry(it.id);
-      return `<div class="item${e ? ' on' : ''}">
-        <canvas class="thumb furn" data-item="${it.id}" width="64" height="64"></canvas>
-        <span>${esc(it.name)}${e ? `<em>${e.x}, ${e.y}</em>` : ''}</span>
-        ${e
-          ? `<button class="act" data-decor-move="${it.id}">옮기기</button>
-             <button class="act ghost" data-decor-take="${it.id}">치우기</button>`
-          : `<button class="act" data-decor-put="${it.id}">놓기</button>`}
-      </div>`;
-    };
-    return {
-      title: '방 꾸미기', kind: '옷장',
-      html: `
-        <div class="shop-coin">놓은 가구 <b>${(ROOM.decor || []).length}</b> · 보관 <b>${mine.length - (ROOM.decor || []).length}</b></div>
-        ${mine.length
-          ? `<div class="shop-grid">${mine.map(card).join('')}</div>`
-          : `<p>아직 가진 가구가 없어요. <b>학생회관 상점</b>의 <b>가구</b> 칸에서
-             살 수 있습니다.</p>`}
-        <div class="note" style="margin-top:14px">놓기를 누르면 방으로 돌아가서
-        <b>방향키</b>로 자리를 옮기고 <b>Space</b> 로 놓습니다. 문 앞이나 지나가는
-        길을 막는 자리에는 놓을 수 없어요 — 방 안에 걸어 들어갈 수 없는 구석이
-        생기기 때문입니다.</div>`,
-    };
-  },
+  /* '방 꾸미기' 는 창이 아니라 오른쪽 서랍입니다(§가구 서랍). 창으로
+     두면 방이 통째로 가려져서, 어디가 비었는지 보면서 고를 수가 없습니다.
+     PANELS 에 자리를 안 남기는 이유 — openPanel('decor') 가 서랍으로
+     넘어가는 길을 openPanel 첫 줄 한 곳에만 두려는 것입니다. */
 
   coins: () => ({
     title: '코인', kind: '',
@@ -11841,6 +12205,10 @@ let panelOpen = false, activePanelKey = '';
 /** tab — 탭이 있는 창을 특정 탭으로 엽니다. 마이페이지에서 회고를 열 때
     세션이 아직 도는 중이면 "지난 세션" 쪽을 먼저 보여 주기 위해서입니다. */
 function openPanel(key, tab) {
+  /* 꾸미기만 창이 아니라 서랍입니다. 옷장을 만지는 길·상점에서 돌아오는
+     길·서버 응답이 오는 길이 전부 openPanel('decor') 를 부르므로,
+     갈림길을 여기 한 줄로 모읍니다. */
+  if (key === 'decor') { decorDrawer(true); return; }
   activePanelKey = key;
   /* 회고를 열었다고 주던 코인은 없앴습니다 — 단일 규칙에 없는 축이고,
      자기 기록을 보는 일에 값을 매기면 보러 오는 이유가 바뀝니다. */
@@ -12217,12 +12585,6 @@ panelBody.addEventListener('click', (e) => {
   if (sw) { setTint(sw.dataset.tint, sw.dataset.hex); saveRoom(); pushLoadout(); reopenShop(); return; }
 
   /* ---- 방 꾸미기 ---- */
-  const put = e.target.closest('[data-decor-put]');
-  if (put) return decorStart(put.dataset.decorPut);
-  const mv = e.target.closest('[data-decor-move]');
-  if (mv) return decorStart(mv.dataset.decorMove);
-  const take = e.target.closest('[data-decor-take]');
-  if (take) { decorTake(take.dataset.decorTake); openPanel('decor'); return; }
   /* 바깥 서비스 주소 줄이 먼저입니다 — 이것도 .row.tap 이라, 뒤에 두면
      아래 openEdit 이 먼저 잡아 EDITS[undefined] 로 조용히 아무 일도 안 합니다. */
   const link = e.target.closest('[data-link]');
@@ -13099,7 +13461,7 @@ function applyServerRoom(st) {
   paintCoins(false);
   /* 상점이나 꾸미기를 열어 둔 채로 응답이 오면 그 화면도 새로 그립니다 */
   if (panelOpen && activePanelKey === 'shop') reopenShop();
-  else if (panelOpen && activePanelKey === 'decor') openPanel('decor');
+  if (DECOR.drawer) paintDrawer();
 }
 window.addEventListener('worldsave:room', (e) => applyServerRoom(e.detail));
 
@@ -13213,7 +13575,7 @@ function update(dt) {
   }
   /* 배치 모드에서는 사람이 안 걷습니다. 걸으면 유령과 사람이 같이
      움직여서 어느 쪽을 옮기는지 알 수 없습니다. */
-  if (!player.sitting && !dialogOpen && !panelOpen && !travel && !DECOR.on) {
+  if (!player.sitting && !dialogOpen && !panelOpen && !travel && !DECOR.it) {
     const run = keys.has('shift');
     /* 속도도 지도 눈금입니다. 타일만 두 배로 하고 여기를 그대로 두면
        같은 거리를 두 배 걸어야 해서 월드가 갑자기 넓게 느껴집니다. */
@@ -13441,23 +13803,61 @@ function draw() {
     } else { drawPlayer(); drawCount++; }
   }
 
-  /* 놓는 중인 가구. 사람·기물 위에 얹습니다 — 어디에 놓이는지가 지금
+  /* 끌고 있는 가구. 사람·기물 위에 얹습니다 — 어디에 놓이는지가 지금
      가장 중요한 정보이고, 침대 뒤에 반쯤 가린 유령은 못 읽습니다. */
-  if (DECOR.on && DECOR.it) {
+  if (DECOR.it) {
     const d = PROP[DECOR.it.prop];
     const gx = DECOR.x * T - camX, gy = DECOR.y * T - camY;
     ctx.save();
-    /* 바닥 칸 표시 — 되면 청록, 안 되면 빨강. 그림만 반투명하게 얹으면
-       몇 칸을 차지하는지 안 보입니다. */
-    ctx.globalAlpha = 0.24;
-    ctx.fillStyle = DECOR.ok ? '#2DD4BF' : '#E0483A';
+    /* ---- 놓을 수 있는 칸 전부 ----
+       커서 밑 한 칸만 색이 바뀌면 어디가 되는지 한 칸씩 찍어 봐야
+       압니다. 되는 칸을 통째로 켜 두면 방을 한 번 훑는 것으로 끝납니다.
+       천천히 숨 쉬게 하는 이유 — 바닥에 칠한 색은 가만히 있으면 방
+       무늬로 읽히고, 움직이면 "지금 뜬 것" 으로 읽힙니다. */
+    if (DECOR.spots) {
+      const m = zone;
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 300);
+      const on = (x, y) => x >= 0 && y >= 0 && x < m.w && y < m.h && DECOR.spots[at(m, x, y)];
+      const x0 = Math.max(0, Math.floor(camX / T)), x1 = Math.min(m.w, Math.ceil((camX + VIEW_W) / T));
+      const y0 = Math.max(0, Math.floor(camY / T)), y1 = Math.min(m.h, Math.ceil((camY + VIEW_H) / T));
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+        if (!DECOR.spots[at(m, x, y)]) continue;
+        const px0 = x * T - camX, py0 = y * T - camY;
+        ctx.globalAlpha = 0.26 + 0.12 * pulse;
+        ctx.fillStyle = MINT;
+        ctx.fillRect(px0 + 2, py0 + 2, T - 4, T - 4);
+        /* 테두리는 **덩어리 바깥에만** 긋습니다. 칸마다 두르면 격자무늬가
+           되고, 격자는 놓을 자리가 아니라 바닥 재질로 보입니다. */
+        ctx.globalAlpha = 0.72 + 0.28 * pulse;
+        const e = 2;
+        if (!on(x, y - 1)) ctx.fillRect(px0, py0, T, e);
+        if (!on(x, y + 1)) ctx.fillRect(px0, py0 + T - e, T, e);
+        if (!on(x - 1, y)) ctx.fillRect(px0, py0, e, T);
+        if (!on(x + 1, y)) ctx.fillRect(px0 + T - e, py0, e, T);
+      }
+    }
+    /* ---- 지금 놓이는 자리 ----
+       되면 민트, 안 되면 빨강. 그림만 반투명하게 얹으면 몇 칸을
+       차지하는지 안 보입니다. */
+    ctx.globalAlpha = 0.30;
+    ctx.fillStyle = DECOR.ok ? MINT : '#E0483A';
     ctx.fillRect(gx, gy, d.w * T, d.h * T);
-    ctx.globalAlpha = DECOR.ok ? 0.9 : 0.42;
+    ctx.globalAlpha = DECOR.ok ? 0.92 : 0.45;
     blitArt(d.canvas, gx, gy);
     ctx.globalAlpha = 1;
     ctx.strokeStyle = DECOR.ok ? '#0C5A4F' : '#8E2A20';
     ctx.lineWidth = 2;
     ctx.strokeRect(gx + 1, gy + 1, d.w * T - 2, d.h * T - 2);
+    /* 못 놓는 자리에는 가위표. 색만으로 알리면 색을 못 가르는 사람에게는
+       아무 표시도 없는 것과 같습니다. */
+    if (!DECOR.ok) {
+      ctx.strokeStyle = '#8E2A20'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      const cx0 = gx + d.w * T / 2, cy0 = gy + d.h * T / 2, r = Math.min(d.w, d.h) * T * 0.28;
+      ctx.beginPath();
+      ctx.moveTo(cx0 - r, cy0 - r); ctx.lineTo(cx0 + r, cy0 + r);
+      ctx.moveTo(cx0 + r, cy0 - r); ctx.lineTo(cx0 - r, cy0 + r);
+      ctx.stroke();
+    }
     ctx.restore();
     drawCount++;
   }
@@ -13564,7 +13964,7 @@ function drawMark(cx, baseY, active, phase) {
 function drawMarks() {
   /* 가구를 놓는 중이거나 대화 중에는 안 답니다. 지금 할 일이 하나로
      정해져 있는데 화면이 다른 것을 가리키면 방해입니다. */
-  if (DECOR.on || dialogOpen) return;
+  if (DECOR.it || dialogOpen) return;
   for (const t of zone.things || []) {
     const cx = (t.x + (t.w || 1) / 2) * T - camX;
     const top = (t.y + (t.top || 0)) * T - camY;

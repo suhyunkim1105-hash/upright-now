@@ -405,6 +405,11 @@
     const ae = document.activeElement;
     if (panelOpen) return;
     if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+    /* 가구 서랍에서 Enter 는 '집어 들기' 입니다. 여기서 채팅이 먼저
+       가져가 버리면 자판만 쓰는 사람은 가구를 영영 못 놓습니다.
+       panelOpen 과 같은 방식으로 index.html 의 전역을 이름으로 읽습니다. */
+    if (typeof DECOR !== 'undefined'
+        && (DECOR.it || (ae && ae.closest && ae.closest('#furn')))) return;
 
     if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); open(); }
   }, true);

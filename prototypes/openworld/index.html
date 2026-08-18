@@ -3529,7 +3529,9 @@ PROP.bookshelf = paintedProp('bookshelf', 1, 2);
 /* 화분과 스탠드는 위가 튀어나온 물건입니다 — 밑동만 막습니다 */
 PROP.plantTall = paintedProp('plantTall', 1, 2, [0, 1]);
 PROP.laundry   = paintedProp('laundry', 1, 1);
-PROP.sofa      = { ...paintedProp('sofa', 2, 1), sit: true };
+/* 소파는 기숙사 물건입니다. 앉는 자리는 도서관·본관에만 두기로 했으므로
+   sit 을 뗍니다 — 남겨 두면 존 판정을 우회할 자리가 지도에 남습니다. */
+PROP.sofa      = paintedProp('sofa', 2, 1);
 
 /* ==================================================================
    사서 놓는 가구
@@ -3722,7 +3724,7 @@ PROP.furPlant    = paintedProp('furPlant', 1, 1);
 PROP.furDumbbell = paintedProp('furDumbbell', 1, 1);
 PROP.furFan      = paintedProp('furFan', 1, 2, [0, 1]);
 PROP.furShelf    = paintedProp('furShelf', 2, 1);
-PROP.furBeanbag  = { ...paintedProp('furBeanbag', 1, 1), sit: true };
+PROP.furBeanbag  = paintedProp('furBeanbag', 1, 1);   // 기숙사에만 놓는 가구 — 앉는 자리가 아닙니다
 PROP.furTv       = paintedProp('furTv', 2, 1);
 PROP.furGuitar   = paintedProp('furGuitar', 1, 2, [0, 1]);
 
@@ -4794,7 +4796,8 @@ const ZONES = {};
   /* ---- 북쪽 벽 (y3~4) : 공부 · 잠 ---- */
   prop(m, 'desk3', 1, 3);                       // 세 칸 책상. 1칸 책상은 책상으로 안 보입니다
   prop(m, 'laptopN', 1, 3); prop(m, 'books2', 2, 3); prop(m, 'deskLamp', 3, 3);
-  prop(m, 'chair', 2, 4);                       // 앉는 자리. 기숙사는 FOCUS 가 아니라 PIP 는 안 뜹니다
+  /* 의자는 뺐습니다. 세션 자리는 도서관·본관뿐이라, 앉을 수 없는 의자가
+     책상 앞에 있으면 눌러 보고 아무 일도 안 일어나는 자리가 됩니다. */
   prop(m, 'fridge', 5, 3);
   /* 학교 색이 닿는 둘. 벽에 응원기, 러그에 방석. 과잠·마이페이지
      강조색과 같은 색이라, 방에 들어오면 내 학교가 먼저 보입니다. */
@@ -6260,7 +6263,12 @@ function findNearby() {
     if (dist < bestD) { bestD = dist; best = t; }
   }
   if (best) return { kind: 'talk', npc: best };
-  for (const s of zone.sitSpots) if (s.x === f.x && s.y === f.y) return { kind: 'sit', spot: s };
+  /* 앉는 자리는 **집중 공간(FOCUS)에만** 있습니다 — 도서관과 본관.
+     자리 목록을 비우는 것으로는 부족합니다: 사서 놓는 가구가 방에 들어오면
+     그때 다시 앉는 자리가 생깁니다. 자리를 지우는 대신 **여기서 막습니다** —
+     지도를 어떻게 고쳐도 다른 존에서는 앉기가 안 걸립니다. */
+  if (FOCUS[zoneId])
+    for (const s of zone.sitSpots) if (s.x === f.x && s.y === f.y) return { kind: 'sit', spot: s };
   return null;
 }
 function interact() {
@@ -6431,6 +6439,9 @@ function showPip(on) {
    시계 옆 글자가 늘 말해 줍니다. */
 function sit(spot) {
   if (player.sitting) return;
+  /* 세션 자리는 도서관·본관뿐입니다. findNearby 가 이미 거르지만, 앉기를
+     부르는 길이 하나 더 생겨도 규칙이 안 뚫리도록 여기서도 봅니다. */
+  if (!FOCUS[zoneId]) return;
   SFX.chair(false);
   sitSquash = 1;            // 앉는 순간 살짝 눌렸다 폅니다
   player.sitting = true;
@@ -8252,7 +8263,7 @@ const SHOP = [
   { id: 'fur-shelf',    cat: FURN_CAT, name: '낮은 책장',   price: 180, prop: 'furShelf' },
   { id: 'fur-rug-round',cat: FURN_CAT, name: '둥근 러그',   price: 190, prop: 'furRugRound', desc: '밟고 다닙니다' },
   { id: 'fur-guitar',   cat: FURN_CAT, name: '기타',        price: 240, prop: 'furGuitar' },
-  { id: 'fur-beanbag',  cat: FURN_CAT, name: '빈백',        price: 260, prop: 'furBeanbag',  desc: '앉을 수 있어요' },
+  { id: 'fur-beanbag',  cat: FURN_CAT, name: '빈백',        price: 260, prop: 'furBeanbag',  desc: '푹신해 보여요' },
   { id: 'fur-rug',      cat: FURN_CAT, name: '러그',        price: 300, prop: 'furRug',      desc: '밟고 다닙니다' },
   { id: 'fur-tv',       cat: FURN_CAT, name: '브라운관 TV', price: 340, prop: 'furTv' },
 ];

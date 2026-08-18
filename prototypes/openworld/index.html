@@ -331,6 +331,28 @@
   }
   #banner.play { animation: bannerIn 2.1s ease both; }
 
+  /* ---------- 배치 모드 안내줄 ----------
+     화면 위쪽입니다. 아래에는 세션 카드·채팅·코인이 이미 있고, 놓는
+     자리를 보려면 방 아래쪽이 안 가려져야 합니다. */
+  #decor-bar {
+    position: fixed; left: 50%; top: 16px; transform: translate(-50%, -12px);
+    display: none; align-items: center; gap: 10px;
+    padding: 9px 15px; border-radius: 999px;
+    background: var(--surface); border: 1px solid var(--line);
+    box-shadow: var(--sh-lg); font-size: 12.5px;
+    opacity: 0; transition: opacity .16s ease, transform .16s ease;
+  }
+  #decor-bar.on { display: flex; opacity: 1; transform: translate(-50%, 0); }
+  #decor-bar b { font-weight: 800; }
+  #decor-bar u {
+    text-decoration: none; font-weight: 700; color: var(--teal-700);
+  }
+  #decor-bar.bad u { color: var(--bad); }
+  #decor-bar em {
+    font-style: normal; color: var(--ink-3); font-size: 11px;
+    padding-left: 10px; border-left: 1px solid var(--line);
+  }
+
   /* ---------- 집중 세션 ---------- */
   /* 세션 카드 자리. 기본은 오른쪽 아래인데, 앉아서 PIP 로 줄어들면
      오른쪽 **위**로 올라갑니다 — 아래쪽에는 세션 HUD·조작 안내·코인이
@@ -763,6 +785,8 @@
     image-rendering: pixelated;
     background: var(--surface-2); border-radius: 9px;
   }
+  /* 가구 칸 — 종이인형이 아니라 물건 한 장이라 네모입니다 */
+  #panel .item > .thumb.furn { width: 64px; height: 64px; }
   #panel .item > span { font-size: 12.5px; font-weight: 600; text-align: center; line-height: 1.35; }
   #panel .item > span em {
     display: block; font-style: normal; font-size: 10.5px; color: var(--ink-3); font-weight: 400;
@@ -1116,6 +1140,11 @@
 <div id="say" role="status" aria-live="polite"></div>
 <div id="headTimer"><i></i><b>0:00</b></div>
 <div id="banner"><span></span><b></b></div>
+
+<!-- 배치 모드 안내줄. 이 모드에서만 키가 달라지므로 화면에 적어 둡니다 -->
+<div id="decor-bar" role="status" aria-live="polite">
+  <b></b><u></u><em>방향키로 옮기고 · Space 놓기 · Esc 취소</em>
+</div>
 
 <div id="session">
   <h3><i id="cam-dot"></i> 집중 세션</h3>
@@ -4604,6 +4633,10 @@ const ZONES = {};
   m.things = [
     { x: 5, y: 2, name: '안내', panel: 'guide' },
     { x: 12, y: 7, name: '개인정보 안내', panel: 'privacy' },
+    /* 꾸미기는 옷장이 맡습니다. 방 안 물건이 곧 메뉴라는 규칙이고, 산
+       물건이 든 곳이 옷장이라 찾을 자리도 여기입니다. 버튼을 하나 더
+       띄우면 방 안에서 화면을 누르는 일이 또 생깁니다. */
+    { x: 11, y: 3, name: '방 꾸미기', panel: 'decor' },
     /* 초인종은 **문 옆**입니다. 전에는 문 한가운데(3, h-2)에 있어서, 다가서면
        초인철에 닿기 전에 포탈이 먼저 걸렸습니다. 관리인 성재도 "문 옆
        초인종" 이라고 말합니다 — 말과 자리가 같아야 합니다. */
@@ -4614,7 +4647,15 @@ const ZONES = {};
      어디로 가야 하는지가 한 번 더 생각할 일이 됩니다. */
   prop(m, 'exitDoor', 6, m.h - 2);
   m.portals.push({ x: 6, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 21, sy: 11, label: '캠퍼스' });
+
+  /* 여기까지가 방을 지을 때 박아 둔 것입니다. 산 가구는 이 뒤에 붙였다
+     뗐다 하므로, 원본을 한 벌 남겨 둡니다 — 안 남기면 가구를 치울 때
+     무엇이 원래 있던 것인지 알 수 없습니다. */
+  m.baseProps = m.props.slice();
 }
+/* 가구 코드가 여러 군데에서 이 지도를 찾습니다. ZONES.dorm 을 매번 쓰면
+   오타가 조용히 undefined 가 되므로 이름을 하나 둡니다. */
+const DORM = ZONES.dorm;
 /* ================== 학생회관 ==================
    NPC 셋이 각각 기능을 맡습니다. 계산대 앞에 줄 설 공간을 비웠습니다 —
    여러 명이 동시에 말을 걸 수 있어야 합니다. */
@@ -5846,6 +5887,17 @@ addEventListener('keydown', (e) => {
     if (k === 'escape' ||
         (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'animalFind', 'animalMatch3'].includes(activePanelKey)))
       closePanel();
+    return;
+  }
+  /* 배치 모드는 키가 다릅니다 — 방향키가 사람이 아니라 가구를 옮깁니다.
+     지도(M)보다 먼저 봐야 합니다. 안 그러면 가구를 든 채로 지도가 열립니다. */
+  if (DECOR.on) {
+    if (k === 'escape') { decorEnd(true); return; }
+    if (k === ' ') { decorCommit(); return; }
+    if (k === 'w' || k === 'arrowup') { decorNudge(0, -1); return; }
+    if (k === 's' || k === 'arrowdown') { decorNudge(0, 1); return; }
+    if (k === 'a' || k === 'arrowleft') { decorNudge(-1, 0); return; }
+    if (k === 'd' || k === 'arrowright') { decorNudge(1, 0); return; }
     return;
   }
   /* 지도가 열려 있으면 지도가 키를 먼저 먹습니다. 숫자로 바로 갑니다. */
@@ -7563,6 +7615,11 @@ const ROOM = {
   character: '거북이',
   owned: [],              // 산 아이템 id
   worn: {},               // 칸(cat) 하나에 하나씩. 같은 칸을 사면 앞엣것이 벗겨집니다
+  /* 방에 놓은 가구. 납작한 배열이라 그대로 테이블 한 줄씩이 됩니다
+     (room_id, item_id, x, y). 캔버스나 PROP 참조를 담으면 안 됩니다 —
+     저장은 JSON 이고, 나중에 서버로 갈 때도 같은 모양이어야 합니다.
+     산 것은 하나씩이라 item id 가 곧 열쇠입니다. */
+  decor: [],              // [{ id: 'fur-rug', x: 4, y: 5 }, ...]
   coins: 0,
   wallpaper: 'cream',
   floor: 'laminate',
@@ -7892,7 +7949,14 @@ const SHOP_CATS = [
   { id: 'face',   name: '안경' },
   { id: 'bag',    name: '가방' },
   { id: 'egg',    name: '알' },
+  { id: 'furn',   name: '가구' },
 ];
+/* 가구는 입는 것이 아니라 **놓는** 것입니다. 이 한 줄을 여기 두는 이유는
+   equip/unequip/팔레트/종이인형이 전부 '칸(cat) 하나에 하나' 를 전제로
+   쓰여 있어서입니다 — 가구가 그 길에 들어가면 ROOM.worn.furn 이 생기고
+   종이인형이 옷장을 입으려 듭니다. 갈림길을 이 상수 하나로 모읍니다. */
+const FURN_CAT = 'furn';
+const isFurniture = (it) => !!it && it.cat === FURN_CAT;
 /* cat 은 화면의 칸, z 는 겹치는 순서(item-spec §4). 둘이 다른 이유는
    '안경' 과 '모자' 가 화면에선 남남이지만 겹칠 때는 순서가 있어서입니다.
    color 는 스프라이트가 못 뜰 때만 쓰는 대비색입니다 — 그림이 정답입니다. */
@@ -7952,6 +8016,25 @@ const SHOP = [
   { id: 'egg-hedgehog', cat: 'egg', name: '고슴도치 알', price: 800, color: '#E6B48C', sprite: null },
   { id: 'egg-alpaca',   cat: 'egg', name: '알파카 알',   price: 800, color: '#DCBEA0', sprite: null },
   { id: 'egg-swan',     cat: 'egg', name: '백조 알',     price: 800, color: '#D2D2D2', sprite: null },
+
+  /* ---- 가구 ----
+     prop 은 PROP 의 이름입니다. 그림·크기·막는 줄이 전부 거기 있으므로
+     상점은 이름만 들고 있으면 됩니다 — 크기를 여기에 또 적으면 둘이
+     어긋나는 날이 옵니다.
+     값은 차지하는 칸 수에 맞췄습니다. 방은 걸을 자리가 52칸뿐이라
+     큰 물건이 싸면 방이 한 번에 창고가 됩니다.
+     하나씩만 삽니다 — ROOM.owned 가 '샀나 안 샀나' 뿐이라 개수를 세려면
+     장부를 하나 더 만들어야 하고, 그러면 옷·알까지 같이 바뀝니다. */
+  { id: 'fur-cushion',  cat: FURN_CAT, name: '방석',        price: 60,  prop: 'furCushion',  desc: '밟고 다닙니다' },
+  { id: 'fur-dumbbell', cat: FURN_CAT, name: '아령',        price: 80,  prop: 'furDumbbell' },
+  { id: 'fur-plant',    cat: FURN_CAT, name: '작은 화분',   price: 90,  prop: 'furPlant' },
+  { id: 'fur-fan',      cat: FURN_CAT, name: '선풍기',      price: 140, prop: 'furFan' },
+  { id: 'fur-shelf',    cat: FURN_CAT, name: '낮은 책장',   price: 180, prop: 'furShelf' },
+  { id: 'fur-rug-round',cat: FURN_CAT, name: '둥근 러그',   price: 190, prop: 'furRugRound', desc: '밟고 다닙니다' },
+  { id: 'fur-guitar',   cat: FURN_CAT, name: '기타',        price: 240, prop: 'furGuitar' },
+  { id: 'fur-beanbag',  cat: FURN_CAT, name: '빈백',        price: 260, prop: 'furBeanbag',  desc: '앉을 수 있어요' },
+  { id: 'fur-rug',      cat: FURN_CAT, name: '러그',        price: 300, prop: 'furRug',      desc: '밟고 다닙니다' },
+  { id: 'fur-tv',       cat: FURN_CAT, name: '브라운관 TV', price: 340, prop: 'furTv' },
 ];
 const SHOP_BY_ID = Object.fromEntries(SHOP.map((i) => [i.id, i]));
 
@@ -7989,12 +8072,233 @@ const tintOf = (it, map) => (tintable(it) ? (map || ROOM.tint)[it.id] || null : 
 function pruneUnknownItems() {
   ROOM.owned = (ROOM.owned || []).filter((id) => SHOP_BY_ID[id]);
   for (const cat of Object.keys(ROOM.worn || {}))
-    if (!SHOP_BY_ID[ROOM.worn[cat]]) delete ROOM.worn[cat];
+    if (!SHOP_BY_ID[ROOM.worn[cat]] || isFurniture(SHOP_BY_ID[ROOM.worn[cat]])) delete ROOM.worn[cat];
   ROOM.tint = ROOM.tint || {};
   for (const id of Object.keys(ROOM.tint))
     if (!tintable(SHOP_BY_ID[id]) || !TINT_BY_HEX[ROOM.tint[id]]) delete ROOM.tint[id];
+  /* 저장된 가구는 세 가지로 깨질 수 있습니다 — 없어진 상품, 안 산 것,
+     방 크기가 바뀌어 지도 밖으로 나간 좌표. 셋 다 여기서 거릅니다.
+     같은 것을 두 번 놓은 기록도 앞엣것만 남깁니다(하나씩만 삽니다). */
+  const seen = new Set();
+  ROOM.decor = (Array.isArray(ROOM.decor) ? ROOM.decor : []).filter((d) => {
+    const it = d && SHOP_BY_ID[d.id];
+    if (!isFurniture(it) || !ROOM.owned.includes(d.id) || seen.has(d.id)) return false;
+    const p = PROP[it.prop];
+    if (!p || !Number.isInteger(d.x) || !Number.isInteger(d.y)) return false;
+    if (d.x < 0 || d.y < 0 || d.x + p.w > DORM.w || d.y + p.h > DORM.h) return false;
+    seen.add(d.id);
+    return true;
+  }).map((d) => ({ id: d.id, x: d.x, y: d.y }));   // 남는 필드는 버립니다
 }
 pruneUnknownItems();
+
+/* ==================================================================
+   방 꾸미기
+
+   싸이월드 미니룸이 기준입니다 — 칸이 정해진 진열장이 아니라, 방 안
+   아무 데나 끌어다 놓는 것. 그래서 **자유 배치**입니다.
+
+   자유 배치의 값은 "내가 정했다" 이고, 값은 두 가지입니다.
+     · 검사를 해야 합니다. 정해진 칸이면 애초에 못 막지만, 자유 배치는
+       문 앞에 옷장을 놓아 스스로를 가둘 수 있습니다.
+     · 놓는 동안 보여 줘야 합니다. 목록에서 고르고 끝나면 어디에 놓일지
+       모르는 채로 확인을 누르게 됩니다.
+   그래서 배치 모드(유령 미리보기 + 방향키 + Space)를 같이 만듭니다.
+
+   막히는지 검사 —
+     bake(m) 이 m.solid 를 통째로 새로 만드므로(확인함: 함수 첫 줄이
+     new Uint8Array), 후보를 props 에 넣고 굽고 재 보고 아니면 되돌리면
+     됩니다. 판정 규칙을 두 벌 쓰지 않는 것이 요점입니다 — 걸을 수 있나
+     없나를 여기서 따로 계산하면 언젠가 bake 와 달라집니다.
+
+   저장 —
+     ROOM.decor 는 [{ id, x, y }] 납작한 배열입니다. 나중에 서버로 갈 때
+     그대로 (room_id, item_id, x, y) 한 줄씩이 됩니다.
+   ================================================================== */
+
+const DORM_SPAWN = { x: 7, y: 8 };          // 문으로 들어오면 서는 자리
+const DECOR = {
+  on: false,      // 배치 모드
+  it: null,       // 놓는 중인 상품
+  x: 0, y: 0,     // 유령 왼쪽 위 칸
+  ok: false, why: '',
+};
+
+const decorEntry = (id) => (ROOM.decor || []).find((d) => d.id === id) || null;
+const decorProp = (d) => ({ kind: SHOP_BY_ID[d.id].prop, x: d.x, y: d.y });
+
+/** ROOM.decor(또는 넘긴 목록)를 지도에 얹고 다시 굽습니다. */
+function applyDecor(list) {
+  const m = DORM;
+  m.props = m.baseProps.concat((list || ROOM.decor).map(decorProp));
+  bake(m);
+}
+/* 가구 없이 한 번 구워 "원래 방" 의 막힌 칸을 떠 둡니다. 놓을 자리를
+   고를 때 이걸 봅니다 — 지금 solid 를 보면 이미 놓은 가구 위에 또
+   놓이거나, 옮기는 중인 자기 자신 때문에 자기 자리에 못 돌아옵니다. */
+applyDecor([]);
+DORM.baseSolid = DORM.solid.slice();
+applyDecor();
+
+/** 가구가 덮는 칸들 */
+function decorTiles(it, x, y) {
+  const d = PROP[it.prop], out = [];
+  for (let j = 0; j < d.h; j++) for (let i = 0; i < d.w; i++) out.push({ x: x + i, y: y + j });
+  return out;
+}
+
+/** 방이 통째로 이어져 있는지. 문·초인종·안내까지 걸어서 닿아야 합니다. */
+function dormConnected() {
+  const m = DORM;
+  const seen = new Uint8Array(m.w * m.h);
+  const start = at(m, DORM_SPAWN.x, DORM_SPAWN.y);
+  if (m.solid[start]) return false;                 // 들어오는 자리부터 막혔습니다
+  const q = [start];
+  seen[start] = 1;
+  let n = 1;
+  while (q.length) {
+    const i = q.pop(), x = i % m.w, y = (i / m.w) | 0;
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (!inMap(m, nx, ny)) continue;
+      const j = at(m, nx, ny);
+      if (seen[j] || m.solid[j]) continue;
+      seen[j] = 1; n++; q.push(j);
+    }
+  }
+  /* 걸을 수 있는 칸이 하나라도 남으면 주머니가 생긴 것입니다 —
+     화면으로는 안 보이고 걸어 들어가야만 알 수 있는 구멍입니다. */
+  let free = 0;
+  for (let i = 0; i < m.solid.length; i++) if (!m.solid[i]) free++;
+  if (n !== free) return false;
+  /* 물건은 한 칸 옆에서 만집니다(findNearby). 옆이 다 막히면 창이
+     영영 안 열립니다. */
+  for (const t of m.things || []) {
+    const d = PROP[m.props.find((q2) => q2.x === t.x && q2.y === t.y)?.kind];
+    const tw = d ? d.w : 1, th = d ? d.h : 1;
+    let reach = false;
+    for (let y = t.y - 1; y <= t.y + th && !reach; y++)
+      for (let x = t.x - 1; x <= t.x + tw && !reach; x++)
+        if (inMap(m, x, y) && seen[at(m, x, y)]) reach = true;
+    if (!reach) return false;
+  }
+  return true;
+}
+
+/** 여기 놓아도 되나. 되면 ok, 안 되면 왜 안 되는지까지 돌려줍니다. */
+function decorCheck(it, x, y) {
+  const m = DORM, d = PROP[it.prop];
+  if (x < 0 || y < 0 || x + d.w > m.w || y + d.h > m.h) return { ok: false, why: '방 밖입니다' };
+  const tiles = decorTiles(it, x, y);
+
+  /* 원래 방에서 걸을 수 있던 칸에만 놓습니다. 벽·붙박이 가구 위에
+     겹쳐 놓으면 그림이 서로를 자릅니다. */
+  for (const t of tiles)
+    if (m.baseSolid[at(m, t.x, t.y)]) return { ok: false, why: '벽이나 원래 있던 가구 자리입니다' };
+
+  /* 문간. bake 가 포탈 칸을 무조건 뚫으므로, 여기서 안 막으면 문 위에
+     옷장을 놓고 그 옷장을 뚫고 지나가게 됩니다. */
+  for (const po of m.portals)
+    for (const t of tiles)
+      if (t.x >= po.x && t.x < po.x + po.w && t.y >= po.y && t.y < po.y + po.h)
+        return { ok: false, why: '문 앞은 비워 둡니다' };
+
+  /* 초인종·안내 같은 물건 칸 */
+  for (const t of m.things || [])
+    if (tiles.some((q) => q.x === t.x && q.y === t.y)) return { ok: false, why: t.name + ' 자리입니다' };
+
+  /* 이미 놓은 가구 (옮기는 중인 자기 자신은 뺍니다) */
+  for (const o of ROOM.decor) {
+    if (o.id === it.id) continue;
+    const od = PROP[SHOP_BY_ID[o.id].prop];
+    for (const t of tiles)
+      if (t.x >= o.x && t.x < o.x + od.w && t.y >= o.y && t.y < o.y + od.h)
+        return { ok: false, why: SHOP_BY_ID[o.id].name + ' 과 겹칩니다' };
+  }
+
+  /* 사람 발밑. 자기 발 아래 옷장을 놓으면 그 자리에서 못 빠져나옵니다 */
+  if (zoneId === 'dorm') {
+    const ptx = Math.floor(player.x / T), pty = Math.floor((player.y - 1) / T);
+    if (tiles.some((t) => t.x === ptx && t.y === pty) && PROP[it.prop].c.some((r) => r.some(Boolean)))
+      return { ok: false, why: '내가 서 있는 자리입니다' };
+  }
+
+  /* 마지막으로 실제로 놓아 보고 방이 이어져 있는지 봅니다. 앞의 규칙을
+     다 지켜도 통로 한 칸을 막으면 방이 두 조각이 납니다. */
+  const trial = ROOM.decor.filter((o) => o.id !== it.id).concat([{ id: it.id, x, y }]);
+  applyDecor(trial);
+  const fine = dormConnected();
+  applyDecor();                                     // 무조건 되돌립니다
+  if (!fine) return { ok: false, why: '여기 놓으면 방이 막힙니다' };
+  return { ok: true, why: '' };
+}
+
+/* ---- 배치 모드 ---- */
+function decorStart(id) {
+  const it = SHOP_BY_ID[id];
+  if (!isFurniture(it) || !owns(id) || zoneId !== 'dorm' || VISIT.host) return;
+  if (player.sitting) stand();
+  closePanel();
+  const had = decorEntry(id);
+  const d = PROP[it.prop];
+  /* 놓여 있던 것은 그 자리에서, 새 것은 내 앞에서 시작합니다 —
+     방 가운데에서 시작하면 놓고 싶은 자리까지 매번 걸어가야 합니다. */
+  const px0 = Math.floor(player.x / T), py0 = Math.floor((player.y - 1) / T);
+  DECOR.on = true;
+  DECOR.it = it;
+  DECOR.x = had ? had.x : Math.max(0, Math.min(DORM.w - d.w, px0));
+  DECOR.y = had ? had.y : Math.max(0, Math.min(DORM.h - d.h, py0));
+  keys.clear();                                     // 걷다가 들어와도 안 미끄러집니다
+  decorRecheck();
+  decorBar();
+}
+function decorRecheck() {
+  const r = decorCheck(DECOR.it, DECOR.x, DECOR.y);
+  DECOR.ok = r.ok; DECOR.why = r.why;
+}
+function decorNudge(dx, dy) {
+  const d = PROP[DECOR.it.prop];
+  DECOR.x = Math.max(0, Math.min(DORM.w - d.w, DECOR.x + dx));
+  DECOR.y = Math.max(0, Math.min(DORM.h - d.h, DECOR.y + dy));
+  decorRecheck();
+  decorBar();
+}
+function decorCommit() {
+  if (!DECOR.ok) { SFX.deny && SFX.deny(); return; }
+  ROOM.decor = ROOM.decor.filter((d) => d.id !== DECOR.it.id);
+  ROOM.decor.push({ id: DECOR.it.id, x: DECOR.x, y: DECOR.y });
+  saveRoom();
+  applyDecor();
+  /* 'once:decorate' 를 쓰지 않습니다 — 그 열쇠는 openPanel('settings') 가
+     이미 씁니다(마이페이지를 열면 '첫 꾸미기' 가 들어옵니다). 같이 쓰면
+     마이페이지를 먼저 연 사람은 정작 가구를 놓고 아무것도 못 받습니다. */
+  award('once:roomDecor', '첫 방 꾸미기');
+  SFX.chair && SFX.chair(false);
+  decorEnd(true);
+}
+function decorTake(id) {
+  ROOM.decor = ROOM.decor.filter((d) => d.id !== id);
+  saveRoom();
+  applyDecor();
+}
+function decorEnd(reopen) {
+  DECOR.on = false; DECOR.it = null;
+  keys.clear();
+  decorBar();
+  if (reopen) openPanel('decor');
+}
+
+/* 아래쪽 안내줄. 무엇을 누르면 되는지 화면에 있어야 합니다 — 배치
+   모드는 평소와 키가 다르므로 짐작하게 두면 안 됩니다. */
+function decorBar() {
+  const el = document.getElementById('decor-bar');
+  if (!el) return;
+  el.classList.toggle('on', DECOR.on);
+  if (!DECOR.on) return;
+  el.querySelector('b').textContent = DECOR.it.name;
+  el.querySelector('u').textContent = DECOR.ok ? '여기 놓을 수 있어요' : DECOR.why;
+  el.classList.toggle('bad', !DECOR.ok);
+}
 
 /* ---- 스프라이트 한 장씩 — 다 뜨면 열린 상점을 다시 그립니다 ---- */
 const ITEM_IMG = {};
@@ -8340,6 +8644,9 @@ const itemColor = (it) => (it.school ? schoolColor() : tintOf(it) || it.color);
 const owns = (id) => ROOM.owned.includes(id);
 const wearing = (id) => {
   const it = SHOP_BY_ID[id];
+  /* 가구에게 '입었나' 는 '방에 놓았나' 입니다. 칸(cat) 이 아니라
+     ROOM.decor 를 봅니다 — 가구는 ROOM.worn 에 절대 안 들어갑니다. */
+  if (isFurniture(it)) return !!decorEntry(id);
   return it.cat === 'egg' ? ROOM.character === EGG_CHARACTER[id] : ROOM.worn[it.cat] === id;
 };
 
@@ -8348,6 +8655,7 @@ const wearing = (id) => {
    젭·게더도 미리보기 옆에 색을 두고 지금 입은 것에 바로 먹입니다. */
 function paletteHtml(cat) {
   if (cat === 'egg') return ''; // 알은 입는 게 아니라 캐릭터가 바뀌는 것입니다
+  if (cat === FURN_CAT) return ''; // 가구는 그려진 색 그대로입니다
   const it = SHOP_BY_ID[ROOM.worn[cat]];
   if (!it) return `<div class="pal"><b>색</b><p class="hint">이 칸에 입은 것이 없습니다.</p></div>`;
   if (!tintable(it)) {
@@ -8372,6 +8680,23 @@ function paletteHtml(cat) {
 
 /** 왼쪽 미리보기 — 입은 것을 마네킹에 실제로 겹쳐 보여 줍니다. */
 function shopPreviewHtml(cat) {
+  /* 가구는 종이인형에 얹을 것이 아닙니다. 이 자리에 마네킹을 두면
+     "가구를 입는다" 로 읽히므로, 대신 방이 지금 어떤 상태인지 씁니다. */
+  if (cat === FURN_CAT) {
+    const mine = SHOP.filter(isFurniture);
+    const have = mine.filter((i) => owns(i.id)).length;
+    const put = (ROOM.decor || []).length;
+    return `
+      <div class="shop-prev">
+        <div class="who"><b>내 방</b><em>기숙사 · 1인실</em></div>
+        <div class="rows" style="margin-bottom:10px">
+          <div class="row"><span>가진 가구</span><span class="val">${have}/${mine.length}</span></div>
+          <div class="row"><span>방에 놓음</span><span class="val">${put}</span></div>
+        </div>
+        <p class="hint">사면 <b>보관</b>에 들어갑니다. 놓는 곳은 기숙사 방
+          <b>옷장</b>이에요 — 옷장 앞에서 Space 를 누르면 꾸미기가 열립니다.</p>
+      </div>`;
+  }
   const layer = (cat, label) => {
     const id = ROOM.worn[cat];
     const it = id && SHOP_BY_ID[id];
@@ -8400,17 +8725,25 @@ function shopTabHtml(cat) {
   const card = (it) => {
     const have = owns(it.id), on = wearing(it.id);
     const afford = ROOM.coins >= it.price;
+    /* 가구는 상점에서 사기만 합니다 — 놓는 것은 방에서 하는 일이고,
+       상점에 '놓기' 를 두면 학생회관에서 기숙사 바닥을 고르게 됩니다. */
     const action = !have
       ? `<button class="act" data-buy="${it.id}"${afford ? '' : ' disabled'}>${it.price}</button>`
-      : on
-        ? `<button class="act ghost" data-off="${it.id}">벗기</button>`
-        : `<button class="act" data-on="${it.id}">입기</button>`;
+      : isFurniture(it)
+        ? `<span class="act ghost" aria-hidden="true">${on ? '방에 있음' : '보관 중'}</span>`
+        : on
+          ? `<button class="act ghost" data-off="${it.id}">벗기</button>`
+          : `<button class="act" data-on="${it.id}">입기</button>`;
     /* zoom 2 — 격자 칸의 그림을 두 배로 키웁니다. 캔버스 자체를 크게
        잡아야(64x96) 확대해도 픽셀이 또렷합니다. CSS 로만 늘리면
-       image-rendering 이 있어도 브라우저마다 결과가 다릅니다. */
+       image-rendering 이 있어도 브라우저마다 결과가 다릅니다.
+       가구는 세로로 긴 종이인형 칸이 필요 없어서 칸을 낮게 씁니다. */
+    const thumb = isFurniture(it)
+      ? `<canvas class="thumb furn" data-item="${it.id}" width="64" height="64"></canvas>`
+      : `<canvas class="thumb" data-item="${it.id}" data-zoom="2"
+           width="${ITEM_W * 2}" height="${ITEM_H * 2}"></canvas>`;
     return `<div class="item${on ? ' on' : ''}">
-      <canvas class="thumb" data-item="${it.id}" data-zoom="2"
-        width="${ITEM_W * 2}" height="${ITEM_H * 2}"></canvas>
+      ${thumb}
       <span>${esc(it.name)}${it.desc ? `<em>${esc(it.desc)}</em>` : ''}</span>
       ${have && !on ? '<u>보유</u>' : ''}
       ${action}</div>`;
@@ -9063,7 +9396,11 @@ function paintItemCanvases() {
     g.imageSmoothingEnabled = false;
     g.clearRect(0, 0, c.width, c.height);
     const zoom = Number(c.dataset.zoom) || 1;
-    if (it && it.cat === 'egg') {
+    if (isFurniture(it)) {
+      /* 가구는 그려 둔 그림 그대로입니다. 칸 안에서 최대 배율로 키우되
+         정수배만 씁니다 — 1.5배로 늘리면 픽셀 폭이 들쭉날쭉해집니다. */
+      drawFurnThumb(g, c.width, c.height, PROP[it.prop]);
+    } else if (it && it.cat === 'egg') {
       drawEggThumb(g, c.width, c.height, itemColor(it) || '#C9C4BE');
     } else if (it && (itemReady(CHAR_IMG[speciesOf(ROOM.character).slug]) || itemReady(MANNEQUIN))) {
       /* 옷만 따로 띄우면 32px 짜리 색 덩어리라 무엇인지 알 수 없습니다.
@@ -9077,6 +9414,16 @@ function paintItemCanvases() {
     }
   }
 }
+/** 가구 그림 한 장을 칸 가운데에 놓습니다. 상점 칸과 꾸미기 칸이 같이 씁니다. */
+function drawFurnThumb(g, W, H, d) {
+  if (!d || !d.canvas) return;
+  const src = d.canvas;
+  const k = Math.max(1, Math.floor(Math.min(W / src.width, H / src.height)));
+  const w = src.width * k, h = src.height * k;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(src, Math.round((W - w) / 2), Math.round((H - h) / 2), w, h);
+}
+
 /* 알에는 스프라이트가 없습니다(까 봐야 아는 것이라 그림이 없는 게 맞습니다).
    그렇다고 네모난 색 블록을 두면 옆 칸의 옷 그림과 결이 안 맞아 **미완성으로
    보입니다.** 알 모양을 픽셀로 찍고 통째로 확대합니다 — 벡터 타원으로
@@ -10144,6 +10491,41 @@ const PANELS = {
     tabHtml: SHOP_CATS.map((c) => shopTabHtml(c.id)),
   }),
 
+  /* ---- 방 꾸미기 — 기숙사 옷장 ----
+     사는 곳과 놓는 곳을 나눕니다. 상점은 학생회관에 있고, 놓는 것은
+     방에서만 합니다 — 방을 보면서 놓아야 어디가 비었는지 알 수 있습니다. */
+  decor: () => {
+    const mine = SHOP.filter((i) => isFurniture(i) && owns(i.id));
+    const away = !!VISIT.host;
+    const card = (it) => {
+      const e = decorEntry(it.id);
+      return `<div class="item${e ? ' on' : ''}">
+        <canvas class="thumb furn" data-item="${it.id}" width="64" height="64"></canvas>
+        <span>${esc(it.name)}${e ? `<em>${e.x}, ${e.y}</em>` : ''}</span>
+        ${away ? `<span class="act ghost" aria-hidden="true">${e ? '놓음' : '보관'}</span>`
+          : e
+            ? `<button class="act" data-decor-move="${it.id}">옮기기</button>
+               <button class="act ghost" data-decor-take="${it.id}">치우기</button>`
+            : `<button class="act" data-decor-put="${it.id}">놓기</button>`}
+      </div>`;
+    };
+    return {
+      title: '방 꾸미기', kind: '옷장',
+      html: `
+        <div class="shop-coin">놓은 가구 <b>${(ROOM.decor || []).length}</b> · 보관 <b>${mine.length - (ROOM.decor || []).length}</b></div>
+        ${away ? `<div class="note" style="margin-bottom:12px">여기는
+          <b>${esc(VISIT.host.nickname)}</b>님의 방이에요. 남의 방 가구는 못 옮깁니다.</div>` : ''}
+        ${mine.length
+          ? `<div class="shop-grid">${mine.map(card).join('')}</div>`
+          : `<p>아직 가진 가구가 없어요. <b>학생회관 상점</b>의 <b>가구</b> 칸에서
+             살 수 있습니다.</p>`}
+        <div class="note" style="margin-top:14px">놓기를 누르면 방으로 돌아가서
+        <b>방향키</b>로 자리를 옮기고 <b>Space</b> 로 놓습니다. 문 앞이나 지나가는
+        길을 막는 자리에는 놓을 수 없어요 — 방 안에 걸어 들어갈 수 없는 구석이
+        생기기 때문입니다.</div>`,
+    };
+  },
+
   coins: () => ({
     title: '코인', kind: '',
     html: `
@@ -10671,6 +11053,14 @@ panelBody.addEventListener('click', (e) => {
   if (off) { unequip(off.dataset.off); saveRoom(); reopenShop(); return; }
   const sw = e.target.closest('[data-tint]');
   if (sw) { setTint(sw.dataset.tint, sw.dataset.hex); saveRoom(); reopenShop(); return; }
+
+  /* ---- 방 꾸미기 ---- */
+  const put = e.target.closest('[data-decor-put]');
+  if (put) return decorStart(put.dataset.decorPut);
+  const mv = e.target.closest('[data-decor-move]');
+  if (mv) return decorStart(mv.dataset.decorMove);
+  const take = e.target.closest('[data-decor-take]');
+  if (take) { decorTake(take.dataset.decorTake); openPanel('decor'); return; }
   const tap = e.target.closest('.row.tap');
   if (tap) return openEdit(tap.dataset.edit, tap);
   const act = e.target.closest('[data-do]');
@@ -10768,6 +11158,9 @@ function audioCtx() {
 function equip(id) {
   const it = SHOP_BY_ID[id];
   if (!it || !owns(id)) return;
+  /* 가구는 입는 것이 아닙니다. 이 갈림길이 없으면 ROOM.worn.furn 이
+     생기고 종이인형이 옷 대신 옷장을 겹쳐 그리려 듭니다. */
+  if (isFurniture(it)) return;
   if (it.cat === 'egg') ROOM.character = EGG_CHARACTER[id] || ROOM.character;
   else ROOM.worn[it.cat] = id;
   jacketCanvas = null; dressedCache = null;                   // 월드 캐릭터를 다시 굽습니다
@@ -10775,7 +11168,7 @@ function equip(id) {
 }
 function unequip(id) {
   const it = SHOP_BY_ID[id];
-  if (!it || it.cat === 'egg') return;   // 알은 벗을 수 없습니다. 다른 알로 바꿀 뿐입니다
+  if (!it || it.cat === 'egg' || isFurniture(it)) return;   // 알은 벗을 수 없고 가구는 입지도 않습니다
   if (ROOM.worn[it.cat] === id) delete ROOM.worn[it.cat];
   jacketCanvas = null; dressedCache = null;
 }
@@ -11437,7 +11830,9 @@ function update(dt) {
     }
     if (travel.t >= TRAVEL_OUT + TRAVEL_IN) travel = null;
   }
-  if (!player.sitting && !dialogOpen && !panelOpen && !travel) {
+  /* 배치 모드에서는 사람이 안 걷습니다. 걸으면 유령과 사람이 같이
+     움직여서 어느 쪽을 옮기는지 알 수 없습니다. */
+  if (!player.sitting && !dialogOpen && !panelOpen && !travel && !DECOR.on) {
     const run = keys.has('shift');
     /* 속도도 지도 눈금입니다. 타일만 두 배로 하고 여기를 그대로 두면
        같은 거리를 두 배 걸어야 해서 월드가 갑자기 넓게 느껴집니다. */
@@ -11676,6 +12071,27 @@ function draw() {
       }
     } else if (it.kind === 'mp') { MP.drawOne(it.rp); drawCount++;
     } else { drawPlayer(); drawCount++; }
+  }
+
+  /* 놓는 중인 가구. 사람·기물 위에 얹습니다 — 어디에 놓이는지가 지금
+     가장 중요한 정보이고, 침대 뒤에 반쯤 가린 유령은 못 읽습니다. */
+  if (DECOR.on && DECOR.it) {
+    const d = PROP[DECOR.it.prop];
+    const gx = DECOR.x * T - camX, gy = DECOR.y * T - camY;
+    ctx.save();
+    /* 바닥 칸 표시 — 되면 청록, 안 되면 빨강. 그림만 반투명하게 얹으면
+       몇 칸을 차지하는지 안 보입니다. */
+    ctx.globalAlpha = 0.24;
+    ctx.fillStyle = DECOR.ok ? '#2DD4BF' : '#E0483A';
+    ctx.fillRect(gx, gy, d.w * T, d.h * T);
+    ctx.globalAlpha = DECOR.ok ? 0.9 : 0.42;
+    blitArt(d.canvas, gx, gy);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = DECOR.ok ? '#0C5A4F' : '#8E2A20';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(gx + 1, gy + 1, d.w * T - 2, d.h * T - 2);
+    ctx.restore();
+    drawCount++;
   }
 
   /* 벽시계 바늘 — 진짜 시각. 방에 있는 동안 분침이 움직입니다. */

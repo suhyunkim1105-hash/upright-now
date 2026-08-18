@@ -830,6 +830,30 @@
     font-size: 11.5px; color: var(--ink-3); text-align: right; margin-bottom: 8px;
   }
   #panel .shop-coin b { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  /* 바깥 서비스 화면 한 칸. 높이를 고정하는 이유: 안이 교차 출처라
+     내용에 맞춰 늘릴 수가 없고, 안 정하면 0px 로 접힙니다.
+     380px 은 스포티파이 플레이리스트와 캘린더 안건 목록이 둘 다
+     한눈에 들어오는 높이입니다. */
+  #panel .embed {
+    position: relative; margin: 10px 0 6px; height: 380px;
+    border-radius: 12px; overflow: hidden;
+    background: var(--surface-3); border: 1px solid var(--line-2);
+  }
+  #panel .embed iframe { position: relative; z-index: 1; width: 100%; height: 100%; border: 0; }
+  /* 안내는 화면 **뒤에** 깔립니다. 앞에 두면 다 뜬 뒤에도 글자가 얹혀 있고,
+     뒤에 두면 화면이 뜨는 순간 자연히 가려집니다. */
+  #panel .embed-wait {
+    position: absolute; inset: 0; z-index: 0; margin: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 24px; text-align: center; line-height: 1.5;
+    font-size: 12px; color: var(--ink-3);
+  }
+  #panel .embed-wait.bad { color: var(--ink-2); }
+  /* 못 불러왔으면 380px 짜리 회색 판을 남길 이유가 없습니다 — 한 줄이면
+     한 줄만큼입니다. 큰 판에 글자 한 줄이 떠 있으면 아직 뭔가 오는
+     중처럼 보입니다. */
+  #panel .embed.dead { height: auto; }
+  #panel .embed.dead .embed-wait { position: static; padding: 18px 20px; }
   /* 못 산 이유 · 못 보낸 저장. 색만으로 말하지 않도록 글로 씁니다 —
      안 뜨는 것이 정상이고, 뜨면 무엇이 안 됐는지가 그대로 적혀 있습니다. */
   #panel .shop-state {
@@ -4614,7 +4638,13 @@ const ZONES = {};
   /* 나가는 곳 — 네 건물이 전부 같은 문입니다. 건물마다 다르면
      "여기가 출구" 를 매번 새로 배워야 합니다. */
   prop(m, 'board', 20, 23);                 // 문(x17) 오른쪽, 아래벽 앞
-  m.things = [{ x: 20, y: 23, name: '본관 안내', panel: 'aboutMainhall' }];
+  m.things = [
+    { x: 20, y: 23, name: '본관 안내', panel: 'aboutMainhall' },
+    /* 강단 위 노트북. 본관 안내에 "대중음악이 나온다" 고 적어 놓고 실제로는
+       합성음 화음만 났습니다. 음악을 트는 자리가 화면 어딘가가 아니라
+       강단이어야, 이 방이 왜 음악이 나오는 방인지가 설명됩니다. */
+    { x: 17, y: 5, name: '강단 스피커', panel: 'radio' },
+  ];
 
   prop(m, 'exitDoor', 17, m.h - 2);
   m.portals.push({ x: 17, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 6, sy: 25, label: '캠퍼스' });
@@ -4703,6 +4733,15 @@ const ZONES = {};
   m.things = [
     { x: 5, y: 2, name: '안내', panel: 'guide' },
     { x: 12, y: 7, name: '개인정보 안내', panel: 'privacy' },
+    /* 창밖 날씨. 창(x=9) 자체에는 못 붙입니다 — 그 아래가 침대라 다가갈
+       칸이 없습니다. 창 바로 옆 머리맡 협탁(7,3)에 붙였습니다.
+       벽(7,2)이 아니라 협탁인 이유: (6,3) 에서 벽 자리는 안내판(5,2)과
+       거리가 똑같아서, 서 있는 자리에 따라 뭐가 열릴지 모르게 됩니다.
+       협탁은 (6,3)·(7,4) 둘 다에서 한 칸이라 헷갈리지 않습니다. */
+    { x: 7, y: 3, name: '창밖 보기', panel: 'weather' },
+    /* 책상 위 노트북. 시간표를 보는 자리는 책상이지 설정 화면이 아닙니다.
+       desk3 가 세 칸이라 (0~4, 2~4) 어디서나 닿습니다. */
+    { x: 1, y: 3, name: '노트북 · 시간표', panel: 'calendar' },
     /* 꾸미기는 옷장이 맡습니다. 방 안 물건이 곧 메뉴라는 규칙이고, 산
        물건이 든 곳이 옷장이라 찾을 자리도 여기입니다. 버튼을 하나 더
        띄우면 방 안에서 화면을 누르는 일이 또 생깁니다. */
@@ -5278,6 +5317,13 @@ const WX = { CLEAR: 0, RAIN: 1, SNOW: 2 };
 const WEATHER = {
   override: null,           // 시험용 - 0..1 궂은 정도
 
+  /* 기상청 단기예보를 받아 왔으면 여기 들어갑니다(setRealWeather).
+     못 받았으면 null 이고, 그러면 아래 절차적 곡선을 그대로 씁니다 —
+     **가짜 예보를 지어내지 않습니다.** 창밖은 둘 중 하나입니다:
+     진짜 서울 하늘이거나, 원래 쓰던 "날짜와 시각으로 정해지는 하늘".
+     자세한 것은 아래 REAL_WEATHER 묶음에 적었습니다. */
+  real: null,               // { pty, sky, tempC, pop, at }
+
   /** 정수 격자에서만 난수를 뽑고 사이를 부드럽게 잇습니다. 매 시각마다
       새로 뽑으면 날씨가 아니라 깜빡임이 됩니다. */
   noise(t) {
@@ -5295,11 +5341,24 @@ const WEATHER = {
 
   /** 0(안 옴) ~ 1(퍼붓는 중). 가장자리가 부드러워야 뚝 켜지지 않습니다. */
   strength() {
+    if (this.override !== null) return Math.max(0, Math.min(1, this.override));
+    if (this.real) {
+      /* 안 오면 0. 오면 강수확률을 세기로 씁니다.
+         바닥을 0.3 으로 두는 이유: 확률 20% 짜리 비도 "오긴 오는" 것이라
+         창밖에 한 방울도 안 지나가면 예보와 화면이 다른 말을 합니다. */
+      if (!this.real.pty) return 0;
+      return Math.max(0.3, Math.min(1, (this.real.pop || 0) / 100));
+    }
     return Math.max(0, Math.min(1, (this.raw() - 0.58) / 0.26));
   },
 
   kind() {
     if (this.strength() <= 0) return WX.CLEAR;
+    /* 진짜 예보가 있으면 눈인지 비인지도 예보가 정합니다.
+       PTY 2 비/눈 · 3 눈 · 6 빗방울눈날림 · 7 눈날림 */
+    if (this.real && this.override === null) {
+      return [2, 3, 6, 7].includes(this.real.pty) ? WX.SNOW : WX.RAIN;
+    }
     /* 12 · 1 · 2 월은 눈. 계절이 창밖에 있어야 1 년을 쓰는 월드가 됩니다. */
     const m = new Date().getMonth();
     return (m === 11 || m < 2) ? WX.SNOW : WX.RAIN;
@@ -9564,6 +9623,9 @@ const repaintOpenPanel = () => { if (panelOpen) paintItemCanvases(); };
 function setPanelBody(html) {
   panelBody.innerHTML = html;
   paintItemCanvases();
+  /* 바깥 화면(iframe)이 들어 있으면 뜨는지 지켜봅니다. 창을 그리는 길이
+     둘(html · tabHtml)이라 여기 한 곳에서 겁니다. */
+  watchEmbeds();
 }
 
 
@@ -10258,7 +10320,275 @@ function startAnimalMatch3() {
   renderAnimalMatch3();
 }
 
+/* ==================================================================
+   바깥 서비스 세 가지
+
+   개더처럼, 물건 앞에서 Space 를 누르면 창이 열립니다. 셋 다 **월드가
+   이미 하던 일**에 붙습니다 — 새 기능을 얹는 것이 아니라, 여기 있던
+   가짜를 진짜로 바꿉니다.
+
+     창밖 날씨 (기숙사 창)   월드에는 이미 비·눈이 내립니다. 지금까지는
+                             날짜·시각으로 정해지는 곡선이었습니다.
+                             기상청 단기예보가 오면 **그 비가 진짜 비**가
+                             됩니다.
+     음악 (본관 강단)        본관 안내에 "대중음악이 나온다" 고 적혀
+                             있는데 실제로는 합성음 화음뿐이었습니다.
+     시간표 (기숙사 노트북)  세션을 시작할 이유는 대개 "오늘 뭐 있더라"
+                             에서 옵니다. 그 화면이 방 안에 있어야 합니다.
+
+   무엇을 안 붙였나 (일부러)
+     카카오맵   진짜 지도가 이 제품이 하는 일을 돕지 않습니다. 여기는
+                가상 캠퍼스이고, 실제 위치가 자세·집중과 이어지는 지점이
+                없습니다. 키 발급 + 도메인 등록이라는 비용만 남습니다.
+     디스코드   위젯 자체는 됩니다. 다만 이 월드에 동아리 부스는 그림일
+                뿐 기능이 없고, 붙일 서버도 아직 없습니다. 들어갈 자리가
+                생기면 그때 붙이는 것이 맞습니다.
+     구글 문서  붙일 자리가 마땅치 않습니다. 도서관에 "공유 자료" 를
+                만들면 그건 통합이 아니라 새 기능이고, 그건 회의 안건입니다.
+
+   붙일 수 없다고 확인된 것: 노션 · 캔바 편집기 · 구글 미트 · 슬랙 ·
+   에브리타임(2022년 크롤링 유죄 판례) · 링커리어 · RISS. 시도하지 않습니다.
+
+   ---- 열쇠와 주소는 수현만 넣을 수 있습니다 ----
+   날씨는 API 키가 필요하고(api/weather.ts 머리말), 음악·시간표는 어떤
+   플레이리스트·어떤 달력인지를 사람이 정해야 합니다. 그래서 셋 다
+   **비어 있는 상태가 기본**이고, 비어 있으면 창이 그 사실을 그대로
+   말합니다. 있지도 않은 것을 그럴듯하게 채우지 않습니다.
+   ================================================================== */
+
+/* 사람이 붙여 넣는 주소들. 설정 화면이 아니라 **각 창 안**에 둡니다 —
+   마이페이지·설정은 이 작업에서 건드리지 않기로 한 자리입니다. */
+const LINKS = Object.assign(
+  { spotify: '', calendar: '' },
+  loadJSON('girin.links', {}),
+);
+function saveLinks() { saveJSON('girin.links', LINKS); }
+
+/* ---- 진짜 날씨 ----
+   /api/weather 는 이 저장소의 서버 함수입니다(api/weather.ts). 기상청은
+   CORS 를 안 주고 키도 비밀이라 브라우저가 직접 못 부릅니다.
+
+   못 받으면 **아무 일도 안 일어납니다.** WEATHER.real 이 null 로 남고,
+   월드는 지금까지 쓰던 절차적 하늘을 그대로 씁니다. 못 받은 이유는
+   WEATHER_WHY 에 담아 창에 그대로 적습니다 — "왜 안 되는지" 를 아는 것과
+   모르는 것은 다릅니다.
+
+   30분마다 다시 물어봅니다. 단기예보는 세 시간에 한 번 발표되므로 더
+   자주 물어도 같은 답이고, 하루 10,000회를 나눠 써야 합니다. */
+let WEATHER_WHY = '';
+async function pullWeather() {
+  try {
+    const r = await fetch('/api/weather', { cache: 'no-store' });
+    if (!r.ok) { WEATHER_WHY = '날씨 서버가 ' + r.status + ' 로 답했어요.'; return; }
+    const d = await r.json();
+    if (!d.configured) { WEATHER_WHY = '서버에 기상청 키가 아직 없어요.'; return; }
+    if (!d.ok) { WEATHER_WHY = '기상청 응답: ' + (d.reason || '알 수 없음'); return; }
+    WEATHER_WHY = '';
+    WEATHER.real = { pty: d.pty, sky: d.sky, tempC: d.tempC, pop: d.pop, at: d.baseAt };
+    /* 하늘이 바뀌었으니 화면에 지금 뭐가 내리는지 다시 정합니다.
+       PRECIP 는 kind 가 바뀌면 알아서 방울을 새로 만듭니다. */
+    if (panelOpen && activePanelKey === 'weather') openPanel('weather');
+  } catch {
+    /* 정적 서버로 열었거나(이 경로가 없음) 오프라인입니다. 둘 다 정상입니다. */
+    WEATHER_WHY = '날씨 서버에 못 닿았어요. 정적 서버로 연 경우에는 원래 없는 주소예요.';
+  }
+}
+pullWeather();
+setInterval(pullWeather, 30 * 60 * 1000);
+
+/* ---- 스포티파이 ----
+   oEmbed 를 안 부릅니다. 붙여 넣은 주소에서 종류와 id 만 뽑아 embed 주소를
+   바로 만듭니다. 요청이 하나도 안 나가므로 CORS 도, 키도, 실패할 왕복도
+   없습니다 — oEmbed 로 얻는 것은 제목뿐인데 그 값에 왕복 하나를 걸 이유가
+   없습니다.
+   받아 주는 꼴: https://open.spotify.com/playlist/ID · spotify:track:ID ·
+   ?si=... 붙은 공유 링크. */
+function spotifyEmbed(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  let m = /^spotify:(track|album|playlist|artist|show|episode):([A-Za-z0-9]+)/.exec(s);
+  if (!m) m = /open\.spotify\.com\/(?:intl-[a-z]+\/)?(track|album|playlist|artist|show|episode)\/([A-Za-z0-9]+)/.exec(s);
+  if (!m) return null;
+  return 'https://open.spotify.com/embed/' + m[1] + '/' + m[2];
+}
+
+/* ---- 구글 캘린더 ----
+   "웹에 공개" 로 만든 달력만 embed 로 열립니다. 비공개 달력은 로그인
+   화면이 뜨는데, iframe 안에서는 구글이 로그인을 막으므로 빈 칸이 됩니다.
+   그래서 주소를 받을 때 그 조건을 화면에 적어 둡니다.
+   붙여 넣는 것은 캘린더 ID(xxx@group.calendar.google.com) 또는 구글이
+   주는 embed 주소 통째로 — 둘 다 받습니다. */
+function calendarEmbed(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  if (/^https:\/\/calendar\.google\.com\/calendar\/embed\?/.test(s)) return s;
+  /* <iframe src="..."> 를 통째로 붙여 넣는 사람이 많아서 그것도 받습니다 */
+  const inFrame = /src="(https:\/\/calendar\.google\.com\/calendar\/embed\?[^"]+)"/.exec(s);
+  if (inFrame) return inFrame[1].replace(/&amp;/g, '&');
+  /* 캘린더 ID 에는 # 이 들어갑니다 — 구글이 주는 공휴일 달력이
+     ko.south_korea#holiday@group.v.calendar.google.com 꼴입니다.
+     처음에 # 을 빼고 짰다가 그 달력이 통째로 거절됐습니다. */
+  if (!/^[\w.#+-]+@[\w.-]+$/.test(s)) return null;
+  return 'https://calendar.google.com/calendar/embed?ctz=Asia%2FSeoul&mode=AGENDA&src='
+    + encodeURIComponent(s);
+}
+
+/* 창 안에 끼우는 바깥 화면 한 칸.
+
+   **안 뜨는 것을 안 뜬다고 말하는 것**이 이 함수의 전부입니다. iframe 은
+   교차 출처라 안에서 무슨 일이 났는지 알 수 없고, 차단당해도 onload 가
+   그냥 뜨는 경우가 있습니다. 그래서 시간을 재고, 시간 안에 아무 일도 안
+   일어나면 "지금은 못 불러옵니다" 로 바꿉니다. 흰 칸을 그냥 두면 사람은
+   자기 인터넷을 의심하며 기다립니다. */
+function embedHtml(src, label) {
+  /* 인터넷이 꺼져 있는 줄 아는 경우에는 아예 안 만듭니다. 만들어 봐야
+     6초 기다렸다 "못 불러왔어요" 가 되고, 그 사이 브라우저가 자기 오류
+     페이지를 창 안에 띄웁니다.
+     navigator.onLine 은 "랜선이 꽂혀 있나" 수준이라 false 일 때만 믿습니다 —
+     true 인데 못 닿는 경우는 아래 watchEmbeds 가 시간으로 잡습니다. */
+  if (navigator.onLine === false) {
+    return `<div class="embed dead"><p class="embed-wait bad">인터넷이 꺼져 있어요.
+      연결되면 다시 열어 주세요.</p></div>
+      <p class="hint">주소: ${esc(src)}</p>`;
+  }
+  /* sandbox 를 안 겁니다. 두 가지 이유입니다.
+     (1) 주소는 사람이 붙여 넣은 문자열이 아니라 **우리가 만든 것**입니다.
+         spotifyEmbed·calendarEmbed 는 종류와 id 만 뽑아 주소를 다시 짓거나,
+         calendar.google.com/calendar/embed 로 시작하는지 확인합니다. 그래서
+         여기 들어오는 src 는 open.spotify.com 아니면 calendar.google.com
+         둘 중 하나입니다 — 임의의 사이트를 띄우는 창구가 아닙니다.
+     (2) sandbox 를 걸면 저장소 접근이 막혀서 두 서비스가 자기 안에서
+         SecurityError 를 냅니다. 스포티파이는 로그인 상태를 저장소로
+         확인하므로, 막으면 전곡 재생이 30초 미리듣기로 떨어집니다.
+     대신 allow 는 필요한 것만 켭니다. */
+  return `<div class="embed" data-embed="${esc(src)}">
+    <iframe title="${esc(label)}" src="${esc(src)}" loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"></iframe>
+    <p class="embed-wait">불러오는 중…</p>
+  </div>
+  <p class="hint"><a href="${esc(src)}" target="_blank" rel="noopener">새 탭에서 열기</a></p>`;
+}
+
+/* 창을 그린 뒤에 부릅니다. 뜨면 안내를 지우고, 안 뜨면 **iframe 을 치우고**
+   정직하게 씁니다.
+
+   왜 load 이벤트만으로는 안 되나 — 실제로 겪은 일입니다
+   ------------------------------------------------------
+   처음에는 iframe.onload 로 성공을 판정했습니다. 그런데 주소에 못 닿으면
+   크로미움이 그 자리에 **자기 오류 페이지**를 넣고, 그것도 load 로 셉니다.
+   그래서 "다 떴다" 며 안내를 지우고 회색 빈 칸만 남았습니다 — 정확히
+   하지 말자고 한 그 화면입니다. 교차 출처라 안을 들여다볼 수도 없습니다.
+
+   그래서 **따로 두드려 봅니다.** mode:'no-cors' 로 fetch 하면 내용은 못
+   읽지만(opaque), 호스트에 닿았는지는 알 수 있습니다 — 닿으면 resolve,
+   못 닿으면 reject 입니다. 이 컨테이너에서 실측: 막힌 호스트는 reject,
+   같은 서버는 resolve. */
+function watchEmbeds() {
+  for (const box of panelBody.querySelectorAll('.embed')) {
+    const frame = box.querySelector('iframe');
+    const wait = box.querySelector('.embed-wait');
+    if (!frame || !wait) continue;
+    let done = false;
+    const fail = (text) => {
+      if (done) return;
+      done = true;
+      /* 빈 칸을 남기지 않으려고 치웁니다. 남겨 두면 글자 뒤에 회색 판이
+         계속 서 있어서 "곧 뜰 것" 처럼 보입니다. */
+      frame.remove();
+      wait.textContent = text;
+      wait.classList.add('bad');
+      box.classList.add('dead');
+    };
+    const good = () => { if (!done) { done = true; wait.remove(); } };
+
+    fetch(frame.src, { mode: 'no-cors', cache: 'no-store' })
+      .then(() => { /* 호스트가 답했습니다 — load 를 기다립니다 */ })
+      .catch(() => fail('지금은 못 불러왔어요. 인터넷이 막혀 있거나 이 주소가 차단돼 있어요. 아래 “새 탭에서 열기” 로는 열릴 수 있어요.'));
+
+    frame.addEventListener('load', () => setTimeout(good, 250));
+    frame.addEventListener('error', () => fail('지금은 못 불러왔어요. 새 탭에서 열어 보세요.'));
+    /* 6초. 느린 회선에서 성급하게 실패라고 하지 않을 만큼이면서,
+       사람이 빈 칸을 보고 있기에는 이미 긴 시간입니다. */
+    setTimeout(() => fail('지금은 못 불러왔어요. 주소가 공개가 아니거나 응답이 없어요.'), 6000);
+  }
+}
+
 const PANELS = {
+  /* ---- 창밖 날씨 — 기숙사 창 ---- */
+  weather: () => {
+    const w = WEATHER.real;
+    const st = WEATHER.strength();
+    const kindName = st <= 0 ? '안 옴' : (WEATHER.kind() === WX.SNOW ? '눈' : '비');
+    const SKY = { 1: '맑음', 3: '구름 많음', 4: '흐림' };
+    const PTY = { 0: '없음', 1: '비', 2: '비/눈', 3: '눈', 4: '소나기', 5: '빗방울', 6: '빗방울눈날림', 7: '눈날림' };
+    const rows = w
+      ? `<div class="rows">
+          <div class="row"><span>하늘</span><span class="val">${SKY[w.sky] || '?'}</span></div>
+          <div class="row"><span>강수</span><span class="val">${PTY[w.pty] ?? '?'}</span></div>
+          <div class="row"><span>강수확률</span><span class="val">${w.pop}%</span></div>
+          ${w.tempC === null ? '' : `<div class="row"><span>기온</span><span class="val">${w.tempC}℃</span></div>`}
+          <div class="row"><span>월드에 내리는 것</span><span class="val">${kindName}</span></div>
+        </div>
+        <div class="note">기상청 단기예보 ${esc(String(w.at || ''))} 발표 · 서울 격자 기준.
+        지금 창밖에 내리는 것이 실제 예보예요.</div>`
+      : `<div class="rows">
+          <div class="row"><span>월드에 내리는 것</span><span class="val">${kindName}</span></div>
+          <div class="row"><span>세기</span><span class="val">${Math.round(st * 100)}%</span></div>
+        </div>
+        <div class="note"><b>지금은 진짜 예보가 아니에요.</b> 날짜와 시각으로
+        정해지는 하늘을 쓰고 있어요 — 같은 날 들어온 사람은 같은 하늘을 봅니다.
+        ${esc(WEATHER_WHY || '아직 안 물어봤어요.')}</div>
+        <div class="note">진짜 예보를 켜려면 <b>기상청 단기예보 API 키</b>가
+        필요해요. 하루 10,000회까지 무료이고 신청은 자동 승인이에요.
+        <br>1. data.go.kr 에서 “기상청_단기예보 조회서비스” 활용신청
+        <br>2. 일반 인증키(Decoding) 복사
+        <br>3. Vercel 환경변수에 <b>KMA_SERVICE_KEY</b> 로 넣고 재배포
+        <br>자세한 것은 <b>api/weather.ts</b> 맨 위에 적어 두었어요.</div>`;
+    return { title: '창밖', kind: '날씨', html: `<p>${w ? '지금 서울 하늘이 이 방 창밖에도 있습니다.' : '창밖은 이 월드가 만든 하늘이에요.'}</p>${rows}` };
+  },
+
+  /* ---- 음악 — 본관 강단 ---- */
+  radio: () => {
+    const src = spotifyEmbed(LINKS.spotify);
+    return {
+      title: '강단 스피커', kind: '음악',
+      html: `<p>본관에서 트는 음악이에요. 스포티파이 링크를 걸면 여기서
+        바로 나옵니다 — 로그인한 계정이면 전곡, 아니면 30초 미리듣기예요.</p>
+        ${src ? embedHtml(src, '스포티파이 플레이어')
+              : `<div class="note">아직 아무것도 안 걸려 있어요. 있지도 않은
+                 플레이리스트를 넣어 두면 눌렀을 때 빈 칸이 뜨니까요.</div>`}
+        <div class="rows" style="margin-top:12px">
+          <div class="row tap" data-link="spotify"><span>스포티파이 주소
+            <em>${src ? esc(LINKS.spotify) : '플레이리스트·앨범·트랙 링크'}</em></span>
+            <span class="val">${src ? '바꾸기' : '붙여넣기'}</span></div>
+        </div>
+        <p class="hint">스포티파이 앱에서 플레이리스트 → 공유 → 링크 복사.
+        <b>open.spotify.com/playlist/…</b> 꼴이면 됩니다.</p>`,
+    };
+  },
+
+  /* ---- 시간표 — 기숙사 노트북 ---- */
+  calendar: () => {
+    const src = calendarEmbed(LINKS.calendar);
+    return {
+      title: '노트북', kind: '시간표',
+      html: `<p>오늘 뭐가 있는지 보고 앉으라고 책상 위에 뒀어요.</p>
+        ${src ? embedHtml(src, '구글 캘린더')
+              : `<div class="note">아직 달력을 안 걸었어요.</div>`}
+        <div class="rows" style="margin-top:12px">
+          <div class="row tap" data-link="calendar"><span>구글 캘린더
+            <em>${src ? esc(LINKS.calendar) : '캘린더 ID 또는 삽입 주소'}</em></span>
+            <span class="val">${src ? '바꾸기' : '붙여넣기'}</span></div>
+        </div>
+        <p class="hint"><b>공개 달력만 보입니다.</b> 구글 캘린더 → 설정 →
+        해당 캘린더 → “공개 사용 설정” 을 켠 뒤, 같은 화면의
+        “캘린더 통합” 에서 <b>삽입 코드</b>나 <b>캘린더 ID</b> 를 복사하세요.
+        비공개 달력을 넣으면 로그인 화면이 뜨는데, 창 안에서는 구글이
+        로그인을 막아서 빈 칸이 됩니다.</p>`,
+    };
+  },
+
   animalFind: () => ({
     title: '동물 기억력 게임', kind: 'MINI GAME',
     html: animalFindIntroHtml(),
@@ -11091,6 +11421,56 @@ function openEdit(key, row) {
   sync();
 }
 
+/* 바깥 서비스 주소를 붙여 넣는 줄. EDITS 를 안 쓰는 이유는 저장 뒤 흐름이
+   다르기 때문입니다 — EDITS 의 저장은 ROOM 을 고치고 **마이페이지**를 다시
+   엽니다. 여기는 LINKS 를 고치고 지금 보던 창을 다시 엽니다. */
+const LINK_SPEC = {
+  spotify: {
+    label: '스포티파이 주소', hint: 'https://open.spotify.com/playlist/…',
+    parse: spotifyEmbed, panel: 'radio',
+    bad: '스포티파이 링크가 아니에요. 앱에서 공유 → 링크 복사로 받은 주소를 넣어 주세요.',
+  },
+  calendar: {
+    label: '구글 캘린더', hint: '캘린더 ID 또는 삽입 주소',
+    parse: calendarEmbed, panel: 'calendar',
+    bad: '캘린더 ID(…@group.calendar.google.com)나 calendar.google.com/calendar/embed?… 주소를 넣어 주세요.',
+  },
+};
+function openLinkEdit(key, row) {
+  const spec = LINK_SPEC[key];
+  if (!spec || !row) return;
+  const box = document.createElement('div');
+  box.className = 'edit';
+  box.innerHTML = '<input type="text" maxlength="400" placeholder="' + spec.hint
+    + '" aria-label="' + spec.label + '">'
+    + '<button class="act" data-do="link-save">저장</button>'
+    + '<button class="act ghost" data-do="link-clear">지우기</button>';
+  row.replaceWith(box);
+  box.dataset.key = key;
+  const input = box.querySelector('input');
+  input.value = LINKS[key] || '';
+  input.focus(); input.select();
+  const why = document.createElement('p');
+  why.className = 'hint'; why.style.color = 'var(--bad)';
+  why.setAttribute('role', 'alert'); why.hidden = true;
+  box.after(why);
+  const save = box.querySelector('[data-do="link-save"]');
+  const sync = () => {
+    const v = input.value.trim();
+    const okNow = !v || !!spec.parse(v);
+    save.disabled = !okNow;
+    save.style.opacity = okNow ? 1 : .45;
+    why.textContent = okNow ? '' : spec.bad;
+    why.hidden = okNow;
+  };
+  input.addEventListener('input', sync);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !save.disabled) save.click();
+    if (e.key === 'Escape') openPanel(spec.panel);
+  });
+  sync();
+}
+
 /* 창 안의 조작 — 위임 하나로 받습니다 */
 panelBody.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
@@ -11164,11 +11544,24 @@ panelBody.addEventListener('click', (e) => {
   if (mv) return decorStart(mv.dataset.decorMove);
   const take = e.target.closest('[data-decor-take]');
   if (take) { decorTake(take.dataset.decorTake); openPanel('decor'); return; }
+  /* 바깥 서비스 주소 줄이 먼저입니다 — 이것도 .row.tap 이라, 뒤에 두면
+     아래 openEdit 이 먼저 잡아 EDITS[undefined] 로 조용히 아무 일도 안 합니다. */
+  const link = e.target.closest('[data-link]');
+  if (link) return openLinkEdit(link.dataset.link, link);
   const tap = e.target.closest('.row.tap');
   if (tap) return openEdit(tap.dataset.edit, tap);
   const act = e.target.closest('[data-do]');
   if (!act) return;
   const what = act.dataset.do;
+  if (what === 'link-save' || what === 'link-clear') {
+    const box = act.closest('.edit');
+    const key = box.dataset.key;
+    const spec = LINK_SPEC[key];
+    LINKS[key] = what === 'link-clear' ? '' : box.querySelector('input').value.trim();
+    saveLinks();
+    openPanel(spec.panel);
+    return;
+  }
   if (what === 'edit-save' || what === 'edit-cancel') {
     const box = act.closest('.edit');
     if (what === 'edit-save') {

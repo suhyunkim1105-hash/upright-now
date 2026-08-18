@@ -1559,6 +1559,42 @@ function paintBuilding(spec) {
       disc(g, fx, fy, f.r, '#B9C2C8');
       disc(g, fx - 1, fy - 2, Math.max(1, f.r - 3), '#E2E8EC');
     }
+    else if (f.k === 'cube') {
+      /* 지붕에 얹은 주사위 조형물 — 미니게임관. 돔·원뿔·시계탑이 전부
+         둥근 것이라, 다섯째 건물은 각진 것 하나로 갈라집니다.
+
+         윗면을 **눌러서** 그립니다(가로 2s, 세로 1.3s). 정사각으로 두면
+         전체 실루엣이 세로로 길어져 벽에 걸린 액자가 됩니다 — 눌러야
+         위에서 내려다본 상자가 됩니다. */
+      const s = f.r, th = Math.round(s * 0.66), dep = Math.round(s * 0.72);
+      const ink = '#2A2036';
+      shadow(g, fx + 3, fy + th + dep + 1, s - 3, 3);
+      px(g, fx - s - 1, fy - th - 1, s * 2 + 2, th * 2 + dep + 2, ink);   // 테는 1px
+      px(g, fx - s, fy + th, s * 2, dep, '#D6CAB0');            // 앞면
+      px(g, fx - s, fy + th, s * 2, 2, '#B6A98E');              // 윗면과의 접힘
+      px(g, fx - s, fy + th + dep - 2, s * 2, 2, '#B6A98E');
+      px(g, fx - s, fy - th, s * 2, th * 2, '#F6F1E2');         // 윗면
+      px(g, fx - s, fy - th, s * 2, 2, '#FFFDF4');
+      px(g, fx - s, fy - th, 2, th * 2, '#FFFDF4');
+      px(g, fx + s - 3, fy - th + 3, 3, th * 2 - 3, '#E2DAC6');
+      /* 귀 — 두 칸씩 깎습니다. 한 칸이면 이 크기에서 안 보입니다. */
+      [[-s, -th], [s - 2, -th], [-s, th - 2], [s - 2, th - 2]]
+        .forEach(([dx, dy]) => px(g, fx + dx, fy + dy, 2, 2, ink));
+      /* 눈 다섯. 윗면이 눌렸으니 눈도 같이 눌립니다 — 동그란 눈을 그대로
+         찍으면 면만 기울고 무늬는 안 기운 그림이 됩니다. */
+      const pw = Math.max(2, Math.round(s * 0.17)), ph = Math.max(1, Math.round(pw * 0.7));
+      const qx = Math.round(s * 0.5), qy = Math.round(th * 0.5);
+      const pip = (dx, dy, c) => {
+        px(g, fx + dx - pw, fy + dy - ph, pw * 2, ph * 2 + 1, c);
+        px(g, fx + dx - pw + 1, fy + dy - ph - 1, pw * 2 - 2, ph * 2 + 3, c);
+      };
+      pip(-qx, -qy, ink); pip(qx, -qy, ink);
+      pip(0, 0, '#D8442C');                                     // 가운데만 빨강
+      pip(-qx, qy, ink); pip(qx, qy, ink);
+      /* 앞면은 둘. 다섯을 또 새기면 이 높이에서 줄무늬가 됩니다. */
+      px(g, fx - qx - 1, fy + th + 4, 3, 3, ink);
+      px(g, fx + qx - 2, fy + th + dep - 7, 3, 3, ink);
+    }
     else if (f.k === 'sky') {
       /* 채광창 — 열람실 위에 줄지어 앉습니다 */
       for (let i = 0; i < f.n; i++) {
@@ -1589,15 +1625,21 @@ function paintBuilding(spec) {
 
   const doorX = ((spec.w >> 1) - 1) * TS;
   /* 창문 — 건물마다 양식이 다릅니다. 색보다 형태가 성격을 말합니다. */
-  const step = spec.win === 'shop' ? 16 : spec.win === 'grid' ? 11 : 13;
+  const step = spec.win === 'shop' ? 16 : spec.win === 'grid' ? 11
+             : spec.win === 'round' ? 18 : 13;
   let wi = 0;
   for (let x = 9; x < W - 14; x += step) {
     if (x + 10 > doorX - 12 && x < doorX + TS * 2 + 14) continue;
     paintWindow(g, spec.win, x, wallY, P);
     /* 셋 중 하나는 불이 켜져 있습니다. 전부 같은 유리면 벽지입니다. */
     if (wi % 3 === 1) {
-      px(g, x + 2, wallY + 6, 6, 9, 'rgba(255,214,138,.72)');
-      px(g, x + 2, wallY + 6, 6, 3, 'rgba(255,240,200,.82)');
+      if (spec.win === 'round') {
+        disc(g, x + 5, wallY + 10, 4, 'rgba(255,214,138,.72)');
+        disc(g, x + 5, wallY + 9, 3, 'rgba(255,240,200,.82)');
+      } else {
+        px(g, x + 2, wallY + 6, 6, 9, 'rgba(255,214,138,.72)');
+        px(g, x + 2, wallY + 6, 6, 3, 'rgba(255,240,200,.82)');
+      }
     }
     wi++;
   }
@@ -1658,6 +1700,32 @@ function paintBuilding(spec) {
     }
   }
 
+  /* ---- 처마 위 간판 ----
+     정면 두 줄은 32px 뿐이고 차양·유리문·계단이 이미 다 씁니다. 그래서
+     이름판은 지붕 앞머리에 세웁니다 — 위에서 내려다보는 그림에서 판이
+     정면으로 서는 자리가 여기뿐입니다.
+     전구를 두르는 이유는 밤입니다. 창은 셋 중 하나만 켜지지만 간판은
+     통째로 켜져서, 어두워지면 이 건물만 멀리서 눈에 띕니다
+     (windowLights 가 __signY 를 보고 여기에 빛을 답니다). */
+  if (spec.sign) {
+    const sw = Math.min(W - 44, 136), sh = 26;
+    const sx = Math.round((W - sw) / 2), sy = faceY - sh - 3;
+    [sx + 9, sx + sw - 13].forEach((lx) => px(g, lx, sy + sh - 2, 4, 7, P.dark));  // 다리 둘
+    px(g, sx + 3, sy + 4, sw, sh, 'rgba(0,0,0,.26)');
+    px(g, sx, sy, sw, sh, P.dark);
+    px(g, sx + 3, sy + 3, sw - 6, sh - 6, spec.sign.c);
+    px(g, sx + 3, sy + 3, sw - 6, 1, 'rgba(255,255,255,.20)');
+    /* 전구는 하나 걸러 색을 바꿉니다. 전부 같은 색이면 점선이 됩니다. */
+    for (let i = 4; i < sw - 5; i += 7) {
+      const warm = ((i / 7) | 0) % 2;
+      px(g, sx + i, sy + 1, 2, 2, warm ? '#FFF3C4' : '#FFD16B');
+      px(g, sx + i, sy + sh - 3, 2, 2, warm ? '#FFD16B' : '#FFF3C4');
+    }
+    stamp(g, spec.sign.text, 9, 'rgba(0,0,0,.55)', (W >> 1) + 1, sy + 9, 'center');
+    stamp(g, spec.sign.text, 9, '#FFFFFF', W >> 1, sy + 8, 'center');
+    c.__signY = sy + (sh >> 1);
+  }
+
   return c;
 }
 
@@ -1673,7 +1741,10 @@ function buildingProp(spec) {
       c[j].push(isDoor ? 0 : 1);
     }
   }
-  return { s: 'img', canvas, w: spec.w, h: spec.h, c, t: null, doorX };
+  /* signY 는 밤에 간판을 켜는 자리입니다(windowLights). 그림을 그린
+     쪽이 알려 준 값을 그대로 물려받습니다 — 여기서 다시 계산하면
+     간판 높이를 두 군데에 적게 되고, 언젠가 둘이 어긋납니다. */
+  return { s: 'img', canvas, w: spec.w, h: spec.h, c, t: null, doorX, signY: canvas.__signY };
 }
 
 /* ==================================================================
@@ -1805,6 +1876,28 @@ function roofIcon(g, kind, cx, cy, R) {
     disc(g, cx, cy, 2, '#FF6B52');
     disc(g, cx, cy, 1, '#8E2E1C');
   }
+  else if (kind === 'dice') {
+    /* 주사위 — 미니게임관. 넷(달·책·시계·우승컵)과 겹치지 않으면서
+       설명 없이 "놀이" 로 읽히는 것이 이것뿐이었습니다.
+       면이 14px 은 돼야 눈 다섯이 격자로 안 뭉칩니다 — 메달 안지름이
+       22px 이라 딱 들어갑니다. */
+    const s = 7;
+    px(g, cx - s - 1, cy - s - 1, s * 2 + 2, s * 2 + 2, ink);
+    px(g, cx - s, cy - s, s * 2, s * 2, '#F6F1E2');
+    px(g, cx - s, cy - s, s * 2, 2, '#FFFDF4');                 // 빛은 왼쪽 위
+    px(g, cx - s, cy - s, 2, s * 2, '#FFFDF4');
+    px(g, cx + s - 2, cy - s + 2, 2, s * 2 - 2, '#DCD3BE');
+    px(g, cx - s + 2, cy + s - 2, s * 2 - 4, 2, '#DCD3BE');
+    /* 귀를 한 점씩 깎습니다. 안 깎으면 주사위가 아니라 각설탕입니다. */
+    [[-s, -s], [s - 1, -s], [-s, s - 1], [s - 1, s - 1]]
+      .forEach(([dx, dy]) => px(g, cx + dx, cy + dy, 1, 1, ink));
+    /* 눈 다섯. 가운데만 빨강입니다 — 다섯이 전부 검으면 이 크기에서
+       점 다섯이 아니라 격자무늬로 읽힙니다. */
+    const pip = (dx, dy, c) => px(g, cx + dx - 1, cy + dy - 1, 3, 3, c);
+    pip(-4, -4, ink); pip(4, -4, ink);
+    pip(0, 0, '#D8442C');
+    pip(-4, 4, ink); pip(4, 4, ink);
+  }
 }
 
 /** 창문. 건물의 성격이 가장 많이 드러나는 자리입니다.
@@ -1867,6 +1960,25 @@ function paintWindow(g, style, x, y, P, cut) {
     px(g, x - 3, y + 22, 22, 3, P.trim);           // 창턱
     px(g, x - 3, y + 22, 22, 1, '#FFFFFF');
     return [[x, y - 2, 16, 22]];
+  }
+  if (style === 'round') {
+    /* 동그란 창 — 미니게임관. 나머지 넷이 전부 네모라, 색을 외우지 않아도
+       형태 하나로 "다른 집" 이 됩니다. 테두리 볼트 넷이 있어야 뚫린
+       구멍이 아니라 끼워 넣은 창이 됩니다. */
+    disc(g, x + 5, y + 10, 8, P.frame);       // 바깥 테 — 어두워야 벽에서 떨어집니다
+    disc(g, x + 5, y + 10, 7, P.trim);        // 창틀 몸 — 두 겹이라야 테로 읽힙니다
+    px(g, x + 1, y + 18, 9, 2, P.trim);       // 받침 — 없으면 벽에 뚫린 구멍입니다
+    px(g, x + 1, y + 18, 9, 1, 'rgba(255,255,255,.45)');
+    glass(() => disc(g, x + 5, y + 10, 5, P.glass));
+    /* 유리에 앉은 빛 — 위쪽 초승달. 원으로 깎으면 아랫유리까지 불투명해져
+       하늘이 안 비치므로, 줄 셋으로 직접 놓습니다. */
+    px(g, x + 2, y + 6, 6, 1, P.glassLit);
+    px(g, x + 1, y + 7, 8, 1, P.glassLit);
+    px(g, x + 1, y + 8, 4, 1, P.glassLit);
+    px(g, x - 2, y + 9, 14, 1, P.frame);                       // 가운데 창살
+    [[0, -7], [0, 7], [-7, 0], [7, 0]].forEach(([dx, dy]) =>
+      px(g, x + 4 + dx, y + 9 + dy, 2, 2, P.trim));            // 볼트 넷
+    return [[x, y + 5, 11, 11]];
   }
   if (style === 'shop') {
     /* 넓은 상점 창에 차양 — 학생회관 */
@@ -2100,6 +2212,15 @@ const IPAL = {
     iBase: '#AFC6B6', iShadow: '#82998A',
     frame: '#3B8055', glass: '#CDE8DA', glassLit: '#EDF9F2', trim: '#3B8055',
   },
+  /* 자주는 캠퍼스에서 여기만 씁니다. 나머지 넷이 남색·청록·주황·초록이라
+     남은 색상환에서 넷 다와 가장 멀리 떨어진 자리입니다. 벽은 크림으로
+     두어 자주가 천장·몰딩·관문에서만 나오게 합니다 — 벽까지 자주면
+     방이 아니라 조명이 됩니다. */
+  arcade: {
+    iWall: '#EAE3F2', iWallLit: '#F5F0FA', iCeil: '#3B2A5E', iTrim: '#6E52A8',
+    iBase: '#BCAECE', iShadow: '#8C7EA0',
+    frame: '#6E52A8', glass: '#D6CCEE', glassLit: '#F2ECFB', trim: '#4A3478',
+  },
 };
 
 /* ---- 네 건물. 조감도(campus-map.html)의 팔레트·실루엣을 그대로 옮깁니다 ---- */
@@ -2157,12 +2278,32 @@ const BSPEC = {
       { k: 'tank', x: 13.2, y: 1.4, r: 5 },
     ],
   },
+  /* 미니게임관 — 자주 지붕에 주사위 조형물, 처마 위에 전구 간판.
+     넷은 전부 둥근 것(돔·원뿔·시계탑)을 이고 있어서, 다섯째는 각진 것
+     하나로 갈라놓습니다. 창도 넷이 다 네모라 여기만 동그랗습니다.
+     지붕 위 물탱크만 넷과 같습니다 — 같은 캠퍼스의 같은 시공사가 지은
+     건물로 보여야 하니 하나는 공유합니다. */
+  bldArcade: {
+    w: 12, h: 8, win: 'round',
+    pal: { roof: '#7A5AAE', lit: '#9E80D2', dark: '#523780',
+           wall: '#F7F1E8', wallDark: '#C8B8CE', trim: '#C3B0DA',
+           frame: '#4A3878', glass: '#4A3E82', glassLit: '#BCACE0' },
+    sign: { text: '미니게임', c: '#2E2050' },
+    features: [
+      { k: 'cube', x: 6, y: 1.8, r: 21 },
+      { k: 'tank', x: 1.5, y: 1.3, r: 5 },
+      { k: 'tank', x: 10.5, y: 1.3, r: 5 },
+    ],
+  },
 };
 
 PROP.bldMain    = buildingProp(BSPEC.bldMain);
 PROP.bldLibrary = buildingProp(BSPEC.bldLibrary);
 PROP.bldDorm    = buildingProp(BSPEC.bldDorm);
 PROP.bldUnion   = buildingProp(BSPEC.bldUnion);
+/* 미니게임관은 여기서 안 굽습니다 — 간판에 글자가 있고, 픽셀 글자
+   (PXTEXT)는 이 줄보다 아래에서 만들어집니다. paintGates 바로 뒤에서
+   같이 굽습니다. */
 
 /* ==================================================================
    기물과 바닥
@@ -2502,6 +2643,12 @@ tentCanvas('tentC', '#E0AE3C', '#F7CE6E', '#A87A20');
    문 안쪽을 벽처럼 막지 않고 어둡게 파서 빛을 물렸습니다 — 관문은
    지나가는 곳이라 안이 안 보이면 그냥 벽에 붙인 장식이 됩니다. */
 function gateEmblem(g, kind, cx, cy, ink) {
+  /* 문장은 어두운 문간 위에 한 색으로만 얹힙니다. 채울 수 없으니
+     테두리로 그립니다 — 속을 칠하면 안쪽 빛이 죽습니다. */
+  const rect = (x, y, w, h) => {
+    px(g, x, y, w, 1, ink); px(g, x, y + h - 1, w, 1, ink);
+    px(g, x, y, 1, h, ink); px(g, x + w - 1, y, 1, h, ink);
+  };
   if (kind === 'key') {
     /* 열쇠 — 방탈출 */
     circleLine(g, cx - 4, cy, 4, ink);
@@ -2509,6 +2656,22 @@ function gateEmblem(g, kind, cx, cy, ink) {
     px(g, cx - 1, cy - 1, 10, 2, ink);
     px(g, cx + 5, cy + 1, 2, 3, ink);
     px(g, cx + 8, cy + 1, 2, 3, ink);
+  } else if (kind === 'up') {
+    /* 위로 뻗는 화살표 — 기린 목 펴기. 기린을 이 크기에 그리면 실루엣이
+       뭉개지므로, 생김새 대신 **하는 일**을 그립니다. */
+    px(g, cx - 2, cy - 3, 4, 11, ink);
+    for (let k = 0; k < 6; k++) px(g, cx - k, cy - 4 - k, k * 2 + 1, 1, ink);
+    px(g, cx - 8, cy + 9, 16, 2, ink);            // 바닥 — 어디서부터 펴는지
+  } else if (kind === 'card') {
+    /* 카드 두 장 — 기억력 카드. 한 장만 무늬가 보입니다(짝을 찾는 중). */
+    rect(cx - 10, cy - 8, 9, 15);
+    rect(cx + 1, cy - 8, 9, 15);
+    px(g, cx + 4, cy - 3, 3, 4, ink);
+  } else if (kind === 'stack') {
+    /* 블록 셋 — 기린 목 쌓기. 위로 갈수록 어긋나야 쌓다 만 것이 됩니다. */
+    rect(cx - 8, cy + 4, 15, 6);
+    rect(cx - 6, cy - 2, 15, 6);
+    rect(cx - 3, cy - 8, 15, 6);
   } else {
     /* 물음표 — 아직 정하지 않은 놀이 */
     px(g, cx - 4, cy - 7, 8, 2, ink);
@@ -2583,16 +2746,25 @@ function gateCanvas(key, name, base, lit, dark, glow, emblem) {
    관문 넷이 셋으로 보입니다. 색은 자리에 붙은 것이라, 안의 게임이
    바뀌어도 그대로 둡니다. */
 function paintGates() {
-  /* 문에 붙은 이름이 곧 그 안의 게임입니다. 이름과 열리는 게임이 어긋나
-     있던 것을 연우님 판본에서 맞췄습니다 — 넷 다 m.things 의 panel 과
-     같은 이름입니다(캠퍼스 북동 미니게임존). */
-  gateCanvas('gateEsc', '거북이 알 합치기', '#2DD4BF', '#8AE5D9', '#0C5A4F', '45,212,191', 'key');
-  gateCanvas('gateA', '기린 목 펴기', '#E8695A', '#FFA694', '#8E2E1C', '232,105,90', 'ex');
-  gateCanvas('gateB', '기억력 카드', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'ex');
-  gateCanvas('gateC', '동물 매칭 퍼즐', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'shell');
+  /* 문에 붙은 이름이 곧 그 안의 게임입니다 — 넷 다 미니게임관(ZONES.arcade)
+     m.things 의 panel 과 같은 이름이고, 게시판 목록과도 같습니다.
+
+     넷을 고른 기준은 **3분**입니다. 이 방이 파는 것이 "세션을 끊는 대신
+     3분 놀고 돌아가기" 라, 3분 안에 끝이 나는 것만 문을 얻습니다.
+     거북이 알 합치기(2048)와 동물 매칭 퍼즐(24수, 제한 시간 없음)은
+     그래서 뺐습니다 — 패널은 그대로 살아 있습니다. */
+  gateCanvas('gateA', '기린 목 펴기', '#E8695A', '#FFA694', '#8E2E1C', '232,105,90', 'up');
+  gateCanvas('gateEsc', '방탈출', '#2DD4BF', '#8AE5D9', '#0C5A4F', '45,212,191', 'key');
+  gateCanvas('gateB', '기억력 카드', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'card');
+  gateCanvas('gateC', '기린 목 쌓기', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'stack');
 }
 paintGates();
 TEXT_ART.push(paintGates);
+
+/* 미니게임관 — 다섯 건물 중 유일하게 간판에 글자가 있어, 픽셀 글자가
+   준비된 여기서 굽고 글꼴이 온 뒤 한 번 더 굽습니다(위 BSPEC 주석). */
+PROP.bldArcade = buildingProp(BSPEC.bldArcade);
+TEXT_ART.push(() => { PROP.bldArcade.canvas = paintBuilding(BSPEC.bldArcade); });
 
 /* ---- 서가 3×2 ----
    책등 색을 무작위로 흩되 폭은 2~4px 로 묶습니다. 폭까지 무작위면
@@ -3040,6 +3212,14 @@ function signIcon(g, kind, x, y, ink, lit) {
     px(g, x + 1, y + 1, 1, 3, lit); px(g, x + 8, y + 1, 1, 3, lit);   // 손잡이
     px(g, x + 4, y + 6, 2, 2, lit);          // 자루
     px(g, x + 2, y + 8, 6, 1, lit);          // 받침
+  } else if (kind === 'dice') {
+    /* 주사위 — 눈을 1px 로 찍으면 이 크기에서 안 보입니다. 2px 로 놓고
+       대신 네 귀를 한 점씩 깎아 실루엣으로 주사위를 말합니다. */
+    px(g, x + 1, y, 8, 9, lit);
+    [[1, 0], [8, 0], [1, 8], [8, 8]].forEach(([dx, dy]) => px(g, x + dx, y + dy, 1, 1, ink));
+    px(g, x + 2, y + 1, 2, 2, ink); px(g, x + 6, y + 1, 2, 2, ink);
+    px(g, x + 4, y + 4, 2, 2, ink);
+    px(g, x + 2, y + 6, 2, 2, ink); px(g, x + 6, y + 6, 2, 2, ink);
   }
 }
 
@@ -3059,30 +3239,34 @@ function signArrow(g, dir, x, y) {
 }
 
 function paintSignpost() {
-  const c = canvasOf(5, 5), g = c.getContext('2d');
+  /* 판이 다섯이 되면서 5×5 로는 마지막 판이 받침돌을 밟습니다. 판을
+     얇게 눌러 다섯을 욱여넣는 대신 기둥을 한 칸 늘였습니다 — 판 높이를
+     줄이면 그 안의 글자가 먼저 잘립니다. 대신 광장에 세울 때 한 칸 위에
+     놓아(prop 20,18) 받침돌은 전과 같은 자리에 섭니다. */
+  const c = canvasOf(5, 6), g = c.getContext('2d');
   const CX = 40;
-  shadow(g, CX, 77, 15, 3);
+  shadow(g, CX, 93, 15, 3);
 
   /* 받침돌 — 다듬은 돌 세 켜. 한 덩이로 두면 나무 기둥이 땅에 꽂힌
      것으로 보입니다. 켜가 보여야 사람이 쌓은 것이 됩니다. */
-  px(g, CX - 15, 70, 30, 8, '#5F6874');
-  px(g, CX - 14, 71, 28, 6, '#96A0AA');
-  px(g, CX - 14, 71, 28, 2, '#BDC6CE');
-  px(g, CX - 12, 65, 24, 6, '#6E757F');
-  px(g, CX - 11, 66, 22, 4, '#A6AFB8');
-  px(g, CX - 11, 66, 22, 1, '#C6CED5');
+  px(g, CX - 15, 86, 30, 8, '#5F6874');
+  px(g, CX - 14, 87, 28, 6, '#96A0AA');
+  px(g, CX - 14, 87, 28, 2, '#BDC6CE');
+  px(g, CX - 12, 81, 24, 6, '#6E757F');
+  px(g, CX - 11, 82, 22, 4, '#A6AFB8');
+  px(g, CX - 11, 82, 22, 1, '#C6CED5');
   g.fillStyle = '#7C848E';
-  for (let x = CX - 9; x < CX + 10; x += 6) g.fillRect(x, 72, 1, 4);
+  for (let x = CX - 9; x < CX + 10; x += 6) g.fillRect(x, 88, 1, 4);
   /* 발밑 풀 — 돌과 포석 사이가 붙어 보이지 않게 두 포기만 */
-  px(g, CX - 17, 74, 1, 4, '#5FA855'); px(g, CX - 16, 76, 1, 2, '#5FA855');
-  px(g, CX + 16, 75, 1, 3, '#4E9E63'); px(g, CX + 17, 76, 1, 2, '#4E9E63');
+  px(g, CX - 17, 90, 1, 4, '#5FA855'); px(g, CX - 16, 92, 1, 2, '#5FA855');
+  px(g, CX + 16, 91, 1, 3, '#4E9E63'); px(g, CX + 17, 92, 1, 2, '#4E9E63');
 
   /* 기둥 — 왼쪽이 밝고 오른쪽이 어둡습니다(빛은 왼쪽 위) */
-  px(g, CX - 4, 10, 8, 58, '#6B4A2E');
-  px(g, CX - 4, 10, 3, 58, '#8A6039');
-  px(g, CX + 2, 10, 2, 58, '#523821');
+  px(g, CX - 4, 10, 8, 74, '#6B4A2E');
+  px(g, CX - 4, 10, 3, 74, '#8A6039');
+  px(g, CX + 2, 10, 2, 74, '#523821');
   g.fillStyle = 'rgba(82,56,33,.5)';
-  for (let y = 16; y < 66; y += 7) g.fillRect(CX - 2, y, 3, 1);
+  for (let y = 16; y < 82; y += 7) g.fillRect(CX - 2, y, 3, 1);
 
   /* 꼭대기 — 작은 박공지붕과 등. 광장에서 가장 높은 물건이므로 여기만
      청록(브랜드색)이 한 번 나오고, 밤에는 등이 켜집니다(LAMPS.signpost). */
@@ -3146,11 +3330,16 @@ function paintSignpost() {
     stamp(g, label, 8, '#FFFFFF', tx, y + 2, 'left');
   }
 
-  /* 위에서 아래로 북 · 동 · 서 · 남. 판 높이 순서가 곧 지도입니다. */
+  /* 위에서 아래로 북 · 동 · 동 · 서 · 남. 판 높이 순서가 곧 지도입니다.
+     미니게임관은 표지판에서 보면 오른쪽 위 — 가로로 열일곱 칸, 세로로
+     여덟 칸이라 동쪽이 더 멉니다. 그래서 도서관 바로 아래, 같은 오른쪽
+     묶음에 답니다. 같은 방향 판이 둘이면 실제 이정표가 그렇듯 위아래로
+     붙습니다. */
   board(15, 'u', '#E79C6E', '#8A461F', '기숙사', 'moon');
   board(28, 'r', '#5FB0A3', '#1F544C', '도서관', 'book');
-  board(41, 'l', '#5A7FA8', '#1E3550', '본관', 'clock');
-  board(54, 'd', '#7FCE96', '#2E6B45', '학생회관', 'cup');
+  board(41, 'r', '#9E80D2', '#3E2A63', '미니게임', 'dice');
+  board(54, 'l', '#5A7FA8', '#1E3550', '본관', 'clock');
+  board(67, 'd', '#7FCE96', '#2E6B45', '학생회관', 'cup');
 
   PAINTED.signpost = c;
 }
@@ -3301,10 +3490,10 @@ PROP.planter   = paintedProp('planter', 1, 2);
 PROP.signBoard = paintedProp('signBoard', 1, 2, [0, 1]);
 PROP.pillar    = paintedProp('pillar', 1, 2, [0, 1]);
 PROP.flagPole  = paintedProp('flagPole', 1, 3, [0, 0, 1]);
-PROP.signpost = paintedProp('signpost', 5, 5, [0, 0, 0, 0, 1]);
+PROP.signpost = paintedProp('signpost', 5, 6, [0, 0, 0, 0, 0, 1]);
 /* 막는 것은 받침돌뿐입니다 — 판 밑으로는 지나갈 수 있습니다.
    가운데 한 칸이라 3×4 판본과 막는 자리가 같습니다(22,23). */
-PROP.signpost.c[4] = [0, 0, 1, 0, 0];
+PROP.signpost.c[5] = [0, 0, 1, 0, 0];
 PROP.bed      = paintedProp('bed', 2, 2);
 PROP.mailbox  = paintedProp('mailbox', 1, 1);
 PROP.mirror   = paintedProp('mirror', 1, 2, [0, 1]);
@@ -4116,9 +4305,13 @@ function floorGlow(c, cx, cy, r) {
   }
 }
 
-function floorInlay(c, x, y, w, h, kind) {
+/** rgb — 러너 색. 안 주면 도서관·본관·학생회관이 쓰는 청록입니다.
+    미니게임관만 자주를 넘깁니다. 색을 하나 더 만드는 대신 넘겨받는
+    이유는, 무늬가 방마다 달라지면 같은 건물군으로 안 보이기 때문입니다. */
+function floorInlay(c, x, y, w, h, kind, rgb) {
   const g = c.getContext('2d');
   const X = x * TS, Y = y * TS, W = w * TS, H = h * TS;
+  const run = rgb || '62,141,130';
   if (kind === 'border') {
     /* 벽을 따라 도는 테두리 띠. 넓은 방은 이게 없으면 바닥이 아니라
        무늬 종이가 됩니다. */
@@ -4133,10 +4326,10 @@ function floorInlay(c, x, y, w, h, kind) {
     return;
   }
   if (kind === 'runner') {
-    px(g, X, Y, W, H, 'rgba(62,141,130,.16)');
+    px(g, X, Y, W, H, 'rgba(' + run + ',.16)');
     px(g, X, Y, W, 2, 'rgba(255,255,255,.22)');
     px(g, X + W - 2, Y, 2, H, 'rgba(0,0,0,.12)');
-    g.fillStyle = 'rgba(62,141,130,.4)';
+    g.fillStyle = 'rgba(' + run + ',.4)';
     g.fillRect(X + 2, Y, 2, H); g.fillRect(X + W - 5, Y, 2, H);
   } else if (kind === 'rug') {
     /* 테두리 두 겹에 안쪽 무늬. 동심 사각을 계속 겹치면 과녁이 됩니다. */
@@ -4378,7 +4571,7 @@ function paintTrack(wTiles, hTiles) {
    관문 넷이 마주 보고 서는 안뜰입니다. 가운데 통로를 한 줄 비워 두면
    어디로 걸어 들어가는지가 바닥에서 먼저 읽힙니다 — 상가 거리와 같은
    원리입니다. */
-function paintArcadeCourt(wTiles, hTiles) {
+function paintArcadeCourt(wTiles, hTiles, aisleTile, aisleTiles) {
   const c = canvasOf(wTiles, hTiles), g = c.getContext('2d');
   const W = c.width, H = c.height;
   px(g, 0, 0, W, H, '#C6BCA6');
@@ -4393,8 +4586,10 @@ function paintArcadeCourt(wTiles, hTiles) {
   g.fillStyle = 'rgba(120,110,92,.35)';
   for (let y = 7; y < H; y += 8) g.fillRect(0, y, W, 1);
 
-  /* 가운데 통로 — 코랄 실선 둘로 폭을 표시합니다 */
-  const aisle = 5 * TS, aw = 3 * TS;
+  /* 문으로 가는 통로 — 코랄 실선 둘로 폭을 표시합니다. 자리를 밖에서
+     받는 이유는 이 선이 곧 "문은 여기" 이기 때문입니다. 마당 한가운데에
+     그으면 문과 어긋나고, 그러면 선이 아무 데도 안내하지 않습니다. */
+  const aisle = aisleTile * TS, aw = aisleTiles * TS;
   px(g, aisle, 0, aw, H, 'rgba(255,107,82,.10)');
   px(g, aisle, 0, 2, H, 'rgba(255,107,82,.55)');
   px(g, aisle + aw - 2, 0, 2, H, 'rgba(255,107,82,.55)');
@@ -4495,15 +4690,17 @@ const ZONES = {};
   {
     const gg = m.ground.getContext('2d');
     gg.drawImage(paintTrack(14, 12), 1 * TS, 1 * TS);        // 북서 운동장
-    gg.drawImage(paintArcadeCourt(14, 12), 31 * TS, 1 * TS);        // 북동 미니게임존
+    /* 북동 — 미니게임관 앞마당. 마당 자리에 건물이 서므로 실제로 보이는
+       것은 아래 세 줄(y10~12)뿐이고, 나머지는 지붕 밑에 깔립니다.
+       그래도 통째로 그리는 이유는 통로 선이 문 정중앙에서 시작해야
+       하기 때문입니다 — 아랫부분만 잘라 그리면 선의 기준이 사라집니다. */
+    gg.drawImage(paintArcadeCourt(12, 11, 4, 4), 32 * TS, 2 * TS);
   }
   /* 그림만 얹은 두 곳은 표면도 같이 칠합니다. 안 칠하면 우레탄 트랙
      위에서 잔디 소리가 납니다. 트랙은 타원이라 안쪽 잔디를 도로 살립니다. */
   fillSurf(m, 1, 1, 14, 12, SURF.TRACK);
   fillEllipseSurf(m, 8, 7, 4.2, 3.4, SURF.GRASS);          // 인필드
-  fillSurf(m, 31, 1, 14, 12, SURF.GRAVEL);
-  {
-  }
+  fillSurf(m, 32, 2, 12, 11, SURF.GRAVEL);
 
   /* 가운데 원형 광장 — 모서리를 깎아 둥글게 */
   fillOver(m, 15, 16, 16, 11, M.PLAZA);
@@ -4550,14 +4747,26 @@ const ZONES = {};
      운동장 · 북 대로 · 부화장을 한 줄로 꿰는 가로 산책로입니다. */
   fillOver(m, 6, 13, 33, 3, M.PLAZA);
 
-  /* ---- 건물 넷 ---- */
+  /* ---- 건물 다섯 ----
+     넷은 광장을 북·서·동·남으로 둘러쌉니다. 다섯째(미니게임관)는 그
+     원에 끼우지 않고 북동 모서리, 관문 넷이 서 있던 그 자리에 세웁니다 —
+     "미니게임은 북동" 을 이미 아는 사람이 다시 배울 것이 없고, 광장을
+     둘러싼 넷 사이에 끼워 넣으면 넷 중 하나와 앞마당이 붙습니다.
+     가장 가까운 기숙사(x17~27)와 다섯 칸 떨어져 있습니다. */
   placeBuilding(m, 'bldDorm',    17, 3,  'dorm',     7,  8,  '기숙사');
   placeBuilding(m, 'bldMain',    1,  16, 'mainhall', 18, 25, '본관');
   placeBuilding(m, 'bldLibrary', 32, 16, 'library',  18, 25, '도서관');
   placeBuilding(m, 'bldUnion',   16, 30, 'union',    16, 21, '학생회관');
+  placeBuilding(m, 'bldArcade',  32, 2,  'arcade',   11, 10, '미니게임관');
+  /* placeBuilding 이 문 앞에 깔아 준 포장을 도로 걷습니다. 여기는 이미
+     판석 마당이고, 그 위에 또 포장을 얹으면 마당 한복판에 회색 네모가
+     하나 뜹니다. 표면(GRAVEL)은 위에서 이미 칠했으므로 발소리는 그대로입니다. */
+  fillOver(m, 36, 10, 4, 3, 0);
 
   /* ---- 광장 한가운데: 방향 표지판 ---- */
-  prop(m, 'signpost', 20, 19);
+  /* 판이 다섯이 되어 그림이 한 칸 길어졌습니다. 한 칸 위에서 시작해야
+     받침돌이 전과 같은 자리(20~24, 23)에 섭니다. */
+  prop(m, 'signpost', 20, 18);
 
   /* 안내 — 기숙사에서 나오면 21,11 에 섭니다. 바로 오른쪽 아래에 세워
      고개를 돌리지 않아도 보이게 했습니다. 표지판(21,20)까지 걸어가야
@@ -4604,47 +4813,11 @@ const ZONES = {};
      비어 보이기 때문이지, 곧 뭐가 붙어서가 아닙니다. */
   prop(m, 'mat', 6, 6); prop(m, 'mat', 9, 6);
 
-  /* 북동 — 미니게임존. 집중이 흐트러졌을 때 세션을 끊는 대신 갈 곳입니다.
-     관문 넷이 안뜰을 마주 보고, 가운데 통로로 들어갑니다. 지금 이름이
-     붙은 것은 방탈출 하나이고 나머지 셋은 자리만 잡아 뒀습니다 —
-     무엇이 들어갈지 정해지면 천 색과 문장만 바꾸면 됩니다. */
-  /* 관문 안에 서서 Space 를 누르면 열립니다. 자리는 관문과 같습니다 —
-     문이 서 있는데 아무 일도 안 일어나던 것을 채웁니다. */
-  m.things = [
-    { x: 32, y: 2, name: '방탈출', panel: 'escapeRoom' },        // gateEsc
-    { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },  // gateA
-    { x: 32, y: 7, name: '기억력 카드', panel: 'animalFind' }, // gateB
-    { x: 39, y: 7, name: '거북이 알 합치기', panel: 'eggMerge' }, // gateC
-    /* 안뜰에 딱 하나 있는 게시판. 관문마다 안내를 붙이면 같은 글을 넷이
-       나눠 갖게 되고, 그러면 어느 것을 읽어야 하는지가 또 문제가 됩니다. */
-    { x: 31, y: 12, name: '미니게임 설명 보기', panel: 'arcade' },
-  ];
-  prop(m, 'gateEsc', 32, 2); prop(m, 'gateA', 39, 2);
-  prop(m, 'gateB', 32, 7);   prop(m, 'gateC', 39, 7);
-  /* 여기서 m.things 를 한 번 더 대입합니다. 위 목록은 통째로 덮여
-     죽은 줄입니다 — 관문 배치를 회의에서 정하기로 해서 아직 한 줄로
-     합치지 않았습니다. 살아 있는 것은 아래 넷입니다.
-
-     연우님 판본에서 관문 이름과 열리는 게임이 처음으로 맞았습니다:
-     gateEsc·거북이 알 합치기 / gateA·기린 목 펴기 / gateB·기억력 카드 /
-     gateC·동물 매칭 퍼즐. 예전에 어긋나 있던 (32,2) 도 이제 맞습니다.
-
-     대신 관문을 못 얻은 게임이 셋입니다 — 방탈출·기린 목 쌓기·거북이 알
-     받기. 코드는 그대로 살아 있고 패널도 등록돼 있는데 들어갈 문이
-     없습니다. 관문을 늘릴지 하나를 목록 창으로 바꿀지는 회의 안건이라
-     여기서 임의로 정하지 않습니다.
-
-     게시판(arcade)은 되살립니다. 연우님이 넷을 갈아 끼우면서 같이
-     빠졌는데, 바로 아래에서 prop(m,'board',31,12) 로 그리고 있어서
-     그림만 서 있고 눌러도 아무 일이 없는 상태였습니다. */
-  m.things = [
-    { x: 32, y: 2, name: '거북이 알 합치기', panel: 'eggMerge' },
-    { x: 32, y: 7, name: '기억력 카드', panel: 'animalFind' },
-    { x: 39, y: 2, name: '기린 목 펴기', panel: 'giraffeNeck' },
-    { x: 39, y: 7, name: '동물 매칭 퍼즐', panel: 'animalMatch3' },
-    { x: 31, y: 12, name: '미니게임 설명 보기', panel: 'arcade' },
-  ];
-  prop(m, 'board', 31, 12); prop(m, 'planter', 44, 12);
+  /* 북동 — 미니게임관 앞마당. 관문 넷과 게시판은 전부 건물 안으로
+     들어갔습니다(ZONES.arcade). 마당에 흩어져 있으면 넷을 다 보려고
+     마당을 한 바퀴 돌아야 하고, 비 오는 날에도 밖에 서 있어야 합니다.
+     여기 남는 것은 문으로 가는 통로와 그 양옆 화단뿐입니다. */
+  prop(m, 'planter', 33, 11); prop(m, 'planter', 42, 11);
 
   /* 남서 — 호수. 세션과 세션 사이에 아무것도 안 해도 되는 자리가
      하나는 있어야 합니다. 광장은 지나가는 곳이라 머무는 곳이 못 됩니다. */
@@ -5104,6 +5277,88 @@ const DORM = ZONES.dorm;
      "여기가 출구" 를 매번 새로 배워야 합니다. */
   prop(m, 'exitDoor', 16, m.h - 2);
   m.portals.push({ x: 16, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 21, sy: 39, label: '캠퍼스' });
+}
+
+/* ================== 미니게임관 ==================
+   관문 넷이 광장 자갈마당에 흩어져 있었습니다. 넷을 다 보려면 마당을 한
+   바퀴 돌아야 했고, 비가 오면 밖에 서서 골라야 했습니다. 한 방에 **한
+   줄로** 세웁니다 — 문을 열고 서면 넷이 한눈에 들어오고, 고르는 데
+   걸음이 필요 없습니다.
+
+   방을 넓게 잡지 않았습니다(23x13). 여기는 3분 쉬고 나가는 방이라,
+   가로지르는 데 시간이 드는 순간 쉬는 곳이 아니라 들르는 곳이 됩니다. */
+{
+  const m = makeMap(23, 13, F.gray);
+  ZONES.arcade = m; m.name = '미니게임관'; m.sub = '3분만 놀고 가는 곳';
+
+  ring(m, 0, 0, m.w, m.h, F.brickO);
+  fillBase(m, 1, 1, m.w - 2, 2, F.brickO);
+  m.floor = paintFloor(m.w, m.h, 'tile'); m.floorKind = SURF.TILE;
+  floorInlay(m.floor, 1, 3, m.w - 2, m.h - 5, 'border');
+  /* 관문 앞을 가로지르는 띠. 자주입니다 — 이 방은 청록이 한 번도 안
+     나오는 유일한 실내이고, 그게 겉의 자주 지붕과 짝입니다. */
+  floorInlay(m.floor, 1, 7, m.w - 2, 2, 'runner', '110,82,168');
+
+  /* ---- 관문 넷, 한 줄 ----
+     넷이 나란히 서고 좌우 여백이 한 칸씩 같습니다(x1, x21). 가운데로
+     몰거나 한쪽에 붙이면 문이 다섯 개인데 하나가 빠진 것처럼 보입니다.
+     순서는 왼쪽부터 **몸 · 머리 · 기억 · 손**입니다 — 같은 종류가 붙어
+     있으면 둘 중 뭘 골랐는지 나중에 헷갈립니다.
+     색은 자리에 붙은 것이라 넷이 서로 다릅니다(코랄·청록·노랑·보라).
+     이름표를 못 읽는 거리에서도 "아까 그 노란 문" 으로 찾아집니다. */
+  const GATES = [
+    { k: 'gateA',   x: 2,  name: '기린 목 펴기', panel: 'giraffeNeck' },
+    { k: 'gateEsc', x: 7,  name: '방탈출',       panel: 'escapeRoom' },
+    { k: 'gateB',   x: 12, name: '기억력 카드',  panel: 'animalFind' },
+    { k: 'gateC',   x: 17, name: '기린 목 쌓기', panel: 'giraffeStack' },
+  ];
+  GATES.forEach((q) => {
+    prop(m, q.k, q.x, 3);
+    /* 문 안에 서서 Space. 자리는 관문 왼쪽 위 칸이고, 만지는 거리는
+       bake 가 관문 크기(4x4)로 잡아 줍니다. */
+    m.things.push({ x: q.x, y: 3, name: q.name, panel: q.panel });
+    floorGlow(m.floor, q.x + 2, 7, 3);            // 문에서 새어 나온 빛
+  });
+
+  /* ---- 게시판 ----
+     넷 중 무엇을 고를지는 문 앞에서 정하는 것이 아니라 들어오면서
+     정합니다. 그래서 문에서 관문으로 가는 길 오른쪽에 세웁니다. */
+  prop(m, 'board', 18, 9);
+  m.things.push({ x: 18, y: 9, name: '미니게임 안내', panel: 'arcade' });
+
+  /* ---- 나머지는 벽 쪽으로 ----
+     관문 아랫줄(y7~8)은 통째로 비웁니다. 넷 앞에 서는 자리이자 넷 사이를
+     옮겨 다니는 길이라, 여기 물건을 두면 고르는 동안 걸립니다. */
+  prop(m, 'vending', 1, 9); prop(m, 'vending2', 2, 9);
+  prop(m, 'bench', 4, 9);
+  prop(m, 'bench', 14, 9);
+  prop(m, 'plantTall', 21, 9);
+  prop(m, 'plant', 21, 3); prop(m, 'plantS', 1, 8);
+
+  m.npcs.push(
+    { x: 8, y: 9, sprite: 212, species: '기린', dir: 'down',
+      worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', hat: 'hat-cap' },
+      name: '미니게임관 · 세아',
+      lines: [
+        '어서 와. 문 넷 중에 아무거나 골라.',
+        '한 판 3분이야. 그거 넘게 붙잡고 있으면 쉬는 게 아니라 딴짓이지.',
+        '코인은 게임마다 하루 한 번. 그 뒤로는 그냥 재미로 하는 거야.',
+      ] },
+  );
+
+  /* 벽 — 관문 사이 빈 칸 위에만 창을 냅니다. 관문 뒤에 내면 아치에
+     가려 반쪽만 보입니다. 가운데는 시계입니다 — 3분 놀고 돌아가는 방에
+     시계가 없으면 그 3분을 잴 방법이 없습니다. */
+  dressRoom(m, IPAL.arcade, [
+    { k: 'win', x: 6, style: 'round' },
+    { k: 'clockFace', x: 11 },
+    { k: 'win', x: 16, style: 'round' },
+  ]);
+  m.clock = { x: 11, y: 0 };
+
+  /* 나가는 곳 — 다섯 건물이 전부 같은 문입니다. */
+  prop(m, 'exitDoor', 10, m.h - 2);
+  m.portals.push({ x: 10, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 37, sy: 11, label: '캠퍼스' });
 }
 
 /* ---------------- 충돌 굽기 ---------------- */
@@ -6038,8 +6293,11 @@ const LAMPS = {
   deskLamp:  { dx: 8,  dy: 6,  r: 30, c: [255, 232, 184], i: 0.8 },
   vending:   { dx: 8,  dy: 12, r: 26, c: [190, 226, 255], i: 0.7 },
   vending2:  { dx: 8,  dy: 12, r: 26, c: [190, 226, 255], i: 0.7 },
-  gateEsc:   { dx: 32, dy: 42, r: 44, c: [255, 150, 120], i: 1.0 },
-  gateA:     { dx: 32, dy: 42, r: 44, c: [130, 230, 215], i: 1.0 },
+  /* 등불 색은 그 문의 천 색과 같아야 합니다. 청록 문(gateEsc)에 코랄
+     불이, 코랄 문(gateA)에 청록 불이 켜져 있어 둘이 서로 바뀌어
+     있었습니다 — 멀리서 색으로 문을 찾는 것이 이 넷의 요점입니다. */
+  gateEsc:   { dx: 32, dy: 42, r: 44, c: [130, 230, 215], i: 1.0 },
+  gateA:     { dx: 32, dy: 42, r: 44, c: [255, 150, 120], i: 1.0 },
   gateB:     { dx: 32, dy: 42, r: 44, c: [255, 220, 130], i: 1.0 },
   gateC:     { dx: 32, dy: 42, r: 44, c: [190, 160, 255], i: 1.0 },
   signpost:  { dx: 40, dy: 2,  r: 30, c: [255, 236, 200], i: 0.7 },
@@ -6068,6 +6326,11 @@ function windowLights(m) {
     const y = (p.y + d.h - 2) * T + 8 * AS;
     for (let i = 1; i < d.w - 1; i += 3)
       out.push({ x: (p.x + i) * T + 8 * AS, y, r: 34 * AS, c: [255, 226, 170], i: 0.62 });
+    /* 전구 간판은 창보다 세고 넓습니다. 밤에 "저기는 아직 열려 있다" 를
+       말하는 것이 이 빛이라, 창 불빛과 같은 세기로 두면 티가 안 납니다. */
+    if (d.signY != null)
+      out.push({ x: (p.x + d.w / 2) * T, y: p.y * T + d.signY * AS,
+                 r: 52 * AS, c: [255, 232, 186], i: 0.95 });
   }
   return out;
 }
@@ -8464,7 +8727,8 @@ const INVITE = {
    한 행에 자세 통계까지 넣습니다. 전에는 { date, minutes, recoveries }
    셋뿐이라, 회고 화면이 그리는 좋음/주의/굽음 비율이 세션이 끝나는
    순간 사라졌습니다. 어제 회고를 다시 열 방법이 없었습니다. */
-const ZONE_KO = { library: '도서관', mainhall: '본관', union: '학생회관', dorm: '기숙사', campus: '캠퍼스' };
+const ZONE_KO = { library: '도서관', mainhall: '본관', union: '학생회관', dorm: '기숙사',
+                  arcade: '미니게임관', campus: '캠퍼스' };
 const SESS_KEY = 'girin.sessions';
 const SESS_MAX = 200;                      // 약 반년치
 
@@ -11186,21 +11450,21 @@ const PANELS = {
       `<div class="row"><span>${name} <em>${line}</em></span>` +
       `<span class="val">${done.includes(key) ? '오늘 받음' : COIN_MINIGAME}</span></div>`;
     return {
-      title: '미니게임존', kind: 'GUIDE',
+      title: '미니게임관', kind: 'GUIDE',
       html: `
       <p>한 시간쯤 앉아 있으면 자세가 먼저 무너집니다. 그때
       <b>세션을 끊는 대신</b> 여기로 오세요. 3분 놀고 자리로 돌아가는
       자리예요.</p>
       <ol>
-        <li>관문 앞에서 <b>Space</b> 를 눌러 주세요.</li>
+        <li>관문 안에 서서 <b>Space</b> 를 눌러 주세요.</li>
         <li>제한 시간은 <b>3분</b>이에요.</li>
         <li>시간 안에 깨면 <b>${COIN_MINIGAME}코인</b>이 들어와요.</li>
       </ol>
       <div class="rows">
         ${row('giraffeNeck', '기린 목 펴기', '연타로 목을 폅니다')}
-        ${row('animalFind', '기억력 카드', '같은 동물 카드 짝을 맞춥니다')}
-        ${row('eggMerge', '거북이 알 합치기', '같은 알을 붙입니다')}
         ${row('escapeRoom', '방탈출', '단서를 찾아 번호를 맞춥니다')}
+        ${row('animalFind', '기억력 카드', '같은 동물 카드 짝을 맞춥니다')}
+        ${row('giraffeStack', '기린 목 쌓기', '움직이는 블록을 맞춰 떨어뜨립니다')}
       </div>
       <div class="note">코인은 <b>게임마다 하루 한 번</b>까지예요. 오늘 받은
       게임을 또 깨도 코인은 안 들어와요 — 여기는 벌러 오는 곳이 아니니까요.
@@ -12106,6 +12370,8 @@ const AMBIENCE = {
   dorm:    { cut: 160,  q: 1.0, gain: 0.20, tone: [64, 96] },
   union:   { cut: 1400, q: 0.5, gain: 0.12, tone: [196, 294] },
   campus:  { cut: 2600, q: 0.4, gain: 0.07, tone: [294, 392, 494] },
+  /* 관문 넷이 웅웅거리는 방. 학생회관보다 낮고 두껍게 깝니다. */
+  arcade:  { cut: 1000, q: 0.7, gain: 0.15, tone: [147, 220] },
 };
 
 function syncSound() {
@@ -12152,6 +12418,9 @@ const MUSIC = {
    이라 음악까지 다르면 공간이 아니라 곡이 기억에 남습니다. */
 const ZONE_TRACK = {
   library: 'calm', mainhall: 'calm', dorm: 'warm', union: 'bright', campus: 'bright',
+  /* 미니게임관은 학생회관과 같은 곡입니다 — 둘 다 볼일 보고 나가는 곳이라,
+     여기만 다른 곡을 깔면 3분 있다 나오는 방이 제일 기억에 남습니다. */
+  arcade: 'bright',
 };
 const semi = (root, n) => root * Math.pow(2, n / 12);
 
@@ -12370,7 +12639,7 @@ const PLACES = [
   { id: 'union',    to: ['union', 16, 21],    x: 23, y: 33, name: '학생회관',  key: '4' },
   { id: 'campus',   to: ['campus', 22, 25],   x: 22, y: 21, name: '중앙 광장', key: '5' },
   { id: 'field',    to: ['campus', 8, 8],     x: 8,  y: 7,  name: '운동장',    key: '6' },
-  { id: 'arcade',   to: ['campus', 38, 8],    x: 38, y: 7,  name: '미니게임존', key: '7' },
+  { id: 'arcade',   to: ['arcade', 11, 10],   x: 37, y: 5,  name: '미니게임관', key: '7' },
   { id: 'lake',     to: ['campus', 6, 29],    x: 6,  y: 35, name: '호수',      key: '8' },
   { id: 'clubs',    to: ['campus', 40, 29],   x: 40, y: 35, name: '동아리 거리', key: '9' },
 ];

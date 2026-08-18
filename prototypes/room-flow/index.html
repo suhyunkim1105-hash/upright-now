@@ -722,6 +722,21 @@
   .screen[hidden] { display: none; }
   .screen-flush { padding: 56px 0 0; display: flex; flex-direction: column; }
 
+  /* 월드는 자기 안에서 HUD·미니맵·패널을 전부 fixed 로 붙입니다. 그 fixed
+     의 기준이 이 틀이 되도록 남는 자리를 정확히 채우고, 바깥 스크롤은
+     막습니다 — 틀보다 커지면 셸이 월드를 세로로 밀어 캔버스가 잘립니다.
+     위 56px 은 상단 바 자리입니다(screen-flush). 안 비우면 월드의 좌우
+     상단 표시가 반투명 바 아래로 들어갑니다. */
+  #screen-world { overflow: hidden; }
+  .world-frame {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: block;
+    border: 0;
+    background: var(--bg-grouped);
+  }
+
   /* =========================================================
      공통 조각
      ========================================================= */
@@ -4019,6 +4034,15 @@
               <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3Z"/><path d="M9 3v15"/><path d="M15 6v15"/></svg>
               캠퍼스
             </button>
+            <!--
+              월드는 캠퍼스 바로 아래입니다. 둘 다 "학교 사람들이 있는 곳"
+              이고, 캠퍼스(영토전 지도)를 보다가 실제로 걸어 들어가는 순서라
+              나란히 있어야 이어집니다.
+            -->
+            <button class="navitem" type="button" data-nav="world">
+              <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/></svg>
+              월드
+            </button>
             <button class="navitem" type="button" data-nav="my">
               <svg aria-hidden="true" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               마이페이지
@@ -4608,6 +4632,22 @@
             </div>
           </div>
 
+          <!-- ---------- 월드 ----------
+            오픈월드는 통째로 다른 문서라 iframe 으로 답니다. 두 파일 다
+            전역 이름을 수백 개 씩 쓰고 있어서(player · ctx · SESSION …)
+            한 문서에 합치면 조용히 서로를 덮어씁니다.
+
+            src 는 비워 둡니다. 여기 주소를 미리 적어 두면 방 만들기 화면에
+            앉아 있는 동안 월드가 카메라·오디오·렌더 루프를 켭니다.
+            처음 이 탭을 열 때 코드가 채웁니다(openWorld).
+          -->
+          <div class="screen screen-flush" id="screen-world" hidden>
+            <iframe class="world-frame" id="world-frame"
+                    title="기린캠퍼스 오픈월드"
+                    data-src="../openworld/index.html"
+                    allow="camera"></iframe>
+          </div>
+
           <!-- ---------- 마이페이지 ---------- -->
           <div class="screen" id="screen-my" hidden>
 
@@ -5134,6 +5174,7 @@
     result:         document.getElementById('screen-result'),
     growth:         document.getElementById('screen-growth'),
     campus:         document.getElementById('screen-campus'),
+    world:          document.getElementById('screen-world'),
     my:             document.getElementById('screen-my'),
     settings:       document.getElementById('screen-settings')
   };
@@ -5147,6 +5188,7 @@
     result:         ['결과', '이번 세션 기록'],
     growth:         ['성장', '거북이에서 기린까지 15단계'],
     campus:         ['캠퍼스', '시즌 3 · 42일 남음'],
+    world:          ['월드', '기린캠퍼스 · 걸어 다니면서 같이 앉기'],
     my:             ['마이페이지', '이번 주 기록과 내 자세 기준'],
     settings:       ['설정', '알림 · 미니 창 · 카메라 · 데이터']
   };
@@ -5169,6 +5211,7 @@
     if (key === 'result')       renderResult();
     if (key === 'session')      renderSession();
     if (key === 'campus')       renderTerritory();
+    if (key === 'world')        openWorld();
 
     /*
       세션은 화면을 떠나도 계속 돕니다. 앉아 있는 걸 재는 기능인데
@@ -5184,7 +5227,38 @@
   paintCamBtn();
   }
 
-  var NAV_TO_SCREEN = { room: 'hub', growth: 'growth', campus: 'campus', my: 'my' };
+  /* ---------------------------------------------- 월드
+
+     이 탭을 처음 열 때 iframe 에 주소를 넣습니다. 마크업에 미리 넣어 두면
+     셸을 여는 순간 월드가 같이 뜨면서 카메라를 열고 자세 판정 모델을
+     내려받습니다 — 방 만들기 화면에 있는 사람에게는 켠 적 없는 카메라입니다.
+
+     한 번 띄운 뒤에는 탭을 옮겨도 그대로 둡니다. 월드 안에서 세션이 돌고
+     있어서, 지우면 걷던 자리와 세션 시계가 같이 사라집니다. 이 화면의
+     세션을 마이페이지에 갔다고 멈추지 않는 것과 같은 이유입니다.
+     대신 카메라도 그동안 켜져 있습니다 — 월드 안 왼쪽 아래 글자가 그걸
+     계속 말해 주고, 끄는 것은 월드의 세션 종료입니다. */
+  var worldFrame = document.getElementById('world-frame');
+
+  function openWorld() {
+    if (!worldFrame.getAttribute('src')) {
+      worldFrame.setAttribute('src', worldFrame.getAttribute('data-src'));
+      return;
+    }
+    /* 숨어 있는 동안 창이 바뀌면 월드는 그걸 못 봅니다 — display:none 인
+       문서에는 resize 가 안 갑니다(재서 확인: 창을 1440→1000 으로 줄여도
+       iframe 안 innerWidth 는 1192 그대로).
+       크롬은 다시 보이는 순간 스스로 resize 를 한 번 보내 줘서 이 줄이
+       없어도 캔버스가 맞습니다. 다른 엔진은 안 재 봤고, 한 번 더 보내는
+       비용이 0 이라 남겨 둡니다. 안 맞으면 월드가 틀 밖으로 잘립니다. */
+    try {
+      worldFrame.contentWindow.dispatchEvent(new Event('resize'));
+    } catch (err) {
+      /* 아직 문서가 안 붙었으면 첫 그리기에서 알아서 맞습니다 */
+    }
+  }
+
+  var NAV_TO_SCREEN = { room: 'hub', growth: 'growth', campus: 'campus', world: 'world', my: 'my' };
 
   document.querySelectorAll('[data-nav]').forEach(function (btn) {
     btn.addEventListener('click', function () {

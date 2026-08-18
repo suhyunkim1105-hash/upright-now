@@ -59,10 +59,10 @@ let landing = readFileSync('prototypes/landing/index.html', 'utf8');
 for (const [from, to] of REWRITE) landing = landing.replaceAll(from, to);
 /* assets/ · vendor/ 는 따옴표 뒤에 오는 것만 바꿉니다. @keyframes 이름처럼
    같은 글자가 다른 뜻으로 쓰인 자리를 건드리지 않기 위해서입니다. */
-landing = landing.replace(/(["'])(assets|vendor)\//g, '$1/prototypes/landing/$2/');
+landing = landing.replace(/(["'])(assets|vendor|legal)\//g, '$1/prototypes/landing/$2/');
 
 /* 남은 상대경로가 있으면 배포본에서 조용히 404 가 됩니다. 여기서 멈춥니다. */
-const leftover = landing.match(/["']\.{0,2}\/?(assets|vendor)\/|\.\.\//g);
+const leftover = landing.match(/["']\.{0,2}\/?(assets|vendor|legal)\/|\.\.\//g);
 if (leftover) {
   throw new Error(`dist/index.html 에 고쳐지지 않은 상대경로: ${[...new Set(leftover)].join(' ')}`);
 }

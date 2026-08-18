@@ -85,11 +85,37 @@
   --sh:    0 8px 24px rgba(20, 40, 38, .10);
   --sh-lg: 0 24px 56px rgba(20, 40, 38, .16);
 
-  --ease:  cubic-bezier(.16, 1, .3, 1);
+  /* ---- 동작 ----
+     room-flow(라임 판본)에서 정한 네 가지를 그대로 가져옵니다.
+
+       ① 반응은 **누르는 순간**입니다. 떼는 순간이 아닙니다.
+       ② 전환은 스프링. 실제 스프링 곡선을 linear() 로 샘플링했습니다.
+          감쇠비 1.0 이 기본이고, **손이 밀어낸 동작에만** 0.8 을 씁니다.
+       ③ 들어온 길로 나갑니다 — 아래에서 올라온 것은 아래로 내려갑니다.
+       ④ 재료는 반투명. 바 아래로 내용이 흘러가고, 1px 실선 대신
+          가장자리에서 흐려집니다. */
+  --ease:  cubic-bezier(.4, 0, .2, 1);
   --press: cubic-bezier(.2, .9, .3, 1);
-  /* 위저드가 아래에서 올라올 때만 쓰는 스프링. 판이 커서 보통 곡선으로
-     올리면 무거운 것이 미끄러지듯 올라옵니다. */
-  --spring: linear(0, .186, .4655, .6818, .8211, .903, .9487, .9734, .9864, .9931, .9966, 1);
+  --t-press: 110ms;
+  --t-quick: 220ms;
+  --spring:        cubic-bezier(.32, .72, 0, 1);
+  --spring-bounce: cubic-bezier(.34, 1.4, .5, 1);
+  --spring-t:        550ms;
+  --spring-bounce-t: 480ms;
+  /* 부드럽게 앉히는 곡선. 판이 들어올 때만 씁니다. */
+  --settle: cubic-bezier(.16, 1, .3, 1);
+}
+
+/* 실제 스프링 곡선. linear() 를 아는 브라우저에서만 덮어씁니다. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --spring: linear(
+      0, .186, .4655, .6818, .8211, .903,
+      .9487, .9734, .9864, .9931, .9966, 1);
+    --spring-bounce: linear(
+      0, .223, .5652, .8134, .9463, 1.0009,
+      1.0148, 1.013, 1.0078, 1.0036, 1.0012, 1);
+  }
 }
 
 * { box-sizing: border-box; }
@@ -147,9 +173,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   display: flex; align-items: center; gap: var(--sp-md);
   width: 100%; padding: var(--sp-md); margin-bottom: var(--sp-sm);
   border-radius: var(--r-lg); background: var(--surface-2);
-  text-align: left; transition: background .18s var(--ease);
+  text-align: left;
+  transition: background var(--t-press) var(--ease), transform var(--t-press) var(--ease);
 }
 .me:hover { background: var(--surface-3); }
+.me:active { transform: scale(.98); }
 .me canvas {
   width: 40px; height: 60px; flex: none;
   image-rendering: pixelated; align-self: flex-end; margin-bottom: -6px;
@@ -179,9 +207,13 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   display: flex; align-items: center; gap: var(--sp-lg);
   padding: 0 var(--sp-lg); border-radius: var(--r-lg);
   font-size: 17px; font-variation-settings: 'wght' 700; color: var(--ink-2);
-  text-align: left; transition: background .16s var(--ease), color .16s var(--ease);
+  text-align: left;
+  transition: background var(--t-press) var(--ease), color var(--t-press) var(--ease),
+              transform var(--t-press) var(--ease);
 }
-.navitem svg { flex: none; opacity: .75; width: 22px; height: 22px; }
+.navitem svg { flex: none; opacity: .75; width: 22px; height: 22px;
+  transition: opacity var(--t-press) var(--ease); }
+.navitem:active { transform: scale(.975); background: var(--surface-3); }
 .navitem:hover { background: var(--surface-2); color: var(--ink); }
 .navitem[aria-current="page"] {
   background: var(--teal-50); color: var(--teal-800); font-variation-settings: 'wght' 800;
@@ -203,16 +235,33 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .railfoot svg { flex: none; }
 
 .main { min-width: 0; display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
-.topbar { display: flex; align-items: baseline; gap: var(--sp-md); padding: var(--sp-xl) var(--sp-2xl) var(--sp-lg); }
+/* 바 아래로 내용이 흘러갑니다. 1px 실선으로 자르면 두 층이 서로 모르는
+   것이 되고, 흐려 두면 같은 화면의 위아래가 됩니다. */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: baseline; gap: var(--sp-md);
+  padding: var(--sp-xl) var(--sp-2xl) var(--sp-lg);
+  background: color-mix(in srgb, var(--surface-2) 74%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+.topbar::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 100%;
+  height: 16px; pointer-events: none;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--surface-2) 88%, transparent), transparent);
+}
 .topbar h1 { font-size: 19px; }
 .topbar .sub { font-size: 13px; color: var(--ink-3); }
 .topbar .spacer { margin-left: auto; }
 .iconbtn {
   width: 36px; height: 36px; display: grid; place-items: center;
   border-radius: var(--r-md); color: var(--ink-2);
-  transition: background .16s var(--ease), color .16s var(--ease);
+  transition: background var(--t-press) var(--ease), color var(--t-press) var(--ease),
+              transform var(--t-press) var(--ease);
 }
 .iconbtn:hover { background: var(--surface-3); color: var(--ink); }
+.iconbtn:active { transform: scale(.9); background: var(--line); }
 
 .view { padding: 0 var(--sp-2xl) var(--sp-2xl); display: flex; flex-direction: column; gap: var(--sp-lg); }
 
@@ -229,7 +278,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 
 @keyframes settle { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.view > * { animation: settle .42s var(--ease) both; }
+.view > * { animation: settle .42s var(--settle) both; }
 .view > *:nth-child(2) { animation-delay: .06s; }
 .view > *:nth-child(3) { animation-delay: .12s; }
 .view > *:nth-child(4) { animation-delay: .18s; }
@@ -248,25 +297,53 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .cardhead .spacer { margin-left: auto; }
 .cardhead .count { font-size: 13px; color: var(--ink-3); }
 
+/* ---- 버튼 ----
+   **두께로 눌립니다.** 1px inset 테두리는 모던 SaaS 의 버튼이고, 이건
+   게임입니다 — 같은 계열 진한 선을 아래로 깔아 두고, 누르면 그 두께만큼
+   내려앉습니다. 반응은 누르는 순간이지 떼는 순간이 아닙니다. */
 .btn {
   display: inline-flex; align-items: center; gap: var(--sp-sm);
   padding: 13px var(--sp-xl); border-radius: var(--r-pill);
-  font-size: 15px; font-variation-settings: 'wght' 800;
-  transition: transform .09s var(--press), background .16s var(--ease), box-shadow .16s var(--ease), opacity .16s var(--ease);
+  font-size: 15px; font-variation-settings: 'wght' 800; white-space: nowrap;
+  transition: transform var(--t-press) var(--press),
+              background var(--t-press) var(--ease),
+              box-shadow var(--t-press) var(--ease),
+              opacity var(--t-press) var(--ease);
 }
-.btn:active { transform: scale(.975); }
-.btn:disabled { opacity: .42; cursor: not-allowed; transform: none; }
+.btn:disabled { opacity: .42; cursor: not-allowed; }
 .btn svg { flex: none; }
-.btn-dark { background: var(--night); color: var(--on-night); box-shadow: var(--sh); }
+/* 두께를 갖는 것은 **주 동작 둘**뿐입니다. 모든 버튼이 내려앉으면
+   무엇이 주 동작인지 사라집니다. */
+.btn-dark {
+  background: var(--night); color: var(--on-night);
+  box-shadow: 0 3px 0 0 #000, var(--sh);
+  transform: translateY(-2px);
+}
 .btn-dark:hover:not(:disabled) { background: var(--night-2); }
-.btn-teal { background: var(--teal); color: var(--on-teal); }
+.btn-dark:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 0 0 0 #000; }
+
+.btn-teal {
+  background: var(--teal); color: var(--on-teal);
+  box-shadow: 0 3px 0 0 var(--teal-600);
+  transform: translateY(-2px);
+}
 .btn-teal:hover:not(:disabled) { background: var(--teal-400); }
+.btn-teal:active:not(:disabled) { transform: translateY(1px); box-shadow: 0 0 0 0 var(--teal-600); }
+
+/* 두께가 없는 것들은 눌리면 살짝 작아집니다. */
 .btn-light { background: rgba(255,255,255,.72); color: var(--on-teal); }
 .btn-light:hover:not(:disabled) { background: #fff; }
 .btn-ghost { background: var(--surface-2); color: var(--ink); font-variation-settings: 'wght' 700; }
 .btn-ghost:hover:not(:disabled) { background: var(--surface-3); }
 .btn-line { background: none; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--line-2); font-variation-settings: 'wght' 700; }
 .btn-line:hover:not(:disabled) { background: var(--surface-2); }
+.btn-light:active:not(:disabled),
+.btn-ghost:active:not(:disabled),
+.btn-line:active:not(:disabled) { transform: scale(.965); }
+
+/* 비활성은 두께를 잃습니다 — 눌러도 안 내려간다는 것을 형태가 먼저
+   말합니다. */
+.btn:disabled { transform: none; box-shadow: none; }
 .btn-sm { padding: 8px var(--sp-lg); font-size: 13px; }
 .btn-lg { padding: 15px var(--sp-2xl); font-size: 16px; }
 
@@ -294,7 +371,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .gate .gact {
   position: relative; z-index: 2; margin-left: auto;
-  display: flex; flex-direction: column; gap: var(--sp-sm); min-width: 200px;
+  display: flex; flex-direction: column; align-items: stretch;
+  gap: var(--sp-sm); min-width: 200px;
 }
 .gate .gact .btn { justify-content: center; }
 
@@ -307,6 +385,33 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   letter-spacing: .04em; opacity: .72;
 }
 .gate .gsub { font-size: 14px; line-height: 1.55; opacity: .8; max-width: 42ch; }
+
+/* ---- 코드로 참여 ----
+   청록 판 위에 얹히는 판입니다. 22% 먹으로는 바탕이 비쳐 밝은 청록이
+   되고 그 위 흰 글자가 무너집니다. 불투명에 가깝게 눌러 둡니다. */
+.codepop {
+  width: 300px; margin-top: var(--sp-xs);
+  display: flex; flex-direction: column; gap: var(--sp-sm);
+  padding: var(--sp-lg); border-radius: var(--r-lg);
+  background: rgba(23, 32, 30, .92);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  color: var(--on-night);
+  animation: codepop-in 320ms var(--spring) both;
+}
+@keyframes codepop-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.codepop label { font-size: 12px; font-variation-settings: 'wght' 700; opacity: .72; }
+.codepop-row { display: flex; gap: var(--sp-sm); min-width: 0; }
+.codepop-row .btn { flex: none; }
+.codepop .field {
+  flex: 1; min-width: 0; max-width: none; margin: 0;
+  background: rgba(255,255,255,.94); color: var(--ink); border-color: transparent;
+  letter-spacing: .08em; text-transform: uppercase;
+}
+.codepop-msg { min-height: 15px; font-size: 12px; opacity: .86; }
+.codepop-msg[data-bad="true"] { color: var(--warn-400); opacity: 1; }
 
 .gate-teal { background: var(--teal); color: var(--on-teal); }
 .gate-teal::after {
@@ -340,19 +445,26 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: background .18s var(--ease), color .18s var(--ease);
 }
 .seg button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(20,40,38,.10); }
+.seg button:active { transform: scale(.96); }
 
 .rows { display: flex; flex-direction: column; }
 .row { display: flex; align-items: center; gap: var(--sp-md); padding: var(--sp-md) 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .row:last-child { border-bottom: 0; }
 .row .lb { color: var(--ink-2); }
 .row .lb em { font-style: normal; color: var(--ink-3); font-size: 12px; }
-.row .val { margin-left: auto; font-variation-settings: 'wght' 700; font-variant-numeric: tabular-nums; }
+.row .lb { min-width: 0; overflow-wrap: anywhere; }
+.row .val {
+  margin-left: auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-variation-settings: 'wght' 700; font-variant-numeric: tabular-nums;
+}
 .row.tap {
   cursor: pointer; margin: 0 calc(var(--sp-md) * -1);
   padding-left: var(--sp-md); padding-right: var(--sp-md);
   border-radius: var(--r-md); transition: background .16s var(--ease);
 }
 .row.tap:hover { background: var(--surface-2); }
+.row.tap:active { background: var(--surface-3); }
 .row .chev { color: var(--ink-3); margin-left: var(--sp-sm); }
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sp-md); }
@@ -380,16 +492,23 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   background: linear-gradient(180deg, var(--teal-50), var(--surface-2)); min-height: 300px;
 }
 .stage canvas { width: 128px; height: 192px; image-rendering: pixelated; filter: drop-shadow(0 12px 14px rgba(20,40,38,.16)); }
-.stage .nm { font-size: 17px; font-variation-settings: 'wght' 800; }
+.stage .nm {
+  font-size: 17px; font-variation-settings: 'wght' 800;
+  /* 닉네임은 20자까지 들어옵니다. 무대 폭이 300 이라 그대로 두면 세
+     줄이 되고 캐릭터가 위로 밀립니다. */
+  max-width: 100%; overflow-wrap: anywhere; line-height: 1.3;
+}
 .stage .sp { font-size: 12px; color: var(--ink-3); margin-top: 2px; text-align: center; }
 
 .wear { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-md); }
 .slot {
   padding: var(--sp-md); border: 1.5px dashed var(--line-2); border-radius: var(--r-md);
   background: var(--surface-2); text-align: left;
-  transition: border-color .18s var(--ease), background .18s var(--ease);
+  transition: border-color var(--t-press) var(--ease), background var(--t-press) var(--ease),
+              transform var(--t-press) var(--press);
 }
 .slot:hover { border-color: var(--teal-400); background: var(--teal-50); }
+.slot:active { transform: scale(.975); }
 .slot u { display: block; text-decoration: none; font-size: 11px; color: var(--ink-3); font-variation-settings: 'wght' 700; }
 .slot b { display: block; margin-top: var(--sp-xs); font-size: 13px; font-variation-settings: 'wght' 700; }
 .slot.on { border-style: solid; border-color: var(--teal-200); background: var(--teal-50); }
@@ -399,7 +518,13 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .lg li { display: flex; align-items: center; gap: var(--sp-md); padding: var(--sp-md); border-radius: var(--r-md); font-size: 14px; }
 .lg li + li { margin-top: 2px; }
 .lg .rk { width: 26px; text-align: center; flex: none; font-variation-settings: 'wght' 800; font-variant-numeric: tabular-nums; color: var(--ink-3); }
-.lg .un { font-variation-settings: 'wght' 700; }
+.lg .un {
+  font-variation-settings: 'wght' 700;
+  /* 학교 이름이 길면 시간 열을 밀어냅니다. 순위표에서 숫자가 흔들리면
+     비교가 안 됩니다 — 이름이 줄고 숫자가 자리를 지킵니다. */
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.lg .hr { flex: none; }
 .lg .hr { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--ink-2); }
 .lg li.mine { background: var(--teal-50); }
 .lg li.mine .rk, .lg li.mine .un { color: var(--teal-800); }
@@ -410,9 +535,36 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .note-warn { background: var(--warn-50); color: var(--warn-700); }
 .note-warn b { color: var(--warn-700); }
 
-.empty { display: flex; flex-direction: column; align-items: center; gap: var(--sp-lg); padding: var(--sp-3xl) var(--sp-xl); text-align: center; }
+/* ---- 빈 상태 ----
+   아이콘 판 · 굵은 한 줄 · 설명 · **할 일 하나**. 할 일이 둘이면 아무것도
+   없는 사람이 제일 먼저 결정을 하게 됩니다. */
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-md);
+  padding: var(--sp-3xl) var(--sp-xl); text-align: center;
+}
+.empty-fig {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  border-radius: 14px; background: var(--surface-3); color: var(--ink-3);
+  margin-bottom: var(--sp-xs);
+}
 .empty .ttl { font-size: 15px; font-variation-settings: 'wght' 800; }
-.empty p { font-size: 13px; color: var(--ink-3); line-height: 1.6; max-width: 40ch; }
+.empty p { font-size: 13px; color: var(--ink-3); line-height: 1.6; max-width: 36ch; }
+.empty .btn { margin-top: var(--sp-sm); }
+
+/* ---- 목록 뼈대 ----
+   서버를 기다리는 구간에 화면이 비어 있으면 **고장으로 읽힙니다.**
+   지금은 서버가 없지만, 화면을 갈 때 이 구간을 실제로 만들어 두어야
+   나중에 붙일 자리가 생깁니다. */
+.skel { display: flex; flex-direction: column; gap: 6px; }
+.skel i {
+  display: block; height: 46px; border-radius: var(--r-md);
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: skel 1.4s ease-in-out infinite;
+}
+.skel.tall i { height: 92px; }
+@keyframes skel { from { background-position: 100% 0; } to { background-position: 0 0; } }
+@media (prefers-reduced-motion: reduce) { .skel i { animation: none; } }
 
 /* 초안에서 가짜 숫자를 진짜처럼 두면 회의에서 그 숫자로 결정이 납니다. */
 .demo { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: var(--r-pill); background: var(--warn-50); color: var(--warn-700); font-size: 11px; font-variation-settings: 'wght' 800; }
@@ -423,15 +575,25 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .save .tt span { display: block; font-size: 12px; color: #2F7A50; margin-top: 2px; }
 .save .btn { margin-left: auto; }
 
+/* 들어올 때는 스프링, 나갈 때는 ease. 비대칭입니다 — 나타나는 것은
+   사람이 기다린 것이고, 사라지는 것은 이미 읽은 것입니다. */
 .toast {
-  position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 14px);
+  position: fixed; left: 50%; bottom: 28px;
   padding: 12px 20px; border-radius: var(--r-pill);
   background: var(--night); color: var(--on-night);
   font-size: 13px; font-variation-settings: 'wght' 700; box-shadow: var(--sh-lg);
-  opacity: 0; pointer-events: none;
-  transition: opacity .22s var(--ease), transform .22s var(--ease); z-index: 90;
+  pointer-events: none; z-index: 90;
+  opacity: 0; transform: translate(-50%, 10px) scale(.94);
 }
-.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.toast.on {
+  opacity: 1; transform: translate(-50%, 0) scale(1);
+  transition: opacity var(--t-quick) var(--ease),
+              transform var(--spring-t) var(--spring);
+}
+.toast.off {
+  opacity: 0; transform: translate(-50%, -6px);
+  transition: opacity var(--t-quick) var(--ease), transform var(--t-quick) var(--ease);
+}
 
 /* ==================================================================
    방 만들기 위저드
@@ -448,9 +610,18 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .wizard.up { transform: none; }
 
 .wiz-nav {
+  position: relative; z-index: 2;
   display: flex; align-items: center; gap: var(--sp-lg);
   padding: var(--sp-lg) var(--sp-2xl);
-  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+.wiz-nav::after {
+  content: ''; position: absolute; left: 0; right: 0; top: 100%;
+  height: 16px; pointer-events: none;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--bg) 88%, transparent), transparent);
 }
 .wiz-back {
   display: inline-flex; align-items: center; gap: 5px;
@@ -467,7 +638,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .wiz-track i { width: 34px; height: 4px; border-radius: var(--r-pill); background: var(--surface-3); transition: background .3s var(--ease); }
 .wiz-track i[data-fill="true"] { background: var(--teal); }
 
-.wiz-scroll { flex: 1; overflow-y: auto; }
+.wiz-scroll { flex: 1; overflow-y: auto; margin: -16px 0; padding: 16px 0; }
 .wiz-stage { max-width: 620px; margin: 0 auto; padding: var(--sp-2xl) var(--sp-xl) var(--sp-3xl); }
 
 /* 단계가 넘어갈 때. 들어올 때는 아래에서, 뒤로 갈 때는 위에서 옵니다 —
@@ -485,7 +656,19 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .wiz-lede h3 { font-size: 26px; }
 .wiz-lede p { margin-top: var(--sp-sm); font-size: 14px; line-height: 1.6; color: var(--ink-2); }
 
-.wiz-bar { border-top: 1px solid var(--line); background: var(--bg); }
+.wiz-bar {
+  position: relative; z-index: 2;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+}
+/* 아래 바는 위쪽 가장자리가 흐려집니다 — 방향만 반대입니다. */
+.wiz-bar::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 100%;
+  height: 16px; pointer-events: none;
+  background: linear-gradient(to top,
+    color-mix(in srgb, var(--bg) 88%, transparent), transparent);
+}
 .wiz-bar-inner {
   max-width: 620px; margin: 0 auto;
   padding: var(--sp-lg) var(--sp-xl);
@@ -507,6 +690,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
 }
 .pick:hover { border-color: var(--teal-300); transform: translateY(-1px); }
+.pick:active { transform: scale(.99); }
 .pick[aria-pressed="true"] { border-color: var(--teal); background: var(--teal-50); }
 .pick-fig { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink-2); }
 .pick[aria-pressed="true"] .pick-fig { background: var(--teal); color: var(--on-teal); }
@@ -600,9 +784,11 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   display: flex; flex-direction: column; align-items: flex-start; gap: var(--sp-sm);
   padding: var(--sp-lg); border-radius: var(--r-lg);
   border: 1.5px solid var(--line-2); background: var(--surface); text-align: left; height: 100%;
-  transition: border-color .18s var(--ease), background .18s var(--ease);
+  transition: border-color var(--t-press) var(--ease), background var(--t-press) var(--ease),
+              transform var(--t-press) var(--press);
 }
 .mode:hover { border-color: var(--teal-300); }
+.mode:active { transform: scale(.98); }
 .mode[aria-pressed="true"] { border-color: var(--teal); background: var(--teal-50); }
 .mode-fig { width: 34px; height: 34px; display: grid; place-items: center; border-radius: var(--r-md); background: var(--surface-2); color: var(--ink-2); }
 .mode[aria-pressed="true"] .mode-fig { background: var(--teal); color: var(--on-teal); }
@@ -653,6 +839,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .mint-code.copyable { cursor: pointer; background: var(--surface-2); }
 .mint-code.copyable:hover { background: var(--surface-3); }
+.mint-code.copyable:active { transform: scale(.98); }
 .mint-code.copied { background: var(--teal-100); }
 .minting h3 { font-size: 20px; }
 .minting p { font-size: 13.5px; color: var(--ink-2); }
@@ -689,7 +876,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .gtile-name { font-size: 13.5px; font-variation-settings: 'wght' 700; }
 .gtile-state { font-size: 11.5px; padding: 2px 8px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink-3); font-variation-settings: 'wght' 700; }
 .gtile-state.ready { background: var(--good-50); color: #1F6B41; }
-.gtile:not(.empty):not(.self) { cursor: pointer; }
+.gtile:not(.empty):not(.self) { cursor: pointer; transition: transform var(--t-press) var(--press); }
+.gtile:not(.empty):not(.self):active { transform: scale(.98); }
 
 .lobby-foot { display: flex; align-items: center; gap: var(--sp-lg); margin-top: var(--sp-xl); }
 .lobby-status { font-size: 13px; color: var(--ink-3); }
@@ -793,13 +981,29 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
               <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
             </svg>
           </button>
-          <button class="btn btn-light" type="button" data-go="joincode">
+          <button class="btn btn-light" type="button" id="openJoin"
+                  aria-expanded="false" aria-controls="codepop">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>
             </svg>
             코드로 참여
           </button>
+
+          <!-- 버튼 아래에서 펼쳐집니다. 화면을 덮으면 방을 만들려던 사람이
+               한 번 되돌아와야 하고, 코드를 잘못 넣었을 때 갈 곳이 없습니다.
+               절대배치로 띄우면 버튼을 가려서, 무엇을 눌러 열었는지가
+               화면에서 사라집니다. -->
+          <div class="codepop" id="codepop" hidden>
+          <label for="joincode">초대 코드</label>
+          <div class="codepop-row">
+            <input class="field" type="text" id="joincode" placeholder="4F2K9A"
+                   maxlength="6" autocomplete="off" spellcheck="false"
+                   aria-describedby="codepopMsg">
+            <button class="btn btn-teal btn-sm" type="button" id="joinGo">참여</button>
+          </div>
+            <p class="codepop-msg" id="codepopMsg" role="status" aria-live="polite"></p>
+          </div>
         </div>
       </div>
 
@@ -891,15 +1095,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
             <h2>옷장</h2><span class="spacer"></span>
             <span class="count tnum" id="coinCount">코인 0</span>
           </div>
-          <div class="wear" id="wearSlots"></div>
-          <div style="display:flex;gap:8px;margin-top:16px">
-            <button class="btn btn-ghost btn-sm" type="button" data-go="shop">상점 열기</button>
-            <button class="btn btn-line btn-sm" type="button" data-go="undress">전부 벗기</button>
-          </div>
-          <div class="note">
-            옷은 <b>학생회관 상점</b>에서 코인으로 삽니다. 코인은 앉은 시간과
-            회복 횟수로 쌓여요. 여기서는 가진 것을 갈아입기만 합니다.
-          </div>
+          <div id="wearWrap"></div>
         </div>
       </div>
     </section>
@@ -1154,12 +1350,19 @@ function show(key) {
   document.querySelector('.main').scrollTop = 0;
 }
 
-let toastT = 0;
+let toastT = 0, toastT2 = 0;
 function toast(msg) {
   const el = $('toast');
-  el.textContent = msg; el.classList.add('on');
-  clearTimeout(toastT);
-  toastT = setTimeout(() => el.classList.remove('on'), 2200);
+  el.textContent = msg;
+  el.classList.remove('off');
+  /* 같은 토스트가 연달아 뜨면 애니메이션이 안 다시 돕니다. 한 프레임
+     떼었다가 다시 붙입니다. */
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  clearTimeout(toastT); clearTimeout(toastT2);
+  toastT = setTimeout(() => {
+    el.classList.remove('on'); el.classList.add('off');
+    toastT2 = setTimeout(() => el.classList.remove('off'), 240);
+  }, 2200);
 }
 
 document.addEventListener('click', (e) => {
@@ -1192,7 +1395,7 @@ function act(what) {
     case 'recal':       location.href = '../onboarding/index.html#cal'; break;
     case 'export':      exportSave(); break;
     case 'leave-lobby': show('start'); break;
-    case 'joincode':    toast('코드로 참여 — 서버가 붙으면 동작합니다'); break;
+
     case 'shop':        toast('상점 — 월드 학생회관의 상점 창을 여기로 옮깁니다'); break;
     case 'undress':     toast('전부 벗기 — 옷장 저장이 붙으면 동작합니다'); break;
     default: toast('아직 안 이어진 곳이에요');
@@ -1255,6 +1458,9 @@ const IC = {
   pin:   '<path d="M12 17v5"/><path d="M9 10.76V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4.76a2 2 0 0 0 .55 1.37l1.9 2A2 2 0 0 1 17 17H7a2 2 0 0 1-1.45-2.87l1.9-2A2 2 0 0 0 9 10.76Z"/>',
   disk:  '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
   chev:  '<path d="m10 6 6 6-6 6"/>',
+  chart: '<path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-6"/>',
+  shirt: '<path d="M20.4 14.5 16 10 4 20"/><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/>',
+  seat:  '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/>',
 };
 
 /* ---- 1단계: 방 종류 ---- */
@@ -1861,6 +2067,60 @@ function renderLobby() {
 
 $('lobbyCopy').addEventListener('click', () => copyCode(W.code, toast));
 
+/* ---- 코드로 참여 ----
+   서버가 없으므로 **형식만** 검사합니다. 그래도 검사를 붙이는 이유는,
+   지금 없는 것과 나중에 틀린 것이 사람에게 같은 화면으로 보이면 안 되기
+   때문입니다 — 여섯 자를 안 채웠다는 말은 지금도 사실입니다. */
+(function joinByCode() {
+  const open = $('openJoin'), pop = $('codepop'), input = $('joincode');
+  const msg = $('codepopMsg'), go = $('joinGo');
+
+  const say = (m, bad) => { msg.textContent = m; msg.dataset.bad = String(!!bad); };
+
+  function close() {
+    if (pop.hidden) return;
+    pop.hidden = true;
+    open.setAttribute('aria-expanded', 'false');
+    say('', false);
+  }
+
+  open.addEventListener('click', () => {
+    const next = pop.hidden;
+    pop.hidden = !next;
+    open.setAttribute('aria-expanded', String(next));
+    if (next) { input.value = ''; say('', false); input.focus(); }
+  });
+
+  /* 판 밖을 누르면 닫힙니다. Escape 도 같습니다 — 열어 둔 채로 다른 일을
+     하러 갔을 때 되돌아올 곳이 필요합니다. */
+  document.addEventListener('click', (e) => {
+    if (pop.hidden) return;
+    if (pop.contains(e.target) || open.contains(e.target)) return;
+    close();
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+
+  input.addEventListener('input', () => {
+    input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    if (msg.textContent) say('', false);
+  });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go.click(); });
+
+  go.addEventListener('click', () => {
+    const v = input.value.trim();
+    if (v.length < 6) { say('여섯 자를 다 넣어 주세요', true); input.focus(); return; }
+    /* 코드 문자표에 없는 글자는 애초에 발급되지 않습니다 — I·L·O·0·1 은
+       서로 헷갈려서 뺀 글자라, 들어왔다면 잘못 읽은 것입니다. */
+    if (/[ILO01]/.test(v)) { say('I·L·O·0·1 은 코드에 안 쓰여요. 다시 봐 주세요', true); input.focus(); return; }
+    say('방을 찾는 중이에요…', false);
+    go.disabled = true;
+    setTimeout(() => {
+      go.disabled = false;
+      say('그런 방이 없어요. 서버가 붙으면 실제로 찾습니다', true);
+    }, 700);
+  });
+})();
+
 /* 시연용 — 실제로는 서버가 준비 상태를 보냅니다. 타일을 눌러 준비 완료로
    바꿀 수 있게 해서, 막힌 상태와 풀린 상태를 둘 다 보여 줍니다. */
 $('lobbyGallery').addEventListener('click', (e) => {
@@ -1904,11 +2164,34 @@ function paintChar() {
   $('petName').textContent = ROOM.nickname;
   $('petLine').textContent = ROOM.character + ' · ' + sp.line;
   $('coinCount').textContent = '코인 ' + (ROOM.coins || 0);
-  $('wearSlots').innerHTML = SLOTS.map(([cat, ko]) => {
-    const id = ROOM.worn && ROOM.worn[cat];
-    return `<button class="slot${id ? ' on' : ''}" type="button" data-go="shop">
-      <u>${ko}</u><b>${id ? esc(ITEM_KO[id] || id) : '비어 있음'}</b></button>`;
-  }).join('');
+
+  const owned = Array.isArray(ROOM.owned) ? ROOM.owned.length : 0;
+  const worn = SLOTS.filter(([c]) => ROOM.worn && ROOM.worn[c]).length;
+
+  /* 가진 옷이 하나도 없으면 빈 칸 여섯을 보여 주지 않습니다. 채울 수
+     없는 칸 여섯은 "내가 뭘 놓쳤나" 로 읽히지, 살 것으로 안 읽힙니다. */
+  if (owned === 0 && worn === 0) {
+    $('wearWrap').innerHTML = `<div class="empty">
+      <span class="empty-fig">${icon(IC.shirt, 22, 2)}</span>
+      <div class="ttl">아직 가진 옷이 없어요</div>
+      <p>코인은 앉은 시간과 회복 횟수로 쌓여요. 학생회관 상점에서 옷으로 바꿉니다.</p>
+      <button class="btn btn-teal" type="button" data-go="world">학생회관 가기</button>
+    </div>`;
+    return;
+  }
+
+  $('wearWrap').innerHTML =
+    '<div class="wear">' + SLOTS.map(([cat, ko]) => {
+      const id = ROOM.worn && ROOM.worn[cat];
+      return `<button class="slot${id ? ' on' : ''}" type="button" data-go="shop">
+        <u>${ko}</u><b>${id ? esc(ITEM_KO[id] || id) : '비어 있음'}</b></button>`;
+    }).join('') + '</div>'
+    + '<div style="display:flex;gap:8px;margin-top:16px">'
+    + '<button class="btn btn-ghost btn-sm" type="button" data-go="shop">상점 열기</button>'
+    + (worn ? '<button class="btn btn-line btn-sm" type="button" data-go="undress">전부 벗기</button>' : '')
+    + '</div>'
+    + '<div class="note">옷은 <b>학생회관 상점</b>에서 코인으로 삽니다. 코인은 앉은 '
+    + '시간과 회복 횟수로 쌓여요. 여기서는 가진 것을 갈아입기만 합니다.</div>';
 }
 
 const LEAGUE = [
@@ -1996,7 +2279,9 @@ const MY = {
       : '<div class="row"><span class="lb">아직 없어요</span></div>';
 
     const sessList = !S.count
-      ? `<div class="empty"><div class="ttl">아직 앉은 기록이 없어요</div>
+      ? `<div class="empty">
+          <span class="empty-fig">${icon(IC.chart, 22, 2)}</span>
+          <div class="ttl">아직 앉은 기록이 없어요</div>
           <p>도서관이나 본관에서 한 세션만 채우면 여기에 쌓입니다.</p>
           <button class="btn btn-teal" type="button" data-go="world">월드 입장</button></div>`
       : '<div class="rows">' + SESSIONS.slice().reverse().slice(0, 12).map((r) => {
@@ -2140,20 +2425,34 @@ const MY = {
   },
 };
 
-function paintMy(tab) {
+/* 칸을 바꿀 때 잠깐 뼈대를 보여 줍니다. 지금은 값이 이미 손에 있어
+   기다릴 것이 없지만, **서버가 붙는 자리가 여기**입니다 — 그때 화면이
+   비어 있으면 고장으로 읽힙니다. 260ms 는 room-flow 가 쓰던 값입니다. */
+let myTimer = 0;
+function paintMy(tab, instant) {
+  const key = tab || 'info';
   const pane = $('myPane');
-  pane.innerHTML = '<div class="view" style="padding:0">' + MY[tab || 'info']() + '</div>';
-  pane.querySelectorAll('.view > *').forEach((c, i) => {
-    c.style.animation = 'settle .42s var(--ease) both';
-    c.style.animationDelay = (i * 60) + 'ms';
-  });
+  clearTimeout(myTimer);
+
+  const draw = () => {
+    pane.innerHTML = '<div class="view" style="padding:0">' + MY[key]() + '</div>';
+    pane.querySelectorAll('.view > *').forEach((c, i) => {
+      c.style.animation = 'settle .42s var(--settle) both';
+      c.style.animationDelay = (i * 60) + 'ms';
+    });
+  };
+
+  if (instant || REDUCED) { draw(); return; }
+  pane.innerHTML = '<div class="card"><div class="skel tall">'
+    + '<i></i><i></i><i></i></div></div>';
+  myTimer = setTimeout(draw, 260);
 }
 
 /* ---- 시작 ---- */
 paintRail();
 paintChar();
 paintLeague();
-paintMy('info');
+paintMy('info', true);
 show('start');
 </script>
 </body>

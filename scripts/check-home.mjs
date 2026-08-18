@@ -223,6 +223,18 @@ for (const [w, h] of SIZES) {
   if (type.neg) fail('음수 자간 ' + type.neg + '곳');
   if (type.size === '15px' && !type.w420 && !type.neg) pass('타이포 계약');
 
+  /* ---- 초점 링이 면을 따라가는가 ----
+     하나로 고정하면 청록 판 위 2.92, 먹 판 위 3.06 으로 비텍스트 UI 기준
+     3:1 을 못 넘거나 겨우 걸칩니다. 키보드로만 쓰는 사람에게는 이 선이
+     "지금 어디" 의 전부입니다. */
+  const rings = await page.evaluate(() => {
+    const v = (s) => getComputedStyle(document.querySelector(s)).getPropertyValue('--focus').trim();
+    return { teal: v('.gate-teal'), night: v('.gate-night'), root: v(':root') };
+  });
+  if (rings.teal === rings.root || rings.night === rings.root) {
+    fail('초점 링이 면마다 안 바뀜: ' + JSON.stringify(rings));
+  } else pass('초점 링 ' + rings.root + ' / 청록 ' + rings.teal + ' / 먹 ' + rings.night);
+
   /* ---- 화면마다: 가로 넘침 · axe ---- */
   const scan = async (label) => {
     const r = await new AxeBuilder({ page })

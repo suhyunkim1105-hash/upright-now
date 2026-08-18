@@ -117,7 +117,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .app {
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr);
-  min-height: 100dvh;
+  height: 100dvh;
   transition: transform .5s var(--ease), filter .5s var(--ease);
 }
 /* 위저드가 올라오면 뒤 화면이 살짝 물러납니다. 덮인 것이지 사라진 것이
@@ -129,7 +129,8 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
   padding: var(--sp-lg);
   background: var(--bg);
   border-right: 1px solid var(--line);
-  position: sticky; top: 0; height: 100dvh;
+  height: 100%;
+  overflow-y: auto;
 }
 .brand { display: flex; align-items: center; gap: var(--sp-md); padding: var(--sp-md) var(--sp-md) var(--sp-lg); }
 /* 랜딩과 **같은 파일**을 씁니다. 로고를 두 번 그리면 곧 두 개가 됩니다. */
@@ -163,7 +164,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .nav { display: flex; flex-direction: column; gap: 2px; }
 .navitem {
   display: flex; align-items: center; gap: var(--sp-md);
-  padding: var(--sp-md); border-radius: var(--r-md);
+  padding: var(--sp-lg) var(--sp-md); border-radius: var(--r-md);
   font-size: 15px; font-variation-settings: 'wght' 600; color: var(--ink-2);
   text-align: left; transition: background .16s var(--ease), color .16s var(--ease);
 }
@@ -174,6 +175,36 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .navitem[aria-current="page"] svg { opacity: 1; }
 
+.today {
+  margin-top: var(--sp-lg);
+  display: block; width: 100%; text-align: left;
+  padding: var(--sp-lg); margin-bottom: var(--sp-sm);
+  border-radius: var(--r-lg); background: var(--surface-2);
+  transition: background .18s var(--ease);
+}
+.today:hover { background: var(--surface-3); }
+.today .th { display: block; font-size: 11px; font-variation-settings: 'wght' 800; color: var(--ink-3); letter-spacing: .04em; }
+.today .tbig { display: block; margin-top: var(--sp-xs); font-size: 13px; color: var(--ink-2); font-variation-settings: 'wght' 600; }
+.today .tbig b { font-size: 26px; letter-spacing: -.035em; font-variation-settings: 'wght' 800; color: var(--ink); margin-right: 1px; }
+/* 이레 막대를 아주 작게. 숫자 하나만 두면 오늘이 많은 날인지 적은 날인지
+   알 수가 없습니다 — 옆에 지난 엿새가 있어야 오늘이 읽힙니다. */
+.today .tweek { display: flex; align-items: flex-end; gap: 3px; height: 34px; margin-top: var(--sp-md); }
+/* 4px 은 "오늘 0분" 도 칸으로 보이게 하는 최소치입니다. 2px 이면
+   밑줄처럼 보여서 막대가 깨진 줄 압니다. */
+.today .tweek i { flex: 1; border-radius: 2px; background: var(--line-2); min-height: 4px; }
+.today .tweek i[data-today="true"] { background: var(--teal); }
+.today .trow { display: flex; gap: var(--sp-sm); margin-top: var(--sp-md); font-size: 11px; font-variation-settings: 'wght' 700; }
+.today .trow span { padding: 3px 8px; border-radius: var(--r-pill); background: var(--surface); color: var(--ink-3); }
+.today .trow span.ok { background: var(--teal-50); color: var(--teal-700); }
+
+.recent { display: flex; flex-direction: column; gap: 1px; padding: 0 var(--sp-xs); }
+.recent .rh { padding: var(--sp-md) var(--sp-sm) var(--sp-sm); font-size: 11px; font-variation-settings: 'wght' 800; color: var(--ink-3); letter-spacing: .04em; }
+.recent .rr { display: flex; align-items: baseline; gap: var(--sp-sm); padding: 5px var(--sp-sm); font-size: 12px; }
+.recent .rr .rd { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.recent .rr .rz { color: var(--ink-2); }
+.recent .rr .rm { margin-left: auto; font-variation-settings: 'wght' 700; font-variant-numeric: tabular-nums; }
+.recent .rempty { padding: 5px var(--sp-sm); font-size: 12px; color: var(--ink-3); }
+
 .railfoot {
   margin-top: auto;
   display: flex; align-items: center; gap: var(--sp-sm);
@@ -183,7 +214,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .railfoot svg { flex: none; }
 
-.main { min-width: 0; display: flex; flex-direction: column; }
+.main { min-width: 0; display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
 .topbar { display: flex; align-items: baseline; gap: var(--sp-md); padding: var(--sp-xl) var(--sp-2xl) var(--sp-lg); }
 .topbar h1 { font-size: 19px; }
 .topbar .sub { font-size: 13px; color: var(--ink-3); }
@@ -196,6 +227,16 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .iconbtn:hover { background: var(--surface-3); color: var(--ink); }
 
 .view { padding: 0 var(--sp-2xl) var(--sp-2xl); display: flex; flex-direction: column; gap: var(--sp-lg); }
+
+/* 세션 시작만 화면을 다 씁니다. 여기에는 고를 것이 둘뿐이라 스크롤이
+   생길 이유가 없고, 판이 클수록 "여기서 앉기 시작한다" 가 먼저 읽힙니다.
+   나머지 화면은 내용 길이를 따라갑니다. */
+#v-start {
+  flex: 1;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  min-height: 0;
+}
 
 @keyframes settle { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .view > * { animation: settle .42s var(--ease) both; }
@@ -242,21 +283,51 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 /* ---- 입구 판 ---- */
 .gate {
   position: relative; overflow: hidden;
-  border-radius: var(--r-xl); padding: var(--sp-xl) var(--sp-2xl);
-  min-height: 196px; display: flex; align-items: center; gap: var(--sp-xl);
+  border-radius: var(--r-xl); padding: var(--sp-2xl);
+  min-height: 196px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  gap: var(--sp-xl);
 }
-.gate .gtext { position: relative; z-index: 2; }
+.gate .gtext { position: relative; z-index: 2; align-self: center; }
 .gate .gkind {
   display: inline-flex; align-items: center; gap: 6px;
   font-size: 12px; font-variation-settings: 'wght' 800; letter-spacing: .04em; opacity: .72;
 }
-.gate h2 { font-size: 38px; letter-spacing: -.045em; line-height: 1.05; margin: var(--sp-md) 0 var(--sp-sm); }
-.gate .gsub { font-size: 14px; line-height: 1.5; opacity: .78; max-width: 40ch; }
+.gate h2 {
+  font-size: clamp(38px, 4.4vw, 56px);
+  letter-spacing: -.045em; line-height: 1.02;
+  margin: var(--sp-md) 0 var(--sp-md);
+}
+.gate .gsub { font-size: clamp(14px, 1.15vw, 16px); line-height: 1.55; opacity: .8; max-width: 42ch; }
 .gate .gact {
-  position: relative; z-index: 2; margin-left: auto;
-  display: flex; flex-direction: column; gap: var(--sp-sm); min-width: 176px;
+  position: relative; z-index: 2; align-self: center; justify-self: end;
+  display: flex; flex-direction: column; gap: var(--sp-sm); min-width: 200px;
 }
 .gate .gact .btn { justify-content: center; }
+
+/* 판 아래 사실 세 줄. 판이 화면 절반이 되면서 가운데 글 덩어리만으로는
+   위아래가 비었습니다. 여기 적는 것은 꾸밈이 아니라 **고르는 데 필요한
+   정보** 입니다 — 방은 몇 명까지 어떻게 들어오는지, 월드는 어디에
+   앉는지. */
+.gfacts {
+  position: relative; z-index: 2;
+  grid-column: 1 / -1; align-self: end;
+  display: flex; flex-wrap: wrap; gap: var(--sp-sm);
+  padding-top: clamp(10px, 1.8vh, 16px);
+  border-top: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 16%, transparent);
+}
+.gfacts span {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-variation-settings: 'wght' 700; opacity: .8;
+}
+.gfacts span + span::before {
+  content: ''; width: 3px; height: 3px; border-radius: 50%;
+  background: currentColor; margin-right: var(--sp-sm); opacity: .5;
+}
 
 .gate-teal { background: var(--teal); color: var(--on-teal); }
 .gate-teal::after {
@@ -284,7 +355,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 
 .live {
   display: inline-flex; align-items: center; gap: var(--sp-sm);
-  margin-top: var(--sp-lg); padding: 6px var(--sp-md);
+  margin-top: clamp(8px, 1.6vh, 16px); padding: 6px var(--sp-md);
   border-radius: var(--r-pill); background: rgba(255,255,255,.09);
   font-size: 13px; font-variation-settings: 'wght' 700;
 }
@@ -317,22 +388,6 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 }
 .row.tap:hover { background: var(--surface-2); }
 .row .chev { color: var(--ink-3); margin-left: var(--sp-sm); }
-
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: var(--sp-md); }
-.tile {
-  display: flex; align-items: center; gap: var(--sp-md);
-  padding: var(--sp-md) var(--sp-lg);
-  border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface);
-  text-align: left;
-  transition: border-color .18s var(--ease), transform .18s var(--ease), box-shadow .18s var(--ease);
-}
-.tile:hover { border-color: var(--teal-200); transform: translateY(-2px); box-shadow: var(--sh); }
-.tile .ic { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: var(--r-md); background: var(--teal-50); color: var(--teal-700); }
-.tile .tt { min-width: 0; }
-.tile .tt b { display: block; font-size: 14px; font-variation-settings: 'wght' 700; }
-.tile .tt span { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; }
-.tile .st { margin-left: auto; flex: none; padding: 4px 10px; border-radius: var(--r-pill); background: var(--teal-50); color: var(--teal-700); font-size: 12px; font-variation-settings: 'wght' 700; }
-.tile .st.off { background: var(--surface-3); color: var(--ink-3); }
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--sp-md); }
 .stat { padding: var(--sp-lg) var(--sp-xl); border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
@@ -731,6 +786,23 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
       </button>
     </div>
 
+    <!-- 메뉴가 넷이라 레일 가운데가 통째로 비었습니다. 여기 넣는 것은
+         **오늘 하나** 입니다 — 자세한 것은 마이페이지에 있고, 레일은
+         "오늘 앉았나" 한 가지만 답합니다. 눌러서 기록으로 갑니다. -->
+    <button class="today" type="button" data-nav="my" data-my-tab="log" id="todayCard">
+      <span class="th">오늘</span>
+      <span class="tbig"><b id="todayMin" class="tnum">0</b>분 앉았어요</span>
+      <span class="tweek" id="todayWeek" aria-hidden="true"></span>
+      <span class="trow">
+        <span id="todayStreak">연속 0일</span>
+        <span id="todayBase">기준 미확인</span>
+      </span>
+    </button>
+
+    <!-- 최근 세 줄. 오늘 숫자만 두면 "요즘 어땠나" 를 보려고 마이페이지를
+         열어야 합니다. 세 줄이면 레일에서 답이 납니다. -->
+    <div class="recent" id="recent"></div>
+
     <div class="railfoot">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -789,6 +861,12 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
             코드로 참여
           </button>
         </div>
+        <div class="gfacts">
+          <span>최대 10자리</span>
+          <span>초대 코드로만 입장</span>
+          <span>서로의 화면은 안 보여요</span>
+          <span>도서관 · 내 공간 · 팀플 모드</span>
+        </div>
       </div>
 
       <div class="gate gate-night">
@@ -815,21 +893,14 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
             </svg>
           </button>
         </div>
+        <div class="gfacts">
+          <span>도서관 · 본관에 앉아요</span>
+          <span>학생회관에서 상점 · 출석</span>
+          <span>기숙사는 쉬는 곳</span>
+          <span>접속한 사람이 같이 걸어 다녀요</span>
+        </div>
       </div>
 
-      <div class="card">
-        <div class="cardhead">
-          <h2>방 찾기</h2>
-          <div class="seg" role="tablist" aria-label="방 출처">
-            <button type="button" role="tab" aria-selected="true"  data-seg="mine">내 방</button>
-            <button type="button" role="tab" aria-selected="false" data-seg="school">명지대</button>
-            <button type="button" role="tab" aria-selected="false" data-seg="all">전체</button>
-          </div>
-          <span class="spacer"></span>
-          <span class="count" id="roomCount">0개</span>
-        </div>
-        <div class="tiles" id="roomList"></div>
-      </div>
     </section>
 
     <!-- ---------- 대기실 ---------- -->
@@ -1163,7 +1234,7 @@ function show(key) {
   if (v) v.querySelectorAll(':scope > *').forEach((c) => {
     c.style.animation = 'none'; void c.offsetWidth; c.style.animation = '';
   });
-  window.scrollTo({ top: 0 });
+  document.querySelector('.main').scrollTop = 0;
 }
 
 let toastT = 0;
@@ -1176,16 +1247,19 @@ function toast(msg) {
 
 document.addEventListener('click', (e) => {
   const nav = e.target.closest('[data-nav]');
-  if (nav) { show(nav.dataset.nav); return; }
-  const go = e.target.closest('[data-go]');
-  if (go) { act(go.dataset.go); return; }
-  const seg = e.target.closest('[data-seg]');
-  if (seg) {
-    seg.parentElement.querySelectorAll('button')
-      .forEach((b) => b.setAttribute('aria-selected', String(b === seg)));
-    paintRooms(seg.dataset.seg);
+  if (nav) {
+    show(nav.dataset.nav);
+    /* 오늘 칸은 마이페이지 안 기록 탭까지 데려갑니다 — 마이페이지 첫
+       칸에 떨어뜨리면 방금 본 숫자를 다시 찾아야 합니다. */
+    if (nav.dataset.myTab) {
+      document.querySelectorAll('[data-my]').forEach((b) =>
+        b.setAttribute('aria-selected', String(b.dataset.my === nav.dataset.myTab)));
+      paintMy(nav.dataset.myTab);
+    }
     return;
   }
+  const go = e.target.closest('[data-go]');
+  if (go) { act(go.dataset.go); return; }
   const my = e.target.closest('[data-my]');
   if (my) {
     my.parentElement.querySelectorAll('button')
@@ -1262,7 +1336,6 @@ const IC = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18Z"/>',
   check: '<path d="M20 6 9 17l-5-5"/>',
   pin:   '<path d="M12 17v5"/><path d="M9 10.76V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4.76a2 2 0 0 0 .55 1.37l1.9 2A2 2 0 0 1 17 17H7a2 2 0 0 1-1.45-2.87l1.9-2A2 2 0 0 0 9 10.76Z"/>',
-  place: '<path d="M20 10c0 4.4-5.5 10-8 12-2.5-2-8-7.6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
   disk:  '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
   chev:  '<path d="m10 6 6 6-6 6"/>',
 };
@@ -1893,39 +1966,39 @@ $('lobbyStart').addEventListener('click', function () {
    ================================================================== */
 function paintRail() {
   $('railName').textContent = ROOM.nickname;
+  paintToday();
   const lv = REWARD && REWARD.level ? 'Lv.' + REWARD.level + ' · ' : '';
   $('railSub').textContent = lv + ROOM.character + ' · 코인 ' + (ROOM.coins || 0);
   $('railSchool').textContent = ROOM.school;
   drawPet($('railPet'));
 }
 
-const ROOMS = {
-  mine: [
-    { n: '자료구조 스터디', m: '도서관 모드 · 4자리 · 4F2K9A', st: '3명 대기', on: true },
-    { n: '새벽 혼자 방',   m: '내 공간 모드 · 혼자 · 8QW1TM', st: '비어 있음', on: false },
-  ],
-  school: [
-    { n: '명지대 열람실',     m: '도서관 모드 · 10자리', st: '7명', on: true },
-    { n: '중간고사 벼락치기', m: '도서관 모드 · 6자리', st: '2명', on: true },
-    { n: '전공책 같이 보기',  m: '팀플 모드 · 4자리', st: '비어 있음', on: false },
-  ],
-  all: [
-    { n: '아무나 같이 앉아요', m: '도서관 모드 · 10자리', st: '9명', on: true },
-    { n: '조용한 방',         m: '도서관 모드 · 4자리', st: '4명', on: true },
-    { n: '아침 6시 기상방',    m: '내 공간 모드 · 8자리', st: '1명', on: true },
-    { n: '논문 쓰는 사람들',   m: '도서관 모드 · 6자리', st: '비어 있음', on: false },
-  ],
-};
+/** 레일의 오늘 칸. 마이페이지 기록과 **같은 S** 를 읽습니다. */
+function paintToday() {
+  const today = dayKey(Date.now());
+  const mine = S.week.find((w) => w.d === today);
+  $('todayMin').textContent = mine ? mine.min : 0;
 
-function paintRooms(which) {
-  const list = ROOMS[which] || ROOMS.mine;
-  $('roomCount').textContent = list.length + '개';
-  $('roomList').innerHTML = list.map((r) => `
-    <button class="tile" type="button" data-go="joincode">
-      <span class="ic" aria-hidden="true">${icon(IC.place, 17, 2.2)}</span>
-      <span class="tt"><b>${esc(r.n)}</b><span>${esc(r.m)}</span></span>
-      <span class="st${r.on ? '' : ' off'}">${esc(r.st)}</span>
-    </button>`).join('');
+  const max = Math.max(1, ...S.week.map((w) => w.min));
+  $('todayWeek').innerHTML = S.week.map((w) =>
+    '<i style="height:' + Math.round((w.min / max) * 100) + '%" data-today="'
+    + (w.d === today) + '"></i>').join('');
+
+  $('todayStreak').textContent = '연속 ' + S.streak + '일';
+
+  const last = SESSIONS.slice().reverse().slice(0, 3);
+  $('recent').innerHTML = '<div class="rh">최근</div>' + (last.length
+    ? last.map((r) => {
+        const d = new Date(r.at);
+        return '<div class="rr"><span class="rd">' + (d.getMonth() + 1) + '.' + d.getDate() + '</span>'
+          + '<span class="rz">' + (ZONE_KO[r.zone] || '캠퍼스') + '</span>'
+          + '<span class="rm">' + (r.minutes || 0) + '분</span></div>';
+      }).join('')
+    : '<div class="rempty">아직 앉은 기록이 없어요</div>');
+  const axes = BASELINE && BASELINE.features ? Object.keys(BASELINE.features).length : 0;
+  const b = $('todayBase');
+  b.textContent = axes ? '기준 ' + axes + '축' : '기준 미확인';
+  b.classList.toggle('ok', axes > 0);
 }
 
 const SLOTS = [['top', '상의'], ['bottom', '하의'], ['shoes', '신발'], ['hat', '모자'], ['bag', '가방'], ['face', '얼굴']];
@@ -2189,7 +2262,6 @@ function paintMy(tab) {
 
 /* ---- 시작 ---- */
 paintRail();
-paintRooms('mine');
 paintChar();
 paintLeague();
 paintMy('info');

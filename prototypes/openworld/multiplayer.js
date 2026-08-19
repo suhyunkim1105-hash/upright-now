@@ -590,7 +590,7 @@
   }
 
   /* ================== 핸들러 ================== */
-  const listeners = { chat: [], join: [], leave: [] };
+  const listeners = { chat: [], join: [], leave: [], race: [] };
   function emit(kind, ...a) { listeners[kind].forEach((f) => f(...a)); }
 
   const handlers = {
@@ -647,6 +647,12 @@
       if (b.length && s.t <= b[b.length - 1].t) return;
       b.push(s);
     },
+    /* 달리기 시합 — 같은 존에 있는 사람들끼리만 오갑니다(채널이 존별이라
+       그 자체로 걸러집니다). 위치처럼 지나가면 사라지는 값이라 DB 에 안
+       씁니다. 닉네임을 payload 에 실어 보내는 이유: 트랙에 이름표를
+       세워야 하는데, 방금 들어온 사람은 presence 가 아직 안 왔을 수
+       있습니다. */
+    onRace(id, p) { emit('race', id, p || {}); },
     onChat(id, m) {
       const rp = remotes.get(id);
       emit('chat', {
@@ -717,6 +723,9 @@
     say(text, emoji) {
       MP.send({ type: 'chat', t: performance.now(), text: text || '', emoji: emoji || '' });
     },
+    /** 달리기 시합 진행 상황. 서버가 없으면 아무 데도 안 갑니다 —
+        그래서 혼자 하는 판은 이걸 불러도 그냥 조용합니다. */
+    race(p) { MP.send(Object.assign({ type: 'race' }, p)); },
   };
   window.MP = MP;
 
@@ -828,6 +837,11 @@
         if (!p || !p.id || p.id === MP.meId) return;
         h.onChat(p.id, p);
       });
+      c.on('broadcast', { event: 'race' }, (msg) => {
+        const p = msg && msg.payload;
+        if (!p || !p.id || p.id === MP.meId) return;
+        h.onRace(p.id, p);
+      });
       c.on('presence', { event: 'sync' }, () => syncPresence(c));
       c.subscribe((status) => {
         if (c !== ch || !alive) return;
@@ -863,6 +877,10 @@
             id: MP.meId, t: m.t, x: m.x, y: m.y,
             dir: m.dir, flip: !!m.flip, moving: !!m.moving, sit: !!m.sit,
           } });
+        } else if (m.type === 'race') {
+          const p = Object.assign({}, m); delete p.type;
+          p.id = MP.meId;
+          ch.send({ type: 'broadcast', event: 'race', payload: p });
         } else if (m.type === 'chat') {
           const p = { id: MP.meId, t: m.t, text: m.text || '', emoji: m.emoji || '' };
           ch.send({ type: 'broadcast', event: 'say', payload: p });

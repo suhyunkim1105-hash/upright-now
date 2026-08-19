@@ -1520,6 +1520,60 @@ const PROP = {
 };
 
 /* ==================================================================
+   미니게임 표 — 이 파일에서 미니게임을 아는 유일한 자리
+
+   게임을 한 건물에 몰아 두지 않고 **어울리는 자리에** 흩어 놓기로
+   했습니다. 달리기는 운동장에, 낚시는 호수에, 책 정리는 도서관에.
+   미니게임관은 그 대신 어디에 무엇이 있는지 알려 주는 **안내소**가
+   됩니다.
+
+   흩어 놓으면 생기는 문제가 하나 있습니다 — 호수 옆에 있는 게임을
+   아무도 못 찾습니다. 안내소가 그 문제를 맡습니다.
+
+   그래서 목록이 세 군데(관문 그림 · 월드에 세우는 것 · 안내소 표)에
+   생기는데, 이 저장소에서 그 목록은 이미 두 번 어긋났습니다. 게시판이
+   '5코인'이라고 적어 둔 사이 실제 지급은 10코인이었고, 관문 이름과
+   패널 이름이 따로 논 적도 있습니다. 그래서 **표를 하나만 둡니다.**
+   여기 한 줄을 고치면 관문 · 월드 · 안내소가 같이 따라옵니다.
+
+     key    RW.daily.games 에 쌓이는 이름이자 패널 이름입니다. 코인이
+            하루 한 번인지 여기로 셉니다 — 패널 key 와 반드시 같아야
+            earn() 이 옳은 칸을 셉니다.
+     zone   세울 존. prop/x/y 로 그 자리에 소품과 만질 것을 같이 놓습니다.
+     go     안내소의 '바로 가기'가 데려다 놓는 칸. 소품 위가 아니라
+            **소품 앞에 설 수 있는 빈 칸**이어야 합니다.
+     glow   바닥에 새는 빛 [dx, dy, r]. 실내 관문에만 씁니다.
+   ================================================================== */
+const MINIGAMES = [
+  /* ---- 미니게임관 안 관문 넷 ----
+     순서는 왼쪽부터 몸 · 머리 · 기억 · 손입니다. 색은 자리에 붙은 것이라
+     GATE_STYLE 이 따로 들고 있습니다 — 안의 게임이 바뀌어도 "아까 그
+     노란 문" 이 그대로여야 합니다. */
+  { key: 'giraffeNeck', name: '기린 목 펴기', where: '미니게임관',
+    how: '연타로 목을 폅니다', zone: 'arcade', prop: 'gateA', x: 2, y: 3,
+    go: ['arcade', 11, 10], glow: [2, 4, 3] },
+  { key: 'escapeRoom', name: '방탈출', where: '미니게임관',
+    how: '단서를 찾아 번호를 맞춥니다', zone: 'arcade', prop: 'gateEsc', x: 7, y: 3,
+    go: ['arcade', 11, 10], glow: [2, 4, 3] },
+  { key: 'animalFind', name: '기억력 카드', where: '미니게임관',
+    how: '같은 동물 카드 짝을 맞춥니다', zone: 'arcade', prop: 'gateB', x: 12, y: 3,
+    go: ['arcade', 11, 10], glow: [2, 4, 3] },
+  { key: 'giraffeStack', name: '기린 목 쌓기', where: '미니게임관',
+    how: '움직이는 블록을 맞춰 떨어뜨립니다', zone: 'arcade', prop: 'gateC', x: 17, y: 3,
+    go: ['arcade', 11, 10], glow: [2, 4, 3] },
+];
+
+/** 넷은 서로 **달라야** 합니다. 나란히 서 있어서 색이 곧 이름표입니다.
+    청록·코랄·노랑·보라를 한 색씩 나눠 갖습니다 — 둘이 같은 계열이면
+    관문 넷이 셋으로 보입니다. */
+const GATE_STYLE = {
+  gateA:   { base: '#E8695A', lit: '#FFA694', dark: '#8E2E1C', glow: '232,105,90', emblem: 'up' },
+  gateEsc: { base: '#2DD4BF', lit: '#8AE5D9', dark: '#0C5A4F', glow: '45,212,191', emblem: 'key' },
+  gateB:   { base: '#E0AE3C', lit: '#F7CE6E', dark: '#8E6714', glow: '255,220,130', emblem: 'card' },
+  gateC:   { base: '#8A6BC4', lit: '#B79BE8', dark: '#4E3480', glow: '190,160,255', emblem: 'stack' },
+};
+
+/* ==================================================================
    건물 픽셀 그리기
 
    Kenney 타일로는 돔도 첨탑도 만들 수 없습니다. 시트에 없는 형태라
@@ -2843,22 +2897,18 @@ function gateCanvas(key, name, base, lit, dark, glow, emblem) {
   px(g, 11, 57, 42, 1, lit);
   PAINTED[key] = c;
 }
-/* 넷은 서로 **달라야** 합니다. 나란히 서 있어서 색이 곧 이름표입니다.
-   청록·코랄·노랑·보라 넷을 한 색씩 나눠 갖습니다 — 둘이 같은 계열이면
-   관문 넷이 셋으로 보입니다. 색은 자리에 붙은 것이라, 안의 게임이
-   바뀌어도 그대로 둡니다. */
-function paintGates() {
-  /* 문에 붙은 이름이 곧 그 안의 게임입니다 — 넷 다 미니게임관(ZONES.arcade)
-     m.things 의 panel 과 같은 이름이고, 게시판 목록과도 같습니다.
+/* 문에 붙는 이름은 **표에서** 읽습니다(MINIGAMES). 여기에 다시 적어 두면
+   표를 고쳐도 문패는 옛 이름인 채로 남습니다 — 실제로 그랬습니다.
 
-     넷을 고른 기준은 **3분**입니다. 이 방이 파는 것이 "세션을 끊는 대신
-     3분 놀고 돌아가기" 라, 3분 안에 끝이 나는 것만 문을 얻습니다.
-     거북이 알 합치기(2048)와 동물 매칭 퍼즐(24수, 제한 시간 없음)은
-     그래서 뺐습니다 — 패널은 그대로 살아 있습니다. */
-  gateCanvas('gateA', '기린 목 펴기', '#E8695A', '#FFA694', '#8E2E1C', '232,105,90', 'up');
-  gateCanvas('gateEsc', '방탈출', '#2DD4BF', '#8AE5D9', '#0C5A4F', '45,212,191', 'key');
-  gateCanvas('gateB', '기억력 카드', '#E0AE3C', '#F7CE6E', '#8E6714', '255,220,130', 'card');
-  gateCanvas('gateC', '기린 목 쌓기', '#8A6BC4', '#B79BE8', '#4E3480', '190,160,255', 'stack');
+   관문을 얻는 기준은 **3분**입니다. 이 방이 파는 것이 "세션을 끊는 대신
+   3분 놀고 돌아가기" 라, 3분 안에 끝이 나는 것만 문을 얻습니다.
+   거북이 알 합치기(2048)와 동물 매칭 퍼즐(24수, 제한 시간 없음)은
+   그래서 뺐습니다 — 패널은 그대로 살아 있습니다. */
+function paintGates() {
+  for (const g of MINIGAMES) {
+    const st = GATE_STYLE[g.prop];
+    if (st) gateCanvas(g.prop, g.name, st.base, st.lit, st.dark, st.glow, st.emblem);
+  }
 }
 paintGates();
 TEXT_ART.push(paintGates);
@@ -3522,7 +3572,7 @@ PROP.tentB     = paintedProp('tentB', 3, 3, [0, 1, 1]);
 PROP.tentC     = paintedProp('tentC', 3, 3, [0, 1, 1]);
 /* 막는 것은 기둥 둘뿐입니다 — 가운데는 걸어 들어가 설 수 있습니다.
    관문 안에 서는 것이 곧 미니게임을 시작하는 자리가 됩니다. */
-['gateEsc', 'gateA', 'gateB', 'gateC'].forEach((k) => {
+Object.keys(GATE_STYLE).forEach((k) => {
   const d = paintedProp(k, 4, 4, [0, 1, 1, 1]);
   d.c[1] = [1, 0, 0, 1]; d.c[2] = [1, 0, 0, 1]; d.c[3] = [1, 0, 0, 1];
   PROP[k] = d;
@@ -4561,6 +4611,18 @@ function ring(m, x, y, w, h, tile) {
   for (let j = y; j < y + h; j++) { fillBase(m, x, j, 1, 1, tile); fillBase(m, x + w - 1, j, 1, 1, tile); }
 }
 function prop(m, kind, x, y) { m.props.push({ kind, x, y }); }
+
+/** 미니게임 표에서 이 존 몫만 꺼내 소품과 만질 것을 같이 세웁니다.
+    소품만 놓고 things 를 잊으면 서 있는 그림이 되고, things 만 놓으면
+    아무것도 없는 자리에서 창이 열립니다. 둘을 한 줄에 묶어 둡니다. */
+function placeMinigames(m, id) {
+  for (const g of MINIGAMES) {
+    if (g.zone !== id) continue;
+    prop(m, g.prop, g.x, g.y);
+    m.things.push({ x: g.x, y: g.y, name: g.name, panel: g.key });
+    if (g.glow) floorGlow(m.floor, g.x + g.glow[0], g.y + g.glow[1], g.glow[2]);
+  }
+}
 function rowOf(m, kind, x, y, n, step = 1) { for (let i = 0; i < n; i++) prop(m, kind, x + i * step, y); }
 function rnd(x, y, s = 0) {
   let h = (x * 374761393 + y * 668265263 + s * 2246822519) | 0;
@@ -5442,19 +5504,10 @@ const DORM = ZONES.dorm;
      있으면 둘 중 뭘 골랐는지 나중에 헷갈립니다.
      색은 자리에 붙은 것이라 넷이 서로 다릅니다(코랄·청록·노랑·보라).
      이름표를 못 읽는 거리에서도 "아까 그 노란 문" 으로 찾아집니다. */
-  const GATES = [
-    { k: 'gateA',   x: 2,  name: '기린 목 펴기', panel: 'giraffeNeck' },
-    { k: 'gateEsc', x: 7,  name: '방탈출',       panel: 'escapeRoom' },
-    { k: 'gateB',   x: 12, name: '기억력 카드',  panel: 'animalFind' },
-    { k: 'gateC',   x: 17, name: '기린 목 쌓기', panel: 'giraffeStack' },
-  ];
-  GATES.forEach((q) => {
-    prop(m, q.k, q.x, 3);
-    /* 문 안에 서서 Space. 자리는 관문 왼쪽 위 칸이고, 만지는 거리는
-       bake 가 관문 크기(4x4)로 잡아 줍니다. */
-    m.things.push({ x: q.x, y: 3, name: q.name, panel: q.panel });
-    floorGlow(m.floor, q.x + 2, 7, 3);            // 문에서 새어 나온 빛
-  });
+  /* 문 안에 서서 Space. 자리는 관문 왼쪽 위 칸이고, 만지는 거리는
+     bake 가 관문 크기(4x4)로 잡아 줍니다. 넷의 자리·이름·패널은
+     전부 MINIGAMES 가 들고 있습니다. */
+  placeMinigames(m, 'arcade');
 
   /* ---- 게시판 ----
      넷 중 무엇을 고를지는 문 앞에서 정하는 것이 아니라 들어오면서
@@ -11980,6 +12033,20 @@ function watchEmbeds() {
   }
 }
 
+/** 안내소·게시판이 같이 쓰는 한 줄. 오늘 코인이 남았는지는 지급하는
+    쪽(RW.daily.games)에 직접 물어봅니다 — 따로 세면 어긋납니다.
+    where 를 넘기면 그 자리에 있는 것만 뽑습니다. */
+function minigameRows(zone) {
+  const done = RW.daily.games || [];
+  /* 숫자를 글에 박아 두면 상수만 바뀌었을 때 조용히 거짓말이 됩니다.
+     실제로 여기 '5' 와 COIN_MINIGAME(10) 이 어긋나 있었습니다. */
+  return MINIGAMES
+    .filter((g) => !zone || g.zone === zone)
+    .map((g) => `<div class="row"><span>${esc(g.name)} <em>${esc(g.how)}</em></span>`
+      + `<span class="val">${done.includes(g.key) ? '오늘 받음' : COIN_MINIGAME}</span></div>`)
+    .join('');
+}
+
 const PANELS = {
   /* ---- 창밖 날씨 — 기숙사 창 ---- */
   weather: () => {
@@ -12130,17 +12197,14 @@ const PANELS = {
 
   /* 미니게임존 안내 — 안뜰 게시판이 여는 창.
      읽는 사람이 알아야 하는 것은 셋입니다: 여기가 왜 있는지, 규칙이
-     무엇인지, 코인이 어떻게 들어오는지. 그 밖은 안 씁니다. */
-  arcade: () => {
-    const done = (RW.daily.games || []);
-    /* 숫자를 글에 박아 두면 상수만 바뀌었을 때 조용히 거짓말이 됩니다.
-       실제로 여기 '5' 와 COIN_MINIGAME(10) 이 어긋나 있었습니다. */
-    const row = (key, name, line) =>
-      `<div class="row"><span>${name} <em>${line}</em></span>` +
-      `<span class="val">${done.includes(key) ? '오늘 받음' : COIN_MINIGAME}</span></div>`;
-    return {
-      title: '미니게임관', kind: 'GUIDE',
-      html: `
+     무엇인지, 코인이 어떻게 들어오는지. 그 밖은 안 씁니다.
+
+     목록은 **MINIGAMES 를 그대로 훑습니다.** 손으로 적어 두면 게임을
+     하나 옮기거나 더할 때 여기만 옛 이야기를 합니다 — 이 저장소에서
+     이미 두 번 그랬습니다. */
+  arcade: () => ({
+    title: '미니게임관', kind: 'GUIDE',
+    html: `
       <p>한 시간쯤 앉아 있으면 자세가 먼저 무너집니다. 그때
       <b>세션을 끊는 대신</b> 여기로 오세요. 3분 놀고 자리로 돌아가는
       자리예요.</p>
@@ -12149,17 +12213,11 @@ const PANELS = {
         <li>제한 시간은 <b>3분</b>이에요.</li>
         <li>시간 안에 깨면 <b>${COIN_MINIGAME}코인</b>이 들어와요.</li>
       </ol>
-      <div class="rows">
-        ${row('giraffeNeck', '기린 목 펴기', '연타로 목을 폅니다')}
-        ${row('escapeRoom', '방탈출', '단서를 찾아 번호를 맞춥니다')}
-        ${row('animalFind', '기억력 카드', '같은 동물 카드 짝을 맞춥니다')}
-        ${row('giraffeStack', '기린 목 쌓기', '움직이는 블록을 맞춰 떨어뜨립니다')}
-      </div>
+      <div class="rows">${minigameRows('arcade')}</div>
       <div class="note">코인은 <b>게임마다 하루 한 번</b>까지예요. 오늘 받은
       게임을 또 깨도 코인은 안 들어와요 — 여기는 벌러 오는 곳이 아니니까요.
       물론 계속 놀아도 됩니다.</div>`,
-    };
-  },
+  }),
 
   guide: () => ({
     title: 'Deskfit 안내', kind: 'GUIDE',

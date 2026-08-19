@@ -1545,6 +1545,10 @@ const PROP = {
      glow   바닥에 새는 빛 [dx, dy, r]. 실내 관문에만 씁니다.
    ================================================================== */
 const MINIGAMES = [
+  { key: 'postureRun', name: '거북목 탈출 러너', where: '운동장',
+    how: '고개를 들면 뛰어넘습니다', zone: 'campus', prop: 'runBoard', x: 3, y: 13,
+    go: ['campus', 5, 14] },
+
   /* ---- 미니게임관 안 관문 넷 ----
      순서는 왼쪽부터 몸 · 머리 · 기억 · 손입니다. 색은 자리에 붙은 것이라
      GATE_STYLE 이 따로 들고 있습니다 — 안의 게임이 바뀌어도 "아까 그
@@ -2647,7 +2651,7 @@ function repaintTextArt() {
    있습니다. 쓸 글자를 주며 명시적으로 부릅니다. 못 읽어도 넘어갑니다 —
    폴백으로 찍힌 그림이 이미 있으니 앱은 그대로 돕니다. */
 Promise.all(GALMURI.map((f) =>
-  document.fonts.load(`${f.unit}px "${f.family}"`, '기숙사도서관본관학생회안내방탈출기린목펴쌓알합치')
+  document.fonts.load(`${f.unit}px "${f.family}"`, '기숙사도서관본관학생회안내방탈출기린목펴쌓알합치러너출발낚시반납')
     .catch(() => null)
 )).then(() => document.fonts.ready).then(repaintTextArt);
 
@@ -3586,6 +3590,37 @@ PROP.circDesk  = paintedProp('circDesk', 4, 3, [1, 1, 1]);
 PROP.circDesk.c = [[1, 1, 1, 1], [1, 0, 0, 0], [1, 0, 0, 0]];
 PROP.board     = paintedProp('board', 2, 2, [0, 1]);
 PROP.mat       = { ...paintedProp('mat', 2, 2, [0, 0]), anchor: 0 };
+
+/* ---- 러너 안내판 2×3 — 운동장 남쪽 입구 ----
+   글자를 넣는 이유: 표시는 ▼ 하나뿐이라 무엇을 여는 자리인지 그림만으로는
+   안 읽힙니다. 관문 넷이 이름 천을 다는 것과 같은 이유입니다.
+   판 안의 그림은 **위로 뻗는 화살표**입니다 — 이 게임에서 하는 동작이
+   그것 하나라서, 조작을 그림 한 장으로 말할 수 있습니다. */
+function paintRunBoard() {
+  const c = canvasOf(2, 3), g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  shadow(g, 16, 46, 12, 3);
+  [8, 21].forEach((x) => { px(g, x, 36, 3, 11, '#6B4A2E'); px(g, x, 36, 1, 11, '#8B6540'); });
+  px(g, 0, 2, 32, 36, '#5E4128');
+  px(g, 1, 3, 30, 34, '#8A6039');
+  px(g, 2, 4, 28, 32, '#FFF6F3');
+  px(g, 2, 4, 28, 2, '#FFFFFF');
+  /* 이름 띠 — 코랄. 미니게임관 관문 색과 짝을 맞춥니다 */
+  px(g, 2, 5, 28, 9, '#E8695A');
+  px(g, 2, 5, 28, 1, '#FFA694');
+  stamp(g, '러너', 7, '#8E2E1C', 16, 11, 'center', 'middle');
+  stamp(g, '러너', 7, '#FFFFFF', 16, 10, 'center', 'middle');
+  /* 위로 뻗는 화살표 — 뾰족한 쪽이 **위**입니다. 이 게임에서 하는 동작이
+     그것 하나라, 조작을 그림 한 장으로 말할 수 있습니다. */
+  const ink = '#2A2320';
+  for (let k = 0; k < 6; k++) px(g, 16 - k, 17 + k, k * 2 + 1, 1, ink);
+  px(g, 14, 23, 4, 10, ink);
+  px(g, 8, 34, 16, 2, '#B9A99F');                 // 바닥 — 어디서부터 드는지
+  PAINTED.runBoard = c;
+}
+paintRunBoard();
+TEXT_ART.push(paintRunBoard);
+PROP.runBoard = paintedProp('runBoard', 2, 3, [0, 0, 1]);
 
 PAINTED.pennant = canvasOf(1, 2);
 PAINTED.schoolCushion = canvasOf(1, 1);
@@ -4981,6 +5016,12 @@ const ZONES = {};
      코인 표에도 없습니다. 여기 두는 이유는 트랙만 있으면 운동장이
      비어 보이기 때문이지, 곧 뭐가 붙어서가 아닙니다. */
   prop(m, 'mat', 6, 6); prop(m, 'mat', 9, 6);
+
+  /* 운동장에서 할 것은 트랙 **남쪽 입구**에 세웁니다. 트랙 안쪽에 두면
+     한 바퀴 도는 길을 막고, 여기는 광장에서 산책로를 따라 올라오는
+     사람이 반드시 지나가는 목이라 "저게 뭐지" 가 먼저 걸립니다.
+     자리는 MINIGAMES 가 들고 있습니다. */
+  placeMinigames(m, 'campus');
 
   /* 북동 — 미니게임관 앞마당. 관문 넷과 게시판은 전부 건물 안으로
      들어갔습니다(ZONES.arcade). 마당에 흩어져 있으면 넷을 다 보려고
@@ -6701,6 +6742,11 @@ addEventListener('keydown', (e) => {
     if (typeof GIRAFFE_STACK !== 'undefined' && GIRAFFE_STACK.active && k === ' ') {
       e.preventDefault(); dropGiraffeStack(); return;
     }
+    /* 러너는 카메라가 돌고 있어도 Space 를 같이 받습니다 — 조작을 카메라
+       뒤에 잠그지 않는다는 규칙이 여기 한 줄입니다. */
+    if (typeof POSTURE_RUN !== 'undefined' && POSTURE_RUN.active && k === ' ') {
+      e.preventDefault(); jumpPostureRun(); return;
+    }
     if (typeof EGG_MERGE !== 'undefined' && EGG_MERGE.active &&
         ['a', 'd', 'w', 's', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown'].includes(k)) {
       e.preventDefault(); moveEggMerge(k); return;
@@ -6719,7 +6765,8 @@ addEventListener('keydown', (e) => {
        닫아 버리면 판을 짜다가 화면이 사라집니다. 위 주석의 "Space 가
        게임 대신 창을 닫았습니다" 가 이 줄까지 와야 없어집니다. */
     if (k === 'escape' ||
-        (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'animalFind', 'animalMatch3'].includes(activePanelKey)))
+        (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'animalFind', 'animalMatch3',
+                        'postureRun'].includes(activePanelKey)))
       closePanel();
     return;
   }
@@ -7668,6 +7715,10 @@ var POSE = (function () {
     arbiter: arbiter, step: step, median: median, mad: mad,
     Smoother: Smoother,
     PRIMARY: PRIMARY, AUX: AUX,
+    /* 판정에 쓰는 환산 상수를 그대로 내보냅니다. 러너가 고개 움직임을
+       입력으로 쓰는데, 같은 식((v-median)*DIRECTION/tol)을 저쪽에 베껴
+       두면 여기 숫자를 고칠 때 조작이 조용히 어긋납니다. */
+    DIRECTION: DIRECTION, FLOOR: FLOOR, MAD_K: MAD_K, SENS: SENS,
     MIN_SHOULDER_WIDTH: MIN_SHOULDER_WIDTH,
     ready: function () { return !!poser; }
   };
@@ -7736,6 +7787,9 @@ const LIVE = {
   state: 'idle', msg: '측정 준비',
   frames: 0, seen: 0,
   goodMs: 0, warnMs: 0, badMs: 0, recoveries: 0, lastTick: 0, wasBad: false,
+  /* 마지막으로 쓸 만했던 프레임의 축값과 그 시각. 러너의 조작이 여기서
+     나옵니다(postureLift). 오래된 값으로 뛰면 안 되므로 시각을 같이 둡니다. */
+  features: null, featAt: 0,
 };
 
 const STATE_COLOR = { good: '#2E9E5B', warning: '#D98324', bad: '#E0483A', idle: '#9A8E88' };
@@ -8521,6 +8575,11 @@ function poseLoop() {
     return;
   }
   LIVE.seen++;
+  /* 이번 프레임의 **원본 축값**입니다. 러너가 이걸 씁니다.
+     판정 결과(votes.details)로는 안 됩니다 — 거기 deviation 은
+     Math.max(0, …) 라 "벗어난 쪽" 만 남고, 러너가 필요한 "고개를 든 쪽"
+     은 전부 0 으로 깎여 있습니다. */
+  LIVE.features = a.features; LIVE.featAt = now;
 
   const q = a.meanVisibility >= 0.6;
   const v = POSE.votes(a.features, LIVE.profile, SENSITIVITY, q);
@@ -11836,6 +11895,338 @@ function startAnimalMatch3() {
 }
 
 /* ==================================================================
+   미니게임 5 — 거북목 탈출 러너 · 운동장
+
+   이 월드에서 자세를 **조작 장치로** 쓰는 유일한 게임입니다. 고개를
+   살짝 들면 캐릭터가 뜁니다. 그것 하나뿐이라 규칙을 설명할 것이 없고,
+   요구하는 동작이 마침 목에 좋은 쪽입니다.
+
+   ---- 지켜야 하는 것 셋 ----
+
+   1) **절대 각도로 판정하지 않습니다.** 판정과 똑같은 식을 씁니다:
+        (v - median) * DIRECTION / tol,  tol = 감도 × max(FLOOR, MAD×8)
+      부호만 뒤집어서 "기준보다 고개를 든 정도" 로 읽습니다. 원래
+      고개가 앞으로 나와 있는 사람도 자기 기준에서 조금만 들면 뜁니다.
+      절대값으로 잡으면 그 사람은 이 게임을 **아예 못 합니다.**
+
+   2) **카메라 없이도 됩니다.** 축값이 안 오면 그 자리에서 Space 로
+      바뀌고 화면에 그렇게 적습니다. 카메라를 켜 둔 사람도 Space 를
+      같이 쓸 수 있습니다 — 조작을 카메라 뒤에 잠그지 않습니다.
+
+   3) **자세에 점수를 매기지 않습니다**(AGENTS.md §2.2). 고개를 든
+      횟수도 크기도 기록하지 않고 아무 데도 안 보냅니다. 성적은 달린
+      거리로만 납니다. 그리고 나쁜 자세를 **요구하지 않습니다** —
+      숙이라고 시키는 조작은 넣지 않았습니다. 한 바퀴(400m)로 끝나는
+      것도 같은 이유입니다.
+   ================================================================== */
+
+/* 고개 각도를 말하는 축들. 넷 다 "숙임" 이 이탈 방향이라, 부호를 뒤집으면
+   그대로 "듦" 이 됩니다. 한 축만 쓰면 그 축이 빠진 기준에서 게임이
+   안 돌아가므로, 있는 것만 모아 **중앙값**을 씁니다 — 하나가 튀어도
+   조작이 흔들리지 않습니다. */
+const RUN_PITCH_AXES = ['headPitchDeg', 'facePitchRatio', 'earEyeRatio', 'headHeightRatio'];
+/* 허용치(tol) 배수로 읽습니다. 판정이 "기준에서 벗어났다" 고 보기
+   시작하는 값이 1.0 이므로, 0.7 은 그보다 작은 **분명하지만 가벼운**
+   움직임입니다 — headPitchDeg 기준이면 약 5.6도. 여기를 더 올리면
+   목을 크게 젖혀야 하고, 그건 이 게임이 시키면 안 되는 동작입니다. */
+const RUN_JUMP_AT = 0.7;
+const RUN_REARM_AT = 0.3;        // 여기까지 돌아와야 다시 뜁니다
+const RUN_STALE_MS = 700;        // 이보다 오래된 축값은 안 씁니다
+
+/** 기준선 대비 **고개를 든 정도**. 자세가 안 잡히면 null 을 돌려주고,
+    부르는 쪽은 그때 자판으로 물러납니다. 양수 = 기준보다 들었음. */
+function postureLift() {
+  const f = LIVE.features;
+  if (!f || !LIVE.featAt || performance.now() - LIVE.featAt > RUN_STALE_MS) return null;
+  /* 기준표는 축 이름 -> {median, mad} 입니다. 판정 쪽 votes() 는 한 겹
+     더 들어간 profile.features 를 읽는데 LIVE.profile 에는 표가 바로
+     들어 있습니다. 둘 다 받아 둡니다 — 어느 쪽이 맞는지는 자세 엔진이
+     정할 일이고, 러너가 그 사이에서 멈출 이유는 없습니다. */
+  const prof = (LIVE.profile && LIVE.profile.features) || LIVE.profile;
+  if (!prof) return null;
+  const mult = POSE.SENS[SENSITIVITY] || 1;
+  const vals = [];
+  for (const k of RUN_PITCH_AXES) {
+    const v = f[k], st = prof[k];
+    if (v === undefined || !st) continue;
+    const tol = mult * Math.max(POSE.FLOOR[k], st.mad * POSE.MAD_K);
+    if (!(tol > 0)) continue;
+    vals.push(-((v - st.median) * POSE.DIRECTION[k]) / tol);
+  }
+  if (!vals.length) return null;
+  vals.sort((a, b) => a - b);
+  const mid = vals.length >> 1;
+  return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+}
+
+const RUN_LAP_M = 400;           // 트랙 한 바퀴. 이 이상은 목을 시키는 일이 됩니다
+const RUN_PX_M = 16;             // 그림 픽셀 / 미터
+const RUN_LIVES = 3;
+const RUN_G = 1500;              // 중력 px/s²
+const RUN_V0 = -430;             // 뛰는 힘 — 0.57초 떠 있습니다
+const RUN_W = 480, RUN_H = 190, RUN_GY = 150, RUN_ME = 58;
+const POSTURE_RUN = {
+  active: false, raf: 0, last: 0, over: false, won: false, rewarded: false,
+  dist: 0, spd: 0, y: 0, vy: 0, lives: RUN_LIVES, invuln: 0,
+  obs: [], nextAt: 0, lift: null, armed: true, mode: 'key', jumps: 0, step: 0, rowsAt: 0,
+};
+
+function postureRunHtml() {
+  return `
+    <p>고개를 살짝 들면 뛰어넘습니다. 트랙 <b>한 바퀴 400m</b>면 끝이에요.</p>
+    <div class="rows">
+      <div class="row"><span>조작</span><span class="val" id="run-mode">준비 중</span></div>
+      <div class="row"><span>남은 거리</span><span class="val" id="run-dist">400m</span></div>
+      <div class="row"><span>부딪혀도 되는 횟수</span><span class="val" id="run-life">3번</span></div>
+    </div>
+    <canvas id="run-cv" width="${RUN_W}" height="${RUN_H}" role="img"
+      aria-label="운동장 트랙을 달리는 기린. 고개를 들거나 스페이스를 누르면 뜁니다."
+      style="width:100%;margin:12px 0 0;border-radius:12px;border:1px solid var(--line-2);image-rendering:pixelated;display:block"></canvas>
+    <div style="margin:10px 0 10px;height:10px;border-radius:999px;background:var(--surface-3);overflow:hidden;border:1px solid var(--line-2)">
+      <i id="run-bar" style="display:block;width:0%;height:100%;background:var(--good);transition:width .1s linear"></i>
+    </div>
+    <p class="hint" id="run-msg" aria-live="polite">시작합니다. 고개를 들 준비!</p>
+    <button class="act" data-do="run-restart">다시 하기</button>
+    <div class="note">고개를 살짝 들었다가 <b>제자리로 돌아오면</b> 한 번 뜁니다.
+    억지로 젖히지 않으셔도 되고, 카메라가 꺼져 있으면 Space 로 하시면 됩니다.
+    이 게임은 자세에 점수를 매기지 않아요 — 고개 움직임을 조작으로만 씁니다.</div>`;
+}
+
+/** 조작 갈래를 매 프레임 다시 정합니다. 세션 도중에 기준이 잡히면
+    그 자리에서 고개 조작이 살아나야 합니다. */
+function postureRunMode() {
+  const lift = postureLift();
+  POSTURE_RUN.lift = lift;
+  POSTURE_RUN.mode = lift === null ? 'key' : 'pose';
+  return POSTURE_RUN.mode;
+}
+
+function jumpPostureRun() {
+  const R = POSTURE_RUN;
+  if (!R.active || R.over || R.y > 0) return;
+  R.vy = RUN_V0; R.y = 0.001; R.jumps++;
+  SFX.chair(true);
+}
+
+function postureRunTick(now) {
+  const R = POSTURE_RUN;
+  if (!R.active) return;
+  R.raf = requestAnimationFrame(postureRunTick);
+  const dt = Math.min(0.05, (now - R.last) / 1000);
+  R.last = now;
+  if (dt <= 0) return;
+
+  /* ---- 조작 ---- */
+  const before = R.mode;
+  const lift = postureRunMode() === 'pose' ? R.lift : null;
+  if (lift !== null) {
+    /* 한 번 들면 한 번만 뜁니다. 계속 들고 있는다고 연달아 뛰면 "든 채로
+       버티기" 가 유리해지는데, 그건 이 게임이 시키면 안 되는 동작입니다. */
+    if (R.armed && lift >= RUN_JUMP_AT) { R.armed = false; jumpPostureRun(); }
+    else if (!R.armed && lift <= RUN_REARM_AT) R.armed = true;
+  } else R.armed = true;
+  if (before !== R.mode) postureRunPaintRows();
+
+  /* ---- 달리기 ---- */
+  /* 조금씩 빨라집니다 — 한 바퀴 동안 200 -> 330. 끝에 가서 숨이 차야
+     완주가 완주로 느껴집니다. */
+  R.spd = Math.min(330, R.spd + 5 * dt);
+  R.dist += R.spd * dt;
+  R.step += R.spd * dt;
+  if (R.invuln > 0) R.invuln -= dt;
+  /* y 는 땅에서 뜬 높이(위가 +), vy 는 화면 좌표 방향(위가 -)입니다. */
+  if (R.y > 0 || R.vy !== 0) {
+    R.vy += RUN_G * dt;
+    R.y = Math.max(0, R.y - R.vy * dt);
+    if (R.y <= 0) { R.y = 0; R.vy = 0; }
+  }
+
+  /* ---- 장애물 ---- */
+  if (R.dist >= R.nextAt && R.dist < RUN_LAP_M * RUN_PX_M - 400) {
+    const kinds = ['book', 'monitor', 'chair'];
+    R.obs.push({ at: R.dist + RUN_W, kind: kinds[(Math.random() * 3) | 0] });
+    R.nextAt = R.dist + 340 + Math.random() * 260;
+  }
+  R.obs = R.obs.filter((o) => o.at - R.dist > -60);
+  for (const o of R.obs) {
+    const sx = o.at - R.dist;
+    const h = o.kind === 'monitor' ? 30 : o.kind === 'chair' ? 26 : 20;
+    if (sx < RUN_ME + 20 && sx > RUN_ME - 22 && R.y < h && R.invuln <= 0) {
+      R.lives -= 1; R.invuln = 1.0; R.spd *= 0.75;
+      SFX.step(2, false);
+      postureRunPaintRows();
+      const msg = panelBody.querySelector('#run-msg');
+      if (msg) msg.textContent = R.lives > 0 ? '부딪혔어요. ' + R.lives + '번 더 괜찮아요.' : '';
+      if (R.lives <= 0) return finishPostureRun(false);
+    }
+  }
+
+  if (R.dist >= RUN_LAP_M * RUN_PX_M) return finishPostureRun(true);
+  drawPostureRun();
+  /* 숫자 줄은 초당 열 번이면 충분합니다. 프레임마다 고치면 60분의 1초마다
+     DOM 을 네 번씩 만지는데, 눈은 그 차이를 못 봅니다. */
+  if (now - R.rowsAt > 100) { R.rowsAt = now; postureRunPaintRows(); }
+}
+
+function postureRunPaintRows() {
+  const R = POSTURE_RUN;
+  const mode = panelBody.querySelector('#run-mode');
+  const dist = panelBody.querySelector('#run-dist');
+  const life = panelBody.querySelector('#run-life');
+  const bar = panelBody.querySelector('#run-bar');
+  if (!mode) return;
+  mode.textContent = R.mode === 'pose' ? '고개 들기 · Space' : 'Space (카메라 꺼짐)';
+  const left = Math.max(0, RUN_LAP_M - R.dist / RUN_PX_M);
+  dist.textContent = Math.ceil(left) + 'm';
+  life.textContent = Math.max(0, R.lives) + '번';
+  bar.style.width = Math.min(100, (R.dist / (RUN_LAP_M * RUN_PX_M)) * 100) + '%';
+}
+
+/* ---- 그림 ----
+   트랙은 붉은 우레탄, 안쪽은 잔디. 월드의 운동장과 같은 색이라 창을 열면
+   방금 서 있던 자리가 옆에서 흘러갑니다. */
+function drawPostureRun() {
+  const cv = panelBody.querySelector('#run-cv');
+  if (!cv) return;
+  const g = cv.getContext('2d');
+  const R = POSTURE_RUN;
+  const d = R.dist;
+
+  const sky = g.createLinearGradient(0, 0, 0, RUN_GY);
+  sky.addColorStop(0, '#BFE3EF'); sky.addColorStop(1, '#EAF3E4');
+  g.fillStyle = sky; g.fillRect(0, 0, RUN_W, RUN_GY);
+
+  /* 먼 관중석 — 느리게 흐릅니다 */
+  g.fillStyle = '#9FB6A6';
+  for (let i = 0; i < 14; i++) {
+    const x = ((i * 60 - d * 0.12) % (RUN_W + 60) + RUN_W + 60) % (RUN_W + 60) - 60;
+    g.fillRect(x, 96, 44, 26);
+    g.fillStyle = '#B7CCBC'; g.fillRect(x, 96, 44, 4); g.fillStyle = '#9FB6A6';
+  }
+  g.fillStyle = '#7E9C86'; g.fillRect(0, 120, RUN_W, 8);
+
+  /* 잔디 인필드는 **트랙 뒤**입니다. 발이 닿는 줄(RUN_GY)보다 8px 위에서
+     붉은 우레탄이 시작해야 "트랙 위를 달린다" 로 읽힙니다 — 경계선에
+     발을 딱 붙여 놓으면 잔디에 서 있는 것처럼 보입니다. */
+  g.fillStyle = '#8FBF7A'; g.fillRect(0, 128, RUN_W, 14);
+  g.fillStyle = '#C4553F'; g.fillRect(0, 142, RUN_W, RUN_H - 142);
+  g.fillStyle = '#D96A50'; g.fillRect(0, 142, RUN_W, 3);
+  g.fillStyle = '#B04A36'; g.fillRect(0, RUN_GY - 1, RUN_W, 1);
+  g.fillStyle = '#F4EDE4';
+  for (let i = 0; i < 20; i++) {
+    const x = ((i * 48 - d) % (RUN_W + 48) + RUN_W + 48) % (RUN_W + 48) - 48;
+    g.fillRect(x, RUN_GY + 16, 26, 3);
+  }
+  g.fillStyle = '#A8422F'; g.fillRect(0, RUN_GY + 28, RUN_W, 2);
+
+  /* 장애물 — 책상에서 굴러 나온 것들 */
+  for (const o of R.obs) {
+    const x = Math.round(o.at - d);
+    if (x < -40 || x > RUN_W + 10) continue;
+    if (o.kind === 'book') {
+      [['#D8442C', 0], ['#E8C34A', 7], ['#3F8F5C', 14]].forEach(([c, dy]) => {
+        g.fillStyle = c; g.fillRect(x, RUN_GY - 6 - dy, 22, 6);
+        g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x, RUN_GY - 6 - dy, 22, 1);
+      });
+    } else if (o.kind === 'monitor') {
+      g.fillStyle = '#4A525C'; g.fillRect(x + 8, RUN_GY - 10, 8, 10);
+      g.fillRect(x + 2, RUN_GY - 4, 20, 4);
+      g.fillStyle = '#3A4048'; g.fillRect(x, RUN_GY - 30, 24, 21);
+      g.fillStyle = '#8FD3E8'; g.fillRect(x + 2, RUN_GY - 28, 20, 17);
+      g.fillStyle = '#CDEAF5'; g.fillRect(x + 2, RUN_GY - 28, 20, 4);
+    } else {
+      g.fillStyle = '#8A6039'; g.fillRect(x, RUN_GY - 12, 24, 5);
+      g.fillRect(x + 1, RUN_GY - 26, 5, 15);
+      g.fillStyle = '#B08050'; g.fillRect(x + 1, RUN_GY - 26, 5, 2);
+      g.fillStyle = '#6B4A2E';
+      g.fillRect(x + 2, RUN_GY - 7, 4, 7); g.fillRect(x + 18, RUN_GY - 7, 4, 7);
+    }
+  }
+
+  /* 기린 — 달리는 사람 자리 */
+  const y = RUN_GY - R.y;
+  const air = R.y > 0.5;
+  /* 그림자는 늘 땅에 붙어 있고 뜬 만큼 작아집니다. 이게 없으면 공중에
+     있는지 그냥 위에 그려진 것인지 구별이 안 됩니다. */
+  g.fillStyle = 'rgba(90,40,28,' + (0.28 - Math.min(0.2, R.y / 320)).toFixed(2) + ')';
+  g.fillRect(RUN_ME + 1 + Math.min(4, R.y / 16), RUN_GY - 2,
+             18 - Math.min(8, R.y / 8), 3);
+  const blink = R.invuln > 0 && ((performance.now() / 90) | 0) % 2 === 0;
+  if (!blink) {
+    const swing = air ? 0 : Math.sin(R.step / 11) * 4;
+    g.fillStyle = '#9B5B2B';
+    g.fillRect(RUN_ME + 2, y - 12 + (air ? 4 : 0), 4, air ? 8 : 12 + swing);
+    g.fillRect(RUN_ME + 12, y - 12 + (air ? 4 : 0), 4, air ? 8 : 12 - swing);
+    g.fillStyle = '#E8AD50'; g.fillRect(RUN_ME, y - 26, 20, 15);
+    g.fillStyle = '#D7953F'; g.fillRect(RUN_ME, y - 15, 20, 4);
+    g.fillStyle = '#B66D31';
+    [[3, -23], [12, -21], [6, -17]].forEach(([a, b]) => g.fillRect(RUN_ME + a, y + b, 5, 4));
+    /* 목 — 뛰는 동안 더 곧게 섭니다. 이 게임이 파는 그림이 그것입니다. */
+    const nh = air ? 30 : 24;
+    g.fillStyle = '#E8AD50'; g.fillRect(RUN_ME + 12, y - 26 - nh, 7, nh);
+    g.fillStyle = '#D7953F'; g.fillRect(RUN_ME + 12, y - 26 - nh, 2, nh);
+    g.fillRect(RUN_ME + 11, y - 30 - nh, 13, 9);
+    g.fillStyle = '#E8AD50'; g.fillRect(RUN_ME + 11, y - 31 - nh, 13, 8);
+    g.fillStyle = '#2A2520'; g.fillRect(RUN_ME + 20, y - 29 - nh, 2, 2);
+    g.fillStyle = '#9B5B2B';
+    g.fillRect(RUN_ME + 13, y - 35 - nh, 2, 4); g.fillRect(RUN_ME + 18, y - 35 - nh, 2, 4);
+  }
+
+  /* 자세 게이지 — 고개를 얼마나 들었는지. 조작이 눈에 보여야 "내가
+     뭘 해서 뛰었는지" 를 배웁니다. 점수가 아니라 **입력 표시**입니다. */
+  if (R.mode === 'pose') {
+    const gx = RUN_W - 26, gy = 16, gh = 108;
+    g.fillStyle = 'rgba(255,255,255,.78)'; g.fillRect(gx - 4, gy - 6, 22, gh + 12);
+    g.fillStyle = '#D8D2CC'; g.fillRect(gx, gy, 14, gh);
+    const t = Math.max(0, Math.min(1, ((R.lift || 0) + 0.5) / 2.2));
+    g.fillStyle = R.armed ? '#2E9E5B' : '#9A8E88';
+    g.fillRect(gx, gy + gh - gh * t, 14, gh * t);
+    const jy = gy + gh - gh * ((RUN_JUMP_AT + 0.5) / 2.2);
+    g.fillStyle = '#E0483A'; g.fillRect(gx - 3, jy, 20, 2);
+  }
+}
+
+function finishPostureRun(won) {
+  const R = POSTURE_RUN;
+  R.active = false; R.over = true; R.won = won;
+  cancelAnimationFrame(R.raf);
+  drawPostureRun();
+  postureRunPaintRows();
+  const msg = panelBody.querySelector('#run-msg');
+  const cv = panelBody.querySelector('#run-cv');
+  if (won) {
+    if (!R.rewarded) { R.rewarded = true; earn(COIN_MINIGAME, '거북목 탈출 러너 완주'); }
+    if (cv) {
+      const g = cv.getContext('2d');
+      g.fillStyle = 'rgba(47,158,91,.92)'; g.fillRect(0, 52, RUN_W, 86);
+      g.fillStyle = '#FFFFFF'; g.textAlign = 'center';
+      g.font = '800 34px system-ui, sans-serif';
+      g.fillText('한 바퀴 완주!', RUN_W / 2, 92);
+      g.font = '700 15px system-ui, sans-serif';
+      g.fillText('400m · ' + R.jumps + '번 뛰었어요', RUN_W / 2, 116);
+      g.textAlign = 'left';
+    }
+    if (msg) msg.textContent = gameWinMsg();
+  } else if (msg) {
+    msg.textContent = '세 번 부딪혔어요. 장애물이 보이면 조금 일찍 들어 주세요.';
+  }
+}
+
+function startPostureRun() {
+  const R = POSTURE_RUN;
+  cancelAnimationFrame(R.raf);
+  panelBody.innerHTML = postureRunHtml();
+  R.active = true; R.over = false; R.won = false; R.rewarded = false;
+  R.dist = 0; R.spd = 200; R.y = 0; R.vy = 0; R.lives = RUN_LIVES; R.invuln = 0;
+  R.obs = []; R.nextAt = 420; R.armed = true; R.jumps = 0; R.step = 0; R.rowsAt = 0;
+  R.last = performance.now();
+  postureRunMode();
+  postureRunPaintRows();
+  drawPostureRun();
+  R.raf = requestAnimationFrame(postureRunTick);
+}
+
+/* ==================================================================
    바깥 서비스 세 가지
 
    개더처럼, 물건 앞에서 Space 를 누르면 창이 열립니다. 셋 다 **월드가
@@ -12125,6 +12516,10 @@ const PANELS = {
   animalFind: () => ({
     title: '동물 기억력 게임', kind: 'MINI GAME',
     html: animalFindIntroHtml(),
+  }),
+  postureRun: () => ({
+    title: '거북목 탈출 러너', kind: 'MINI GAME',
+    html: postureRunHtml(),
   }),
   giraffeStack: () => ({
     title: '기린 목 쌓기', kind: 'MINI GAME',
@@ -12685,6 +13080,7 @@ function openPanel(key, tab) {
   /* 게임 패널은 열리는 순간 시작합니다. 시작 버튼을 따로 두면 창을 열고
      또 눌러야 하고, 그 사이 화면은 멈춘 그림입니다. */
   if (key === 'giraffeNeck') startGiraffeNeck();
+  if (key === 'postureRun') startPostureRun();
   if (key === 'eggMerge') startEggMerge();
   if (key === 'giraffeStack') startGiraffeStack();
   if (key === 'animalFind') { /* 시작 버튼은 게임 방법 화면에서 누릅니다. */ }
@@ -12711,6 +13107,10 @@ function closePanel() {
   }
   if (typeof ANIMAL_MATCH3 !== 'undefined' && ANIMAL_MATCH3.active) {
     ANIMAL_MATCH3.active = false;
+  }
+  if (typeof POSTURE_RUN !== 'undefined' && POSTURE_RUN.active) {
+    POSTURE_RUN.active = false;
+    cancelAnimationFrame(POSTURE_RUN.raf);
   }
   TURTLE_MAZE.active = false;
   clearInterval(TURTLE_MAZE.timerId);
@@ -12787,6 +13187,7 @@ panelBody.addEventListener('click', (e) => {
     if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
     return dropGiraffeStack();
   }
+  if (e.target.closest('[data-do="run-restart"]')) return startPostureRun();
   if (e.target.closest('[data-do="giraffe-restart"]')) return startGiraffeNeck();
   if (e.target.closest('[data-do="giraffe-tap"]')) tapGiraffeNeck();
   if (e.target.closest('[data-do="egg-restart"]')) return startTurtleEgg();

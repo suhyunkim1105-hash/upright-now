@@ -12130,7 +12130,7 @@ function postureRunHtml() {
     <div class="rows">
       <div class="row"><span>조작</span><span class="val" id="run-mode">준비 중</span></div>
       <div class="row"><span>남은 거리</span><span class="val" id="run-dist">400m</span></div>
-      <div class="row"><span>부딪혀도 되는 횟수</span><span class="val" id="run-life">3번</span></div>
+      <div class="row"><span>부딪힘</span><span class="val" id="run-life">0 / ${RUN_LIVES}</span></div>
     </div>
     <canvas id="run-cv" width="${RUN_W}" height="${RUN_H}" role="img"
       aria-label="운동장 트랙을 달리는 기린. 고개를 들거나 스페이스를 누르면 뜁니다."
@@ -12142,7 +12142,8 @@ function postureRunHtml() {
     <button class="act" data-do="run-restart">다시 하기</button>
     <div class="note">고개를 살짝 들었다가 <b>제자리로 돌아오면</b> 한 번 뜁니다.
     억지로 젖히지 않으셔도 되고, 카메라가 꺼져 있으면 Space 로 하시면 됩니다.
-    이 게임은 자세에 점수를 매기지 않아요 — 고개 움직임을 조작으로만 씁니다.</div>`;
+    이 게임은 자세에 점수를 매기지 않아요 — 고개 움직임을 조작으로만 씁니다.
+    <b>${RUN_LIVES}번</b> 부딪히면 그 판은 끝이에요.</div>`;
 }
 
 /** 조작 갈래를 매 프레임 다시 정합니다. 세션 도중에 기준이 잡히면
@@ -12209,7 +12210,7 @@ function postureRunTick(now) {
       SFX.step(2, false);
       postureRunPaintRows();
       const msg = panelBody.querySelector('#run-msg');
-      if (msg) msg.textContent = R.lives > 0 ? '부딪혔어요. ' + R.lives + '번 더 괜찮아요.' : '';
+      if (msg) msg.textContent = R.lives > 0 ? '부딪혔어요. ' + R.lives + '번 더 부딪히면 끝이에요.' : '';
       if (R.lives <= 0) return finishPostureRun(false);
     }
   }
@@ -12231,7 +12232,9 @@ function postureRunPaintRows() {
   mode.textContent = R.mode === 'pose' ? '고개 들기 · Space' : 'Space (카메라 꺼짐)';
   const left = Math.max(0, RUN_LAP_M - R.dist / RUN_PX_M);
   dist.textContent = Math.ceil(left) + 'm';
-  life.textContent = Math.max(0, R.lives) + '번';
+  /* 몇 번 부딪혔는지로 씁니다. 남은 목숨으로 쓰면 "1번 더 괜찮아요" 를
+     띄운 다음 판이 끝나서, 화면이 거짓말을 합니다. */
+  life.textContent = (RUN_LIVES - Math.max(0, R.lives)) + ' / ' + RUN_LIVES;
   bar.style.width = Math.min(100, (R.dist / (RUN_LAP_M * RUN_PX_M)) * 100) + '%';
 }
 
@@ -12451,7 +12454,8 @@ function trackRaceHtml() {
     <button class="act ghost" data-do="race-restart" style="margin-top:10px">다시 하기</button>
     <div class="note"><b>${RACE_TARGET}초 안</b>에 들어오면 오늘 몫 코인이
     들어와요. 코인은 순위가 아니라 기록으로 정합니다 — 느린 사람과 붙어서
-    받는 길을 막으려고요. 같은 시간에 트랙에 있는 사람은 레인으로 같이 보여요.</div>`;
+    받는 길을 막으려고요. 같은 시간에 트랙에 있는 사람은 레인으로 같이
+    보여요. <b>${RACE_LIMIT}초</b>를 넘기면 그 판은 거기서 끝나요.</div>`;
 }
 
 /** 한 걸음. foot 은 'left' | 'right'. 같은 발을 두 번 밟으면 안 나갑니다. */
@@ -12745,9 +12749,10 @@ function pondFishHtml() {
     <button class="act" data-do="fish-press" style="width:100%">던지기 · 채기 (Space)</button>
     <p class="hint" id="fish-msg" aria-live="polite">던져 보세요.</p>
     <button class="act ghost" data-do="fish-restart" style="margin-top:10px">다시 하기</button>
-    <div class="note">잡은 종은 <b>도감</b>에 남아요 — 여덟 종이 다 이
-    캠퍼스에 사는 것들이에요. 코인은 하루 한 번이지만 도감은 계속 채울 수
-    있어요.</div>`;
+    <div class="note">찌가 잠긴 뒤 <b>0.6초</b> 안이에요. 너무 일찍 채거나
+    놓치면 그 판은 그냥 넘어가요. 잡은 종은 <b>도감</b>에 남아요 — 여덟 종이
+    다 이 캠퍼스에 사는 것들이에요. 코인은 하루 한 번이지만 도감은 계속
+    채울 수 있어요.</div>`;
 }
 function fishSay(t) {
   const el = panelBody.querySelector('#fish-msg');

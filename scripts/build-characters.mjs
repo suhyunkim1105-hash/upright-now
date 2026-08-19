@@ -281,6 +281,21 @@ function repaint(f, y0, y1, from, to, { d = 0 } = {}) {
 // 살갗으로 덮습니다.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * 뒤통수에서 얼굴 자국을 지웁니다.
+ * 시안의 뒷모습은 정면에서 눈만 대충 지운 것이라, 눈 하이라이트(흰 점)나
+ * 주둥이 그늘이 남아 있습니다. 4배로 키워 의자에 앉혀 놓으면 그게 다시
+ * 얼굴로 읽혀서, 뒤돌아 앉았는데 이쪽을 보는 것처럼 보입니다.
+ * 테두리는 안 건드립니다(inset 2) — 지우면 머리 윤곽이 무너집니다.
+ */
+function noFace(f, marks, to, y0 = 9, y1 = 22) {
+  let n = 0
+  for (let y = y0; y <= y1; y++)
+    for (let x = 0; x < FRAME_W; x++)
+      if (marks.includes(f.key(x, y)) && inset(f, x, y, 2)) { f.set(x, y, to); n++ }
+  return n
+}
+
 /** 정면 눈 상자 [x0, x1, y0, y1] 둘. index.html FACE_SPEC 의 ex/ey 와 같은 값입니다. */
 const FACE = {
   turtle: { ex: [10, 18], ey: 14, skin: '#8cd296' },
@@ -466,6 +481,7 @@ const PAINT = {
   hamster: {
     back(f) {
       repaint(f, 24, 40, ['#e6c8a0', '#e6c896'], () => '#dcb478', { d: 1 })
+      noFace(f, ['#fabebe', '#501e00', '#461e00'], '#dcb478')   // 귀는 뒤에서 보면 분홍 속이 안 보입니다
       /* 등은 가운데가 볼록합니다 — 가장자리로 갈수록 어둡게. 등뼈를 선으로
          그으면 지퍼가 됩니다(한 번 해 보고 지웠습니다). */
       ellipse(f, 15.5, 32, 10, 9, (x, y, t) => (t > 0.72 ? '#be8c64' : t > 0.5 ? '#dcaa78' : null), { d: 1 })
@@ -485,6 +501,7 @@ const PAINT = {
   frog: {
     back(f) {
       repaint(f, 12, 26, ['#faf0a0', '#f0f0a0', '#e6d282', '#dcd282'], () => '#82dc3c')
+      noFace(f, ['#ffffff', '#0a5028', '#0a4628', '#0a5032', '#5aa028', '#64aa28'], '#82dc3c')
       const mark = '#64aa28'
       for (const [x, y, w, h] of [[11, 28, 2, 2], [19, 28, 2, 2], [13, 33, 3, 2], [17, 33, 3, 2], [15, 25, 2, 2]])
         for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) if (inset(f, x + i, y + j, 1)) f.over(x + i, y + j, mark)
@@ -502,9 +519,9 @@ const PAINT = {
   hedgehog: {
     back(f) {
       const q = ['#735242', '#523929', '#9c7352', '#391908']
-      for (let y = 23; y <= 39; y++)
+      for (let y = 9; y <= 39; y++)
         for (let x = 6; x <= 25; x++) {
-          if (!inset(f, x, y, 1)) continue
+          if (!inset(f, x, y, y < 23 ? 2 : 1)) continue
           /* 가시는 줄마다 반 칸씩 엇갈린 비늘 무늬입니다. 세로줄로 그으면
              가시가 아니라 빗금으로 보입니다. */
           const row = y - 23
@@ -539,6 +556,7 @@ const PAINT = {
           if ((x + (y % 4 < 2 ? 0 : 2)) % 4 === 0 && y % 2 === 0) f.over(x, y, curl)
           else if ((x + (y % 4 < 2 ? 0 : 2)) % 4 === 1 && y % 2 === 0) f.over(x, y, deep)
         }
+      noFace(f, ['#786450', '#826450', '#785a46', '#785a50'], '#fae6d2')
       // 목덜미 그늘 — 네모로 칠하면 상자를 얹은 것처럼 보입니다
       ellipse(f, 15.5, 26, 5, 3, (x, y, t) => (t > 0.55 ? null : deep), { d: 1 })
       ellipse(f, 15.5, 38, 2.4, 2, (x, y, t) => (t > 0.6 ? '#dcbe96' : curl), { d: 1 })
@@ -556,6 +574,7 @@ const PAINT = {
   swan: {
     back(f) {
       const wing = '#d2d2d2', quill = '#acacac', edge = '#505050'
+      noFace(f, ['#464646', '#505050'], '#ffffff')
       /* 날개는 흰 채로 두고 **테두리와 깃 선만** 긋습니다. 회색으로 채우면
          흰 새 등에 회색 덩이 둘을 얹은 꼴이라 가방으로 보입니다. */
       for (const s of [-1, 1]) {

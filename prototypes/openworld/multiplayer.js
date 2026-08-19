@@ -172,7 +172,7 @@
       buf: [],            // 받은 스냅샷 (시간순)
       zone: profile.zone || 'campus',
       /* 화면에 그릴 값 — 매 프레임 buf 에서 새로 만듭니다 */
-      x: 0, y: 0, dir: 'down', flip: false, dir4: 'down', moving: false,
+      x: 0, y: 0, dir: 'down', flip: false, dir4: 'down', moving: false, sit: false,
       anim: 0, frame: 0,
       big: false,         // 32x48 로 그려졌는지 — drawOne 이 매 프레임 적습니다
       ready: false,       // 스냅샷을 두 개 이상 받아야 그립니다
@@ -225,12 +225,18 @@
     rp.zone = s.zone;
     rp.dir = s.dir; rp.flip = s.flip;
     rp.dir4 = dir4Of(s.dir, s.flip);
+    rp.sit = !!s.sit;
 
     /* 걷는 그림은 **실제로 움직인 거리**로 넘깁니다. moving 플래그만
-       믿으면 보간이 멈춘 프레임에도 다리가 움직여 미끄러져 보입니다. */
+       믿으면 보간이 멈춘 프레임에도 다리가 움직여 미끄러져 보입니다.
+
+       눈금은 index.html 의 걷기와 같아야 합니다 — 거기서는 반 보폭(STRIDE/2
+       = 9.5 x AS = 19px)마다 한 박자입니다. 3.2px 마다 한 박자이던 예전
+       값은 몸이 1px 들썩이는 것뿐일 때는 안 보였지만, 다리가 실제로
+       움직이는 지금은 남만 여섯 배 빨리 걷습니다. */
     const d = rp.ready ? Math.hypot(rp.x - px, rp.y - py) : 0;
     rp.moving = d > 0.05;
-    if (rp.moving) { rp.anim += d / 3.2; rp.frame = Math.floor(rp.anim); }
+    if (rp.moving) { rp.anim += d / (9.5 * AS); rp.frame = Math.floor(rp.anim); }
     else { rp.anim = 0; rp.frame = 0; }
     rp.ready = true;
 
@@ -322,8 +328,16 @@
     const dx = Math.round(rp.x - W / 2 - camX);
     const dy = Math.round(rp.y - G - camY);
 
-    shadowAt(dx + W / 2, dy + G - 1, 6, 2.4);
+    /* 앉아 있으면 그림자를 안 깝니다 — 발이 바닥에 없습니다(drawPlayer 와 같음) */
+    if (!rp.sit) shadowAt(dx + W / 2, dy + G - 1, 6, 2.4);
 
+    /* 걷기 네 박자·앉은 자세는 저쪽 창구가 구워 줍니다. 창구가 옛 판이면
+       pose 가 없으니 예전처럼 시트에서 바로 잘라 씁니다. */
+    if (typeof C.pose === 'function') {
+      const p = C.pose(sheet, rp.species, rp.dir4, { sitting: rp.sit, moving: rp.moving, frame: rp.frame });
+      ctx.drawImage(p.img, p.sx, p.sy, W, H, dx, dy - (p.lift || 0), W, H);
+      return;
+    }
     const sx = (C.dirIndex?.[rp.dir4] ?? 0) * W;
     ctx.drawImage(sheet, sx, 0, W, H, dx, dy + bobOf(rp), W, H);
   }
@@ -560,13 +574,16 @@
 
     /* 위치 — 안 움직이면 안 보냅니다. 서 있는 사람 몫으로 초당 열 번을
        쓰는 건 낭비입니다. 다만 한 번은 더 보내 "멈췄다"를 알립니다. */
-    const key = [zoneId, ppos, player.dir, player.flip, player.moving].join(',');
+    const key = [zoneId, ppos, player.dir, player.flip, player.moving, player.sitting].join(',');
     if (key === lastSentKey) return;
     lastSentKey = key;
     MP.send({
       type: 'state', t: now, zone: zoneId,
       x: player.x, y: player.y,
       dir: player.dir, flip: player.flip, moving: player.moving,
+      /* 앉았는지도 보냅니다 — 남이 의자에 앉으면 나도 앉은 모습으로 봐야
+         자리 잡은 사람과 서 있는 사람이 구별됩니다. */
+      sit: !!player.sitting,
     });
   }
 
@@ -801,6 +818,7 @@
            낫습니다 — 남의 존으로 자기를 그려 넣을 수 있습니다. */
         h.onState(p.id, {
           t: p.t, zone, x: p.x, y: p.y, dir: p.dir, flip: !!p.flip, moving: !!p.moving,
+          sit: !!p.sit,
         });
       });
       c.on('broadcast', { event: 'say' }, (msg) => {
@@ -841,7 +859,7 @@
         if (m.type === 'state') {
           ch.send({ type: 'broadcast', event: 'm', payload: {
             id: MP.meId, t: m.t, x: m.x, y: m.y,
-            dir: m.dir, flip: !!m.flip, moving: !!m.moving,
+            dir: m.dir, flip: !!m.flip, moving: !!m.moving, sit: !!m.sit,
           } });
         } else if (m.type === 'chat') {
           const p = { id: MP.meId, t: m.t, text: m.text || '', emoji: m.emoji || '' };

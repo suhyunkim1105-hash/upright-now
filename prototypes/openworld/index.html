@@ -12514,9 +12514,12 @@ function racePacerAt(q, t) {
   return t < acc ? v * t * t / (2 * acc) : v * (t - acc / 2);
 }
 
+/** 조용해진 레인을 접습니다. **다 들어온 사람은 안 접습니다** — 나보다
+    3초 넘게 먼저 끝낸 사람이 사라지면 순위가 "내가 1등" 이 됩니다.
+    실제로 두 탭으로 달려 보다가 그렇게 나왔습니다. */
 function raceExpire(now) {
   for (const [id, g] of TRACK_RACE.ghosts)
-    if (now - g.at > RACE_KEEP_MS) TRACK_RACE.ghosts.delete(id);
+    if (!g.fin && now - g.at > RACE_KEEP_MS) TRACK_RACE.ghosts.delete(id);
 }
 
 /** 결승선을 나보다 먼저 넘은 레인 수 + 1. 페이서와 사람을 같이 셉니다. */

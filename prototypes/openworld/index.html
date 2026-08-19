@@ -750,37 +750,37 @@
 
      상자를 격자로 바꿉니다. 머리글이 두 칸을 걸치고, 아래 왼쪽이 탭,
      오른쪽이 본문입니다. */
-  #panel[data-panel="shop"] .box {
+  #panel[data-panel^="shop"] .box {
     width: min(880px, 100%);
     display: grid;
     grid-template-columns: 124px minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
   }
-  #panel[data-panel="shop"] header { grid-column: 1 / -1; }
-  #panel[data-panel="shop"] .tabs {
+  #panel[data-panel^="shop"] header { grid-column: 1 / -1; }
+  #panel[data-panel^="shop"] .tabs {
     grid-column: 1; grid-row: 2;
     flex-direction: column; gap: 1px;
     padding: 11px 0 14px; align-content: start;
     border-right: 1px solid var(--line);
     background: var(--surface-2); overflow-y: auto;
   }
-  #panel[data-panel="shop"] .tabs button {
+  #panel[data-panel^="shop"] .tabs button {
     flex: none; text-align: left;
     padding: 11px 12px 11px 14px;
     border-bottom: 0; border-left: 3px solid transparent;
   }
-  #panel[data-panel="shop"] .tabs button:hover { color: var(--ink-2); }
-  #panel[data-panel="shop"] .tabs button[aria-selected="true"] {
+  #panel[data-panel^="shop"] .tabs button:hover { color: var(--ink-2); }
+  #panel[data-panel^="shop"] .tabs button[aria-selected="true"] {
     border-bottom-color: transparent; border-left-color: var(--teal);
     background: var(--surface); color: var(--teal-700);
   }
-  #panel[data-panel="shop"] .body { grid-column: 2; grid-row: 2; }
+  #panel[data-panel^="shop"] .body { grid-column: 2; grid-row: 2; }
   /* 좁은 화면에서는 막대가 방해가 됩니다 — 위 탭으로 되돌립니다 */
   @media (max-width: 700px) {
-    #panel[data-panel="shop"] .box {
+    #panel[data-panel^="shop"] .box {
       display: flex; flex-direction: column; width: min(560px, 100%);
     }
-    #panel[data-panel="shop"] .tabs {
+    #panel[data-panel^="shop"] .tabs {
       flex-direction: row; gap: 4px; padding: 10px 14px 0;
       border-right: 0; background: none;
       /* 세로 막대일 때 넘치면 스크롤하라고 준 overflow 를 여기서 되돌립니다.
@@ -788,11 +788,11 @@
          탭 줄이 20px 로 찌그러지고 글자가 잘립니다. */
       overflow: visible; flex: none;
     }
-    #panel[data-panel="shop"] .tabs button {
+    #panel[data-panel^="shop"] .tabs button {
       flex: 1; text-align: center; padding: 9px 4px 10px;
       border-left: 0; border-bottom: 2px solid transparent;
     }
-    #panel[data-panel="shop"] .tabs button[aria-selected="true"] {
+    #panel[data-panel^="shop"] .tabs button[aria-selected="true"] {
       border-bottom-color: var(--teal); background: none;
     }
   }
@@ -5172,9 +5172,29 @@ const ZONES = {};
   /* 해초는 뺐습니다. 물 안에 풀이 서 있으면 사람이 만든 못이 아니라
      내버려 둔 웅덩이가 됩니다 — 이 못의 직선 둘레와도 어긋납니다. */
 
-  /* 남동 — 동아리 거리. 학생회관이 혼자 쓰는 기능(상점·출석·랭킹)이면
-     여기는 같이 쓰는 기능입니다. 친구 초대 링크가 닿을 자리. */
+  /* ---- 남동 — 동아리 거리 ----
+     천막 셋이 서 있는데 여는 것이 하나도 없었습니다. 지도에 이름이 있고
+     (미니맵 9번) 가 보면 할 일이 없는 자리는, 이 월드에서 가장 나쁜
+     자리입니다 — 한 번 속으면 다시 안 옵니다.
+
+     그래서 여기를 **시장**으로 만듭니다. 상점을 새 건물에 넣지 않은
+     이유는 미니게임 때와 같습니다: 이미 서 있는 자리를 먼저 씁니다.
+     그리고 가게는 문을 열고 들어가는 곳이 아니라 **길에서 보이는 곳**이
+     맞습니다 — 셋이 한눈에 서 있고 천 색으로 구별되면, "빨간 게 옷" 을
+     설명 없이 한 번에 배웁니다. 건물이면 문을 열기 전엔 아무것도
+     모릅니다.
+
+     천 색은 이미 서로 다르게 칠해 둔 것을 그대로 씁니다(tentCanvas).
+       빨강 tentA — 옷      · 파랑 tentB — 가구 · 노랑 tentC — 안내 */
   prop(m, 'tentA', 35, 32); prop(m, 'tentB', 39, 32); prop(m, 'tentC', 43, 32);
+  m.things.push(
+    { x: 35, y: 32, name: '옷 가게',   panel: 'shopWear' },
+    { x: 39, y: 32, name: '가구 가게', panel: 'shopFurn' },
+    { x: 43, y: 32, name: '상점 안내', panel: 'market' },
+  );
+  /* 바닥은 이미 깔려 있습니다(위 fillOver 의 M.GRAY 두 줄). floorGlow 는
+     여기서 못 씁니다 — 그건 방 안 바닥 그림(m.floor)에 붓는 것이고
+     캠퍼스는 타일 지도라 m.floor 자체가 없습니다. */
   prop(m, 'board', 36, 37); prop(m, 'board', 41, 37);
 
   m.spawn = { x: 22, y: 25 };
@@ -5627,8 +5647,9 @@ const DORM = ZONES.dorm;
   m.npcs.push(
     { x: 6, y: 7, sprite: 266, species: '고슴도치', dir: 'down',
       worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', face: 'fac-sun' },
-      name: '상점 · 미르', panel: 'shop',
-      line: '알 하나 깨고 나온 얼굴이네. 나머지 일곱도 여기 있어. 안 싸.' },
+      name: '알 가게 · 미르', panel: 'shopEgg',
+      line: '알 하나 깨고 나온 얼굴이네. 나머지 일곱도 여기 있어. 안 싸. '
+          + '옷이랑 가구는 이제 동아리 거리에서 팔아 — 나는 알만 봐.' },
     /* 남은 날은 대사에 안 적습니다 — 지도를 만들 때 굳어 버려서, 며칠이
        지나도 같은 숫자를 말하게 됩니다. 숫자는 창이 그때그때 셉니다. */
     { x: 26, y: 8, sprite: 185, species: '알파카', dir: 'down',
@@ -7010,7 +7031,7 @@ function canStand(px, py) {
   return !(solidAt(l, t) || solidAt(r, t) || solidAt(l, b) || solidAt(r, b));
 }
 
-function enterZone(id, sx, sy) {
+function enterZone(id, sx, sy, dir) {
   if (id === 'library' || id === 'mainhall' || id === 'union')
     award('once:visit_' + id, ({ library: '도서관', mainhall: '본관', union: '학생회관' })[id] + ' 첫 방문');
   /* 세션은 여기서 한 번만 시작합니다. 존을 옮겨 다녀도 이어집니다 —
@@ -7019,6 +7040,7 @@ function enterZone(id, sx, sy) {
   if (!SESSION.startedAt) { SESSION.startedAt = Date.now(); startCamera(); }
   zoneId = id; zone = ZONES[id];
   player.x = sx * T + T / 2; player.y = sy * T + T;
+  if (dir) { player.dir = dir === 'left' || dir === 'right' ? 'side' : dir; player.flip = dir === 'left'; }
   /* 짧게 둡니다. 문 바로 안쪽에 서므로, 돌아서면 곧바로 다시 나갈 수
      있어야 합니다. 길면 문이 잠긴 것처럼 느껴집니다. */
   portalCooldown = 0.35;
@@ -7351,7 +7373,8 @@ const TOUR = [
       mark(22, 7, '기숙사 · 내 방', true);
       mark(8, 20, '본관 · 앉는 곳');
       mark(38, 20, '도서관 · 앉는 곳');
-      mark(23, 34, '학생회관 · 상점');
+      mark(23, 34, '학생회관 · 출석');
+      mark(40, 35, '동아리 거리 · 상점');
       mark(38, 7, '미니게임');
       /* 지금 서 있는 곳 — 방에서 나오면 여기입니다 */
       const me = at(21, 12);
@@ -7381,12 +7404,17 @@ const TOUR = [
   },
   {
     title: '코인과 상점',
-    desc: '세션을 마치면 판정이 돌아간 만큼 코인이 들어와요. 학생회관 상점에서 옷과 가구를 삽니다.',
+    desc: '세션을 마치면 판정이 돌아간 만큼 코인이 들어와요. 동아리 거리에서 옷과 가구를 삽니다.',
     draw(g) {
-      const box = worldShot(g, 0, 0, PIC_W, PIC_H, 'union', 7, 8, { x: 6, y: 9, dir: 'up' });
-      const shop = shotAt(box, 6, 7);
-      tourRing(g, shop.x, shop.y + 4, 32);
-      tourChip(g, shop.x, shop.y - 46, '상점 · 미르', true);
+      /* 가게 셋이 한 화면에 들어가야 "천 색이 가게" 라는 규칙이 그림
+         하나로 전해집니다. 글로 "빨간 천막이 옷" 이라고 쓰면 읽는 사람이
+         적고, 읽어도 가서 다시 확인합니다. */
+      const box = worldShot(g, 0, 0, PIC_W, PIC_H, 'campus', 40, 34.4, { x: 39, y: 36, dir: 'up' });
+      const wear = shotAt(box, 36, 33.5), furn = shotAt(box, 40, 33.5);
+      tourRing(g, wear.x, wear.y, 30); tourRing(g, furn.x, furn.y, 30);
+      tourChip(g, wear.x, wear.y - 48, '옷', true);
+      tourChip(g, furn.x, furn.y - 48, '가구', true);
+      const shop = wear;
       /* 코인 — HUD 에 있는 것과 같은 그림입니다. 화면 구석에서 본 것과
          같아야 "저기 있는 그것" 이라고 따로 안 알려 줘도 됩니다. */
       const cx = PIC_W - 92, cy = 42;
@@ -9247,16 +9275,49 @@ const ITEM_DIR = { right: 0, up: 1, left: 2, down: 3 };
 const ITEM_W = 32, ITEM_H = 48;
 const ITEM_BASE = 'assets/items/';
 
+/* shop 은 이 칸을 **어느 가게가 파는가** 입니다. 상점 하나에 여덟 탭이던
+   것을 셋으로 갈랐습니다 — 입는 것 · 놓는 것 · 되는 것.
+
+   가른 이유는 탭이 많아서가 아니라, 여덟 칸이 한 창에 있으면 상점이
+   **어디에 있든 상관없는 창**이 되기 때문입니다. 창 하나로 다 되면 그
+   창을 여는 자리는 아무 데나 되고, 그러면 월드에 가게가 있을 이유가
+   없습니다. 셋으로 가르면 각 가게가 자기 자리를 갖습니다.
+
+   칸(cat)은 그대로입니다 — 입기·색·종이인형·구매가 전부 cat 을 보고
+   돌아가므로, 여기서 바뀌는 것은 **어느 창에 어느 탭이 서는가** 뿐입니다. */
 const SHOP_CATS = [
-  { id: 'top',    name: '상의' },
-  { id: 'bottom', name: '하의' },
-  { id: 'shoes',  name: '신발' },
-  { id: 'hat',    name: '모자' },
-  { id: 'face',   name: '안경' },
-  { id: 'bag',    name: '가방' },
-  { id: 'egg',    name: '알' },
-  { id: 'furn',   name: '가구' },
+  { id: 'top',    name: '상의',  shop: 'shopWear' },
+  { id: 'bottom', name: '하의',  shop: 'shopWear' },
+  { id: 'shoes',  name: '신발',  shop: 'shopWear' },
+  { id: 'hat',    name: '모자',  shop: 'shopWear' },
+  { id: 'face',   name: '안경',  shop: 'shopWear' },
+  { id: 'bag',    name: '가방',  shop: 'shopWear' },
+  { id: 'furn',   name: '가구',  shop: 'shopFurn' },
+  { id: 'egg',    name: '알',    shop: 'shopEgg' },
 ];
+
+/* 가게 셋. key 는 창 이름이자 m.things 의 panel 이고, CSS 는
+   [data-panel^="shop"] 로 셋을 한꺼번에 잡습니다(왼쪽 세로 탭 막대).
+
+   자리를 이렇게 나눈 까닭:
+     · 옷·가구 — 동아리 거리. 천막 셋이 이미 서 있는데 여는 것이 하나도
+       없었습니다. 지도에 이름이 있고 가면 할 일이 없는 자리가 이 월드에서
+       가장 나쁜 자리입니다.
+     · 알 — 학생회관. 종을 바꾸는 일은 학적을 바꾸는 일이라 행정 건물이
+       맞고, 그 방 진열대는 처음부터 알을 놓으라고 그려 둔 자리입니다.
+   미르는 알 가게에 남습니다 — 상점에서 가장 비싼 물건을 지키는 사람. */
+const SHOPS = [
+  { key: 'shopWear', title: '옷 가게',   kind: '동아리 거리',
+    where: '동아리 거리', how: '입는 것 여섯 칸', go: ['campus', 36, 35] },
+  { key: 'shopFurn', title: '가구 가게', kind: '동아리 거리',
+    where: '동아리 거리', how: '방에 놓는 것',     go: ['campus', 40, 35] },
+  /* 미르는 계산대 **뒤**에 섭니다. 데려다만 놓고 방향을 안 주면 등을
+     돌린 채로 서게 되어, 도착하자마자 Space 를 눌러도 아무 일이 없습니다. */
+  { key: 'shopEgg',  title: '알 가게',   kind: '학생회관 · 미르',
+    where: '학생회관',   how: '종을 바꾸는 알 여덟', go: ['union', 6, 9, 'up'] },
+];
+const SHOP_KEYS = SHOPS.map((s) => s.key);
+const isShopPanel = (k) => SHOP_KEYS.includes(k);
 /* 가구는 입는 것이 아니라 **놓는** 것입니다. 이 한 줄을 여기 두는 이유는
    equip/unequip/팔레트/종이인형이 전부 '칸(cat) 하나에 하나' 를 전제로
    쓰여 있어서입니다 — 가구가 그 길에 들어가면 ROOM.worn.furn 이 생기고
@@ -9801,7 +9862,7 @@ function paintDrawer() {
       }).join('')
     : `<p class="empty">${mine.length
         ? '이 칸은 비어 있어요.'
-        : '아직 가진 가구가 없어요.<br>학생회관 상점의 <b>가구</b> 칸에서 살 수 있어요.'}</p>`;
+        : '아직 가진 가구가 없어요.<br><b>동아리 거리</b>의 파란 천막에서 살 수 있어요.'}</p>`;
   for (const c of furnGridEl.querySelectorAll('canvas[data-item]')) {
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
@@ -10988,10 +11049,14 @@ function startEggMerge() {
 /** 산 뒤에도 보던 칸에 그대로 남아야 합니다 — 매번 상의로 튕기면
     신발 세 켤레를 사는 데 열 번을 눌러야 합니다. */
 
+/** 산 뒤에 **열려 있던 그 가게**를 그대로 다시 엽니다. 예전에는 창이
+    하나여서 'shop' 을 적어 두면 됐는데, 셋으로 갈린 뒤에도 그대로 두면
+    가구를 사자마자 옷 가게로 튕깁니다. */
 function reopenShop() {
+  const key = isShopPanel(activePanelKey) ? activePanelKey : SHOP_KEYS[0];
   const tabs = [...panelTabs.querySelectorAll('button')];
   const active = Math.max(0, tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true'));
-  openPanel('shop');
+  openPanel(key);
   panelTabs.querySelectorAll('button')[active]?.click();
 }
 
@@ -13397,13 +13462,14 @@ const PANELS = {
       <p>공부하는 곳이 아니라 <b>볼일을 보는 곳</b>이에요. 창구 셋과
       동아리 부스가 있어요.</p>
       <div class="rows">
-        <div class="row"><span>상점 <em>미르 · 알과 꾸미기</em></span><span class="val">서쪽</span></div>
+        <div class="row"><span>알 가게 <em>미르 · 다른 종으로 바꾸기</em></span><span class="val">서쪽</span></div>
         <div class="row"><span>출석 <em>도윤 · 오늘 출석 확인</em></span><span class="val">가운데</span></div>
         <div class="row"><span>명예의 전당 <em>하연 · 학교끼리 순위</em></span><span class="val">동쪽</span></div>
         <div class="row"><span>동아리 부스</span><span class="val">남서쪽</span></div>
       </div>
       <div class="note">여기서는 코인이 쌓이지 않아요. 앉아서 버는 곳은
-      <b>도서관</b>과 <b>본관</b>이에요.</div>`,
+      <b>도서관</b>과 <b>본관</b>이에요. 옷과 가구는 <b>동아리 거리</b>
+      천막에서 팔아요 — 미르는 알만 봐요.</div>`,
   }),
 
   /* 미니게임존 안내 — 안뜰 게시판이 여는 창.
@@ -13444,7 +13510,9 @@ const PANELS = {
         다른 탭으로 가도 판정은 계속 돌아가요.</li>
         <li>다 했으면 왼쪽 아래 <b>세션 종료</b>를 눌러 주세요. 그때
         카메라가 꺼지고 회고가 열려요.</li>
-        <li><b>학생회관</b>(남쪽)에는 상점과 명예의 전당이 있어요.</li>
+        <li><b>학생회관</b>(남쪽)에는 출석 · 알 가게 · 명예의 전당이 있어요.</li>
+        <li>옷과 가구는 <b>동아리 거리</b>(남동쪽) 천막에서 팔아요 —
+        빨간 천막이 옷, 파란 천막이 가구예요.</li>
         <li>미니게임은 <b>캠퍼스 곳곳</b>에 있어요 — 운동장 · 호수 · 도서관 ·
         미니게임관. 어디에 무엇이 있는지는 <b>미니게임관 안내소</b>에서
         한눈에 보고 바로 갈 수 있어요.</li>
@@ -13680,13 +13748,39 @@ const PANELS = {
     };
   },
 
-  /* ---- 상점 — 학생회관 미르 ----
+  /* ---- 가게 셋 ----
      칸(cat)마다 탭 하나. 왼쪽에 지금 입은 모습을 실제로 겹쳐 보여 주고
-     오른쪽에 그 칸의 물건을 늘어놓습니다. */
-  shop: () => ({
-    title: '상점', kind: '미르',
-    tabs: SHOP_CATS.map((c) => c.name),
-    tabHtml: SHOP_CATS.map((c) => shopTabHtml(c.id)),
+     오른쪽에 그 칸의 물건을 늘어놓습니다. 창 셋이 **같은 함수**를 부르고
+     탭 목록만 다릅니다 — 가게를 하나 더 내도 SHOPS 에 한 줄입니다.
+
+     아래 세 줄을 손으로 적는 대신 Object.fromEntries 로 펴는 방법도
+     있는데, 그러면 PANELS 를 훑어 창 이름을 찾는 검사(그리고 사람)가
+     여기서 아무것도 못 봅니다. 셋뿐이라 적어 둡니다. */
+  ...Object.fromEntries(SHOPS.map((sh) => [sh.key, () => {
+    const cats = SHOP_CATS.filter((c) => c.shop === sh.key);
+    return {
+      title: sh.title, kind: sh.kind,
+      tabs: cats.map((c) => c.name),
+      tabHtml: cats.map((c) => shopTabHtml(c.id)),
+    };
+  }])),
+
+  /* ---- 상점 안내 — 동아리 거리 노란 천막 ----
+     가게가 셋으로 갈리면 "그건 어디서 팔지" 가 새로 생깁니다. 미니게임을
+     흩어 놓고 안내소를 둔 것과 같은 이유이고, 같은 방식입니다 — 목록은
+     SHOPS 를 그대로 훑으므로 가게가 늘면 여기도 같이 늡니다. */
+  market: () => ({
+    title: '상점 안내', kind: '동아리 거리',
+    html: `
+      <p>가게는 <b>셋</b>이에요. 파는 것이 서로 달라서 자리도 달라요.</p>
+      <div class="rows">
+        ${SHOPS.map((sh) => `<div class="row"><span>${esc(sh.title)} <em>${esc(sh.how)}</em></span>`
+          + `<span class="val">${esc(sh.where)}</span>`
+          + `<button class="act ghost" data-goto="${esc(sh.key)}" style="margin-left:10px;flex:none">바로 가기</button></div>`).join('')}
+      </div>
+      <div class="note">여기 <b>동아리 거리</b>에 빨간 천막이 옷, 파란 천막이
+      가구예요. 알은 <b>학생회관</b> 미르한테 있어요 — 종을 바꾸는 일이라
+      그쪽이 맡고 있어요.</div>`,
   }),
 
   /* '방 꾸미기' 는 창이 아니라 오른쪽 서랍입니다(§가구 서랍). 창으로
@@ -13719,8 +13813,9 @@ const PANELS = {
       자리를 비우면 시계는 흐르지만 판정은 안 돕니다.</div>
       <h4 style="margin-top:18px">어디에 쓰나</h4>
       <div class="rows">
-        <div class="row"><span>옷·모자·가방 <em>학생회관 상점</em></span><span class="val">100~400</span></div>
-        <div class="row"><span>새 알 <em>다른 종으로 바꾸기</em></span><span class="val">800</span></div>
+        <div class="row"><span>옷·모자·가방 <em>동아리 거리 · 빨간 천막</em></span><span class="val">100~400</span></div>
+        <div class="row"><span>가구 <em>동아리 거리 · 파란 천막</em></span><span class="val">60~340</span></div>
+        <div class="row"><span>새 알 <em>학생회관 · 미르</em></span><span class="val">800</span></div>
       </div>
       <div class="note">코인은 <b>행동</b>으로만 쌓여요. 자세를 잘 잡았다고 더 주지
       않습니다 — 그러면 목이 긴 사람이 유리한 게임이 됩니다.</div>`,
@@ -13856,7 +13951,7 @@ function openPanel(key, tab) {
      자기 기록을 보는 일에 값을 매기면 보러 오는 이유가 바뀝니다. */
   if (key === 'settings') award('once:decorate', '첫 꾸미기');
   /* 값을 치르는 화면이라 서버 숫자를 다시 받아 옵니다(refreshShopCoins 주석) */
-  if (key === 'shop') refreshShopCoins();
+  if (isShopPanel(key)) refreshShopCoins();
   /* 순위는 이 기기가 아니라 서버에 있습니다. 창을 열 때 물어보고, 답이
      오면 그 자리에서 다시 그립니다(refreshHall). 여는 순간 그리는 것은
      아직 안 온 답이라 "불러오는 중" 입니다. */
@@ -14028,8 +14123,11 @@ panelBody.addEventListener('click', (e) => {
      그 앞에 서서 Space 를 누르는 것까지가 "거기에 간" 것입니다. */
   const goto = e.target.closest('[data-goto]');
   if (goto) {
-    const g = MINIGAMES.find((q) => q.panel === goto.dataset.goto);
-    if (g) enterZone(g.go[0], g.go[1], g.go[2]);
+    /* 미니게임 안내소와 상점 안내가 같은 단추를 씁니다. 두 표를 이어
+       한 번에 찾습니다 — 안내 창마다 위임을 따로 두면, 다음 안내 창을
+       만들 때 이 줄을 또 복사하게 됩니다. */
+    const g = [...MINIGAMES, ...SHOPS].find((q) => (q.panel || q.key) === goto.dataset.goto);
+    if (g && g.go) enterZone(g.go[0], g.go[1], g.go[2], g.go[3]);
     return;
   }
   const bk = e.target.closest('[data-book]');
@@ -14660,7 +14758,9 @@ const PLACES = [
   { id: 'field',    to: ['campus', 8, 8],     x: 8,  y: 7,  name: '운동장',    key: '6' },
   { id: 'arcade',   to: ['arcade', 11, 10],   x: 37, y: 5,  name: '미니게임관', key: '7' },
   { id: 'lake',     to: ['campus', 6, 29],    x: 6,  y: 35, name: '호수',      key: '8' },
-  { id: 'clubs',    to: ['campus', 40, 29],   x: 40, y: 35, name: '동아리 거리', key: '9' },
+  /* 도착 칸을 천막 **앞**으로 내렸습니다. y29 는 시장 북쪽 잔디라,
+     지도에서 눌렀는데 가게가 화면 아래로 밀려 안 보이는 자리였습니다. */
+  { id: 'clubs',    to: ['campus', 40, 36],   x: 40, y: 35, name: '동아리 거리', key: '9' },
 ];
 
 /** 캠퍼스 바닥을 줄여 한 장으로 굽습니다. 한 번만 합니다. */
@@ -15117,7 +15217,7 @@ function applyServerRoom(st) {
   drawCamAvatar();
   paintCoins(false);
   /* 상점이나 꾸미기를 열어 둔 채로 응답이 오면 그 화면도 새로 그립니다 */
-  if (panelOpen && activePanelKey === 'shop') reopenShop();
+  if (panelOpen && isShopPanel(activePanelKey)) reopenShop();
   if (DECOR.drawer) paintDrawer();
 }
 window.addEventListener('worldsave:room', (e) => applyServerRoom(e.detail));
@@ -15139,7 +15239,7 @@ function refreshShopCoins() {
   WORLD_SAVE.balance().then((b) => {
     if (typeof b !== 'number' || b === ROOM.coins) return;
     ROOM.coins = b; saveRoom(); paintCoins(false);
-    if (panelOpen && activePanelKey === 'shop') reopenShop();
+    if (panelOpen && isShopPanel(activePanelKey)) reopenShop();
   });
 }
 

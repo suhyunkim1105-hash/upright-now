@@ -62,11 +62,16 @@ const REWRITE = [
 let landing = readFileSync('prototypes/landing/index.html', 'utf8');
 for (const [from, to] of REWRITE) landing = landing.replaceAll(from, to);
 /* assets/ · vendor/ 는 따옴표 뒤에 오는 것만 바꿉니다. @keyframes 이름처럼
-   같은 글자가 다른 뜻으로 쓰인 자리를 건드리지 않기 위해서입니다. */
-landing = landing.replace(/(["'])(assets|vendor|legal)\//g, '$1/prototypes/landing/$2/');
+   같은 글자가 다른 뜻으로 쓰인 자리를 건드리지 않기 위해서입니다.
+
+   **역따옴표(`)도 따옴표입니다.** 안 넣었더니 리그 섹션의
+   `` `assets/univ/${slug}.png` `` 다섯 장이 배포본에서 404 였습니다 —
+   대학 엠블럼이 통째로 빈 자리로 떴고, 아래 leftover 검사도 같은 눈을
+   갖고 있어서 못 잡았습니다. 로컬에서는 상대경로가 맞으니 안 보입니다. */
+landing = landing.replace(/([`"'])(assets|vendor|legal)\//g, '$1/prototypes/landing/$2/');
 
 /* 남은 상대경로가 있으면 배포본에서 조용히 404 가 됩니다. 여기서 멈춥니다. */
-const leftover = landing.match(/["']\.{0,2}\/?(assets|vendor|legal)\/|\.\.\//g);
+const leftover = landing.match(/[`"']\.{0,2}\/?(assets|vendor|legal)\/|\.\.\//g);
 if (leftover) {
   throw new Error(`dist/index.html 에 고쳐지지 않은 상대경로: ${[...new Set(leftover)].join(' ')}`);
 }

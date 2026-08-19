@@ -17,8 +17,13 @@ assert.match(html, /animal-memory-card-inner/)
 assert.match(html, /window\.ANIMAL_FIND_ENGINE/)
 assert.match(html, /clearAnimalFindTimers/)
 assert.match(html, /resolveTimerId/)
+assert.match(html, /if \(handleAnimalFindPress\(e\.target\)\)/)
+assert.match(html, /transition:transform \.18s ease/)
 assert.match(html, /cv\.addEventListener\('pointerup'/)
-assert.match(html, /gateCanvas\('gateB', '기억력 카드'/)
+/* 관문 간판은 MINIGAMES 표에서 나옵니다 — 관문 넷이 미니게임관 안으로
+   들어가면서 paintGates 가 표를 훑는 구조가 됐습니다. gateCanvas 를
+   손으로 부르는 줄은 이제 없고, 확인할 것은 표 쪽입니다. */
+assert.match(html, /name: '기억력 카드', panel: 'animalFind',[\s\S]{0,120}?prop: 'gateB'/)
 assert.match(html, /name: '기억력 카드', panel: 'animalFind'/)
 assert.doesNotMatch(html, /name: '동물 찾기 챌린지', panel: 'animalFind'/)
 assert.doesNotMatch(html, /x: 32, y: 7, name: '기린 목 쌓기', panel: 'giraffeStack'/)

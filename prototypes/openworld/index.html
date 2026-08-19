@@ -1553,14 +1553,14 @@ const MINIGAMES = [
   { name: '기린 목 펴기', panel: 'giraffeNeck', where: '미니게임관',
     how: '연타로 목을 폅니다', zone: 'arcade', prop: 'gateA', x: 2, y: 3,
     go: ['arcade', 3, 5], glow: [2, 4, 3] },
-  { name: '방탈출', panel: 'escapeRoom', where: '미니게임관',
-    how: '단서를 찾아 번호를 맞춥니다', zone: 'arcade', prop: 'gateEsc', x: 7, y: 3,
+  { name: '동물 달리기', panel: 'animalRunner', where: '미니게임관',
+    how: '장애물을 피하고 코인을 모읍니다', zone: 'arcade', prop: 'gateEsc', x: 7, y: 3,
     go: ['arcade', 8, 5], glow: [2, 4, 3] },
   { name: '기억력 카드', panel: 'animalFind', where: '미니게임관',
     how: '같은 동물 카드 짝을 맞춥니다', zone: 'arcade', prop: 'gateB', x: 12, y: 3,
     go: ['arcade', 13, 5], glow: [2, 4, 3] },
-  { name: '기린 목 쌓기', panel: 'giraffeStack', where: '미니게임관',
-    how: '움직이는 블록을 맞춰 떨어뜨립니다', zone: 'arcade', prop: 'gateC', x: 17, y: 3,
+  { name: '동물 매칭 퍼즐', panel: 'animalMatch3', where: '미니게임관',
+    how: '같은 동물 셋을 맞춰 지웁니다', zone: 'arcade', prop: 'gateC', x: 17, y: 3,
     go: ['arcade', 18, 5], glow: [2, 4, 3] },
 
   /* ---- 밖에 있는 것들 ----
@@ -1587,7 +1587,7 @@ const GATE_STYLE = {
   gateA:   { base: '#E8695A', lit: '#FFA694', dark: '#8E2E1C', glow: '232,105,90', emblem: 'up' },
   gateEsc: { base: '#2DD4BF', lit: '#8AE5D9', dark: '#0C5A4F', glow: '45,212,191', emblem: 'key' },
   gateB:   { base: '#E0AE3C', lit: '#F7CE6E', dark: '#8E6714', glow: '255,220,130', emblem: 'card' },
-  gateC:   { base: '#8A6BC4', lit: '#B79BE8', dark: '#4E3480', glow: '190,160,255', emblem: 'stack' },
+  gateC:   { base: '#8A6BC4', lit: '#B79BE8', dark: '#4E3480', glow: '190,160,255', emblem: 'match3' },
 };
 
 /* ==================================================================
@@ -2823,7 +2823,7 @@ function gateEmblem(g, kind, cx, cy, ink) {
     px(g, x, y, 1, h, ink); px(g, x + w - 1, y, 1, h, ink);
   };
   if (kind === 'key') {
-    /* 열쇠 — 방탈출 */
+    /* 열쇠 — 동물 달리기 */
     circleLine(g, cx - 4, cy, 4, ink);
     circleLine(g, cx - 4, cy, 3, ink);
     px(g, cx - 1, cy - 1, 10, 2, ink);
@@ -2840,11 +2840,18 @@ function gateEmblem(g, kind, cx, cy, ink) {
     rect(cx - 10, cy - 8, 9, 15);
     rect(cx + 1, cy - 8, 9, 15);
     px(g, cx + 4, cy - 3, 3, 4, ink);
-  } else if (kind === 'stack') {
-    /* 블록 셋 — 기린 목 쌓기. 위로 갈수록 어긋나야 쌓다 만 것이 됩니다. */
-    rect(cx - 8, cy + 4, 15, 6);
-    rect(cx - 6, cy - 2, 15, 6);
-    rect(cx - 3, cy - 8, 15, 6);
+  } else if (kind === 'match3') {
+    /* 블록 셋이 한 줄 — 동물 매칭 퍼즐. 가로로 셋이 맞으면 지워지는 것이
+       이 놀이의 전부라, 그 순간을 그대로 그립니다. 가운데만 속을 채워
+       "이제 맞았다" 를 보이고, 셋의 간격은 같게 둡니다 — 어긋나게 두면
+       옆 문의 쌓기 문장과 헷갈립니다.
+
+       (연우님 판본은 여기에 'shell' 을 넘겼는데 그런 문장이 없어서
+        물음표가 그려지고 있었습니다.) */
+    rect(cx - 11, cy - 4, 7, 7);
+    rect(cx - 3, cy - 4, 7, 7);
+    rect(cx + 5, cy - 4, 7, 7);
+    px(g, cx - 1, cy - 2, 3, 3, ink);
   } else {
     /* 물음표 — 아직 정하지 않은 놀이 */
     px(g, cx - 4, cy - 7, 8, 2, ink);
@@ -6876,9 +6883,6 @@ addEventListener('keydown', (e) => {
     if (typeof GIRAFFE_NECK !== 'undefined' && GIRAFFE_NECK.active && k === ' ') {
       e.preventDefault(); tapGiraffeNeck(); return;
     }
-    if (typeof GIRAFFE_STACK !== 'undefined' && GIRAFFE_STACK.active && k === ' ') {
-      e.preventDefault(); dropGiraffeStack(); return;
-    }
     /* 러너는 카메라가 돌고 있어도 Space 를 같이 받습니다 — 조작을 카메라
        뒤에 잠그지 않는다는 규칙이 여기 한 줄입니다. */
     if (typeof POSTURE_RUN !== 'undefined' && POSTURE_RUN.active && k === ' ') {
@@ -6914,7 +6918,7 @@ addEventListener('keydown', (e) => {
        닫아 버리면 판을 짜다가 화면이 사라집니다. 위 주석의 "Space 가
        게임 대신 창을 닫았습니다" 가 이 줄까지 와야 없어집니다. */
     if (k === 'escape' ||
-        (k === ' ' && !['giraffeNeck', 'eggMerge', 'giraffeStack', 'animalFind', 'animalMatch3',
+        (k === ' ' && !['giraffeNeck', 'eggMerge', 'animalFind', 'animalMatch3', 'animalRunner',
                         'postureRun', 'trackRace', 'pondFish', 'bookSort'].includes(activePanelKey)))
       closePanel();
     return;
@@ -10761,100 +10765,6 @@ function startGiraffeNeck() {
 }
 
 /* ==================================================================
-   미니게임 2 — 방탈출
-
-   3분 안에 방 안의 단서 세 개를 찾아 숫자를 순서대로 입력합니다.
-   단서는 한 번에 하나씩 열리므로 발견하는 과정이 게임의 핵심입니다.
-   ================================================================== */
-const ESCAPE_ROOM = {
-  active: false, timer: 0, startedAt: 0, clues: [false, false, false],
-  digits: ['4', '2', '8'], rewarded: false,
-};
-function escapeRoomHtml() {
-  return `
-    <p>방 안의 단서 3개를 찾아 비밀번호를 완성하세요.</p>
-    <div class="rows">
-      <div class="row"><span>남은 시간</span><span class="val" id="escape-time">3:00</span></div>
-      <div class="row"><span>찾은 단서</span><span class="val" id="escape-found">0 / 3</span></div>
-      <div class="row"><span>힌트</span><span class="val">숫자를 순서대로 입력</span></div>
-    </div>
-    <div id="escape-clues" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0">
-      ${[0, 1, 2].map((i) => `<button class="escape-clue" data-do="escape-clue" data-clue="${i}" style="min-height:84px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2);color:var(--ink);font:inherit;cursor:pointer"><b>단서 ${i + 1}</b><span id="escape-clue-${i}" style="display:block;margin-top:8px;font-size:22px">?</span></button>`).join('')}
-    </div>
-    <div id="escape-code" style="text-align:center;letter-spacing:.35em;font-size:28px;font-weight:800;padding:10px;border-radius:10px;background:var(--surface-3)">_ _ _</div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <input id="escape-input" inputmode="numeric" maxlength="3" placeholder="비밀번호 3자리" aria-label="방탈출 비밀번호" style="flex:1;min-width:0;padding:11px;border:1px solid var(--line-2);border-radius:10px;font:inherit">
-      <button class="act" data-do="escape-submit">확인</button>
-    </div>
-    <p class="hint" id="escape-message" aria-live="polite">단서를 모두 찾아 숫자를 입력해 주세요.</p>
-    <button class="act" data-do="escape-restart">다시 시작</button>`;
-}
-function renderEscapeRoom() {
-  const time = panelBody.querySelector('#escape-time');
-  const found = panelBody.querySelector('#escape-found');
-  if (!time || !found) return;
-  const elapsed = ESCAPE_ROOM.active ? Date.now() - ESCAPE_ROOM.startedAt : 0;
-  time.textContent = ESCAPE_ROOM.active ? mmss(GAME_MS - elapsed) : time.textContent;
-  found.textContent = `${ESCAPE_ROOM.clues.filter(Boolean).length} / 3`;
-  ESCAPE_ROOM.clues.forEach((open, i) => {
-    const cell = panelBody.querySelector(`#escape-clue-${i}`);
-    if (cell) cell.textContent = open ? ESCAPE_ROOM.digits[i] : '?';
-  });
-  const code = panelBody.querySelector('#escape-code');
-  if (code) code.textContent = ESCAPE_ROOM.clues.map((open, i) => open ? ESCAPE_ROOM.digits[i] : '_').join(' ');
-}
-function finishEscapeRoom(success, message) {
-  ESCAPE_ROOM.active = false;
-  clearInterval(ESCAPE_ROOM.timer);
-  const stage = panelBody.querySelector('#escape-clues');
-  const messageEl = panelBody.querySelector('#escape-message');
-  if (success) {
-    if (!ESCAPE_ROOM.rewarded) {
-      ESCAPE_ROOM.rewarded = true;
-      earn(COIN_MINIGAME, '방탈출 성공');
-    }
-    if (stage) stage.innerHTML = '<div style="grid-column:1/-1;height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(145deg,#ff6b52,#f04d39);color:#fff;text-align:center"><strong style="font-size:42px;line-height:1">성공!</strong><span style="margin-top:12px;font-size:16px;font-weight:700">방을 탈출했어요</span><b style="margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#d84635;font-size:15px">+' + COIN_MINIGAME + '코인</b></div>';
-    if (messageEl) messageEl.textContent = gameWinMsg();
-  } else if (messageEl) messageEl.textContent = message || '시간이 끝났어요. 다시 도전해 보세요.';
-  renderEscapeRoom();
-}
-function tickEscapeRoom() {
-  if (!ESCAPE_ROOM.active) return;
-  if (Date.now() - ESCAPE_ROOM.startedAt >= GAME_MS) finishEscapeRoom(false);
-  else renderEscapeRoom();
-}
-function revealEscapeClue(index) {
-  if (!ESCAPE_ROOM.active || ESCAPE_ROOM.clues[index]) return;
-  ESCAPE_ROOM.clues[index] = true;
-  const message = panelBody.querySelector('#escape-message');
-  if (message) message.textContent = `단서 ${index + 1} 발견! 나머지 단서도 찾아보세요.`;
-  renderEscapeRoom();
-}
-function submitEscapeCode() {
-  if (!ESCAPE_ROOM.active) return;
-  const input = panelBody.querySelector('#escape-input');
-  const message = panelBody.querySelector('#escape-message');
-  const code = input?.value.trim() || '';
-  if (ESCAPE_ROOM.clues.some((clue) => !clue)) {
-    if (message) message.textContent = '먼저 단서 3개를 모두 찾아야 해요.';
-    return;
-  }
-  if (code === ESCAPE_ROOM.digits.join('')) return finishEscapeRoom(true);
-  if (message) message.textContent = '비밀번호가 맞지 않아요. 단서 순서를 다시 확인해 보세요.';
-  if (input) { input.value = ''; input.focus(); }
-}
-function startEscapeRoom() {
-  clearInterval(ESCAPE_ROOM.timer);
-  if (!panelBody.querySelector('#escape-clues .escape-clue')) panelBody.innerHTML = escapeRoomHtml();
-  ESCAPE_ROOM.active = true;
-  ESCAPE_ROOM.startedAt = Date.now();
-  ESCAPE_ROOM.clues = [false, false, false];
-  ESCAPE_ROOM.rewarded = false;
-  ESCAPE_ROOM.timer = setInterval(tickEscapeRoom, 100);
-  renderEscapeRoom();
-}
-
-/* ==================================================================
    미니게임 2 — 거북이 알 받기
 
    바구니를 좌우로 움직여 떨어지는 알을 받습니다. 20초 안에 8개 중
@@ -11075,139 +10985,6 @@ function startEggMerge() {
   renderEggMerge();
 }
 
-/* ==================================================================
-   미니게임 3 — 기린 목 쌓기
-
-   좌우로 움직이는 목 블록을 Space/클릭으로 떨어뜨립니다. 아래 블록과
-   겹친 부분만 남고, 여섯 층을 쌓으면 기린 머리가 완성됩니다.
-   ================================================================== */
-const GIRAFFE_STACK = {
-  active: false, timer: 0, x: 50, width: 24, visualWidth: 48, level: 0, stackHeight: 0, blocks: [],
-  direction: 1, rewarded: false, dropping: false, dropTop: 34, round: 0,
-};
-function giraffeStackHtml() {
-  return `
-    <p>움직이는 목 블록을 잘 맞춰 기린을 완성하세요.</p>
-    <div class="rows">
-      <div class="row"><span>쌓은 층</span><span class="val" id="stack-level">0 / 6</span></div>
-      <div class="row"><span>조작</span><span class="val">Space · 클릭</span></div>
-      <div class="row"><span>실패 조건</span><span class="val">블록이 빗나가면 종료</span></div>
-    </div>
-    <div class="stack-stage" data-do="giraffe-stack-drop" role="button" tabindex="0" aria-label="기린 목 블록 떨어뜨리기" style="position:relative;height:400px;margin:14px 0;border-radius:14px;background:linear-gradient(180deg,#dce9ef,#f4dfb9);overflow:hidden;cursor:pointer;user-select:none">
-      <img id="stack-head" src="assets/giraffe-head.png" alt="기린 머리" style="position:absolute;left:50%;top:24px;width:78px;height:62px;object-fit:contain;transform:translateX(-50%);opacity:0;pointer-events:none">
-      <div id="stack-tower" style="position:absolute;left:50%;bottom:12px;width:78%;height:370px;transform:translateX(-50%);overflow:visible"></div>
-      <div id="stack-moving" style="position:absolute;left:50%;top:104px;width:72px;height:72px;transform:translateX(-50%);transition:left .04s linear,top .28s cubic-bezier(.2,.85,.3,1);pointer-events:none"><img src="assets/giraffe-body-block-square.png" alt="기린 몸통 블록" style="display:block;width:100%;height:100%;object-fit:cover;pointer-events:none"></div>
-      <span style="position:absolute;left:50%;top:8px;transform:translateX(-50%);font-size:12px;color:#8a6b50">위에서 움직이는 목 블록을 클릭해서 떨어뜨리기</span>
-    </div>
-    <p class="hint" id="stack-message" aria-live="polite">아래 블록과 최대한 겹치게 맞춰 보세요.</p>
-    <button class="act" data-do="giraffe-stack-restart">다시 시작</button>`;
-}
-function renderGiraffeStack() {
-  const moving = panelBody.querySelector('#stack-moving');
-  const tower = panelBody.querySelector('#stack-tower');
-  const level = panelBody.querySelector('#stack-level');
-  if (!moving || !tower || !level) return;
-  moving.style.left = `${GIRAFFE_STACK.x}%`;
-  moving.style.width = `${GIRAFFE_STACK.visualWidth}px`;
-  moving.style.height = `${GIRAFFE_STACK.visualWidth}px`;
-  moving.style.top = `${GIRAFFE_STACK.dropping ? GIRAFFE_STACK.dropTop : 104}px`;
-  level.textContent = `${GIRAFFE_STACK.level} / 6`;
-  tower.innerHTML = GIRAFFE_STACK.blocks.map((block, i) => `<i style="position:absolute;left:${block.x}%;bottom:${block.bottom}px;width:${block.visualWidth}px;height:${block.visualWidth}px;transform:translateX(-50%);display:block;overflow:hidden;font-style:normal"><img src="assets/giraffe-body-block-square.png" alt="기린 몸통 블록 ${i + 1}" style="display:block;width:100%;height:100%;object-fit:cover;pointer-events:none"></i>`).join('');
-  const head = panelBody.querySelector('#stack-head');
-  if (head) head.style.opacity = .35;
-}
-function tickGiraffeStack() {
-  if (!GIRAFFE_STACK.active) return;
-  GIRAFFE_STACK.x += GIRAFFE_STACK.direction * 1.2;
-  const edge = 10;
-  if (GIRAFFE_STACK.x >= 100 - edge || GIRAFFE_STACK.x <= edge) GIRAFFE_STACK.direction *= -1;
-  renderGiraffeStack();
-}
-function dropGiraffeStack() {
-  if (!GIRAFFE_STACK.active) return;
-  if (GIRAFFE_STACK.dropping) return;
-  const previous = GIRAFFE_STACK.blocks[GIRAFFE_STACK.blocks.length - 1] || { x: 50, width: 24, visualWidth: 48 };
-  const left = Math.max(GIRAFFE_STACK.x - GIRAFFE_STACK.width / 2, previous.x - previous.width / 2);
-  const right = Math.min(GIRAFFE_STACK.x + GIRAFFE_STACK.width / 2, previous.x + previous.width / 2);
-  const overlap = right - left;
-  if (overlap <= 3) return finishGiraffeStack(false);
-  const nextVisualWidth = Math.max(30, Math.round(previous.visualWidth * overlap / previous.width));
-  const nextX = (left + right) / 2;
-  GIRAFFE_STACK.dropping = true;
-  GIRAFFE_STACK.dropTop = Math.max(26, 400 - 14 - GIRAFFE_STACK.stackHeight - nextVisualWidth);
-  GIRAFFE_STACK.x = nextX;
-  GIRAFFE_STACK.visualWidth = nextVisualWidth;
-  clearInterval(GIRAFFE_STACK.timer);
-  renderGiraffeStack();
-  const round = GIRAFFE_STACK.round;
-  setTimeout(() => {
-    if (!GIRAFFE_STACK.active || round !== GIRAFFE_STACK.round) return;
-    GIRAFFE_STACK.blocks.push({ x: nextX, width: overlap, visualWidth: nextVisualWidth, bottom: GIRAFFE_STACK.stackHeight });
-    GIRAFFE_STACK.stackHeight += nextVisualWidth;
-    GIRAFFE_STACK.width = overlap;
-    GIRAFFE_STACK.x = nextX;
-    GIRAFFE_STACK.level++;
-    GIRAFFE_STACK.dropping = false;
-    GIRAFFE_STACK.dropTop = 104;
-    if (GIRAFFE_STACK.level >= 6) return finishGiraffeStack(true);
-    GIRAFFE_STACK.timer = setInterval(tickGiraffeStack, 50);
-    const message = panelBody.querySelector('#stack-message');
-    if (message) message.textContent = GIRAFFE_STACK.width < 35 ? '목이 꽤 좁아졌어요. 천천히.' : '좋아요. 다음 블록도 같은 자리에.';
-    renderGiraffeStack();
-  }, 300);
-}
-function finishGiraffeStack(success) {
-  GIRAFFE_STACK.active = false;
-  clearInterval(GIRAFFE_STACK.timer);
-  const stage = panelBody.querySelector('.stack-stage');
-  const message = panelBody.querySelector('#stack-message');
-  if (success) {
-    if (!GIRAFFE_STACK.rewarded) {
-      GIRAFFE_STACK.rewarded = true;
-      earn(COIN_MINIGAME, '기린 목 쌓기 성공');
-    }
-    if (stage) {
-      const topBlock = GIRAFFE_STACK.blocks[GIRAFFE_STACK.blocks.length - 1] || { visualWidth: 48 };
-      const headWidth = Math.round(topBlock.visualWidth * 1.55);
-      const legsWidth = Math.round(topBlock.visualWidth * 1.05);
-      const legsHeight = Math.round(legsWidth * .5);
-      const baseBottom = 12;
-      const blockBottom = baseBottom + legsHeight;
-      const finishedBlocks = GIRAFFE_STACK.blocks.map((block, i) => `<img src="assets/giraffe-body-block-square.png" alt="내가 쌓은 기린 몸통 ${i + 1}" style="position:absolute;left:${block.x}%;bottom:${blockBottom + block.bottom}px;width:${block.visualWidth}px;height:${block.visualWidth}px;transform:translateX(-50%);object-fit:cover">`).join('');
-      const headBottom = blockBottom + GIRAFFE_STACK.stackHeight;
-      stage.innerHTML =
-        '<div style="height:100%;display:flex;align-items:center;justify-content:center;gap:18px;background:linear-gradient(145deg,#f0c566,#d7953f);color:#fff;text-align:center">' +
-          '<div style="position:relative;width:180px;height:390px">' +
-            '<img src="assets/giraffe-lower-legs.png" alt="완성된 기린 다리" style="position:absolute;left:50%;bottom:' + baseBottom + 'px;width:' + legsWidth + 'px;height:' + legsHeight + 'px;transform:translateX(-50%);object-fit:contain">' +
-            finishedBlocks +
-            '<img src="assets/giraffe-head.png" alt="완성된 기린 머리" style="position:absolute;left:50%;bottom:' + headBottom + 'px;width:' + headWidth + 'px;height:' + Math.round(headWidth * .78) + 'px;transform:translateX(-50%);object-fit:contain">' +
-          '</div>' +
-          '<div><strong style="display:block;font-size:42px;line-height:1">성공!</strong><span style="display:block;margin-top:12px;font-size:16px;font-weight:700">기린이 다 쌓였어요</span><b style="display:inline-block;margin-top:18px;padding:7px 14px;border-radius:999px;background:#fff;color:#a56e25;font-size:15px">+' + COIN_MINIGAME + '코인</b></div>' +
-        '</div>';
-    }
-    if (message) message.textContent = gameWinMsg();
-  } else if (message) message.textContent = '블록이 빗나갔어요. 다시 쌓아 보세요.';
-  renderGiraffeStack();
-}
-function startGiraffeStack() {
-  clearInterval(GIRAFFE_STACK.timer);
-  panelBody.innerHTML = giraffeStackHtml();
-  GIRAFFE_STACK.active = true;
-  GIRAFFE_STACK.x = 50;
-  GIRAFFE_STACK.width = 24;
-  GIRAFFE_STACK.visualWidth = 48;
-  GIRAFFE_STACK.level = 0;
-  GIRAFFE_STACK.stackHeight = 0;
-  GIRAFFE_STACK.blocks = [];
-  GIRAFFE_STACK.direction = 1;
-  GIRAFFE_STACK.rewarded = false;
-  GIRAFFE_STACK.dropping = false;
-  GIRAFFE_STACK.dropTop = 104;
-  GIRAFFE_STACK.round++;
-  GIRAFFE_STACK.timer = setInterval(tickGiraffeStack, 50);
-  renderGiraffeStack();
-}
-
 /** 산 뒤에도 보던 칸에 그대로 남아야 합니다 — 매번 상의로 튕기면
     신발 세 켤레를 사는 데 열 번을 눌러야 합니다. */
 
@@ -11371,7 +11148,7 @@ function animalFindHtml() {
     #animal-find-board{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(100%,420px);margin:16px auto;touch-action:manipulation;perspective:900px}
     .animal-memory-card{position:relative;min-width:0;aspect-ratio:1;padding:0;border:0;border-radius:14px;background:transparent;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
     .animal-memory-card:disabled{cursor:default}
-    .animal-memory-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .28s ease}
+    .animal-memory-card-inner{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .18s ease}
     .animal-memory-card.flipped .animal-memory-card-inner,.animal-memory-card.matched .animal-memory-card-inner{transform:rotateY(180deg)}
     .animal-memory-card-face{position:absolute;inset:0;display:grid;place-items:center;border-radius:14px;backface-visibility:hidden;box-shadow:inset 0 -5px 0 rgba(0,0,0,.12)}
     .animal-memory-card-back{background:linear-gradient(145deg,#2dd4bf,#168f84);color:#eafffb;font-size:clamp(20px,7vw,34px)}
@@ -13386,6 +13163,89 @@ function minigameRows() {
   return html + (html ? '</div>' : '');
 }
 
+/* ==================================================================
+   미니게임 — 동물 달리기 (연우님)
+
+   Phaser 로 만든 3분짜리 러너입니다. 게임은 animal-runner-game.mjs 에
+   따로 있고, 여기는 **창과 게임을 잇는 자리**입니다 — 창을 닫을 때
+   반드시 destroy() 해야 Phaser 캔버스가 뒤에 남아 계속 돌지 않습니다.
+   ================================================================== */
+let animalRunnerInstance = null;
+let animalRunnerRewarded = false;
+
+function mountAnimalRunner(options) {
+  /* 모듈이 아직 안 붙었으면(파일 열기로 연 경우) 조용히 비웁니다.
+     여기서 던지면 창이 아예 안 열립니다. */
+  if (typeof window.MOUNT_ANIMAL_RUNNER !== 'function') return null;
+  return window.MOUNT_ANIMAL_RUNNER(options);
+}
+
+function animalRunnerIntroHtml() {
+  return `<div style="padding:8px 0 4px">
+    <p>장애물을 피하고 코인을 모으며 3분 동안 달려보세요.</p>
+    <div class="rows">
+      <div class="row"><span>제한 시간</span><span class="val">3분</span></div>
+      <div class="row"><span>조작</span><span class="val">← → 이동 · Space 점프</span></div>
+      <div class="row"><span>보상</span><span class="val">${COIN_MINIGAME}코인</span></div>
+    </div>
+    <div class="note" style="margin-top:14px">휴대폰에서는 화면 아래 ← · → · JUMP 단추로 합니다.</div>
+    <button class="act" data-do="animal-runner-start" style="width:100%;margin-top:16px">게임 시작</button>
+  </div>`;
+}
+
+function animalRunnerHtml() {
+  return '<div id="animal-runner-mount" style="position:relative;width:min(100%,390px);min-height:260px;margin:0 auto;border-radius:16px;overflow:hidden;background:#dff2f0;touch-action:none"></div>';
+}
+
+/** 지금 쓰는 캐릭터를 게임에 넘깁니다 — 광장에서 걷던 동물이 그대로
+    달려야 "내가 달린다" 가 됩니다. */
+function runnerCharacter() {
+  const species = speciesOf(ROOM.character);
+  return { id: species.slug, name: ROOM.character, image: window.GIRIN_CHAR?.mine?.() || null };
+}
+
+function renderAnimalRunnerResult(result) {
+  /* 코인은 판이 아니라 **하루**에 한 번입니다. gameReward 가 그 판정을
+     들고 있으므로 여기서 또 세지 않습니다. */
+  let got = 0;
+  if (!animalRunnerRewarded) {
+    animalRunnerRewarded = true;
+    got = gameReward('동물 달리기 성공');
+  }
+  const reward = got ? `+${got}P` : '오늘 보상 완료';
+  panelBody.innerHTML = `<div style="padding:24px 4px;text-align:center">
+    <strong style="display:block;font-size:32px;line-height:1">RUN COMPLETE!</strong>
+    <p style="margin:12px 0 18px;color:var(--ink-2)">3분 달리기를 완료했어요.</p>
+    <div class="rows" style="text-align:left">
+      <div class="row"><span>최종 점수</span><span class="val">${result.score}</span></div>
+      <div class="row"><span>획득 코인</span><span class="val">${result.coins}</span></div>
+      <div class="row"><span>장애물 충돌</span><span class="val">${result.hitCount}회</span></div>
+      <div class="row"><span>최대 Combo</span><span class="val">${result.maxCombo}</span></div>
+    </div>
+    <div class="note" style="margin-top:16px">보상: <b>${reward}</b></div>
+    <button class="act" data-do="animal-runner-restart" style="width:100%;margin-top:16px">다시 하기</button>
+  </div>`;
+}
+
+function startAnimalRunner() {
+  animalRunnerInstance?.destroy();
+  animalRunnerInstance = null;
+  animalRunnerRewarded = false;
+  panelBody.innerHTML = animalRunnerHtml();
+  const container = panelBody.querySelector('#animal-runner-mount');
+  if (!container) return;
+  animalRunnerInstance = mountAnimalRunner({
+    container,
+    character: runnerCharacter(),
+    onGameComplete: (result) => {
+      animalRunnerInstance?.destroy();
+      animalRunnerInstance = null;
+      renderAnimalRunnerResult(result);
+    },
+  });
+  if (!animalRunnerInstance) container.innerHTML = '<p class="hint" style="padding:24px">게임을 못 불러왔어요. 로컬 서버(npm run dev)로 다시 열어 주세요.</p>';
+}
+
 const PANELS = {
   /* ---- 창밖 날씨 — 기숙사 창 ---- */
   weather: () => {
@@ -13481,9 +13341,9 @@ const PANELS = {
     title: '책 정리', kind: 'MINI GAME',
     html: bookSortHtml(),
   }),
-  giraffeStack: () => ({
-    title: '기린 목 쌓기', kind: 'MINI GAME',
-    html: giraffeStackHtml(),
+  animalRunner: () => ({
+    title: '동물 달리기', kind: 'MINI GAME',
+    html: animalRunnerIntroHtml(),
   }),
   eggMerge: () => ({
     title: '거북이 알 합치기', kind: 'MINI GAME',
@@ -13492,10 +13352,6 @@ const PANELS = {
   giraffeNeck: () => ({
     title: '기린 목 펴기', kind: 'MINI GAME',
     html: giraffeNeckHtml(),
-  }),
-  escapeRoom: () => ({
-    title: '방탈출', kind: 'MINI GAME',
-    html: escapeRoomHtml(),
   }),
   animalMatch3: () => ({
     title: '동물 매칭 퍼즐', kind: 'MINI GAME',
@@ -14046,9 +13902,9 @@ function openPanel(key, tab) {
   if (key === 'pondFish') startPondFish();
   if (key === 'bookSort') startBookSort();
   if (key === 'eggMerge') startEggMerge();
-  if (key === 'giraffeStack') startGiraffeStack();
   if (key === 'animalFind') { /* 시작 버튼은 게임 방법 화면에서 누릅니다. */ }
-  if (key === 'escapeRoom') startEscapeRoom();
+  /* 러너와 카드는 게임 방법 화면의 시작 단추에서 시작합니다 —
+     Phaser 를 창이 열리는 프레임에 띄우면 첫 그림이 한 박자 늦습니다. */
   keys.clear();
   panelEl.querySelector('header button').focus();
 }
@@ -14059,11 +13915,9 @@ function closePanel() {
     GIRAFFE_NECK.active = false; clearInterval(GIRAFFE_NECK.timer);
   }
   if (typeof EGG_MERGE !== 'undefined') EGG_MERGE.active = false;
-  if (typeof ESCAPE_ROOM !== 'undefined' && ESCAPE_ROOM.active) {
-    ESCAPE_ROOM.active = false; clearInterval(ESCAPE_ROOM.timer);
-  }
-  if (typeof GIRAFFE_STACK !== 'undefined' && GIRAFFE_STACK.active) {
-    GIRAFFE_STACK.active = false; clearInterval(GIRAFFE_STACK.timer);
+  if (animalRunnerInstance) {
+    animalRunnerInstance.destroy();
+    animalRunnerInstance = null;
   }
   if (typeof ANIMAL_FIND !== 'undefined' && ANIMAL_FIND.active) {
     ANIMAL_FIND.active = false;
@@ -14118,18 +13972,16 @@ function handleAnimalMatch3Press(target) {
   return true;
 }
 panelBody.addEventListener('pointerdown', (e) => {
-  if (activePanelKey === 'giraffeStack' && e.target.closest('[data-do="giraffe-stack-drop"]')) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
   if ((e.pointerType === 'touch' || e.pointerType === 'pen')
       && handleAnimalMatch3Press(e.target)) {
     ANIMAL_MATCH3.lastInputAt = Date.now();
     e.preventDefault();
     e.stopPropagation();
   }
-  if ((e.pointerType === 'touch' || e.pointerType === 'pen')
-      && handleAnimalFindPress(e.target)) {
+  /* 카드 입력은 click 위임만 기다리면 일부 모바일 브라우저에서 300ms
+     안팎 늦게 반응합니다. 포인터가 눌린 즉시 처리하고, 아래 click 은
+     lastInputAt 으로 중복 실행만 막습니다. (연우님 2a0db8d) */
+  if (handleAnimalFindPress(e.target)) {
     ANIMAL_FIND.lastInputAt = Date.now();
     e.preventDefault();
     e.stopPropagation();
@@ -14157,11 +14009,13 @@ panelBody.addEventListener('click', (e) => {
     if (Date.now() - ANIMAL_MATCH3.lastInputAt >= 500) handleAnimalMatch3Press(e.target);
     return;
   }
-  if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {
+  /* 러너는 Phaser 가 자기 화면 안에서 입력을 받습니다. 여기서는 시작·
+     다시 하기 두 단추만 봅니다 — 아래 위임보다 먼저 잡아야 창이 같이
+     반응하는 것을 막습니다. */
+  if (activePanelKey === 'animalRunner' && (e.target.closest('[data-do="animal-runner-start"]') || e.target.closest('[data-do="animal-runner-restart"]'))) {
     e.preventDefault();
     e.stopImmediatePropagation();
-    if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
-    return dropGiraffeStack();
+    return startAnimalRunner();
   }
   if (e.target.closest('[data-do="run-restart"]')) return startPostureRun();
   const foot = e.target.closest('[data-do="race-foot"]');
@@ -14189,12 +14043,7 @@ panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="egg-down"]')) return moveEggMerge('arrowdown');
   if (e.target.closest('[data-do="egg-left"]')) return moveEggMerge('arrowleft');
   if (e.target.closest('[data-do="egg-right"]')) return moveEggMerge('arrowright');
-  if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
-  if (e.target.closest('[data-do="giraffe-stack-drop"]')) return dropGiraffeStack();
   if (e.target.closest('[data-do="tour-replay"]')) { closePanel(); return startTour(); }
-  if (e.target.closest('[data-do="escape-restart"]')) return startEscapeRoom();
-  if (e.target.closest('[data-do="escape-clue"]')) return revealEscapeClue(Number(e.target.closest('[data-do="escape-clue"]').dataset.clue));
-  if (e.target.closest('[data-do="escape-submit"]')) return submitEscapeCode();
 });
 
 /* ---- 값 고치기 ----
@@ -14356,26 +14205,6 @@ panelBody.addEventListener('keydown', (e) => {
 });
 /* 미니게임 버튼. 기존 chip 핸들러보다 **먼저** 등록해야 목 쌓기의
    떨구기가 다른 핸들러에 먹히지 않습니다. */
-panelBody.addEventListener('click', (e) => {
-  if (activePanelKey === 'giraffeStack' && (e.target.closest('[data-do="giraffe-stack-drop"]') || e.target.closest('[data-do="giraffe-stack-restart"]'))) {
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
-    return dropGiraffeStack();
-  }
-  if (e.target.closest('[data-do="giraffe-restart"]')) return startGiraffeNeck();
-  if (e.target.closest('[data-do="giraffe-tap"]')) tapGiraffeNeck();
-  if (e.target.closest('[data-do="egg-merge-restart"]')) return startEggMerge();
-  if (e.target.closest('[data-do="egg-up"]')) return moveEggMerge('arrowup');
-  if (e.target.closest('[data-do="egg-down"]')) return moveEggMerge('arrowdown');
-  if (e.target.closest('[data-do="egg-left"]')) return moveEggMerge('arrowleft');
-  if (e.target.closest('[data-do="egg-right"]')) return moveEggMerge('arrowright');
-  if (e.target.closest('[data-do="giraffe-stack-restart"]')) return startGiraffeStack();
-  if (e.target.closest('[data-do="giraffe-stack-drop"]')) return dropGiraffeStack();
-  if (e.target.closest('[data-do="escape-restart"]')) return startEscapeRoom();
-  if (e.target.closest('[data-do="escape-clue"]')) return revealEscapeClue(Number(e.target.closest('[data-do="escape-clue"]').dataset.clue));
-  if (e.target.closest('[data-do="escape-submit"]')) return submitEscapeCode();
-});
 
 panelBody.addEventListener('click', (e) => {
   const chip = e.target.closest('.chip');
@@ -16032,8 +15861,10 @@ school.src = 'assets/school16.png';
 </script>
 
 <script type="module">
+  import { mountAnimalRunner } from './animal-runner-game.mjs';
   import * as animalMatch3Engine from './animal-match3-engine.mjs';
   import * as animalFindEngine from './animal-find-engine.mjs';
+  window.MOUNT_ANIMAL_RUNNER = mountAnimalRunner;
   window.ANIMAL_MATCH3_ENGINE = animalMatch3Engine;
   window.ANIMAL_FIND_ENGINE = animalFindEngine;
 </script>

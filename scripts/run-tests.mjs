@@ -1,6 +1,17 @@
 /**
  * 단위 테스트 실행 + 수집 누락 감지.
  *
+ * 두 벌을 돕니다.
+ *   1) src/**  — vitest (jsdom). 아래 수집 누락 감지가 붙는 쪽입니다.
+ *   2) scripts/*.test.mjs — node:test. index.html 을 글자로 읽어 배선을
+ *      확인하는 통합 시험들입니다.
+ *
+ * (2)는 오랫동안 **한 번도 안 돌았습니다.** vite.config.ts 의 include 가
+ * `src/**\/*.{test,spec}.{ts,tsx}` 라서 vitest 가 아예 안 보고, 따로
+ * 부르는 곳도 없었습니다. 파일 10개가 통과하는 줄 알고 있었을 뿐입니다.
+ * 이 저장소에서 같은 사고가 build-items.mjs 때도 있었습니다 — 도구가
+ * 조용히 죽어 있으면 아무도 모릅니다. 그래서 여기에 묶습니다.
+ *
  * vitest 는 워커가 죽어 일부 spec 파일을 돌리지 못해도 종료 코드 0 을
  * 반환합니다(실측 확인). 그래서 "일부만 돌고 통과"로 보일 수 있습니다.
  * 이 래퍼는 실행이 끝난 뒤, 실제로 수집된 파일 수가 디스크의 spec 파일
@@ -14,6 +25,8 @@ import { join } from 'node:path'
 
 const SRC = 'src'
 const SPEC = /\.(spec|test)\.(ts|tsx)$/
+const SCRIPTS = 'scripts'
+const MJS_SPEC = /\.(spec|test)\.mjs$/
 
 function countSpecFiles(dir) {
   let total = 0
@@ -28,6 +41,19 @@ function countSpecFiles(dir) {
 const expected = countSpecFiles(SRC)
 const args = process.argv.slice(2)
 
+/** scripts/*.test.mjs — node:test. 끝나면 code 를 넘깁니다. */
+function runScriptTests() {
+  return new Promise((resolve) => {
+    const files = readdirSync(SCRIPTS).filter((f) => MJS_SPEC.test(f)).sort()
+    if (!files.length) return resolve(0)
+    console.log(`\n[run-tests] scripts/ 통합 시험 ${files.length}개 (node:test)`)
+    const t = spawn(process.execPath, ['--test', ...files.map((f) => join(SCRIPTS, f))], {
+      stdio: 'inherit',
+    })
+    t.on('close', (c) => resolve(c ?? 1))
+  })
+}
+
 const child = spawn('npx', ['vitest', 'run', ...args], {
   shell: true,
   stdio: ['inherit', 'pipe', 'inherit'],
@@ -40,7 +66,7 @@ child.stdout.on('data', (chunk) => {
   process.stdout.write(text)
 })
 
-child.on('close', (code) => {
+child.on('close', async (code) => {
   // "Test Files  50 passed (50)" 에서 괄호 안 총 파일 수를 읽습니다.
   const match = output.match(/Test Files\s+.*?\((\d+)\)/)
   const collected = match ? Number(match[1]) : null
@@ -66,4 +92,11 @@ child.on('close', (code) => {
   }
 
   console.log(`\n[run-tests] spec 파일 ${collected}/${expected}개 전부 실행됨.`)
+
+  /* vitest 가 다 통과한 뒤에만 갑니다. 앞이 깨졌으면 위에서 이미 나갔습니다. */
+  const scriptCode = await runScriptTests()
+  if (scriptCode !== 0) {
+    console.error('\n[run-tests] scripts/ 통합 시험이 깨졌습니다.')
+    process.exit(scriptCode)
+  }
 })

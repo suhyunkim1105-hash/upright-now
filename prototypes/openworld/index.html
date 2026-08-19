@@ -6024,6 +6024,123 @@ const DORM = ZONES.dorm;
   m.portals.push({ x: 11, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 39, sy: 33, label: '캠퍼스' });
 }
 
+
+/* ==================================================================
+   탈것 — 캠퍼스가 넓어져서 생긴 물건
+
+   존이 일곱이 되고 미니게임이 흩어지면서, 광장에서 동아리 상점까지
+   걸어가는 데 스무 걸음이 넘습니다. 지도(M)로 건너뛸 수는 있지만 그건
+   **월드를 건너뛰는 것**이라 자주 쓰면 걸어 다닐 이유가 사라집니다.
+   걷는 것을 빠르게 만드는 쪽이 맞습니다.
+
+   옷과 같은 칸(worn)에 들어가지만 **그림은 옷과 다른 길로 갑니다.**
+   옷은 종마다 몸 실루엣에 맞춰 자른 32×48 시트를 겹치는데, 탈것은
+   종과 상관없이 **발밑에 한 장** 깔면 됩니다. 자전거는 거북이가 타나
+   기린이 타나 같은 자전거입니다. 그래서 sprite 는 null 로 두고
+   (종이인형 합성이 조용히 건너뜁니다) 여기서 따로 그립니다.
+
+   속도는 곱입니다. 걷기 54 · 뛰기 92 에 곱하므로, 탈것을 타고 Shift 를
+   누르면 둘이 겹칩니다 — 그게 맞습니다. 자전거로 언덕을 내려가는 것과
+   같습니다. 다만 곱이 2 를 넘으면 한 프레임에 한 칸 넘게 움직여서
+   벽 검사(canStand)를 뛰어넘습니다. 그래서 1.8 이 천장입니다.
+   ================================================================== */
+const RIDES = {
+  'ride-skate': { mult: 1.30, lift: 0, name: '롤러스케이트' },
+  'ride-kick':  { mult: 1.45, lift: 0, name: '킥보드' },
+  'ride-bike':  { mult: 1.60, lift: 0, name: '자전거' },
+  'ride-cloud': { mult: 1.80, lift: 3, name: '구름' },   // 유일하게 뜹니다
+};
+const RIDE_ART = {};
+/** 지금 탄 것. 안 탔으면 null. */
+function myRide() {
+  const id = (ROOM.worn || {}).ride;
+  return id && RIDES[id] ? { id, ...RIDES[id] } : null;
+}
+/** 걷는 속도에 곱할 값. 앉아 있으면 1 — 앉아서 빨라질 것은 없습니다. */
+function rideMult() {
+  const r = myRide();
+  return r && !player.sitting ? r.mult : 1;
+}
+
+/* 옆모습과 앞모습 두 장씩. 위에서 내려다보는 지도라 뒤에서 본 것과
+   앞에서 본 것이 거의 같아, 앞모습 한 장을 위아래로 같이 씁니다. */
+function paintRides() {
+  const mk = () => { const c = canvasOf(2, 1); return [c, c.getContext('2d')]; };
+  const TIRE = '#2A2320', RIM = '#B9C2C8', SPOKE = '#8A939B';
+
+  /* ---- 자전거 ---- */
+  {
+    const [cs, gs] = mk();                       // 옆
+    shadow(gs, 16, 15, 12, 2);
+    const wheel = (cx) => {
+      disc(gs, cx, 10, 5, TIRE); disc(gs, cx, 10, 3, RIM); disc(gs, cx, 10, 1, SPOKE);
+    };
+    wheel(7); wheel(25);
+    px(gs, 9, 6, 14, 2, '#2DD4BF');              // 프레임 윗대
+    px(gs, 11, 8, 10, 1, '#12A592');
+    px(gs, 22, 3, 2, 4, '#5F6874');              // 안장 기둥
+    px(gs, 20, 2, 6, 2, '#4A3323');              // 안장
+    px(gs, 8, 2, 2, 5, '#5F6874');               // 핸들 기둥
+    px(gs, 5, 1, 7, 2, '#2A2320');               // 핸들
+    RIDE_ART['ride-bike'] = { side: cs };
+    const [cf, gf] = mk();                       // 앞
+    shadow(gf, 16, 15, 9, 2);
+    disc(gf, 11, 11, 4, TIRE); disc(gf, 21, 11, 4, TIRE);
+    disc(gf, 11, 11, 2, RIM);  disc(gf, 21, 11, 2, RIM);
+    px(gf, 13, 6, 6, 5, '#2DD4BF');
+    px(gf, 8, 3, 16, 2, '#2A2320');              // 핸들 가로대
+    px(gf, 15, 1, 2, 3, '#5F6874');
+    RIDE_ART['ride-bike'].front = cf;
+  }
+
+  /* ---- 킥보드 ---- */
+  {
+    const [cs, gs] = mk();
+    shadow(gs, 16, 15, 10, 2);
+    disc(gs, 9, 12, 3, TIRE); disc(gs, 24, 12, 3, TIRE);
+    disc(gs, 9, 12, 1, RIM);  disc(gs, 24, 12, 1, RIM);
+    px(gs, 8, 9, 18, 2, '#E8695A');              // 발판
+    px(gs, 8, 9, 18, 1, '#FFA694');
+    px(gs, 8, 3, 2, 7, '#B9C2C8');               // 기둥
+    px(gs, 5, 2, 8, 2, '#2A2320');               // 손잡이
+    RIDE_ART['ride-kick'] = { side: cs };
+    const [cf, gf] = mk();
+    shadow(gf, 16, 15, 7, 2);
+    disc(gf, 16, 12, 3, TIRE); disc(gf, 16, 12, 1, RIM);
+    px(gf, 12, 9, 9, 2, '#E8695A');
+    px(gf, 15, 3, 2, 7, '#B9C2C8');
+    px(gf, 10, 2, 12, 2, '#2A2320');
+    RIDE_ART['ride-kick'].front = cf;
+  }
+
+  /* ---- 롤러스케이트 — 발에 신는 것이라 가장 작습니다 ---- */
+  {
+    const skate = (g, cx) => {
+      px(g, cx - 4, 9, 8, 3, '#F0EBE2');          // 부츠
+      px(g, cx - 4, 9, 8, 1, '#FFFFFF');
+      px(g, cx - 4, 12, 8, 1, '#8A939B');         // 밑판
+      disc(g, cx - 2, 14, 1, TIRE); disc(g, cx + 2, 14, 1, TIRE);
+    };
+    const [cs, gs] = mk(); shadow(gs, 16, 15, 8, 2); skate(gs, 12); skate(gs, 21);
+    RIDE_ART['ride-skate'] = { side: cs };
+    const [cf, gf] = mk(); shadow(gf, 16, 15, 8, 2); skate(gf, 11); skate(gf, 22);
+    RIDE_ART['ride-skate'].front = cf;
+  }
+
+  /* ---- 구름 — 유일하게 바퀴가 없습니다. 그림자를 흐리게 깔아
+         "떠 있다" 를 그림자로도 말합니다. ---- */
+  {
+    const [cs, gs] = mk();
+    gs.globalAlpha = 0.5; shadow(gs, 16, 15, 10, 2); gs.globalAlpha = 1;
+    disc(gs, 11, 10, 5, '#FFFFFF'); disc(gs, 20, 10, 6, '#FFFFFF');
+    disc(gs, 16, 8, 6, '#FFFFFF');
+    disc(gs, 11, 11, 4, '#E4EDF4'); disc(gs, 21, 11, 4, '#E4EDF4');
+    px(gs, 6, 11, 20, 2, '#D2DEE8');
+    RIDE_ART['ride-cloud'] = { side: cs, front: cs };
+  }
+}
+paintRides();
+
 /* ---------------- 충돌 굽기 ---------------- */
 function bake(m) {
   m.solid = new Uint8Array(m.w * m.h);
@@ -9828,6 +9945,7 @@ const SHOP_CATS = [
   { id: 'hat',    name: '모자',  shop: 'shopWear' },
   { id: 'face',   name: '안경',  shop: 'shopWear' },
   { id: 'bag',    name: '가방',  shop: 'shopWear' },
+  { id: 'ride',   name: '탈것',  shop: 'shopWear' },
   { id: 'f-seat',  name: '앉기',   shop: 'shopFurn' },
   { id: 'f-floor', name: '바닥',   shop: 'shopFurn' },
   { id: 'f-store', name: '수납',   shop: 'shopFurn' },
@@ -9943,6 +10061,19 @@ const SHOP = [
      큰 물건이 싸면 방이 한 번에 창고가 됩니다.
      하나씩만 삽니다 — ROOM.owned 가 '샀나 안 샀나' 뿐이라 개수를 세려면
      장부를 하나 더 만들어야 하고, 그러면 옷·알까지 같이 바뀝니다. */
+  /* ---- 탈것 ----
+     걷는 속도에 곱해집니다. 그림은 발밑에 따로 깔기 때문에 sprite 는
+     없습니다(RIDE_ART). z 는 가장 낮게 둡니다 — 어차피 종이인형 합성을
+     건너뛰지만, 값이 비어 있으면 정렬에서 undefined 가 섞입니다. */
+  { id: 'ride-skate', cat: 'ride', name: '롤러스케이트', price: 260, z: 10, color: '#F0EBE2', sprite: null,
+    desc: '조금 빨라져요 ×1.3' },
+  { id: 'ride-kick',  cat: 'ride', name: '킥보드',      price: 320, z: 10, color: '#E8695A', sprite: null,
+    desc: '×1.45' },
+  { id: 'ride-bike',  cat: 'ride', name: '자전거',      price: 480, z: 10, color: '#2DD4BF', sprite: null,
+    desc: '×1.6' },
+  { id: 'ride-cloud', cat: 'ride', name: '구름',        price: 900, z: 10, color: '#FFFFFF', sprite: null,
+    desc: '가장 빠르고, 조금 떠요 ×1.8' },
+
   /* ---- 앉기 ---- */
   { id: 'fur-cushion',  cat: 'f-seat',  name: '방석',        price: 60,  prop: 'furCushion',  desc: '밟고 다닙니다' },
   { id: 'fur-cushion2', cat: 'f-seat',  name: '체크 방석',   price: 70,  prop: 'cushion',     desc: '밟고 다닙니다' },
@@ -16241,7 +16372,10 @@ function update(dt) {
     const run = keys.has('shift') && !onPath;
     /* 속도도 지도 눈금입니다. 타일만 두 배로 하고 여기를 그대로 두면
        같은 거리를 두 배 걸어야 해서 월드가 갑자기 넓게 느껴집니다. */
-    const speed = (run ? 92 : 54) * AS * dt;
+    /* 탈것을 탔으면 곱합니다(rideMult). Shift 와 겹치는 것은 일부러입니다 —
+       자전거로 내리막을 달리는 것과 같습니다. 곱 천장이 1.8 인 이유는
+       RIDES 주석에 있습니다(한 프레임에 한 칸을 넘으면 벽을 뚫습니다). */
+    const speed = (run ? 92 : 54) * rideMult() * AS * dt;
     let dx = 0, dy = 0;
     if (keys.has('w') || keys.has('arrowup')) dy -= 1;
     if (keys.has('s') || keys.has('arrowdown')) dy += 1;
@@ -16685,16 +16819,43 @@ function drawPlayer() {
   const sheet = dressedSheet();
   /* 예비로 쓰는 16px 사람만 아직 통째로 흔들립니다 — 32x48 시트 쪽 흔들림은
      자세 시트(bakeStance)가 팔다리와 같이 만듭니다. */
-  const bob = player.moving && !player.sitting ? (Math.floor(player.anim * 2) % 2 ? -1 : 0) : 0;
+  let bob = player.moving && !player.sitting ? (Math.floor(player.anim * 2) % 2 ? -1 : 0) : 0;
 
   /* 그림자는 시트에 굽지 않고 여기서 그립니다 — 종마다 발 폭이 달라도
      같은 타원이 깔려야 다 같은 바닥에 서 있는 것으로 보입니다.
      앉았을 때는 안 깝니다 — 발이 바닥에 없고, 의자가 제 그림자를 갖고 있습니다. */
   const fx = Math.round(player.x - camX), fy = Math.round(player.y - camY);
-  if (!player.sitting) {
+  /* 탈것을 탔으면 바닥 그림자를 안 깝니다 — 탈것이 제 그림자를 갖고
+     있어서 둘이 겹치면 두 겹으로 보입니다(의자와 같은 이유). */
+  const ride = player.sitting ? null : myRide();
+  if (!player.sitting && !ride) {
     ctx.save();
     ctx.globalAlpha = 0.22; ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.ellipse(fx, fy - 1, 6, 2.4, 0, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+  /* 탈것은 **사람보다 먼저** 그립니다. 사람이 그 위에 앉거나 서 있어야
+     하고, 나중에 그리면 자전거가 사람 얼굴을 가립니다.
+     구름만 위아래로 아주 조금 떠다닙니다 — 바퀴가 없는 것을 움직임으로
+     한 번 더 말합니다. */
+  if (ride && RIDE_ART[ride.id]) {
+    const art = RIDE_ART[ride.id];
+    const img = player.dir === 'side' ? art.side : (art.front || art.side);
+    const w = img.width * AS, h = img.height * AS;
+    const float = ride.lift ? Math.round(Math.sin(WIND.t * 2.2) * 1.5) : 0;
+    /* 사람도 같이 뜹니다. 구름만 뜨고 사람이 제자리면 구름을 밟고 선
+       것이 아니라 구름이 발밑을 지나가는 것으로 보입니다. */
+    bob -= ride.lift + float;
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    /* 옆모습은 바라보는 쪽으로 뒤집습니다. 탈것은 좌우가 대칭이 아니라
+       (핸들이 앞에 있습니다) 안 뒤집으면 뒤로 타고 갑니다. */
+    if (player.dir === 'side' && !player.flip) {
+      ctx.translate(fx + w / 2, 0); ctx.scale(-1, 1);
+      ctx.drawImage(img, 0, fy - h + 3 + float, w, h);
+    } else {
+      ctx.drawImage(img, fx - w / 2, fy - h + 3 + float, w, h);
+    }
     ctx.restore();
   }
 

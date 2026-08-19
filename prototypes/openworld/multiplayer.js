@@ -274,12 +274,14 @@
      사람이 한 프레임에 세 번(그리기·이름표·말풍선) 굽는 쪽을 두드립니다. */
   function liftOf(rp) {
     const C = charAPI();
-    return (C && rp.big) ? C.groundY : T;
+    /* 앉으면 몸이 의자 높이만큼 올라갑니다 — 이름표도 같이 올라가야
+       앉은 사람 이름이 뒤통수에 걸치지 않습니다. */
+    return (C && rp.big) ? C.groundY + (rp.sit ? (C.sitLift || 0) : 0) : T;
   }
   /* 내 캐릭터 몫. 내 그림은 index.html 이 그리므로 창구만 보고 정합니다. */
   function liftMe() {
     const C = charAPI();
-    return C ? C.groundY : T;
+    return C ? C.groundY + (player.sitting ? (C.sitLift || 0) : 0) : T;
   }
 
   /* 그림자는 장식입니다. 성능 모드에서 제일 먼저 끕니다. */

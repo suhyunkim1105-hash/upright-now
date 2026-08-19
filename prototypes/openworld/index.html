@@ -10028,6 +10028,8 @@ window.GIRIN_CHAR = {
   dirIndex: ITEM_DIR,                       // { right:0, up:1, left:2, down:3 }
   species: CHAR_SPECIES,
   names: Object.keys(CHAR_SPECIES),
+  /** 앉으면 발 위치보다 이만큼 위에 그립니다 — 이름표·시계도 같이 올라갑니다. */
+  sitLift: SIT_LIFT - SIT_KNEE,
   /** 내 캐릭터 — 입은 것이 바뀌면 알아서 다시 굽습니다. */
   mine: () => dressedSheet(),
   /**
@@ -14370,7 +14372,10 @@ function syncPrompt() {
   /* 발에서 프레임 맨 위까지 올립니다. 예전엔 T(16)만큼만 올렸는데,
      캐릭터가 32x48 이 되면서 그 높이가 배꼽입니다 — multiplayer.js 의
      이름표가 groundY(45)를 쓰는 것과 같은 이유입니다. */
-  const lift = (window.GIRIN_CHAR && GIRIN_CHAR.groundY) || T;
+  /* 앉으면 몸이 의자 높이만큼 올라가므로 머리 위 자리도 같이 올립니다.
+     안 올리면 세션 시계가 앉은 캐릭터 이마에 걸칩니다. */
+  const lift = ((window.GIRIN_CHAR && GIRIN_CHAR.groundY) || T)
+    + (player.sitting && window.GIRIN_CHAR ? (GIRIN_CHAR.sitLift || 0) : 0);
   const hy = r.top + (player.y - lift - camY) * SCALE;
   /* 타이머가 먼저 머리 위에 앉고, 안내는 그 위로 비켜 섭니다.
      같은 자리에 두면 말 걸 때마다 시간이 가려집니다. */

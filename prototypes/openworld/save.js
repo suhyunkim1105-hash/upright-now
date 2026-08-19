@@ -285,9 +285,52 @@
     return r.ok ? r.data : null;
   }
 
+  /** 명예의 전당 — 학교 순위.
+   *
+   *  큐를 안 씁니다. 읽기라서 나중에 보낼 이유가 없고, 늦게 도착한 순위는
+   *  틀린 순위입니다.
+   *
+   *  **왜 못 받았는지를 갈라서 돌려줍니다.** 화면이 "서버가 없는 판본" 과
+   *  "지금 인터넷이 끊김" 과 "로그인이 풀림" 에 같은 말을 하면, 사람은
+   *  기다려야 하는지 다시 열어야 하는지 알 수 없습니다.
+   *
+   *    reason  'unconfigured'  config.js 가 없거나 file:// — 이 판본엔 서버가 없음
+   *            'offline'       토큰이나 요청이 네트워크에서 실패
+   *            'unauth'        서버가 401/403 — 로그인이 풀림
+   *            'server'        그 밖의 서버 오류
+   */
+  async function schoolRanking() {
+    if (!configured) return { ok: false, reason: 'unconfigured', data: null };
+    let t;
+    try { t = await token(); }
+    catch (e) {
+      /* 토큰을 못 얻는 길이 둘입니다. 인터넷이 없거나(fetch 가 던짐),
+         서버가 4xx 로 거절하거나(익명 로그인이 꺼져 있는 경우 등).
+         뒤엣것을 "오프라인" 이라고 하면 사람은 기다리면 될 줄 압니다. */
+      const auth4xx = /^auth 4\d\d$/.test(String((e && e.message) || ''));
+      return { ok: false, reason: auth4xx ? 'unauth' : 'offline', data: null };
+    }
+    let r;
+    try {
+      r = await fetch(URL_BASE + '/rest/v1/rpc/world_school_ranking', {
+        method: 'POST',
+        headers: {
+          apikey: ANON,
+          Authorization: 'Bearer ' + t,
+          'Content-Type': 'application/json',
+        },
+        body: '{}',
+      });
+    } catch { return { ok: false, reason: 'offline', data: null }; }
+    if (r.status === 401 || r.status === 403) return { ok: false, reason: 'unauth', data: null };
+    if (!r.ok) return { ok: false, reason: 'server', data: null, status: r.status };
+    try { return { ok: true, reason: null, data: await r.json() }; }
+    catch { return { ok: false, reason: 'server', data: null }; }
+  }
+
   global.WORLD_SAVE = {
     configured, uuid, finishSession, earnMinigame, balance, flush, pending,
-    buyItem, setLoadout, setDecor, roomState,
+    buyItem, setLoadout, setDecor, roomState, schoolRanking,
     /** 지금 쓰는 액세스 토큰. multiplayer.js 가 Realtime 에 붙일 때 씁니다 —
         여기 로그인 갈래(학교 이메일 → 익명)를 두 곳에서 따로 쓰면 언젠가
         서로 다른 사람으로 붙습니다. 없으면 만들어 옵니다. */

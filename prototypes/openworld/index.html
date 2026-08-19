@@ -991,6 +991,12 @@
   #panel .rank span em {
     font-style: normal; font-size: 10.5px; color: var(--school, var(--ink-3)); font-weight: 700;
   }
+  /* 학교 이름 아래 작은 줄 — 총 시간과 회복 횟수. 점수(인당 분)만 남기면
+     "우리가 실제로 얼마나 했나" 를 볼 자리가 없어집니다. */
+  #panel .rank span small {
+    display: block; margin-top: 2px; font-size: 10.5px; font-weight: 500;
+    color: var(--ink-3); font-variant-numeric: tabular-nums;
+  }
   #panel .rank b {
     font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right;
     min-width: 62px;
@@ -11560,39 +11566,58 @@ function pastSessionsHtml() {
 }
 
 /* ==================================================================
-   명예의 전당
+   명예의 전당 — 서버 집계
 
-   서버가 없으니 순위는 **예시 값**입니다. 빈 화면을 보여 주는 것보다
-   낫지만, 진짜인 척해서는 안 됩니다 — 화면 아래에 예시라고 적습니다.
+   전에는 SEED_RANKING 이라는 예시 값 열 줄이 여기 있었습니다. 이제
+   순위는 서버가 셉니다(supabase/migrations/20260819_world_school_ranking.sql).
 
-   내 학교만 이 기기에 쌓인 진짜 기록을 더해 얹습니다. 내가 앉은 시간이
-   우리 학교 숫자에 더해지는 것이 이 화면의 요점이니까요.
+   왜 클라이언트가 못 세는가: world_sessions 의 RLS 가 "본인 행만" 이라
+   브라우저는 남의 세션을 한 줄도 못 읽습니다. 학교 합계는 원리상 여기서
+   만들 수 없고, 만들 수 있게 하려면 남의 기록을 열어 줘야 합니다.
+
+   이 파일이 하는 일은 **받아서 그리는 것**뿐입니다. 점수 공식도 참여자
+   하한도 시즌 창도 서버 것입니다 — 두 벌로 두면 언젠가 화면과 서버가
+   다른 순위를 말합니다.
    ================================================================== */
-const SEED_RANKING = [
-  { school: '연세대학교',     hours: 12840, recoveries: 41200 },
-  { school: '고려대학교',     hours: 12610, recoveries: 39800 },
-  { school: '서울대학교',     hours: 11930, recoveries: 37400 },
-  { school: '한양대학교',     hours: 9880,  recoveries: 31100 },
-  { school: '성균관대학교',   hours: 9240,  recoveries: 29600 },
-  { school: '중앙대학교',     hours: 8410,  recoveries: 26800 },
-  { school: '경희대학교',     hours: 7960,  recoveries: 25300 },
-  { school: '서강대학교',     hours: 6180,  recoveries: 19700 },
-  { school: '이화여자대학교', hours: 5940,  recoveries: 18900 },
-  { school: '명지대학교',     hours: 4720,  recoveries: 15100 },
-];
-/* 역대 1위 — **바로 앞 세 시즌**입니다. 번호를 1·2·3 으로 박아 두면
-   시즌이 넘어갈 때마다 뒤로 밀려서, 지금이 6시즌인데 액자는 3시즌까지만
-   있는 화면이 됩니다. 학교와 시간은 예시 값이고 그 사실을 창 아래에
-   적어 두었습니다 — 번호만 그때그때 셉니다. */
-const PAST_WINNERS = [
-  { school: '고려대학교', hours: 14210 },
-  { school: '연세대학교', hours: 13050 },
-  { school: '서울대학교', hours: 11480 },
-];
-const PAST_SEASONS = () => PAST_WINNERS.map((w, i) =>
-  Object.assign({ no: seasonInfo().no - 1 - i }, w)).filter((p) => p.no >= 1);
+const HALL = {
+  /* 'idle' 아직 안 물어봄 · 'loading' 물어보는 중 · 'ok' 받음
+     못 받은 이유는 save.js 의 reason 을 그대로 씁니다:
+     'unconfigured' 서버 없는 판본 · 'offline' 못 닿음 · 'unauth' 로그인 풀림
+     · 'server' 그 밖 */
+  state: 'idle', data: null, at: 0,
+};
+/* 창을 여닫을 때마다 물어보면 왕복이 낭비고, 한 번 받아 영영 두면 옆
+   사람이 세션을 끝내도 안 바뀝니다. 1분이면 창을 닫았다 다시 여는 동안은
+   그대로고, 잠깐 다른 일을 하고 오면 새로 받습니다.
 
-/** 시즌은 90일. 남은 날이 보여야 "이번 시즌 안에" 라는 말이 성립합니다. */
+   실패했을 때는 5초입니다. **성공과 같은 1분을 주면 안 됩니다** — 화면이
+   "창을 다시 열면 한 번 더 물어봅니다" 라고 적어 놓고 1분 동안 안 물어보면
+   그 줄이 거짓말이 됩니다. */
+const HALL_TTL = 60000, HALL_RETRY = 5000;
+
+/** 서버에서 순위를 받아 옵니다. 창이 열려 있으면 받은 뒤 다시 그립니다.
+    답이 오면 다시 그리는데, 다시 그리는 길이 openPanel 이라 이 함수가 또
+    불립니다. 그래서 **결과가 좋든 나쁘든** 방금 물어봤으면 물러납니다 —
+    안 그러면 실패할 때마다 그리기와 요청이 서로를 부르며 끝없이 돕니다. */
+function refreshHall(force) {
+  if (!(window.WORLD_SAVE && WORLD_SAVE.schoolRanking)) { HALL.state = 'unconfigured'; return; }
+  if (!WORLD_SAVE.configured) { HALL.state = 'unconfigured'; return; }
+  if (HALL.state === 'loading') return;
+  if (!force && HALL.at
+      && Date.now() - HALL.at < (HALL.state === 'ok' ? HALL_TTL : HALL_RETRY)) return;
+  HALL.state = 'loading';
+  WORLD_SAVE.schoolRanking().then((r) => {
+    HALL.state = r.ok ? 'ok' : (r.reason || 'server');
+    HALL.data = r.ok ? r.data : null;
+    HALL.at = Date.now();
+    if (panelOpen && activePanelKey === 'hall') openPanel('hall');
+  });
+}
+
+/** 시즌은 90일. 남은 날이 보여야 "이번 시즌 안에" 라는 말이 성립합니다.
+    서버의 world_school_ranking() 이 **같은 상수**로 같은 창을 셉니다 —
+    한쪽만 고치면 화면의 남은 날과 실제 집계 구간이 어긋납니다. 서버가
+    답을 주면 그쪽이 이기고, 이 함수는 서버가 없을 때의 답입니다. */
 function seasonInfo() {
   const LEN = 90, START = Date.UTC(2026, 0, 5);       // 시즌 4 시작
   const days = Math.floor((Date.now() - START) / 86400000);
@@ -11604,18 +11629,20 @@ function seasonInfo() {
   return { no, daysLeft: LEN - into, progress: into / LEN, from: fmt(from), to: fmt(to) };
 }
 
-/** 예시 값에 이 기기의 진짜 기록을 얹어 정렬합니다. */
-function schoolRanking() {
-  const s = myStats();
-  const rows = SEED_RANKING.map((r) => Object.assign({}, r));
-  const mine = rows.find((r) => r.school === ROOM.school);
-  if (mine) {
-    mine.hours += Math.round(s.total / 60);
-    mine.recoveries += s.recov;
-  } else if (ROOM.school) {
-    rows.push({ school: ROOM.school, hours: Math.round(s.total / 60), recoveries: s.recov });
-  }
-  return rows.sort((a, b) => b.hours - a.hours || b.recoveries - a.recoveries);
+/** 'YYYY-MM-DD' → '7월 4일'. 서버는 날짜만 주고 말투는 화면이 정합니다. */
+function hallDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  return m ? Number(m[2]) + '월 ' + Number(m[3]) + '일' : '';
+}
+
+/** 화면 위쪽 시즌 칸에 쓸 값. 서버 답이 있으면 서버 것, 없으면 이 기기 것. */
+function hallSeason() {
+  const s = HALL.state === 'ok' && HALL.data && HALL.data.season;
+  if (!s) return seasonInfo();
+  return {
+    no: s.no, daysLeft: s.daysLeft, progress: s.progress,
+    from: hallDate(s.from), to: hallDate(s.to),
+  };
 }
 
 /* ==================================================================
@@ -12268,45 +12295,118 @@ const PANELS = {
   /* ---- 코인 ---- */
 /* ---- 명예의 전당 — 학생회관 하연 ----
      학교끼리 겨룹니다. 개인 순위를 앞에 두면 "나는 몇 등인가" 가 먼저
-     보이고, 그건 자세를 점수로 만드는 것과 같은 실수입니다. */
+     보이고, 그건 자세를 점수로 만드는 것과 같은 실수입니다.
+
+     숫자는 전부 서버가 준 것입니다. 못 받았으면 **못 받았다고 씁니다** —
+     지어낸 순위를 보여 주느니 빈 자리를 보여 줍니다. 왜 못 받았는지도
+     갈라서 씁니다(서버 없는 판본 / 못 닿음 / 로그인 풀림): 기다리면 되는
+     일과 다시 열어야 하는 일은 다른 일이니까요. */
   hall: () => {
-    const season = seasonInfo();
-    const rank = schoolRanking();
-    const mine = rank.findIndex((r) => r.school === ROOM.school);
+    const season = hallSeason();
+    const d = HALL.state === 'ok' ? HALL.data : null;
+    const ranked = (d && d.ranked) || [];
+    const pending = (d && d.pending) || [];
+    const past = (d && d.past) || [];
+    const rules = (d && d.rules) || {};
+    /* 내 학교는 서버가 내 세션에서 뽑은 것이 먼저입니다. 서버가 모르면
+       (아직 세션이 없으면) 이 기기에 저장된 학교로 칠합니다. */
+    const mySchool = (d && d.me && d.me.school) || ROOM.school || '';
+    const myRank = d && d.me ? d.me.rank : null;
+    const myPending = d && d.me ? d.me.contributors : null;
+
     const row = (r, i) => `
-      <div class="rank${r.school === ROOM.school ? ' me' : ''}">
+      <div class="rank${r.school === mySchool ? ' me' : ''}">
         <u>${i + 1}</u>
         <i style="background:${schoolColorOf(r.school)}"></i>
-        <span>${esc(r.school)}${r.school === ROOM.school ? ' <em>우리 학교</em>' : ''}</span>
-        <b>${r.hours.toLocaleString()}<small>시간</small></b>
-        <b class="sub">${r.recoveries.toLocaleString()}<small>회복</small></b>
+        <span>${esc(r.school)}${r.school === mySchool ? ' <em>우리 학교</em>' : ''}
+          <small>${Math.round(r.minutes / 60).toLocaleString()}시간 · 회복 ${Number(r.recoveries).toLocaleString()}회</small></span>
+        <b>${Math.round(r.score).toLocaleString()}<small>분/인</small></b>
+        <b class="sub">${Number(r.contributors).toLocaleString()}<small>명</small></b>
       </div>`;
+    /* 하한 미달 학교. 분·회복·점수는 서버가 아예 안 보냅니다 — 참여자가
+       한둘인 학교의 "합계" 는 그 사람의 기록 그 자체라서요. */
+    const pendRow = (r) => `
+      <div class="rank${r.school === mySchool ? ' me' : ''}">
+        <u>·</u>
+        <i style="background:${schoolColorOf(r.school)}"></i>
+        <span>${esc(r.school)}${r.school === mySchool ? ' <em>우리 학교</em>' : ''}</span>
+        <b class="sub">${r.contributors} / ${rules.minContributors || 20}<small>명</small></b>
+      </div>`;
+
+    /* 못 받았을 때 뭐라고 쓸지. 한 곳에 모아 둡니다 — 여기저기 흩어 두면
+       나중에 갈래가 하나 늘 때 한 군데를 빠뜨립니다. */
+    const trouble = {
+      idle:         ['불러오는 중이에요', '학교 순위를 서버에서 받아 오고 있어요.'],
+      loading:      ['불러오는 중이에요', '학교 순위를 서버에서 받아 오고 있어요.'],
+      unconfigured: ['이 판본에는 서버가 없어요',
+        '학교 순위는 서버가 셉니다. 링크로 받은 단독본이나 파일로 연 화면에서는 볼 수 없어요. 다른 화면은 그대로 씁니다.'],
+      offline:      ['서버에 닿지 못했어요',
+        '인터넷이 끊겼거나 서버가 잠깐 쉬는 중이에요. 창을 다시 열면 한 번 더 물어봅니다.'],
+      unauth:       ['로그인이 풀렸어요',
+        '학교 순위는 로그인한 뒤에 볼 수 있어요. 세션을 한 번 마치면 다시 붙습니다.'],
+      server:       ['서버가 답하지 못했어요',
+        '잠시 뒤에 창을 다시 열어 주세요. 이 화면 말고 다른 기능은 그대로 돕니다.'],
+    };
+    const t = trouble[HALL.state];
+
+    /* 이번 시즌 칸. 셋 중 하나입니다 — 못 받음 / 받았는데 텅 빔 / 순위 있음 */
+    let body;
+    if (t) {
+      body = `<div class="note"><b>${t[0]}</b><br>${t[1]}</div>`;
+    } else if (!ranked.length && !pending.length) {
+      body = `<div class="note"><b>아직 아무 학교도 집계되지 않았어요.</b><br>
+        이번 시즌에 끝난 세션이 아직 없습니다. 도서관이나 본관에 앉아
+        세션을 한 번 마치면 우리 학교가 이 자리에 처음 올라와요.</div>`;
+    } else {
+      body = (ranked.length
+          ? `<div class="ranks">${ranked.map(row).join('')}</div>`
+          : `<div class="note">아직 참여자 ${rules.minContributors || 20}명을 넘긴 학교가 없어요.
+             넘는 학교가 생기면 여기에 순위가 섭니다.</div>`)
+        + (pending.length ? `
+          <h4 style="margin-top:18px">집계 중</h4>
+          <div class="ranks">${pending.map(pendRow).join('')}</div>
+          <p class="hint">참여자 ${rules.minContributors || 20}명부터 순위에 오릅니다.
+            시즌 안에 자세 판정이 잠깐이라도 돌아간 사람만 셉니다.</p>` : '');
+    }
+
     return {
       title: '명예의 전당', kind: '하연',
       html: `
       <div class="stats">
         <div class="stat"><u>시즌</u><b>${season.no}</b></div>
         <div class="stat"><u>남은 날</u><b>${season.daysLeft}<span style="font-size:12px">일</span></b></div>
-        <div class="stat"><u>우리 학교</u><b>${mine < 0 ? '—' : mine + 1 + '위'}</b></div>
+        <div class="stat"><u>우리 학교</u><b>${
+          myRank ? myRank + '위'
+          : myPending != null ? myPending + '/' + (rules.minContributors || 20) + '명'
+          : '—'}</b></div>
       </div>
       <div class="bar"><i style="width:${Math.round(season.progress * 100)}%"></i></div>
-      <p class="hint">${season.from} ~ ${season.to}</p>
+      <p class="hint">${season.from} ~ ${season.to}${t ? '' : ' · 참여자 '
+        + Number((d && d.totals && d.totals.contributors) || 0).toLocaleString() + '명'}</p>
 
       <h4 style="margin-top:18px">이번 시즌 학교 순위</h4>
-      <div class="ranks">${rank.map(row).join('')}</div>
+      ${body}
 
+      ${/* 못 물어봤으면 액자 칸을 아예 안 세웁니다. "아직 끝난 시즌이 없어요"
+            는 서버가 없다고 답했을 때만 할 수 있는 말입니다 — 못 물어본 것과
+            없다는 것은 다른 말입니다. */ t ? '' : `
       <h4 style="margin-top:20px">역대 시즌 1위</h4>
-      <div class="frames">${PAST_SEASONS().map((p) => `
+      ${past.length ? `<div class="frames">${past.map((p) => `
         <div class="frame">
           <div class="plate" style="background:${schoolColorOf(p.school)};
                color:${readableOn(schoolColorOf(p.school))}">시즌 ${p.no}</div>
           <b>${esc(p.school)}</b>
-          <em>${p.hours.toLocaleString()}시간</em>
-        </div>`).join('')}</div>
+          <em>${Math.round(p.minutes / 60).toLocaleString()}시간</em>
+        </div>`).join('')}</div>`
+        : `<div class="note">아직 끝난 시즌이 없어요. 시즌이 하나 끝나면 여기에 액자가 걸립니다.</div>`}`}
 
-      <div class="note">순위는 <b>앉은 시간과 회복 횟수</b>로만 매깁니다. 자세를
-      점수로 매기지 않아요 — 그러면 목이 긴 사람이 유리한 게임이 됩니다.
-      아래 숫자는 서버가 붙기 전까지 <b>예시 값</b>입니다.</div>`,
+      <div class="note">순위는 <b>자세 판정이 돌아간 시간과 회복 횟수</b>로만
+      매깁니다. 자세를 점수로 매기지 않아요 — 그러면 목이 긴 사람이 유리한
+      게임이 됩니다.<br>
+      숫자는 <b>학교 합계가 아니라 참여자 한 명당</b>입니다. 합계로 세면 사람
+      많은 학교가 늘 이기고, 그러면 나머지 학교는 둘째 주에 안 봅니다.
+      참여자가 적은 학교는 값이 튀지 않게 전체 평균 쪽으로 당겨 놓습니다.<br>
+      개인 순위는 없습니다. 서버도 학교 합계만 내려보내요.</div>`,
     };
   },
 
@@ -12487,6 +12587,10 @@ function openPanel(key, tab) {
   if (key === 'settings') award('once:decorate', '첫 꾸미기');
   /* 값을 치르는 화면이라 서버 숫자를 다시 받아 옵니다(refreshShopCoins 주석) */
   if (key === 'shop') refreshShopCoins();
+  /* 순위는 이 기기가 아니라 서버에 있습니다. 창을 열 때 물어보고, 답이
+     오면 그 자리에서 다시 그립니다(refreshHall). 여는 순간 그리는 것은
+     아직 안 온 답이라 "불러오는 중" 입니다. */
+  if (key === 'hall') refreshHall();
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
   activePanelKey = key;

@@ -1105,6 +1105,15 @@
   #panel .hint { margin: 8px 0 0; font-size: 11.5px; color: var(--ink-3); }
 
   #panel .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 15px; }
+  /* 음량 손잡이. 칩 두 개로 "크게/작게" 를 만들 수도 있었지만, 편한 음량은
+     쓰는 방(이어폰이냐 노트북 스피커냐)마다 달라서 두 칸으로는 못 맞춥니다.
+     행 오른쪽에 끼우지 않고 아래 한 줄을 통째로 쓰는 것은, 좁은 창에서
+     손잡이가 40px 로 쪼그라들면 5% 단위를 손가락으로 못 짚기 때문입니다. */
+  #panel .slider {
+    width: 100%; margin: 2px 0 10px; accent-color: var(--teal);
+    height: 22px; cursor: pointer;
+  }
+  #panel .slider:focus-visible { outline: 2px solid var(--teal-600); outline-offset: 2px; }
   /* 행 안에 들어간 칩 묶음 — 오른쪽 끝에 붙습니다. 아래에 따로 두면
      설정 하나에 두 줄이 들고, 설정이 넷이면 페이지가 여덟 줄이 됩니다.
      표준적인 설정 화면은 이름 왼쪽 · 값 오른쪽 한 줄입니다. */
@@ -9702,7 +9711,7 @@ const INVITE = {
    셋뿐이라, 회고 화면이 그리는 좋음/주의/굽음 비율이 세션이 끝나는
    순간 사라졌습니다. 어제 회고를 다시 열 방법이 없었습니다. */
 const ZONE_KO = { library: '도서관', mainhall: '본관', union: '학생회관', dorm: '기숙사',
-                  arcade: '미니게임관', campus: '캠퍼스' };
+                  arcade: '미니게임관', campus: '캠퍼스', clubshop: '동아리 상점' };
 const SESS_KEY = 'girin.sessions';
 const SESS_MAX = 200;                      // 약 반년치
 
@@ -13701,6 +13710,16 @@ function spotifyEmbed(raw) {
   return 'https://open.spotify.com/embed/' + m[1] + '/' + m[2];
 }
 
+/* 새 탭으로 열 주소. embed 주소에서 `/embed` 만 뺍니다 — spotifyEmbed 가
+   이미 종류와 id 만 뽑아 우리 손으로 다시 지은 주소라, 여기 오는 것은
+   언제나 https://open.spotify.com/… 입니다. javascript: 같은 것은 그
+   앞에서 이미 null 이 되어 여기까지 못 옵니다. 이 갈림길이 없으면
+   window.open 에 사람이 붙여 넣은 글자가 그대로 들어갑니다. */
+function spotifyLink(raw) {
+  const e = spotifyEmbed(raw);
+  return e && e.replace('/embed/', '/');
+}
+
 /* ---- 구글 캘린더 ----
    "웹에 공개" 로 만든 달력만 embed 로 열립니다. 비공개 달력은 로그인
    화면이 뜨는데, iframe 안에서는 구글이 로그인을 막으므로 빈 칸이 됩니다.
@@ -14517,12 +14536,52 @@ const PANELS = {
           <div class="row"><span>웹캠 화면 <em>도서관·본관에서 앉으면 작은 화면으로 나와요</em></span>${chips('camPeek', [['on', '보이기'], ['off', '숨기기']])}</div>
           <div class="row"><span>자세 말풍선 <em>자세가 무너지면 캐릭터가 알려줘요</em></span>${chips('sayOn', [['on', '켬'], ['off', '끔']])}</div>
           <div class="row"><span>채팅 <em>숨기면 Enter 를 눌렀을 때만 대화가 보여요</em></span>${chips('chatOn', [['on', '보이기'], ['off', '숨기기']])}</div>
-          <div class="row"><span>배경 음악</span>${chips('bgm', [['on', '켬'], ['off', '끔']])}</div>
-          <div class="row"><span>곡 <em>장소 따라 = 공간마다 다른 곡</em></span>${
-            chips('bgmTrack', [['auto', '장소 따라'], ['calm', '조용한 오후'],
-                               ['bright', '볕 드는 마당'], ['warm', '저녁 방'], ['night', '늦은 밤']])}</div>
+          <div class="row"><span>소리 <em>공간 소음과 음악을 한꺼번에</em></span>${chips('bgm', [['on', '켬'], ['off', '끔']])}</div>
           <div class="row"><span>효과음 <em>발소리·문·코인</em></span>${chips('sfxOn', [['on', '켬'], ['off', '끔']])}</div>
         </div>
+
+        <!-- ---- 음악 ----
+             칩을 행 오른쪽에 붙이지 않고 아래로 내렸습니다. 곡이 열 개라
+             한 줄에 못 들어가고(.row .chips 는 nowrap), 억지로 넣으면
+             오른쪽으로 넘쳐 이름이 잘립니다. -->
+        <h4 style="margin-top:20px">음악</h4>
+        <div class="rows">
+          <div class="row"><span>음량 <em>공간 소음은 이 손잡이를 안 지납니다</em></span>
+            <span class="val" id="musvol-val">${MUSICCFG.vol}%</span></div>
+        </div>
+        <input id="musvol" class="slider" type="range" min="0" max="100" step="5"
+          value="${MUSICCFG.vol}" aria-label="음악 음량">
+        <p class="hint" style="margin:2px 0 9px"><b>장소 따라</b>가 기본이에요 —
+        ${Object.entries(ZONE_TRACK).map(([z, t]) =>
+          (ZONE_KO[z] || z) + ' ' + MUSIC[t].name).join(' · ')}.
+        하나를 고르면 어디를 가도 <b>계속 그 곡</b>이 나옵니다.</p>
+        ${chips('bgmTrack', [['auto', '장소 따라'],
+          ...Object.entries(MUSIC).map(([id, m]) => [id, m.name]), ['off', '끔']])}
+        <div class="note" style="margin-top:0">곡은 전부 <b>CC0</b>(퍼블릭 도메인)
+        음원이에요. 제목·작가·받은 곳은 <b>docs/audio/CREDITS.md</b> 에 적어 뒀어요.
+        ${MUSIC_WHY ? '<br><b>' + esc(MUSIC_WHY) + '</b>' : ''}</div>
+
+        <!-- ---- 스포티파이 ----
+             SDK 를 안 붙입니다. 붙이면 로그인·프리미엄 계정·기기 선택이
+             따라오고, 그러고도 재생 조종은 스포티파이가 허락하는 만큼만
+             됩니다. 여기서 하는 일은 링크를 받아 두었다가 새 탭으로 열어
+             주는 것까지이고, 그 사실을 화면에 그대로 적습니다. -->
+        <h4 style="margin-top:20px">스포티파이</h4>
+        <div class="rows">
+          <div class="row tap" tabindex="0" role="button" data-link="spotify" data-back="settings">
+            <span>플레이리스트 주소
+              <em>${spotifyLink(LINKS.spotify) ? esc(LINKS.spotify) : 'open.spotify.com/playlist/… 를 붙여 넣어요'}</em></span>
+            <span class="val">${spotifyLink(LINKS.spotify) ? '바꾸기' : '붙여넣기'}</span><svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 6 6 6-6 6"/></svg></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="act ghost" data-do="spotify-open"${
+            spotifyLink(LINKS.spotify) ? '' : ' disabled style="opacity:.45;cursor:default"'}>새 탭에서 열기</button>
+        </div>
+        <div class="note">Deskfit 은 <b>스포티파이 재생을 조종할 수 없어요.</b>
+        재생·정지·다음 곡은 스포티파이 앱이나 웹 플레이어에서 하셔야 해요.
+        여기서 하는 일은 걸어 둔 주소를 새 탭으로 열어 주는 것까지예요.
+        스포티파이를 틀어 두실 거면 위 음악 음량을 0 으로 내려 두세요 —
+        두 소리가 겹치면 둘 다 안 들립니다.</div>
         <div class="note" style="margin-top:10px">웹캠 화면을 숨겨도 자세는
         그대로 봐요. 화면에 안 띄울 뿐, 카메라는 켜져 있어요 — 켜짐 여부는
         왼쪽 아래 세션 시계 옆에 항상 표시됩니다.</div>
@@ -14866,7 +14925,10 @@ const LINK_SPEC = {
     bad: '캘린더 ID(…@group.calendar.google.com)나 calendar.google.com/calendar/embed?… 주소를 넣어 주세요.',
   },
 };
-function openLinkEdit(key, row) {
+/* back — 저장한 뒤 돌아갈 창. 안 주면 LINK_SPEC 이 정한 창(라디오·노트북)
+   으로 갑니다. 마이페이지에서 같은 줄을 열었을 때는 마이페이지로 돌아와야
+   합니다 — 설정을 만지다가 갑자기 본관 강단에 서 있으면 안 됩니다. */
+function openLinkEdit(key, row, back) {
   const spec = LINK_SPEC[key];
   if (!spec || !row) return;
   const box = document.createElement('div');
@@ -14877,6 +14939,7 @@ function openLinkEdit(key, row) {
     + '<button class="act ghost" data-do="link-clear">지우기</button>';
   row.replaceWith(box);
   box.dataset.key = key;
+  if (back) box.dataset.back = back;
   const input = box.querySelector('input');
   input.value = LINKS[key] || '';
   input.focus(); input.select();
@@ -14901,13 +14964,31 @@ function openLinkEdit(key, row) {
   sync();
 }
 
+/* 음량 손잡이 — 창을 다시 그릴 때마다 새 element 라 위임으로 받습니다.
+   input 은 끄는 동안 계속 오므로 그 자리에서 소리가 따라옵니다. 저장까지
+   여기서 하는 것은, 손을 뗀 뒤에 저장하면 창을 닫고 나가는 사람의 값이
+   안 남기 때문입니다(localStorage 는 싸고, 이 창은 자주 안 엽니다). */
+panelBody.addEventListener('input', (e) => {
+  const sl = e.target.closest('#musvol');
+  if (!sl) return;
+  MUSICCFG.vol = Math.max(0, Math.min(100, Math.round(Number(sl.value) || 0)));
+  saveMusicCfg();
+  syncMusicVolume();
+  const out = panelBody.querySelector('#musvol-val');
+  if (out) out.textContent = MUSICCFG.vol + '%';
+});
+
 /* 창 안의 조작 — 위임 하나로 받습니다 */
 panelBody.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter' && e.key !== ' ') return;
   const tap = e.target.closest('.row.tap');
   if (!tap) return;
   e.preventDefault();
-  openEdit(tap.dataset.edit, tap);
+  /* 같은 .row.tap 이라도 바깥 서비스 주소 줄(스포티파이·캘린더)은 다른
+     창구를 씁니다. 안 갈라 놓으면 EDITS[undefined] 로 떨어져서, 마우스로는
+     열리는데 Enter 로는 아무 일도 안 일어나는 줄이 됩니다. */
+  if (tap.dataset.link) openLinkEdit(tap.dataset.link, tap, tap.dataset.back);
+  else openEdit(tap.dataset.edit, tap);
 });
 /* 미니게임 버튼. 기존 chip 핸들러보다 **먼저** 등록해야 목 쌓기의
    떨구기가 다른 핸들러에 먹히지 않습니다. */
@@ -14951,7 +15032,7 @@ panelBody.addEventListener('click', (e) => {
   /* 바깥 서비스 주소 줄이 먼저입니다 — 이것도 .row.tap 이라, 뒤에 두면
      아래 openEdit 이 먼저 잡아 EDITS[undefined] 로 조용히 아무 일도 안 합니다. */
   const link = e.target.closest('[data-link]');
-  if (link) return openLinkEdit(link.dataset.link, link);
+  if (link) return openLinkEdit(link.dataset.link, link, link.dataset.back);
   const tap = e.target.closest('.row.tap');
   if (tap) return openEdit(tap.dataset.edit, tap);
   const act = e.target.closest('[data-do]');
@@ -14963,7 +15044,22 @@ panelBody.addEventListener('click', (e) => {
     const spec = LINK_SPEC[key];
     LINKS[key] = what === 'link-clear' ? '' : box.querySelector('input').value.trim();
     saveLinks();
-    openPanel(spec.panel);
+    /* 탭이 있는 창으로 돌아갈 때는 보던 탭을 들고 갑니다. 안 그러면
+       설정에서 주소를 고쳤는데 "내 정보" 가 열립니다. */
+    const back = box.dataset.back;
+    if (back) {
+      const tabs = [...panelTabs.querySelectorAll('button')];
+      const at = tabs.findIndex((b) => b.getAttribute('aria-selected') === 'true');
+      openPanel(back, at < 0 ? undefined : at);
+    } else openPanel(spec.panel);
+    return;
+  }
+  /* 스포티파이를 새 탭으로. 창 안에 iframe 으로 띄우지 않는 이유는 본관
+     강단(radio)과 달리 여기는 "내 플레이리스트를 내 플레이어에서 튼다"
+     이기 때문입니다. noopener 는 새 탭이 이 창을 되잡지 못하게 합니다. */
+  if (what === 'spotify-open') {
+    const url = spotifyLink(LINKS.spotify);
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
     return;
   }
   if (what === 'edit-save' || what === 'edit-cancel') {
@@ -15016,7 +15112,26 @@ panelBody.addEventListener('click', (e) => {
 const SOUND = Object.assign({ bgm: true, sfx: true }, loadJSON('girin.sound', {}));
 function saveSound() { saveJSON('girin.sound', { bgm: SOUND.bgm, sfx: SOUND.sfx }); }
 
-const AUDIO = { ctx: null, master: null, bgmGain: null, amb: null, ambId: null, noise: null };
+/* ---- 음악만의 설정 ----
+   SOUND 에 얹지 않고 열쇠를 따로 뒀습니다. SOUND 는 "소리를 켤 것인가"
+   이고 여기는 "음악을 얼마나 크게 깔 것인가" 라, 둘이 한 덩어리면
+   음악을 0 으로 내렸을 때 공간의 소음까지 같이 사라집니다. 앰비언트는
+   코인 설계에서 공간 차등을 뺀 자리를 메우기로 한 소리이므로, 음악
+   손잡이가 그것까지 끌고 내려가면 안 됩니다.
+
+   vol 은 0~100 입니다. 소수 0.25 를 그대로 저장하지 않는 것은, 나중에
+   최대값(MUSIC_MAX)을 다시 맞추면 저장된 값의 뜻이 조용히 바뀌기
+   때문입니다. 퍼센트로 두면 사람이 고른 것은 "절반쯤" 으로 남습니다. */
+const MUSICCFG = Object.assign({ vol: 55 }, loadJSON('girin.music', {}));
+function saveMusicCfg() { saveJSON('girin.music', { vol: MUSICCFG.vol }); }
+/* 100% 일 때의 실제 이득. 음원은 모두 -20.0 LUFS 로 맞춰 두었고
+   앰비언트는 bgmGain 에서 0.07~0.22 로 깔립니다. 0.45 를 꼭대기로 두면
+   기본값 55% 가 0.25 근처가 되는데, 그 자리가 "도서관 소음 위에 음악이
+   얹혀 있다" 로 들리는 지점입니다. 더 올리면 음악이 방을 덮습니다. */
+const MUSIC_MAX = 0.45;
+const musicGainValue = () => MUSIC_MAX * Math.max(0, Math.min(100, MUSICCFG.vol)) / 100;
+
+const AUDIO = { ctx: null, master: null, bgmGain: null, musicGain: null, amb: null, ambId: null, noise: null };
 
 /** 분홍잡음 한 벌. 흰잡음은 이 크기에서 쉬익 소리가 세서 귀가 아픕니다. */
 function noiseBuffer(ctx) {
@@ -15050,6 +15165,12 @@ function audioCtx() {
   AUDIO.bgmGain = ctx.createGain();
   AUDIO.bgmGain.gain.value = 0;
   AUDIO.bgmGain.connect(AUDIO.master);
+  /* 음악만 한 단을 더 지납니다. 앰비언트는 bgmGain 에 바로 물리므로
+     이 손잡이를 0 으로 내려도 공간의 소음은 그대로 남습니다 — 음악은
+     "그 위에 얹는 것" 이라는 원칙이 그래프 모양으로 적혀 있는 셈입니다. */
+  AUDIO.musicGain = ctx.createGain();
+  AUDIO.musicGain.gain.value = musicGainValue();
+  AUDIO.musicGain.connect(AUDIO.bgmGain);
   return ctx;
 }
 
@@ -15118,38 +15239,131 @@ function stopAmbience() {
   AUDIO.amb = null; AUDIO.ambId = null;
 }
 
-/* ================== 배경 음악 ==================
-   이 저장소의 소리는 전부 코드로 만듭니다 — 오디오 파일이 한 장도 없습니다.
-   음악도 같은 자리에서 만듭니다. 파일을 넣으면 라이선스와 용량이 따라오고,
-   무엇보다 앰비언트와 음색이 따로 놀게 됩니다.
+/* ================== 배경 음악 — 실제 음원으로 교체 ==================
+   여기 있던 것은 오실레이터로 그 자리에서 찍어 내던 곡 넷이었습니다.
+   파일이 0바이트이고 라이선스가 아예 없다는 것이 그 선택의 전부였는데,
+   대신 얻은 소리가 "여섯 방에서 도는 네 개의 아르페지오" 였습니다.
+   30분 앉아 있으면 방이 아니라 그 패턴이 기억에 남습니다. 그래서 실제
+   음원으로 바꿉니다. 곡은 넷에서 **열**로 늘었고, 자리도 여섯에서
+   일곱(동아리 상점 포함)으로 늘었습니다.
 
-   곡은 넷입니다. 장소마다 기본 곡이 정해져 있고(auto), 사람이 하나를 고르면
-   어디를 가도 그 곡입니다. 장소 색을 소리로 옮긴 것이라 음계가 다릅니다 —
-   조용한 곳은 단조·느리게, 밝은 곳은 장조·빠르게.
+   ---- 라이선스: CC0 만 씁니다 ----
+   열 곡 전부 freesound.org 에서 받은 **CC0 1.0**(퍼블릭 도메인 기증)
+   입니다. 곡마다 원본 페이지를 열어 "Creative Commons 0" 이라고 적힌
+   것만 골랐고, 제목·작가·주소·확인 날짜는 docs/audio/CREDITS.md 에
+   한 줄씩 적어 두었습니다. 표기 의무가 없는 라이선스지만 적습니다 —
+   나중에 "이건 어디서 났어요" 를 물었을 때 대답이 한 줄로 끝나야 합니다.
 
-   앰비언트를 끄지 않습니다. 앰비언트는 "그 공간의 소음"이고 음악은 그 위에
-   얹는 것이라, 둘이 같이 있어야 도서관이 도서관으로 들립니다. */
+   확인하고 **뺀** 것들 —
+     · Pixabay — 자체 라이선스라 CC0 이 아닙니다("standalone 재배포 금지"
+       조항이 있어 CC0·CC-BY·PD 어느 쪽도 아닙니다).
+     · FreePD — 17년 만에 문을 닫았습니다. 새로 받을 곳도 다시 확인할
+       곳도 없어서 "예전엔 PD 였다" 말고는 댈 근거가 없습니다.
+     · Incompetech(CC-BY 4.0) · Indie Meditations(CC-BY 4.0) — 쓸 수는
+       있지만 저작물이 울리는 화면에서 표기가 닿아야 합니다. 그 자리를
+       만들 계획이 없으므로 CC0 만 씁니다.
+     · freesound 611050 "Electric Dream Ambient" — 곡은 맞는데 원본
+       페이지가 **Attribution 4.0** 이었습니다. CC0 만 모아 놨다는 목록에
+       섞여 있던 것이라, 목록을 믿지 말고 한 곡씩 열어 봐야 한다는 증거로
+       CREDITS.md 에 남겼습니다.
+     · freesound 652432 — 페이지가 404 입니다. 파일은 손에 있지만
+       라이선스를 확인할 곳이 사라졌으므로 안 씁니다.
+
+   ---- 파일 ----
+   모노 Ogg Vorbis(q1 · 44.1kHz). 열 곡 합쳐 432.7초 · 2,544,399 바이트
+   (2.4MiB), 평균 47.0kbps 입니다. 스테레오를 버린 이유는 이 음악이
+   앰비언트 **아래에서** 깔리는 소리라 좌우 폭이 들릴 자리가 아니고,
+   모노면 같은 품질에서 용량이 절반이기 때문입니다.
+
+   음량은 열 곡 모두 **-20.0 LUFS** 로 맞췄습니다. 원본은 -17.1 에서
+   -30.5 까지 13.4dB 이 벌어져 있어서, 그대로 얹으면 곡을 바꿀 때마다
+   사람이 음량을 다시 만져야 합니다. 봉우리는 -2dBFS 리미터로만 눌렀고
+   (통째로 줄이면 뮤직박스처럼 튀는 음이 있는 곡만 3dB 작게 들립니다),
+   결과는 -20.0 ~ -20.4 LUFS · 피크 -1.5 ~ -8.7 dBFS 입니다.
+
+   ---- 이음매 ----
+   곡마다 스펙트럼 자기상관으로 되풀이 지점을 찾아 그 길이로 자르고,
+   꼬리 0.4~2.0초를 머리 위에 겹쳐 접었습니다(예: play 는 50.85초에서
+   상관 0.997, calm 은 87.96초에서 0.966). 코드로 만들던 음악은 원리상
+   끊김이 없었으므로, 파일로 바꾸면서 1분마다 딸깍거리면 그건 **없던
+   문제를 만든 것**입니다.
+
+   ---- 앰비언트는 그대로 둡니다 ----
+   앰비언트는 "그 공간의 소음"이고 음악은 그 위에 얹는 것이라, 둘이 같이
+   있어야 도서관이 도서관으로 들립니다. 음악만 musicGain 을 한 단 더
+   지나게 해서, 사람이 음량을 0 으로 내리거나 곡을 끔으로 두어도 공간의
+   소음은 남습니다.
+
+   ---- 아티팩트에서는 조용합니다 ----
+   build-artifact.mjs 는 png·서체·옆 스크립트만 파일 안에 박고 오디오는
+   안 박습니다. 아티팩트는 바깥 요청을 전부 막으므로 거기서는 fetch 가
+   실패하고 음악이 빠집니다(앰비언트는 코드라 그대로 울립니다). 일부러
+   그대로 둡니다 — 넣으면 base64 4/3 배가 붙어 5.1MB 짜리 단일 HTML 이
+   8MB 를 넘고, 아티팩트의 존재 이유가 "링크 하나로 열리는 것" 이라
+   그 값을 배경음악에 쓰지 않습니다. 실패는 조용히 삼키지 말고 왜
+   안 나오는지를 MUSIC_WHY 에 담아 설정 화면이 그대로 말합니다. */
+const MUSIC_DIR = 'assets/audio/';
+
+/* 곡 표.
+
+   id 는 저장된 값입니다 — 예전 판본에서 곡을 골라 둔 사람의
+   girin.room.bgmTrack 에 calm · bright · warm · night 가 들어 있어서,
+   그 넷은 이름을 그대로 지켰습니다. 저장소를 건드리는 이사 코드 없이
+   그 사람의 선택이 새 파일을 가리킵니다. 나머지 여섯이 이번에 늘어난
+   자리입니다.
+
+   sec 는 실제 파일 길이입니다. 화면에 쓰지는 않지만, 파일만 갈아 끼우고
+   표를 안 고친 경우를 scripts/openworld-music.test.mjs 가 이 값으로
+   잡습니다. by 는 CREDITS.md 와 짝이 맞는지 보는 열쇠입니다. */
 const MUSIC = {
-  calm:   { name: '조용한 오후', bpm: 60, wave: 'sine',     root: 220.00,
-            steps: [0, 7, 11, 7, 4, 7], pad: [0, 7],     gain: 0.055, len: 1.9 },
-  bright: { name: '볕 드는 마당', bpm: 92, wave: 'triangle', root: 293.66,
-            steps: [0, 4, 7, 9, 7, 4, 2, 4], pad: [0, 4, 7], gain: 0.042, len: 0.9 },
-  warm:   { name: '저녁 방',     bpm: 54, wave: 'sine',     root: 174.61,
-            steps: [0, 3, 7, 10, 7, 3], pad: [0, 3, 7], gain: 0.060, len: 2.2 },
-  night:  { name: '늦은 밤',     bpm: 46, wave: 'sine',     root: 146.83,
-            steps: [0, 5, 7, 12, 7, 5], pad: [0, 7],     gain: 0.055, len: 2.6 },
+  calm:   { name: '조용한 오후',  file: 'calm.ogg',   sec: 87.96, by: 'LightMister' },
+  bright: { name: '볕 드는 마당', file: 'bright.ogg', sec: 66.80, by: 'SondreDrakensson' },
+  warm:   { name: '저녁 방',      file: 'warm.ogg',   sec: 54.85, by: 'Erokia' },
+  night:  { name: '늦은 밤',      file: 'night.ogg',  sec: 39.75, by: 'szegvari' },
+  errand: { name: '볼일 보는 길', file: 'errand.ogg', sec: 15.98, by: 'Leszek_Szary' },
+  play:   { name: '삼 분만',      file: 'play.ogg',   sec: 50.85, by: 'michorvath' },
+  shop:   { name: '좌판 앞',      file: 'shop.ogg',   sec: 11.00, by: 'Rolly-SFX' },
+  noon:   { name: '한낮의 마당',  file: 'noon.ogg',   sec: 12.00, by: 'pinkinblue' },
+  study:  { name: '창가 자리',    file: 'study.ogg',  sec: 33.51, by: 'Hakren' },
+  water:  { name: '물가',         file: 'water.ogg',  sec: 60.00, by: 'SondreDrakensson' },
 };
-/* 장소별 기본 곡. 본관은 도서관과 같은 곡을 씁니다 — 둘 다 "집중하는 곳"
-   이라 음악까지 다르면 공간이 아니라 곡이 기억에 남습니다. */
-const ZONE_TRACK = {
-  library: 'calm', mainhall: 'calm', dorm: 'warm', union: 'bright', campus: 'bright',
-  /* 미니게임관은 학생회관과 같은 곡입니다 — 둘 다 볼일 보고 나가는 곳이라,
-     여기만 다른 곡을 깔면 3분 있다 나오는 방이 제일 기억에 남습니다. */
-  arcade: 'bright',
-};
-const semi = (root, n) => root * Math.pow(2, n / 12);
 
-const BGM = { id: null, timer: 0, step: 0, next: 0, out: null, pad: null };
+/* 장소별 기본 곡.
+
+   **본관은 도서관과 같은 곡을 씁니다.** 둘 다 "집중하는 곳" 이라 음악까지
+   다르면 공간이 아니라 곡이 기억에 남습니다. 곡이 넷뿐이던 시절의 결정인데
+   열 곡이 된 지금도 지킵니다 — 파일이 남아돈다고 해서 두 방을 갈라야 할
+   이유가 생기는 것은 아니고, 이 둘은 애초에 "오래 앉는 자리" 하나입니다.
+
+   대신 **미니게임관은 갈랐습니다.** 예전에는 학생회관과 같은 곡이었고
+   그 이유가 "여기만 다른 곡을 깔면 3분 있다 나오는 방이 제일 기억에
+   남는다" 였습니다. 그 걱정은 곡이 넷이라 미니게임관에 줄 것이 밝은
+   아르페지오밖에 없을 때의 이야기입니다. 지금은 8비트 곡이 따로 있고,
+   미니게임관은 "기억에 남는 것" 이 실패가 아니라 목적인 유일한 방입니다.
+
+   **운동장과 호수에는 따로 안 답니다.** 둘은 존이 아니라 캠퍼스 안의
+   좌표입니다(PLACES 의 field·lake 는 to 가 campus 입니다). 걸어 다니는
+   동안 좌표로 곡을 바꾸면 잔디밭을 가로지를 때마다 음악이 두 번 넘어가고,
+   그러면 공간이 아니라 전환이 들립니다. 물가에 어울리는 곡(water)은
+   설정에서 직접 고를 수 있게 두는 것으로 갈음합니다. */
+const ZONE_TRACK = {
+  library: 'calm', mainhall: 'calm', dorm: 'warm', union: 'errand', campus: 'bright',
+  arcade: 'play', clubshop: 'shop',
+};
+/* 어느 장소의 기본도 아닌 곡 넷 — night · noon · study · water 는 사람이
+   설정에서 직접 골랐을 때만 나옵니다. 이 자리는 예전 night 하나가 하던
+   일이고, "장소 따라" 를 안 쓰는 사람에게 고를 것을 주는 것이 이 곡들의
+   쓸모입니다. */
+
+const BGM = { id: null, want: undefined, src: null, out: null };
+/* 받아 둔 곡. 같은 방을 다시 들어갈 때마다 다시 받으면 문을 지날 때마다
+   네트워크가 도는데, 곡 하나가 60~470KB 라 열 곡을 다 들러도 2.4MB 입니다. */
+const musicBuf = new Map();
+/* 늦게 도착한 응답이 지금 곡을 덮지 않게 하는 번호표. 도서관 문을 열자마자
+   기숙사로 뛰면 도서관 곡의 fetch 가 나중에 끝나는데, 그때 그대로 틀면
+   기숙사에서 도서관 곡이 납니다. */
+let musicSeq = 0;
+let MUSIC_WHY = '';
 
 /** 지금 울려야 할 곡. 사람이 고른 게 있으면 그것, 아니면 장소 기본. */
 function trackFor(zone) {
@@ -15159,70 +15373,87 @@ function trackFor(zone) {
   return ZONE_TRACK[zone] || null;
 }
 
+/** 음악 손잡이를 지금 값으로 맞춥니다. 뚝 바꾸면 딸깍 소리가 납니다. */
+function syncMusicVolume() {
+  if (!AUDIO.musicGain) return;
+  const g = AUDIO.musicGain.gain, t = AUDIO.ctx.currentTime;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(g.value, t);
+  g.linearRampToValueAtTime(musicGainValue(), t + 0.15);
+}
+
+/** 파일 하나를 받아 디코드해 둡니다. 두 번째부터는 받아 둔 것을 씁니다. */
+function loadTrack(id) {
+  if (musicBuf.has(id)) return Promise.resolve(musicBuf.get(id));
+  const ctx = audioCtx();
+  const spec = MUSIC[id];
+  if (!ctx || !spec) return Promise.resolve(null);
+  const url = MUSIC_DIR + spec.file;
+  return fetch(url)
+    .then((r) => {
+      if (!r.ok) throw new Error(url + ' → ' + r.status);
+      return r.arrayBuffer();
+    })
+    /* decodeAudioData 를 프라미스로 씁니다. 사파리 옛 판은 콜백만 받는데,
+       이 월드는 이미 다른 곳에서 프라미스 판을 쓰는 브라우저를 전제합니다. */
+    .then((b) => ctx.decodeAudioData(b))
+    .then((buf) => { musicBuf.set(id, buf); return buf; });
+}
+
 function stopMusic() {
-  clearTimeout(BGM.timer); BGM.timer = 0;
-  if (!AUDIO.ctx) { BGM.id = null; return; }
+  const src = BGM.src, out = BGM.out;
+  BGM.id = null; BGM.src = null; BGM.out = null;
+  if (!AUDIO.ctx || !src || !out) return;
   const t = AUDIO.ctx.currentTime;
-  for (const node of [BGM.out, BGM.pad]) {
-    if (!node) continue;
-    node.gain.cancelScheduledValues(t);
-    node.gain.setValueAtTime(node.gain.value, t);
-    node.gain.linearRampToValueAtTime(0, t + 0.6);
-  }
-  const dying = BGM.padOsc || [];
-  setTimeout(() => dying.forEach((o) => { try { o.stop(); } catch { /* 이미 멈춤 */ } }), 800);
-  BGM.out = null; BGM.pad = null; BGM.padOsc = null; BGM.id = null;
+  out.gain.cancelScheduledValues(t);
+  out.gain.setValueAtTime(out.gain.value, t);
+  out.gain.linearRampToValueAtTime(0, t + 0.6);
+  /* 0.6초 페이드가 끝난 **뒤에** 끊습니다. 바로 stop() 하면 페이드가
+     들리기 전에 소리가 잘려서, 문을 지날 때마다 뚝 끊깁니다. */
+  setTimeout(() => {
+    try { src.stop(); } catch { /* 이미 멈춤 */ }
+    try { src.disconnect(); out.disconnect(); } catch { /* 이미 끊김 */ }
+  }, 800);
 }
 
-/** 음 하나. 붙였다 떼는 소리라 감쇠가 길어야 방에 남습니다. */
-function pluck(ctx, freq, at, spec) {
-  const o = ctx.createOscillator(), g = ctx.createGain();
-  o.type = spec.wave; o.frequency.value = freq;
-  g.gain.setValueAtTime(0, at);
-  g.gain.linearRampToValueAtTime(spec.gain, at + 0.03);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + spec.len);
-  o.connect(g); g.connect(BGM.out);
-  o.start(at); o.stop(at + spec.len + 0.05);
-}
-
-/* 앞을 내다보며 예약합니다. requestAnimationFrame 으로 음을 내면 탭이
-   가려질 때 프레임이 멈춰 음악도 끊깁니다 — 그러면 다른 탭에서 일하는
-   동안 소리가 사라집니다. WebAudio 시계에 미리 꽂아 둡니다. */
-function pumpMusic() {
-  const ctx = AUDIO.ctx, spec = MUSIC[BGM.id];
-  if (!ctx || !spec) return;
-  const beat = 60 / spec.bpm;
-  while (BGM.next < ctx.currentTime + 0.6) {
-    const n = spec.steps[BGM.step % spec.steps.length];
-    pluck(ctx, semi(spec.root, n), Math.max(BGM.next, ctx.currentTime + 0.02), spec);
-    BGM.step++; BGM.next += beat;
-  }
-  BGM.timer = setTimeout(pumpMusic, 250);
+function playTrack(id, buf) {
+  const ctx = AUDIO.ctx;
+  const out = ctx.createGain();
+  out.gain.value = 0;
+  out.connect(AUDIO.musicGain);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  /* 이음매를 미리 접어 두었으므로 loop 만 켜면 끝입니다. loopStart/End 를
+     안 건드립니다 — 파일 전체가 곧 한 바퀴입니다. */
+  src.loop = true;
+  src.connect(out);
+  src.start();
+  /* 1.2초에 걸쳐 올립니다. 문을 열자마자 음악이 튀어나오면 방에 들어간
+     것이 아니라 스피커를 켠 것이 됩니다. */
+  out.gain.linearRampToValueAtTime(1, ctx.currentTime + 1.2);
+  BGM.id = id; BGM.src = src; BGM.out = out;
 }
 
 function setMusic(zone) {
   const want = trackFor(zone);
-  if (BGM.id === want) return;
+  /* 같은 곡이면 이어서 틉니다. 도서관에서 본관으로 넘어갈 때 곡이 처음으로
+     돌아가면, 두 방이 같은 곡이라는 결정이 오히려 눈에 띕니다. */
+  if (want === BGM.want) return;
+  BGM.want = want;
+  const seq = ++musicSeq;
   stopMusic();
-  if (!want) return;
-  const ctx = audioCtx();
-  if (!ctx) return;
-  const spec = MUSIC[want];
-
-  BGM.out = ctx.createGain(); BGM.out.gain.value = 1; BGM.out.connect(AUDIO.bgmGain);
-  /* 화음 한 겹 — 음만 있으면 방이 비어 들립니다. 아주 작게 깔아 둡니다. */
-  BGM.pad = ctx.createGain(); BGM.pad.gain.value = 0;
-  BGM.pad.connect(AUDIO.bgmGain);
-  BGM.padOsc = spec.pad.map((n) => {
-    const o = ctx.createOscillator();
-    o.type = 'sine'; o.frequency.value = semi(spec.root / 2, n);
-    o.connect(BGM.pad); o.start();
-    return o;
+  if (!want || !audioCtx()) return;
+  loadTrack(want).then((buf) => {
+    if (!buf || seq !== musicSeq) return;   // 그새 다른 방으로 갔습니다
+    MUSIC_WHY = '';
+    playTrack(want, buf);
+  }).catch((e) => {
+    if (seq !== musicSeq) return;
+    /* 정적 파일이 없거나(아티팩트·오프라인) 디코드가 막힌 경우입니다.
+       조용히 삼키면 "음악이 원래 없는 줄" 알게 되므로 이유를 남깁니다. */
+    MUSIC_WHY = '음악 파일을 못 읽었어요 (' + (e && e.message ? e.message : '알 수 없음') + ').';
+    console.warn('[music]', e);
   });
-  BGM.pad.gain.linearRampToValueAtTime(spec.gain * 0.5, ctx.currentTime + 1.2);
-
-  BGM.id = want; BGM.step = 0; BGM.next = ctx.currentTime + 0.15;
-  pumpMusic();
 }
 
 /** 장소가 바뀌면 앞엣것을 접고 새로 답니다. 뚝 끊으면 문을 지날 때마다

@@ -13,7 +13,7 @@
    다릅니다. (나)는 어디서 열어도 같은 화면이라 빌드 산출물만 보고
    확인할 수 있습니다. 대신 랜딩의 상대경로를 여기서 고쳐야 합니다 —
    아래 REWRITE 가 그 전부이고, 안 맞으면 마지막 검사에서 빌드가 멈춥니다. */
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 
 /* ponytail: cpSync({recursive}) 가 이 윈도우+node 22.19 조합에서 세그폴트라 직접 걷습니다 */
 function copyDir(src, dst, onHtml) {
@@ -37,6 +37,42 @@ const fixFonts = (html) => html.replaceAll('../../public/fonts/', '/fonts/');
    ("Unexpected token '<'"). 로컬에서는 파일이 옆에 있어 안 드러납니다. */
 for (const name of ['landing', 'onboarding', 'openworld', 'room-flow', 'shared']) {
   copyDir(`prototypes/${name}`, `dist/prototypes/${name}`, fixFonts);
+}
+
+/* ---- 배경음악 파일이 실제로 dist 까지 갔는지 ----
+   copyDir 은 재귀라 assets/audio/ 도 따라옵니다. 그런데 "따라오게 되어
+   있다" 와 "따라왔다" 는 다른 말이고, 이 저장소는 그 차이로 두 번
+   데었습니다 — shared/ 가 목록에 없어 배포본에서만 404 였고, 랜딩의
+   엠블럼은 리라이트가 **역따옴표를 안 봐서** 다섯 장이 빈 칸이었습니다
+   (아래 REWRITE 주석). 둘 다 로컬에서는 파일이 옆에 있어 안 드러납니다.
+
+   음악은 그중에서도 조용히 실패합니다. 그림이 빠지면 빈 네모가 보이지만
+   소리가 빠지면 화면은 멀쩡하고, 월드가 원래 조용한 줄 압니다. 그래서
+   바이트 수까지 맞춰 보고 안 맞으면 여기서 빌드를 멈춥니다.
+
+   openworld 는 dist 에서도 /prototypes/openworld/ 그대로라 상대경로
+   `assets/audio/…` 가 그대로 맞습니다. 랜딩처럼 `/` 로 옮기는 파일이
+   아니므로 경로를 고칠 일이 없고, 고칠 일이 없으니 역따옴표 함정도
+   없습니다 — 대신 "안 고쳐도 되는 게 맞나" 를 이 검사가 대신 봅니다. */
+const AUDIO_SRC = 'prototypes/openworld/assets/audio';
+const AUDIO_DST = 'dist/prototypes/openworld/assets/audio';
+{
+  const want = existsSync(AUDIO_SRC) ? readdirSync(AUDIO_SRC).filter((f) => f.endsWith('.ogg')) : [];
+  if (!want.length) throw new Error(`${AUDIO_SRC} 에 배경음악(.ogg)이 없습니다`);
+  const missing = [];
+  for (const f of want) {
+    const a = `${AUDIO_SRC}/${f}`, b = `${AUDIO_DST}/${f}`;
+    if (!existsSync(b)) missing.push(`${f} (없음)`);
+    else if (statSync(a).size !== statSync(b).size) missing.push(`${f} (크기 다름)`);
+  }
+  if (missing.length) throw new Error(`dist 에 배경음악이 안 갔습니다: ${missing.join(' · ')}`);
+  /* index.html 이 그 폴더를 실제로 부르는지도 같이 봅니다. 파일만 복사되고
+     코드가 다른 곳을 보고 있으면 검사가 통과해도 소리는 안 납니다. */
+  const world = readFileSync(`${AUDIO_DST}/../../index.html`, 'utf8');
+  if (!world.includes(`'assets/audio/'`)) {
+    throw new Error("dist/prototypes/openworld/index.html 이 'assets/audio/' 를 안 부릅니다");
+  }
+  console.log(`dist/…/openworld/assets/audio: ${want.length}개 확인`);
 }
 
 /* React 본서비스는 자리만 비켜 줍니다. 안에서 쓰는 주소가 전부 `/assets/…`

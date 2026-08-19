@@ -426,16 +426,19 @@ const PAINT = {
   giraffe: {
     back(f) {
       const mane = '#8c461e', maneLit = '#dc7828', spot = '#f08c32'
-      /* 갈기는 목덜미에만. 머리부터 꼬리까지 두 줄로 그으면 갈기가 아니라
-         지퍼로 보입니다 — 한 줄로 짧게, 끝은 엇갈리게 흐립니다. */
-      for (let y = 21; y <= 27; y++) {
+      /* 갈기는 목덜미에만. 머리부터 꼬리까지 두 줄로 내리그으면 갈기가
+         아니라 지퍼로 보입니다 — 짧게, 끝은 한 톤 밝게 흐립니다.
+         밝은 색으로만 그었더니 얼룩과 섞여 안 보여서 짙은 색을 씁니다. */
+      for (let y = 20; y <= 27; y++) {
         if (!inset(f, 15, y, 1)) continue
         f.over(15, y, y > 25 ? maneLit : mane)
-        if (y < 25) f.over(16, y, maneLit)
+        if (y <= 25) f.over(16, y, y > 22 ? maneLit : mane)
       }
-      // 꼬리 — 엉덩이에서 한 줄 내려와 술로 끝납니다
-      for (let y = 34; y <= 39; y++) if (inset(f, 15, y, 1)) f.over(15, y, maneLit)
-      for (const [x, y] of [[15, 40], [15, 41], [16, 41]]) f.over(x, y, mane)
+      /* 꼬리 — 엉덩이에서 한 줄 내려와 술로 끝납니다. 다리 사이(투명)까지
+         내려가므로 실루엣이 그만큼 넓어집니다. 넓어지는 쪽은 아이템 깎기에
+         안전하고, 바지를 입으면 바지 뒤로 들어갑니다. */
+      for (let y = 33; y <= 40; y++) f.over(15, y, y < 36 ? mane : maneLit)
+      for (const [x, y] of [[15, 41], [15, 42], [16, 42], [15, 43]]) f.set(x, y, mane)
       for (const [x, y] of [[11, 28], [19, 30], [12, 34], [20, 35], [10, 31]])
         if (inset(f, x, y, 1)) { f.over(x, y, spot); f.over(x + 1, y, spot); f.over(x, y + 1, spot) }
     },

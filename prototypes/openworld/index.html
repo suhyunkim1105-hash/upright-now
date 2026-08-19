@@ -9924,10 +9924,17 @@ function bakeStance(g, sheet, G, d, row) {
   const leg = (left, { up = 0, slide = 0, hip = 0, dy = 0, dx = 0 } = {}) => {
     const x = left ? 0 : 16;
     if (slide) {
-      /* 발끝만 밉니다. 통째로 밀면 엉덩이가 몸에서 뜯어집니다. */
+      /* 발끝만 밉니다. 통째로 밀면 엉덩이가 몸에서 뜯어집니다.
+         한 칸 밀린 줄은 **밀기 전 자리에도 한 번 더** 찍습니다. 백조 다리는
+         y40-41 이 1px 짜리 막대라, 위아래 줄이 대각선으로만 닿으면 발이
+         다리에서 떨어져 나갑니다(덩이 검사에서 백조만 걸렸습니다). */
+      let prev = 0;
       for (let y = legTop; y < CHAR_H; y++) {
         const t = (y - legTop) / (CHAR_H - 1 - legTop);
-        blit(x, y, 16, 1, x + dx + Math.round(slide * t), y + dy - up);
+        const s = Math.round(slide * t);
+        if (s !== prev) blit(x, y, 16, 1, x + dx + prev, y + dy - up);
+        blit(x, y, 16, 1, x + dx + s, y + dy - up);
+        prev = s;
       }
     } else {
       blit(x, legTop, 16, CHAR_H - legTop, x + dx, legTop + dy - up);

@@ -1536,9 +1536,9 @@ const PROP = {
    패널 이름이 따로 논 적도 있습니다. 그래서 **표를 하나만 둡니다.**
    여기 한 줄을 고치면 관문 · 월드 · 안내소가 같이 따라옵니다.
 
-     key    RW.daily.games 에 쌓이는 이름이자 패널 이름입니다. 코인이
-            하루 한 번인지 여기로 셉니다 — 패널 key 와 반드시 같아야
-            earn() 이 옳은 칸을 셉니다.
+     panel  PANELS 의 이름이자 RW.daily.games 에 쌓이는 이름입니다. 코인이
+            하루 한 번인지도 이 이름으로 셉니다 — 둘이 같은 문자열이라야
+            earn() 이 옳은 칸을 셉니다. 그래서 이름을 하나만 둡니다.
      zone   세울 존. prop/x/y 로 그 자리에 소품과 만질 것을 같이 놓습니다.
      go     안내소의 '바로 가기'가 데려다 놓는 칸. 막힌 칸이면 안 되고,
             거기서 Space 가 그 게임에 닿아야 합니다. 관문은 **문 안**이
@@ -1550,32 +1550,32 @@ const MINIGAMES = [
      순서는 왼쪽부터 몸 · 머리 · 기억 · 손입니다. 색은 자리에 붙은 것이라
      GATE_STYLE 이 따로 들고 있습니다 — 안의 게임이 바뀌어도 "아까 그
      노란 문" 이 그대로여야 합니다. */
-  { key: 'giraffeNeck', name: '기린 목 펴기', where: '미니게임관',
+  { name: '기린 목 펴기', panel: 'giraffeNeck', where: '미니게임관',
     how: '연타로 목을 폅니다', zone: 'arcade', prop: 'gateA', x: 2, y: 3,
     go: ['arcade', 3, 5], glow: [2, 4, 3] },
-  { key: 'escapeRoom', name: '방탈출', where: '미니게임관',
+  { name: '방탈출', panel: 'escapeRoom', where: '미니게임관',
     how: '단서를 찾아 번호를 맞춥니다', zone: 'arcade', prop: 'gateEsc', x: 7, y: 3,
     go: ['arcade', 8, 5], glow: [2, 4, 3] },
-  { key: 'animalFind', name: '기억력 카드', where: '미니게임관',
+  { name: '기억력 카드', panel: 'animalFind', where: '미니게임관',
     how: '같은 동물 카드 짝을 맞춥니다', zone: 'arcade', prop: 'gateB', x: 12, y: 3,
     go: ['arcade', 13, 5], glow: [2, 4, 3] },
-  { key: 'giraffeStack', name: '기린 목 쌓기', where: '미니게임관',
+  { name: '기린 목 쌓기', panel: 'giraffeStack', where: '미니게임관',
     how: '움직이는 블록을 맞춰 떨어뜨립니다', zone: 'arcade', prop: 'gateC', x: 17, y: 3,
     go: ['arcade', 18, 5], glow: [2, 4, 3] },
 
   /* ---- 밖에 있는 것들 ----
      자기 자리에 있습니다. 달리기는 운동장, 낚시는 호수, 책 정리는
      도서관. 대신 못 찾는 문제가 생기므로 위 안내소가 그것을 맡습니다. */
-  { key: 'postureRun', name: '거북목 탈출 러너', where: '운동장',
+  { name: '거북목 탈출 러너', panel: 'postureRun', where: '운동장',
     how: '고개를 들면 뛰어넘습니다', zone: 'campus', prop: 'runBoard', x: 3, y: 13,
     go: ['campus', 5, 14] },
-  { key: 'trackRace', name: '달리기 시합', where: '운동장',
+  { name: '달리기 시합', panel: 'trackRace', where: '운동장',
     how: '좌우를 번갈아 밟아 100m', zone: 'campus', prop: 'startGate', x: 7, y: 13,
     go: ['campus', 8, 15] },
-  { key: 'pondFish', name: '연못 낚시', where: '호수',
+  { name: '연못 낚시', panel: 'pondFish', where: '호수',
     how: '찌가 잠기는 순간을 챕니다', zone: 'campus', prop: 'fishDeck', x: 5, y: 30,
     go: ['campus', 5, 29] },
-  { key: 'bookSort', name: '책 정리', where: '도서관',
+  { name: '책 정리', panel: 'bookSort', where: '도서관',
     how: '청구기호 순서대로 꽂습니다', zone: 'library', prop: 'bookCart', x: 25, y: 21,
     go: ['library', 25, 20] },
 ];
@@ -4785,7 +4785,7 @@ function placeMinigames(m, id) {
   for (const g of MINIGAMES) {
     if (g.zone !== id) continue;
     prop(m, g.prop, g.x, g.y);
-    m.things.push({ x: g.x, y: g.y, name: g.name, panel: g.key });
+    m.things.push({ x: g.x, y: g.y, name: g.name, panel: g.panel });
     if (g.glow) floorGlow(m.floor, g.x + g.glow[0], g.y + g.glow[1], g.glow[2]);
   }
 }
@@ -13365,12 +13365,12 @@ function minigameRows() {
       if (html) html += '</div>';
       html += `<p class="hint" style="margin:16px 0 0;font-weight:700;color:var(--ink-2)">${esc(g.where)}</p><div class="rows">`;
     }
-    const got = done.includes(g.key);
+    const got = done.includes(g.panel);
     html += `<div class="row"><span>${esc(g.name)} <em>${esc(g.how)}</em></span>`
       + `<span class="val"${got ? ' style="color:var(--ink-3)"' : ''}>${got ? '오늘 받음' : COIN_MINIGAME + '코인'}</span>`
       /* 흩어 놓은 배치를 쓸 수 있게 만드는 것이 이 단추입니다. 이게 없으면
          "호수 옆에 있대" 를 듣고 지도를 다시 펴야 합니다. */
-      + `<button class="act ghost" data-goto="${esc(g.key)}" style="margin-left:10px;flex:none">바로 가기</button></div>`;
+      + `<button class="act ghost" data-goto="${esc(g.panel)}" style="margin-left:10px;flex:none">바로 가기</button></div>`;
   }
   return html + (html ? '</div>' : '');
 }
@@ -14163,7 +14163,7 @@ panelBody.addEventListener('click', (e) => {
      그 앞에 서서 Space 를 누르는 것까지가 "거기에 간" 것입니다. */
   const goto = e.target.closest('[data-goto]');
   if (goto) {
-    const g = MINIGAMES.find((q) => q.key === goto.dataset.goto);
+    const g = MINIGAMES.find((q) => q.panel === goto.dataset.goto);
     if (g) enterZone(g.go[0], g.go[1], g.go[2]);
     return;
   }

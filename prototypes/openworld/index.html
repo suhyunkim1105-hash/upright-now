@@ -1992,6 +1992,24 @@ function roofIcon(g, kind, cx, cy, R) {
     px(g, cx + 4, cy + hh - 2, 2, 6, '#2DD4BF');
     px(g, cx + 4, cy + hh + 3, 2, 2, '#D8442C');
   }
+  else if (kind === 'bag') {
+    /* 장바구니 — 동아리 상점. 여섯 건물 중 유일하게 장사하는 집이라
+       상징도 기관의 것(책·우승컵·달)이 아니라 물건 파는 집의 것입니다.
+       손잡이를 먼저 그려 자루 뒤로 넣습니다 — 앞에 그리면 붙어 있는
+       고리가 아니라 위에 얹힌 반지가 됩니다. */
+    px(g, cx - 5, cy - 9, 2, 5, ink);                    // 손잡이 왼쪽
+    px(g, cx + 3, cy - 9, 2, 5, ink);                    // 손잡이 오른쪽
+    px(g, cx - 4, cy - 10, 8, 2, ink);                   // 손잡이 위
+    px(g, cx - 3, cy - 9, 6, 1, '#F2C64A');
+    /* 자루 — 위가 넓고 아래로 아주 조금 좁아집니다 */
+    px(g, cx - 8, cy - 5, 16, 13, ink);
+    px(g, cx - 7, cy - 4, 14, 11, '#E0776C');
+    px(g, cx - 7, cy - 4, 14, 3, '#F0A096');             // 빛 받는 윗면
+    px(g, cx - 7, cy + 5, 14, 2, '#B3453C');             // 바닥 그늘
+    /* 접힌 자국 둘 — 없으면 빨간 상자입니다 */
+    px(g, cx - 3, cy - 3, 1, 9, 'rgba(0,0,0,.18)');
+    px(g, cx + 2, cy - 3, 1, 9, 'rgba(0,0,0,.18)');
+  }
   else if (kind === 'trophy') {
     /* 우승컵 — 명예의 전당. 손잡이가 없으면 화분입니다. */
     /* 손잡이 먼저 — 컵 뒤로 들어가야 붙어 보입니다 */
@@ -2433,6 +2451,15 @@ const IPAL = {
     iBase: '#BCAECE', iShadow: '#8C7EA0',
     frame: '#6E52A8', glass: '#D6CCEE', glassLit: '#F2ECFB', trim: '#4A3478',
   },
+  /* 동아리 상점 — 붉은 벽돌 가게. 여섯 중 유일하게 장사하는 집이라
+     천장·몰딩이 다른 다섯보다 따뜻합니다. 벽은 크림으로 두어 진열된
+     물건이 벽보다 먼저 보이게 합니다 — 가게에서 가장 밝아야 하는 것은
+     파는 물건입니다. */
+  clubshop: {
+    iWall: '#F3E7DA', iWallLit: '#FBF3EA', iCeil: '#8E332C', iTrim: '#C4544A',
+    iBase: '#C9AE97', iShadow: '#9A8270',
+    frame: '#A85248', glass: '#F0D6CC', glassLit: '#FCEFE9', trim: '#8E332C',
+  },
 };
 
 /* ---- 네 건물. 조감도(campus-map.html)의 팔레트·실루엣을 그대로 옮깁니다 ---- */
@@ -2495,6 +2522,22 @@ const BSPEC = {
      하나로 갈라놓습니다. 창도 넷이 다 네모라 여기만 동그랗습니다.
      지붕 위 물탱크만 넷과 같습니다 — 같은 캠퍼스의 같은 시공사가 지은
      건물로 보여야 하니 하나는 공유합니다. */
+  /* 동아리 상점 — 붉은 벽돌에 천 차양. 여섯 중 유일하게 **장사하는 집**
+     이라 나머지 다섯(기관)과 결이 달라야 합니다. 지붕에 돔도 첨탑도
+     없고, 대신 차양(win: 'shop')과 간판이 정면을 채웁니다.
+     물탱크 하나만 다섯과 공유합니다 — 같은 캠퍼스의 같은 시공사. */
+  bldClub: {
+    w: 11, h: 7, win: 'shop',
+    pal: { roof: '#C4544A', lit: '#E0776C', dark: '#8E332C',
+           wall: '#F7EFE6', wallDark: '#CBB6A8', trim: '#C98F76',
+           frame: '#8A6B5E', glass: '#5A4038', glassLit: '#C29A88' },
+    sign: { text: '동아리 상점', c: '#5A211C' },
+    features: [
+      { k: 'medal', x: 5.5, y: 3.1, r: 13, icon: 'bag' },
+      { k: 'tank', x: 1.4, y: 1.2, r: 5 },
+      { k: 'tank', x: 9.6, y: 1.2, r: 5 },
+    ],
+  },
   bldArcade: {
     w: 12, h: 8, win: 'round',
     pal: { roof: '#7A5AAE', lit: '#9E80D2', dark: '#523780',
@@ -2513,6 +2556,8 @@ PROP.bldMain    = buildingProp(BSPEC.bldMain);
 PROP.bldLibrary = buildingProp(BSPEC.bldLibrary);
 PROP.bldDorm    = buildingProp(BSPEC.bldDorm);
 PROP.bldUnion   = buildingProp(BSPEC.bldUnion);
+/* 동아리 상점은 여기서 안 굽습니다 — 간판에 글자가 있고, 픽셀 글자
+   (PXTEXT)는 이 줄보다 아래에서 만들어집니다. 미니게임관과 같이 굽습니다. */
 /* 미니게임관은 여기서 안 굽습니다 — 간판에 글자가 있고, 픽셀 글자
    (PXTEXT)는 이 줄보다 아래에서 만들어집니다. paintGates 바로 뒤에서
    같이 굽습니다. */
@@ -2983,6 +3028,8 @@ TEXT_ART.push(paintGates);
    준비된 여기서 굽고 글꼴이 온 뒤 한 번 더 굽습니다(위 BSPEC 주석). */
 PROP.bldArcade = buildingProp(BSPEC.bldArcade);
 TEXT_ART.push(() => { PROP.bldArcade.canvas = paintBuilding(BSPEC.bldArcade); });
+PROP.bldClub   = buildingProp(BSPEC.bldClub);
+TEXT_ART.push(() => { PROP.bldClub.canvas = paintBuilding(BSPEC.bldClub); });
 
 /* ---- 서가 3×2 ----
    책등 색을 무작위로 흩되 폭은 2~4px 로 묶습니다. 폭까지 무작위면
@@ -5248,6 +5295,9 @@ const ZONES = {};
      들어가자마자 벽에 박힙니다. */
   placeBuilding(m, 'bldUnion',   16, 30, 'union',    12, 10, '학생회관');
   placeBuilding(m, 'bldArcade',  32, 2,  'arcade',   11, 10, '미니게임관');
+  /* 동아리 상점 — 남동. 도서관(y16~23)과 다섯 줄 떨어뜨려 세웁니다.
+     문은 아래(y32)이고 앞마당이 y33~35 라, 천막 둘이 그 좌우에 섭니다. */
+  placeBuilding(m, 'bldClub',    34, 26, 'clubshop', 11, 12, '동아리 상점');
   /* placeBuilding 이 문 앞에 깔아 준 포장을 도로 걷습니다. 여기는 이미
      판석 마당이고, 그 위에 또 포장을 얹으면 마당 한복판에 회색 네모가
      하나 뜹니다. 표면(GRAVEL)은 위에서 이미 칠했으므로 발소리는 그대로입니다. */
@@ -5334,12 +5384,10 @@ const ZONES = {};
 
      천 색은 이미 서로 다르게 칠해 둔 것을 그대로 씁니다(tentCanvas).
        빨강 tentA — 옷      · 파랑 tentB — 가구 · 노랑 tentC — 안내 */
-  prop(m, 'tentA', 35, 32); prop(m, 'tentB', 39, 32); prop(m, 'tentC', 43, 32);
-  m.things.push(
-    { x: 35, y: 32, name: '옷 가게',   panel: 'shopWear' },
-    { x: 39, y: 32, name: '가구 가게', panel: 'shopFurn' },
-    { x: 43, y: 32, name: '상점 안내', panel: 'market' },
-  );
+  /* 가게 셋은 이제 **건물 안**입니다(ZONES.clubshop). 천막은 그 앞마당에
+     남습니다 — 여는 것은 없고, 가게 앞에 장이 선 거리라는 표시입니다.
+     문으로 가는 길(x38~40)은 비워 둡니다. */
+  prop(m, 'tentA', 33, 34); prop(m, 'tentC', 43, 34);
   /* 바닥은 이미 깔려 있습니다(위 fillOver 의 M.GRAY 두 줄). floorGlow 는
      여기서 못 씁니다 — 그건 방 안 바닥 그림(m.floor)에 붓는 것이고
      캠퍼스는 타일 지도라 m.floor 자체가 없습니다. */
@@ -5754,11 +5802,14 @@ const DORM = ZONES.dorm;
      1칸 대화라는 문법을 셋이 똑같이 씁니다.
      미르 x4 ↔ 하연 x20 이 짝이고, 도윤 x12 는 중심 12.5 로 문과 한 축입니다. */
   m.npcs.push(
-    { x: 4, y: 4, sprite: 266, species: '고슴도치', dir: 'down',
-      worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', face: 'fac-sun' },
-      name: '알 가게 · 미르', panel: 'shopEgg',
-      line: '알 하나 깨고 나온 얼굴이네. 나머지 일곱도 여기 있어. 안 싸. '
-          + '옷이랑 가구는 이제 동아리 거리에서 팔아 — 나는 알만 봐.' },
+    /* 미르는 동아리 상점으로 옮겨 갔습니다(알 가게). 빈 창구를 그냥 두면
+       "준비 중" 자리가 되므로, 캠퍼스 안내를 여기로 올립니다 — 건물이
+       여섯이 되고 가게·미니게임이 흩어진 지금, "그건 어디서 하지" 에
+       답하는 창구가 하나 필요합니다. */
+    { x: 4, y: 4, sprite: 210, species: '백조', dir: 'down',
+      worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-dress' },
+      name: '안내 · 세연', panel: 'aboutUnion',
+      line: '처음이면 여기서 물어봐. 어디서 뭘 하는지는 내가 제일 잘 알아.' },
     /* 도윤에게는 창이 없어서 대사 한 줄만 뜨고 끝났습니다 — 창구 셋 중
        하나만 기능이 아니었습니다. 연속 출석과 오늘 획득은 코인 창이 이미
        세고 있으므로 새 창을 만들지 않고 그것을 엽니다. (민철님) */
@@ -5873,6 +5924,95 @@ const DORM = ZONES.dorm;
   /* 나가는 곳 — 다섯 건물이 전부 같은 문입니다. */
   prop(m, 'exitDoor', 10, m.h - 2);
   m.portals.push({ x: 10, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 37, sy: 11, label: '캠퍼스' });
+}
+
+/* ================== 동아리 상점 ==================
+   가게 셋이 한 지붕 아래 있습니다 — **옷 · 가구 · 알**.
+
+   천막 셋으로 길에 늘어놓았다가 건물로 들였습니다. 길에 두면 셋이
+   한눈에 보이는 대신, 파는 물건을 **진열할 자리**가 없습니다. 옷 가게에
+   옷걸이가 없고 가구 가게에 가구가 안 놓여 있으면, 그건 가게가 아니라
+   이름표가 붙은 천막입니다.
+
+   방은 25×15. 학생회관(25×13)보다 두 줄 깊습니다 — 창구만 있는 방과
+   달리 여기는 **진열대가 카운터 뒤에** 서야 하고, 그 한 켜가 가게와
+   창구를 가릅니다.
+
+   셋의 자리는 왼쪽부터 **옷 · 가구 · 알**입니다. 값이 싼 것에서 비싼
+   것으로 갑니다(100~400 · 60~420 · 800). 들어오자마자 800짜리 알이
+   눈앞에 있으면 그 방은 비싼 가게로 기억됩니다. */
+{
+  const m = makeMap(25, 15, F.gray);
+  ZONES.clubshop = m; m.name = '동아리 상점'; m.sub = '옷 · 가구 · 알';
+
+  ring(m, 0, 0, m.w, m.h, F.brickR);
+  fillBase(m, 1, 1, m.w - 2, 2, F.brickR);
+  m.floor = paintFloor(m.w, m.h, 'tile'); m.floorKind = SURF.TILE;
+  /* 가게 셋이 각자 깔개를 깔고 섭니다. 학생회관 창구와 같은 치수(3×4)라
+     "창구가 셋" 이라는 문법이 두 건물에서 같습니다. 짝은 x ↔ 24-x. */
+  floorInlay(m.floor, 3, 4, 3, 4, 'runner', '196,84,74');
+  floorInlay(m.floor, 11, 4, 3, 4, 'runner', '196,84,74');
+  floorInlay(m.floor, 19, 4, 3, 4, 'runner', '196,84,74');
+  floorInlay(m.floor, 1, 3, m.w - 2, m.h - 5, 'border');
+  floorGlow(m.floor, 4.5, 7, 3.4);
+  floorGlow(m.floor, 12.5, 7, 3.4);
+  floorGlow(m.floor, 20.5, 7, 3.4);
+
+  /* ---- 진열대 (y3) ----
+     카운터 **뒤**입니다. 실제 상점 문법이고, 앞에 두면 손님이 진열대를
+     넘어 말을 걸어야 합니다. 파는 것이 무엇인지 그림으로 먼저 말합니다 —
+     옷 가게 뒤에는 옷장과 거울, 가구 가게 뒤에는 책장과 화분,
+     알 가게 뒤에는 알 넷이 받침 위에 섭니다. */
+  prop(m, 'wardrobe', 3, 3); prop(m, 'mirror', 5, 3);
+  prop(m, 'bookshelf', 11, 3); prop(m, 'plantTall', 13, 3);
+  prop(m, 'eggTurtle', 19, 3); prop(m, 'eggGiraffe', 20, 3);
+  prop(m, 'eggMeerkat', 21, 3); prop(m, 'eggPig', 22, 3);
+
+  /* ---- 카운터 셋 (y6) ----
+     NPC 하나에 책상 하나. 학생회관과 같은 규칙입니다 — 창구 뒤에 사람이
+     서고 앞 한 칸에서 말을 겁니다. 책상 셋은 NPC 칸 한가운데에 옵니다. */
+  prop(m, 'desk3', 3, 6);      // 옷
+  prop(m, 'desk3', 11, 6);     // 가구
+  prop(m, 'desk3', 19, 6);     // 알
+
+  m.npcs.push(
+    { x: 4, y: 5, sprite: 92, species: '알파카', dir: 'down',
+      worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-dress', face: 'fac-round' },
+      name: '옷 가게 · 하린', panel: 'shopWear',
+      line: '입어 보고 아니다 싶으면 벗어도 돼. 벗는 데는 돈 안 받아.' },
+    { x: 12, y: 5, sprite: 44, species: '햄스터', dir: 'down',
+      worn: { top: 'top-tee', bottom: 'bot-trainer', shoes: 'sho-sneaker', bag: 'bag-tote' },
+      name: '가구 가게 · 우진', panel: 'shopFurn',
+      line: '사면 보관함으로 들어가. 놓는 건 네 방 옷장 앞에서 해 — 여기서 놓으면 내 가게가 좁아지잖아.' },
+    /* 미르는 학생회관 상점 창구에서 여기로 왔습니다. 알은 종을 바꾸는
+       물건이라 값이 제일 비싸고, 파는 사람도 그대로 따라옵니다. */
+    { x: 20, y: 5, sprite: 266, species: '고슴도치', dir: 'down',
+      worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', face: 'fac-sun' },
+      name: '알 가게 · 미르', panel: 'shopEgg',
+      line: '알 하나 깨고 나온 얼굴이네. 나머지 일곱도 여기 있어. 안 싸.' },
+  );
+
+  /* ---- 벽 ----
+     창 둘 사이에 코르크판. 가게 벽이라 시계는 안 답니다 — 물건 고르는
+     데 시간을 재게 하면 안 됩니다(미니게임관은 반대 이유로 시계를 답니다). */
+  dressRoom(m, IPAL.clubshop, [
+    { k: 'win', x: 7, style: 'shop' },
+    { k: 'cork', x: 15 },
+    { k: 'win', x: 21, style: 'shop' },
+  ]);
+
+  /* 안내 게시판 — 문 오른쪽. 어디서 무엇을 파는지와 코인 버는 법. */
+  prop(m, 'board', 16, 11);
+  m.things = [{ x: 16, y: 11, name: '상점 안내', panel: 'market' }];
+
+  /* 앉을 자리를 하나 둡니다 — 가게 앞 벤치. 세션 자리는 아닙니다(FOCUS
+     아님). 셋을 다 돌아본 뒤 잠깐 앉을 데가 있는 것과 없는 것은 다릅니다. */
+  prop(m, 'bench', 6, 11); prop(m, 'bench', 18, 11);
+  prop(m, 'planter', 2, 11); prop(m, 'planter', 22, 11);
+
+  /* 나가는 곳 — 여섯 건물이 전부 같은 문입니다. */
+  prop(m, 'exitDoor', 11, m.h - 2);
+  m.portals.push({ x: 11, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 39, sy: 33, label: '캠퍼스' });
 }
 
 /* ---------------- 충돌 굽기 ---------------- */
@@ -9493,7 +9633,12 @@ const SHOP_CATS = [
   { id: 'hat',    name: '모자',  shop: 'shopWear' },
   { id: 'face',   name: '안경',  shop: 'shopWear' },
   { id: 'bag',    name: '가방',  shop: 'shopWear' },
-  { id: 'furn',   name: '가구',  shop: 'shopFurn' },
+  { id: 'f-seat',  name: '앉기',   shop: 'shopFurn' },
+  { id: 'f-floor', name: '바닥',   shop: 'shopFurn' },
+  { id: 'f-store', name: '수납',   shop: 'shopFurn' },
+  { id: 'f-live',  name: '살림',   shop: 'shopFurn' },
+  { id: 'f-hobby', name: '취미',   shop: 'shopFurn' },
+  { id: 'f-green', name: '초록·불', shop: 'shopFurn' },
   { id: 'egg',    name: '알',    shop: 'shopEgg' },
 ];
 
@@ -9507,15 +9652,16 @@ const SHOP_CATS = [
      · 알 — 학생회관. 종을 바꾸는 일은 학적을 바꾸는 일이라 행정 건물이
        맞고, 그 방 진열대는 처음부터 알을 놓으라고 그려 둔 자리입니다.
    미르는 알 가게에 남습니다 — 상점에서 가장 비싼 물건을 지키는 사람. */
+/* 셋이 한 건물 안에 있습니다. 카운터 뒤에 사람이 서므로 데려다줄 때
+   **바라보는 쪽**까지 줘야 합니다 — NPC 는 바라보는 쪽 두 칸으로
+   찾습니다(findNearby). 안 주면 등을 돌린 채로 세워 놓게 됩니다. */
 const SHOPS = [
-  { key: 'shopWear', title: '옷 가게',   kind: '동아리 거리',
-    where: '동아리 거리', how: '입는 것 여섯 칸', go: ['campus', 36, 35] },
-  { key: 'shopFurn', title: '가구 가게', kind: '동아리 거리',
-    where: '동아리 거리', how: '방에 놓는 것',     go: ['campus', 40, 35] },
-  /* 미르는 계산대 **뒤**에 섭니다. 데려다만 놓고 방향을 안 주면 등을
-     돌린 채로 서게 되어, 도착하자마자 Space 를 눌러도 아무 일이 없습니다. */
-  { key: 'shopEgg',  title: '알 가게',   kind: '학생회관 · 미르',
-    where: '학생회관',   how: '종을 바꾸는 알 여덟', go: ['union', 6, 9, 'up'] },
+  { key: 'shopWear', title: '옷 가게',   kind: '동아리 상점',
+    where: '동아리 상점', how: '입는 것 여섯 칸',   go: ['clubshop', 4, 7, 'up'] },
+  { key: 'shopFurn', title: '가구 가게', kind: '동아리 상점',
+    where: '동아리 상점', how: '방에 놓는 것 여섯 칸', go: ['clubshop', 12, 7, 'up'] },
+  { key: 'shopEgg',  title: '알 가게',   kind: '동아리 상점',
+    where: '동아리 상점', how: '종을 바꾸는 알 여덟', go: ['clubshop', 20, 7, 'up'] },
 ];
 const SHOP_KEYS = SHOPS.map((s) => s.key);
 const isShopPanel = (k) => SHOP_KEYS.includes(k);
@@ -9523,8 +9669,18 @@ const isShopPanel = (k) => SHOP_KEYS.includes(k);
    equip/unequip/팔레트/종이인형이 전부 '칸(cat) 하나에 하나' 를 전제로
    쓰여 있어서입니다 — 가구가 그 길에 들어가면 ROOM.worn.furn 이 생기고
    종이인형이 옷장을 입으려 듭니다. 갈림길을 이 상수 하나로 모읍니다. */
-const FURN_CAT = 'furn';
-const isFurniture = (it) => !!it && it.cat === FURN_CAT;
+/* 가구는 칸이 **여섯**입니다. 하나였을 때는 스물몇 개가 한 격자에 쏟아져
+   나와, 사고 싶은 것을 찾는 일이 스크롤이 됐습니다. 옷이 여섯 칸으로
+   나뉘어 있는 것과 같은 이유입니다.
+
+   `worn` 은 여전히 가구를 안 받습니다 — 가구는 입는 것이 아니라 놓는
+   것이고, 그 갈림길은 아래 isFurniture 하나가 지킵니다. 칸이 늘었으니
+   문자열 하나를 비교하는 대신 표를 봅니다. */
+const FURN_CATS = ['f-seat', 'f-floor', 'f-store', 'f-live', 'f-hobby', 'f-green'];
+const FURN_CAT_SET = new Set(FURN_CATS);
+const FURN_CAT = FURN_CATS[0];                 // 옛 이름 — 아직 부르는 곳이 있습니다
+const isFurnCat = (cat) => FURN_CAT_SET.has(cat);
+const isFurniture = (it) => !!it && isFurnCat(it.cat);
 /* cat 은 화면의 칸, z 는 겹치는 순서(item-spec §4). 둘이 다른 이유는
    '안경' 과 '모자' 가 화면에선 남남이지만 겹칠 때는 순서가 있어서입니다.
    color 는 스프라이트가 못 뜰 때만 쓰는 대비색입니다 — 그림이 정답입니다. */
@@ -9593,16 +9749,41 @@ const SHOP = [
      큰 물건이 싸면 방이 한 번에 창고가 됩니다.
      하나씩만 삽니다 — ROOM.owned 가 '샀나 안 샀나' 뿐이라 개수를 세려면
      장부를 하나 더 만들어야 하고, 그러면 옷·알까지 같이 바뀝니다. */
-  { id: 'fur-cushion',  cat: FURN_CAT, name: '방석',        price: 60,  prop: 'furCushion',  desc: '밟고 다닙니다' },
-  { id: 'fur-dumbbell', cat: FURN_CAT, name: '아령',        price: 80,  prop: 'furDumbbell' },
-  { id: 'fur-plant',    cat: FURN_CAT, name: '작은 화분',   price: 90,  prop: 'furPlant' },
-  { id: 'fur-fan',      cat: FURN_CAT, name: '선풍기',      price: 140, prop: 'furFan' },
-  { id: 'fur-shelf',    cat: FURN_CAT, name: '낮은 책장',   price: 180, prop: 'furShelf' },
-  { id: 'fur-rug-round',cat: FURN_CAT, name: '둥근 러그',   price: 190, prop: 'furRugRound', desc: '밟고 다닙니다' },
-  { id: 'fur-guitar',   cat: FURN_CAT, name: '기타',        price: 240, prop: 'furGuitar' },
-  { id: 'fur-beanbag',  cat: FURN_CAT, name: '빈백',        price: 260, prop: 'furBeanbag',  desc: '푹신해 보여요' },
-  { id: 'fur-rug',      cat: FURN_CAT, name: '러그',        price: 300, prop: 'furRug',      desc: '밟고 다닙니다' },
-  { id: 'fur-tv',       cat: FURN_CAT, name: '브라운관 TV', price: 340, prop: 'furTv' },
+  /* ---- 앉기 ---- */
+  { id: 'fur-cushion',  cat: 'f-seat',  name: '방석',        price: 60,  prop: 'furCushion',  desc: '밟고 다닙니다' },
+  { id: 'fur-cushion2', cat: 'f-seat',  name: '체크 방석',   price: 70,  prop: 'cushion',     desc: '밟고 다닙니다' },
+  { id: 'fur-beanbag',  cat: 'f-seat',  name: '빈백',        price: 260, prop: 'furBeanbag',  desc: '푹신해 보여요' },
+  { id: 'fur-sofa',     cat: 'f-seat',  name: '2인 소파',    price: 380, prop: 'sofa' },
+  { id: 'fur-chair',    cat: 'f-seat',  name: '나무 의자',   price: 120, prop: 'chair' },
+
+  /* ---- 바닥 ---- */
+  { id: 'fur-rug-round',cat: 'f-floor', name: '둥근 러그',   price: 190, prop: 'furRugRound', desc: '밟고 다닙니다' },
+  { id: 'fur-rug',      cat: 'f-floor', name: '러그',        price: 300, prop: 'furRug',      desc: '밟고 다닙니다' },
+
+  /* ---- 수납 ---- */
+  { id: 'fur-shelf',    cat: 'f-store', name: '낮은 책장',   price: 180, prop: 'furShelf' },
+  { id: 'fur-bookshelf',cat: 'f-store', name: '높은 책장',   price: 280, prop: 'bookshelf' },
+  { id: 'fur-sidetable',cat: 'f-store', name: '협탁',        price: 110, prop: 'sideTable' },
+  { id: 'fur-laundry',  cat: 'f-store', name: '빨래바구니',  price: 90,  prop: 'laundry' },
+  { id: 'fur-suitcase', cat: 'f-store', name: '캐리어',      price: 130, prop: 'suitcase' },
+
+  /* ---- 살림 ---- */
+  { id: 'fur-bed',      cat: 'f-live',  name: '싱글 침대',   price: 420, prop: 'bed' },
+  { id: 'fur-fridge',   cat: 'f-live',  name: '냉장고',      price: 330, prop: 'fridge' },
+  { id: 'fur-mirror',   cat: 'f-live',  name: '전신 거울',   price: 200, prop: 'mirror' },
+  { id: 'fur-fan',      cat: 'f-live',  name: '선풍기',      price: 140, prop: 'furFan' },
+
+  /* ---- 취미 ---- */
+  { id: 'fur-guitar',   cat: 'f-hobby', name: '기타',        price: 240, prop: 'furGuitar' },
+  { id: 'fur-tv',       cat: 'f-hobby', name: '브라운관 TV', price: 340, prop: 'furTv' },
+  { id: 'fur-dumbbell', cat: 'f-hobby', name: '아령',        price: 80,  prop: 'furDumbbell' },
+  { id: 'fur-teddy',    cat: 'f-hobby', name: '곰인형',      price: 150, prop: 'teddy' },
+
+  /* ---- 초록·불 ---- */
+  { id: 'fur-plant',    cat: 'f-green', name: '작은 화분',   price: 90,  prop: 'furPlant' },
+  { id: 'fur-plant2',   cat: 'f-green', name: '큰 화분',     price: 210, prop: 'plantTall' },
+  { id: 'fur-floorlamp',cat: 'f-green', name: '플로어 스탠드', price: 230, prop: 'floorLamp' },
+  { id: 'fur-desklamp', cat: 'f-green', name: '책상 스탠드', price: 100, prop: 'deskLamp' },
 ];
 const SHOP_BY_ID = Object.fromEntries(SHOP.map((i) => [i.id, i]));
 
@@ -10803,7 +10984,7 @@ const wearing = (id) => {
    젭·게더도 미리보기 옆에 색을 두고 지금 입은 것에 바로 먹입니다. */
 function paletteHtml(cat) {
   if (cat === 'egg') return ''; // 알은 입는 게 아니라 캐릭터가 바뀌는 것입니다
-  if (cat === FURN_CAT) return ''; // 가구는 그려진 색 그대로입니다
+  if (isFurnCat(cat)) return ''; // 가구는 그려진 색 그대로입니다
   const it = SHOP_BY_ID[ROOM.worn[cat]];
   if (!it) return `<div class="pal"><b>색</b><p class="hint">이 칸에 입은 것이 없습니다.</p></div>`;
   if (!tintable(it)) {
@@ -10830,8 +11011,8 @@ function paletteHtml(cat) {
 function shopPreviewHtml(cat) {
   /* 가구는 종이인형에 얹을 것이 아닙니다. 이 자리에 마네킹을 두면
      "가구를 입는다" 로 읽히므로, 대신 방이 지금 어떤 상태인지 씁니다. */
-  if (cat === FURN_CAT) {
-    const mine = SHOP.filter(isFurniture);
+  if (isFurnCat(cat)) {
+    const mine = SHOP.filter((i) => i.cat === cat);
     const have = mine.filter((i) => owns(i.id)).length;
     const put = (ROOM.decor || []).length;
     return `
@@ -14013,9 +14194,10 @@ const PANELS = {
           + `<span class="val">${esc(sh.where)}</span>`
           + `<button class="act ghost" data-goto="${esc(sh.key)}" style="margin-left:10px;flex:none">바로 가기</button></div>`).join('')}
       </div>
-      <div class="note">여기 <b>동아리 거리</b>에 빨간 천막이 옷, 파란 천막이
-      가구예요. 알은 <b>학생회관</b> 미르한테 있어요 — 종을 바꾸는 일이라
-      그쪽이 맡고 있어요.</div>`,
+      <div class="note">셋 다 <b>동아리 상점</b>(캠퍼스 남동쪽) 한 건물 안에
+      있어요. 들어가면 왼쪽부터 옷 · 가구 · 알이고, 카운터마다 주인이
+      서 있어요. <b>바로 가기</b>는 그 카운터 앞까지 데려다만 줘요 —
+      말은 거기서 <b>Space</b> 로 걸어요.</div>`,
   }),
 
   /* '방 꾸미기' 는 창이 아니라 오른쪽 서랍입니다(§가구 서랍). 창으로
@@ -15034,7 +15216,7 @@ const PLACES = [
   { id: 'lake',     to: ['campus', 6, 29],    x: 6,  y: 35, name: '호수',      key: '8' },
   /* 도착 칸을 천막 **앞**으로 내렸습니다. y29 는 시장 북쪽 잔디라,
      지도에서 눌렀는데 가게가 화면 아래로 밀려 안 보이는 자리였습니다. */
-  { id: 'clubs',    to: ['campus', 40, 36],   x: 40, y: 35, name: '동아리 거리', key: '9' },
+  { id: 'clubs',    to: ['clubshop', 11, 12], x: 40, y: 30, name: '동아리 상점', key: '9' },
 ];
 
 /** 캠퍼스 바닥을 줄여 한 장으로 굽습니다. 한 번만 합니다. */

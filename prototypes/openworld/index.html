@@ -8633,7 +8633,7 @@ async function loadPose() {
     camMsg.hidden = true;
     LIVE.smoother = new POSE.Smoother();
     LIVE.arb = POSE.arbiter();
-    LIVE.profile = (BASELINE && BASELINE.features) || null;
+    LIVE.profile = BASELINE || null;   // votes() 계약: 표가 아니라 기준선 객체
     LIVE.zone = zoneId;
     /* lastTick 리셋은 남깁니다 — 없으면 재시작 첫 프레임이 꺼져 있던
        공백 전체를 이전 상태에 청구합니다. good/warn/bad 누적은 세션의
@@ -8855,7 +8855,7 @@ function calFinish() {
     /* 이번 10초는 버려도, 지난 세션에 잡아 둔 기준이 있으면 그걸로
        계속 봅니다. 없으면 idle 로 남고, 집중 공간에 앉을 때 다시
        시도합니다(sit 참고). */
-    LIVE.profile = (BASELINE && BASELINE.features) || null;
+    LIVE.profile = BASELINE || null;   // votes() 계약: 표가 아니라 기준선 객체
     setState('idle', LIVE.profile ? '지난 기준으로 볼게요' : '기준을 못 맞췄어요');
     noteCam(LIVE.profile ? '카메라 켜짐' : '기준 없음', !!LIVE.profile);
     poseRunning = true; poseLoop();
@@ -8890,7 +8890,12 @@ function calFinish() {
   };
   saveBaseline();
 
-  LIVE.profile = feats;
+  /* **표가 아니라 기준선 객체를 통째로** 넣습니다. votes() 는
+     `profile.features[k]` 를 읽습니다(src/features/posture-engine/classify.ts
+     와 같은 계약). 표를 바로 넣으면 `feats.features` 가 undefined 라
+     프레임마다 TypeError 가 나고, poseLoop 이 rAF 를 먼저 걸어 두어
+     루프는 살아 있는 채로 **판정만 한 번도 확정되지 않습니다.** */
+  LIVE.profile = BASELINE;
   LIVE.arb = POSE.arbiter();
   camMsg.hidden = true;
   setState('good', Object.keys(feats).length + '개 축으로 기준을 맞췄어요');
@@ -12091,10 +12096,8 @@ const RUN_STALE_MS = 700;        // 이보다 오래된 축값은 안 씁니다
 function postureLift() {
   const f = LIVE.features;
   if (!f || !LIVE.featAt || performance.now() - LIVE.featAt > RUN_STALE_MS) return null;
-  /* 기준표는 축 이름 -> {median, mad} 입니다. 판정 쪽 votes() 는 한 겹
-     더 들어간 profile.features 를 읽는데 LIVE.profile 에는 표가 바로
-     들어 있습니다. 둘 다 받아 둡니다 — 어느 쪽이 맞는지는 자세 엔진이
-     정할 일이고, 러너가 그 사이에서 멈출 이유는 없습니다. */
+  /* LIVE.profile 은 기준선 객체이고 축 표는 그 안 features 입니다.
+     옛 저장본이 표를 바로 들고 있을 수 있어 두 모양을 다 받습니다. */
   const prof = (LIVE.profile && LIVE.profile.features) || LIVE.profile;
   if (!prof) return null;
   const mult = POSE.SENS[SENSITIVITY] || 1;

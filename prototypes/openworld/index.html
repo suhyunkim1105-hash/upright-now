@@ -13864,6 +13864,28 @@ function calendarEmbed(raw) {
   /* <iframe src="..."> 를 통째로 붙여 넣는 사람이 많아서 그것도 받습니다 */
   const inFrame = /src="(https:\/\/calendar\.google\.com\/calendar\/embed\?[^"]+)"/.exec(s);
   if (inFrame) return inFrame[1].replace(/&amp;/g, '&');
+  /* **"공유 가능한 링크" 도 받습니다.**
+     구글 캘린더 설정의 "공유 가능한 내 캘린더 링크" 는
+       https://calendar.google.com/calendar/u/0?cid=<base64>
+     꼴이고, cid 는 캘린더 ID 를 base64 로 감싼 것입니다. 사람들이 가장
+     쉽게 찾는 링크가 이것인데 여태 통째로 거절당했습니다 — 형식이 틀린
+     것이 아니라 **우리가 못 읽은 것**이라, 풀어서 받습니다.
+
+     다만 이 링크는 "내 캘린더에 추가" 용이라, 그 달력이 비공개면 풀어도
+     iframe 은 여전히 빈 칸입니다. 그 경우는 아래 안내 문구가 맡습니다 —
+     주소를 못 읽는 것과 달력이 비공개인 것은 다른 문제이고, 둘을 같은
+     오류로 뭉뚱그리면 사람이 주소만 계속 바꿔 넣게 됩니다. */
+  const cid = /[?&]cid=([^&#\s]+)/.exec(s);
+  if (cid) {
+    try {
+      /* base64url 로 오는 경우가 있어 -_ 를 +/ 로 되돌리고 padding 을 채웁니다 */
+      const b = cid[1].replace(/-/g, '+').replace(/_/g, '/');
+      const id = atob(b + '='.repeat((4 - b.length % 4) % 4));
+      if (/^[\w.#+-]+@[\w.-]+$/.test(id))
+        return 'https://calendar.google.com/calendar/embed?ctz=Asia%2FSeoul&mode=AGENDA&src='
+          + encodeURIComponent(id);
+    } catch { /* base64 가 아니면 아래 규칙으로 흘려보냅니다 */ }
+  }
   /* 캘린더 ID 에는 # 이 들어갑니다 — 구글이 주는 공휴일 달력이
      ko.south_korea#holiday@group.v.calendar.google.com 꼴입니다.
      처음에 # 을 빼고 짰다가 그 달력이 통째로 거절됐습니다. */
@@ -15053,7 +15075,7 @@ const LINK_SPEC = {
   calendar: {
     label: '구글 캘린더', hint: '캘린더 ID 또는 삽입 주소',
     parse: calendarEmbed, panel: 'calendar',
-    bad: '캘린더 ID(…@group.calendar.google.com)나 calendar.google.com/calendar/embed?… 주소를 넣어 주세요.',
+    bad: '캘린더 ID(…@group.calendar.google.com) · embed 주소 · "공유 가능한 링크"(…?cid=…) 셋 다 됩니다. 셋 다 아니면 주소를 다시 확인해 주세요.',
   },
 };
 /* back — 저장한 뒤 돌아갈 창. 안 주면 LINK_SPEC 이 정한 창(라디오·노트북)

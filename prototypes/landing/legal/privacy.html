@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개인정보처리방침 — Deskfit</title>
+<meta name="robots" content="index, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦒</text></svg>">
+<link rel="stylesheet" href="../../../upright-now/public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body>
+<a class="skip" href="#doc">본문으로 건너뛰기</a>
+
+<header class="lg-head">
+  <a class="brand" href="../index.html">Deskfit</a>
+  <a class="back" href="../index.html">← 랜딩으로</a>
+</header>
+
+<div class="lg-wrap">
+  <nav class="lg-side" aria-label="문서 목록">
+    <span class="lbl">정책과 고지</span>
+    <a href="privacy.html" aria-current="page">개인정보처리방침</a><a href="terms.html">서비스 이용약관</a><a href="camera.html">카메라 사용 고지</a><a href="security.html">보안 정책 및 취약점 신고</a><a href="accessibility.html">접근성 고지</a><a href="licenses.html">오픈소스 라이선스 고지</a><a href="support.html">서비스 상태 및 문의</a>
+  </nav>
+
+  <main class="lg-doc" id="doc">
+    <h1>개인정보처리방침</h1>
+<div class="tw"><table>
+<tbody><tr><td>서비스명</td><td>Deskfit</td></tr><tr><td>문서 버전</td><td>1.0</td></tr><tr><td>작성일</td><td>2026년 8월 17일</td></tr><tr><td>시행일</td><td>2026년 8월 17일</td></tr><tr><td>근거</td><td>「개인정보 보호법」 및 같은 법 시행령</td></tr></tbody>
+</table></div>
+<blockquote><p>Deskfit은 아직 사업자 등록을 하지 않은 학생 팀 프로젝트입니다.</p><p>이 방침은 코드를 직접 읽고 "실제로 무엇이 기기 밖으로 나가는가"를 확인해</p><p>작성했습니다. 정식 출시 전에는 전문가 검토를 받을 예정입니다.</p></blockquote>
+<hr>
+<h2>0. 가장 먼저 알아야 할 것</h2>
+<h3>카메라 영상은 이 기기 밖으로 나가지 않습니다</h3>
+<ul>
+<li>웹캠 화면은 <strong>브라우저 안에서만</strong> 분석되고, 분석이 끝난 프레임은 <strong>즉시 버려집니다.</strong></li>
+<li>영상·사진·스냅샷·얼굴 이미지·자세 좌표는 <strong>어떤 서버에도 저장되거나 전송되지 않습니다.</strong></li>
+<li>서버로 보내는 것은 "몇 분 앉았는가" 같은 <strong>숫자 요약</strong>뿐입니다.</li>
+<li>자세 판정 모델(MediaPipe Pose Landmarker)은 처음 한 번 내려받은 뒤</li>
+</ul>
+<p><strong>브라우저 안에서 실행됩니다.</strong> 판정을 위해 영상을 어디에도 업로드하지 않습니다.</p>
+<p>더 자세한 내용은 <a href="camera.html">카메라 사용 고지</a>를 봐 주세요.</p>
+<hr>
+<h2>1. 이 방침의 적용 범위</h2>
+<p>Deskfit은 웹캠으로 앉은 자세를 살펴 주는 <strong>온라인 자습실</strong>입니다.</p>
+<p>캐릭터로 캠퍼스를 걸어 다니고, 자리에 앉아 공부하며, 앉은 시간만큼 코인이 쌓입니다.</p>
+<p>이 방침은 Deskfit 랜딩 페이지, 온보딩, 캠퍼스(월드) 화면 전체에 적용됩니다.</p>
+<blockquote><p><strong>Deskfit은 의료기기가 아니며 의료 서비스를 제공하지 않습니다.</strong></p><p>진단·치료·통증 위험도를 판정하지 않고, 자세 점수나 정상/비정상 등급도 만들지 않습니다.</p><p>자세한 내용은 <a href="terms.html">이용약관</a> 제9조를 봐 주세요.</p></blockquote>
+<hr>
+<h2>2. 수집하는 정보</h2>
+<h3>2.1 회원가입을 요구하지 않습니다</h3>
+<p>Deskfit은 <strong>이메일·전화번호·비밀번호·이름을 받지 않습니다.</strong></p>
+<p>닉네임과 캐릭터만 고르면 바로 시작할 수 있습니다.</p>
+<h3>2.2 이 기기에 저장되는 정보 (브라우저 localStorage)</h3>
+<p>브라우저 저장소를 지우면 함께 사라집니다. 저장 키는 모두 <code>girin.</code> 으로 시작합니다.</p>
+<div class="tw"><table>
+<thead><tr><th>저장 키</th><th>담기는 값</th><th>왜 필요한가</th></tr></thead>
+<tbody><tr><td><code>girin.signup</code></td><td>닉네임, 고른 캐릭터, 학교 선택</td><td>화면 표시·개인화</td></tr><tr><td><code>girin.baseline</code></td><td><strong>내 평소 자세의 요약 통계</strong> — 특징별 기준값, 만든 시각</td><td>지금 자세와 비교</td></tr><tr><td><code>girin.session</code></td><td>진행 중인 세션 정보 (시작 시각, 상태별 누적 시간)</td><td>새로고침해도 세션 유지</td></tr><tr><td><code>girin.sessions</code></td><td>지난 세션 요약 목록 (최대 12개)</td><td>회고 화면</td></tr><tr><td><code>girin.reward</code></td><td>코인 잔액, 일일 획득량, 연속 출석, 보유 아이템</td><td>코인·상점</td></tr><tr><td><code>girin.room</code></td><td>내 방 꾸미기 상태, 장착한 아이템</td><td>미니룸</td></tr><tr><td><code>girin.mute</code> · <code>girin.motion</code> · <code>girin.perf</code> · <code>girin.perfNagOff</code></td><td>소리 끄기, 모션 블러, 저사양 모드, 안내 숨김</td><td>환경 설정</td></tr><tr><td><code>girin.tutorial</code></td><td>첫 진입 튜토리얼을 봤는지 여부</td><td>중복 안내 방지</td></tr><tr><td><code>girin.landing.lang</code></td><td>랜딩 언어 선택 (한국어/영어)</td><td>다시 방문할 때 유지</td></tr><tr><td><code>girin.worldsave.auth</code></td><td>익명 접속 토큰</td><td>서버 저장을 쓸 때만 생성</td></tr><tr><td><code>girin.worldsave.queue</code></td><td>아직 서버에 반영되지 않은 기록 대기열</td><td>네트워크가 끊겼을 때 유실 방지</td></tr></tbody>
+</table></div>
+<p><strong>내 평소 자세 수치는 좌표 원본이 아니라 통계 요약입니다.</strong></p>
+<p>얼굴이나 신체를 복원할 수 있는 형태가 아니며, 서버로 보내지 않습니다.</p>
+<h3>2.3 서버에 저장되는 정보</h3>
+<blockquote><p>서버 저장 기능은 <strong>환경 설정으로 켜고 끕니다.</strong> 꺼져 있으면 익명 계정조차</p><p>만들어지지 않으므로 <strong>서버에 아무것도 저장되지 않습니다.</strong></p></blockquote>
+<p>서버 저장이 켜져 있을 때, 세션을 마치면 아래 값만 전송됩니다.</p>
+<div class="tw"><table>
+<thead><tr><th>항목</th><th>담기는 값</th></tr></thead>
+<tbody><tr><td>익명 사용자 ID</td><td>자동 발급되는 임의 문자열(UUID). 이메일·전화번호와 연결되지 않습니다</td></tr><tr><td>세션 요약</td><td>세션 ID, 학교(선택했다면), <strong>앉은 시간(분)</strong>, 캠퍼스 체류 시간(분), 회복 횟수, 시작·종료 시각</td></tr><tr><td>미니게임 기록</td><td>어떤 게임을 했는지 (하루 1회 지급 판정용)</td></tr><tr><td>코인 잔액</td><td>서버가 계산한 누적 코인</td></tr></tbody>
+</table></div>
+<p><strong>여기에 없는 것은 서버로 가지 않습니다.</strong> 특히 다음은 전송하지 않습니다.</p>
+<ul>
+<li>카메라 영상·프레임·스냅샷</li>
+<li>자세 좌표(랜드마크)·얼굴 정보</li>
+<li>내 평소 자세 기준값</li>
+<li>닉네임을 제외한 어떤 신원 정보</li>
+</ul>
+<h3>2.4 다른 이용자에게 보이는 정보</h3>
+<p>같은 캠퍼스에 있는 사람에게는 <strong>닉네임과 캐릭터, 그리고 캠퍼스 안 위치</strong>만</p>
+<p>보입니다. 카메라 화면은 <strong>누구에게도</strong> 보이지 않습니다.</p>
+<h3>2.5 자동으로 만들어지는 정보</h3>
+<p>Deskfit은 광고 식별자·행동 추적 쿠키·분석 도구(Google Analytics 등)를</p>
+<p><strong>사용하지 않습니다.</strong></p>
+<hr>
+<h2>3. 이용 목적</h2>
+<div class="tw"><table>
+<thead><tr><th>정보</th><th>목적</th></tr></thead>
+<tbody><tr><td>닉네임·캐릭터</td><td>화면 표시, 같은 캠퍼스 이용자 구분</td></tr><tr><td>평소 자세 기준값</td><td>지금 자세와 비교해 상태(좋음·주의·나쁨)를 세기 위해</td></tr><tr><td>세션 요약</td><td>회고 화면 표시, 코인 지급</td></tr><tr><td>코인·아이템</td><td>상점·미니룸 기능 제공</td></tr><tr><td>미니게임 기록</td><td>하루 1회 지급 상한 판정 (중복 지급 차단)</td></tr></tbody>
+</table></div>
+<p>법령상 의무 이행 외의 목적으로는 사용하지 않으며, **마케팅·광고·프로파일링에</p>
+<p>활용하지 않습니다.**</p>
+<hr>
+<h2>4. 보관 기간과 파기</h2>
+<div class="tw"><table>
+<thead><tr><th>정보</th><th>보관 기간</th><th>파기 방법</th></tr></thead>
+<tbody><tr><td>브라우저에 저장된 모든 값</td><td>이용자가 지울 때까지</td><td>설정의 <strong>전체 데이터 초기화</strong>, 또는 브라우저 저장소 삭제</td></tr><tr><td>카메라 프레임</td><td><strong>보관하지 않음</strong> — 분석 직후 메모리에서 폐기</td><td>해당 없음</td></tr><tr><td>서버의 세션 요약·코인</td><td>익명 계정이 유지되는 동안</td><td>아래 §7 참고</td></tr></tbody>
+</table></div>
+<p>브라우저 저장소를 지우면 익명 계정에 다시 접근할 방법이 없어지고,</p>
+<p>남은 서버 기록은 어떤 개인과도 연결되지 않는 임의 문자열에만 묶입니다.</p>
+<hr>
+<h2>5. 제3자 제공과 처리위탁</h2>
+<p><strong>개인정보를 제3자에게 판매하거나 제공하지 않습니다.</strong></p>
+<p>서비스 운영을 위해 아래를 이용합니다.</p>
+<div class="tw"><table>
+<thead><tr><th>수탁자</th><th>역할</th><th>위탁 내용</th></tr></thead>
+<tbody><tr><td>Supabase Inc.</td><td>데이터베이스·익명 인증</td><td>§2.3의 세션 요약·코인 저장</td></tr><tr><td>Vercel Inc.</td><td>웹 호스팅</td><td>정적 파일 전송, 접속 로그</td></tr><tr><td>Google LLC</td><td>MediaPipe 모델 배포(CDN)</td><td>판정 모델 파일 내려받기 (영상은 전송되지 않음)</td></tr></tbody>
+</table></div>
+<hr>
+<h2>6. 국외 이전</h2>
+<p>위 수탁자의 서버는 국외(주로 미국·유럽)에 있습니다.</p>
+<div class="tw"><table>
+<thead><tr><th>이전받는 자</th><th>이전 국가</th><th>이전 항목</th><th>이전 시점</th></tr></thead>
+<tbody><tr><td>Supabase Inc.</td><td>미국</td><td>익명 ID, 세션 요약, 코인</td><td>세션 종료 시</td></tr><tr><td>Vercel Inc.</td><td>미국</td><td>IP 주소, 브라우저 정보(접속 로그)</td><td>페이지 접속 시</td></tr><tr><td>Google LLC</td><td>미국</td><td>IP 주소(모델 파일 요청)</td><td>첫 실행 시 1회</td></tr></tbody>
+</table></div>
+<p>이전을 원하지 않으시면 서버 저장 기능이 꺼진 상태로 이용하실 수 있으며,</p>
+<p>그 경우 기록은 이 기기 안에만 남습니다.</p>
+<hr>
+<h2>7. 이용자의 권리</h2>
+<p>언제든지 아래 권리를 행사할 수 있습니다.</p>
+<ul>
+<li><strong>열람</strong> — 브라우저 개발자 도구의 localStorage에서 저장된 값을 직접 확인할 수 있습니다.</li>
+<li><strong>삭제</strong> — 설정의 <strong>전체 데이터 초기화</strong> 한 번으로 이 기기의 모든 기록이 지워집니다.</li>
+<li><strong>처리 정지</strong> — 카메라 권한을 브라우저에서 차단하면 자세 판정이 멈춥니다.</li>
+<li><strong>서버 기록 삭제</strong> — 아래 문의처로 익명 ID를 알려 주시면 해당 행을 삭제해 드립니다.</li>
+</ul>
+<p>(익명 ID는 설정 화면에서 확인할 수 있습니다.)</p>
+<p>문의: <strong>ikmc554@mju.ac.kr</strong></p>
+<hr>
+<h2>8. 만 14세 미만 아동</h2>
+<p>Deskfit은 만 14세 미만 아동을 대상으로 하지 않으며, 아동임을 알게 된 경우</p>
+<p>관련 기록을 지체 없이 삭제합니다.</p>
+<hr>
+<h2>9. 쿠키와 로컬 스토리지</h2>
+<p>Deskfit은 <strong>추적 쿠키를 사용하지 않습니다.</strong> §2.2의 localStorage 값은</p>
+<p>기능 제공을 위한 것이며, 브라우저 설정에서 언제든 지울 수 있습니다.</p>
+<hr>
+<h2>10. 안전성 확보 조치</h2>
+<ul>
+<li><strong>수집 최소화</strong> — 카메라 영상과 좌표를 애초에 저장·전송하지 않습니다.</li>
+<li><strong>전송 구간 암호화</strong> — 모든 통신은 HTTPS로 이루어집니다.</li>
+<li><strong>접근 통제</strong> — 서버의 각 행은 발급된 익명 ID 본인만 읽고 쓸 수 있도록</li>
+</ul>
+<p>행 수준 보안(RLS)이 걸려 있습니다.</p>
+<ul>
+<li><strong>키 분리</strong> — 클라이언트에는 공개용 익명 키만 두고, 관리자 키는 두지 않습니다.</li>
+<li><strong>서버 검증</strong> — 코인 지급량과 하루 상한은 서버가 다시 계산합니다.</li>
+</ul>
+<p>브라우저에서 값을 고쳐도 지급에 영향을 주지 않습니다.</p>
+<p>자세한 내용과 취약점 신고는 <a href="security.html">보안 정책</a>을 봐 주세요.</p>
+<hr>
+<h2>11. 개인정보 보호책임자</h2>
+<p>사업자 등록 전 학생 팀 프로젝트로, 아래 창구가 개인정보 관련 문의를 받습니다.</p>
+<div class="tw"><table>
+<tbody><tr><td>담당</td><td>Deskfit 팀</td></tr><tr><td>이메일</td><td><strong>ikmc554@mju.ac.kr</strong></td></tr></tbody>
+</table></div>
+<p>개인정보 침해에 대해 상담이 필요하시면 아래 기관에도 문의하실 수 있습니다.</p>
+<ul>
+<li>개인정보침해 신고센터 (privacy.kisa.or.kr / 국번없이 118)</li>
+<li>개인정보 분쟁조정위원회 (kopico.go.kr / 1833-6972)</li>
+<li>대검찰청 사이버수사과 (spo.go.kr / 1301)</li>
+<li>경찰청 사이버수사국 (ecrm.police.go.kr / 182)</li>
+</ul>
+<hr>
+<h2>12. 방침 변경</h2>
+<p>이 방침이 바뀌면 시행 7일 전에 랜딩 페이지에 공지합니다.</p>
+<p>이용자에게 불리한 변경은 30일 전에 공지합니다.</p>
+<div class="tw"><table>
+<thead><tr><th>버전</th><th>날짜</th><th>내용</th></tr></thead>
+<tbody><tr><td>1.0</td><td>2026-08-17</td><td>최초 작성</td></tr></tbody>
+</table></div>
+    <footer class="lg-foot">
+      <p>이 문서에 대해 궁금한 점이 있으면 <a href="mailto:ikmc554@mju.ac.kr">ikmc554@mju.ac.kr</a> 로 알려 주세요.</p>
+      <p class="copy">© Monkeyz. All rights reserved.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

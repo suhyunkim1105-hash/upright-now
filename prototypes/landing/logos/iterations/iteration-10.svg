@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- it-10 v2 · 렌즈 속 옆모습: 크림 원판 안, 머리가 축에서 비껴난 곧은 등 -->
+  <g id="plate">
+    <rect x="16" y="16" width="480" height="480" rx="112" fill="#2DD4BF"/>
+  </g>
+  <g id="lens">
+    <circle cx="256" cy="256" r="152" fill="#F7F8F8"/>
+  </g>
+  <g id="figure" fill="#2DD4BF">
+    <circle id="head" cx="292" cy="172" r="40"/>
+    <rect id="back" x="216" y="204" width="52" height="140" rx="26"/>
+    <rect id="lap" x="216" y="292" width="128" height="52" rx="26"/>
+  </g>
+</svg>

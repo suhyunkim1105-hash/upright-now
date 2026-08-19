@@ -2493,7 +2493,10 @@ PROP.bldUnion   = buildingProp(BSPEC.bldUnion);
    ================================================================== */
 
 const FURN = {
-  wood:  '#A8703F', woodLit: '#C99257', woodDark: '#7A4C25',
+  /* 바닥을 올리면서 나무도 같이 올립니다. 기물만 두면 밝아진 마루에
+     책상이 묻힙니다 — 바닥(66%)보다 조금 어두운 자리(56%)를 지켜야
+     기물이 바닥 위에 놓인 것으로 읽힙니다. 색상·채도는 그대로입니다. */
+  wood:  '#BE854F', woodLit: '#DCA96E', woodDark: '#8E5C2E',
   metal: '#98A2AD', metalLit: '#C2CAD2', metalDark: '#5F6874',
   ink:   '#1B2430', lime: '#FF6B52',
   glass: '#3A5568', glassLit: '#8FB0C6',
@@ -4385,9 +4388,13 @@ PROP.furGuitar   = paintedProp('furGuitar', 1, 2, [0, 1]);
    떠 있지 않습니다.
    ================================================================== */
 
+/* 앉는 면 넉 장이 전부 밝기 39~43% 였습니다 — 밝아진 바닥(65%) 위에서
+   네 색이 다 같은 어두운 덩이로 뭉쳐 보였습니다. 색상은 그대로 두고
+   밝기만 39~43% → 57~60% 로 올립니다. 나무 틀(woodDark)은 그대로라
+   등받이·다리와 앉는 면의 경계는 오히려 또렷해집니다. */
 const DESKPAL = {
-  wood:    '#A9773F', woodLit: '#C99A5C', woodDark: '#7E5526', woodDeep: '#5E3D19',
-  seat:    '#4E6E8E', seatLit: '#6E8FAE', seatDark: '#35506B',
+  wood:    '#BE8A4C', woodLit: '#DCA96E', woodDark: '#8E6330', woodDeep: '#6E4A22',
+  seat:    '#6E92B6', seatLit: '#93B2D0', seatDark: '#4E7095',
   metal:   '#9AA3AD', metalLit: '#C4CBD2', metalDark: '#616974',
   glass:   '#BFD9E4', glassLit: '#E2F0F5', glassDark: '#6E93A4',
   mat:     '#C2412C', matLit: '#E0604A',
@@ -4418,9 +4425,9 @@ function chairCanvas(seatCol, seatLit, seatDark) {
   return c;
 }
 PAINTED.chair  = chairCanvas(DESKPAL.seat, DESKPAL.seatLit, DESKPAL.seatDark);
-PAINTED.chairB = chairCanvas('#8E5A4E', '#AE7A6A', '#6B4038');
-PAINTED.chairC = chairCanvas('#4E7A5E', '#6E9A7C', '#376046');
-PAINTED.chairD = chairCanvas('#7A6A4E', '#9A8A6C', '#5A4C36');
+PAINTED.chairB = chairCanvas('#BE8676', '#D6A695', '#95604F');
+PAINTED.chairC = chairCanvas('#79AC8B', '#9BC7AA', '#568A67');
+PAINTED.chairD = chairCanvas('#AF9C76', '#C9B896', '#87764F');
 
 /* ---- 책상 ----
    상판 · 앞면 · 다리 세 켜. 상판만 그리면 판때기로 보입니다. */
@@ -4550,12 +4557,17 @@ function paintFloor(w, h, kind, P) {
        2:1 에 줄눈이 진하고, 마루는 9:1 에 세로 이음새가 거의 안 보이며
        결이 깁니다. 그래서 널을 63px(9:1)로 늘이고 세로 이음새를 죽이고
        긴 결을 넣습니다. 색도 주황에서 갈색으로 내립니다. */
-    px(g, 0, 0, W, H, '#A9805A');
+    /* 밝기는 51% → 61% 로 올리되 **채도는 오히려 내립니다**(31% → 24%).
+       한 번은 밝기만 올렸다가 주황기가 세져 싸구려 합판처럼 보였습니다 —
+       밝은 나무를 고급스럽게 보이게 하는 것은 밝기가 아니라 낮은 채도이고,
+       색상도 29~30° 주황에서 31~32° 로 옮겨 호두나무 쪽에 붙였습니다.
+       세 널의 명암 순서(어두움-밝음-중간)는 그대로라 결은 살아 있습니다. */
+    px(g, 0, 0, W, H, '#B39C82');
     for (let y = 0; y < H; y += 8) {
       const off = (y / 8 % 2) * 32;
       for (let x = -64; x < W; x += 64) {
         const n = rnd(x, y, 3);
-        px(g, x + off, y, 63, 7, n < 0.33 ? '#A47B54' : n < 0.66 ? '#AE8560' : '#9C744E');
+        px(g, x + off, y, 63, 7, n < 0.33 ? '#AF9880' : n < 0.66 ? '#BCA68C' : '#A78F76');
         px(g, x + off, y, 63, 1, 'rgba(255,255,255,.09)');
         px(g, x + off + 62, y, 1, 7, 'rgba(0,0,0,.07)');
         /* 긴 결 두 가닥 — 이게 나무를 나무로 만듭니다 */
@@ -4566,10 +4578,14 @@ function paintFloor(w, h, kind, P) {
     }
   } else if (kind === 'stone') {
     /* 석재 — 본관. 큰 판을 줄눈으로 나눕니다. */
-    px(g, 0, 0, W, H, '#B9BEC6');
+    /* 석재는 밝기(75%)가 아니라 **채도**가 문제였습니다 — 10% 라 밝은
+       게 아니라 색이 빠진 것으로 읽힙니다. 채도를 18% 로 올리고 색상을
+       푸른 회색에서 따뜻한 베이지 회색으로 옮깁니다. 밝기는 그대로라
+       기물과의 대비는 안 변합니다. */
+    px(g, 0, 0, W, H, '#CBC4B6');
     for (let y = 0; y < H; y += 24) for (let x = 0; x < W; x += 24) {
       const n = rnd(x, y, 7);
-      px(g, x, y, 23, 23, n < 0.3 ? '#C2C7CE' : n < 0.7 ? '#B4B9C2' : '#BDC2C9');
+      px(g, x, y, 23, 23, n < 0.3 ? '#D4CDBE' : n < 0.7 ? '#C6BFB1' : '#CFC8BA');
       px(g, x, y, 23, 1, 'rgba(255,255,255,.16)');
       px(g, x, y, 1, 23, 'rgba(255,255,255,.12)');
       px(g, x + 23, y, 1, 24, 'rgba(0,0,0,.13)');
@@ -4643,14 +4659,18 @@ function floorInlay(c, x, y, w, h, kind, rgb) {
   if (kind === 'border') {
     /* 벽을 따라 도는 테두리 띠. 넓은 방은 이게 없으면 바닥이 아니라
        무늬 종이가 됩니다. */
-    px(g, X, Y, W, TS, 'rgba(0,0,0,.10)');
-    px(g, X, Y + H - TS, W, TS, 'rgba(0,0,0,.10)');
-    px(g, X, Y, TS, H, 'rgba(0,0,0,.10)');
-    px(g, X + W - TS, Y, TS, H, 'rgba(0,0,0,.10)');
-    px(g, X + TS - 2, Y + TS - 2, W - TS * 2 + 4, 2, 'rgba(255,255,255,.20)');
-    px(g, X + TS - 2, Y + H - TS, W - TS * 2 + 4, 2, 'rgba(255,255,255,.20)');
-    px(g, X + TS - 2, Y + TS - 2, 2, H - TS * 2 + 4, 'rgba(255,255,255,.20)');
-    px(g, X + W - TS, Y + TS - 2, 2, H - TS * 2 + 4, 'rgba(255,255,255,.20)');
+    /* 검정 10% 로 방 둘레를 한 바퀴 덮고 있었습니다. 넓은 방일수록
+       시야 가장자리가 눌려서 방 전체가 어둡게 느껴집니다 — 검정을
+       절반으로 줄이고 대신 안쪽 하이라이트를 올려, 테두리는 그대로
+       읽히되 눌리지는 않게 합니다. */
+    px(g, X, Y, W, TS, 'rgba(0,0,0,.05)');
+    px(g, X, Y + H - TS, W, TS, 'rgba(0,0,0,.05)');
+    px(g, X, Y, TS, H, 'rgba(0,0,0,.05)');
+    px(g, X + W - TS, Y, TS, H, 'rgba(0,0,0,.05)');
+    px(g, X + TS - 2, Y + TS - 2, W - TS * 2 + 4, 2, 'rgba(255,255,255,.28)');
+    px(g, X + TS - 2, Y + H - TS, W - TS * 2 + 4, 2, 'rgba(255,255,255,.28)');
+    px(g, X + TS - 2, Y + TS - 2, 2, H - TS * 2 + 4, 'rgba(255,255,255,.28)');
+    px(g, X + W - TS, Y + TS - 2, 2, H - TS * 2 + 4, 'rgba(255,255,255,.28)');
     return;
   }
   if (kind === 'runner') {
@@ -4661,15 +4681,29 @@ function floorInlay(c, x, y, w, h, kind, rgb) {
     g.fillRect(X + 2, Y, 2, H); g.fillRect(X + W - 5, Y, 2, H);
   } else if (kind === 'rug') {
     /* 테두리 두 겹에 안쪽 무늬. 동심 사각을 계속 겹치면 과녁이 됩니다.
-       켜 두께는 **짧은 변**을 따라갑니다. 4·7·11 로 못을 박아 두면 두 칸
+       네 겹의 명암 순서는 그대로 두고 통째로 위로 올렸습니다 — 전에는
+       바깥 테두리가 마루보다 어두워 깔개가 바닥에 뚫린 구멍처럼 보였습니다.
+
+       그 다음 판이 촌스러웠던 이유는 밝기가 아니라 **채도**였습니다:
+       35~53% 짜리 주황 갈색은 밝게 올릴수록 살구색으로 가서 싸 보입니다.
+       고풍스러운 갈색은 채도가 낮습니다 — 채도를 절반(18~29%)으로 깎고
+       색상을 20~24° 주황에서 31~34° 올리브 갈색으로 옮겼습니다.
+       오래된 양모 깔개의 색입니다. 밝기는 거의 그대로 둡니다.
+       (색은 민철님이 재서 잡은 값입니다.)
+
+       겹 두께는 **짧은 변**을 따라갑니다. 4·7·11 로 못을 박아 두면 두 칸
        짜리 러그(32px)는 테두리 세 겹이 높이를 다 먹어 안쪽 무늬가 한 줄도
-       안 남고, 그러면 러그가 아니라 갈색 판때기가 됩니다. */
+       안 남고, 그러면 러그가 아니라 판때기가 됩니다. 방 꾸미기로 산
+       작은 러그가 그렇습니다 — 큰 방 깔개만 있던 때는 안 걸렸습니다.
+       12로 나눈 것은 4겹이 짧은 변의 1/3을 넘지 않게 하는 값입니다. */
     const k = Math.max(1, Math.min(4, Math.floor(Math.min(W, H) / 12)));
-    px(g, X, Y, W, H, '#9A6A57');
-    px(g, X + k, Y + k, W - k * 2, H - k * 2, '#B5866C');
-    px(g, X + k * 2, Y + k * 2, W - k * 4, H - k * 4, '#A87458');
-    px(g, X + k * 3, Y + k * 3, W - k * 6, H - k * 6, '#C39679');
-    g.fillStyle = 'rgba(154,106,87,.55)';
+    px(g, X, Y, W, H, '#9D8871');
+    px(g, X + k, Y + k, W - k * 2, H - k * 2, '#BCA891');
+    px(g, X + Math.round(k * 1.75), Y + Math.round(k * 1.75),
+       W - Math.round(k * 3.5), H - Math.round(k * 3.5), '#AC977F');
+    px(g, X + Math.round(k * 2.75), Y + Math.round(k * 2.75),
+       W - Math.round(k * 5.5), H - Math.round(k * 5.5), '#CBB9A1');
+    g.fillStyle = 'rgba(120,102,80,.34)';
     const m0 = k * 4;
     for (let yy = Y + m0; yy < Y + H - m0; yy += 14)
       for (let xx = X + m0; xx < X + W - m0; xx += 14) {
@@ -5164,7 +5198,10 @@ const ZONES = {};
   placeBuilding(m, 'bldDorm',    17, 3,  'dorm',     7,  8,  '기숙사');
   placeBuilding(m, 'bldMain',    1,  16, 'mainhall', 18, 25, '본관');
   placeBuilding(m, 'bldLibrary', 32, 16, 'library',  18, 25, '도서관');
-  placeBuilding(m, 'bldUnion',   16, 30, 'union',    16, 21, '학생회관');
+  /* 학생회관 도착 칸이 (16,21) → (12,10) 입니다. 민철님이 그 방을
+     34×24 에서 25×13 으로 줄였습니다 — 옛 좌표는 이제 방 **밖**이라
+     들어가자마자 벽에 박힙니다. */
+  placeBuilding(m, 'bldUnion',   16, 30, 'union',    12, 10, '학생회관');
   placeBuilding(m, 'bldArcade',  32, 2,  'arcade',   11, 10, '미니게임관');
   /* placeBuilding 이 문 앞에 깔아 준 포장을 도로 걷습니다. 여기는 이미
      판석 마당이고, 그 위에 또 포장을 얹으면 마당 한복판에 회색 네모가
@@ -5298,7 +5335,6 @@ const ZONES = {};
   const table = (bx, by) => {
     for (let i = 0; i < 3; i++) prop(m, 'chairC', bx + i, by);      // 뒷줄
     prop(m, 'desk3', bx, by + 1);
-    prop(m, 'books2', bx, by + 1);
     prop(m, 'deskLamp', bx + 2, by + 1);
     for (let i = 0; i < 3; i++) prop(m, 'chair', bx + i, by + 2);   // 앞줄
   };
@@ -5326,26 +5362,27 @@ const ZONES = {};
      신간. 들어와서 처음 보는 것이 그 방의 용도를 말합니다. */
   prop(m, 'circDesk', 21, 21);
 
-  prop(m, 'searchPC', 14, 21);
-  prop(m, 'newBooks', 12, 23);
+  /* 검색대(기둥 위 화면)와 신간 진열대는 뺐습니다. */
   /* 읽기 자리 — 서가 런 하나와 깔개. 열람석은 앉아서 버티는 자리고,
      여기는 잠깐 머무는 자리입니다. */
   [3, 6].forEach((x) => prop(m, 'stack', x, 20));
-  floorInlay(m.floor, 3, 23, 8, 3, 'rug');
-  floorGlow(m.floor, 7, 24, 3);
-  /* 연우님이 넣으신 스탠드·협탁 한 쌍입니다. 원래 좌표(20,23)·(21,23)은
-     대출대를 ㄱ자 circDesk 로 바꾸기 전 배치를 보고 잡으신 것이라, 지금은
-     협탁이 카운터 세로 팔 위에 얹히고 스탠드가 안내 게시판을 덮습니다.
-     기물 위에 기물을 얹으면 둘 다 안 읽히므로 깔개 쪽으로 옮겼습니다 —
-     여기가 원래 의도한 "잠깐 머무는 자리"이고, 스탠드 밑동(7,24)이
-     이미 깔려 있던 빛웅덩이 한가운데에 맞습니다. */
-  prop(m, 'floorLamp', 7, 23); prop(m, 'sideTable', 8, 23);
+  /* 입구 왼쪽 깔개도 뺐습니다. 위에 있던 스탠드·협탁을 앞서 지우면서
+     아무것도 안 얹힌 깔개만 덩그러니 남아 있었습니다 — 깔개는 무언가를
+     묶어 주는 것이지 그 자체가 기물이 아닙니다. */
   /* 화분·사물함은 뺐습니다 — 화분은 사람으로, 사물함은 분홍 반점 판으로
      보입니다. 도서관 초록은 이제 벽 책장이 맡습니다. */
 
+  /* 왼쪽 벽은 책장 둘(x2·x5)에 x7~16 이 통째로 비어 허전했습니다.
+     shelf 는 2칸 폭이라 두 칸 간격으로 세우면 **틈 없이 이어진 서가 런**이
+     됩니다 — 도서관 벽은 책장이 띄엄띄엄 걸린 것이 아니라 벽을 메우는
+     것이고, 그래야 창(x9)이 서가 사이에 낀 것으로 읽힙니다.
+     벽 그림은 paintTopWall 캔버스에 한 번 구워지므로 몇 장을 더 세워도
+     프레임마다 그리는 횟수는 그대로입니다. */
   dressRoom(m, IPAL.library, [
-    { k: 'shelf', x: 2 }, { k: 'shelf', x: 5 }, { k: 'win', x: 9, style: 'arch' },
-    { k: 'shelf', x: 12 }, { k: 'clock', x: 17 },
+    { k: 'shelf', x: 2 }, { k: 'shelf', x: 4 }, { k: 'shelf', x: 6 },
+    { k: 'win', x: 9, style: 'arch' },
+    { k: 'shelf', x: 11 }, { k: 'shelf', x: 13 }, { k: 'shelf', x: 15 },
+    { k: 'clock', x: 17 },
     { k: 'win', x: 25, style: 'arch' }, { k: 'shelf', x: 28 }, { k: 'shelf', x: 31 },
     { k: 'win', x: 35, style: 'arch' },
   ]);
@@ -5399,7 +5436,10 @@ const ZONES = {};
   floorInlay(m.floor, 6, 8, 26, 17, 'runner');        // 강의실 바닥
 
   /* 칠판과 게시판은 벽에 그려져 있습니다 (dressRoom) */
-  prop(m, 'desk3', 16, 5); prop(m, 'laptopN', 17, 5);
+  /* 교탁은 문(x17~19)과 같은 축에 섭니다 — desk3 도 세 칸이라 x17 에서
+     시작하면 span 이 x17~19, 가운데가 x18.5 로 문·통로와 한 줄이 됩니다.
+     x16 이면 가운데가 17.5 라 방 축에서 한 칸 왼쪽으로 서 있었습니다. */
+  prop(m, 'desk3', 17, 5); prop(m, 'laptopN', 18, 5);
 
 
   /* 강의실 — 2칸 책상 하나에 의자 둘. 도서관과 같은 규칙이고
@@ -5414,43 +5454,35 @@ const ZONES = {};
     prop(m, 'chair', x, y + 1);
     prop(m, 'chairC', x + 1, y + 1);
   }
-  /* 책은 앞줄에만 올립니다. 열여덟 자리 전부에 올렸더니 그리는 횟수가
-     한 방에서 아홉이 늘었습니다 — 강의실은 책상 줄이 보이면 되고,
-     책이 보여야 하는 곳은 도서관입니다. */
-  for (const x of SEAT_X) prop(m, 'books2', x, SEAT_Y[0]);
-  /* 사물함은 3칸짜리라 (2,24) 는 x2~4 를, (33,24) 는 x33~35 를 씁니다.
-     연우님 원래 좌표에서는 스탠드가 왼쪽 사물함 안에, 쓰레기통이 오른쪽
-     사물함 안에 들어가 있어서 둘 다 안 보였습니다 — 한 칸씩 밖으로
-     내보냅니다. */
-  prop(m, 'lockers', 2, 24); prop(m, 'lockers', 33, 24);
-  prop(m, 'floorLamp', 5, 24); prop(m, 'sideTable', 6, 24);
-  prop(m, 'bin', 36, 25);
+  /* 책(books2)은 월드 전체에서 뺐습니다. */
+  /* 벽면 기물(사물함·스탠드·협탁·쓰레기통)은 전부 뺐습니다. 강의실은
+     칠판을 향해 좌우 대칭으로 앉는 방이라, 한쪽 벽에만 붙은 덩어리가
+     축을 깨뜨렸습니다. 사물함·쓰레기통은 맵 전체에서 뺍니다. */
 
   /* 줄마다 바닥을 한 겹 깔아 "여기부터 여기까지가 한 줄"을 만듭니다.
      바닥은 zone.floor 한 장에 구워지므로 그리는 횟수가 늘지 않습니다. */
+  /* 깔개는 책상 셋을 **여백까지 맞아떨어지게** 감쌉니다.
+     13칸이면 책상 6칸 + 남는 7칸을 네 틈(양끝 여백 2 + 사이 2)에 고르게
+     못 나눠서, 왼쪽은 한 칸 비고 오른쪽은 끝 책상이 경계에 딱 붙었습니다.
+     14칸이면 여백 1 · 사이 3 · 사이 3 · 여백 1 로 떨어집니다.
+
+     좌우 짝은 칸 x ↔ 37-x 입니다. 왼쪽이 x3~16 이므로 오른쪽은 x21~34.
+     빛웅덩이는 desk2 가 x·x+1 두 칸을 쓰므로 가운데가 x+1 입니다. */
   for (const y of SEAT_Y) {
-    floorInlay(m.floor, 3, y - 1, 13, 4, 'rug');
-    floorInlay(m.floor, 21, y - 1, 13, 4, 'rug');
-    for (const x of SEAT_X) floorGlow(m.floor, x + 0.5, y + 1.5, 2.2);
+    floorInlay(m.floor, 3, y - 1, 14, 4, 'rug');
+    floorInlay(m.floor, 21, y - 1, 14, 4, 'rug');
+    for (const x of SEAT_X) floorGlow(m.floor, x + 1, y + 1.5, 2.2);
   }
 
-  /* 뒤쪽 라운지 — 음악 나오는 건물의 뒷줄은 강의석이 아니라 쉬는
-     자리여야 합니다. 새 기물 없이 학생회관 휴게와 같은 문법:
-     깔개 + 테이블 + 의자 마주 보기. */
-  /* 입구(x17~19) 앞 3×3 을 비워야 하므로 두 단위를 바깥으로 밀어
-     가운데에 5칸 통로를 냅니다 — 문에서 칠판까지 한 줄로 뚫립니다. */
-  floorInlay(m.floor, 11, 20, 16, 5, 'rug');
-  prop(m, 'desk3', 12, 22); prop(m, 'desk3', 22, 22);
-  rowOf(m, 'chairB', 12, 21, 3); rowOf(m, 'chairD', 12, 24, 3);
-  rowOf(m, 'chairB', 22, 21, 3); rowOf(m, 'chairD', 22, 24, 3);
-  floorGlow(m.floor, 13.5, 23, 3); floorGlow(m.floor, 23.5, 23, 3);
+  /* 뒤쪽 라운지(3칸 책상 둘 + 3칸 의자 넉 줄)는 뺐습니다. 입구에서
+     칠판까지 한 줄로 뚫리고, 강의석 세 줄만 남아 축이 하나가 됩니다. */
 
 
   /* 교탁 위 조명 — **책상 한가운데**입니다. desk3 는 세 칸이므로 x+1.5 가
      가운데이고, 뒷줄 라운지도 같은 규칙을 씁니다(12 → 13.5).
      여기만 19 로 박혀 있어 빛이 책상에서 한 칸 반 오른쪽으로 밀려 있었고,
      노트북 한 대만 놓인 자리라 그 어긋남이 그대로 보였습니다. */
-  floorGlow(m.floor, 17.5, 6, 5);
+  floorGlow(m.floor, 18.5, 6, 5);
   /* 좌석 빛웅덩이는 위 SEAT_X/SEAT_Y 루프가 자리마다 하나씩 놓습니다.
      여기 있던 [7,13,23,29] 루프는 네 열이던 시절의 좌표라, 좌우 셋씩으로
      바뀐 뒤에는 책상 없는 자리 열둘을 밝히고 있었습니다 — 책상 위가 아니라
@@ -5473,7 +5505,7 @@ const ZONES = {};
     /* 강단 위 노트북. 본관 안내에 "대중음악이 나온다" 고 적어 놓고 실제로는
        합성음 화음만 났습니다. 음악을 트는 자리가 화면 어딘가가 아니라
        강단이어야, 이 방이 왜 음악이 나오는 방인지가 설명됩니다. */
-    { x: 17, y: 5, name: '강단 스피커', panel: 'radio' },
+    { x: 18, y: 5, name: '강단 스피커', panel: 'radio' },
   ];
 
   prop(m, 'exitDoor', 17, m.h - 2);
@@ -5553,6 +5585,9 @@ const ZONES = {};
      띄웁니다. 붙여 놓으면 어느 것 앞에 선 것인지 발끝으로 재게 됩니다.
      ================================================================== */
   prop(m, 'desk3', 1, 3);                       // 세 칸 책상. 1칸 책상은 책상으로 안 보입니다
+  /* 윗벽 한 줄은 **기능**만 세웁니다. 민철님 판의 침대·곰인형·캐리어·
+     냉장고는 이 방 아래쪽에 이미 서 있고, 윗줄에 가구를 얹으면 "여기서
+     뭘 할 수 있나" 가 가구 사이에 숨습니다. 이 줄이 기숙사의 차림표입니다. */
   prop(m, 'laptopCal', 2, 3); prop(m, 'deskLamp', 3, 3);
   /* 의자는 뺐습니다. 세션 자리는 도서관·본관뿐이라, 앉을 수 없는 의자가
      책상 앞에 있으면 눌러 보고 아무 일도 안 일어나는 자리가 됩니다. */
@@ -5646,104 +5681,97 @@ const ZONES = {};
    오타가 조용히 undefined 가 되므로 이름을 하나 둡니다. */
 const DORM = ZONES.dorm;
 /* ================== 학생회관 ==================
-   NPC 셋이 각각 기능을 맡습니다. 계산대 앞에 줄 설 공간을 비웠습니다 —
-   여러 명이 동시에 말을 걸 수 있어야 합니다. */
+   **볼일 보는 곳.** 다른 방은 시간을 벌고(도서관·본관), 여기는 그 시간을
+   씁니다 — 코인을 쓰고(상점), 시즌 순위를 보고(랭킹전), 출석을 확인합니다.
+
+   34×24(816칸) → 25×13(325칸), 60% 줄였습니다. 줄인 것은 **남쪽**입니다:
+   전에는 문에서 창구까지 아홉 줄을 걸었는데 그 사이에 아무것도 없었습니다.
+   지금은 다섯 걸음이고, 문을 열면 창구 셋이 바로 눈앞에 섭니다.
+
+   **앉을 자리는 두지 않습니다.** 앉는 곳은 도서관과 본관입니다. 여기에
+   의자를 놓으면 세션이 두 군데서 도는 방이 됩니다.
+
+   **폭이 25(홀수)인 이유.** 24 로 했더니 문·책상이 3칸(홀수)이라 방 한가운데에
+   놓을 수가 없었습니다 — 폭 24 의 기하 중심은 x12 인데 3칸 기물의 중심은 항상
+   x.5 에 생겨 늘 0.5칸이 남았습니다. 25 면 내부가 1~23, 중심이 x12.5 라
+   3칸 기물이 정확히 가운데 서고, 짝은 `cell x ↔ 24-x` 로 딱 떨어집니다. */
 {
-  const m = makeMap(34, 24, F.gray);
+  const m = makeMap(25, 13, F.gray);
   ZONES.union = m; m.name = '학생회관'; m.sub = '볼일 보는 곳';
 
   ring(m, 0, 0, m.w, m.h, F.brickO);
   fillBase(m, 1, 1, m.w - 2, 2, F.brickO);
   m.floor = paintFloor(m.w, m.h, 'tile'); m.floorKind = SURF.TILE;
-  floorInlay(m.floor, 2, 5, 12, 8, 'runner');           // 상점
-  floorInlay(m.floor, 20, 5, 12, 8, 'runner');          // 명예의 전당
+  /* 창구 셋이 각자 같은 크기의 깔개를 깔고 섭니다 — 상점 x3~5,
+     출석 x11~13, 랭킹 x19~21. 짝은 x ↔ 24-x 로 정확히 맞습니다. */
+  floorInlay(m.floor, 3, 3, 3, 4, 'runner');            // 상점
+  floorInlay(m.floor, 11, 3, 3, 4, 'runner');           // 출석
+  floorInlay(m.floor, 19, 3, 3, 4, 'runner');           // 랭킹전
   floorInlay(m.floor, 1, 3, m.w - 2, m.h - 5, 'border');
-  floorInlay(m.floor, 11, 14, 12, 6, 'rug');            // 휴게
-  floorGlow(m.floor, 8, 9, 5); floorGlow(m.floor, 26, 9, 5); floorGlow(m.floor, 17, 17, 4);
+  /* 빛도 책상 한가운데. desk3 는 x·x+1·x+2 를 쓰므로 가운데가 x+1.5 입니다. */
+  floorGlow(m.floor, 4.5, 6, 3.4);
+  floorGlow(m.floor, 12.5, 6, 3.4);
+  floorGlow(m.floor, 20.5, 6, 3.4);
 
-  /* ---- 상점 (북서) ----
-     톤앤매너: 장터. 천 깔린 긴 테이블이 계산대이고(시트의 tableLong —
-     원작 에셋), 뒤 진열대에 **알 넷**이 받침 위에 섭니다. 알 그림은
-     처음부터 "상점에서 가장 비싼 물건" 으로 그려 둔 것이라 여기가
-     제 자리입니다. 상품은 카운터 뒤 — 실제 상점 문법입니다. */
-  prop(m, 'shelfLow', 11, 4); prop(m, 'shelfLow2', 12, 4);
-  /* 계산대는 desk3 — 천 테이블(tableLong)로 했더니 2줄 깊이라 카운터
-     너머 대화가 안 닿았습니다. 대화는 1칸 너머까지입니다(카날라베 치수).
-     천 테이블은 부스 앞으로 갔습니다. 카운터 위 소품과 알 진열은 검수에서
-     어색하다고 빠졌습니다 — 빈 카운터가 소품 잘못 얹은 카운터보다 낫습니다. */
-  prop(m, 'desk3', 4, 8); prop(m, 'desk3', 7, 8);
+  /* ---- 창구 셋 ----
+     **NPC 하나에 책상 하나.** 전에는 상점과 랭킹전이 책상을 둘씩 쓰고
+     뒤에 진열대·게시판까지 세워서, 창구가 아니라 부스처럼 보였습니다.
+     NPC 뒤는 전부 비웁니다 — 사람이 주인공이고 책상은 그 앞에 하나면
+     "여기서 말을 건다" 가 읽힙니다.
 
-  /* ---- 출석 (가운데 위) ----
-     책상 하나가 창구입니다. 도윤이 뒤에 서고 앞에서 말을 겁니다 —
-     카운터 너머 1칸 대화, 상점·전당과 같은 문법. */
-  prop(m, 'desk3', 15, 6); prop(m, 'laptopN', 16, 6);
+     책상 셋은 NPC 칸의 한가운데에 옵니다: 미르 x4(중심 4.5)에 책상 x3~5,
+     도윤 x12(중심 12.5)에 x11~13, 하연 x20(중심 20.5)에 x19~21. */
+  prop(m, 'desk3', 3, 5);      // 상점
+  prop(m, 'desk3', 11, 5);     // 출석
+  prop(m, 'desk3', 19, 5);     // 랭킹전
 
-
-  /* ---- 명예의 전당 (북동) ----
-     톤앤매너: 격식. 코르크 게시판 둘이 밀착으로 순위 카드를 붙이고,
-     책상 위 모니터가 실시간 순위. 액자·사진벽도 걸어 봤는데 검수에서
-     어색하다고 빠졌습니다 — 게시판 둘이 이미 벽의 주인공입니다. */
-  prop(m, 'board', 24, 5); prop(m, 'board', 26, 5);
-  prop(m, 'desk3', 22, 9); prop(m, 'desk3', 27, 9);
-  prop(m, 'monitor', 23, 9); prop(m, 'monitor', 28, 9);
-
-  /* ---- 동아리 부스 (남서) ----
-     캠퍼스 동아리 거리의 천막이 실내로 들어온 것 — 같은 천막이 같은
-     동아리를 말합니다. 천막 아래 천 깔린 테이블이 좌판(스타듀 부스 문법:
-     지붕 + 좌판). 남쪽 대자보 입간판 석 장은 검수에서 빠졌습니다. */
-  prop(m, 'tentA', 2, 13); prop(m, 'tentB', 6, 13);
-  prop(m, 'tableLong', 2, 16); prop(m, 'tableLong2', 6, 16);
-
-  /* ---- 휴게 (가운데 아래) ----
-     입구 앞 3×3 을 비우려고 한 줄 위로 올렸습니다. */
-  /* 가운데는 비웁니다. 창구 셋 앞에 줄 설 자리이자, 부스에서 나와
-     지나가는 길입니다. 여기 책상을 놓으면 학생회관이 열람실이 됩니다. */
-
-
-  /* 동쪽 벽은 사물함만 둡니다. 자판기·벤치·쓰레기통을 줄 세워 봤는데
-     검수에서 전부 빠졌습니다 — 벽을 채우라는 규칙(⑤)은 벽면 기물이
-     있을 때 밀착하라는 것이지, 채우려고 만들라는 것이 아닙니다. */
-
-  prop(m, 'plant', 10, 4); prop(m, 'plant2', 19, 4);
-  prop(m, 'plantS', 10, 12); prop(m, 'plant', 19, 12);
-  prop(m, 'floorLamp', 16, 14); prop(m, 'sideTable', 17, 14);
-  prop(m, 'vending', 32, 20);
-  prop(m, 'bin', 30, 21);
-
+  /* NPC 는 책상 뒤(y4), 사람은 앞(y6~)에서 말을 겁니다 — 카운터 너머
+     1칸 대화라는 문법을 셋이 똑같이 씁니다.
+     미르 x4 ↔ 하연 x20 이 짝이고, 도윤 x12 는 중심 12.5 로 문과 한 축입니다. */
   m.npcs.push(
-    { x: 6, y: 7, sprite: 266, species: '고슴도치', dir: 'down',
+    { x: 4, y: 4, sprite: 266, species: '고슴도치', dir: 'down',
       worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', face: 'fac-sun' },
       name: '알 가게 · 미르', panel: 'shopEgg',
       line: '알 하나 깨고 나온 얼굴이네. 나머지 일곱도 여기 있어. 안 싸. '
           + '옷이랑 가구는 이제 동아리 거리에서 팔아 — 나는 알만 봐.' },
+    /* 도윤에게는 창이 없어서 대사 한 줄만 뜨고 끝났습니다 — 창구 셋 중
+       하나만 기능이 아니었습니다. 연속 출석과 오늘 획득은 코인 창이 이미
+       세고 있으므로 새 창을 만들지 않고 그것을 엽니다. (민철님) */
+    { x: 12, y: 4, sprite: 131, species: '개구리', dir: 'down',
+      worn: { top: 'top-tee', bottom: 'bot-trainer', shoes: 'sho-sneaker', bag: 'bag-backpack' },
+      name: '출석 · 도윤', panel: 'coins',
+      line: '오늘 거 아직 안 찍혔는데. 도서관이든 본관이든 한 세션만 채우고 와.' },
     /* 남은 날은 대사에 안 적습니다 — 지도를 만들 때 굳어 버려서, 며칠이
        지나도 같은 숫자를 말하게 됩니다. 숫자는 창이 그때그때 셉니다. */
-    { x: 26, y: 8, sprite: 185, species: '알파카', dir: 'down',
+    { x: 20, y: 4, sprite: 185, species: '알파카', dir: 'down',
       worn: { top: 'top-shirt', bottom: 'bot-slacks', shoes: 'sho-dress', hat: 'hat-grad' },
-      name: '명예의 전당 · 하연', panel: 'hall',
-      line: '여기 순위는 앉은 시간이랑 회복 횟수야. 자세에는 점수 안 매겨. 그건 안 하기로 했어.' },
-    { x: 16, y: 5, sprite: 131, species: '개구리', dir: 'down',
-      worn: { top: 'top-tee', bottom: 'bot-trainer', shoes: 'sho-sneaker', bag: 'bag-backpack' },
-      name: '출석 · 도윤',
-      line: '오늘 거 아직 안 찍혔는데. 도서관이든 본관이든 한 세션만 채우고 와.' },
+      name: '랭킹전 · 하연', panel: 'hall',
+      line: '이번 시즌 순위는 앉은 시간이랑 회복 횟수야. 자세에는 점수 안 매겨. 그건 안 하기로 했어.' },
   );
 
   /* 북쪽 벽은 창만. 시계·현수막·공지를 걸어 봤는데 검수에서 전부
-     빠졌습니다 — 게시판·진열대 같은 바닥 기물이 이미 벽 앞에 서 있어,
-     벽 그림까지 얹으면 두 겹이 됩니다. */
+     빠졌습니다. 창 넷도 짝(x ↔ 24-x)입니다: 3↔21, 9↔15. */
   dressRoom(m, IPAL.union, [
-    { k: 'win', x: 2, style: 'shop' }, { k: 'win', x: 12, style: 'shop' },
-    { k: 'win', x: 19, style: 'shop' }, { k: 'win', x: 30, style: 'shop' },
+    { k: 'win', x: 3, style: 'shop' }, { k: 'win', x: 9, style: 'shop' },
+    { k: 'win', x: 15, style: 'shop' }, { k: 'win', x: 21, style: 'shop' },
   ]);
-  /* 문(x16~18) 바로 오른쪽, 아래벽 앞. 전에는 y17 이라 홀 한가운데에
-     떠 있었습니다 — 들어오는 사람 눈높이는 문 옆입니다. */
-  prop(m, 'board', 19, 19);
-  m.things = [{ x: 19, y: 19, name: '학생회관 안내', panel: 'aboutUnion' }];
+
+  /* 안내는 문 오른쪽, 아래벽 앞 — 들어오는 사람 눈높이입니다.
+     이것만 짝이 없습니다: 문(x11~13)이 가운데를 쓰므로 대칭 자리가 문 안에
+     들어갑니다. 길잡이 한 장이라 대칭 구성에서 뺍니다. */
+  prop(m, 'board', 16, 9);
+  m.things = [
+    { x: 16, y: 9, name: '학생회관 안내', panel: 'aboutUnion' },
+    /* 랭킹전은 하연이 자리를 비워도 볼 수 있어야 합니다. 뒤 게시판을
+       없앴으므로 창구 책상 자체가 그 입구를 겸합니다. */
+    { x: 20, y: 5, name: '이번 시즌 랭킹전', panel: 'hall' },
+  ];
 
   /* 나가는 곳 — 네 건물이 전부 같은 문입니다. 건물마다 다르면
-     "여기가 출구" 를 매번 새로 배워야 합니다. */
-  prop(m, 'exitDoor', 16, m.h - 2);
-  m.portals.push({ x: 16, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 21, sy: 39, label: '캠퍼스' });
+     "여기가 출구" 를 매번 새로 배워야 합니다.
+     문 세 칸 x11~13 의 중심이 x12.5 로 방 중심·출석 창구와 한 줄입니다. */
+  prop(m, 'exitDoor', 11, m.h - 2);
+  m.portals.push({ x: 11, y: m.h - 2, w: 3, h: 2, to: 'campus', sx: 21, sy: 39, label: '캠퍼스' });
 }
 
 /* ================== 미니게임관 ==================
@@ -6832,7 +6860,29 @@ const LIGHTMAP = {
     /* 대낮에는 통째로 건너뜁니다. 흰색을 곱하는 건 아무 일도 아닌데
        화면 크기만 한 합성을 한 번 하는 셈이라 순수한 낭비입니다.
        궂은 날은 대낮에도 한 겹 내려앉으므로 건너뛰지 않습니다. */
-    if (dark < 0.02 && wet < 0.05) return;
+    /* 실내는 예외입니다 — 대낮에도 아주 옅은 앰비언트를 한 겹 올립니다.
+       낮의 실내는 등이 하나도 안 켜져(아래 on 이 0) 바닥·기물 원색만
+       그대로 보이는데, 그게 방을 가라앉아 보이게 하는 마지막 한 겹이었습니다.
+       곱셈이 아니라 덧셈(lighter)이라 색이 뜨지 않고 공기만 밝아집니다. */
+    const inside0 = !!m.floor;
+    if (dark < 0.02 && wet < 0.05) {
+      if (!inside0) return;
+      if (!this.buf || this.buf.width !== vw || this.buf.height !== vh) {
+        this.buf = document.createElement('canvas');
+        this.buf.width = vw; this.buf.height = vh;
+        this.g = this.buf.getContext('2d');
+      }
+      const ga = this.g;
+      ga.globalCompositeOperation = 'source-over';
+      ga.fillStyle = 'rgb(255,255,255)';
+      ga.fillRect(0, 0, vw, vh);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = 0.04;                 // 4% — 곁눈으로만 걸리는 양
+      ctx.drawImage(this.buf, 0, 0);
+      ctx.restore();
+      return;
+    }
 
     let tint = TIME.tint();
     /* 구름이 끼면 빛이 줄고 색이 빠집니다. 어둡게만 하면 밤이 되고,
@@ -7126,7 +7176,15 @@ function enterZone(id, sx, sy, dir) {
   const b = document.getElementById('banner');
   b.querySelector('b').textContent = zone.name;
   b.querySelector('span').textContent = zone.sub;
+  /* CSS 만으로는 화면에 남는 일이 있었습니다 — 애니메이션이 끝나기 전에
+     탭이 가려지거나 다음 전환이 겹치면 `.play` 가 붙은 채로 멈춰 섭니다.
+     끝나면 반드시 클래스를 떼고, 못 끝나도 시간이 지나면 떼도록 두 겹으로
+     막습니다. 클래스가 없으면 기본 규칙(opacity:0)이라 무조건 사라집니다. */
+  clearTimeout(b.__hide);
   b.classList.remove('play'); void b.offsetWidth; b.classList.add('play');
+  const drop = () => { b.classList.remove('play'); clearTimeout(b.__hide); };
+  b.addEventListener('animationend', drop, { once: true });
+  b.__hide = setTimeout(drop, 2400);   // 2.1s 애니메이션 + 여유
   /* 존 배지를 없앴으므로 여기서 쓸 곳이 없습니다. 이름은 지도(M)와
      건물 안내판이 말합니다. */
   /* 설정은 미니룸에서만. 캠퍼스를 걷는 동안에는 월드를 가립니다.
@@ -14817,7 +14875,7 @@ const PLACES = [
   { id: 'dorm',     to: ['dorm', 7, 8],       x: 22, y: 6,  name: '기숙사',    key: '1' },
   { id: 'mainhall', to: ['mainhall', 18, 25], x: 7,  y: 19, name: '본관',      key: '2' },
   { id: 'library',  to: ['library', 18, 25],  x: 38, y: 19, name: '도서관',    key: '3' },
-  { id: 'union',    to: ['union', 16, 21],    x: 23, y: 33, name: '학생회관',  key: '4' },
+  { id: 'union',    to: ['union', 12, 10],    x: 23, y: 33, name: '학생회관',  key: '4' },
   { id: 'campus',   to: ['campus', 22, 25],   x: 22, y: 21, name: '중앙 광장', key: '5' },
   { id: 'field',    to: ['campus', 8, 8],     x: 8,  y: 7,  name: '운동장',    key: '6' },
   { id: 'arcade',   to: ['arcade', 11, 10],   x: 37, y: 5,  name: '미니게임관', key: '7' },

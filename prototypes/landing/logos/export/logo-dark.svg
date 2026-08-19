@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- iteration 6 v4: 같은 d — 잉크 판 + 청록 획 (다크 판본) -->
+  <g id="plate">
+    <rect x="16" y="16" width="480" height="480" rx="112" fill="#101312"/>
+  </g>
+  <g id="stroke">
+    <path d="M 330 128
+             L 330 404
+             C 268 428, 196 408, 178 344
+             C 162 286, 204 234, 268 244
+             C 300 249, 322 268, 330 296"
+          fill="none" stroke="#2DD4BF" stroke-width="48"
+          stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

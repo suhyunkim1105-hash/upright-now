@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deskfit 로고 — 콘셉트</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Wanted Sans", -apple-system, "Segoe UI", sans-serif;
+    padding: 2rem;
+    transition: background-color .3s, color .3s;
+  }
+  body.light { background: #F7F8F8; color: #2B3230; }
+  body.dark { background: #202624; color: #F7F8F8; }
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+  h1 { font-size: 1.5rem; font-weight: 700; }
+  h2 { font-size: 1.1rem; font-weight: 700; margin: 2.5rem 0 1rem; }
+  .toggle {
+    padding: .5rem 1rem; border: 1px solid currentColor; border-radius: 8px;
+    background: transparent; color: inherit; cursor: pointer; font-size: .875rem;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+  .card { border: 1px solid rgba(128,128,128,.3); border-radius: 12px; overflow: hidden; }
+  .card-img { display: flex; align-items: center; justify-content: center; padding: 2rem; min-height: 240px; }
+  body.light .card-img { background: #fff; }
+  body.dark .card-img { background: #2B3230; }
+  .card-img img { max-width: 100%; max-height: 200px; }
+  .card-label { padding: .75rem 1rem; font-size: .875rem; font-weight: 600; border-top: 1px solid rgba(128,128,128,.3); }
+  body.light .card-label { background: #fafafa; }
+  body.dark .card-label { background: #262c2a; }
+  /* 실제 헤더 문맥 — 22px 렌더 */
+  .ctx { display: flex; flex-direction: column; gap: 10px; }
+  .ctx-bar {
+    display: flex; align-items: center; gap: 9px;
+    background: #F7F8F8; border: 1px solid #e3e6e5; border-radius: 10px;
+    padding: 14px 20px; width: 320px;
+  }
+  .ctx-bar img { height: 22px; width: auto; }
+  .ctx-bar b { font-size: 17px; letter-spacing: -.01em; color: #2B3230; font-weight: 800; }
+  .ctx-bar.dark2 { background: #202624; border-color: #333; }
+  .ctx-bar.dark2 b { color: #F7F8F8; }
+  .sizes { display: flex; gap: 2rem; flex-wrap: wrap; align-items: end; }
+  .sz { display: flex; flex-direction: column; align-items: center; gap: .5rem; }
+  .sz .row { display: flex; gap: 1rem; align-items: end; }
+  .sz small { font-size: .75rem; opacity: .6; display: block; text-align: center; margin-top: 4px; }
+</style>
+</head>
+<body class="light">
+  <div class="header">
+    <h1>Deskfit 로고 — 콘셉트 5</h1>
+    <button class="toggle" onclick="document.body.classList.toggle('dark'); document.body.classList.toggle('light'); this.textContent = document.body.classList.contains('dark') ? '☀️ Light' : '🌙 Dark';">🌙 Dark</button>
+  </div>
+  <div class="grid" id="grid"></div>
+
+  <h2>헤더 문맥 (22px — 실제 자리)</h2>
+  <div class="ctx" id="ctx"></div>
+
+  <h2>파비콘 크기 확인</h2>
+  <div class="sizes" id="sizes"></div>
+
+<script>
+  const N = 5;
+  const names = {
+    1: 'concept-1 · D 모노그램 + 척추',
+    2: 'concept-2 · 곧게 앉은 실루엣',
+    3: 'concept-3 · 기하 기린 목',
+    4: 'concept-4 · 웹캠 링 + 상승 획',
+    5: 'concept-5 · 책상 + 새싹',
+  };
+  for (let i = 1; i <= N; i++) {
+    const p = 'concepts/concept-' + i + '.svg';
+    document.getElementById('grid').insertAdjacentHTML('beforeend',
+      `<div class="card"><div class="card-img"><img src="${p}"></div><div class="card-label">${names[i]}</div></div>`);
+    document.getElementById('ctx').insertAdjacentHTML('beforeend',
+      `<div class="ctx-bar"><img src="${p}"><b>Deskfit</b></div>`);
+    document.getElementById('sizes').insertAdjacentHTML('beforeend',
+      `<div class="sz"><div style="font-size:.8rem;font-weight:600">${i}</div>
+        <div class="row">
+          <div><img src="${p}" width="64" height="64"><small>64</small></div>
+          <div><img src="${p}" width="32" height="32"><small>32</small></div>
+          <div><img src="${p}" width="16" height="16"><small>16</small></div>
+        </div></div>`);
+  }
+</script>
+</body>
+</html>

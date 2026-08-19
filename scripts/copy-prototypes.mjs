@@ -31,7 +31,11 @@ function copyDir(src, dst, onHtml) {
    폴더가 없습니다 — 고치지 않으면 배포본에서만 서체가 없는 화면이 됩니다. */
 const fixFonts = (html) => html.replaceAll('../../public/fonts/', '/fonts/');
 
-for (const name of ['landing', 'onboarding', 'openworld', 'room-flow']) {
+/* shared 도 함께 옮깁니다. 온보딩과 월드가 `../shared/…` 로 부르는데
+   목록에 없어서 배포본에서만 404 였고, 그러면 SPA 리라이트가 대신
+   app.html 을 돌려줘 브라우저가 HTML 을 스크립트로 읽습니다
+   ("Unexpected token '<'"). 로컬에서는 파일이 옆에 있어 안 드러납니다. */
+for (const name of ['landing', 'onboarding', 'openworld', 'room-flow', 'shared']) {
   copyDir(`prototypes/${name}`, `dist/prototypes/${name}`, fixFonts);
 }
 
@@ -59,10 +63,10 @@ let landing = readFileSync('prototypes/landing/index.html', 'utf8');
 for (const [from, to] of REWRITE) landing = landing.replaceAll(from, to);
 /* assets/ · vendor/ 는 따옴표 뒤에 오는 것만 바꿉니다. @keyframes 이름처럼
    같은 글자가 다른 뜻으로 쓰인 자리를 건드리지 않기 위해서입니다. */
-landing = landing.replace(/(["'])(assets|vendor)\//g, '$1/prototypes/landing/$2/');
+landing = landing.replace(/(["'])(assets|vendor|legal)\//g, '$1/prototypes/landing/$2/');
 
 /* 남은 상대경로가 있으면 배포본에서 조용히 404 가 됩니다. 여기서 멈춥니다. */
-const leftover = landing.match(/["']\.{0,2}\/?(assets|vendor)\/|\.\.\//g);
+const leftover = landing.match(/["']\.{0,2}\/?(assets|vendor|legal)\/|\.\.\//g);
 if (leftover) {
   throw new Error(`dist/index.html 에 고쳐지지 않은 상대경로: ${[...new Set(leftover)].join(' ')}`);
 }

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- iteration 3: badge — teal squircle, cream one-color giraffe (favicon-first) -->
+  <g id="badge">
+    <rect x="16" y="16" width="480" height="480" rx="120" fill="#2DD4BF"/>
+  </g>
+  <g id="giraffe-mark" fill="#F7F8F8">
+    <rect id="neck" x="186" y="166" width="116" height="286" rx="58"/>
+    <ellipse id="ear" cx="168" cy="118" rx="40" ry="18" transform="rotate(32 168 118)"/>
+    <rect id="ossicone" x="218" y="76" width="38" height="80" rx="19"/>
+    <rect id="skull" x="186" y="110" width="212" height="104" rx="52"/>
+  </g>
+  <g id="details" fill="#2DD4BF">
+    <circle id="eye" cx="326" cy="148" r="15"/>
+    <circle id="spot-1" cx="234" cy="256" r="27"/>
+    <circle id="spot-2" cx="256" cy="334" r="23"/>
+    <circle id="spot-3" cx="236" cy="404" r="20"/>
+  </g>
+</svg>

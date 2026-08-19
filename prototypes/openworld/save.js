@@ -191,7 +191,20 @@
     return flush();
   }
 
-  /** 서버가 아는 내 잔액. 행이 아직 없으면 0, 못 물어보면 null. */
+  /** 서버가 아는 내 잔액. **모르면 null 입니다 — 0 이 아닙니다.**
+   *
+   *  전에는 행이 없을 때 0 을 돌려줬습니다. 그런데 world_coins 에 행이
+   *  생기는 것은 **첫 세션을 끝냈을 때**입니다. 그 전까지 서버는 이 사람을
+   *  모르는 상태이고, 그동안 사람은 미니게임·출석으로 이 기기에 코인을
+   *  쌓고 있습니다.
+   *
+   *  그래서 상점을 여는 순간 refreshShopCoins 가 이 0 을 받아 로컬 잔액을
+   *  덮고 저장까지 했습니다 — **모아 둔 코인이 상점 문턱에서 사라집니다.**
+   *  실제로 그렇게 됐습니다.
+   *
+   *  "아직 모른다" 와 "0원이다" 는 다른 말입니다. 모를 때는 null 을 주고,
+   *  부르는 쪽이 로컬 값을 그대로 두게 합니다. 진짜 0원인 사람은 행이
+   *  있으므로 0 이 그대로 옵니다. */
   async function balance() {
     if (!configured) return null;
     try {
@@ -201,7 +214,7 @@
       });
       if (!r.ok) return null;
       const rows = await r.json();
-      return rows.length ? rows[0].balance : 0;
+      return rows.length ? rows[0].balance : null;
     } catch { return null; }
   }
 

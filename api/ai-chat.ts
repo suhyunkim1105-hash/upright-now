@@ -23,14 +23,19 @@ export const AI_CHAT_MODEL = 'gemini-3.5-flash'
   완벽한 방어가 아니라 **실수와 장난을 막는 문**입니다. 진짜 방어는
   인증이 붙은 뒤에 사용자 단위로 겁니다.
 */
+import { authErrorStatus, requireUser, type AuthedUser } from './require-auth'
+
 const RATE_WINDOW_MS = 10 * 60_000
 const RATE_MAX = 20
 
 type RateEntry = { count: number; resetAt: number }
 const rateLimits = new Map<string, RateEntry>()
 
-function requestKey(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+/* **사용자 id 로 셉니다.** 전에는 `x-forwarded-for` 를 썼는데 그건 보내는
+   쪽이 정하는 값이라, 매번 다른 가짜 IP 를 실으면 통이 무한히 열렸습니다.
+   토큰은 Supabase 가 서명한 것이라 위조할 수 없습니다. */
+function requestKey(user: AuthedUser): string {
+  return user.id
 }
 
 function withinRateLimit(key: string, now: number): boolean {
@@ -90,6 +95,7 @@ export async function handleAiChat(
   deps: {
     enabled?: boolean
     generate?: (systemPrompt: string, turns: Array<{ role: string; text: string }>) => Promise<string>
+    verify?: (token: string) => Promise<AuthedUser>
   } = {},
 ): Promise<Response> {
   if (request.method !== 'POST') return json({ code: 'METHOD_NOT_ALLOWED' }, 405)
@@ -97,7 +103,16 @@ export async function handleAiChat(
   const enabled = deps.enabled ?? process.env.AI_REPORT_ENABLED === 'true'
   if (!enabled) return json({ code: 'AI_CHAT_UNAVAILABLE' }, 503)
 
-  if (!withinRateLimit(requestKey(request), Date.now())) {
+  /* 이 뒤부터 **우리 돈이 나갑니다.** 로그인한 사람만 지나갑니다. */
+  let user: AuthedUser
+  try {
+    user = await requireUser(request, deps.verify)
+  } catch (error) {
+    const { status, code } = authErrorStatus(error)
+    return json({ code }, status)
+  }
+
+  if (!withinRateLimit(requestKey(user), Date.now())) {
     return json({ code: 'AI_CHAT_RATE_LIMITED' }, 429)
   }
 

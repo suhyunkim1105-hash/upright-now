@@ -3,6 +3,7 @@ import {
   handleAiReport,
   resetAiReportRateLimitsForTest,
 } from '../../../api/ai-report-handler'
+import { AuthError } from '../../../api/require-auth'
 import {
   AI_REPORT_INPUT_FIELDS,
   createAiReportInput,
@@ -38,10 +39,17 @@ const REPORT: AiSessionReport = {
   },
 }
 
-function request(body: unknown): Request {
+/* 로그인한 사람으로 부릅니다. 실제 서명 검증은 Supabase 가 하고, 여기서는
+   그 자리를 대신 채웁니다 — `enabled`·`generate` 와 같은 주입 방식입니다. */
+const VERIFY = async () => ({ id: 'user-1', email: 'a@mju.ac.kr' })
+
+function request(body: unknown, token: string | null = 'tok'): Request {
   return new Request('http://localhost/api/ai-report', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(body),
   })
 }
@@ -53,6 +61,7 @@ describe('AI 세션 회고 API', () => {
     const generate = vi.fn(async () => REPORT)
     const observe = vi.fn(async () => {})
     const response = await handleAiReport(request(INPUT), {
+      verify: VERIFY,
       enabled: true,
       generate,
       observe,
@@ -66,9 +75,8 @@ describe('AI 세션 회고 API', () => {
 
   it('카메라 데이터처럼 계약 밖 필드가 있으면 생성기에 도달하지 않는다', async () => {
     const generate = vi.fn(async () => REPORT)
-    const response = await handleAiReport(
-      request({ ...INPUT, cameraFrame: 'forbidden' }),
-      { enabled: true, generate },
+    const response = await handleAiReport(request({ ...INPUT, cameraFrame: 'forbidden' }), {
+      verify: VERIFY, enabled: true, generate },
     )
 
     expect(response.status).toBe(400)
@@ -80,6 +88,7 @@ describe('AI 세션 회고 API', () => {
     // 관찰 칸에 넣습니다 — 실제로 의료 표현이 새어 나올 가능성이 가장 높은
     // 자리입니다. 모델이 숫자를 보고 원인을 해석하려 드는 곳이라서요.
     const response = await handleAiReport(request(INPUT), {
+      verify: VERIFY,
       enabled: true,
       generate: async () => ({
         ...REPORT,
@@ -96,6 +105,7 @@ describe('AI 세션 회고 API', () => {
   it('세 번을 넘는 요청은 같은 10분 창에서 제한한다', async () => {
     for (let index = 0; index < 3; index += 1) {
       const response = await handleAiReport(request(INPUT), {
+      verify: VERIFY,
         enabled: true,
         generate: async () => REPORT,
       })
@@ -103,6 +113,7 @@ describe('AI 세션 회고 API', () => {
     }
 
     const response = await handleAiReport(request(INPUT), {
+      verify: VERIFY,
       enabled: true,
       generate: async () => REPORT,
     })
@@ -141,5 +152,54 @@ describe('AI 세션 회고 API', () => {
     expect(input).not.toHaveProperty('goal')
     expect(input).not.toHaveProperty('unstableMs')
     expect(input).not.toHaveProperty('sessionId')
+  })
+
+  /* ---- 인증 ----
+     이 뒤로 **우리 돈이 나갑니다.** 문이 열려 있으면 주소만 아는 사람이
+     청구서를 씁니다. 검사가 없으면 다음 사람이 조용히 걷어냅니다. */
+  it('토큰이 없으면 401 이고 생성기를 부르지 않는다', async () => {
+    const generate = vi.fn()
+    const response = await handleAiReport(request(INPUT, null), { enabled: true, verify: VERIFY, generate })
+    expect(response.status).toBe(401)
+    expect(await response.json()).toMatchObject({ code: 'AUTH_REQUIRED' })
+    expect(generate).not.toHaveBeenCalled()
+  })
+
+  it('토큰이 틀리면 401 이고 생성기를 부르지 않는다', async () => {
+    const generate = vi.fn()
+    const response = await handleAiReport(request(INPUT), {
+      enabled: true,
+      verify: async () => {
+        throw new AuthError('AUTH_INVALID')
+      },
+      generate,
+    })
+    expect(response.status).toBe(401)
+    expect(generate).not.toHaveBeenCalled()
+  })
+
+  it('한 사람이 많이 불러도 다른 사람은 안 막힌다', async () => {
+    const generate = async () => REPORT
+    for (let i = 0; i < 3; i += 1) {
+      await handleAiReport(request(INPUT), {
+        enabled: true,
+        verify: async () => ({ id: 'heavy', email: null }),
+        generate,
+      })
+    }
+    /* 위 사람은 막혔지만 — */
+    const blocked = await handleAiReport(request(INPUT), {
+      enabled: true,
+      verify: async () => ({ id: 'heavy', email: null }),
+      generate,
+    })
+    expect(blocked.status).toBe(429)
+    /* 다른 사람은 그대로 지나갑니다. IP 로 셀 때는 이게 안 됐습니다. */
+    const other = await handleAiReport(request(INPUT), {
+      enabled: true,
+      verify: async () => ({ id: 'other', email: null }),
+      generate,
+    })
+    expect(other.status).toBe(200)
   })
 })

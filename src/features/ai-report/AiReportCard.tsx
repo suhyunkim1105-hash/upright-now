@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { authedFetch } from '@/lib/supabase/client'
 import { useObject } from '@ai-sdk/react'
 import { Badge, Button, Card, CardTitle } from '@/components/ui'
 import {
@@ -85,6 +86,8 @@ export function AiReportCard({
   const [consented, setConsented] = useState(false)
   const { object, error, isLoading, submit } = useObject({
     api: '/api/ai-report',
+    /* 로그인 토큰을 실어 보냅니다. 서버가 인증을 요구하게 바뀌었습니다. */
+    fetch: authedFetch,
     schema: AiSessionReportSchema,
     initialValue: summary.aiReport,
     onFinish: ({ object: completedObject, error: finishError }) => {

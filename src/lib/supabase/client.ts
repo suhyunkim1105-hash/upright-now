@@ -105,3 +105,22 @@ export async function ensureAnonymousUser(): Promise<string | null> {
   if (error || !data.user) return null
   return data.user.id
 }
+
+/**
+ * 로그인 토큰을 실어서 우리 서버 함수를 부릅니다.
+ *
+ * `api/` 의 AI 엔드포인트는 이제 `Authorization: Bearer` 를 요구합니다 —
+ * 그 뒤에 **우리 돈으로 도는 모델**이 있어서, 열어 두면 주소만 아는
+ * 사람이 청구서를 씁니다.
+ *
+ * 로그인 전이면 헤더 없이 보냅니다. 서버가 401 로 돌려주고, 화면은
+ * 이미 그 오류를 다룰 줄 압니다 — 여기서 막으면 "왜 아무 일도 안
+ * 일어나지" 가 됩니다.
+ */
+export async function authedFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const supabase = await getSupabase()
+  const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null
+  const headers = new Headers(init.headers)
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  return fetch(input, { ...init, headers })
+}

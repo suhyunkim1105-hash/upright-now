@@ -4,7 +4,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const DIR = 'C:/Users/user/Desktop/girin_mvp/prototypes/landing/legal';
+/* 이 파일이 있는 곳. 절대경로로 박아 두면 다른 기계에서 안 돕니다. */
+const DIR = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+
+/* ---- 연락처는 한 곳에서만 ----
+   전에는 일곱 문서에 같은 주소를 손으로 적어 뒀습니다. 바꿀 일이 생기면
+   일곱 군데를 찾아야 하고, 하나를 놓치면 **개인정보처리방침이 죽은
+   주소를 가리킵니다.**
+
+   마크다운에는 `{{CONTACT}}` 만 씁니다. 실제 값은 여기 한 줄입니다. */
+const CONTACT = process.env.DESKFIT_CONTACT || 'ikmc554@mju.ac.kr';
 const DOCS = [
   ['privacy', '개인정보처리방침'],
   ['terms', '서비스 이용약관'],
@@ -141,7 +150,8 @@ ${body}
 let n = 0;
 for (const [slug, title] of DOCS) {
   const md = fs.readFileSync(path.join(DIR, slug + '.md'), 'utf8');
-  fs.writeFileSync(path.join(DIR, slug + '.html'), page(slug, title, render(md)), 'utf8');
+  const filled = md.replaceAll('{{CONTACT}}', CONTACT);
+  fs.writeFileSync(path.join(DIR, slug + '.html'), page(slug, title, render(filled)), 'utf8');
   n++;
 }
 console.log('HTML 생성', n, '개');

@@ -1540,11 +1540,32 @@ const PROP = {
             하루 한 번인지 여기로 셉니다 — 패널 key 와 반드시 같아야
             earn() 이 옳은 칸을 셉니다.
      zone   세울 존. prop/x/y 로 그 자리에 소품과 만질 것을 같이 놓습니다.
-     go     안내소의 '바로 가기'가 데려다 놓는 칸. 소품 위가 아니라
-            **소품 앞에 설 수 있는 빈 칸**이어야 합니다.
+     go     안내소의 '바로 가기'가 데려다 놓는 칸. 막힌 칸이면 안 되고,
+            거기서 Space 가 그 게임에 닿아야 합니다. 관문은 **문 안**이
+            그 자리입니다(이 방의 안내 문구가 "관문 안에 서서 Space").
      glow   바닥에 새는 빛 [dx, dy, r]. 실내 관문에만 씁니다.
    ================================================================== */
 const MINIGAMES = [
+  /* ---- 미니게임관 안 관문 넷 ----
+     순서는 왼쪽부터 몸 · 머리 · 기억 · 손입니다. 색은 자리에 붙은 것이라
+     GATE_STYLE 이 따로 들고 있습니다 — 안의 게임이 바뀌어도 "아까 그
+     노란 문" 이 그대로여야 합니다. */
+  { key: 'giraffeNeck', name: '기린 목 펴기', where: '미니게임관',
+    how: '연타로 목을 폅니다', zone: 'arcade', prop: 'gateA', x: 2, y: 3,
+    go: ['arcade', 3, 5], glow: [2, 4, 3] },
+  { key: 'escapeRoom', name: '방탈출', where: '미니게임관',
+    how: '단서를 찾아 번호를 맞춥니다', zone: 'arcade', prop: 'gateEsc', x: 7, y: 3,
+    go: ['arcade', 8, 5], glow: [2, 4, 3] },
+  { key: 'animalFind', name: '기억력 카드', where: '미니게임관',
+    how: '같은 동물 카드 짝을 맞춥니다', zone: 'arcade', prop: 'gateB', x: 12, y: 3,
+    go: ['arcade', 13, 5], glow: [2, 4, 3] },
+  { key: 'giraffeStack', name: '기린 목 쌓기', where: '미니게임관',
+    how: '움직이는 블록을 맞춰 떨어뜨립니다', zone: 'arcade', prop: 'gateC', x: 17, y: 3,
+    go: ['arcade', 18, 5], glow: [2, 4, 3] },
+
+  /* ---- 밖에 있는 것들 ----
+     자기 자리에 있습니다. 달리기는 운동장, 낚시는 호수, 책 정리는
+     도서관. 대신 못 찾는 문제가 생기므로 위 안내소가 그것을 맡습니다. */
   { key: 'postureRun', name: '거북목 탈출 러너', where: '운동장',
     how: '고개를 들면 뛰어넘습니다', zone: 'campus', prop: 'runBoard', x: 3, y: 13,
     go: ['campus', 5, 14] },
@@ -1557,23 +1578,6 @@ const MINIGAMES = [
   { key: 'bookSort', name: '책 정리', where: '도서관',
     how: '청구기호 순서대로 꽂습니다', zone: 'library', prop: 'bookCart', x: 25, y: 21,
     go: ['library', 25, 20] },
-
-  /* ---- 미니게임관 안 관문 넷 ----
-     순서는 왼쪽부터 몸 · 머리 · 기억 · 손입니다. 색은 자리에 붙은 것이라
-     GATE_STYLE 이 따로 들고 있습니다 — 안의 게임이 바뀌어도 "아까 그
-     노란 문" 이 그대로여야 합니다. */
-  { key: 'giraffeNeck', name: '기린 목 펴기', where: '미니게임관',
-    how: '연타로 목을 폅니다', zone: 'arcade', prop: 'gateA', x: 2, y: 3,
-    go: ['arcade', 11, 10], glow: [2, 4, 3] },
-  { key: 'escapeRoom', name: '방탈출', where: '미니게임관',
-    how: '단서를 찾아 번호를 맞춥니다', zone: 'arcade', prop: 'gateEsc', x: 7, y: 3,
-    go: ['arcade', 11, 10], glow: [2, 4, 3] },
-  { key: 'animalFind', name: '기억력 카드', where: '미니게임관',
-    how: '같은 동물 카드 짝을 맞춥니다', zone: 'arcade', prop: 'gateB', x: 12, y: 3,
-    go: ['arcade', 11, 10], glow: [2, 4, 3] },
-  { key: 'giraffeStack', name: '기린 목 쌓기', where: '미니게임관',
-    how: '움직이는 블록을 맞춰 떨어뜨립니다', zone: 'arcade', prop: 'gateC', x: 17, y: 3,
-    go: ['arcade', 11, 10], glow: [2, 4, 3] },
 ];
 
 /** 넷은 서로 **달라야** 합니다. 나란히 서 있어서 색이 곧 이름표입니다.
@@ -3713,6 +3717,42 @@ PROP.fishDeck = { ...paintedProp('fishDeck', 2, 2, [0, 0]), anchor: 0 };
 }
 PROP.bookCart = paintedProp('bookCart', 2, 2, [1, 1]);
 
+/* ---- 안내소 게시판 2×3 — 미니게임관 ----
+   여기 있던 것은 코르크 게시판(board)이었습니다. 게시판은 "붙여 둔 것을
+   읽는 곳" 이라 벽 아무 데나 있어도 되는 물건인데, 이 방의 성격이
+   **어디에 무엇이 있는지 알려 주고 데려다주는 곳**으로 바뀌었으니
+   물건도 바뀌어야 합니다. 지도 핀 넷과 이름표 하나. */
+function paintDirBoard() {
+  const c = canvasOf(2, 3), g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  shadow(g, 16, 46, 12, 3);
+  px(g, 13, 34, 6, 13, '#5E5449');
+  px(g, 13, 34, 2, 13, '#877C6A');
+  px(g, 8, 44, 16, 3, '#4A443C');
+  px(g, 0, 1, 32, 36, '#4E3480');
+  px(g, 1, 2, 30, 34, '#8A6BC4');
+  px(g, 2, 3, 28, 32, '#F4EDE4');
+  /* 이름 띠 — 자주. 이 방의 지붕 색입니다 */
+  px(g, 2, 3, 28, 9, '#6B52A8');
+  px(g, 2, 3, 28, 1, '#B79BE8');
+  stamp(g, '안내소', 7, '#3A2568', 16, 9, 'center', 'middle');
+  stamp(g, '안내소', 7, '#FFFFFF', 16, 8, 'center', 'middle');
+  /* 작은 지도 — 네모 하나에 핀 넷. 어디에 무엇이 있는지가 이 물건입니다 */
+  px(g, 5, 15, 22, 17, '#CDE3D2');
+  px(g, 5, 15, 22, 1, '#E4F1E7');
+  px(g, 5, 23, 22, 2, '#9AA3AE');
+  px(g, 14, 15, 2, 17, '#9AA3AE');
+  [[7, 17, '#E8695A'], [21, 18, '#2DD4BF'], [8, 27, '#E0AE3C'], [22, 27, '#8A6BC4']]
+    .forEach(([x, y, col]) => {
+      px(g, x, y, 4, 4, col);
+      px(g, x + 1, y + 4, 2, 3, '#4A443C');
+    });
+  PAINTED.dirBoard = c;
+}
+paintDirBoard();
+TEXT_ART.push(paintDirBoard);
+PROP.dirBoard = paintedProp('dirBoard', 2, 3, [0, 0, 1]);
+
 PAINTED.pennant = canvasOf(1, 2);
 PAINTED.schoolCushion = canvasOf(1, 1);
 function paintSchoolProps() {
@@ -5644,11 +5684,13 @@ const DORM = ZONES.dorm;
      전부 MINIGAMES 가 들고 있습니다. */
   placeMinigames(m, 'arcade');
 
-  /* ---- 게시판 ----
-     넷 중 무엇을 고를지는 문 앞에서 정하는 것이 아니라 들어오면서
-     정합니다. 그래서 문에서 관문으로 가는 길 오른쪽에 세웁니다. */
-  prop(m, 'board', 18, 9);
-  m.things.push({ x: 18, y: 9, name: '미니게임 안내', panel: 'arcade' });
+  /* ---- 안내소 게시판 ----
+     이 방은 이제 미니게임을 다 가진 방이 아니라, **어디에 무엇이 있는지
+     알려 주는 방**입니다. 게임 넷은 그대로 두고, 밖에 흩어진 것들을
+     여기서 찾습니다. 문에서 관문으로 가는 길 오른쪽 — 들어오면서
+     지나치는 자리입니다. */
+  prop(m, 'dirBoard', 18, 9);
+  m.things.push({ x: 18, y: 9, name: '안내소', panel: 'arcade' });
 
   /* ---- 나머지는 벽 쪽으로 ----
      관문 아랫줄(y7~8)은 통째로 비웁니다. 넷 앞에 서는 자리이자 넷 사이를
@@ -5664,8 +5706,9 @@ const DORM = ZONES.dorm;
       worn: { top: 'top-tee', bottom: 'bot-shorts', shoes: 'sho-sneaker', hat: 'hat-cap' },
       name: '미니게임관 · 세아',
       lines: [
-        '어서 와. 문 넷 중에 아무거나 골라.',
-        '한 판 3분이야. 그거 넘게 붙잡고 있으면 쉬는 게 아니라 딴짓이지.',
+        '어서 와. 여기 문 넷은 바로 할 수 있고,',
+        '나머지는 밖에 흩어져 있어. 운동장이랑 호수랑 도서관.',
+        '저기 안내소 판 봐. 어디 있는지 다 적혀 있고 눌러서 바로 갈 수도 있어.',
         '코인은 게임마다 하루 한 번. 그 뒤로는 그냥 재미로 하는 거야.',
       ] },
   );
@@ -13305,18 +13348,31 @@ function watchEmbeds() {
   }
 }
 
-/** 안내소·게시판이 같이 쓰는 한 줄. 오늘 코인이 남았는지는 지급하는
-    쪽(RW.daily.games)에 직접 물어봅니다 — 따로 세면 어긋납니다.
-    where 를 넘기면 그 자리에 있는 것만 뽑습니다. */
-function minigameRows(zone) {
+/** 안내소 목록. **MINIGAMES 를 그대로 훑습니다** — 손으로 적어 두면
+    게임을 하나 옮기거나 더할 때 여기만 옛 이야기를 하고, 이 저장소에서
+    이미 두 번 그랬습니다. 표에 한 줄을 더하면 여기도 같이 늘어납니다.
+
+    오늘 코인이 남았는지는 지급하는 쪽(RW.daily.games)에 직접 물어봅니다.
+    따로 세면 그 둘이 또 어긋납니다. 액수도 상수를 그대로 씁니다 —
+    실제로 여기 '5' 와 COIN_MINIGAME(10) 이 어긋나 있었습니다. */
+function minigameRows() {
   const done = RW.daily.games || [];
-  /* 숫자를 글에 박아 두면 상수만 바뀌었을 때 조용히 거짓말이 됩니다.
-     실제로 여기 '5' 와 COIN_MINIGAME(10) 이 어긋나 있었습니다. */
-  return MINIGAMES
-    .filter((g) => !zone || g.zone === zone)
-    .map((g) => `<div class="row"><span>${esc(g.name)} <em>${esc(g.how)}</em></span>`
-      + `<span class="val">${done.includes(g.key) ? '오늘 받음' : COIN_MINIGAME}</span></div>`)
-    .join('');
+  const seen = [];
+  let html = '';
+  for (const g of MINIGAMES) {
+    if (!seen.includes(g.where)) {
+      seen.push(g.where);
+      if (html) html += '</div>';
+      html += `<p class="hint" style="margin:16px 0 0;font-weight:700;color:var(--ink-2)">${esc(g.where)}</p><div class="rows">`;
+    }
+    const got = done.includes(g.key);
+    html += `<div class="row"><span>${esc(g.name)} <em>${esc(g.how)}</em></span>`
+      + `<span class="val"${got ? ' style="color:var(--ink-3)"' : ''}>${got ? '오늘 받음' : COIN_MINIGAME + '코인'}</span>`
+      /* 흩어 놓은 배치를 쓸 수 있게 만드는 것이 이 단추입니다. 이게 없으면
+         "호수 옆에 있대" 를 듣고 지도를 다시 펴야 합니다. */
+      + `<button class="act ghost" data-goto="${esc(g.key)}" style="margin-left:10px;flex:none">바로 가기</button></div>`;
+  }
+  return html + (html ? '</div>' : '');
 }
 
 const PANELS = {
@@ -13491,20 +13547,18 @@ const PANELS = {
      하나 옮기거나 더할 때 여기만 옛 이야기를 합니다 — 이 저장소에서
      이미 두 번 그랬습니다. */
   arcade: () => ({
-    title: '미니게임관', kind: 'GUIDE',
+    title: '안내소', kind: 'GUIDE',
     html: `
       <p>한 시간쯤 앉아 있으면 자세가 먼저 무너집니다. 그때
-      <b>세션을 끊는 대신</b> 여기로 오세요. 3분 놀고 자리로 돌아가는
-      자리예요.</p>
-      <ol>
-        <li>관문 안에 서서 <b>Space</b> 를 눌러 주세요.</li>
-        <li>제한 시간은 <b>3분</b>이에요.</li>
-        <li>시간 안에 깨면 <b>${COIN_MINIGAME}코인</b>이 들어와요.</li>
-      </ol>
-      <div class="rows">${minigameRows('arcade')}</div>
+      <b>세션을 끊는 대신</b> 잠깐 놀다 오세요.</p>
+      <p><b>미니게임은 캠퍼스 곳곳에 있어요.</b> 달리기는 운동장, 낚시는
+      호수, 책 정리는 도서관. 여기는 어디에 무엇이 있는지 알려 주고,
+      누르면 그 앞까지 데려다주는 곳이에요.</p>
+      ${minigameRows()}
       <div class="note">코인은 <b>게임마다 하루 한 번</b>까지예요. 오늘 받은
       게임을 또 깨도 코인은 안 들어와요 — 여기는 벌러 오는 곳이 아니니까요.
-      물론 계속 놀아도 됩니다.</div>`,
+      물론 계속 놀아도 됩니다. <b>바로 가기</b>는 그 게임 앞으로 데려다만
+      줘요 — 시작은 거기서 <b>Space</b> 예요.</div>`,
   }),
 
   guide: () => ({
@@ -13524,6 +13578,9 @@ const PANELS = {
         <li>다 했으면 왼쪽 아래 <b>세션 종료</b>를 눌러 주세요. 그때
         카메라가 꺼지고 회고가 열려요.</li>
         <li><b>학생회관</b>(남쪽)에는 상점과 명예의 전당이 있어요.</li>
+        <li>미니게임은 <b>캠퍼스 곳곳</b>에 있어요 — 운동장 · 호수 · 도서관 ·
+        미니게임관. 어디에 무엇이 있는지는 <b>미니게임관 안내소</b>에서
+        한눈에 보고 바로 갈 수 있어요.</li>
       </ol>
       <div class="rows">
         <div class="row"><span>이동 <em>WASD 또는 방향키</em></span><span class="val">걷기</span></div>
@@ -14101,6 +14158,15 @@ panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="race-restart"]')) return startTrackRace();
   if (e.target.closest('[data-do="fish-press"]')) return fishPress();
   if (e.target.closest('[data-do="fish-restart"]')) return startPondFish();
+  /* 안내소의 바로 가기. 흩어 놓은 배치를 쓸 수 있게 만드는 자리라
+     다른 무엇보다 먼저 봅니다. 데려다만 주고 게임은 안 엽니다 —
+     그 앞에 서서 Space 를 누르는 것까지가 "거기에 간" 것입니다. */
+  const goto = e.target.closest('[data-goto]');
+  if (goto) {
+    const g = MINIGAMES.find((q) => q.key === goto.dataset.goto);
+    if (g) enterZone(g.go[0], g.go[1], g.go[2]);
+    return;
+  }
   const bk = e.target.closest('[data-book]');
   if (bk) return pickBook(Number(bk.dataset.book));
   if (e.target.closest('[data-do="book-restart"]')) return startBookSort();

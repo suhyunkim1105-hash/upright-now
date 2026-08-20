@@ -7355,6 +7355,21 @@ function calLoop() {
   if (!video || video.readyState < 2) return;
 
   const now = performance.now();
+  /* **poseLoop 과 같은 이유로 같은 값으로 자릅니다.** 여기에만 이 줄이
+     없어서, 기준 잡는 10 초 동안 동기 추론 둘(pose+face)이 초당 60 번
+     돌았습니다 — 의도한 15 번의 네 배입니다.
+
+     배포본을 계측해서 찾았습니다: 22 초에 detect 641 회(초당 29). 그것도
+     가짜 카메라라 사람이 안 잡혀 랜드마크 모델이 건너뛰어진 값이고,
+     실제 사람이 있으면 한 프레임이 88.8ms 입니다(Intel Iris Xe 실측).
+     60fps 로 부르면 1 초에 5.3 초어치를 시키는 셈이라 렌더가 설 자리가
+     없습니다.
+
+     lastDetect 를 poseLoop 과 함께 씁니다 — 두 루프는 서로 배타적이라
+     (startCalibrate 가 poseRunning 을 내립니다) 값을 나눠도 안전하고,
+     오히려 전환 직후 한 프레임이 겹치는 것을 막아 줍니다. */
+  if (now - lastDetect < 66) return;
+  lastDetect = now;
   const elapsed = now - CAL.t0;
   const out = POSE.detect(video, now, LIVE.smoother);
   const a = out && out.analysis;

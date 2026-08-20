@@ -1,8 +1,8 @@
 import { googleAI } from '@genkit-ai/google-genai'
 import { genkit, z } from 'genkit'
 import { AI_REPORT_MODEL } from '../api/ai-report-service'
-import { isSafeAiSessionReport } from '../src/features/ai-report/contract'
-import { buildAiReportPrompt } from '../src/features/ai-report/prompt'
+import { isSafeAiSessionReport } from '../api/_shared/contract'
+import { buildAiReportPrompt } from '../api/_shared/prompt'
 
 const AiReportInputFlowSchema = z.object({
   plannedMinutes: z.number().int().min(1).max(300),

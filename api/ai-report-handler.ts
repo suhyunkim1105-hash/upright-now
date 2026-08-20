@@ -3,8 +3,8 @@ import {
   AiSessionReportSchema,
   isSafeAiSessionReport,
   type AiReportInput,
-} from '../src/features/ai-report/contract.js'
-import type { AiSessionReport } from '../src/types/index.js'
+} from '../api/_shared/contract.js'
+import type { AiSessionReport } from '../api/_shared/types.js'
 import {
   AiReportConfigurationError,
   generateAiSessionReport,

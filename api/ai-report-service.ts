@@ -6,9 +6,9 @@ import {
   AiSessionReportSchema,
   isSafeAiSessionReport,
   type AiReportInput,
-} from '../src/features/ai-report/contract.js'
-import { buildAiReportPrompt } from '../src/features/ai-report/prompt.js'
-import type { AiSessionReport } from '../src/types/index.js'
+} from '../api/_shared/contract.js'
+import { buildAiReportPrompt } from '../api/_shared/prompt.js'
+import type { AiSessionReport } from '../api/_shared/types.js'
 
 export const AI_REPORT_MODEL = 'gemini-3.5-flash'
 

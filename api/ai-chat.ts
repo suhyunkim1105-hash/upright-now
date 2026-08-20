@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
-import { AiReportInputSchema } from '../src/features/ai-report/contract.js'
-import { buildChatSystemPrompt } from '../src/features/ai-report/chatPrompt.js'
+import { AiReportInputSchema } from '../api/_shared/contract.js'
+import { buildChatSystemPrompt } from '../api/_shared/chatPrompt.js'
 
 /**
  * 자세 코치 대화.

@@ -4452,6 +4452,7 @@ PROP.laundry   = paintedProp('laundry', 1, 1);
    sit 을 뗍니다 — 남겨 두면 존 판정을 우회할 자리가 지도에 남습니다. */
 PROP.sofa      = paintedProp('sofa', 2, 1);
 
+
 /* ==================================================================
    사서 놓는 가구
 
@@ -4669,6 +4670,14 @@ const DESKPAL = {
   metal:   '#9AA3AD', metalLit: '#C4CBD2', metalDark: '#616974',
   glass:   '#BFD9E4', glassLit: '#E2F0F5', glassDark: '#6E93A4',
   mat:     '#C2412C', matLit: '#E0604A',
+  /* 천과 펠트를 새로 답니다. 나무·금속·유리만으로는 안락의자와 긴
+     열람대가 안 그려집니다 — 안락의자를 나무로 칠하면 나무 상자가 되고,
+     열람대 상판은 나무 위에 나무라 상판과 틀이 안 갈립니다.
+     색은 이미 방에 있는 것에서 골랐습니다: 천은 창유리(glass)와 같은
+     청록 계열이고, 펠트는 도서관 벽 책장의 초록입니다. 새 색상환을
+     들이면 가구만 다른 게임에서 온 것으로 보입니다. */
+  fab:     '#4E8290', fabLit: '#79ADB9', fabDark: '#33606F',
+  felt:    '#3E6B4C', feltLit: '#5F9270', feltDark: '#2A4B37',
 };
 
 /* ---- 의자 1×1 — 등받이 · 앉는 면 · 다리 ---- */
@@ -4724,6 +4733,245 @@ function deskCanvas(wTiles, topCol, topLit) {
 PAINTED.desk1 = deskCanvas(1, DESKPAL.wood, DESKPAL.woodLit);
 PAINTED.desk2 = deskCanvas(2, DESKPAL.wood, DESKPAL.woodLit);
 PAINTED.desk3 = deskCanvas(3, '#B8834A', '#D6A165');
+
+/* ==================================================================
+   모양이 다른 앉는 자리 넷
+
+   위의 의자 넉 장은 **같은 그림에 색만 넷**입니다. 도서관과 본관은
+   의자가 방마다 마흔 개씩 서는 방이라, 색만 다른 것을 마흔 번 찍으면
+   방이 아니라 도장 자국으로 보입니다. 색을 더 늘려도 같습니다 —
+   16px 에서 먼저 읽히는 것은 색이 아니라 **윤곽**입니다.
+
+   그래서 여기부터는 실루엣을 바꿉니다. 넷을 고른 기준은 "16px 격자
+   에서 서로 헷갈리지 않는가" 하나입니다.
+     안락의자    팔걸이가 좌우로 튀어나오고 등받이가 낮습니다
+     스툴        등받이가 아예 없고 앉는 면이 원입니다
+     열람 의자   등받이가 타일 꼭대기까지 올라가고 좁습니다
+     바퀴 의자   다리 넷 대신 다섯 갈래 별 받침이 깔립니다
+   빛은 여전히 왼쪽 위이고, 바닥에 닿는 것에는 전부 그림자를 깝니다.
+   ================================================================== */
+
+/* ---- 안락의자 1×1 ---- */
+{
+  const c = canvasOf(1, 1), g = c.getContext('2d');
+  const P = DESKPAL;
+  shadow(g, 8, 15, 7, 2);
+  /* 등받이 — 낮고 둥급니다. 윗줄을 한 칸 좁혀 모서리를 깎습니다 */
+  px(g, 3, 0, 10, 1, P.fabDark);
+  px(g, 2, 1, 12, 5, P.fabDark);
+  px(g, 3, 1, 10, 4, P.fab);
+  px(g, 3, 1, 10, 2, P.fabLit);
+  /* 팔걸이 둘 — 앉는 면보다 높고 좌우로 더 나옵니다. 이 두 덩이가
+     안락의자 실루엣의 전부입니다.
+     타일 가장자리(x0 · x15)는 한 줄 비웁니다. 처음엔 끝까지 채웠는데,
+     본관 뒤 원탁처럼 둘을 나란히 놓으면 팔걸이가 맞닿아 **2인 소파
+     한 장**으로 보였습니다. 한 줄만 비워도 둘로 갈립니다. */
+  px(g, 1, 5, 3, 7, P.fabDark);
+  px(g, 1, 5, 3, 2, P.fabLit);
+  px(g, 12, 5, 3, 7, P.fabDark);
+  px(g, 12, 5, 3, 2, P.fab);
+  /* 앉는 면 — 방석 한 장 */
+  px(g, 3, 6, 10, 6, P.fab);
+  px(g, 3, 6, 10, 2, P.fabLit);
+  px(g, 3, 11, 10, 1, P.fabDark);
+  /* 치마단과 발 — 다리가 안 보이는 의자라 밑동이 통으로 내려옵니다 */
+  px(g, 2, 12, 12, 2, P.woodDeep);
+  px(g, 2, 12, 12, 1, P.woodDark);
+  px(g, 3, 14, 2, 2, P.woodDeep);
+  px(g, 11, 14, 2, 2, P.woodDeep);
+  PAINTED.armchair = c;
+}
+
+/* ---- 등받이 없는 둥근 스툴 1×1 ---- */
+{
+  const c = canvasOf(1, 1), g = c.getContext('2d');
+  const P = DESKPAL;
+  shadow(g, 8, 15, 6, 2);
+  /* 다리 셋 — 앉는 면보다 먼저 깔아야 뒤로 넘어갑니다. 벌어져 있어야
+     스툴이고, 곧게 내리면 낮은 상자입니다 */
+  px(g, 2, 9, 2, 7, P.woodDeep);
+  px(g, 2, 9, 1, 7, P.woodDark);
+  px(g, 12, 9, 2, 7, P.woodDeep);
+  px(g, 7, 10, 2, 6, P.woodDark);
+  px(g, 4, 12, 8, 1, P.woodDeep);                    // 가로대 — 다리 셋을 묶습니다
+  /* 앉는 면 — 위에서 본 원입니다. 등받이가 없으니 이 원이 곧 윤곽이고,
+     위 한 줄을 비워 두어야 옆의 의자보다 낮다는 것이 보입니다 */
+  px(g, 4, 1, 8, 1, P.fabDark);
+  px(g, 2, 2, 12, 1, P.fabDark);
+  px(g, 1, 3, 14, 5, P.fabDark);
+  px(g, 2, 8, 12, 1, P.fabDark);
+  px(g, 4, 9, 8, 1, P.fabDark);
+  px(g, 4, 2, 8, 1, P.fab);
+  px(g, 2, 3, 12, 4, P.fab);
+  px(g, 4, 7, 8, 1, P.fab);
+  px(g, 4, 2, 7, 1, P.fabLit);
+  px(g, 3, 3, 8, 2, P.fabLit);
+  PAINTED.stool = c;
+}
+
+/* ---- 등받이 높은 열람 의자 1×1 ---- */
+{
+  const c = canvasOf(1, 1), g = c.getContext('2d');
+  const P = DESKPAL;
+  shadow(g, 8, 15, 6, 2);
+  /* 등받이 — 타일 꼭대기까지 올리고 폭은 좁힙니다. 같은 줄에 다른
+     의자와 섰을 때 **키가 달라 보이는 것**이 이 의자의 전부입니다 */
+  px(g, 3, 0, 10, 2, P.woodDark);
+  px(g, 4, 0, 8, 1, P.wood);
+  px(g, 4, 2, 8, 7, P.woodDeep);
+  px(g, 5, 2, 2, 7, P.wood);
+  px(g, 5, 2, 1, 7, P.woodLit);
+  px(g, 9, 2, 2, 7, P.wood);
+  px(g, 9, 2, 1, 7, P.woodLit);
+  /* 앉는 면 — 초록 펠트. 등받이보다 좌우로 넓어야 둘이 갈립니다 */
+  px(g, 2, 9, 12, 4, P.woodDeep);
+  px(g, 3, 9, 10, 3, P.felt);
+  px(g, 3, 9, 10, 1, P.feltLit);
+  px(g, 3, 12, 10, 1, P.feltDark);
+  /* 다리 — 앞 둘만 보이고 뒤 둘은 그늘로 */
+  px(g, 3, 13, 2, 3, P.woodDark);
+  px(g, 3, 13, 1, 3, P.wood);
+  px(g, 11, 13, 2, 3, P.woodDark);
+  px(g, 11, 13, 1, 3, P.wood);
+  px(g, 5, 13, 6, 1, 'rgba(0,0,0,.18)');
+  PAINTED.readChair = c;
+}
+
+/* ---- 바퀴 의자 1×1 ---- */
+{
+  const c = canvasOf(1, 1), g = c.getContext('2d');
+  const P = DESKPAL;
+  shadow(g, 8, 15, 7, 2);
+  /* 등받이 — 메시. 윗줄을 좁혀 모서리를 깎습니다 */
+  px(g, 4, 0, 8, 1, '#39454F');
+  px(g, 3, 1, 10, 5, '#39454F');
+  px(g, 4, 1, 8, 4, '#5B6E80');
+  px(g, 4, 1, 8, 1, '#8398AB');
+  px(g, 6, 2, 1, 3, '#39454F');
+  px(g, 9, 2, 1, 3, '#39454F');
+  /* 앉는 면 */
+  px(g, 2, 6, 12, 5, '#36434F');
+  px(g, 2, 6, 12, 4, '#4E5F70');
+  px(g, 2, 6, 12, 2, '#72859A');
+  /* 기둥과 다섯 갈래 받침. 16px 에서 이 의자를 알아보는 단서는 별 모양
+     받침 하나뿐이라, 갈래 끝의 바퀴를 어둡게 찍어 셀 수 있게 합니다.
+     다섯째 갈래는 뒤로 뻗어 앉는 면에 가립니다 — 위에서 보면 그렇습니다. */
+  px(g, 7, 11, 2, 2, P.metalDark);
+  px(g, 6, 12, 4, 2, P.metal);
+  px(g, 1, 13, 5, 1, P.metal);
+  px(g, 10, 13, 5, 1, P.metal);
+  px(g, 4, 14, 3, 1, P.metal);
+  px(g, 9, 14, 3, 1, P.metal);
+  px(g, 0, 13, 2, 2, P.metalDark);
+  px(g, 14, 13, 2, 2, P.metalDark);
+  px(g, 3, 15, 2, 1, P.metalDark);
+  px(g, 11, 15, 2, 1, P.metalDark);
+  PAINTED.officeChair = c;
+}
+
+/* ---- 긴 공용 열람대 ----
+   3칸 책상과 폭만 다르면 긴 널판입니다. 갈리는 곳은 둘 — 마주 앉는
+   자리를 가르는 **낮은 칸막이**가 상판 위로 3px 솟고, 상판에 초록
+   펠트를 깝니다. 나무는 호두나무로 내려 3칸 책상(참나무)보다 어둡습니다. */
+function studyTableCanvas(wTiles) {
+  const c = canvasOf(wTiles, 1), g = c.getContext('2d');
+  const P = DESKPAL, W = wTiles * TS;
+  shadow(g, W / 2, 15, W / 2 - 2, 2);
+  /* 칸막이 — 상판보다 먼저 깔아야 뒤로 넘어갑니다 */
+  px(g, 2, 0, W - 4, 3, P.feltDark);
+  px(g, 2, 0, W - 4, 1, P.felt);
+  for (let x = 7; x < W - 7; x += 12) px(g, x, 0, 2, 3, '#1F3728');   // 칸막이 기둥
+  /* 상판 */
+  px(g, 0, 3, W, 9, '#5E4128');
+  px(g, 1, 4, W - 2, 7, '#8A6038');
+  px(g, 1, 4, W - 2, 2, '#A87C4C');
+  /* 펠트 — 나무만 있으면 긴 책상이 아니라 긴 널판입니다 */
+  px(g, 4, 6, W - 8, 4, P.felt);
+  px(g, 4, 6, W - 8, 1, P.feltLit);
+  px(g, 4, 9, W - 8, 1, P.feltDark);
+  /* 앞면과 다리. 가운데 다리를 하나 더 세웁니다 — 여섯 칸짜리는 양
+     끝만으로 받치면 가운데가 처져 보입니다 */
+  px(g, 1, 11, W - 2, 3, '#6B4A2E');
+  px(g, 1, 11, W - 2, 1, '#8A6038');
+  px(g, 2, 14, 3, 2, '#4A3220');
+  px(g, W - 5, 14, 3, 2, '#4A3220');
+  if (wTiles >= 4) px(g, (W >> 1) - 1, 14, 3, 2, '#4A3220');
+  return c;
+}
+PAINTED.tableStudy  = studyTableCanvas(6);
+PAINTED.tableStudy3 = studyTableCanvas(3);
+
+/* ---- 책 칸이 달린 강의실 책상 ----
+   본관 책상 열여덟 개가 전부 같은 2칸 판이었습니다. 상판을 얇게 하고
+   그 아래를 뚫어 책을 꽂으면, 옆에서 보이는 것이 판 하나가 아니라
+   판 + 책등 줄이 됩니다 — 같은 폭에서 윤곽을 바꾸는 가장 싼 방법입니다. */
+function deskShelfCanvas(wTiles) {
+  const c = canvasOf(wTiles, 1), g = c.getContext('2d');
+  const P = DESKPAL, W = wTiles * TS;
+  shadow(g, W / 2, 15, W / 2 - 2, 2);
+  /* 상판 — 아래에 책 칸을 두느라 얇습니다 */
+  px(g, 0, 1, W, 6, P.woodDeep);
+  px(g, 1, 2, W - 2, 4, P.wood);
+  px(g, 1, 2, W - 2, 2, P.woodLit);
+  /* 책 칸 — 안쪽은 늘 그늘입니다 */
+  px(g, 1, 7, W - 2, 6, P.woodDeep);
+  px(g, 2, 8, W - 4, 4, '#3A2718');
+  const spine = ['#B75B4C', '#52739F', '#8B9C48', '#CDC2B1', '#9C6BA0', '#C08A3E'];
+  let bx = 3, k = 17;
+  while (bx < W - 4) {
+    k = (k * 1103515245 + 12345) & 0x7fffffff;
+    const bw = 2 + (k >> 8) % 2;
+    if (bx + bw > W - 4) break;
+    const bh = 3 + ((k >> 16) % 2);
+    px(g, bx, 12 - bh, bw, bh, spine[(k >> 20) % 6]);
+    px(g, bx, 12 - bh, bw, 1, 'rgba(255,255,255,.26)');
+    bx += bw + 1;
+  }
+  px(g, 1, 12, W - 2, 1, P.woodDark);
+  px(g, 1, 13, 3, 3, P.woodDeep);
+  px(g, W - 4, 13, 3, 3, P.woodDeep);
+  return c;
+}
+PAINTED.deskShelf = deskShelfCanvas(2);
+
+/* ---- 원탁 2×2 ----
+   네모 책상 옆에 놓으면 모양 하나로 "여기는 공부하는 자리가 아니다"
+   가 됩니다. 기둥 하나로 서서 다리가 넷 안 보이는 것이 두 번째 단서입니다.
+
+   상판은 정원이 아니라 **세로가 눌린 타원**입니다. 이 게임은 비스듬히
+   내려다보는 시점이라 정원으로 그리면 접시가 위로 선 것처럼 보입니다.
+   disc 는 정원만 그리므로 여기서만 줄 단위로 폅니다. */
+{
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  const P = DESKPAL;
+  shadow(g, 16, 30, 13, 3);
+  /* 기둥과 발 — 상판보다 먼저 깔아야 뒤로 넘어갑니다 */
+  px(g, 12, 18, 8, 10, P.woodDeep);
+  px(g, 12, 18, 2, 10, P.woodDark);
+  px(g, 8, 26, 16, 3, P.woodDeep);
+  px(g, 8, 26, 16, 1, P.woodDark);
+  px(g, 10, 29, 12, 1, '#3E2A18');
+  const top = (cx, cy, rx, ry, col) => {
+    g.fillStyle = col;
+    for (let dy = -ry; dy <= ry; dy++) {
+      const hw = Math.floor(rx * Math.sqrt(1 - (dy * dy) / (ry * ry)));
+      if (hw > 0) g.fillRect(cx - hw, cy + dy, hw * 2, 1);
+    }
+  };
+  /* 테두리를 **한 바퀴 통째로** 두릅니다. 아래쪽에만 어두운 줄을
+     남겼더니 위·좌우가 바닥으로 번져서, 상판이 나무 판이 아니라 바닥에
+     번진 얼룩으로 보였습니다. 안쪽에 띠를 한 겹 더 넣어 두께를 만듭니다. */
+  top(16, 13, 14, 9, '#4A3220');                     // 상판 두께 — 아래로 한 줄 어긋납니다
+  top(16, 12, 14, 9, P.woodDeep);
+  top(16, 12, 13, 8, '#9A6B34');
+  top(16, 12, 12, 7, P.wood);
+  top(15, 11, 9, 5, P.woodLit);
+  top(13, 10, 5, 3, '#E8BE86');
+  /* 나뭇결 — 없으면 나무 상판이 아니라 접시입니다 */
+  g.fillStyle = 'rgba(74,50,32,.24)';
+  g.fillRect(8, 8, 11, 1); g.fillRect(12, 13, 12, 1); g.fillRect(10, 16, 9, 1);
+  PAINTED.tableRound = c;
+}
 
 /* ---- 책상 위 물건 — 노트북·책·스탠드 ---- */
 {
@@ -4802,12 +5050,239 @@ PROP.chair    = { ...paintedProp('chair', 1, 1), sit: true };
 PROP.chairB   = { ...paintedProp('chairB', 1, 1), sit: true };
 PROP.chairC   = { ...paintedProp('chairC', 1, 1), sit: true };
 PROP.chairD   = { ...paintedProp('chairD', 1, 1), sit: true };
+/* 모양이 다른 넷도 앉는 자리입니다. sit 을 안 달면 의자 그림일 뿐이고,
+   그 자리에 서면 앉는 대신 벽에 막힙니다. */
+PROP.armchair    = { ...paintedProp('armchair', 1, 1), sit: true };
+PROP.stool       = { ...paintedProp('stool', 1, 1), sit: true };
+PROP.readChair   = { ...paintedProp('readChair', 1, 1), sit: true };
+PROP.officeChair = { ...paintedProp('officeChair', 1, 1), sit: true };
 PROP.desk1    = paintedProp('desk1', 1, 1);
 PROP.desk2    = paintedProp('desk2', 2, 1);
 PROP.desk3    = paintedProp('desk3', 3, 1);
+PROP.deskShelf   = paintedProp('deskShelf', 2, 1);
+PROP.tableStudy  = paintedProp('tableStudy', 6, 1);
+PROP.tableStudy3 = paintedProp('tableStudy3', 3, 1);
+PROP.tableRound  = paintedProp('tableRound', 2, 2);
 PROP.laptopN  = { ...paintedProp('laptopN', 1, 1), c: [[0]] };
 PROP.books2   = { ...paintedProp('books2', 1, 1), c: [[0]] };
 PROP.deskLamp = { ...paintedProp('deskLamp', 1, 1), c: [[0]] };
+
+/* ==================================================================
+   동아리 상점 진열품 — 옷 가게와 가구 가게
+
+   알 가게 뒤에는 알 넷이 나란히 섭니다. 그래서 알 가게는 창구가 아니라
+   **가게**로 보입니다. 옷 가게 뒤에는 옷장 하나와 거울 하나뿐이었고
+   가구 가게 뒤에는 책장 하나와 화분 하나뿐이었습니다 — 둘 다 어느 방에
+   놓아도 되는 물건이라, 뒤에 서 있어도 무엇을 파는지 말해 주지 않습니다.
+
+   여기 그리는 것들은 전부 **그 가게에서만 나올 물건**입니다. 옷걸이는
+   옷 가게 밖에서는 쓸 데가 없고, 포개 쌓은 의자는 가구 가게 밖에서는
+   창고입니다. 진열은 물건 개수가 아니라 그 자리에만 있는 물건으로
+   만들어집니다.
+   ================================================================== */
+
+/* 옷걸이 2×2 — 봉에 옷 다섯 벌 */
+{
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  shadow(g, 16, 30, 13, 2);
+  /* 기둥 둘과 봉. 봉이 가로로 길어야 옷걸이입니다 — 짧으면 우산꽂이입니다 */
+  px(g, 2, 26, 6, 3, '#5F6874'); px(g, 24, 26, 6, 3, '#5F6874');
+  px(g, 3, 5, 2, 22, '#8E9AA6'); px(g, 3, 5, 1, 22, '#BEC7D0');
+  px(g, 27, 5, 2, 22, '#8E9AA6'); px(g, 27, 5, 1, 22, '#BEC7D0');
+  px(g, 3, 4, 26, 2, '#8E9AA6');
+  px(g, 3, 4, 26, 1, '#D2DAE2');
+  /* 걸린 옷 다섯 — 어깨가 좁고 아래가 넓어야 옷입니다. 색 셋은 옷장
+     (wardrobe) 안에 걸린 것과 같습니다: 같은 가게가 파는 같은 옷입니다 */
+  [['#2DD4BF', '#8AE5D9'], ['#D8442C', '#F0836E'], ['#E8C34A', '#F6DE92'],
+   ['#5C7FC4', '#93AEE0'], ['#C46FA8', '#E3A0CC']].forEach(([col, lit], i) => {
+    const x = 4 + i * 5;
+    px(g, x + 2, 2, 1, 3, '#C9B48E');                // 고리
+    px(g, x + 1, 6, 3, 2, col);                      // 어깨
+    px(g, x, 8, 5, 13, col);
+    px(g, x, 8, 5, 2, lit);
+    px(g, x, 20, 5, 1, 'rgba(0,0,0,.28)');
+  });
+  PAINTED.clothRack = c;
+}
+
+/* 마네킹 1×2 — 옷을 입혀 세웁니다 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 5, 2);
+  px(g, 3, 28, 10, 2, '#5F6874'); px(g, 3, 28, 10, 1, '#8E9AA6');
+  px(g, 7, 20, 2, 8, '#8E9AA6'); px(g, 7, 20, 1, 8, '#BEC7D0');
+  /* 몸통 — 목이 가늘고 어깨가 넓고 허리가 좁습니다. 이 모래시계 윤곽이
+     마네킹의 전부입니다. 머리는 안 답니다: 16px 폭에서 머리를 얹으면
+     마네킹이 아니라 사람으로 보이고, 카운터 뒤에 점원이 하나 더 서 있는
+     것이 됩니다. 처음엔 목에 파란 천을 둘렀는데 그 천이 딱 머리 자리라,
+     "머리를 안 단다" 는 원칙을 스스로 깨고 있었습니다. */
+  px(g, 6, 3, 4, 5, '#E0D2C0');                      // 목
+  px(g, 6, 3, 2, 5, '#F4EADD');
+  px(g, 2, 8, 12, 3, '#E0D2C0');                     // 어깨
+  px(g, 3, 11, 10, 5, '#E0D2C0');                    // 가슴
+  px(g, 5, 16, 6, 4, '#C9B9A4');                     // 허리
+  px(g, 2, 8, 2, 3, '#F4EADD');
+  px(g, 3, 11, 2, 5, '#F4EADD');
+  /* 입혀 놓은 옷 — 파는 물건이 몸에 붙어 있어야 진열입니다.
+     목과 허리는 남겨 둡니다. 통으로 덮으면 옷걸이에 걸린 옷과 같아집니다. */
+  px(g, 3, 9, 10, 7, '#D8442C');
+  px(g, 3, 9, 10, 2, '#F0836E');
+  px(g, 2, 9, 1, 3, '#A8331F');                      // 어깨 솔기
+  px(g, 13, 9, 1, 3, '#A8331F');
+  px(g, 3, 15, 10, 1, '#A8331F');
+  PAINTED.mannequin = c;
+}
+
+/* 신발 선반 2×2 — 세 단에 아홉 켤레 */
+{
+  const c = canvasOf(2, 2), g = c.getContext('2d');
+  shadow(g, 16, 30, 14, 2);
+  px(g, 1, 6, 30, 25, '#6B4A2E');
+  px(g, 2, 7, 28, 23, '#3A2718');
+  px(g, 2, 7, 28, 1, '#96693F');
+  px(g, 2, 7, 1, 23, '#5C4029');
+  /* 신발 — 옆에서 보면 뒤가 낮고 코가 둥급니다. 그 턱이 없으면 벽돌입니다 */
+  const col = ['#B84A3C', '#F0EDE6', '#3C5C82', '#E8C34A', '#4E8A5C', '#2A2320',
+               '#C46FA8', '#8B9C48', '#CDC2B1'];
+  for (let s = 0; s < 3; s++) {
+    const y = 9 + s * 7;
+    for (let i = 0; i < 3; i++) {
+      const x = 5 + i * 8, k = col[s * 3 + i];
+      px(g, x, y + 2, 7, 3, k);
+      px(g, x + 4, y, 3, 3, k);
+      px(g, x + 4, y, 3, 1, 'rgba(255,255,255,.32)');
+      px(g, x, y + 2, 7, 1, 'rgba(255,255,255,.18)');
+      px(g, x, y + 4, 7, 1, 'rgba(0,0,0,.40)');
+    }
+    px(g, 2, y + 5, 28, 2, '#6B4A2E');               // 선반 앞코
+    px(g, 2, y + 5, 28, 1, '#96693F');
+  }
+  PAINTED.shoeShelf = c;
+}
+
+/* 모자걸이 1×2 — 가지 셋에 모자 셋 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 5, 2);
+  px(g, 4, 28, 8, 3, '#5C4029'); px(g, 4, 28, 8, 1, '#8A5F3A');
+  px(g, 7, 5, 2, 24, '#8A5F3A'); px(g, 7, 5, 1, 24, '#A97A4C');
+  /* 챙이 있어야 모자입니다 — 없으면 기둥에 낀 단추 셋입니다 */
+  px(g, 2, 22, 12, 1, '#8A5F3A');
+  px(g, 1, 21, 14, 2, '#4E8A5C'); px(g, 1, 21, 14, 1, '#71B07E');
+  px(g, 4, 17, 8, 5, '#4E8A5C'); px(g, 4, 17, 8, 2, '#71B07E');
+  px(g, 2, 14, 12, 1, '#8A5F3A');
+  px(g, 1, 13, 14, 2, '#C4544A'); px(g, 1, 13, 14, 1, '#E0796C');
+  px(g, 4, 9, 8, 5, '#C4544A'); px(g, 4, 9, 8, 2, '#E0796C');
+  px(g, 1, 5, 14, 2, '#E0B85C'); px(g, 1, 5, 14, 1, '#F2D68C');
+  px(g, 4, 1, 8, 5, '#E0B85C'); px(g, 4, 1, 8, 2, '#F2D68C');
+  PAINTED.hatStand = c;
+}
+
+/* 포개 쌓은 의자 1×2 — 가구 가게의 재고 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  const P = DESKPAL;
+  shadow(g, 8, 30, 6, 2);
+  /* 맨 아래 의자의 다리만 바닥에 닿습니다 */
+  px(g, 3, 26, 2, 5, P.woodDark);
+  px(g, 11, 26, 2, 5, P.woodDark);
+  /* 셋을 포개면 앉는 면이 계단처럼 어긋납니다 — 그 어긋남이 "쌓았다"
+     를 말합니다. 나란히 세우면 그냥 의자 셋입니다. */
+  [[P.seat, P.seatLit], ['#79AC8B', '#9BC7AA'], ['#BE8676', '#D6A695']].forEach(([col, lit], i) => {
+    const y = 22 - i * 7;
+    px(g, 2, y - 6, 12, 7, P.woodDark);
+    px(g, 3, y - 5, 10, 5, P.wood);
+    px(g, 3, y - 5, 10, 1, P.woodLit);
+    px(g, 1, y, 14, 5, P.woodDeep);
+    px(g, 1, y, 14, 4, col);
+    px(g, 1, y, 14, 2, lit);
+  });
+  PAINTED.chairStack = c;
+}
+
+/* 진열용 소파 3×2 — 가구 가게의 얼굴 */
+{
+  const c = canvasOf(3, 2), g = c.getContext('2d');
+  shadow(g, 24, 30, 22, 3);
+  const b = '#4E7A6B', l = '#79A695', d = '#33574B';
+  /* 등받이 — 위에서 보면 얕고 넓습니다. 두 칸 높이로 그리면 침대가 됩니다 */
+  px(g, 4, 5, 40, 9, d);
+  px(g, 5, 6, 38, 7, b);
+  px(g, 5, 6, 38, 2, l);
+  /* 팔걸이 둘 */
+  px(g, 2, 9, 6, 15, d); px(g, 2, 9, 6, 2, l);
+  px(g, 40, 9, 6, 15, d); px(g, 40, 9, 6, 2, b);
+  /* 앉는 면 — 방석 셋. 골이 보여야 3인용입니다 */
+  px(g, 8, 13, 32, 12, b);
+  px(g, 8, 13, 32, 2, l);
+  px(g, 18, 13, 2, 12, d);
+  px(g, 28, 13, 2, 12, d);
+  px(g, 8, 24, 32, 2, '#28453B');
+  px(g, 6, 26, 4, 4, '#4A3220'); px(g, 38, 26, 4, 4, '#4A3220');
+  /* 쿠션 둘 — 얹은 것이 있어야 진열이지, 없으면 놓아 둔 가구입니다 */
+  px(g, 10, 9, 7, 6, '#E8C34A'); px(g, 10, 9, 7, 2, '#F6DE92');
+  px(g, 31, 9, 7, 6, '#C4544A'); px(g, 31, 9, 7, 2, '#E0796C');
+  PAINTED.sofaShop = c;
+}
+
+/* 말아 세운 러그 1×2 — 벽에 기댑니다 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 5, 2);
+  px(g, 4, 6, 9, 25, '#8E5A46');
+  px(g, 5, 7, 7, 23, '#B4735A');
+  px(g, 5, 7, 3, 23, '#CE8E74');
+  /* 말린 끝 — 동심 두 겹이 보여야 "말아 놓은 것"입니다. 안 그리면
+     기둥이고, 가구 가게에 기둥이 서 있을 이유는 없습니다 */
+  disc(g, 8, 6, 4, '#8E5A46');
+  disc(g, 8, 6, 3, '#D9A98C');
+  disc(g, 8, 6, 2, '#8E5A46');
+  px(g, 8, 6, 1, 1, '#D9A98C');
+  /* 묶은 끈 둘 */
+  px(g, 4, 14, 9, 2, '#E8C34A');
+  px(g, 4, 24, 9, 2, '#E8C34A');
+  PAINTED.rugRoll = c;
+}
+
+/* 받침 위 화분 1×2 — 바닥 화분과 갈립니다 */
+{
+  const c = canvasOf(1, 2), g = c.getContext('2d');
+  shadow(g, 8, 30, 6, 2);
+  /* 받침 — 다리 둘에 상판 하나. 화분을 바닥에 두면 도서관 화분과 같은
+     물건이 되고, 파는 물건이라는 것은 받침이 말해 줍니다 */
+  px(g, 3, 29, 2, 2, '#5C4029'); px(g, 11, 29, 2, 2, '#5C4029');
+  px(g, 4, 22, 2, 8, '#6B4A2E'); px(g, 10, 22, 2, 8, '#6B4A2E');
+  px(g, 4, 22, 1, 8, '#8A5F3A');
+  px(g, 2, 20, 12, 3, '#8A5F3A'); px(g, 2, 20, 12, 1, '#A97A4C');
+  /* 화분 */
+  px(g, 4, 13, 8, 7, '#A8654A'); px(g, 4, 13, 8, 2, '#C4805E');
+  px(g, 3, 12, 10, 2, '#8E5238');
+  px(g, 5, 11, 6, 1, FURN.soil);
+  /* 잎 — 좌우 길이를 달리해야 화초가 됩니다. 대칭이면 조화입니다 */
+  px(g, 7, 4, 2, 8, '#4E7A3E');
+  px(g, 7, 4, 1, 8, '#639650');
+  [[-5, 6, 5, '#3E7A3D'], [4, 8, 4, '#5FA855'], [-4, 10, 4, '#4C8C46'],
+   [3, 5, 3, '#6FBA60']].forEach(([dx, y, len, col]) => {
+    const dir = dx < 0 ? -1 : 1;
+    for (let i = 0; i < len; i++)
+      px(g, 8 + dir * (i + 1) - (dir < 0 ? 1 : 0), y - ((i * 3) / len | 0), 1, Math.max(1, 3 - ((i / 2) | 0)), col);
+  });
+  disc(g, 8, 3, 2, '#6FBA60');
+  PAINTED.plantStand = c;
+}
+
+/* 옷걸이·신발장·소파는 통으로 막습니다 — 뒤로 걸어 들어가지면 진열대와
+   벽 사이에 사람이 낄 주머니가 생깁니다(입간판과 같은 이유).
+   마네킹·모자걸이·러그·쌓은 의자·화분 받침은 위가 튀어나온 물건이라
+   밑동 줄만 막습니다. */
+PROP.clothRack  = paintedProp('clothRack', 2, 2);
+PROP.shoeShelf  = paintedProp('shoeShelf', 2, 2);
+PROP.sofaShop   = paintedProp('sofaShop', 3, 2);
+PROP.mannequin  = paintedProp('mannequin', 1, 2, [0, 1]);
+PROP.hatStand   = paintedProp('hatStand', 1, 2, [0, 1]);
+PROP.chairStack = paintedProp('chairStack', 1, 2, [0, 1]);
+PROP.rugRoll    = paintedProp('rugRoll', 1, 2, [0, 1]);
+PROP.plantStand = paintedProp('plantStand', 1, 2, [0, 1]);
 
 /* ==================================================================
    실내 바닥
@@ -5832,34 +6307,80 @@ const ZONES = {};
   [2, 5].forEach((x) => prop(m, 'stack', x, 4));
   [30, 33].forEach((x) => prop(m, 'stack', x, 4));
 
-  /* 열람석 — 3칸 책상 위아래 의자 셋씩, 6인석. **두 줄.**
+  /* 열람석 — 책상 위아래에 의자를 붙여 마주 앉습니다. **두 줄.**
      세 줄이었을 때 의자·책상이 127기물 중 109개 — 도서관이 아니라
-     의자 창고였습니다. 줄 사이는 3칸(주 통로) 비웁니다. */
-  const table = (bx, by) => {
-    for (let i = 0; i < 3; i++) prop(m, 'chairC', bx + i, by);      // 뒷줄
-    prop(m, 'desk3', bx, by + 1);
-    prop(m, 'deskLamp', bx + 2, by + 1);
-    for (let i = 0; i < 3; i++) prop(m, 'chair', bx + i, by + 2);   // 앞줄
+     의자 창고였습니다. 줄 사이는 3칸(주 통로) 비웁니다.
+
+     뒷줄은 6칸 **긴 공용 열람대** 둘, 앞줄은 3칸 책상 넷입니다.
+     예전에는 3칸 책상 여덟 장이 전부였는데, 같은 판이 여덟 번 서면
+     열람실이 아니라 책상 창고입니다. 자리 수는 그대로 48 입니다 —
+     3칸 책상 둘(6+6)을 6칸 한 장(6+6)으로 바꿔 놓았을 뿐이라,
+     세션이 시작되는 자리는 한 칸도 안 줄었습니다.
+
+     의자는 한 열람대 안에서 **두 모양씩 섞습니다.** 색만 넷이던 시절엔
+     한 줄이 통째로 같은 도장이었고, 그게 "다 똑같다"의 정체였습니다.
+     섞는 것은 색이 아니라 등받이 높이입니다 — 16px 에서 먼저 보이는
+     것이 그것입니다. */
+  const table6 = (bx, by) => {
+    for (let i = 0; i < 6; i++) prop(m, i % 2 ? 'chairC' : 'readChair', bx + i, by);
+    prop(m, 'tableStudy', bx, by + 1);
+    prop(m, 'deskLamp', bx + 1, by + 1);
+    prop(m, 'deskLamp', bx + 4, by + 1);
+    for (let i = 0; i < 6; i++) prop(m, i % 2 ? 'readChair' : 'chair', bx + i, by + 2);
   };
-  const TABLES = [3, 9, 24, 30];
-  for (const by of [8, 14]) TABLES.forEach((bx) => table(bx, by));
+  /* 앞줄 넷도 판이 하나면 넷이 같은 도장입니다. 하나 걸러 호두나무
+     열람대(3칸)를 섞습니다 — 뒷줄 긴 열람대와 같은 판이라, 방에 나무가
+     두 종류 있는 것이지 책상이 네 종류 있는 것이 아닙니다. */
+  const table3 = (bx, by, kind, back, front) => {
+    for (let i = 0; i < 3; i++) prop(m, back[i], bx + i, by);
+    prop(m, kind, bx, by + 1);
+    prop(m, 'deskLamp', bx + 2, by + 1);
+    for (let i = 0; i < 3; i++) prop(m, front[i], bx + i, by + 2);
+  };
+  const LONG = [3, 24], TABLES = [3, 9, 24, 30];
+  LONG.forEach((bx) => table6(bx, 8));
+  table3(3, 14, 'desk3', ['chairC', 'readChair', 'chairC'], ['chair', 'chairD', 'chair']);
+  table3(9, 14, 'tableStudy3', ['readChair', 'chairC', 'readChair'], ['chairD', 'chair', 'chairD']);
+  table3(24, 14, 'desk3', ['chairC', 'readChair', 'chairC'], ['chair', 'chairD', 'chair']);
+  table3(30, 14, 'tableStudy3', ['readChair', 'chairC', 'readChair'], ['chairD', 'chair', 'chairD']);
   /* 빛웅덩이는 **책상 가운데**입니다. 램프가 오른쪽 끝(bx+2)에 서 있다고
      빛도 거기 두면, 세 자리 중 오른쪽 하나만 밝고 왼쪽 둘은 어둡습니다 -
      여섯 명이 앉는 열람대에서 그건 등이 치우친 것으로 보입니다.
-     책상은 bx~bx+2 세 칸이므로 가운데는 bx+1.5(칸 중앙 기준). */
-  for (const by of [8, 14]) TABLES.forEach((bx) =>
-    floorGlow(m.floor, bx + 1.5, by + 1.5, 3.2));
+     책상은 bx~bx+2 세 칸이므로 가운데는 bx+1.5(칸 중앙 기준).
+     긴 열람대는 여섯 칸이라 가운데가 bx+3 이고, 한 웅덩이로 덮기엔
+     너무 길어서 램프 둘 밑에 하나씩 놓습니다. */
+  TABLES.forEach((bx) => floorGlow(m.floor, bx + 1.5, 15.5, 3.2));
+  LONG.forEach((bx) => { floorGlow(m.floor, bx + 1.5, 9.5, 3.2); floorGlow(m.floor, bx + 4.5, 9.5, 3.2); });
 
   /* 가운데 — 캐럴 여섯. 11칸이 통째로 비어 화면 절반이 빈 바닥이었던
      자리입니다. 러너(x17~20)가 주 통로로 남고, 캐럴이 양옆에서 러너를
      등집니다. 열람석이 같이 앉는 자리면 캐럴은 혼자 버티는 자리 —
      좌석에 위계가 생깁니다. */
-  for (const cy of [7, 11, 15]) {
-    prop(m, 'carrel', 14, cy); prop(m, 'chair', 14, cy + 2);
-    prop(m, 'carrel', 21, cy); prop(m, 'chairC', 22, cy + 2);
+  /* 캐럴 의자도 줄마다 갈아 답니다 — 여섯 개가 한 줄로 서는 자리라
+     여기가 같은 도장이면 가운데 통로가 통째로 반복 무늬가 됩니다. */
+  for (const [k, cy] of [7, 11, 15].entries()) {
+    prop(m, 'carrel', 14, cy); prop(m, k % 2 ? 'chair' : 'readChair', 14, cy + 2);
+    prop(m, 'carrel', 21, cy); prop(m, k % 2 ? 'readChair' : 'chairC', 22, cy + 2);
     floorGlow(m.floor, 15, cy + 1.4, 2.2);
     floorGlow(m.floor, 22, cy + 1.4, 2.2);
   }
+
+  /* ---- 오른쪽 원탁 자리 ----
+     뒷줄을 긴 열람대로 묶으면서 x30~36 · y7~11 이 통째로 빈 마루가
+     됐습니다. 열람대를 하나 더 세워 메우면 다시 책상 창고가 되므로,
+     여기는 **다르게 앉는 자리**로 씁니다 — 둥근 탁자에 안락의자 둘과
+     스툴 둘. 네모난 판이 방을 가득 채운 뒤에 원이 하나 있으면 그
+     원이 곧 "여기는 쉬는 자리" 라는 말이 됩니다.
+
+     자리 넷은 **늘어난 것**입니다(48+6 → 58). 세션은 앉는 자리에서
+     시작하므로 줄이면 안 되지만 느는 것은 막을 이유가 없고, 탁자만
+     놓고 의자를 안 두면 아무도 못 앉는 탁자가 하나 서 있게 됩니다. */
+  floorInlay(m.floor, 30, 6, 6, 6, 'rug');
+  floorGlow(m.floor, 33, 9, 3.8);
+  prop(m, 'tableRound', 32, 8);
+  prop(m, 'armchair', 32, 7); prop(m, 'stool', 33, 7);
+  prop(m, 'stool', 32, 10);   prop(m, 'armchair', 33, 10);
+  prop(m, 'plantTall', 35, 7);
 
   /* 아래 — 입구에서 보이는 순서대로: 오른쪽 대출 카운터, 왼쪽 검색대와
      신간. 들어와서 처음 보는 것이 그 방의 용도를 말합니다. */
@@ -5987,11 +6508,29 @@ const ZONES = {};
      통째로 비었습니다. 강의실이 한쪽으로 쏠려 보이던 이유입니다.
      지금은 통로(x16–21)를 **가운데 두고 좌우 셋씩** 세웁니다. */
   const SEAT_X = [4, 9, 14, 22, 27, 32], SEAT_Y = [10, 15, 20];
-  for (const y of SEAT_Y) for (const x of SEAT_X) {
-    prop(m, 'desk2', x, y);
-    prop(m, 'chair', x, y + 1);
-    prop(m, 'chairC', x + 1, y + 1);
-  }
+  /* 열여덟 자리가 전부 같은 2칸 판에 같은 의자 둘이었습니다. 강의실은
+     같은 것을 줄 세우는 방이 맞지만, 그렇다고 열여덟 번 같은 도장을
+     찍으면 자리가 아니라 무늬가 됩니다.
+
+     그래서 **줄마다 · 열 짝마다** 갈아 답니다. 규칙은 둘입니다.
+       · 좌우 대칭을 안 깹니다. 이 방의 축은 칠판이고 짝은 x ↔ 37-x 라,
+         왼쪽 책상이 [A,B] 면 오른쪽 짝은 [B,A] 로 뒤집어 놓습니다.
+         안 뒤집으면 대칭이 아니라 복사가 됩니다.
+       · 한 책상에 같은 의자를 둘 안 둡니다. 두 자리뿐인 책상에서
+         둘이 같으면 그 책상이 곧 도장 한 개입니다.
+     책상도 줄마다 갈립니다 — 가운데 줄만 책 칸이 뚫린 판입니다. */
+  const SEATS = [
+    [['officeChair', 'chair'], ['chair', 'chairC'], ['chairC', 'officeChair']],
+    [['chairD', 'officeChair'], ['officeChair', 'chair'], ['chair', 'chairD']],
+    [['chair', 'chairB'], ['chairB', 'officeChair'], ['officeChair', 'chairC']],
+  ];
+  SEAT_Y.forEach((y, r) => SEAT_X.forEach((x, i) => {
+    const right = i > 2, pair = right ? 5 - i : i;
+    const [a, b] = SEATS[r][pair];
+    prop(m, r === 1 ? 'deskShelf' : 'desk2', x, y);
+    prop(m, right ? b : a, x, y + 1);
+    prop(m, right ? a : b, x + 1, y + 1);
+  }));
   /* 책(books2)은 월드 전체에서 뺐습니다. */
   /* 벽면 기물(사물함·스탠드·협탁·쓰레기통)은 전부 뺐습니다. 강의실은
      칠판을 향해 좌우 대칭으로 앉는 방이라, 한쪽 벽에만 붙은 덩어리가
@@ -6058,6 +6597,23 @@ const ZONES = {};
   /* 앞 양옆 화분 둘. 회색 돌바닥 방이라 초록이 하나도 없었습니다.
      칠판을 보는 축(좌우 대칭)을 안 깨도록 짝으로 세웁니다(x ↔ 37-x). */
   prop(m, 'plantTall', 2, 6); prop(m, 'plantTall', 35, 6);
+
+  /* ---- 뒤쪽 원탁 둘 ----
+     좌석 세 줄이 끝나는 y22 아래로 네 줄이 통째로 빈 돌바닥이었습니다.
+     책상을 한 줄 더 세우면 강의석 네 줄이 되어 방이 다시 길어지므로,
+     여기는 **강의를 안 하는 자리**로 씁니다 — 둥근 탁자에 안락의자 둘.
+     네모난 책상 열여덟 장 뒤에 원이 둘 있으면, 그 원이 "여기서부터는
+     수업이 아니다" 를 모양만으로 말합니다.
+
+     의자는 탁자 위쪽에만 둡니다. 아래는 문으로 가는 길이라, 거기 앉으면
+     나가는 사람 앞을 막고 앉는 셈입니다.
+     짝은 이 방의 규칙 그대로 x ↔ 37-x 입니다(왼쪽 x4~5 ↔ 오른쪽 x32~33). */
+  [4, 32].forEach((bx) => {
+    floorInlay(m.floor, bx - 1, 23, 4, 4, 'rug');
+    floorGlow(m.floor, bx + 1, 24.6, 3.4);
+    prop(m, 'tableRound', bx, 24);
+    prop(m, 'armchair', bx, 23); prop(m, 'armchair', bx + 1, 23);
+  });
 
   /* 나가는 곳 — 네 건물이 전부 같은 문입니다. 건물마다 다르면
      "여기가 출구" 를 매번 새로 배워야 합니다. */
@@ -6495,13 +7051,37 @@ const DORM = ZONES.dorm;
 
   /* ---- 진열대 (y3) ----
      카운터 **뒤**입니다. 실제 상점 문법이고, 앞에 두면 손님이 진열대를
-     넘어 말을 걸어야 합니다. 파는 것이 무엇인지 그림으로 먼저 말합니다 —
-     옷 가게 뒤에는 옷장과 거울, 가구 가게 뒤에는 책장과 화분,
-     알 가게 뒤에는 알 넷이 받침 위에 섭니다. */
-  prop(m, 'wardrobe', 3, 3); prop(m, 'mirror', 5, 3);
-  prop(m, 'bookshelf', 11, 3); prop(m, 'plantTall', 13, 3);
+     넘어 말을 걸어야 합니다. 파는 것이 무엇인지 그림으로 먼저 말합니다.
+
+     알 가게만 가게로 보였습니다 — 알 넷이 나란히 서 있었기 때문입니다.
+     옷 가게는 옷장 하나와 거울 하나, 가구 가게는 책장 하나와 화분
+     하나뿐이었고, 그 넷은 기숙사에도 도서관에도 있는 물건이라 뒤에
+     서 있어도 무엇을 파는지 말해 주지 않았습니다.
+
+     그래서 셋 다 **그 가게에서만 나올 물건**으로 뒷벽을 채웁니다.
+     옷 가게는 x1~6, 가구 가게는 x8~16, 알 가게는 종전대로 x19~23.
+     가구 가게는 방 한가운데 축(x12.5) 을 그대로 씁니다 — 벽 꾸미기와
+     창구 셋이 이미 그 축을 쓰고 있어서, 진열만 어긋나면 방이 기울어
+     보입니다. 짝은 x ↔ 24-x 입니다(8↔16 · 9↔15 · 10↔14, 소파는
+     x11~13 이라 그 자체가 축입니다). */
+  prop(m, 'clothRack', 1, 3); prop(m, 'wardrobe', 3, 3);
+  prop(m, 'mannequin', 5, 3); prop(m, 'hatStand', 6, 3);
+  prop(m, 'bookshelf', 8, 3); prop(m, 'rugRoll', 9, 3);
+  prop(m, 'chairStack', 10, 3); prop(m, 'sofaShop', 11, 3);
+  prop(m, 'chairStack', 14, 3); prop(m, 'rugRoll', 15, 3);
+  prop(m, 'bookshelf', 16, 3);
   prop(m, 'eggTurtle', 19, 3); prop(m, 'eggGiraffe', 20, 3);
   prop(m, 'eggMeerkat', 21, 3); prop(m, 'eggPig', 22, 3);
+
+  /* ---- 창구 옆 진열 (y7) ----
+     뒷벽만 채우면 진열이 전부 카운터 너머로 갑니다. 신어 보는 신발과
+     비춰 보는 거울은 손님 쪽에 있어야 하고, 가구 가게는 원래 바닥에
+     늘어놓는 장사입니다.
+     카운터 앞 세 칸(x3~5 · x11~13 · x19~21)은 반드시 비워 둡니다 —
+     거기가 말을 거는 자리라, 막으면 가게가 닫힙니다. */
+  prop(m, 'mirror', 1, 7); prop(m, 'shoeShelf', 6, 7);
+  prop(m, 'floorLamp', 9, 7); prop(m, 'plantStand', 10, 7);
+  prop(m, 'plantStand', 14, 7); prop(m, 'floorLamp', 15, 7);
 
   /* ---- 카운터 셋 (y6) ----
      NPC 하나에 책상 하나. 학생회관과 같은 규칙입니다 — 창구 뒤에 사람이
@@ -6742,7 +7322,11 @@ function bake(m) {
      (chair · chairC)로 정하지 않는 이유는, 본관에서는 둘 다 책상 아래에
      서 있어서 종류와 방향이 안 맞기 때문입니다. 책상은 옮겨도 규칙이
      따라옵니다 — 마주 보는 것이 규칙이지 의자 이름이 규칙이 아닙니다. */
-  const DESKISH = new Set(['desk', 'desk2', 'desk3', 'carrel', 'tableLong', 'tableLong2', 'podium']);
+  /* 새 책상·탁자를 여기 안 넣으면 그 앞에 앉은 사람이 전부 위를 봅니다
+     (아래 기본값). 긴 열람대는 열두 명이 마주 앉는 자리라, 빠뜨리면
+     여섯 명이 등을 돌린 채로 굳습니다 — 종전에 겪은 그대로입니다. */
+  const DESKISH = new Set(['desk', 'desk2', 'desk3', 'carrel', 'tableLong', 'tableLong2', 'podium',
+                           'deskShelf', 'tableStudy', 'tableStudy3', 'tableRound']);
   const deskAt = (x, y) => m.props.some((q) => {
     if (!DESKISH.has(q.kind)) return false;
     const d2 = PROP[q.kind];
@@ -16030,6 +16614,7 @@ const PANELS = {
       <div class="rows">
         <div class="row"><span>열람대 <em>여섯 명이 마주 앉아요</em></span><span class="val">48석</span></div>
         <div class="row"><span>캐럴 <em>칸막이 1인석. 혼자 버티는 자리</em></span><span class="val">6석</span></div>
+        <div class="row"><span>원탁 <em>오른쪽. 안락의자와 스툴</em></span><span class="val">4석</span></div>
         <div class="row"><span>앉으면 <em>10분마다</em></span><span class="val">2코인</span></div>
         <div class="row"><span>쉬지 않고 30분 · 60분</span><span class="val">+3코인</span></div>
       </div>
@@ -16044,8 +16629,8 @@ const PANELS = {
       <p><b>끊어 가도 괜찮은 곳</b>이에요. 대중음악이 나오고, 뒷줄에는
       쉬었다 갈 라운지가 있어요.</p>
       <div class="rows">
-        <div class="row"><span>강의석 <em>칠판을 보고 앉아요</em></span><span class="val">24석</span></div>
-        <div class="row"><span>라운지 <em>뒷줄. 마주 앉는 자리</em></span><span class="val">12석</span></div>
+        <div class="row"><span>강의석 <em>칠판을 보고 앉아요</em></span><span class="val">36석</span></div>
+        <div class="row"><span>라운지 <em>뒷줄 원탁. 안락의자 넷</em></span><span class="val">4석</span></div>
         <div class="row"><span>앉으면 <em>10분마다</em></span><span class="val">3코인</span></div>
       </div>
       <div class="note">언제 일어나도 손해가 없어요. 한 시간을 채우면

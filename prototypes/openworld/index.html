@@ -1638,12 +1638,14 @@ const MINIGAMES = [
   /* ---- 밖에 있는 것들 ----
      자기 자리에 있습니다. 달리기는 운동장, 낚시는 호수, 책 정리는
      도서관. 대신 못 찾는 문제가 생기므로 위 안내소가 그것을 맡습니다. */
+  /* 둘 다 **인필드 안**입니다. 남쪽 큰길에 서 있던 것을 옮겼습니다 —
+     운동장 게임이 운동장 밖에 있었습니다. 매트를 뺀 자리이기도 합니다. */
   { name: '거북목 탈출 러너', panel: 'postureRun', where: '운동장',
-    how: '고개를 들면 뛰어넘습니다', zone: 'campus', prop: 'runBoard', x: 3, y: 13,
-    go: ['campus', 5, 14] },
+    how: '고개를 들면 뛰어넘습니다', zone: 'campus', prop: 'runBoard', x: 5, y: 6,
+    go: ['campus', 6, 9] },
   { name: '달리기 시합', panel: 'trackRace', where: '운동장',
-    how: '좌우를 번갈아 밟아 100m', zone: 'campus', prop: 'startGate', x: 7, y: 13,
-    go: ['campus', 8, 15] },
+    how: '좌우를 번갈아 밟아 100m', zone: 'campus', prop: 'startGate', x: 9, y: 7,
+    go: ['campus', 10, 9] },
   { name: '연못 낚시', panel: 'pondFish', where: '호수',
     how: '찌가 잠기는 순간을 챕니다', zone: 'campus', prop: 'fishDeck', x: 5, y: 30,
     go: ['campus', 5, 29] },
@@ -5701,14 +5703,14 @@ const ZONES = {};
 
   /* ================= 모서리 넷 ================= */
 
-  /* 북서 — 운동장. 매트는 **그림입니다.** 스트레칭 보상은 접었고
-     코인 표에도 없습니다. 여기 두는 이유는 트랙만 있으면 운동장이
-     비어 보이기 때문이지, 곧 뭐가 붙어서가 아닙니다. */
-  prop(m, 'mat', 6, 6); prop(m, 'mat', 9, 6);
+  /* 북서 — 운동장. 매트 둘은 뺐습니다. "곧 뭐가 붙어서가 아니라 트랙만
+     있으면 비어 보여서" 놓은 것이었는데, 그 자리에 이제 진짜 할 것이
+     들어갑니다 — 자리를 채우려고 놓은 그림은 진짜가 오면 비켜야 합니다.
 
-  /* 운동장에서 할 것은 트랙 **남쪽 입구**에 세웁니다. 트랙 안쪽에 두면
-     한 바퀴 도는 길을 막고, 여기는 광장에서 산책로를 따라 올라오는
-     사람이 반드시 지나가는 목이라 "저게 뭐지" 가 먼저 걸립니다.
+     운동장에서 하는 것 둘(거북목 러너 · 달리기 시합)을 **인필드**로
+     옮깁니다. 전에는 남쪽 큰길(y13) 위에 서 있어서, 운동장 게임인데
+     운동장 밖이었습니다. 인필드는 잔디 타원(8,7 반지름 4.2×3.4) 안이라
+     트랙 한 바퀴 도는 길을 막지도 않습니다.
      자리는 MINIGAMES 가 들고 있습니다. */
   placeMinigames(m, 'campus');
   /* 출발선 옆 벤치 하나. 달리기를 기다리는 사람이 서 있을 자리입니다 —
@@ -6588,11 +6590,19 @@ const DORM = ZONES.dorm;
    같습니다. 다만 곱이 2 를 넘으면 한 프레임에 한 칸 넘게 움직여서
    벽 검사(canStand)를 뛰어넘습니다. 그래서 1.8 이 천장입니다.
    ================================================================== */
+/* pose 는 **어떻게 타는가** 입니다. 서서 타는 것과 앉아서 타는 것을
+   같은 그림으로 두면, 자전거 위에 사람이 **서 있는** 것으로 보입니다
+   (실제로 그 지적을 받았습니다).
+     stand  킥보드 · 롤러스케이트 — 실제로 서서 탑니다
+     sit    자전거 · 구름 — 안장과 구름 위에 앉습니다
+   seatY 는 앉은 몸을 안장 높이까지 더 올리는 값입니다. 앉기 자세는
+   원래 의자(타일 바닥에서 12px) 기준으로 맞춰져 있어서, 안장이 그보다
+   높으면 그 차이만큼 더 올려야 엉덩이가 안장에 닿습니다. */
 const RIDES = {
-  'ride-skate': { mult: 1.30, lift: 0, name: '롤러스케이트' },
-  'ride-kick':  { mult: 1.45, lift: 0, name: '킥보드' },
-  'ride-bike':  { mult: 1.60, lift: 0, name: '자전거' },
-  'ride-cloud': { mult: 1.80, lift: 3, name: '구름' },   // 유일하게 뜹니다
+  'ride-skate': { mult: 1.30, lift: 0, name: '롤러스케이트', pose: 'stand', seatY: 0 },
+  'ride-kick':  { mult: 1.45, lift: 0, name: '킥보드',      pose: 'stand', seatY: 0 },
+  'ride-bike':  { mult: 1.60, lift: 0, name: '자전거',      pose: 'sit',   seatY: 7 },
+  'ride-cloud': { mult: 1.80, lift: 3, name: '구름',        pose: 'sit',   seatY: 2 },
 };
 const RIDE_ART = {};
 /** 지금 탄 것. 안 탔으면 null. */
@@ -12900,6 +12910,12 @@ function paintItemCanvases() {
       /* 가구는 그려 둔 그림 그대로입니다. 칸 안에서 최대 배율로 키우되
          정수배만 씁니다 — 1.5배로 늘리면 픽셀 폭이 들쭉날쭉해집니다. */
       drawFurnThumb(g, c.width, c.height, PROP[it.prop]);
+    } else if (it && it.cat === 'ride') {
+      /* 탈것은 sprite 가 없어서(종과 상관없이 발밑에 한 장) 종이인형만
+         부르면 **맨 캐릭터**가 나옵니다. 실제로 상점에서 넷이 다 똑같아
+         보였습니다. 세계에서 그리는 것과 같은 방식으로, 탈것 그림 위에
+         캐릭터를 얹어 보여 줍니다. */
+      drawRideThumb(g, c.width, c.height, it, zoom);
     } else if (it && it.cat === 'egg') {
       drawEggThumb(g, c.width, c.height, itemColor(it) || '#C9C4BE');
     } else if (it && (itemReady(CHAR_IMG[speciesOf(ROOM.character).slug]) || itemReady(MANNEQUIN))) {
@@ -12914,6 +12930,34 @@ function paintItemCanvases() {
     }
   }
 }
+/** 탈것 한 칸 — 탈것 그림 위에 지금 종을 얹습니다. 세계에서 그리는
+    규칙(탈것 먼저, 사람 나중, 앉는 것은 앉은 자세)과 같습니다. */
+function drawRideThumb(g, W, H, it, zoom) {
+  const art = RIDE_ART[it.id];
+  const R = RIDES[it.id];
+  if (!art || !R) return;
+  g.imageSmoothingEnabled = false;
+  /* **옆모습**으로 보여 줍니다. 자전거를 앞에서 보면 바퀴 둘과 핸들뿐이라
+     킥보드와 구별이 안 갑니다 — 옆에서 봐야 자전거입니다. 캐릭터도 같이
+     옆으로 세워야 둘이 같은 방향을 봅니다. */
+  const img = art.side || art.front;
+  /* 칸 안에서 정수배로만 키웁니다. 1.5배로 늘리면 픽셀 폭이 들쭉날쭉합니다. */
+  const k = Math.max(1, Math.min(zoom || 2, Math.floor(W / img.width)));
+  const rw = img.width * k, rh = img.height * k;
+  /* 바닥선을 칸 아래에서 10px 띄웁니다. 4px 로 뒀더니 자전거 바퀴가
+     칸 테두리에 잘렸습니다 — 탈것은 캐릭터보다 옆으로도 아래로도 큽니다. */
+  const baseY = Math.round(H - 10);
+  g.drawImage(img, Math.round((W - rw) / 2), baseY - rh, rw, rh);
+  /* 캐릭터를 그 위에 얹습니다. **선 자세**로 그립니다 — drawDoll 은
+     아이템 시트를 겹치는 함수라 자세 시트(bakeStance)를 안 씁니다.
+     칸에서는 무엇을 파는지가 먼저이고, 앉는 자세는 세계에서 보입니다. */
+  const lift = (R.lift + (R.pose === 'sit' ? R.seatY : 0)) * k;
+  g.save();
+  g.translate(0, -lift - 3 * k);
+  drawDoll(g, ROOM.worn, 'right', k);
+  g.restore();
+}
+
 /** 가구 그림 한 장을 칸 가운데에 놓습니다. 상점 칸과 꾸미기 칸이 같이 씁니다. */
 function drawFurnThumb(g, W, H, d) {
   if (!d || !d.canvas) return;
@@ -16393,7 +16437,7 @@ const PANELS = {
 
     return {
       title: '마이페이지', kind: '',
-      tabs: ['내 정보', '자세 기준', '초대', '설정'],
+      tabs: ['내 정보', '자세 기준', '설정'],
       tabHtml: [
         /* 내 정보 */
         `<div class="stats">
@@ -16451,17 +16495,10 @@ const PANELS = {
         <div class="note">영상은 브라우저 밖으로 나가지 않습니다.
         기준값도 이 기기에만 남습니다.</div>`,
 
-        /* 초대 */
-        `<p>이 코드를 받은 친구는 같은 자리에 앉아 함께 세션을 진행할 수 있어요.</p>
-        <div class="code"><b>${esc(ROOM.invite)}</b>
-          <button class="act" data-do="copy">복사</button></div>
-        <div class="rows">
-          <div class="row"><span>초대 인원 <em>한 방에 최대 10명</em></span><span class="val">0 / 10</span></div>
-          <div class="row"><span>유효 기간 <em>새로 만들면 이전 코드는 끊깁니다</em></span><span class="val">24시간</span></div>
-        </div>
-        <div style="margin-top:14px">
-          <button class="act ghost" data-do="regen">코드 새로 만들기</button>
-        </div>`,
+        /* 초대 탭은 뺐습니다. 친구방으로 이동이 없어지면서 이 코드가
+           여는 문이 하나도 안 남았습니다 — 만들 수는 있는데 쓸 데가
+           없는 코드였습니다. 같이 앉는 것은 지금 그냥 같은 방에 들어가면
+           됩니다(멀티플레이). */
 
         /* 설정 */
         `<div class="rows">
@@ -17035,13 +17072,10 @@ panelBody.addEventListener('click', (e) => {
        도중에 들여다보게 하지 않는다는 원칙은 그대로 두고, 지난 기록만
        열어 줍니다. */
     openPanel('retro', SESSION.ended ? 0 : 1);
-  } else if (what === 'copy') {
-    navigator.clipboard?.writeText(ROOM.invite);
-    act.textContent = '복사됨';
-    setTimeout(() => { act.textContent = '복사'; }, 1400);
-  } else if (what === 'regen') {
-    ROOM.invite = null; saveRoom(); openPanel('mailbox');
   }
+  /* 초대 코드 복사·재발급 단추는 초대 탭과 같이 뺐습니다. 재발급 쪽은
+     이미 `openPanel('mailbox')` 를 부르고 있었는데 그런 창이 없어서,
+     눌렀으면 창이 닫히기만 했을 것입니다 — 아무도 안 눌러 본 자리입니다. */
 });
 
 /* ==================================================================
@@ -18670,7 +18704,9 @@ function drawPlayer() {
     const float = ride.lift ? Math.round(Math.sin(WIND.t * 2.2) * 1.5) : 0;
     /* 사람도 같이 뜹니다. 구름만 뜨고 사람이 제자리면 구름을 밟고 선
        것이 아니라 구름이 발밑을 지나가는 것으로 보입니다. */
-    bob -= ride.lift + float;
+    /* 앉아서 타면 안장까지 더 올립니다. pose 로 자세를 바꾸면 몸이
+       짧아지므로, 그 짧아진 만큼을 seatY 가 되돌려 안장에 앉힙니다. */
+    bob -= ride.lift + float + (ride.pose === 'sit' ? ride.seatY : 0);
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     /* 옆모습은 바라보는 쪽으로 뒤집습니다. 탈것은 좌우가 대칭이 아니라
@@ -18720,8 +18756,11 @@ function drawPlayer() {
   /* 걷기 네 박자와 앉은 자세는 자세 시트에서 골라 옵니다. 자세 시트를 아직
      못 구우면(그림이 늦게 오거나 file:// 로 픽셀을 못 읽으면) pose 가 원래
      시트의 같은 자리를 돌려주므로, 서 있는 그림으로 그대로 나옵니다. */
+  /* 앉아서 타는 탈것이면 **앉은 자세**를 씁니다. 걷기 네 박자를 그대로
+     쓰면 자전거 위에서 다리를 저으며 걸어가는 그림이 됩니다. */
+  const rideSit = !!(ride && ride.pose === 'sit');
   const P = GIRIN_CHAR.pose(sheet, speciesOf(ROOM.character).slug, dirName,
-    { sitting: player.sitting, moving: player.moving, frame: player.frame });
+    { sitting: player.sitting || rideSit, moving: player.moving && !rideSit, frame: player.frame });
 
   ctx.save();
   if (sq !== 1) { ctx.translate(fx, fy); ctx.scale(1, sq); ctx.translate(-fx, -fy); }

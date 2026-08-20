@@ -1,52 +1,62 @@
 <!-- Supabase 대시보드 → Authentication → Emails → Confirm signup 에 붙입니다.
      제목(Subject): Deskfit 인증번호 {{ .Token }}
-     원본은 저장소의 이 파일입니다. 대시보드에서 직접 고치지 말고 여기서
-     고쳐서 다시 붙이세요 — 대시보드 쪽은 되돌릴 이력이 없습니다.
 
-     메일 클라이언트는 <style> 블록과 웹폰트를 자주 버립니다. 그래서 모든
-     스타일이 인라인이고 서체는 기기에 있는 것만 씁니다. -->
-<table width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background:#F7F8F8;padding:40px 16px;margin:0;">
+     원본은 저장소의 이 파일입니다. 대시보드에서 직접 고치지 말고 여기서
+     고쳐서 다시 넣으세요 — 대시보드 쪽은 되돌릴 이력이 없습니다.
+
+     메일 클라이언트는 <style> 블록·웹폰트·flex·grid 를 자주 버립니다.
+     그래서 표 조판이고, 모든 스타일이 인라인이고, 서체는 기기에 있는
+     것만 씁니다. 링크는 **일부러 하나도 없습니다** — 메일 앱의 링크는
+     앱 내장 브라우저에서 열려서, 세션이 온보딩을 띄운 탭이 아니라
+     그 안에 생깁니다. -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:#F7F8F8;margin:0;padding:32px 12px;">
   <tr>
     <td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" border="0"
-             style="max-width:440px;background:#FFFFFF;border-radius:20px;padding:36px 32px;
-                    font-family:'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',sans-serif;">
-        <tr>
-          <td style="font-size:15px;font-weight:800;color:#0D7769;letter-spacing:-.01em;
-                     padding-bottom:22px;">Deskfit</td>
-        </tr>
-        <tr>
-          <td style="font-size:21px;font-weight:800;color:#2B3230;letter-spacing:-.02em;
-                     line-height:1.4;padding-bottom:10px;">아래 번호를 입력해 주세요</td>
-        </tr>
-        <tr>
-          <td style="font-size:14px;color:#5F6764;line-height:1.65;padding-bottom:26px;">
-            학교 메일이 맞는지 확인하는 절차예요.<br>
-            메일을 받은 그 화면으로 돌아가서 입력하면 돼요.
-          </td>
-        </tr>
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0"
+             style="width:600px;max-width:100%;background:#FFFFFF;border:2px solid #2B3230;
+                    border-collapse:separate;
+                    font-family:'Apple SD Gothic Neo','Malgun Gothic','Segoe UI',Roboto,sans-serif;">
+
+        <!-- 머리띠 -->
         <tr>
           <td align="center"
-              style="background:#EFFBF9;border-radius:14px;padding:22px 16px;">
-            <div style="font-size:34px;font-weight:800;color:#0D7769;
-                        letter-spacing:.22em;text-indent:.22em;
-                        font-variant-numeric:tabular-nums;">{{ .Token }}</div>
+              style="background:#2DD4BF;border-bottom:2px solid #2B3230;padding:22px 24px;">
+            <div style="font-size:26px;font-weight:800;color:#2B3230;letter-spacing:-.01em;line-height:1.2;">
+              메일 인증
+            </div>
           </td>
         </tr>
+
+        <!-- 번호 -->
         <tr>
-          <td style="font-size:13px;color:#5F6764;line-height:1.65;padding-top:24px;">
-            1시간 안에 입력해 주세요. 지나면 다시 받으면 돼요.
+          <td style="padding:52px 48px 0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                   style="background:#F1FBF9;border:2px solid #9BE0D4;border-radius:18px;">
+              <tr>
+                <td align="center" style="padding:30px 16px;">
+                  <div style="font-size:44px;font-weight:800;color:#0D7769;
+                              letter-spacing:.20em;text-indent:.20em;line-height:1.1;">{{ .Token }}</div>
+                </td>
+              </tr>
+            </table>
           </td>
         </tr>
+
+        <!-- 안내 -->
         <tr>
-          <td style="border-top:1px solid rgba(43,50,48,.10);
-                     padding-top:20px;font-size:12px;color:#5F6764;line-height:1.65;">
-            요청한 적이 없다면 이 메일은 그냥 두셔도 돼요. 번호를 입력하지
-            않으면 아무 일도 일어나지 않습니다.
+          <td align="center" style="padding:34px 48px 52px;">
+            <div style="font-size:15px;color:#2B3230;line-height:2;">
+              1시간 안에 입력해 주세요. 지나면 다시 받으면 돼요.<br>
+              요청한 적이 없다면 이 메일은 그냥 두셔도 돼요.<br>
+              번호를 입력하지 않으면 아무 일도 일어나지 않아요.
+            </div>
           </td>
         </tr>
+
       </table>
+
     </td>
   </tr>
 </table>

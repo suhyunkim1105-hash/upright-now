@@ -29,7 +29,7 @@
 
    file:// 에서는 동작하지 않습니다
    --------------------------------
-   출처가 `null` 이라 Supabase 가 CORS 로 막습니다. `node prototypes/serve.mjs`
+   출처가 `null` 이라 Supabase 가 CORS 로 막습니다. `npx http-server . -p 8177 -c-1`
    로 띄운 http://localhost 에서 열어야 합니다. 설정이 없거나 file:// 이면
    이 모듈은 `configured: false` 를 돌려주고, 화면은 예전처럼 흉내로
    넘어갑니다 - 팀원이 파일을 더블클릭해서 여는 길을 막지 않기 위해서입니다.
@@ -147,7 +147,7 @@
         가짜 통과를 진짜로 착각합니다. */
     get reason() {
       if (!configured) return 'Supabase 설정이 없습니다 (prototypes/shared/config.js)';
-      if (!servedOverHttp) return 'file:// 에서는 로그인할 수 없습니다 (node prototypes/serve.mjs)';
+      if (!servedOverHttp) return 'file:// 에서는 로그인할 수 없습니다 (npx http-server . -p 8177 -c-1)';
       return '';
     },
     RESEND_SEC,

@@ -10,7 +10,8 @@
 <meta property="og:description" content="웹캠이 앉은 자세를 조용히 봐 주는 온라인 자습실. 영상은 브라우저 밖으로 나가지 않아요.">
 <meta property="og:image" content="assets/still-campus.webp">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="assets/favicon.ico">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/favicon.ico" sizes="48x48">
 <link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
 <style>
 /* ============================================================
@@ -107,7 +108,8 @@ p{text-wrap:pretty}
   font-weight:800;font-size:1.15rem;letter-spacing:-.01em;
   display:flex;align-items:center;gap:10px;
 }
-.header .brand img{width:22px;height:33px;image-rendering:pixelated}
+/* 심볼은 190:112 입니다. 정사각으로 두면 눌립니다. */
+.header .brand img{width:44px;height:26px}
 .header nav{display:flex;gap:4px}
 .header nav a{
   padding:9px 16px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--ink);
@@ -661,7 +663,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 <!-- 헤더 -->
 <header class="header">
   <a class="brand" href="#top" data-mag>
-    <img src="assets/logo.svg" alt="" width="26" height="26" style="border-radius:7px">
+    <img src="assets/logo.svg" alt="" width="44" height="26">
     Deskfit
   </a>
   <nav aria-label="주요 섹션">

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Deskfit">
+  <!-- 탭에서는 16px 입니다. 투명 심볼은 그 크기에서 사라지므로 판을 깔고
+       흰 거북이를 얹습니다. favicon.ico 는 이 파일에서 굽습니다 —
+       scripts/build-favicon.mjs -->
+  <rect width="64" height="64" rx="15" fill="#0D7769"/>
+  <mask id="dfFavGap">
+    <rect x="-40" y="-40" width="280" height="200" fill="#fff"/>
+    <path d="M 20 62 C 46 72, 88 73, 114 68" stroke="#000" stroke-width="10"
+          stroke-linecap="round" fill="none"/>
+  </mask>
+  <g transform="translate(4.6 19.2) scale(.288)">
+    <g fill="#fff" mask="url(#dfFavGap)">
+      <ellipse cx="54" cy="88" rx="11" ry="22"  transform="rotate(-11 54 88)"/>
+      <ellipse cx="114" cy="88" rx="11" ry="22" transform="rotate(11 114 88)"/>
+      <path d="M 40 61 C 28 63, 18 67, 10 73 C 20 78, 30 80, 40 80 Z"/>
+      <rect x="30" y="58" width="108" height="26" rx="13"/>
+      <path d="M 28 66 A 48 46 0 0 1 124 66 Z"/>
+      <ellipse cx="150" cy="50" rx="25" ry="23"/>
+    </g>
+    <circle cx="158" cy="41" r="6" fill="#0D7769"/>
+  </g>
+</svg>

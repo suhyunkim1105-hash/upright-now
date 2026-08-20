@@ -898,6 +898,14 @@
     margin-left: auto; color: var(--ink-2); font-size: 13px; font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
+  /* 밖으로 나가는 줄(공지·공고)은 진짜 <a> 입니다 — 가운데 클릭으로
+     새 탭에 열고, 주소를 복사할 수 있어야 합니다. 대신 브라우저 기본
+     밑줄·파란색은 지웁니다: 한 줄에 제목·날짜·"열기" 셋이 있는데 셋 다
+     밑줄이 그어지면 어디를 누르는 줄인지가 안 보입니다. */
+  #panel .rows a.row { color: inherit; text-decoration: none; }
+  #panel .rows a.row:hover { background: var(--teal-50); }
+  #panel .rows a.row:focus-visible { outline: 2px solid var(--teal-600); outline-offset: -2px; }
+  #panel a.act { text-decoration: none; display: inline-block; }
 
   /* ---------- 상점 ----------
      개더의 아바타 편집과 같은 순서입니다 — **부위 막대 · 격자 · 색 ·
@@ -1201,6 +1209,72 @@
     background: var(--teal-50); border-left: 3px solid var(--teal);
     font-size: 12.5px; line-height: 1.72; color: var(--ink-2);
   }
+  /* ---------- 시간표 ----------
+     대학 시간표는 목록이 아니라 **격자**입니다 — 세로가 시각, 가로가
+     요일. 그 그림을 이미 모두 알고 있어서, 아젠다 목록으로 바꾸면
+     "내 시간표" 로 안 읽힙니다.
+     한 시간을 46px 로 고정합니다. 백분율로 두면 수업이 하나뿐인 날
+     그 한 칸이 화면 높이만큼 늘어납니다. */
+  #panel .tt { --tt-h: 46px; margin-top: 4px; }
+  #panel .tt-grid {
+    display: grid; grid-template-columns: 34px repeat(var(--tt-days), minmax(0, 1fr));
+    gap: 0 4px;
+  }
+  #panel .tt-day {
+    text-align: center; font-size: 12px; font-weight: 700; color: var(--ink-2);
+    padding-bottom: 6px;
+  }
+  #panel .tt-hours { display: flex; flex-direction: column; }
+  #panel .tt-hours i {
+    height: var(--tt-h); font-style: normal; font-size: 10.5px; color: var(--ink-3);
+    text-align: right; padding-right: 4px; transform: translateY(-6px);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 시간 눈금은 칸 배경으로 긋습니다. 줄을 element 로 깔면 요일 수만큼
+     같은 줄을 여러 벌 만들게 되고, 블록이 그 위에 얹히는 순서를
+     또 따져야 합니다. */
+  #panel .tt-col {
+    position: relative; border-radius: 8px;
+    background: var(--surface-2);
+    background-image: repeating-linear-gradient(
+      to bottom, var(--line) 0 1px, transparent 1px var(--tt-h));
+    border: 1px solid var(--line);
+  }
+  #panel .tt-b {
+    position: absolute; left: 2px; right: 2px;
+    border: 0; border-radius: 7px; padding: 5px 6px;
+    font: inherit; text-align: left; cursor: pointer; overflow: hidden;
+    box-shadow: 0 1px 0 rgba(0,0,0,.12);
+  }
+  #panel .tt-b b { display: block; font-size: 11.5px; font-weight: 800; line-height: 1.25; }
+  #panel .tt-b em { display: block; font-style: normal; font-size: 10px; opacity: .8; }
+  #panel .tt-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+  #panel .tt-empty {
+    margin-top: 10px; padding: 22px 14px; text-align: center;
+    border: 1px dashed var(--line-2); border-radius: 12px;
+    font-size: 12.5px; color: var(--ink-3);
+  }
+  #panel .tt-form { margin-top: 14px; padding: 14px; border-radius: 13px;
+    background: var(--surface-2); border: 1px solid var(--line-2); }
+  #panel .tt-form label { display: block; font-size: 11.5px; font-weight: 700;
+    color: var(--ink-2); margin: 10px 0 5px; }
+  #panel .tt-form label:first-child { margin-top: 0; }
+  #panel .tt-form input, #panel .tt-form select {
+    width: 100%; padding: 9px 11px; background: var(--surface);
+    border: 1px solid var(--line-2); border-radius: 9px;
+    color: var(--ink); font: inherit; font-size: 13px;
+  }
+  #panel .tt-form .two { display: flex; gap: 8px; }
+  #panel .tt-swatch {
+    width: 26px; height: 26px; border-radius: 8px; border: 2px solid transparent;
+    cursor: pointer; padding: 0;
+  }
+  #panel .tt-swatch[aria-pressed="true"] { border-color: var(--ink); }
+  #panel .tt-acts { display: flex; gap: 8px; margin-top: 14px; }
+  #panel .tt-acts .act { margin-left: 0; }
+  #panel .tt-acts .act.del { margin-left: auto; background: var(--surface);
+    border-color: var(--line-2); color: var(--bad); }
+
   #panel .bar {
     height: 8px; border-radius: 999px; background: var(--surface-3);
     overflow: hidden; margin-top: 8px;
@@ -3568,6 +3642,44 @@ TEXT_ART.push(() => { PROP.bldClub.canvas = paintBuilding(BSPEC.bldClub); });
   PAINTED.board = c;
 }
 
+/* ---- 캠퍼스 게시판 3×3 — 중앙 광장 ----
+   실내 게시판(board, 2×2)과 **다른 물건**이라 따로 그립니다. 저것은 방
+   안내판이고 이것은 밖에 서서 비를 맞는 큰 판입니다. 크기만 키우면
+   같은 물건의 확대판으로 보이므로, 지붕·기둥 둘·유리 없는 코르크로
+   갈라 놓습니다.
+   지붕을 다는 이유는 밖이기 때문입니다 — 비를 맞는 자리에 종이를 붙이는
+   그림은 이상합니다. 그 지붕 한 겹이 "여기는 실외" 를 말합니다. */
+{
+  const c = canvasOf(3, 3), g = c.getContext('2d');
+  shadow(g, 24, 46, 18, 3);
+  /* 기둥 둘 — 판보다 아래로 더 내려와 땅에 박힙니다 */
+  [8, 37].forEach((x) => {
+    px(g, x, 30, 4, 16, '#5E4128');
+    px(g, x, 30, 2, 16, '#7A5637');
+  });
+  /* 판 */
+  px(g, 2, 8, 44, 26, '#4A3320');
+  px(g, 4, 10, 40, 22, '#8A6A46');          // 코르크
+  px(g, 4, 10, 40, 2, '#A2825C');
+  /* 붙은 종이 — 크기와 각을 다르게 둡니다. 다 같으면 격자무늬입니다 */
+  const notes = ['#FFF6E8', '#FFD9CF', '#E8F1FF', '#FFF0B8', '#E4F7EC'];
+  [[6, 12, 10, 8], [18, 13, 8, 7], [28, 12, 13, 9],
+   [6, 22, 12, 8], [20, 22, 9, 8], [31, 23, 10, 7]].forEach(([x, y, w, h], i) => {
+    px(g, x, y + 1, w, h, 'rgba(0,0,0,.16)');
+    px(g, x, y, w, h, notes[i % 5]);
+    px(g, x, y, w, 1, 'rgba(255,255,255,.55)');
+    /* 글줄 두 개 — 없으면 색종이입니다 */
+    px(g, x + 1, y + 2, w - 4, 1, '#9AA3AE');
+    px(g, x + 1, y + 4, w - 6, 1, '#B6BDC6');
+    px(g, x + (w >> 1) - 1, y - 1, 2, 2, '#D8442C');   // 압정
+  });
+  /* 지붕 — 가운데가 솟은 두 물매. 처마가 판보다 좌우로 나와야 지붕입니다 */
+  for (let k = 0; k < 6; k++) px(g, k, 8 - k, 48 - k * 2, 1, k > 3 ? '#5FB0A3' : '#2DD4BF');
+  px(g, 0, 8, 48, 3, '#0C5A4F');
+  px(g, 0, 8, 48, 1, '#8AE5D9');
+  PAINTED.campusBoard = c;
+}
+
 /* ---- 스트레칭 매트 2×2 ----
    바닥에 **깔린** 물건입니다. 전 판은 말린 쪽이 5px 서 있어서 위에
    올라선 캐릭터 발이 매트 옆구리에 파묻혔습니다. 두께를 1px 로 낮추고
@@ -4095,6 +4207,10 @@ PROP.newBooks  = paintedProp('newBooks', 2, 1, [1]);
 PROP.circDesk  = paintedProp('circDesk', 4, 3, [1, 1, 1]);
 PROP.circDesk.c = [[1, 1, 1, 1], [1, 0, 0, 0], [1, 0, 0, 0]];
 PROP.board     = paintedProp('board', 2, 2, [0, 1]);
+/* 윗줄은 지붕과 판이라 걸어서 지나갈 수 없어야 맞지만, 아랫줄은 기둥
+   둘뿐입니다. 그래도 셋 다 막습니다 — 게시판 **뒤로** 돌아 들어가
+   기둥 사이에 끼어 서는 그림이 광장 한복판에서 나오면 안 됩니다. */
+PROP.campusBoard = paintedProp('campusBoard', 3, 3, [0, 1, 1]);
 PROP.mat       = { ...paintedProp('mat', 2, 2, [0, 0]), anchor: 0 };
 
 /* ---- 러너 안내판 2×3 — 운동장 남쪽 입구 ----
@@ -6347,6 +6463,24 @@ const ZONES = {};
      받침돌이 전과 같은 자리(20~24, 23)에 섭니다. */
   prop(m, 'signpost', 20, 18);
 
+  /* ---- 게시판 ----
+     시간표는 내 방(기숙사 노트북)에 두고, 공지·공고는 여기 둡니다.
+     시간표는 나만 보는 것이고 공지는 모두가 보는 것이라, 자리가 달라야
+     합니다 — 실제 학교도 시간표는 손에 들고 다니고 공지는 광장에 섭니다.
+
+     건물을 하나 더 세우지 않은 이유: 목록 두 장을 보려고 스무 걸음을
+     걷게 됩니다. 탈것을 만든 이유가 그 걸음을 줄이는 것이었는데,
+     새 건물은 그 걸음을 도로 늘립니다. 광장은 다섯 갈래가 만나는
+     자리라 어디로 가든 한 번은 지나갑니다.
+
+     자리는 표지판(x20~24 · y18~23)의 **왼쪽 아래**입니다. 처음에는
+     표지판 바로 오른쪽(26,18)에 세웠는데 거기 이미 벤치와 쓰레기통이
+     있었고(겹침 검사에서 잡혔습니다), 옆으로 붙이면 표지판이 판 여섯
+     짜리로 읽힙니다. 한 칸 띄우는 것으로는 모자라 줄을 바꿉니다 —
+     본관에서 광장으로 올라오는 서쪽 길(x1~14)이 여기서 광장에 붙어서,
+     앉으러 가는 사람이 반드시 한 번 지나갑니다. */
+  prop(m, 'campusBoard', 16, 24);
+
   /* 안내 — 기숙사에서 나오면 21,11 에 섭니다. 바로 오른쪽 아래에 세워
      고개를 돌리지 않아도 보이게 했습니다. 표지판(21,20)까지 걸어가야
      길을 아는 것보다, 나오자마자 말 걸 사람이 있는 편이 낫습니다. */
@@ -6414,6 +6548,9 @@ const ZONES = {};
      트랙 한 바퀴 도는 길을 막지도 않습니다.
      자리는 MINIGAMES 가 들고 있습니다. */
   placeMinigames(m, 'campus');
+  /* 게시판은 미니게임이 아니라 things 한 줄입니다. w·h 를 적으면
+     세 칸 어디에 서서 눌러도 열립니다(findNearby 가 상자로 잽니다). */
+  m.things.push({ x: 16, y: 24, w: 3, h: 3, name: '캠퍼스 게시판', panel: 'campusBoard' });
   /* 출발선 옆 벤치 하나. 달리기를 기다리는 사람이 서 있을 자리입니다 —
      운동장에 앉을 데가 없으면 뛰는 사람 말고는 있을 이유가 없습니다.
      산책로는 세 줄(y13~15)이고 벤치가 막는 것은 가운데 줄 두 칸뿐이라,
@@ -16408,10 +16545,16 @@ function startBookSort() {
    에브리타임(2022년 크롤링 유죄 판례) · 링커리어 · RISS. 시도하지 않습니다.
 
    ---- 열쇠와 주소는 수현만 넣을 수 있습니다 ----
-   날씨는 API 키가 필요하고(api/weather.ts 머리말), 음악·시간표는 어떤
-   플레이리스트·어떤 달력인지를 사람이 정해야 합니다. 그래서 셋 다
-   **비어 있는 상태가 기본**이고, 비어 있으면 창이 그 사실을 그대로
-   말합니다. 있지도 않은 것을 그럴듯하게 채우지 않습니다.
+   날씨는 API 키가 필요하고(api/weather.ts 머리말), 음악은 어떤
+   플레이리스트인지를 사람이 정해야 합니다. 그래서 **비어 있는 상태가
+   기본**이고, 비어 있으면 창이 그 사실을 그대로 말합니다. 있지도 않은
+   것을 그럴듯하게 채우지 않습니다.
+
+   시간표는 **여기서 빠졌습니다.** 구글 캘린더 iframe 이던 것을 직접
+   만든 격자로 바꿨습니다(TT). 남의 서비스에 주소를 붙이는 일 자체가
+   없어졌으므로 여기 표에 남을 이유도 없습니다 — calendarEmbed 는
+   남겨 둡니다. 구글 캘린더를 쓰는 사람이 나중에 다시 붙이고 싶을 때
+   쓸 수 있고, 이미 검사(scripts/openworld-links.test.mjs)가 붙어 있습니다.
    ================================================================== */
 
 /* 사람이 붙여 넣는 주소들. 설정 화면이 아니라 **각 창 안**에 둡니다 —
@@ -16718,6 +16861,262 @@ function startAnimalRunner() {
   if (!animalRunnerInstance) container.innerHTML = '<p class="hint" style="padding:24px">게임을 못 불러왔어요. 로컬 서버(npm run dev)로 다시 열어 주세요.</p>';
 }
 
+/* ==================================================================
+   내 시간표 — 직접 만듭니다
+
+   지난 판은 구글 캘린더 iframe 이었습니다. 붙이기는 쉬웠지만 셋이 걸립니다.
+     하나  달력을 **공개**로 바꿔야 보입니다. 시간표를 인터넷에 공개하는
+           일을 시키고 얻는 것이 시간표 한 장입니다
+     둘    비공개 달력을 넣으면 구글이 창 안에서 로그인을 막아 빈 칸이
+           됩니다. 사람은 자기 인터넷을 의심합니다
+     셋    대학 시간표는 달력이 아니라 **격자**입니다 — 세로가 시각,
+           가로가 요일. 그 그림을 모두 이미 알고 있고, 아젠다 목록은
+           그 그림이 아닙니다
+   그래서 여기서 만듭니다. 계정도 서버도 필요 없이 이 기기에 저장합니다.
+
+   자리는 기숙사 노트북입니다. 시간표는 남에게 보이는 것이 아니라 내가
+   보는 것이라, 광장이 아니라 내 방에 둡니다(공지·공고는 반대로 광장).
+   ================================================================== */
+const TT_DAYS = ['월', '화', '수', '목', '금', '토'];
+/* 색 여섯. 과목 수가 아니라 **한눈에 갈라지는 수**가 기준입니다 —
+   일곱 번째부터는 색으로 구분하지 못하고 글자를 읽게 됩니다.
+   글자색을 같이 적어 둡니다: 밝은 칩 위에 흰 글씨를 얹으면 11px 에서
+   읽히지 않습니다. */
+const TT_COLORS = [
+  { bg: '#2DD4BF', ink: '#06403A' },
+  { bg: '#F6C453', ink: '#5A3E06' },
+  { bg: '#F2836B', ink: '#5A1E12' },
+  { bg: '#8FB8F0', ink: '#12335E' },
+  { bg: '#B39BE0', ink: '#33205E' },
+  { bg: '#8FD69A', ink: '#14431E' },
+];
+const TT = {
+  items: loadJSON('girin.timetable', []),
+  /* 지금 고치고 있는 것. null 이면 폼이 닫혀 있습니다. 화면을 다시 그릴
+     때마다 이 값에서 폼을 만들므로, 입력 중이던 요일·색이 살아 있습니다. */
+  draft: null,
+  save() { saveJSON('girin.timetable', this.items); },
+};
+function ttHM(min) {
+  return String((min / 60) | 0).padStart(2, '0') + ':' + String(min % 60).padStart(2, '0');
+}
+/** 오늘 기준으로 지금 하는 수업 · 다음 수업 · 그다음 날 첫 수업 */
+function ttNext(now) {
+  const d = (now.getDay() + 6) % 7;                 // 0=월
+  const min = now.getHours() * 60 + now.getMinutes();
+  const of = (dd) => TT.items.filter((it) => it.day === dd).sort((a, b) => a.s - b.s);
+  const today = of(d);
+  const on = today.find((it) => min >= it.s && min < it.e);
+  if (on) return { kind: 'now', it: on };
+  const nx = today.find((it) => it.s > min);
+  if (nx) return { kind: 'next', it: nx };
+  for (let k = 1; k <= 6; k++) {
+    const first = of((d + k) % 7)[0];
+    if (first) return { kind: 'later', it: first };
+  }
+  return null;
+}
+/** 격자 한 장. 수업이 없으면 빈 격자 대신 안내 한 줄을 돌려줍니다. */
+function ttGridHtml() {
+  const items = TT.items;
+  if (!items.length) {
+    return '<div class="tt-empty">아직 넣은 수업이 없어요.<br>'
+      + '아래 <b>수업 추가</b>로 한 칸씩 채우면 됩니다.</div>';
+  }
+  const nDays = items.some((it) => it.day === 5) ? 6 : 5;
+  /* 기본 창은 09~18 시입니다. 1교시가 8시인 사람과 야간 수업이 있는
+     사람이 둘 다 있으므로, 넣은 수업에 맞춰 위아래로만 늘립니다. */
+  let lo = 9 * 60, hi = 18 * 60;
+  items.forEach((it) => { lo = Math.min(lo, it.s); hi = Math.max(hi, it.e); });
+  lo = Math.floor(lo / 60) * 60; hi = Math.ceil(hi / 60) * 60;
+  const rows = (hi - lo) / 60, H = 46;
+  let head = '<div></div>';
+  for (let d = 0; d < nDays; d++) head += '<div class="tt-day">' + TT_DAYS[d] + '</div>';
+  let hours = '<div class="tt-hours">';
+  for (let r = 0; r < rows; r++) hours += '<i>' + String(lo / 60 + r).padStart(2, '0') + '</i>';
+  hours += '</div>';
+  let cols = '';
+  for (let d = 0; d < nDays; d++) {
+    let blocks = '';
+    items.filter((it) => it.day === d).sort((a, b) => a.s - b.s).forEach((it) => {
+      const c = TT_COLORS[(it.c | 0) % TT_COLORS.length];
+      /* 22px 아래로는 과목명 한 줄도 안 들어갑니다. 30분 수업이 실선
+         하나로 줄어드는 것보다 살짝 넘치는 편이 읽힙니다. */
+      const h = Math.max(22, (it.e - it.s) / 60 * H - 3);
+      blocks += '<button class="tt-b" type="button" data-tt-edit="' + it.id + '"'
+        + ' title="' + esc(it.title) + ' ' + ttHM(it.s) + '~' + ttHM(it.e) + '"'
+        + ' style="top:' + ((it.s - lo) / 60 * H + 1) + 'px;height:' + h + 'px;'
+        + 'background:' + c.bg + ';color:' + c.ink + '">'
+        + '<b>' + esc(it.title) + '</b>'
+        + (it.place ? '<em>' + esc(it.place) + '</em>' : '')
+        + '</button>';
+    });
+    cols += '<div class="tt-col" style="height:' + (rows * H) + 'px">' + blocks + '</div>';
+  }
+  return '<div class="tt" style="--tt-days:' + nDays + '">'
+    + '<div class="tt-grid">' + head + '</div>'
+    + '<div class="tt-grid">' + hours + cols + '</div></div>';
+}
+/* 30분 단위. 15분 단위로 하면 고르는 칸이 예순 개가 넘고, 대학 시간표는
+   보통 30분에 걸립니다. 아침 7시부터 밤 11시까지. */
+function ttTimeOptions(sel) {
+  let o = '';
+  for (let m = 7 * 60; m <= 23 * 60; m += 30)
+    o += '<option value="' + m + '"' + (m === sel ? ' selected' : '') + '>' + ttHM(m) + '</option>';
+  return o;
+}
+function ttFormHtml() {
+  const d = TT.draft;
+  if (!d) {
+    return '<div class="tt-acts"><button class="act" data-do="tt-add">수업 추가</button></div>';
+  }
+  let days = '<div class="chips">';
+  TT_DAYS.forEach((n, i) => {
+    days += '<button class="chip" type="button" data-tt-day="' + i + '"'
+      + ' aria-pressed="' + (d.day === i) + '">' + n + '</button>';
+  });
+  days += '</div>';
+  let sw = '<div class="chips">';
+  TT_COLORS.forEach((c, i) => {
+    sw += '<button class="tt-swatch" type="button" data-tt-color="' + i + '"'
+      + ' aria-label="색 ' + (i + 1) + '" aria-pressed="' + (d.c === i) + '"'
+      + ' style="background:' + c.bg + '"></button>';
+  });
+  sw += '</div>';
+  return '<div class="tt-form">'
+    + '<label for="tt-title">과목</label>'
+    + '<input id="tt-title" maxlength="24" placeholder="예: 자료구조" value="' + esc(d.title) + '">'
+    + '<label for="tt-place">장소 <span style="font-weight:400;color:var(--ink-3)">(선택)</span></label>'
+    + '<input id="tt-place" maxlength="20" placeholder="예: 공학관 302" value="' + esc(d.place) + '">'
+    + '<label>요일</label>' + days
+    + '<label>시간</label><div class="two">'
+    + '<select id="tt-s">' + ttTimeOptions(d.s) + '</select>'
+    + '<select id="tt-e">' + ttTimeOptions(d.e) + '</select></div>'
+    + '<label>색</label>' + sw
+    + '<div class="tt-acts">'
+    + '<button class="act" data-do="tt-save">저장</button>'
+    + '<button class="act ghost" data-do="tt-cancel">취소</button>'
+    + (d.id ? '<button class="act del" data-do="tt-del">삭제</button>' : '')
+    + '</div></div>';
+}
+/** 폼의 글자칸은 다시 그리면 날아갑니다. 그리기 전에 손에 든 값을
+    draft 로 옮겨 둡니다 — 요일 칩을 눌렀다고 과목명이 지워지면 안 됩니다. */
+function ttSyncDraft() {
+  if (!TT.draft) return;
+  const t = document.getElementById('tt-title');
+  const pl = document.getElementById('tt-place');
+  const s0 = document.getElementById('tt-s');
+  const e0 = document.getElementById('tt-e');
+  if (t) TT.draft.title = t.value;
+  if (pl) TT.draft.place = pl.value;
+  if (s0) TT.draft.s = +s0.value;
+  if (e0) TT.draft.e = +e0.value;
+}
+function ttRedraw() {
+  if (activePanelKey === 'calendar') setPanelBody(PANELS.calendar().html);
+}
+
+/* ==================================================================
+   캠퍼스 게시판 — 학교 공지 · 대외활동
+
+   ---- 공지: 학교마다 다르게 ----
+   /api/notice?school=<도메인> 이 이 저장소의 서버 함수입니다(api/notice.ts).
+   대학 사이트는 CORS 를 안 줘서 브라우저가 직접 못 부릅니다. 학교가
+   **스스로 공개한 RSS** 만 봅니다 — 화면을 긁는 것은 남의 집 구조에
+   기대는 일이고, 그 집이 개편하는 날 조용히 깨집니다.
+
+   어느 학교인지는 마이페이지의 학교 메일에서 옵니다. 아직 인증 전이면
+   ROOM.school 이름으로 도메인을 찾습니다(SCHOOLS 표).
+
+   ---- 대외활동·공모전: 목록이 아니라 바로 가기 ----
+   링커리어는 이용약관 제20조 4항이 크롤링·스크래핑을 **명시적으로**
+   금지합니다. 올콘·캠퍼스픽도 같은 조항이 있고, 에브리타임은 2022년에
+   크롤링으로 유죄 판결이 났습니다. 그래서 목록을 가져오지 않습니다.
+
+   "그럼 왜 두느냐" — 링크만 있어도 하는 일이 있습니다. 공고를 보러
+   가는 사람은 대개 **어디를 봐야 하는지**부터 모릅니다. 넷을 한자리에
+   모아 두는 것이 그 답이고, 이건 약관을 어기지 않습니다.
+   나중에 공식 API 가 열리면(온통청년처럼) api/notice.ts 와 같은 꼴로
+   서버 함수를 하나 더 만들어 이 탭만 채우면 됩니다.
+   ================================================================== */
+const BOARD = {
+  /* null 아직 안 물어봄 · 'load' 묻는 중 · 객체 = 답 */
+  notice: null,
+};
+/** 지금 사람의 학교 도메인. 메일 인증이 먼저고, 없으면 이름으로 찾습니다. */
+function mySchoolDomain() {
+  if (ROOM.schoolDomain) return ROOM.schoolDomain;
+  return (SCHOOL_BY_NAME[ROOM.school] || {}).domain || '';
+}
+function fetchNotices() {
+  const dom = mySchoolDomain();
+  if (!dom) { BOARD.notice = { ok: false, known: false, reason: '학교를 아직 안 정했어요.' }; return; }
+  BOARD.notice = 'load';
+  fetch('/api/notice?school=' + encodeURIComponent(dom))
+    .then((r) => r.json())
+    .then((j) => { BOARD.notice = j; boardRedraw(); })
+    /* 서버 함수가 없는 환경(로컬 정적 서버)에서도 창은 떠야 합니다.
+       못 받은 이유를 화면이 그대로 말하고, 공지 페이지 단추는 남습니다. */
+    .catch(() => { BOARD.notice = { ok: false, known: true, reason: '지금은 못 받아왔어요.' }; boardRedraw(); });
+}
+function boardRedraw() {
+  if (activePanelKey !== 'campusBoard') return;
+  const spec = PANELS.campusBoard();
+  /* 탭이 있는 창이라 지금 보고 있는 탭을 유지해야 합니다 — 답이 오는
+     순간 첫 탭으로 튀면 읽던 자리를 잃습니다. */
+  const i = [...panelTabs.children].findIndex((b) => b.getAttribute('aria-selected') === 'true');
+  setPanelBody(spec.tabHtml[Math.max(0, i)]);
+}
+function boardNoticeHtml() {
+  const n = BOARD.notice;
+  const school = ROOM.school || '학교';
+  if (n === null || n === 'load') {
+    return '<p>' + esc(school) + ' 공지를 받아오는 중이에요.</p>';
+  }
+  const page = n.page
+    ? '<div class="tt-acts"><a class="act" target="_blank" rel="noopener noreferrer" href="'
+      + esc(n.page) + '">' + esc(n.name || school) + ' 열기</a></div>'
+    : '';
+  if (!n.ok || !n.items || !n.items.length) {
+    return '<p>' + esc(school) + ' 공지예요.</p>'
+      + '<div class="note">' + esc(n.reason || '지금은 목록을 못 받아왔어요.')
+      + (n.known === false
+          ? '<br>마이페이지에서 학교 메일을 넣으면 그 학교 공지로 바뀝니다.'
+          : '') + '</div>' + page;
+  }
+  let rows = '<div class="rows">';
+  n.items.forEach((it) => {
+    rows += '<a class="row tap" target="_blank" rel="noopener noreferrer" href="' + esc(it.link) + '">'
+      + '<span>' + esc(it.title) + (it.at ? '<em>' + esc(it.at) + '</em>' : '') + '</span>'
+      + '<span class="val">열기</span></a>';
+  });
+  rows += '</div>';
+  return '<p><b>' + esc(n.name || school) + '</b> — 학교가 공개한 목록을 그대로 가져옵니다.</p>'
+    + rows + page;
+}
+/* 넷을 고른 기준: 공고 수(링커리어·캠퍼스픽)와 종류(위비티는 공모전,
+   올콘은 대외활동)입니다. 다섯째부터는 앞의 넷과 겹칩니다. */
+const BOARD_LINKS = [
+  { name: '링커리어',   what: '대외활동 · 인턴 · 공모전',    url: 'https://linkareer.com/list/activity' },
+  { name: '올콘',       what: '대외활동 · 서포터즈',         url: 'https://www.all-con.co.kr/' },
+  { name: '위비티',     what: '공모전 · 대회',               url: 'https://www.wevity.com/' },
+  { name: '캠퍼스픽',   what: '동아리 · 학회 · 공모전',      url: 'https://www.campuspick.com/contest' },
+];
+function boardOutHtml() {
+  let rows = '<div class="rows">';
+  BOARD_LINKS.forEach((l) => {
+    rows += '<a class="row tap" target="_blank" rel="noopener noreferrer" href="' + esc(l.url) + '">'
+      + '<span>' + esc(l.name) + '<em>' + esc(l.what) + '</em></span>'
+      + '<span class="val">열기</span></a>';
+  });
+  rows += '</div>';
+  return '<p>공고는 여기 네 곳에 거의 다 올라와요.</p>' + rows
+    + '<div class="note"><b>목록을 여기로 가져오지 않는 이유</b><br>'
+    + '링커리어 이용약관 제20조 4항이 크롤링·스크래핑을 금지합니다. '
+    + '올콘·캠퍼스픽도 같은 조항이 있어요. 학교 공지는 학교가 스스로 '
+    + 'RSS 로 공개해서 가져오는 것이고, 여기는 그게 없습니다.</div>';
+}
+
 const PANELS = {
   /* ---- 창밖 날씨 — 기숙사 창 ---- */
   weather: () => {
@@ -16774,24 +17173,35 @@ const PANELS = {
 
   /* ---- 시간표 — 기숙사 노트북 ---- */
   calendar: () => {
-    const src = calendarEmbed(LINKS.calendar);
+    const nx = ttNext(new Date());
+    /* 맨 윗줄은 격자가 아니라 **한 문장**입니다. 시간표를 여는 이유는
+       대개 "지금 뭐였지" 하나라, 그 답이 격자를 읽기 전에 나와야 합니다. */
+    const line = !nx ? ''
+      : nx.kind === 'now'
+        ? `<div class="note">지금 <b>${esc(nx.it.title)}</b>
+             — ${ttHM(nx.it.s)}~${ttHM(nx.it.e)}${nx.it.place ? ' · ' + esc(nx.it.place) : ''}</div>`
+        : nx.kind === 'next'
+          ? `<div class="note">다음은 <b>${esc(nx.it.title)}</b>
+               — 오늘 ${ttHM(nx.it.s)}${nx.it.place ? ' · ' + esc(nx.it.place) : ''}</div>`
+          : `<div class="note">오늘은 끝났어요. 다음은
+               <b>${TT_DAYS[nx.it.day]}요일 ${ttHM(nx.it.s)}
+               ${esc(nx.it.title)}</b>.</div>`;
     return {
-      title: '노트북', kind: '시간표',
+      title: '노트북', kind: '내 시간표',
       html: `<p>오늘 뭐가 있는지 보고 앉으라고 책상 위에 뒀어요.</p>
-        ${src ? embedHtml(src, '구글 캘린더')
-              : `<div class="note">아직 달력을 안 걸었어요.</div>`}
-        <div class="rows" style="margin-top:12px">
-          <div class="row tap" data-link="calendar"><span>구글 캘린더
-            <em>${src ? esc(LINKS.calendar) : '캘린더 ID 또는 삽입 주소'}</em></span>
-            <span class="val">${src ? '바꾸기' : '붙여넣기'}</span></div>
-        </div>
-        <p class="hint"><b>공개 달력만 보입니다.</b> 구글 캘린더 → 설정 →
-        해당 캘린더 → “공개 사용 설정” 을 켠 뒤, 같은 화면의
-        “캘린더 통합” 에서 <b>삽입 코드</b>나 <b>캘린더 ID</b> 를 복사하세요.
-        비공개 달력을 넣으면 로그인 화면이 뜨는데, 창 안에서는 구글이
-        로그인을 막아서 빈 칸이 됩니다.</p>`,
+        ${line}
+        ${ttGridHtml()}
+        ${ttFormHtml()}
+        <p class="hint">이 기기에만 저장됩니다. 칸을 누르면 고치거나 지울 수 있어요.</p>`,
     };
   },
+
+  /* ---- 캠퍼스 게시판 — 중앙 광장 ---- */
+  campusBoard: () => ({
+    title: '캠퍼스 게시판', kind: '공지 · 공고',
+    tabs: ['학교 공지', '대외활동 · 공모전'],
+    tabHtml: [boardNoticeHtml(), boardOutHtml()],
+  }),
 
   animalFind: () => ({
     title: '동물 기억력 게임', kind: 'MINI GAME',
@@ -17403,6 +17813,11 @@ function openPanel(key, tab) {
      오면 그 자리에서 다시 그립니다(refreshHall). 여는 순간 그리는 것은
      아직 안 온 답이라 "불러오는 중" 입니다. */
   if (key === 'hall') refreshHall();
+  /* 공지는 이 기기가 아니라 학교 서버에 있습니다. 창을 열 때 한 번만
+     묻고, 답이 오면 그 자리에서 다시 그립니다(boardRedraw). 열 때마다
+     묻지 않는 이유는 공지가 하루에 몇 개뿐이라서입니다 — 서버 함수도
+     30분 캐시를 겁니다(api/notice.ts). */
+  if (key === 'campusBoard' && BOARD.notice === null) fetchNotices();
   const spec = PANELS[key] && PANELS[key]();
   if (!spec) return;
   activePanelKey = key;
@@ -17603,6 +18018,53 @@ panelBody.addEventListener('click', (e) => {
   if (e.target.closest('[data-do="egg-left"]')) return moveEggMerge('arrowleft');
   if (e.target.closest('[data-do="egg-right"]')) return moveEggMerge('arrowright');
   if (e.target.closest('[data-do="tour-replay"]')) { closePanel(); return startTour(); }
+
+  /* ---- 시간표 ----
+     칩·저장·삭제가 전부 화면을 다시 그리므로, 손에 든 글자를 먼저
+     draft 로 옮깁니다(ttSyncDraft). 안 그러면 요일 칩 한 번에 과목명이
+     지워집니다 — 처음 만들었을 때 실제로 그랬습니다. */
+  {
+    const tEdit = e.target.closest('[data-tt-edit]');
+    if (tEdit) {
+      const it = TT.items.find((x) => x.id === tEdit.dataset.ttEdit);
+      if (it) { TT.draft = { ...it }; ttRedraw(); }
+      return;
+    }
+    const tDay = e.target.closest('[data-tt-day]');
+    if (tDay && TT.draft) { ttSyncDraft(); TT.draft.day = +tDay.dataset.ttDay; ttRedraw(); return; }
+    const tCol = e.target.closest('[data-tt-color]');
+    if (tCol && TT.draft) { ttSyncDraft(); TT.draft.c = +tCol.dataset.ttColor; ttRedraw(); return; }
+    if (e.target.closest('[data-do="tt-add"]')) {
+      /* 새 수업의 색은 돌아가며 줍니다. 늘 첫 색이면 시간표가 한 색이 됩니다. */
+      TT.draft = { id: '', title: '', place: '', day: 0, s: 9 * 60, e: 10 * 60 + 30,
+                   c: TT.items.length % TT_COLORS.length };
+      ttRedraw();
+      const el = document.getElementById('tt-title'); if (el) el.focus();
+      return;
+    }
+    if (e.target.closest('[data-do="tt-cancel"]')) { TT.draft = null; ttRedraw(); return; }
+    if (e.target.closest('[data-do="tt-del"]')) {
+      TT.items = TT.items.filter((x) => x.id !== TT.draft.id);
+      TT.save(); TT.draft = null; ttRedraw();
+      return;
+    }
+    if (e.target.closest('[data-do="tt-save"]')) {
+      ttSyncDraft();
+      const d = TT.draft;
+      const title = (d.title || '').trim();
+      /* 과목명이 비면 격자에 빈 칸이 하나 생기고, 그게 무엇인지 아무도
+         모릅니다. 끝이 시작보다 빠르면 높이가 음수라 안 보입니다.
+         둘 다 저장 전에 여기서 막습니다. */
+      if (!title) { const el = document.getElementById('tt-title'); if (el) el.focus(); return; }
+      if (d.e <= d.s) d.e = d.s + 60;
+      const row = { id: d.id || ('t' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)),
+                    title, place: (d.place || '').trim(), day: d.day, s: d.s, e: d.e, c: d.c };
+      const at = TT.items.findIndex((x) => x.id === row.id);
+      if (at >= 0) TT.items[at] = row; else TT.items.push(row);
+      TT.save(); TT.draft = null; ttRedraw();
+      return;
+    }
+  }
 });
 
 /* ---- 값 고치기 ----

@@ -496,6 +496,9 @@
   }
 
   .topbar { display: flex; align-items: center; gap: var(--sp-lg); padding-bottom: var(--sp-xl); }
+  /* 랜딩에서 넘어온 사람이 같은 제품인지 확인할 곳이 여기밖에 없습니다 -
+     일곱 장 내내 마크가 한 장도 없었습니다. 진행 막대 오른쪽 끝에 둡니다. */
+  .topbar .mark { width: 37px; height: 22px; flex: none; opacity: .9; }
   .backBtn {
     appearance: none; cursor: pointer; flex: none;
     width: 36px; height: 36px; border-radius: 50%;
@@ -554,8 +557,18 @@
      본문 500 은 취향이 아니라 바닥입니다. 한국어는 400 대에서 획이
      얇아지는 게 아니라 흐려집니다. 이건 양식이 아니라 가독성입니다. */
   .card h2 {
+    /* 제목마다 왼쪽에 주색 획 하나. 일곱 장 내내 주색이 진행 막대에만
+       있어서 화면이 무채색으로 읽혔습니다. 글자를 청록으로 칠하는 길은
+       크림 위 1.63:1 이라 막혀 있고, 획은 글자가 아니라 표식이라 대비
+       요건이 없습니다 - 로고와 같은 논리입니다. */
+    position: relative; padding-left: 18px;
     margin: 0; font-size: 26px; font-weight: 700;
     letter-spacing: 0; line-height: 1.4;
+  }
+  .card h2::before {
+    content: ''; position: absolute; left: 0; top: .18em;
+    width: 6px; height: 1.05em; border-radius: 4px;
+    background: var(--teal);
   }
   /* 화면이 바뀌면 초점을 제목으로 옮깁니다 - 안 옮기면 스크린리더
      사용자가 화면이 바뀐 줄 모릅니다. 다만 제목은 키보드로 **가는**
@@ -755,7 +768,10 @@
        떠도는 대신 **틀 밖으로 나가는** 것으로 보입니다. */
     overflow: hidden;
     /* 무대 바닥의 아주 옅은 빛. 알이 어딘가 위에 떠 있다는 것만 말합니다. */
-    background: radial-gradient(58% 46% at 50% 58%, var(--teal-50) 0%, transparent 72%);
+    /* teal-50(#EFFBF9)로 두었더니 흰 바탕과 구분이 안 갔습니다 - 코드에는
+       있는데 화면에는 없는 값이었습니다. 한 단 올려 실제로 보이게 합니다.
+       바탕이라 대비 요건이 없고, 위에 놓이는 것은 알 그림뿐입니다. */
+    background: radial-gradient(58% 46% at 50% 58%, var(--teal-100) 0%, var(--teal-50) 46%, transparent 74%);
   }
   /* 슬롯 크기는 **알 그림과 같아야** 합니다. 슬롯이 더 크면 누르는
      영역이 서로 물려서, 두 알 사이를 누르면 안 보이는 쪽이 잡힙니다. */
@@ -1138,6 +1154,7 @@
         </button>
         <div class="bar" role="progressbar" aria-valuemin="1" aria-valuemax="7"
              aria-valuenow="1" aria-label="가입 진행" id="bar"><i></i></div>
+        <img class="mark" src="../landing/assets/logo.svg" alt="Deskfit" width="37" height="22">
       </header>
 
       <div class="card">

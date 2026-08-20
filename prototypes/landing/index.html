@@ -119,6 +119,10 @@ p{text-wrap:pretty}
 .h-right{display:flex;align-items:center;gap:18px}
 .pill-cta{
   display:inline-flex;align-items:center;
+  /* 주색은 여기서 소리를 냅니다. 페이지 전체에서 상시 보이는 유일한
+     버튼이라, 헤더가 크림이든 먹이든 이 알약 하나가 브랜드 색을 붙듭니다.
+     테두리는 남깁니다 — 먹 구역에서 청록이 배경으로 녹지 않게. */
+  background:var(--teal);color:var(--ink);
   border:1.5px solid var(--ink);border-radius:999px;
   padding:10px 20px;font-weight:700;font-size:.92rem;
   transition:background .3s var(--ease),color .3s var(--ease),transform .3s var(--ease);
@@ -222,7 +226,12 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   font-size:clamp(3rem,6.4vw,6rem);white-space:nowrap;
   text-shadow:0 6px 36px rgba(32,38,36,.45);
 }
-.hf-line .hf-brand{color:var(--ink-black);text-shadow:none}
+/* 두 색으로 끊어 읽히는 줄입니다. 두 번째 색이 먹이었는데, 페이지에서
+   제일 큰 글자이면서 브랜드 이름인 자리라 주색이 맞습니다. 밑에 깔린
+   hf-wash 가 여기서 rgba(32,38,36,.6) 이라 영상이 어떻게 밝아져도 바닥은
+   어둡습니다. 그림자는 형제와 같게 되돌립니다 — 없애 두면 영상이 밝은
+   프레임에서 혼자 흐려집니다. */
+.hf-line .hf-brand{color:var(--teal)}
 /* 온보딩의 낙서 버튼을 그대로 가져왔습니다 — 글자는 흔들리지 않고,
    뒤에 깔린 판(::before)만 wobble 필터로 손그림이 됩니다.
    그림자도 번짐이 아니라 한 번 더 그은 선입니다. */

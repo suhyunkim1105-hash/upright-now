@@ -2,7 +2,7 @@
   <!-- 탭에서는 16px 입니다. 투명 심볼은 그 크기에서 사라지므로 판을 깔고
        흰 거북이를 얹습니다. favicon.ico 는 이 파일에서 굽습니다 —
        scripts/build-favicon.mjs -->
-  <rect width="64" height="64" rx="15" fill="#0D7769"/>
+  <rect width="64" height="64" rx="15" fill="#2DD4BF"/>
   <mask id="dfFavGap">
     <rect x="-40" y="-40" width="280" height="200" fill="#fff"/>
     <path d="M 20 62 C 46 72, 88 73, 114 68" stroke="#000" stroke-width="10"
@@ -17,6 +17,6 @@
       <path d="M 28 66 A 48 46 0 0 1 124 66 Z"/>
       <ellipse cx="150" cy="50" rx="25" ry="23"/>
     </g>
-    <circle cx="158" cy="41" r="6" fill="#0D7769"/>
+    <circle cx="158" cy="41" r="6" fill="#2DD4BF"/>
   </g>
 </svg>

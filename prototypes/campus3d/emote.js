@@ -82,12 +82,15 @@ export function playEmotePose(g, k, t) {
       break;
     }
     case 'clap': {
-      const s = Math.abs(Math.sin(t * 9));
+      /* 박수는 손이 **가슴 앞 가운데에서 만나야** 박수입니다.
+         전에는 팔을 바깥으로 벌렸다 오므려서 날갯짓으로 보였습니다. */
+      const s = Math.abs(Math.sin(t * 10));
       P.arms.forEach((a, i) => {
-        a.rotation.z = (i ? -1 : 1) * (1.0 + s * .5);
-        a.rotation.x = -1.15;
+        a.rotation.x = -1.35;
+        a.rotation.z = (i ? -1 : 1) * (.16 + s * .44);   // 안쪽으로 — 손이 가운데서 만납니다
       });
-      P.torso.rotation.x = .06 + s * .05;
+      P.torso.rotation.x = .07;
+      P.head.rotation.x = .06 + s * .04;
       break;
     }
     case 'yes': {
@@ -109,31 +112,48 @@ export function playEmotePose(g, k, t) {
       break;
     }
     case 'dance': {
-      const s = Math.sin(t * 7);
-      P.torso.rotation.z = s * .17; P.torso.rotation.y = s * .3;
-      P.torso.position.y = .44 + Math.abs(Math.cos(t * 7)) * .06;
-      P.head.rotation.z = -s * .2;
+      /* 한 팔씩 번갈아 하늘을 찌릅니다 — 디스코. 골반은 반대로 흔듭니다 */
+      const s = Math.sin(t * 6.8);
+      const up = s > 0 ? 1 : 0;                       // 이번 박자에 올라가는 팔
       P.arms.forEach((a, i) => {
-        a.rotation.z = (i ? -1 : 1) * (1.2 + s * (i ? -.5 : .5));
-        a.rotation.x = -.6 + s * (i ? .5 : -.5);
+        const lift = i === up ? Math.abs(s) : 0;
+        a.rotation.x = -.3 - lift * 2.3;
+        a.rotation.z = (i ? 1 : -1) * (.34 + lift * .12);
       });
-      P.legs[0].rotation.x = s * .3; P.legs[1].rotation.x = -s * .3;
+      P.torso.rotation.z = s * .2;
+      P.torso.rotation.y = s * .3;
+      P.torso.position.y = .44 + Math.abs(Math.cos(t * 6.8)) * .07;
+      P.head.rotation.z = -s * .12;
+      P.legs[0].rotation.x = s * .26; P.legs[1].rotation.x = -s * .26;
+      P.shins[0].rotation.x = Math.max(0, -s) * .4;
+      P.shins[1].rotation.x = Math.max(0, s) * .4;
       break;
     }
     case 'sad': {
-      const d = Math.min(1, w * 2.2);
-      P.torso.rotation.x = d * .5; P.torso.position.y = .44 - d * .1;
-      P.head.rotation.x = d * .7; P.head.position.z = d * .2; P.head.position.y = 1.48 - d * .16;
-      P.arms.forEach((a, i) => { a.rotation.z = b[i] * .3; a.rotation.x = d * .5; });
-      P.legs.forEach((l) => { l.rotation.x = -d * .25; });
-      P.shins.forEach((s) => { s.rotation.x = d * .3; });
+      /* 좌절 — 쭈그려 앉아 두 손으로 머리를 감쌉니다 */
+      const d = Math.min(1, w * 2.4);
+      g.position.y = -d * .30;
+      P.legs.forEach((l) => { l.rotation.x = -d * 1.5; });
+      P.shins.forEach((sh) => { sh.rotation.x = d * 1.9; });
+      P.torso.rotation.x = d * .42; P.torso.position.y = .44 - d * .08;
+      P.head.rotation.x = d * .58;
+      P.head.position.z = d * .12; P.head.position.y = 1.48 - d * .12;
+      P.arms.forEach((a, i) => {
+        a.rotation.x = -2.5 * d - .08;
+        a.rotation.z = (i ? 1 : -1) * .42 * d + b[i] * (1 - d);
+      });
       break;
     }
     case 'love': {
+      /* 두 팔을 머리 위로 둥글게 — 몸으로 하트를 그립니다 */
       const s = Math.sin(t * 6);
-      P.arms.forEach((a, i) => { a.rotation.z = (i ? -1 : 1) * 1.35; a.rotation.x = -1.35; });
-      P.head.rotation.z = s * .14;
-      P.torso.position.y = .44 + Math.abs(s) * .04;
+      P.arms.forEach((a, i) => {
+        a.rotation.x = -2.55;
+        a.rotation.z = (i ? -1 : 1) * .58;               // 안쪽으로 — 머리 위에서 둥글게
+      });
+      P.head.rotation.x = -.14;
+      P.head.rotation.z = s * .08;
+      P.torso.position.y = .44 + Math.abs(s) * .045;
       break;
     }
   }

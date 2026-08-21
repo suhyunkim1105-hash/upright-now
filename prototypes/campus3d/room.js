@@ -79,7 +79,22 @@ export function desk(g, x, z, ry, w = 2.2, d = 1.0, h = .78) {
   return p;
 }
 /** 의자 — 다리 넷 · 앉는 면 · 등받이 살 */
+
+/* ── 앉는 자리 등록 ──
+   "모든 의자에 앉을 수 있어야" 해서, 의자를 **놓는 순간 좌표를 적어 둡니다.**
+   손으로 목록을 따로 적으면 의자를 옮길 때마다 어긋납니다. */
+let SEATREG = null;
+export function seatsBegin() { SEATREG = []; }
+export function seatsTake() { const r = SEATREG || []; SEATREG = null; return r; }
+function regSeat(x, z, ry, kind) { if (SEATREG) SEATREG.push({ x, z, dir: ry, kind }); }
+function regSeatLocal(px, pz, pry, lx, lz, kind) {
+  if (!SEATREG) return;
+  const c = Math.cos(pry), sn = Math.sin(pry);
+  regSeat(px + lx * c + lz * sn, pz - lx * sn + lz * c, pry, kind);
+}
+
 export function chair(g, x, z, ry, col = IN.wood) {
+  regSeat(x, z, ry, 'chair');
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
     cyl(p, .042, .05, .44, 8, M(IN.metal, .5), sx * .19, .22, sz * .19));
@@ -345,6 +360,7 @@ export function cooler(g, x, z, ry = 0) {
 }
 /** 소파 — 앉는 자리. 좌판 · 등받이 · 팔걸이 둘 · 쿠션 둘 */
 export function sofa(g, x, z, ry, w = 2.6, col = 0x9B7BD4) {
+  [-w / 4, w / 4].forEach((off) => regSeatLocal(x, z, ry, off, .05, 'sofa'));
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   const dk = M(col, .8), lt = M(col, .62);
   box(p, w, .28, 1.1, .12, dk, 0, .34, 0);
@@ -355,6 +371,41 @@ export function sofa(g, x, z, ry, w = 2.6, col = 0x9B7BD4) {
   [-1, 1].forEach((s) => cyl(p, .07, .06, .2, 8, M(IN.woodDark, .6), s * (w / 2 - .25), .1, .4));
   return p;
 }
+
+/** 문 매트 — 나가는 자리 표시. 방마다 문 앞에 깝니다.
+    화살표가 문 쪽(+z)을 가리킵니다. */
+export function doormat(g, x, z, col = 0x4E8C9E) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
+  const flat = (m) => { m.castShadow = false; return m; };
+  flat(box(p, 2.6, .05, 1.5, .1, M(col, .9), 0, .05, 0));
+  flat(box(p, 2.2, .05, 1.1, .09, M(0xFFF6E6, .9), 0, .066, 0));
+  /* 화살표 — 납작한 프리즘 */
+  { const a = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .05, 3), M(col, .8));
+    a.position.set(0, .095, .12); a.rotation.y = Math.PI;
+    a.scale.set(1, 1, .72); a.castShadow = false; p.add(a); }
+  flat(box(p, .2, .05, .5, .06, M(col, .8), 0, .09, -.3));
+  p.traverse((o) => { o.userData.noCollide = true; });
+  return p;
+}
+
+
+/** 잡지꽂이 — 도서관 앞쪽 */
+export function mag(g, x, z, ry) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry || 0; g.add(p);
+  box(p, 1.2, 1.15, .32, .05, M(IN.woodDark, .72), 0, .58, 0);
+  [0, 1, 2].forEach((r) => {
+    box(p, 1.06, .05, .3, .02, M(IN.wood, .68), 0, .34 + r * .32, .02);
+    let bx = -.42;
+    while (bx < .42) {
+      box(p, .2, .26, .03, .01,
+        M([0x63C47C, 0xE8935A, 0x5B84C4, 0xF2C14E, 0x9B7BD4][Math.abs(Math.round(bx * 17 + r * 3)) % 5], .6),
+        bx, .5 + r * .32, .15);
+      bx += .24;
+    }
+  });
+  return p;
+}
+
 /** 낮은 탁자 */
 export function lowTable(g, x, z, ry, w = 1.4, d = .9) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
@@ -373,6 +424,7 @@ export function cafeSet(g, x, z, col = 0x63C47C) {
   cyl(p, .42, .46, .08, 18, M(IN.metalDark, .45), 0, .06, 0);
   [0, 1, 2, 3].forEach((i) => {
     const a = i * Math.PI / 2 + .4, r = 1.24;
+    regSeat(x + Math.cos(a) * r, z + Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)), 'chair');
     const c = new THREE.Group(); c.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
     c.rotation.y = -a + Math.PI / 2; p.add(c);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
@@ -824,6 +876,7 @@ export function displayTable(g, x, z, ry, w = 2.0, kind = 'cloth') {
 }
 /** 긴 벤치 — 회관 · 복도 */
 export function bench(g, x, z, ry, w = 3.0, col = IN.wood) {
+  [-w / 4, w / 4].forEach((off) => regSeatLocal(x, z, ry, off, 0, 'bench'));
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   box(p, w, .2, 1.0, .08, M(col, .7), 0, .58, 0);
   box(p, w, .74, .16, .06, M(col, .7), 0, .98, -.42);

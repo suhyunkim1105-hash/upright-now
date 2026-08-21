@@ -25,6 +25,7 @@ export const GAMES = {
   match3: { title: '동물 셋 지우기', how: '옆 칸과 바꿔 같은 동물 셋을 만듭니다' },
   run:    { title: '동물 러너', how: '↑ 로 뛰어서 장애물을 넘고 동전을 모읍니다' },
   n2048:  { title: '2048', how: '방향키로 같은 수를 붙여 2048 을 만듭니다' },
+  suika:  { title: '동물 합치기', how: '같은 동물을 붙이면 더 큰 동물이 됩니다 — 수박게임 방식' },
 };
 
 let host = null, raf = 0, keyH = null, done = null, closing = false, teardown = null;
@@ -73,7 +74,7 @@ function close(score) {
 export function openGame(key, onDone) {
   closing = false; lastScore = 0; done = onDone; teardown = null;
   const body = shell(key);
-  ({ memory, match3, run, n2048 })[key](body);
+  ({ memory, match3, run, n2048, suika })[key](body);
   const esc = (e) => { if (e.code === 'Escape') { e.preventDefault(); close(lastScore); } };
   addEventListener('keydown', esc);
   const old = done;
@@ -263,4 +264,144 @@ function n2048(body) {
     spawn(); spawn(); setScore(0); setTime(`최고 ${best}`); draw();
   }
   start();
+}
+
+
+/* ---------- ⑤ 동물 합치기 — 수박게임 방식 ----------
+   물리는 **matter-js**(MIT, npm `matter-js@0.20.0` 그대로 vendor/에)가
+   다 합니다. 우리는 과일 대신 우리 동물 여덟을 얹었을 뿐입니다. */
+const SUI = [
+  ['🐸', 16, '#C8EBB4'], ['🐹', 21, '#F2D8B0'], ['🦔', 27, '#E0C4A0'],
+  ['🐧', 34, '#C7D9EF'], ['🦢', 43, '#EFF3F8'], ['🐢', 53, '#BCE3C6'],
+  ['🦙', 64, '#F2E8D8'], ['🦒', 78, '#F6E2AC'],
+];
+const showOver = (t, s2, a) => over(t, s2, a);
+let matterP = null;
+function loadMatter() {
+  if (window.Matter) return Promise.resolve(window.Matter);
+  if (matterP) return matterP;
+  matterP = new Promise((res, rej) => {
+    const t = document.createElement('script');
+    t.src = './vendor/matter.min.js';
+    t.onload = () => (window.Matter ? res(window.Matter) : rej(new Error('matter?')));
+    t.onerror = () => rej(new Error('matter 로드 실패'));
+    document.head.append(t);
+  });
+  return matterP;
+}
+function suika(body) {
+  body.className = 'gbody';
+  const W = 380, H = 500, LINE = 84;
+  const cv = document.createElement('canvas');
+  cv.width = W * 2; cv.height = H * 2;
+  cv.style.cssText = `width:${W}px;height:${H}px;border-radius:14px;background:#FFF9EC;touch-action:none`;
+  body.appendChild(cv);
+  const c = cv.getContext('2d'); c.scale(2, 2);
+  const hint = document.createElement('div');
+  hint.style.cssText = 'margin-top:10px;font:600 11.5px inherit;color:#5C6672;text-align:center';
+  hint.textContent = '누르거나 ← → 로 자리 잡고, 떼면(스페이스) 떨어집니다';
+  body.appendChild(hint);
+  setScore(0); setTime('');
+  let live = true, engine = null, runner = 0;
+  teardown = () => { live = false; cancelAnimationFrame(runner); };
+  loadMatter().then((Matter) => {
+    if (!live) return;
+    const { Engine, Bodies, Composite, Events, Body } = Matter;
+    engine = Engine.create({ gravity: { x: 0, y: 1.1 } });
+    const walls = [
+      Bodies.rectangle(W / 2, H + 30, W + 120, 60, { isStatic: true }),
+      Bodies.rectangle(-30, H / 2, 60, H * 2, { isStatic: true }),
+      Bodies.rectangle(W + 30, H / 2, 60, H * 2, { isStatic: true }),
+    ];
+    Composite.add(engine.world, walls);
+    let score = 0, over = false, dropX = W / 2, next = Math.floor(Math.random() * 3), canDrop = true;
+    const balls = new Set();
+    const spawn = (x, y, tier, vy) => {
+      const [, r] = SUI[tier];
+      const b = Bodies.circle(x, y, r, { restitution: .12, friction: .35, density: .0016 });
+      b.tier = tier; b.bornAt = performance.now();
+      if (vy) Body.setVelocity(b, { x: 0, y: vy });
+      Composite.add(engine.world, b); balls.add(b);
+      return b;
+    };
+    Events.on(engine, 'collisionStart', (ev) => {
+      for (const pr of ev.pairs) {
+        const a = pr.bodyA, b = pr.bodyB;
+        if (a.tier === undefined || b.tier === undefined) continue;
+        if (a.tier !== b.tier || a.merged || b.merged) continue;
+        if (a.tier >= SUI.length - 1) continue;                      // 기린은 끝판
+        a.merged = b.merged = true;
+        const nx = (a.position.x + b.position.x) / 2, ny = (a.position.y + b.position.y) / 2;
+        Composite.remove(engine.world, a); Composite.remove(engine.world, b);
+        balls.delete(a); balls.delete(b);
+        spawn(nx, ny, a.tier + 1);
+        score += (a.tier + 1) * 10; setScore(score);
+      }
+    });
+    const moveTo = (x) => { dropX = Math.max(30, Math.min(W - 30, x)); };
+    cv.addEventListener('pointermove', (e) => {
+      const rc = cv.getBoundingClientRect(); moveTo((e.clientX - rc.left));
+    });
+    cv.addEventListener('pointerup', (e) => {
+      const rc = cv.getBoundingClientRect(); moveTo(e.clientX - rc.left); drop();
+    });
+    keyH = (e) => {
+      if (e.type !== 'keydown') return;
+      if (e.code === 'ArrowLeft') { e.preventDefault(); moveTo(dropX - 16); }
+      else if (e.code === 'ArrowRight') { e.preventDefault(); moveTo(dropX + 16); }
+      else if (e.code === 'Space' || e.code === 'ArrowDown') { e.preventDefault(); drop(); }
+    };
+    addEventListener('keydown', keyH);
+    function drop() {
+      if (!canDrop || over) return;
+      canDrop = false;
+      spawn(dropX, LINE - SUI[next][1] - 4, next, 1.5);
+      next = Math.floor(Math.random() * 3);
+      setTimeout(() => { canDrop = true; }, 480);
+    }
+    const loop = () => {
+      if (!live) return;
+      Engine.update(engine, 1000 / 60);
+      /* 넘침 판정 — 자리 잡은 지 1초가 지난 것이 선 위에 있으면 끝 */
+      const now = performance.now();
+      for (const b of balls)
+        if (now - b.bornAt > 1700 && b.position.y - SUI[b.tier][1] < LINE - 6
+            && Math.abs(b.velocity.y) < .35) { over = true; break; }
+      /* 그리기 */
+      c.clearRect(0, 0, W, H);
+      c.fillStyle = '#FFF9EC'; c.fillRect(0, 0, W, H);
+      c.strokeStyle = '#E8A0A0'; c.setLineDash([7, 7]); c.lineWidth = 2;
+      c.beginPath(); c.moveTo(0, LINE); c.lineTo(W, LINE); c.stroke(); c.setLineDash([]);
+      for (const b of balls) {
+        const [e2, r, col] = SUI[b.tier];
+        c.fillStyle = col;
+        c.beginPath(); c.arc(b.position.x, b.position.y, r, 0, Math.PI * 2); c.fill();
+        c.save();
+        c.translate(b.position.x, b.position.y); c.rotate(b.angle * .3);
+        c.font = `${Math.round(r * 1.15)}px sans-serif`;
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(e2, 0, 2);
+        c.restore();
+      }
+      if (!over) {
+        const [e2, r] = SUI[next];
+        c.globalAlpha = .55;
+        c.font = `${Math.round(r * 1.15)}px sans-serif`;
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(e2, dropX, LINE - r - 4);
+        c.globalAlpha = 1;
+        c.strokeStyle = 'rgba(90,100,110,.3)';
+        c.beginPath(); c.moveTo(dropX, LINE); c.lineTo(dropX, LINE + 26); c.stroke();
+        runner = requestAnimationFrame(loop);
+      } else {
+        showOver('선을 넘었어요', `${score}점 · 최고 동물 ${SUI[Math.max(...[...balls].map((b) => b.tier), 0)][0]}`, () => {
+          for (const b of [...balls]) { Composite.remove(engine.world, b); balls.delete(b); }
+          score = 0; setScore(0); over = false; canDrop = true; loop();
+        });
+      }
+    };
+    loop();
+  }).catch(() => {
+    hint.textContent = '물리 엔진을 못 불러왔습니다. Esc 로 닫아 주세요.';
+  });
 }

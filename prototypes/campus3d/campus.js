@@ -158,67 +158,52 @@ export function fountain(g, x = 0, z = 0) {
    전 판은 둘을 나란히 두고 색을 어둡게 해서 **갈색 덩어리 하나**로
    뭉쳤습니다. 키 차이를 크게 벌리고 청동을 밝게 올립니다. */
 export function statue(g, x, y, z) {
+  /* 동상 — 전 판은 다리·반점·발굽을 부품별로 붙인 "모형" 이라 멀리서
+     지저분했고, 납작한 반점 구가 몸통과 같은 면에서 떨려 껌뻑거렸습니다.
+     동상은 조각이므로 **면을 적게, 흐름을 하나로**: 목은 곡선 튜브 하나,
+     몸은 캡슐 하나, 무늬는 붙이지 않습니다. 이야기는 자세가 말합니다 —
+     거북이가 기린을 올려다봅니다. 느려도 끝까지 가는 쪽이 우리 편입니다. */
   const p = new THREE.Group(); p.position.set(x, y, z); g.add(p);
-  const br = M(0xD8B472, .34, { metalness: .3 });
-  const bd = M(0xB08C4E, .38, { metalness: .3 });
-  const ink = M(0x6B5228, .4, { metalness: .2 });
+  const br = M(0xC9A45E, .3, { metalness: .45 });
+  const brD = M(0xA9863F, .34, { metalness: .45 });
 
-  /* ── 기린 ── 다리 넷 · 몸통 · 긴 목 · 머리. 목이 전부입니다 */
-  const gi = new THREE.Group(); gi.position.set(-.1, 0, -.1); gi.rotation.y = .42; p.add(gi);
-  [[-.26, -.24], [.26, -.24], [-.24, .26], [.24, .26]].forEach(([dx, dz], i) => {
-    cyl(gi, .105, .13, 1.15, 10, br, dx, .58, dz);
-    cyl(gi, .13, .13, .12, 10, ink, dx, .06, dz);                 // 발굽
-  });
-  box(gi, .58, .62, .92, .26, br, 0, 1.45, 0);                     // 몸통
-  cyl(gi, .17, .24, .5, 12, br, 0, 1.72, -.3).rotation.x = -.5;    // 어깨
-  const nk = new THREE.Group(); nk.position.set(0, 1.78, -.34); nk.rotation.x = -.30; gi.add(nk);
-  cyl(nk, .13, .2, 1.7, 12, br, 0, .82, 0);
-  const gh = new THREE.Group(); gh.position.set(0, 1.72, .02); gh.rotation.x = .62; nk.add(gh);
-  box(gh, .3, .3, .58, .13, br, 0, .02, .16);                      // 머리 + 주둥이
-  box(gh, .2, .16, .2, .07, ink, 0, -.04, .44);
-  [-.09, .09].forEach((dx) => {
-    cyl(gh, .035, .05, .22, 6, br, dx, .26, -.06);
-    const k = new THREE.Mesh(new THREE.SphereGeometry(.08, 8, 6), bd);
-    k.position.set(dx, .38, -.06); gh.add(k);
-  });
-  [-.2, .2].forEach((dx) => {
-    const e = new THREE.Mesh(new THREE.SphereGeometry(.13, 10, 8), br);
-    e.position.set(dx, .14, -.1); e.scale.set(.42, 1, .8); gh.add(e);
-  });
-  [-.16, .16].forEach((dx) => {
-    const ey = new THREE.Mesh(new THREE.SphereGeometry(.055, 8, 6), ink);
-    ey.position.set(dx, .1, .2); gh.add(ey);
-  });
-  cyl(gi, .05, .07, .8, 6, br, 0, 1.5, .5).rotation.x = .55;       // 꼬리
-  [[.2,1.6,.3],[-.18,1.34,.36],[.1,1.62,-.34],[-.22,1.7,-.1]].forEach(([dx,dy,dz]) => {
-    const sp = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), bd);
-    sp.position.set(dx, dy, dz); sp.scale.z = .35;
-    sp.lookAt(dx * 5, (dy - 1.5) * 5 + 1.5, dz * 5); gi.add(sp);   // 반점
-  });
+  /* 기린 — 몸통 캡슐 + 굽은 목 튜브 + 작은 머리 */
+  const gi = new THREE.Group(); gi.position.set(-.14, 0, -.12); gi.rotation.y = .5; p.add(gi);
+  [[-.24, -.2], [.24, -.2], [-.22, .24], [.22, .24]].forEach(([dx, dz]) =>
+    cyl(gi, .09, .12, 1.1, 10, br, dx, .55, dz));
+  { const body = new THREE.Mesh(new THREE.CapsuleGeometry(.34, .5, 6, 14), br);
+    body.position.set(0, 1.32, .04); body.rotation.x = Math.PI / 2;
+    body.castShadow = true; gi.add(body); }
+  { const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 1.45, -.3), new THREE.Vector3(0, 2.0, -.52),
+      new THREE.Vector3(0, 2.7, -.5), new THREE.Vector3(0, 3.15, -.3)]);
+    const nk = new THREE.Mesh(new THREE.TubeGeometry(curve, 16, .13, 10), br);
+    nk.castShadow = true; gi.add(nk); }
+  { const hd = new THREE.Mesh(new THREE.CapsuleGeometry(.15, .2, 6, 12), br);
+    hd.position.set(0, 3.24, -.16); hd.rotation.x = 1.25; hd.castShadow = true; gi.add(hd);
+    [-.08, .08].forEach((dx) => {
+      cyl(gi, .022, .03, .16, 6, brD, dx, 3.44, -.26);
+      const k = new THREE.Mesh(new THREE.SphereGeometry(.045, 8, 6), brD);
+      k.position.set(dx, 3.52, -.26); gi.add(k);
+    });
+    [-.14, .14].forEach((dx) => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), br);
+      e.position.set(dx, 3.3, -.3); e.scale.set(.4, .8, .6); gi.add(e);
+    }); }
+  { const tail = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0, 1.42, .5), new THREE.Vector3(.06, 1.1, .72), new THREE.Vector3(.1, .84, .8)]),
+      8, .035, 6), brD); gi.add(tail); }
 
-  /* ── 거북이 ── 기린 발치. 낮고 넓게 앉아 위를 봅니다 */
-  const tu = new THREE.Group(); tu.position.set(1.3, 0, .8); tu.rotation.y = .72; p.add(tu);
-  const sh = new THREE.Mesh(new THREE.SphereGeometry(.62, 20, 14), bd);
-  sh.position.y = .52; sh.scale.set(1, .62, .84); sh.castShadow = true; tu.add(sh);
-  /* 등딱지 무늬 — 밋밋한 공이면 알로 보입니다 */
-  [[0,.9,0],[.4,.72,.2],[-.4,.72,.2],[.28,.74,-.34],[-.28,.74,-.34]].forEach(([dx,dy,dz]) => {
-    const c = new THREE.Mesh(new THREE.SphereGeometry(.17, 8, 6), ink);
-    c.position.set(dx, dy, dz); c.scale.set(1, .3, 1); tu.add(c);
-  });
-  cyl(tu, .64, .68, .2, 20, br, 0, .2, 0);                          // 배딱지
-  [[-.36, .28], [.36, .28], [-.34, -.3], [.34, -.3]].forEach(([dx, dz]) =>
-    cyl(tu, .13, .16, .3, 8, br, dx, .15, dz));
-  cyl(tu, .16, .19, .5, 10, br, 0, .66, .58).rotation.x = -.85;     // 목
-  const th = new THREE.Mesh(new THREE.SphereGeometry(.36, 14, 10), br);
-  th.position.set(0, 1.02, .9); th.castShadow = true; tu.add(th);
-  box(tu, .26, .12, .2, .05, ink, 0, .92, 1.2);                     // 부리
-  [-.14, .14].forEach((dx) => {
-    const ey = new THREE.Mesh(new THREE.SphereGeometry(.055, 8, 6), ink);
-    ey.position.set(dx, 1.12, 1.1); tu.add(ey);
-  });
-  cyl(tu, .05, .08, .34, 6, br, 0, .42, -.62).rotation.x = .7;      // 꼬리
+  /* 거북이 — 매끈한 돔 + 위를 보는 머리 */
+  const tu = new THREE.Group(); tu.position.set(1.15, 0, .72); tu.rotation.y = -.55; p.add(tu);
+  { const sh = new THREE.Mesh(new THREE.SphereGeometry(.5, 22, 16, 0, Math.PI * 2, 0, Math.PI / 2), brD);
+    sh.position.y = .3; sh.scale.set(1.06, .78, .9); sh.castShadow = true; tu.add(sh); }
+  cyl(tu, .53, .56, .16, 22, br, 0, .24, 0);
+  { const hd = new THREE.Mesh(new THREE.CapsuleGeometry(.13, .14, 6, 12), br);
+    hd.position.set(0, .58, .56); hd.rotation.x = .7; hd.castShadow = true; tu.add(hd); }
+  [[-.3, .34], [.3, .34], [-.3, -.32], [.3, -.32]].forEach(([dx, dz]) =>
+    cyl(tu, .09, .11, .18, 8, br, dx, .1, dz));
 
-  p.traverse((o) => { o.castShadow = true; o.receiveShadow = true; });
   return p;
 }
 
@@ -485,6 +470,12 @@ export function buildCampus(scene) {
                      b.z + Math.cos(b.ry) * (b.front + 1.2) * b.s * .5);
     pad.rotation.y = b.ry;
     solid(b.x, b.z, b.w * b.s, b.d * b.s, b.ry, true);
+    /* 계단·현관 — 건물 몸통만 막으면 계단과 문을 **몸으로 뚫고** 들어갑니다.
+       문 앞 한 칸(참여 반경)만 남기고 현관 폭을 막습니다. */
+    { const sd = 1.55 * b.s;                        // 계단 깊이
+      const scx = b.x + Math.sin(b.ry) * (b.d / 2 * b.s + sd / 2);
+      const scz = b.z + Math.cos(b.ry) * (b.d / 2 * b.s + sd / 2);
+      solid(scx, scz, 5.4 * b.s, sd, b.ry, false); }
     /* 들어가는 곳 — 문 앞 */
     const dd = (b.d / 2 + b.front) * b.s;
     portals.push({ x: b.x + Math.sin(b.ry) * dd, z: b.z + Math.cos(b.ry) * dd,
@@ -611,12 +602,17 @@ export function buildCampus(scene) {
   });
   /* 바깥 테두리 숲 — 섬의 끝.
      한 줄로 고르게 심었더니 **울타리**로 보였습니다. 두 겹으로 어긋나게. */
+  const GATE_A = Math.atan2(20.5, 20.5);
   for (let i = 0; i < 150; i++) {
     const a = (i / 150) * Math.PI * 2 + (rnd() - .5) * .05;
+    /* 정문 부채꼴은 비웁니다 — 문 바로 뒤에 숲이 서 있으면 문이 아니라 벽입니다 */
+    if (Math.abs(((a - GATE_A + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < .34) continue;
     const r = HALF - 2.0 - rnd() * 5.0;
+    const tx = Math.cos(a) * r, tz = Math.sin(a) * r;
+    /* 건물 등 뒤도 비웁니다 — 지붕에 수관이 겹치면 벽에 나무가 박힌 것처럼 보입니다 */
+    if (BUILDINGS.some((b) => Math.hypot(b.x - tx, b.z - tz) < 11.5)) continue;
     const pink = i % 11 === 0;
-    tree(g, { ...TP, leaf: pink ? 0xF7B8CE : PAL.leafDeep, trunk: PAL.trunk },
-         Math.cos(a) * r, Math.sin(a) * r, 1.0 + rnd() * .8);
+    tree(g, { ...TP, leaf: pink ? 0xF7B8CE : PAL.leafDeep, trunk: PAL.trunk }, tx, tz, 1.0 + rnd() * .8);
     if (i % 3 === 0) bush(g, TP, Math.cos(a) * (r - 3.4), Math.sin(a) * (r - 3.4), .6 + rnd() * .6);
   }
   /* 덤불 흩뿌리기 */
@@ -634,6 +630,8 @@ export function buildCampus(scene) {
     [-1, 1].forEach((s2) => {
       const x = Math.cos(a) * 24 + Math.cos(a + Math.PI / 2) * s2 * 4.2;
       const z = Math.sin(a) * 24 + Math.sin(a + Math.PI / 2) * s2 * 4.2;
+      if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 12.5)) return;
+      if (Math.hypot(x - 20.5, z - 20.5) < 11) return;
       tree(g, { trunk: 0x9E6A48, leaf: 0xF7B8CE, lod: 11, seg: 13 }, x, z, 1.05);
       solid(x, z, 1.0, 1.0);
     });

@@ -132,19 +132,46 @@ export function plate(p, C, S = 15) {
    ExtrudeGeometry 는 면 묶음이 둘뿐이라 여섯 재질을 못 받습니다.
    판을 먼저 만들고 글자는 **앞면에 얇은 판 한 장**으로 붙입니다. */
 export function sign(p, text, x, y, z, w, h, bg, fg) {
+  /* 간판 —
+     · 캔버스를 판의 **가로세로비 그대로** 만듭니다. 전에는 640×200 고정이라
+       판마다 글자가 늘어나거나 짜부라졌습니다.
+     · 웹폰트가 로드된 **뒤에 한 번 더** 그립니다. 로드 전에 그리면
+       기본 글꼴로 구워져 끝까지 그대로 남습니다.
+     · 이 재질에는 map 이 있으므로 bake 가 절대 합치지 않습니다. */
   const g = new THREE.Group(); g.position.set(x, y, z); p.add(g);
   box(g, w, h, .26, .07, M(bg, .5), 0, 0, 0);
+  const PX = 150;
+  const cw = Math.round((w - .16) * PX), ch = Math.round((h - .16) * PX);
   const c = document.createElement('canvas');
-  c.width = 640; c.height = 200;
+  c.width = cw; c.height = ch;
   const ctx = c.getContext('2d');
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, 640, 200);
-  ctx.font = '800 96px "Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = fg; ctx.fillText(text, 320, 108);
+  const draw = () => {
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, cw, ch);
+    /* 안쪽 테두리 선 하나 — 판이 "만든 간판" 으로 읽힙니다 */
+    ctx.strokeStyle = fg; ctx.globalAlpha = .38; ctx.lineWidth = Math.max(2, ch * .028);
+    const inset = ch * .09;
+    ctx.strokeRect(inset, inset, cw - inset * 2, ch - inset * 2);
+    ctx.globalAlpha = 1;
+    let fs = Math.round(ch * .5);
+    const fam = '"Wanted Sans Variable","Wanted Sans","Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+    ctx.font = `800 ${fs}px ${fam}`;
+    /* 글자가 판보다 길면 **줄입니다** — 자르지 않습니다 */
+    const maxW = cw - inset * 2 - ch * .3;
+    const tw = ctx.measureText(text).width;
+    if (tw > maxW) { fs = Math.floor(fs * maxW / tw); ctx.font = `800 ${fs}px ${fam}`; }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = fg;
+    ctx.fillText(text, cw / 2, ch * .54);
+    tex.needsUpdate = true;
+  };
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(w - .16, h - .16),
     new THREE.MeshStandardMaterial({ map: tex, roughness: .5 }));
   pl.position.z = .15; g.add(pl);
+  draw();
+  if (document.fonts?.ready) document.fonts.ready.then(draw).catch(() => {});
   return g;
 }

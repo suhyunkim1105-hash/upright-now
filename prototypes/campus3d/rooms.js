@@ -24,7 +24,7 @@ const IN = R.IN;
 /* 방 크기 — 전 판보다 한 단계씩 키웠습니다. 같은 가구를 넣어도
    통로가 남아야 방이고, 안 남으면 창고입니다. */
 export const ROOM_SIZE = {
-  library:  { w: 22, d: 16, h: 4.6 },
+  library:  { w: 26, d: 18, h: 5.0 },
   mainhall: { w: 22, d: 16, h: 4.6 },
   dorm:     { w: 14, d: 11, h: 4.2 },
   union:    { w: 22, d: 15, h: 4.6 },
@@ -34,7 +34,7 @@ export const ROOM_SIZE = {
 
 /* 비워 두어야 하는 곳 [x0, z0, x1, z1]. 가구가 여기 걸치면 검사에서 걸립니다. */
 export const CORRIDORS = {
-  library:  [[-2.6, -7.0, 2.6, 8.0], [-11, 2.6, 11, 4.8], [-11, -5.4, 11, -4.6]],
+  library:  [[-2.4, -8.0, 2.4, 8.6], [-12.6, 2.9, 9.0, 4.9], [-12.6, -6.4, 12.6, -5.2], [9.6, -7.4, 10.4, 2.4]],
   mainhall: [[-2.6, -7.5, 2.6, 8.0], [-11, 3.9, 11, 5.4], [-11, -5.8, 11, -4.4]],
   dorm:     [[-1.7, -4.6, 1.7, 5.4], [-7, 0.4, 7, 2.2]],
   union:    [[-2.6, -6.6, 2.6, 5.4], [-11, 1.0, 11, 3.0], [-11, -4.4, 11, -3.2]],
@@ -46,67 +46,77 @@ export const ROOMS = {
   /* ══ ① 도서관 ══ 22×16. 앉아서 오래 버티는 방.
      세로 통로 하나 · 가로 통로 하나 · 서가 앞 통로 하나. */
   library(g) {
-    R.shell(g, 22, 16, 4.6, { floorA: 0xC9945C, floorB: 0xB8814A, wall: 0xF2E8D4 });
-    [-6.0, -1.0, 4.0, 8.4].forEach((x) => R.window3(g, x, 2.7, 16, 2.1, 2.1));
+    /* ══ ① 도서관 ══ 26×18 — **메인 건물**이라 제일 넓고 제일 붐빕니다.
+       세로 통로 하나 · 가로 통로 둘 · 창가 통로 하나. */
+    R.doormat(g, 0, 8.2);
+    R.shell(g, 26, 18, 5.0, { floorA: 0xC9945C, floorB: 0xB8814A, wall: 0xF2E8D4 });
+    [-8.5, -3.5, 1.5, 6.5, 11.0].forEach((x) => R.window3(g, x, 2.9, 18, 2.1, 2.3));
 
-    /* 뒤벽 서가 — z -7.3 (통로 -6.9 바깥) */
-    [-10.0, -8.1, -6.2, -4.3, -2.4, -0.5, 1.4].forEach((x) => R.shelf(g, x, -7.3, 0, 1.8, 2.8));
-    /* 뒤벽 오른쪽은 1인 캐럴 넷 */
-    [3.6, 5.4, 7.2, 9.0].forEach((x) => {
-      R.carrel(g, x, -7.1, 0);
-      R.chair(g, x, -6.0, Math.PI, IN.woodLight);
+    /* 뒤벽 서가 여덟 — z -8.3 */
+    [-12.0, -10.1, -8.2, -6.3, -4.4, -2.5, -0.6, 1.3].forEach((x) => R.shelf(g, x, -8.3, 0, 1.8, 3.2));
+    /* 뒤 오른쪽 1인 캐럴 다섯 */
+    [3.8, 5.6, 7.4].forEach((x) => {
+      R.carrel(g, x, -8.1, 0);
+      R.chair(g, x, -7.0, Math.PI, IN.woodLight);
     });
-    /* 왼벽 캐럴 셋 — 벽을 보고 앉는 자리 */
-    [-3.6, -1.4, 0.8].forEach((z) => {
-      R.carrel(g, -10.2, z, -Math.PI / 2);
-      R.chair(g, -9.4, z, Math.PI / 2, IN.woodLight);
+    /* 왼벽 캐럴 넷 */
+    [-4.8, -2.6, -0.4, 1.8].forEach((z) => {
+      R.carrel(g, -12.2, z, -Math.PI / 2);
+      R.chair(g, -11.35, z, Math.PI / 2, IN.woodLight);
     });
 
     /* 열람 탁자 둘 — 세로 통로 양옆 */
-    [[-6.0, -1.4], [6.0, -1.4]].forEach(([cx, cz], k) => {
-      R.readTable(g, cx, cz, 0, 4.4);
-      [-1.5, -0.5, 0.5, 1.5].forEach((t) => {
+    [[-7.6, -1.8], [6.2, -1.8]].forEach(([cx, cz], k) => {
+      R.readTable(g, cx, cz, 0, 4.6);
+      [-1.6, -0.55, 0.55, 1.6].forEach((t) => {
         R.chair(g, cx + t * 1.1, cz - 1.35, 0, IN.wood);
         R.chair(g, cx + t * 1.1, cz + 1.35, Math.PI, IN.wood);
       });
-      R.lamp(g, cx - 1.7, .87, cz);
-      R.lamp(g, cx + 1.7, .87, cz);
+      R.lamp(g, cx - 1.8, .87, cz);
+      R.lamp(g, cx + 1.8, .87, cz);
       R.books(g, cx - 0.9, .87, cz + (k ? .4 : -.4), 3);
       R.laptop(g, cx + 0.6, .87, cz - .5, Math.PI);
       R.laptop(g, cx - 1.4, .87, cz + .5, 0);
     });
 
+    /* 창가 높은 자리 — 오른쪽 가장자리에서 바깥을 봅니다 */
+    [[-.6], [1.4], [3.4]].forEach(([z]) => {
+      R.chair(g, 11.9, z, Math.PI / 2, 0xC98E4E);
+    });
+    R.plant(g, 12.3, -3.2, 1.0);
+
     /* 앞쪽 — 왼쪽 대출대, 오른쪽 쉬는 자리 */
-    /* 대출대가 앞모서리에 딱 붙어 있어서 **사서가 방 밖에 서 있었습니다**.
-       0.8 안쪽으로 밀어 뒤에 설 자리를 냅니다. */
-    R.counter(g, -7.4, 6.0, Math.PI, 4.0, IN.woodDark);
-    R.counterTop(g, -7.4, 1.1, 5.8);
-    R.globe(g, -5.0, 1.06, 6.0);
-    R.bookCart(g, -4.2, 5.6, .3);
-    R.shelf(g, -10.3, 6.4, Math.PI / 2, 1.8, 2.4);
-    /* 소파는 **탁자를 보고** 앉아야 합니다. 전 판은 ry 0 이라 방 바깥
-       (열린 앞모서리)을 보고 있었습니다 — 등받이가 방 안쪽이었습니다. */
-    R.sofa(g, 5.6, 6.9, Math.PI, 3.4, 0x7FA8C4);
-    R.lowTable(g, 5.6, 5.5, 0, 1.8, 1.0);
-    R.books(g, 5.3, .56, 5.5, 2);
-    R.bookCart(g, 9.4, 6.4, -.4);
+    R.counter(g, -8.4, 6.4, Math.PI, 4.2, IN.woodDark);
+    R.counterTop(g, -8.4, 1.1, 6.2);
+    R.globe(g, -5.9, 1.06, 6.4);
+    R.bookCart(g, -4.6, 5.9, .3);
+    R.shelf(g, -12.3, 6.8, Math.PI / 2, 1.8, 2.6);
+    R.sofa(g, 6.6, 7.6, Math.PI, 3.4, 0x7FA8C4);
+    R.sofa(g, 10.4, 6.2, -Math.PI / 2, 2.6, 0xE8935A);
+    R.lowTable(g, 7.4, 6.2, 0, 1.8, 1.0);
+    R.books(g, 7.1, .56, 6.2, 2);
+    R.bookCart(g, 3.4, 7.4, -.4);
+    R.mag(g, -1.4, 7.8, 0);
 
     /* 벽 · 천장 */
-    R.clock(g, 7.4, 3.6, -7.82);
-    R.poster(g, -10.72, 2.9, -2.6, Math.PI / 2, 1.0, 1.3, 0x63C47C);
-    R.poster(g, -10.72, 2.9, 3.6, Math.PI / 2, 1.0, 1.3, 0xE8935A);
-    R.poster(g, -3.2, 3.0, -7.82, 0, 1.1, 1.4, 0x5B84C4);
-    [-6.0, 0, 6.0].forEach((x) => { R.pendant(g, x, -1.4, 3.7); R.pendant(g, x, 4.6, 3.7); });
-    R.rug(g, 5.6, 6.0, 6.4, 3.4, 0xB08AB0, 0xF2E4E8);
-    R.rug(g, -6.0, -1.4, 6.6, 4.6, 0xC4A0BE, 0xF6ECF2);
-    R.rug(g, 6.0, -1.4, 6.6, 4.6, 0xC4A0BE, 0xF6ECF2);
-    R.bin(g, -2.9, 7.0); R.bin(g, 3.0, -4.4);
-    R.plant(g, 10.2, 7.0, 1.15); R.plant(g, -10.2, -3.9, 1.0); R.plant(g, 10.2, -6.6, 1.0);
-
+    R.clock(g, 8.6, 3.9, -8.82);
+    R.poster(g, -12.72, 3.1, -6.8, Math.PI / 2, 1.0, 1.3, 0x63C47C);
+    R.poster(g, -12.72, 3.1, 4.2, Math.PI / 2, 1.0, 1.3, 0xE8935A);
+    R.poster(g, -4.4, 3.2, -8.82, 0, 1.1, 1.4, 0x5B84C4);
+    R.banner(g, -12.72, 3.9, -.8, Math.PI / 2, 3.4, .95, 0x2C8C7E);
+    [-8.0, -1.0, 6.0].forEach((x) => { R.pendant(g, x, -1.8, 4.0); R.pendant(g, x, 5.4, 4.0); });
+    R.rug(g, 7.0, 6.4, 6.2, 3.4, 0xB08AB0, 0xF2E4E8);
+    R.rug(g, -7.6, -1.8, 6.8, 4.8, 0xC4A0BE, 0xF6ECF2);
+    R.rug(g, 6.2, -1.8, 6.8, 4.8, 0xC4A0BE, 0xF6ECF2);
+    R.bin(g, -3.2, 7.6); R.bin(g, 3.0, -4.6);
+    R.plant(g, 12.2, 8.0, 1.15); R.plant(g, -12.2, -7.6, 1.0);
+    R.aFrame(g, -11.6, 4.2, .5, 0x2C8C7E);
   },
 
   /* ══ ② 본관 ══ 22×16. 강의실. 줄 사이가 걸어 다닐 만큼 벌어져 있어야 합니다. */
   mainhall(g) {
+    R.doormat(g, 0, 7.2);
+
     R.shell(g, 22, 16, 4.6, { floorA: 0xE8E2D2, floorB: 0xD6CFBC, wall: 0xE6EAF2, under: 0x8A9098 });
     R.blackboard(g, -2.2, 2.4, -7.7, 7.0, 2.4);
     R.projScreen(g, 5.4, 2.7, -7.78, 3.6, 2.2);
@@ -154,7 +164,11 @@ export const ROOMS = {
   },
 
   /* ══ ③ 기숙사 ══ 14×11. 내 방. 좁아도 침대·책상·옷장 사이는 다녀야 합니다. */
-  dorm(g) {
+  dorm(g, decor) {
+    R.doormat(g, 0, 4.75, 0xC98E4E);
+    /* 내가 놓은 가구 — 상점에서 사서 방 꾸미기로 놓은 것들 */
+    (decor || []).forEach((d) => decorItem(g, d));
+
     R.shell(g, 14, 11, 4.2, { floorA: 0xD6A96E, floorB: 0xC49A5E, wall: 0xF6EDDC });
     R.window3(g, 3.0, 2.5, 11, 2.4, 2.1);
     R.window3(g, -3.4, 2.5, 11, 2.0, 2.1);
@@ -197,6 +211,8 @@ export const ROOMS = {
 
   /* ══ ④ 학생회관 ══ 22×15. 창구 · 식당 · 라운지가 한 층에. */
   union(g) {
+    R.doormat(g, 0, 6.5, 0x43A05C);
+
     R.shell(g, 22, 15, 4.6, { floorA: 0xE8E2D2, floorB: 0xD8D2C0, wall: 0xEFF6EE, under: 0x8A9098 });
     R.window3(g, -7.0, 2.7, 15, 2.2, 2.1);
     R.window3(g, 0, 2.7, 15, 2.2, 2.1);
@@ -243,6 +259,8 @@ export const ROOMS = {
 
   /* ══ ⑤ 미니게임관 ══ 20×14. 오락기는 벽으로, 가운데는 비웁니다. */
   arcade(g) {
+    R.doormat(g, 0, 6.2, 0x6E5A9E);
+
     R.shell(g, 20, 14, 4.6, { floorA: 0x5E4E7C, floorB: 0x4E4068, wall: 0x2E2646, under: 0x3A3050 });
     const cols = [0xE8695A, 0x2DD4BF, 0xE0AE3C, 0x9B7BD4, 0xFF7FA8, 0x63C47C];
     /* 오락기 여섯 — 뒤벽 */
@@ -276,6 +294,8 @@ export const ROOMS = {
 
   /* ══ ⑥ 동아리 상점 ══ 20×14. 왼쪽 옷 · 오른쪽 알 · 앞쪽 가구. */
   shop(g) {
+    R.doormat(g, 0, 6.2, 0xC4553F);
+
     R.shell(g, 20, 14, 4.6, { floorA: 0xE0C8AE, floorB: 0xD0B69A, wall: 0xF6E8DC, under: 0x9A7458 });
     R.window3(g, 6.6, 2.7, 14, 2.2, 2.1);
     R.window3(g, -4.6, 2.7, 14, 2.0, 2.1);
@@ -329,4 +349,37 @@ export const ROOM_NAME = {
   union: ['학생회관', '볼일 보는 곳'],
   arcade: ['미니게임관', '3분만 놀고 가는 곳'],
   shop: ['동아리 상점', '옷 · 가구 · 알'],
+};
+
+/* 놓는 가구 — 상점 FURN 목록과 1:1. 유령(미리 보기)과 실물이 같은 코드를 씁니다 */
+export function decorItem(g, d) {
+  const p = new THREE.Group(); p.position.set(d.x, 0, d.z); p.rotation.y = d.ry || 0; g.add(p);
+  const id = d.id;
+  if (id === 'plant') R.plant(p, 0, 0, 1.0);
+  else if (id === 'rug2') R.rug(p, 0, 0, 2.2, 1.6, 0x9B7BD4, 0xF2ECF6);
+  else if (id === 'books2') { R.books(p, -.1, .0, 0, 3); R.books(p, .16, .0, .1, 2); }
+  else if (id === 'guitar2') R.guitar(p, 0, 0, .4);
+  else if (id === 'lamp2') {
+    cyl(p, .16, .2, .05, 12, M(0x3A4150, .5), 0, .03, 0);
+    cyl(p, .025, .03, 1.1, 8, M(0x3A4150, .5), 0, .6, 0);
+    const sh2 = new THREE.Mesh(new THREE.ConeGeometry(.22, .26, 14, 1, true), M(0xF2C14E, .55));
+    sh2.position.y = 1.24; sh2.rotation.x = Math.PI; p.add(sh2);
+    const bulb = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8),
+      new THREE.MeshStandardMaterial({ color: 0xFFF2C8, emissive: 0xFFE9A8, emissiveIntensity: .9 }));
+    bulb.position.y = 1.18; p.add(bulb);
+  } else if (id === 'bear') {
+    const br = M(0xC49A6C, .8), brD = M(0xA8804F, .8);
+    const e2 = (r, x, y, z, sx = 1, sy = 1, sz = 1) => {
+      const m2 = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), br);
+      m2.position.set(x, y, z); m2.scale.set(sx, sy, sz); m2.castShadow = true; p.add(m2); return m2;
+    };
+    e2(.22, 0, .24, 0, 1, 1.05, .9);                       // 몸
+    e2(.17, 0, .56, .02);                                   // 머리
+    e2(.06, -.12, .68, 0); e2(.06, .12, .68, 0);            // 귀
+    e2(.08, -.2, .3, .06); e2(.08, .2, .3, .06);            // 팔
+    e2(.09, -.11, .08, .1); e2(.09, .11, .08, .1);          // 다리
+    { const mz = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), brD);
+      mz.position.set(0, .53, .16); mz.scale.set(1, .8, .7); p.add(mz); }
+  }
+  return p;
 };

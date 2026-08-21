@@ -41,7 +41,10 @@ export function bake(root, opt = {}) {
     if (!o.isMesh) return;
     const m = o.material;
     /* 투명 · 발광 · 지정 제외는 그대로 둡니다 — 합치면 그리는 순서가 깨집니다 */
-    if (m.transparent || o.userData.noBake || (o.parent && o.parent.userData.noBake)) { keep.push(o); return; }
+    /* 그림 텍스처가 붙은 것(간판)은 절대 합치면 안 됩니다 — 색·거칠기가
+       같아서 한 덩이가 되면 **남의 간판 글씨**가 내 판에 그려집니다.
+       실제로 기숙사 간판이 옆 건물 텍스처를 잘라 써서 '기수' 로 보였습니다. */
+    if (m.transparent || m.map || o.userData.noBake || (o.parent && o.parent.userData.noBake)) { keep.push(o); return; }
     const key = [m.color.getHex(), Math.round(m.roughness * 100), Math.round((m.metalness || 0) * 100),
       m.emissive ? m.emissive.getHex() : 0, Math.round((m.emissiveIntensity || 0) * 100),
       m.side, o.castShadow ? 1 : 0, o.receiveShadow ? 1 : 0].join('|');

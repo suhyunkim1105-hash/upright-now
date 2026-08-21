@@ -37,7 +37,7 @@ scene.add(key);
 const fill = new THREE.DirectionalLight(0xCFE4F5, .62); fill.position.set(12, 8, 4); scene.add(fill);
 const warm = new THREE.PointLight(0xFFD9A0, .55, 30); warm.position.set(0, 3.2, 1); scene.add(warm);
 
-const S = 1400, F = 9.3;
+const S = 1600, F = 13.6;
 const cam = new THREE.OrthographicCamera(-F, F, F * .78, -F * .78, .1, 200);
 cam.position.set(20, 17, 20); cam.lookAt(0, 1.1, -.2);
 const r = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });

@@ -511,7 +511,12 @@ export function buildCampus(scene) {
     flowerBed(g, Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 1.8);
     solid(Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 4.0, 4.0);
   }
-  [[6.4, 5.4], [-6.4, 5.4], [6.4, -5.4], [-6.4, -5.4]].forEach(([x, z]) => binOut(g, x, z));
+  /* 쓰레기통 — 광장 한가운데(반지름 8.4)에 있어서 시작하자마자 **내 몸을 가렸습니다**.
+     길과 길 사이(22.5°)로 밀어내 가장자리에 둡니다. */
+  [22.5, 112.5, 202.5, 292.5].forEach((deg) => {
+    const a = deg * Math.PI / 180;
+    binOut(g, Math.cos(a) * 10.4, Math.sin(a) * 10.4);
+  });
 
   /* --- 게시판 · 이정표 --- */
   boardOut(g, -8.6, 13.2, .5);  solid(-8.6, 13.2, 3.8, 1.0, .5, true);

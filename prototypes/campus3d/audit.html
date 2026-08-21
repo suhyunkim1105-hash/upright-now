@@ -1,0 +1,51 @@
+<meta charset="utf-8">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { ROOMS, ROOM_SIZE, CORRIDORS } from './rooms.js';
+import { INDOOR } from './npcs.js';
+import { SPOTS } from './spots.js';
+import { character, OUTFITS } from './chars.js';
+const out = [];
+for (const key of Object.keys(ROOM_SIZE)) {
+  const S = ROOM_SIZE[key];
+  const g = new THREE.Group();
+  ROOMS[key](g);
+  const hx = S.w / 2, hz = S.d / 2;
+  const bad = [];
+  g.updateMatrixWorld(true);
+  g.children.forEach((c, i) => {
+    const bb = new THREE.Box3().setFromObject(c);
+    if (!isFinite(bb.min.x)) return;
+    /* 벽·바닥·천장(shell)은 방 크기 그대로이므로 건너뜁니다 */
+    const w = bb.max.x - bb.min.x, d = bb.max.z - bb.min.z;
+    if (w > S.w * .96 && d > S.d * .96) return;
+    const ox = Math.max(bb.min.x < -hx ? -hx - bb.min.x : 0, bb.max.x > hx ? bb.max.x - hx : 0);
+    const oz = Math.max(bb.min.z < -hz ? -hz - bb.min.z : 0, bb.max.z > hz ? bb.max.z - hz : 0);
+    if (ox > .12 || oz > .12)
+      bad.push({ i, ox: +ox.toFixed(2), oz: +oz.toFixed(2),
+        c: [+((bb.min.x + bb.max.x) / 2).toFixed(2), +((bb.min.z + bb.max.z) / 2).toFixed(2)],
+        y: +bb.max.y.toFixed(2) });
+  });
+  /* 사람 */
+  const npc = [];
+  (INDOOR[key] || []).forEach((n) => {
+    const rig = new THREE.Group(); rig.position.set(n.x, 0, n.z);
+    character(rig, n.species, OUTFITS[n.fit % OUTFITS.length], { bag: false });
+    rig.updateMatrixWorld(true);
+    const bb = new THREE.Box3().setFromObject(rig);
+    const ox = Math.max(bb.min.x < -hx ? -hx - bb.min.x : 0, bb.max.x > hx ? bb.max.x - hx : 0);
+    const oz = Math.max(bb.min.z < -hz ? -hz - bb.min.z : 0, bb.max.z > hz ? bb.max.z - hz : 0);
+    if (ox > .02 || oz > .02) npc.push({ n: n.name, at: [n.x, n.z], ox: +ox.toFixed(2), oz: +oz.toFixed(2) });
+  });
+  /* 자리 */
+  const sp = [];
+  (SPOTS[key] || []).forEach((s) => {
+    if (Math.abs(s.x) > hx - .3 || Math.abs(s.z) > hz - .3) sp.push({ t: s.title, at: [s.x, s.z] });
+    if (s.seat && (Math.abs(s.seat.x) > hx - .5 || Math.abs(s.seat.z) > hz - .5))
+      sp.push({ t: s.title + '(앉는자리)', at: [s.seat.x, s.seat.z] });
+  });
+  out.push({ key, size: [S.w, S.d], objOut: bad, npcOut: npc, spotOut: sp });
+}
+window.__audit = out; window.__ready = true;
+</script>

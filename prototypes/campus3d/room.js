@@ -160,10 +160,15 @@ export function plant(g, x, z, s = 1) {
 export function rug(g, x, z, w, d, col = 0xE8935A, inner = 0xFFF0DC) {
   const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
   const flat = (m) => { m.castShadow = false; return m; };
+  /* 테두리 폭은 **짧은 변에 비례** 시킵니다. 전에는 0.5/1.1/1.7 을 그대로
+     빼서, 폭 9 · 깊이 2.4 짜리 깔개가 안쪽 띠 깊이 0.7 이 되어
+     길게 늘어난 줄무늬 — **횡단보도** 처럼 보였습니다. */
+  /* 띠를 네 겹 두르니 좁은 깔개가 **횡단보도** 로 보였습니다.
+     깔개는 테두리 하나 · 바탕 하나 · 가운데 무늬 하나면 충분합니다. */
+  const b = Math.min(.3, Math.min(w, d) * .1);
   flat(box(p, w, .08, d, .1, M(col, .92), 0, .10, 0));
-  flat(box(p, w - .5, .08, d - .5, .09, M(inner, .92), 0, .125, 0));
-  flat(box(p, w - 1.1, .08, d - 1.1, .3, M(col, .92), 0, .14, 0));
-  flat(box(p, w - 1.7, .08, d - 1.7, .3, M(inner, .92), 0, .152, 0));
+  flat(box(p, w - b * 2, .08, d - b * 2, .09, M(inner, .92), 0, .125, 0));
+  flat(box(p, w * .36, .08, d * .36, .3, M(col, .92), 0, .142, 0));
   /* 술 — 짧은 두 변에만. 이게 있어야 깔개로 읽힙니다. */
   const n = Math.max(4, Math.round(w / .34));
   for (let i = 0; i < n; i++) {

@@ -33,3 +33,6 @@ prototypes/**/artifact.html
 
 # 세션 중 만든 임시 검증 스크립트
 _*.mjs
+
+# 번들 파일(수현에게 직접 건네는 것)은 저장소에 넣지 않습니다
+*.bundle

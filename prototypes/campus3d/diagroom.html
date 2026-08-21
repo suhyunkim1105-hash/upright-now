@@ -1,0 +1,94 @@
+<meta charset="utf-8">
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script type="module">
+import * as THREE from 'three';
+import { ROOMS, ROOM_SIZE, CORRIDORS } from './rooms.js';
+import { SPOTS } from './spots.js';
+
+const CELL = .25, R_IN = .30;
+const RING = []; for (let i=0;i<8;i++) RING.push([Math.cos(i/8*Math.PI*2), Math.sin(i/8*Math.PI*2)]);
+function noColl(o){ let p=o; while(p){ if(p.userData&&p.userData.noCollide) return true; p=p.parent; } return false; }
+
+function occupancy(g, size) {
+  g.updateMatrixWorld(true);
+  const nx = Math.ceil(size.w/CELL), nz = Math.ceil(size.d/CELL);
+  const cells = new Uint8Array(nx*nz);
+  const bb = new THREE.Box3();
+  const boxes = [];
+  g.traverse((o) => {
+    if (!o.isMesh || noColl(o)) return;
+    bb.setFromObject(o);
+    if (bb.max.y < .34 || bb.min.y > 1.7) return;
+    boxes.push([bb.min.x, bb.min.z, bb.max.x, bb.max.z]);
+    const i0=Math.max(0,Math.floor((bb.min.x+size.w/2)/CELL)), i1=Math.min(nx-1,Math.floor((bb.max.x+size.w/2)/CELL));
+    const j0=Math.max(0,Math.floor((bb.min.z+size.d/2)/CELL)), j1=Math.min(nz-1,Math.floor((bb.max.z+size.d/2)/CELL));
+    for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) cells[j*nx+i]=1;
+  });
+  return { nx,nz,cells,w:size.w,d:size.d,boxes };
+}
+function cellAt(G,x,z){ const i=Math.floor((x+G.w/2)/CELL), j=Math.floor((z+G.d/2)/CELL);
+  if(i<0||j<0||i>=G.nx||j>=G.nz) return 1; return G.cells[j*G.nx+i]; }
+function hit(G,x,z){
+  if (Math.abs(x)>G.w/2-.35 || Math.abs(z)>G.d/2-.12) return true;
+  if (cellAt(G,x,z)) return true;
+  for(let k=0;k<8;k++) if (cellAt(G,x+RING[k][0]*R_IN, z+RING[k][1]*R_IN)) return true;
+  return false;
+}
+const out = {};
+for (const key of Object.keys(ROOMS)) {
+  const g = new THREE.Group(); ROOMS[key](g);
+  const size = ROOM_SIZE[key];
+  const G = occupancy(g, size);
+  /* ① 통로 침범 — 가구 상자가 통로 사각형과 겹치는가 */
+  const bad = [];
+  (CORRIDORS[key]||[]).forEach((c, ci) => {
+    let n = 0, worst = 0;
+    G.boxes.forEach(([x0,z0,x1,z1]) => {
+      const ox = Math.min(x1,c[2])-Math.max(x0,c[0]), oz = Math.min(z1,c[3])-Math.max(z0,c[1]);
+      if (ox > .06 && oz > .06) { n++; worst = Math.max(worst, Math.min(ox,oz)); }
+    });
+    if (n) bad.push(`통로${ci}에 ${n}개 (최대 ${worst.toFixed(2)})`);
+  });
+  /* ② 걸을 수 있는 곳 · 문에서 닿는 곳 */
+  const S = .17, W = Math.round(size.w/S), D = Math.round(size.d/S);
+  const walk = new Uint8Array(W*D); let free = 0;
+  for(let j=0;j<D;j++) for(let i=0;i<W;i++){
+    const x=-size.w/2+(i+.5)*S, z=-size.d/2+(j+.5)*S;
+    if(!hit(G,x,z)){ walk[j*W+i]=1; free++; }
+  }
+  // 문 앞 빈 자리 찾기(엔진과 같은 방식)
+  let sp = null;
+  for (let r=0; r<=6 && !sp; r+=.22) for (let a=0; a<24; a++){
+    const t=(a/24)*Math.PI*2, x=(r?Math.cos(t)*r:0), z=size.d/2-2.2+(r?Math.sin(t)*r:0);
+    if (Math.abs(z)>size.d/2-.8) continue;
+    if(!hit(G,x,z)){ sp={x,z}; break; }
+  }
+  let reach = 0; const seen = new Uint8Array(W*D);
+  if (sp) {
+    const si=Math.floor((sp.x+size.w/2)/S), sj=Math.floor((sp.z+size.d/2)/S);
+    const q=[sj*W+si]; seen[q[0]]=1; reach=1;
+    while(q.length){ const c=q.pop(), ci=c%W, cj=(c/W)|0;
+      [[1,0],[-1,0],[0,1],[0,-1]].forEach(([di,dj])=>{ const ni=ci+di,nj=cj+dj;
+        if(ni<0||nj<0||ni>=W||nj>=D) return; const n=nj*W+ni;
+        if(seen[n]||!walk[n]) return; seen[n]=1; reach++; q.push(n); }); }
+  }
+  /* ③ 말 걸 자리에 닿는가 */
+  const miss = [];
+  (SPOTS[key]||[]).forEach((s) => {
+    const i=Math.floor((s.x+size.w/2)/S), j=Math.floor((s.z+size.d/2)/S);
+    const Rr=Math.round((s.r||2)/S); let ok=false;
+    for(let dj=-Rr;dj<=Rr&&!ok;dj++) for(let di=-Rr;di<=Rr;di++){
+      const ni=i+di,nj=j+dj; if(ni<0||nj<0||ni>=W||nj>=D) continue;
+      if(di*di+dj*dj>Rr*Rr) continue; if(seen[nj*W+ni]){ ok=true; break; } }
+    if(!ok) miss.push(s.title);
+  });
+  out[key] = {
+    통로침범: bad.length?bad:'없음',
+    걸을수있음: (free/(W*D)*100).toFixed(1)+'%',
+    시작자리: sp?`(${sp.x.toFixed(1)}, ${sp.z.toFixed(1)})`:'없음!',
+    닿는비율: free?(reach/free*100).toFixed(1)+'%':'0%',
+    못닿는자리: miss.length?miss:'없음',
+  };
+}
+window.__out = out; window.__done = true;
+</script>

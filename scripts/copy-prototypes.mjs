@@ -45,7 +45,9 @@ const fixFonts = (html) => html.replaceAll('../../public/fonts/', '/fonts/');
    목록에 없어서 배포본에서만 404 였고, 그러면 SPA 리라이트가 대신
    app.html 을 돌려줘 브라우저가 HTML 을 스크립트로 읽습니다
    ("Unexpected token '<'"). 로컬에서는 파일이 옆에 있어 안 드러납니다. */
-for (const name of ['landing', 'onboarding', 'home', 'openworld', 'room-flow', 'shared']) {
+const FOLDERS = ['landing', 'onboarding', 'lobby', 'mypage', 'league', 'room', 'home', 'openworld', 'room-flow', 'shared'];
+
+for (const name of FOLDERS) {
   copyDir(`prototypes/${name}`, `dist/prototypes/${name}`, fixFonts);
 }
 
@@ -98,4 +100,4 @@ writeFileSync('dist/demo.html', `<!doctype html>
   <li><a href="/prototypes/landing/index.html">랜딩 (원본 경로)</a><br><small>\`/\` 와 같은 화면. 이쪽은 상대경로 그대로입니다</small></li>
 </ul>
 `);
-console.log('dist/ — public + prototypes(6) + index.html(랜딩) + demo.html 완료');
+console.log('dist/ — public + prototypes(' + FOLDERS.length + ') + index.html(랜딩) + demo.html 완료');

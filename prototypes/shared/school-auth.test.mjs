@@ -124,6 +124,47 @@ test('오류는 사용자가 읽을 문장으로 바뀐다', async () => {
   }
 });
 
+test('403 은 어느 끝에서 왔는지로 가른다', async () => {
+  /* 한동안 상태 코드만 보고 서버가 준 본문을 그대로 내보냈습니다. 가입
+     차단 훅은 한국어를 주니 맞았는데, 틀린 6자리도 403 이라 화면에
+     "Token has expired or is invalid" 가 그대로 떴습니다. */
+  {
+    const { A, box } = load();
+    box.reply = bad(403, { msg: '학교 이메일이 아닙니다. ac.kr 로 끝나는 주소가 필요합니다.' });
+    await assert.rejects(() => A.sendCode('a@gmail.com'), (e) => {
+      assert.match(e.friendly, /학교 이메일이 아닙니다/);
+      return true;
+    });
+  }
+  {
+    const { A, box } = load();
+    box.reply = bad(403, { msg: 'Token has expired or is invalid' });
+    await assert.rejects(() => A.verifyCode('a@mju.ac.kr', '000000'), (e) => {
+      assert.doesNotMatch(e.friendly, /[A-Za-z]{4}/, e.friendly);
+      assert.match(e.friendly, /만료/);
+      return true;
+    });
+  }
+  {
+    const { A, box } = load();
+    box.reply = bad(403, { msg: 'Invalid token' });
+    await assert.rejects(() => A.verifyCode('a@mju.ac.kr', '111111'), (e) => {
+      assert.match(e.friendly, /맞지 않습니다/);
+      return true;
+    });
+  }
+});
+
+test('학교 이름은 도메인에서 나온다', () => {
+  /* 온보딩과 마이페이지가 같은 표를 봐야 같은 주소가 같은 이름으로
+     저장됩니다. 한동안 표가 온보딩 안에만 있었습니다. */
+  const { A } = load();
+  assert.equal(A.schoolOf('a@mju.ac.kr'), '명지대학교');
+  assert.equal(A.schoolOf('a@cs.snu.ac.kr'), '서울대학교');   // 학과 서브도메인
+  assert.equal(A.schoolOf('a@skku.edu'), '성균관대학교');      // .ac.kr 아닌 학교
+  assert.equal(A.schoolOf('a@nowhere.ac.kr'), 'nowhere (미등록 학교)');
+  assert.equal(A.schoolOf('a@gmail.com'), null);
+});
 test('로그아웃은 서버가 죽어도 기기에서 지운다', async () => {
   const { A, box, store } = load();
   store['girin.session'] = JSON.stringify({ access_token: 'AT', refresh_token: 'RT',

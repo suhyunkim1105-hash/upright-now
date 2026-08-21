@@ -55,8 +55,21 @@
      서버(is_school_email)와 **같은 규칙**입니다. 여기 것은 사용자를 돕는
      것이고, 막는 것은 서버입니다. 둘이 어긋나면 화면은 통과시켰는데
      서버가 거절하는 상황이 생기므로 규칙을 나란히 둡니다. */
-  /* .ac.kr 을 안 쓰는 학교. 서버의 school_email_domains 표와 같은 내용입니다. */
-  const EXTRA_DOMAINS = { 'skku.edu': '성균관대학교' };
+  /* 도메인 → 학교 이름. 온보딩과 마이페이지가 **같은 표**를 봅니다 —
+     한동안 온보딩 안에만 있었는데, 마이페이지에서 다시 인증하면 같은
+     주소가 다른 이름으로 저장될 수 있었습니다.
+     .ac.kr 을 안 쓰는 학교도 여기 들어 있습니다. 서버의
+     school_email_domains 표와 같은 내용입니다. */
+  const SCHOOLS = {
+    'mju.ac.kr': '명지대학교', 'snu.ac.kr': '서울대학교', 'yonsei.ac.kr': '연세대학교',
+    'korea.ac.kr': '고려대학교', 'hanyang.ac.kr': '한양대학교', 'skku.edu': '성균관대학교',
+    'kaist.ac.kr': 'KAIST', 'postech.ac.kr': 'POSTECH', 'cau.ac.kr': '중앙대학교',
+    'khu.ac.kr': '경희대학교', 'ewha.ac.kr': '이화여자대학교', 'sogang.ac.kr': '서강대학교',
+    'konkuk.ac.kr': '건국대학교', 'dankook.ac.kr': '단국대학교', 'inha.ac.kr': '인하대학교',
+  };
+  /* .ac.kr 밖의 주소만 따로 셉니다 — 판정에 쓰는 것은 이쪽입니다. */
+  const EXTRA_DOMAINS = Object.fromEntries(
+    Object.entries(SCHOOLS).filter(([d]) => !d.endsWith('.ac.kr')));
 
   function domainOf(email) {
     return String(email || '').trim().toLowerCase().split('@')[1] || '';
@@ -67,6 +80,17 @@
     if (!d) return false;
     /* 앞의 점을 요구하므로 `notac.kr` 같은 흉내는 걸리지 않습니다. */
     return d === 'ac.kr' || d.endsWith('.ac.kr') || Boolean(EXTRA_DOMAINS[d]);
+  }
+
+  /** 주소에서 학교 이름. 모르는 .ac.kr 도 이름을 만들어 돌려줍니다 —
+      null 을 돌려주면 화면이 인증된 사람을 미인증으로 그립니다. */
+  function schoolOf(email) {
+    const d = domainOf(email);
+    if (SCHOOLS[d]) return SCHOOLS[d];
+    /* 학과 서브도메인 — cs.snu.ac.kr 같은 주소도 받습니다 */
+    const hit = Object.keys(SCHOOLS).find((k) => d.endsWith('.' + k));
+    if (hit) return SCHOOLS[hit];
+    return d.endsWith('.ac.kr') ? d.replace(/\.ac\.kr$/, '') + ' (미등록 학교)' : null;
   }
 
   /* ---------------- 세션 보관 ----------------
@@ -106,32 +130,40 @@
     });
     let data = null;
     try { data = await res.json(); } catch { /* 204 는 본문이 없습니다 */ }
-    if (!res.ok) throw makeError(res.status, data);
+    if (!res.ok) throw makeError(res.status, data, path);
     return data;
   }
 
   /* GoTrue 는 판본에 따라 `msg` 또는 `message` 로 옵니다. 둘 다 받습니다. */
-  function makeError(status, data) {
+  function makeError(status, data, path) {
     const code = (data && (data.error_code || data.code)) || '';
     const raw = (data && (data.msg || data.message || data.error_description)) || '';
     const e = new Error(raw || ('요청이 실패했습니다 (' + status + ')'));
     e.status = status;
     e.code = code;
-    e.friendly = friendly(status, code, raw);
+    e.friendly = friendly(status, code, raw, path || '');
     return e;
   }
 
   /** 사용자가 읽을 문장. 서버가 준 영어를 그대로 보여 주면 안 됩니다. */
-  function friendly(status, code, raw) {
+  function friendly(status, code, raw, path) {
     if (status === 429 || code === 'over_email_send_rate_limit')
       return '메일을 너무 자주 보냈습니다. 1 분쯤 뒤에 다시 시도해 주세요.';
-    if (status === 403)
-      /* 가입 차단 훅이 돌려준 한국어 문장입니다. 그대로 보여 주는 것이
-         맞습니다 - 왜 막혔는지는 서버만 정확히 압니다. */
-      return raw || '이 주소로는 가입할 수 없습니다.';
+    /* 403 은 두 끝에서 옵니다.
+
+       `/otp` 에서는 가입 차단 훅이 막은 것이고, 서버가 왜 막혔는지
+       한국어로 담아 보냅니다 - 이유는 서버만 정확히 아니 그대로 보여
+       줍니다.
+
+       `/verify` 에서는 틀리거나 만료된 6자리입니다. GoTrue 가
+       "Token has expired or is invalid" 를 보내는데, 상태 코드만 보고
+       raw 를 내보내면 그 영어가 화면에 그대로 떴습니다.
+
+       그래서 상태가 아니라 **어느 끝** 인지로 가릅니다. */
+    if (status === 403 && path === '/otp') return raw || '이 주소로는 가입할 수 없습니다.';
     if (code === 'otp_expired' || /expired/i.test(raw))
       return '번호가 만료됐습니다. 메일을 다시 받아 주세요.';
-    if (status === 400 || status === 401 || code === 'invalid_credentials')
+    if (status === 400 || status === 401 || status === 403 || code === 'invalid_credentials')
       return '번호가 맞지 않습니다. 메일을 다시 확인해 주세요.';
     if (status === 422) return '이메일 주소를 다시 확인해 주세요.';
     return '지금은 연결이 안 됩니다. 잠시 뒤에 다시 시도해 주세요.';
@@ -153,6 +185,8 @@
     RESEND_SEC,
     isSchoolEmail,
     domainOf,
+    schoolOf,
+    SCHOOLS,
 
     /** 인증 메일을 보냅니다. 계정이 없으면 이때 만들어집니다 -
         그 순간 서버의 가입 차단 훅이 학교 메일인지 봅니다. */

@@ -1,0 +1,167 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Gothic+A1:wght@400;500;700;800;900&display=swap">
+  <style>
+    body { margin: 0; background: #F2FAF8; }
+    a { color: #0D7769; } a:hover { color: #0C5A4F; }
+    * { box-sizing: border-box; }
+
+    /* Y2K 눌림 — 누를 때 요소는 3px 내려가고 그림자 오프셋은 3px 줄어듭니다.
+       그림자의 절대 위치가 그대로라 간격만 닫히며 종이에 붙습니다.
+       :active 한 순간만 칠해지므로 연속 애니메이션이 아닙니다. */
+    .y2k-btn { cursor: pointer; box-shadow: 6px 6px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); transition: transform .09s linear, box-shadow .09s linear; }
+    .y2k-btn:active { transform: translate(3px, 3px); box-shadow: 3px 3px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); }
+    .y2k-btn.plain { box-shadow: 6px 6px 0 #2B3230; }
+    .y2k-btn.plain:active { box-shadow: 3px 3px 0 #2B3230; }
+    .y2k-btn.sm { box-shadow: 4px 4px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); }
+    .y2k-btn.sm:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); }
+
+    /* 고른 판은 그림자가 깊어집니다. 안 고른 쪽은 흐려지되 읽히기는 합니다 —
+       회색으로 죽이면 고를 수 없는 것으로 보입니다. */
+    .card { position: relative; cursor: pointer; transition: opacity .12s linear, transform .09s linear, box-shadow .12s linear; }
+    .card.on { box-shadow: 10px 10px 0 #2B3230; }
+    .card.off { opacity: .74; box-shadow: 4px 4px 0 rgba(43,50,48,.34); }
+    .card:active { transform: translate(3px, 3px); }
+    .card.on:active { box-shadow: 7px 7px 0 #2B3230; }
+    .card.off:active { box-shadow: 1px 1px 0 rgba(43,50,48,.34); }
+
+    /* ---- 떠 있는 캐릭터 ----
+       셋이 같은 박자면 한 줄에 매달린 인형으로 보입니다. 주기와 시작
+       시각을 어긋나게 둬야 각자 숨 쉽니다.
+
+       그림자는 캐릭터와 따로 움직입니다. 같이 올라가면 스티커가 떠오른
+       것이고, 바닥에 남아 줄어들어야 캐릭터가 뜬 것입니다.
+
+       will-change 는 안 겁니다 — 끝나지 않는 애니메이션에 걸면 층 셋이
+       영원히 승격된 채로 남습니다. 필요할 때 브라우저가 올립니다. */
+    .bob { animation: bob 3.4s ease-in-out infinite; }
+    .gnd {
+      width: 66px; height: 11px; margin-top: -5px;
+      background: radial-gradient(closest-side, rgba(43,50,48,.26), rgba(43,50,48,0));
+      animation: gnd 3.4s ease-in-out infinite;
+    }
+    .fig-b .bob, .fig-b .gnd { animation-duration: 4.1s; animation-delay: -0.9s; }
+    .fig-c .bob, .fig-c .gnd { animation-duration: 3.8s; animation-delay: -1.8s; }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+    @keyframes gnd { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(.82); opacity: .66; } }
+
+    /* 화면 밖으로 나가면 브라우저가 이 상자의 그리기를 건너뜁니다 */
+    .stage { content-visibility: auto; contain-intrinsic-size: 424px 240px; }
+
+    /* 움직임을 줄여 달라고 한 사람에게는 캠퍼스도 멈춥니다. 애니메이션
+       webp 는 CSS 로 못 멈추므로 정지 판으로 갈아 끼웁니다. */
+    .anim { display: block; }
+    .still { display: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .bob, .gnd { animation: none; }
+      .anim { display: none; }
+      .still { display: block; }
+    }
+  </style>
+</helmet>
+
+<div style="width: 1120px; display: flex; flex-direction: column; align-items: center; gap: 26px; font-family: 'Gothic A1', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+    <div style="font-size: 12px; font-weight: 900; letter-spacing: 0.24em; color: {{ink2}}; padding-left: 0.24em;">세션 시작</div>
+    <div style="font-size: 30px; font-weight: 900; letter-spacing: -0.02em; color: {{ink}};">어디에서 앉을까요?</div>
+  </div>
+
+  <div style="display: flex; gap: 44px; align-items: stretch;">
+
+    <div class="card {{worldOn}}" onClick="{{pickWorld}}" style="width: 480px; cursor: pointer; background: #FFFFFF; border: 2px solid {{ink}}; padding: 38px 26px 26px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+      <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: {{worldTab}}; border: 2px solid {{ink}}; padding: 6px 26px; font-size: 13px; font-weight: 900; letter-spacing: 0.18em; color: {{ink}}; white-space: nowrap;">온라인</div>
+
+      <div class="stage" style="position: relative; width: 100%; border: 2px solid {{ink}}; background: {{ink}}; overflow: hidden; line-height: 0;">
+        <img class="anim" src="world-3d.webp" alt="캠퍼스 위로 카메라가 천천히 들어가는 장면" style="width: 100%;">
+        <img class="still" src="world-still.jpg" alt="캠퍼스 전경" style="width: 100%;">
+        <div style="position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.94); border: 2px solid {{ink}}; padding: 5px 11px; line-height: 1;">
+          <span style="width: 8px; height: 8px; background: {{accent}}; border: 2px solid {{ink}}; flex: none;"></span>
+          <span style="font-size: 12px; font-weight: 900; letter-spacing: 0.06em; color: {{ink}};">지금 {{live}}명</span>
+        </div>
+      </div>
+
+      <div style="font-size: 26px; font-weight: 900; letter-spacing: -0.02em; color: {{ink}};">공개 월드</div>
+      <div style="font-size: 14.5px; font-weight: 500; line-height: 1.6; color: {{ink2}}; text-align: center;">우리 학교 캠퍼스가 통째로 열려 있어요.<br>도서관이든 광장이든 앉고 싶은 데 앉으면 돼요.</div>
+
+      <div style="width: 100%; border-top: 2px dotted rgba(43,50,48,0.28); margin-top: 2px;"></div>
+      <div style="width: 100%; display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; color: {{ink2}};">
+        <span>명지대학교 학생이면 누구나</span>
+        <span>인원 제한 없음</span>
+      </div>
+    </div>
+
+    <div class="card {{roomOn}}" onClick="{{pickRoom}}" style="width: 480px; cursor: pointer; background: #FFFFFF; border: 2px solid {{ink}}; padding: 38px 26px 26px; display: flex; flex-direction: column; align-items: center; gap: 16px;">
+      <div style="position: absolute; top: -18px; left: 50%; transform: translateX(-50%); background: {{roomTab}}; border: 2px solid {{ink}}; padding: 6px 26px; font-size: 13px; font-weight: 900; letter-spacing: 0.18em; color: {{ink}}; white-space: nowrap;">비공개</div>
+
+      <div class="stage" style="position: relative; width: 100%; height: 240px; border: 2px solid {{ink}}; background: linear-gradient(180deg, #FBF6EC 0%, #F1E7D6 100%); overflow: hidden;">
+        <div style="position: absolute; left: 0; right: 0; bottom: 50px; height: 2px; background: rgba(43,50,48,0.12);"></div>
+        <div style="position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; gap: 16px; padding: 0 20px 32px;">
+          <div class="fig-a" style="display: flex; flex-direction: column; align-items: center;">
+            <img class="bob" src="char-turtle.png" alt="거북이" style="height: 132px; display: block;">
+            <span class="gnd"></span>
+          </div>
+          <div class="fig-b" style="display: flex; flex-direction: column; align-items: center;">
+            <img class="bob" src="char-penguin.png" alt="펭귄" style="height: 150px; display: block;">
+            <span class="gnd"></span>
+          </div>
+          <div class="fig-c" style="display: flex; flex-direction: column; align-items: center;">
+            <img class="bob" src="char-frog.png" alt="개구리" style="height: 142px; display: block;">
+            <span class="gnd"></span>
+          </div>
+        </div>
+        <div style="position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,0.94); border: 2px solid {{ink}}; padding: 5px 11px; line-height: 1;">
+          <span style="font-size: 12px; font-weight: 900; letter-spacing: 0.06em; color: {{ink}};">최대 6명</span>
+        </div>
+      </div>
+
+      <div style="font-size: 26px; font-weight: 900; letter-spacing: -0.02em; color: {{ink}};">비공개방</div>
+      <div style="font-size: 14.5px; font-weight: 500; line-height: 1.6; color: {{ink2}}; text-align: center;">코드 6자리가 나와요.<br>그 코드를 아는 사람만 이 방에 들어옵니다.</div>
+
+      <div style="width: 100%; border-top: 2px dotted rgba(43,50,48,0.28); margin-top: 2px;"></div>
+      <div style="width: 100%; display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 700; letter-spacing: 0.02em; color: {{ink2}};">
+        <span>코드를 아는 사람만</span>
+        <span>혼자 시작해도 돼요</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 8px;">
+    <button class="y2k-btn" type="button" style="font-family: inherit; font-size: 20px; font-weight: 900; letter-spacing: 0.08em; color: {{ink}}; background: {{accent}}; border: 2px solid {{ink}}; padding: 17px 68px; box-shadow: inset 0 2px 0 rgba(255,255,255,0.45);">{{goLabel}}</button>
+    <button type="button" style="font-family: inherit; font-size: 13.5px; font-weight: 700; letter-spacing: 0.08em; color: {{ink2}}; background: transparent; border: 0; padding: 6px 12px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px;">← 돌아가기</button>
+  </div>
+
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#2DD4BF","options":["#2DD4BF","#56DCCA","#12A592","#0D7769"]},"picked":{"editor":"enum","default":"world","options":["world","room"]},"$preview":{"width":1120,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#2DD4BF';
+    const picked = (this.state && this.state.picked) || this.props.picked || 'world';
+    const on = picked === 'world';
+    return {
+      accent, ink: '#2B3230', ink2: '#5C6663', live: 23,
+      /* 고른 쪽과 안 고른 쪽의 차이는 전부 class 로 넘깁니다 — 값을 스타일
+         구멍에 꽂으면 편집기 속성판에서 그 자리를 못 만집니다. */
+      worldOn: on ? 'on' : 'off',
+      roomOn: on ? 'off' : 'on',
+      worldTab: on ? accent : '#FFFFFF',
+      roomTab: on ? '#FFFFFF' : accent,
+      goLabel: on ? '캠퍼스로 들어가기' : '방 만들기',
+      pickWorld: () => this.setState({ picked: 'world' }),
+      pickRoom: () => this.setState({ picked: 'room' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

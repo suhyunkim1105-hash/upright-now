@@ -19,7 +19,7 @@
    데스크톱 전용. 색·서체 외 골격은 슈퍼 프롬프트 이식.
    ============================================================ */
 :root{
-  --ink:#2B3230;
+  --ink:#17201E;
   --ink-deep:#202624;
   --cream:#F7F8F8;
   --teal:#2DD4BF;
@@ -29,7 +29,7 @@
      경계가 안 생기고, 순백이면 얹힌 것으로 읽히며 대비도 12.32 → 13.11
      로 올라갑니다. 그동안 #fff 를 다섯 군데에 직접 적어 두고 있었습니다. */
   --paper:#FFFFFF;
-  /* 큰 어두운 면(카메라 약속·랭킹전·마감)에 쓰는 먹. ink(#2B3230) 보다
+  /* 큰 어두운 면(카메라 약속·랭킹전·마감)에 쓰는 먹. ink(#17201E) 보다
      더 내려 크림 글자 대비가 12.32 → 17.56 이 됩니다. 채도를 살짝 남겨
      (160°/9%) 완전한 검정보다 차분합니다. */
   --ink-black:#101312;
@@ -162,10 +162,12 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 .lang-toggle i{font-style:normal;opacity:.35}
 .lang-toggle button{
   border:0;background:transparent;cursor:pointer;padding:8px 4px;
-  color:inherit;opacity:.42;font-weight:700;
+  /* .42 는 흰 위에서 2.34 라 AA 미달이었습니다. 고른 쪽과의 차이는
+     이미 불투명도 하나로 충분히 나므로 읽히는 선까지만 올립니다. */
+  color:inherit;opacity:.62;font-weight:700;
   transition:opacity .25s var(--ease);
 }
-.lang-toggle button:hover{opacity:.75}
+.lang-toggle button:hover{opacity:.86}
 .lang-toggle button[aria-pressed="true"]{opacity:1}
 .lang-toggle button:active{transform:scale(.96)}
 
@@ -615,11 +617,11 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   margin:0 0 22px;padding:16px 20px;
   background:var(--paper);border:1px solid var(--line-soft);border-radius:14px;
 }
-.qa-body h4{
+.qa-body .qa-h{
   margin:24px 0 8px;font-size:.94rem;font-weight:800;color:var(--deep);
   letter-spacing:-.01em;
 }
-.qa-body h4:first-of-type{margin-top:0}
+.qa-body .qa-h:first-of-type{margin-top:0}
 .qa-body b{color:var(--ink);font-weight:800}
 .qa-body i{font-style:normal;color:var(--ink);font-weight:600}
 .qa-body ul,.qa-body ol{margin:0 0 14px;padding-left:20px;color:var(--muted);line-height:1.72}
@@ -686,8 +688,8 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   <div class="lang-toggle" role="group" aria-label="언어 선택">
     <button type="button" data-lang="ko" aria-pressed="true">KOR</button><i aria-hidden="true">/</i><button type="button" data-lang="en" aria-pressed="false">ENG</button>
   </div>
-  <a class="pill-cta" href="../onboarding/index.html">
-    <span class="roll"><i id="pillLabel">시작하기<br>시작하기</i></span>
+  <a class="pill-cta" href="../onboarding/index.html" id="pillCta" aria-label="시작하기">
+    <span class="roll" aria-hidden="true"><i id="pillLabel">시작하기<br>시작하기</i></span>
   </a>
   </div>
 </header>
@@ -701,8 +703,8 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
       <img class="hf-poster" src="assets/still-campus.webp" alt="클레이 디오라마로 만든 캠퍼스 전경 — 네 건물과 광장, 호수">
       <video id="hfVideo" src="assets/video-hero.mp4" muted loop playsinline preload="metadata" aria-hidden="true"></video>
       <div class="hf-wash" aria-hidden="true"></div>
-      <p class="hf-line" id="hfLine" aria-label="자세교정과 공부를 Deskfit에서">
-        <span>자세교정과 공부를</span><span class="hf-brand">Deskfit에서</span>
+      <p class="hf-line" id="hfLine" aria-label="자세교정과 공부를 한 번에">
+        <span>자세교정과 공부를</span><span class="hf-brand">한 번에</span>
       </p>
     </figure>
   </div>
@@ -831,10 +833,10 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
         <div class="qa-a"><div class="qa-body">
 <p class="sum">어깨선을 자로 삼아 머리의 위치와 거리를 재고, 세션 시작 10초 동안 등록한
       내 평소 자세와의 차이만 봅니다. 정답 자세와 비교하는 게 아니라, 오직 나와 나를 비교합니다.</p>
-    <h4>① 몸에서 점을 찾습니다</h4>
+    <h3 class="qa-h">① 몸에서 점을 찾습니다</h3>
     <p>웹캠 화면에서 어깨·눈·귀·코·엉덩이의 위치를 찾아냅니다. 얼굴을 알아보는 게 아니라
       뼈대 몇 개의 좌표만 잡습니다.</p>
-    <h4>② 어깨 너비를 1로 놓고 나머지를 잽니다</h4>
+    <h3 class="qa-h">② 어깨 너비를 1로 놓고 나머지를 잽니다</h3>
     <p>사람마다 몸도 카메라 거리도 다릅니다. 그래서 두 어깨 사이 거리를 자로 삼고, 나머지 값을
       전부 그 비율로 환산합니다. 책상에서 30cm 떨어져 앉든 60cm든 같은 기준이 되도록.
       이렇게 <b>10가지 값</b>을 매 프레임 계산합니다.</p>
@@ -852,18 +854,18 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
         <tr><td>머리까지의 거리(cm)</td><td>가까워짐 = 머리가 앞으로</td></tr>
         <tr><td>고개 각도(도)</td><td>턱을 내림</td></tr>
       </tbody></table></div>
-    <h4>③ 10초 동안 내 기준을 만듭니다</h4>
+    <h3 class="qa-h">③ 10초 동안 내 기준을 만듭니다</h3>
     <p>세션을 시작하면 10초간 지금 앉은 모습을 수백 번 재서, 각 값의 <b>중앙값</b>과
       <b>흔들림 폭</b>을 기록합니다. 평균이 아니라 중앙값을 쓰는 이유는, 중간에 한 번 크게
       움직여도 기준이 끌려가지 않게 하기 위해서예요.</p>
-    <h4>④ 차이가 얼마나 벌어졌는지 봅니다</h4>
+    <h3 class="qa-h">④ 차이가 얼마나 벌어졌는지 봅니다</h3>
     <p>지금 값이 내 중앙값에서 얼마나 벗어났는지를 <b>내 평소 흔들림 폭 대비</b>로 계산합니다.
       원래 자주 움직이는 사람은 기준이 넉넉해지고, 거의 고정된 사람은 좁아집니다.</p>
-    <h4>⑤ 여러 값이 동시에 벗어나야 인정합니다</h4>
+    <h3 class="qa-h">⑤ 여러 값이 동시에 벗어나야 인정합니다</h3>
     <p>하나만 벗어나면 <b>주의</b>, 둘 이상이 벗어나면 <b>나쁨</b>입니다. 한 프레임 튀었다고 바로
       바뀌지도 않아요 — 주의는 1.5초, 나쁨은 5초, 좋음 복귀는 2초 동안 그 상태가 이어져야
       확정됩니다. 기침 한 번, 물 한 모금에 화면이 요란해지지 않게 하려는 장치예요.</p>
-    <h4>세션이 끝나면</h4>
+    <h3 class="qa-h">세션이 끝나면</h3>
     <p>좋음·주의·나쁨 세 상태에 머문 시간과 회복 횟수가 남습니다. 여기에 <b>AI 리포트</b>를 열면
       오늘 어느 시간대에 무너졌는지, 어떤 흐름이 반복됐는지를 문장으로 읽을 수 있어요.
       리포트는 무료이고, 리포트를 열지 않아도 숫자는 그대로 볼 수 있습니다.</p>
@@ -878,15 +880,15 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
         <div class="qa-a"><div class="qa-body">
 <p class="sum">영상은 이 브라우저 밖으로 나가지 않습니다. 판정은 기기 안에서 끝나고 프레임은
       즉시 버려져요. 서버로 가는 건 "몇 분 앉았는가" 같은 숫자 몇 개뿐입니다.</p>
-    <h4>어디서 계산하나</h4>
+    <h3 class="qa-h">어디서 계산하나</h3>
     <p>자세 판정 모델을 처음 한 번 내려받은 뒤로는 <b>브라우저 안에서</b> 돕니다.
       계산하려고 영상을 어디로 보내지 않아요.</p>
-    <h4>서버로 가지 않는 것</h4>
+    <h3 class="qa-h">서버로 가지 않는 것</h3>
     <p>영상·사진·스냅샷, 자세 좌표 원본, 10초 동안 만든 내 기준값, 얼굴에서 뽑은 어떤 값도.</p>
-    <h4>세션이 끝날 때 서버로 가는 것 (전부)</h4>
+    <h3 class="qa-h">세션이 끝날 때 서버로 가는 것 (전부)</h3>
     <p>세션 ID, 앉은 시간(분), 캠퍼스에 머문 시간(분), 회복 횟수, 시작·종료 시각, 선택한 학교.
       이 여섯 줄이 전부입니다.</p>
-    <h4>직접 확인해 보세요</h4>
+    <h3 class="qa-h">직접 확인해 보세요</h3>
     <p>말보다 확실합니다.</p>
     <ol>
       <li><b>Network 탭</b> — F12로 개발자도구를 열고 세션을 돌려 보세요. 오가는 요청이 전부
@@ -894,7 +896,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
       <li><b>인터넷 끊기</b> — 모델을 한 번 받은 뒤 랜선을 뽑거나 와이파이를 꺼 보세요.
         <b>자세 판정은 그대로 돕니다.</b> 계산이 기기 안에서 돈다는 증거예요.</li>
     </ol>
-    <h4>회원가입이 없습니다</h4>
+    <h3 class="qa-h">회원가입이 없습니다</h3>
     <p>이메일·전화번호·비밀번호를 받지 않아요. 다른 사람에게 보이는 건 닉네임과 캐릭터뿐이고,
       카메라 화면은 누구에게도 보이지 않습니다. 화면 공유 기능 자체가 없어요.</p>
     <p>더 자세한 내용은 <a href="legal/privacy.html">개인정보처리방침</a>과
@@ -908,10 +910,10 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
         <div class="qa-a"><div class="qa-body">
 <p class="sum">세션은 멈추지 않지만, 카메라에 몸이 안 보이는 동안은 자세 판정이 서 있습니다.
       그 시간은 코인으로도 리포트로도 잡히지 않아요.</p>
-    <h4>세션은 계속됩니다</h4>
+    <h3 class="qa-h">세션은 계속됩니다</h3>
     <p>자리에서 일어나도 세션이 끝나지 않고 캠퍼스도 그대로예요. 스트레칭하러 다녀오는 걸
       벌주지 않습니다.</p>
-    <h4>다만 판정은 멈춥니다</h4>
+    <h3 class="qa-h">다만 판정은 멈춥니다</h3>
     <p>화면에서 벗어나면 상태가 <b>측정 준비</b>로 돌아가고, 그동안은 좋음·주의·나쁨 어느 쪽으로도
       세지 않아요. 아래 경우가 그렇습니다.</p>
     <ul>
@@ -919,13 +921,13 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
       <li>너무 멀리 있어 어깨가 안 잡힘 — <i>조금 더 가까이 앉아 주세요</i></li>
       <li>두 사람 이상이 잡힘 — <i>두 명 이상 보여요</i></li>
     </ul>
-    <h4>그래서 생기는 일 두 가지</h4>
+    <h3 class="qa-h">그래서 생기는 일 두 가지</h3>
     <p><b>① 코인이 그만큼 줄어듭니다.</b> 코인은 의자에 앉은 벽시계 시간이 아니라
       <b>판정이 실제로 돈 시간</b>으로 계산해요. 자리를 오래 비우면 그 시간은 빠집니다.
       카메라를 가려 두고 코인만 쌓는 걸 막기 위한 설계예요.</p>
     <p><b>② AI 리포트가 그 구간을 읽지 못합니다.</b> 자세 값이 없는 구간이라 흐름이 끊깁니다.
       자주 오래 비운 세션일수록 리포트가 볼 수 있는 게 줄어들어요.</p>
-    <h4>앉는 것과 카메라는 별개입니다</h4>
+    <h3 class="qa-h">앉는 것과 카메라는 별개입니다</h3>
     <p>카메라는 캠퍼스에 들어온 순간부터 세션이 끝날 때까지 계속 켜져 있어요. 도서관·본관 의자에
       앉으면 화면 구석에 작은 카메라 창이 뜨는데, 그건 <b>표시 방식이 바뀌는 것</b>이지
       그때 카메라가 켜지는 게 아닙니다.</p>
@@ -946,17 +948,17 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
         <tr><td>크롬</td><td>최신 크롬 권장. 엣지·웨일 등 같은 계열도 됩니다</td></tr>
         <tr><td>인터넷</td><td>첫 실행 때 판정 모델을 받을 때 필요합니다</td></tr>
       </tbody></table></div>
-    <h4>설치할 게 없습니다</h4>
+    <h3 class="qa-h">설치할 게 없습니다</h3>
     <p>앱도 확장 프로그램도 없어요. 주소만 열면 시작됩니다.</p>
-    <h4>카메라 위치 잡기</h4>
+    <h3 class="qa-h">카메라 위치 잡기</h3>
     <p>상반신이 화면에 들어오면 됩니다. 어깨 양쪽이 보이는 정도가 좋고, 화면과 너무 멀면
       <i>조금 더 가까이 앉아 주세요</i>가 떠요.</p>
-    <h4>조명</h4>
+    <h3 class="qa-h">조명</h3>
     <p>역광이면 인식률이 떨어집니다. 창을 등지고 앉았다면 화면 쪽 조명을 밝게 해 주세요.</p>
-    <h4>성능이 걱정된다면</h4>
+    <h3 class="qa-h">성능이 걱정된다면</h3>
     <p>설정에서 <b>저사양 모드</b>를 켜면 그림자와 장식을 끄고 30fps로 그립니다.
       렌더링 부담이 줄어 카메라 판정에 여유가 생겨요.</p>
-    <h4>카메라 없이도</h4>
+    <h3 class="qa-h">카메라 없이도</h3>
     <p>권한을 거부해도 캠퍼스는 걸어 다닐 수 있습니다. 자세 판정과 그에 따른 코인만
       동작하지 않아요.</p>
         </div></div>
@@ -968,28 +970,28 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
         <div class="qa-a"><div class="qa-body">
 <p class="sum">회원가입 없이도 기록이 남습니다. 기록은 기본적으로 내 브라우저 안에 쌓이고,
       서버 저장을 쓸 때는 이름 없는 임의 ID에만 묶여요.</p>
-    <h4>어떻게 가입 없이 기록이 되나</h4>
+    <h3 class="qa-h">어떻게 가입 없이 기록이 되나</h3>
     <p>브라우저에는 사이트마다 쓸 수 있는 저장 공간이 있습니다. 닉네임·캐릭터·코인·세션 기록을
       전부 여기에 둬요. 서버에 계정을 만들 필요가 없는 이유입니다.</p>
-    <h4>브라우저에 남는 것</h4>
+    <h3 class="qa-h">브라우저에 남는 것</h3>
     <p>닉네임과 캐릭터, 10초로 만든 내 자세 기준, 지난 세션 요약(최근 12개), 코인과 아이템,
       방 꾸미기 상태, 환경 설정.</p>
-    <h4>랭킹에 참여하면</h4>
+    <h3 class="qa-h">랭킹에 참여하면</h3>
     <p>세션 기록이 서버에도 쌓입니다. 이때도 이메일 같은 건 받지 않고,
       <b>자동으로 발급되는 임의의 문자열 ID</b> 하나에만 묶여요. 그 ID는 누구인지 알 수 없는
       값입니다.</p>
-    <h4>그래서 생기는 한계 — 솔직히 말씀드립니다</h4>
+    <h3 class="qa-h">그래서 생기는 한계 — 솔직히 말씀드립니다</h3>
     <ul>
       <li>브라우저 저장소를 지우면 <b>복구할 수 없습니다.</b> 되돌릴 열쇠(이메일·비밀번호)를
         애초에 받지 않기 때문이에요.</li>
       <li>시크릿 모드로 쓰면 창을 닫는 순간 사라집니다.</li>
       <li>다른 브라우저나 다른 기기로 접속하면 <b>다른 사람</b>이 됩니다.</li>
     </ul>
-    <h4>지우고 싶을 때</h4>
+    <h3 class="qa-h">지우고 싶을 때</h3>
     <p>설정의 <b>전체 데이터 초기화</b> 한 번이면 이 기기의 모든 기록이 사라집니다.
-      서버 기록까지 지우고 싶으면 <a href="mailto:ikmc554@mju.ac.kr">ikmc554@mju.ac.kr</a> 로
+      서버 기록까지 지우고 싶으면 <a href="mailto:privacy@deskfit.app">privacy@deskfit.app</a> 로
       ID를 알려 주세요.</p>
-    <h4>네트워크가 끊겨도</h4>
+    <h3 class="qa-h">네트워크가 끊겨도</h3>
     <p>서버로 못 보낸 기록은 대기열에 남아 있다가, 다시 연결되면 알아서 올라갑니다.</p>
         </div></div>
       </div>
@@ -1000,10 +1002,10 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
         <div class="qa-a"><div class="qa-body">
 <p class="sum">학교끼리 겨룹니다. 개인 순위는 없고, 같은 학교 사람들이 앉은 시간과 회복 횟수가
       학교 점수로 모여요. 시즌은 90일입니다.</p>
-    <h4>어떻게 참여하나</h4>
+    <h3 class="qa-h">어떻게 참여하나</h3>
     <p>처음 시작할 때 학교를 고르면 그때부터 내 세션이 그 학교의 기록에 더해집니다.
       따로 신청할 게 없어요.</p>
-    <h4>무엇으로 순위를 매기나</h4>
+    <h3 class="qa-h">무엇으로 순위를 매기나</h3>
     <div class="tw"><table>
       <thead><tr><th>지표</th><th>뜻</th></tr></thead>
       <tbody>
@@ -1012,10 +1014,10 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
       </tbody></table></div>
     <p>회복을 함께 세는 이유가 있어요. 앉은 시간만 보면 <b>오래 버틴 사람만 이깁니다.</b>
       회복은 무너졌다는 걸 전제로 하는 지표라, 자세를 고쳐 앉는 행동 자체에 값을 매깁니다.</p>
-    <h4>개인 순위는 만들지 않습니다</h4>
+    <h3 class="qa-h">개인 순위는 만들지 않습니다</h3>
     <p>자세로 사람을 줄 세우지 않겠다는 게 이 서비스의 원칙이에요. 순위는 학교 단위로만
       존재합니다.</p>
-    <h4>보상</h4>
+    <h3 class="qa-h">보상</h3>
     <ul>
       <li>시즌이 끝나면 <b>권역별 1위 학교</b>를 가립니다.</li>
       <li>그 학교에서 <b>가장 많이 기여한 두 명</b>(참여 시간·회복 횟수 기준)에게 소정의 상품을
@@ -1024,7 +1026,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
     </ul>
     <blockquote><b>아직 베타입니다.</b> 보상의 내용·규모·지급 방식은 확정되지 않았고 바뀔 수
       있어요. 정해지는 대로 서비스 안에 공지하겠습니다.</blockquote>
-    <h4>어뷰징은 막습니다</h4>
+    <h3 class="qa-h">어뷰징은 막습니다</h3>
     <p>학교 점수에 들어가는 시간은 <b>판정이 실제로 돈 시간</b>뿐이에요. 카메라를 가려 두거나
       사진을 비춰 두는 방식은 점수가 되지 않습니다.</p>
         </div></div>
@@ -1043,7 +1045,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
     <h1 class="rv" style="--d:.07s">오늘 집중 시간이<br><span class="serif">우리 학교 이름으로 쌓여요</span></h1>
     <p class="ht-sub rv" style="--d:.1s">세션을 시작하고, 집중만 하면 돼요.</p>
     <div class="hero-actions rv" style="--d:.14s">
-      <a class="btn-primary" href="../onboarding/index.html" data-mag><span class="roll"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span></a>
+      <a class="btn-primary" href="../onboarding/index.html" data-mag aria-label="시작하기"><span class="roll" aria-hidden="true"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span></a>
     </div>
   </div>
 </section>
@@ -1261,7 +1263,7 @@ const ONBOARD = '../onboarding/index.html';
       copies[i].innerHTML =
         `<span class="eyebrow">${t.eyebrow}</span>` +
         `<h2>${t.title}</h2><p>${t.body}</p>` +
-        (s.cta ? `<div class="cta"><a class="btn-primary" href="${ONBOARD}"><span class="roll"><i>${CTA_TXT[LANG]}<br>${CTA_TXT[LANG]}</i></span> <span class="tail" aria-hidden="true">↗</span></a></div>` : '');
+        (s.cta ? `<div class="cta"><a class="btn-primary" href="${ONBOARD}" aria-label="${CTA_TXT[LANG]}"><span class="roll" aria-hidden="true"><i>${CTA_TXT[LANG]}<br>${CTA_TXT[LANG]}</i></span> <span class="tail" aria-hidden="true">↗</span></a></div>` : '');
     });
   }
   fillCopies();
@@ -1536,7 +1538,16 @@ const ONBOARD = '../onboarding/index.html';
     { slug:'alpaca',   ko:['알파카','본관 단골. 느긋하게 다녀요.'],            en:['Alpaca','Main-hall regular. Takes it easy.'] },
     { slug:'swan',     ko:['백조','호숫가 산책으로 하루를 열어요.'],           en:['Swan','Opens the day by the lake.'] },
   ];
-  const GO_TXT = { ko:'이 친구로 시작하기 ↗', en:'Start with this friend ↗' };
+  /* 카드마다 그 친구의 이름이 들어갑니다. 링크 목록만 봐도 구분됩니다. */
+  function ro(name) {
+    const c = name.charCodeAt(name.length - 1) - 0xAC00;
+    if (c < 0 || c > 11171) return '로';         /* 한글이 아니면 그냥 로 */
+    const jong = c % 28;                          /* 0 = 받침 없음, 8 = ㄹ */
+    return jong === 0 || jong === 8 ? '로' : '으로';
+  }
+  const goText = (name) => (LANG === 'ko'
+    ? name + ro(name) + ' 시작하기 ↗'
+    : 'Start with ' + name + ' ↗');
   const BANDS = ['#2DD4BF','#F5C84C','#0D7769','#E8A9C0','#8FD98A','#C79A6B','#E8DCC8','#CFF2ED'];
   const deck = document.getElementById('deck');
   let order = [...CHARS.keys()];
@@ -1548,7 +1559,7 @@ const ONBOARD = '../onboarding/index.html';
       `<i class="band" style="background:${BANDS[i]}" aria-hidden="true"></i>` +
       `<div class="sp"><img src="assets/char-${ch.slug}.png" alt="${ch[LANG][0]}"></div>` +
       `<div class="nm">${ch[LANG][0]}</div><div class="ds">${ch[LANG][1]}</div>` +
-      `<a class="go" href="${ONBOARD}">${GO_TXT[LANG]}</a>`;
+      `<a class="go" href="${ONBOARD}">${goText(ch[LANG][0])}</a>`;
     deck.appendChild(card);
     ch.el = card;
   });
@@ -1568,7 +1579,7 @@ const ONBOARD = '../onboarding/index.html';
   addEventListener('girin:lang', () => CHARS.forEach(ch => {
     ch.el.querySelector('.nm').textContent = ch[LANG][0];
     ch.el.querySelector('.ds').textContent = ch[LANG][1];
-    ch.el.querySelector('.go').textContent = GO_TXT[LANG];
+    ch.el.querySelector('.go').textContent = goText(ch[LANG][0]);
     ch.el.querySelector('.sp img').alt = ch[LANG][0];
   }));
 
@@ -1713,10 +1724,10 @@ const ONBOARD = '../onboarding/index.html';
       ko: '이번 시즌, 다섯 캠퍼스가 함께 앉았어요.<br>제일 오래 앉은 학교의 섬이 가장 밝게 빛나요.',
       en: 'Five campuses sat together this season.<br>The island that sat the longest glows the brightest.' }, 1],
     ['.hero-typo .btn-primary', {
-      ko: '<span class="roll"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
+      ko: '<span class="roll" aria-hidden="true"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
       en: '<span class="roll"><i>Get started<br>Get started</i></span> <span class="tail" aria-hidden="true">↗</span>' }, 1],
     ['#hfLine', {
-      ko: '<span>자세교정과 공부를</span><span class="hf-brand">Deskfit에서</span>',
+      ko: '<span>자세교정과 공부를</span><span class="hf-brand">한 번에</span>',
       en: '<span>Posture and study,</span><span class="hf-brand">at Deskfit</span>' }, 1],
     ['#introEyebrow', { ko: '거북목 자세교정과 함께', en: 'With turtle-neck posture care' }],
     ['#introStatement', {
@@ -1749,7 +1760,7 @@ const ONBOARD = '../onboarding/index.html';
       ko: '오늘 앉을 자리가<br><span class="serif">여기 있어요.</span>',
       en: 'Your seat for today<br><span class="serif">is right here.</span>' }, 1],
     ['.contact .btn-primary', {
-      ko: '<span class="roll"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
+      ko: '<span class="roll" aria-hidden="true"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
       en: '<span class="roll"><i>Get started<br>Get started</i></span> <span class="tail" aria-hidden="true">↗</span>' }, 1],
     ['.contact .promise', {
       ko: '가입 없이 무료예요 · 웹캠 영상은 브라우저 밖으로 나가지 않아요.',
@@ -1777,10 +1788,10 @@ const ONBOARD = '../onboarding/index.html';
      `<p class="sum">It uses your shoulder line as a ruler to measure where your head sits and how far
         away it is, then compares that against the posture you registered in the first 10 seconds.
         It never compares you to a "correct" posture — only you against you.</p>
-      <h4>1. Find points on the body</h4>
+      <h3 class="qa-h">1. Find points on the body</h3>
       <p>From the webcam frame it locates your shoulders, eyes, ears, nose and hips. It does not
         recognise your face — just a handful of skeletal coordinates.</p>
-      <h4>2. Treat shoulder width as 1 and measure everything against it</h4>
+      <h3 class="qa-h">2. Treat shoulder width as 1 and measure everything against it</h3>
       <p>Every body and every camera distance differs. So the distance between your shoulders becomes
         the ruler, and every other value is expressed as a ratio of it — whether you sit 30cm or 60cm
         from the desk, the baseline holds. <b>Ten values</b> are computed every frame.</p>
@@ -1798,19 +1809,19 @@ const ONBOARD = '../onboarding/index.html';
           <tr><td>Head distance (cm)</td><td>Closer = head pushing forward</td></tr>
           <tr><td>Head pitch (deg)</td><td>Chin tucking down</td></tr>
         </tbody></table></div>
-      <h4>3. Build your baseline in 10 seconds</h4>
+      <h3 class="qa-h">3. Build your baseline in 10 seconds</h3>
       <p>When a session starts it samples how you are sitting hundreds of times over 10 seconds and
         records the <b>median</b> and the <b>spread</b> of each value. Median rather than average, so
         one big movement mid-way cannot drag the baseline with it.</p>
-      <h4>4. Measure how far the gap has opened</h4>
+      <h3 class="qa-h">4. Measure how far the gap has opened</h3>
       <p>It checks how far the current value sits from your median, <b>relative to your own natural
         spread</b>. Someone who fidgets gets a wider tolerance; someone who barely moves gets a
         tighter one.</p>
-      <h4>5. Several values must slip at once</h4>
+      <h3 class="qa-h">5. Several values must slip at once</h3>
       <p>One value out of range is <b>careful</b>; two or more is <b>poor</b>. Nor does a single frame
         flip it — careful holds for 1.5s, poor for 5s, and returning to good takes 2s of steady
         readings. That is what keeps a cough or a sip of water from lighting up the screen.</p>
-      <h4>When the session ends</h4>
+      <h3 class="qa-h">When the session ends</h3>
       <p>You are left with time spent in good, careful and poor, plus how many times you recovered.
         Open the <b>AI report</b> and you can read, in sentences, when things slipped today and which
         patterns repeated. The report is free, and the numbers are there with or without it.</p>
@@ -1821,16 +1832,16 @@ const ONBOARD = '../onboarding/index.html';
      `<p class="sum">Video never leaves this browser. Judgement finishes on your machine and frames are
         discarded immediately. What reaches a server is a handful of numbers like "how many minutes
         you sat".</p>
-      <h4>Where the computing happens</h4>
+      <h3 class="qa-h">Where the computing happens</h3>
       <p>After downloading the posture model once, everything runs <b>inside your browser</b>.
         No video is sent anywhere to be analysed.</p>
-      <h4>What never reaches a server</h4>
+      <h3 class="qa-h">What never reaches a server</h3>
       <p>Video, photos, snapshots, raw posture coordinates, the baseline built in those 10 seconds,
         or any value derived from your face.</p>
-      <h4>What is sent when a session ends (all of it)</h4>
+      <h3 class="qa-h">What is sent when a session ends (all of it)</h3>
       <p>Session ID, minutes seated, minutes on campus, recovery count, start and end times, and the
         school you picked. Those six lines are the whole payload.</p>
-      <h4>Check it yourself</h4>
+      <h3 class="qa-h">Check it yourself</h3>
       <p>Better than taking our word for it.</p>
       <ol>
         <li><b>Network tab</b> — open DevTools with F12 and run a session. Every request is visible.
@@ -1838,7 +1849,7 @@ const ONBOARD = '../onboarding/index.html';
         <li><b>Pull the plug</b> — once the model is cached, disconnect your network.
           <b>Posture judgement keeps working.</b> That is the proof it runs locally.</li>
       </ol>
-      <h4>There is no sign-up</h4>
+      <h3 class="qa-h">There is no sign-up</h3>
       <p>No email, phone number or password. Others see only your nickname and character, and your
         camera view is shown to nobody — there is no screen-sharing feature at all.</p>
       <p>The details live in our <a href="legal/privacy.html">Privacy Policy</a> and
@@ -1847,10 +1858,10 @@ const ONBOARD = '../onboarding/index.html';
     ['What happens when I stand up?',
      `<p class="sum">The session keeps running, but posture judgement pauses while your body is out of
         frame. That time counts toward neither coins nor the report.</p>
-      <h4>The session continues</h4>
+      <h3 class="qa-h">The session continues</h3>
       <p>Standing up does not end the session and the campus stays as it was. Going for a stretch is
         never punished.</p>
-      <h4>But judgement pauses</h4>
+      <h3 class="qa-h">But judgement pauses</h3>
       <p>Once you leave the frame the state returns to <b>ready</b>, and nothing is counted as good,
         careful or poor. That happens when:</p>
       <ul>
@@ -1858,13 +1869,13 @@ const ONBOARD = '../onboarding/index.html';
         <li>you are too far for shoulders to register — <i>please sit a little closer</i></li>
         <li>two or more people are detected — <i>more than one person visible</i></li>
       </ul>
-      <h4>Two consequences</h4>
+      <h3 class="qa-h">Two consequences</h3>
       <p><b>1. Coins drop accordingly.</b> Coins come from <b>time actually judged</b>, not wall-clock
         time in the chair. Long absences simply fall out of the total — that is what stops anyone
         covering the camera and farming coins.</p>
       <p><b>2. The AI report cannot read that stretch.</b> With no posture values the flow breaks.
         The more often you step away, the less the report has to work with.</p>
-      <h4>Sitting and the camera are separate</h4>
+      <h3 class="qa-h">Sitting and the camera are separate</h3>
       <p>The camera runs from the moment you enter campus until the session ends. Sitting at a desk in
         the library or main hall opens a small camera window in the corner — that is
         <b>a change in how it is displayed</b>, not the camera switching on.</p>`],
@@ -1880,53 +1891,53 @@ const ONBOARD = '../onboarding/index.html';
           <tr><td>Chrome</td><td>Latest Chrome recommended; Edge and other Chromium browsers work</td></tr>
           <tr><td>Internet</td><td>Needed the first time, to fetch the posture model</td></tr>
         </tbody></table></div>
-      <h4>Nothing to install</h4>
+      <h3 class="qa-h">Nothing to install</h3>
       <p>No app, no extension. Open the address and you have started.</p>
-      <h4>Positioning the camera</h4>
+      <h3 class="qa-h">Positioning the camera</h3>
       <p>Your upper body should be in frame — ideally with both shoulders visible. Sit too far back and
         you will see <i>please sit a little closer</i>.</p>
-      <h4>Lighting</h4>
+      <h3 class="qa-h">Lighting</h3>
       <p>Backlight hurts detection. If a window is behind you, brighten the light facing you.</p>
-      <h4>If you are worried about performance</h4>
+      <h3 class="qa-h">If you are worried about performance</h3>
       <p>Turn on <b>low-spec mode</b> in settings: shadows and decoration switch off and the world
         draws at 30fps, freeing headroom for posture judgement.</p>
-      <h4>Even without the camera</h4>
+      <h3 class="qa-h">Even without the camera</h3>
       <p>Deny the permission and you can still walk the campus. Only posture judgement and the coins
         tied to it stop working.</p>`],
 
     ['How are my records kept?',
      `<p class="sum">Records survive without a sign-up. They live in your browser by default, and when
         server saving is used they are tied only to an anonymous, meaningless ID.</p>
-      <h4>How records work without an account</h4>
+      <h3 class="qa-h">How records work without an account</h3>
       <p>Browsers give each site its own storage. Nickname, character, coins and session records all
         live there — which is why no server account is needed.</p>
-      <h4>What stays in the browser</h4>
+      <h3 class="qa-h">What stays in the browser</h3>
       <p>Your nickname and character, the posture baseline from those 10 seconds, summaries of past
         sessions (the last 12), coins and items, your room decoration, and your settings.</p>
-      <h4>When you join the rankings</h4>
+      <h3 class="qa-h">When you join the rankings</h3>
       <p>Session records also accumulate on the server. Still no email — everything is tied to a single
         <b>automatically issued random string ID</b>, a value that identifies no one.</p>
-      <h4>The limits, plainly</h4>
+      <h3 class="qa-h">The limits, plainly</h3>
       <ul>
         <li>Clear your browser storage and it is <b>unrecoverable</b>, because we never took the key
           (email, password) that would bring it back.</li>
         <li>In private browsing it disappears the moment the window closes.</li>
         <li>Another browser or another machine makes you <b>a different person</b>.</li>
       </ul>
-      <h4>Erasing it</h4>
+      <h3 class="qa-h">Erasing it</h3>
       <p>One <b>reset all data</b> in settings clears everything on this device. To erase server records
-        too, send your ID to <a href="mailto:ikmc554@mju.ac.kr">ikmc554@mju.ac.kr</a>.</p>
-      <h4>If the network drops</h4>
+        too, send your ID to <a href="mailto:privacy@deskfit.app">privacy@deskfit.app</a>.</p>
+      <h3 class="qa-h">If the network drops</h3>
       <p>Records that could not be sent wait in a queue and upload themselves once you are back
         online.</p>`],
 
     ['How do rankings and rewards work?',
      `<p class="sum">Schools compete, not individuals. Seated time and recovery counts from everyone at
         your school pool into one school score. A season runs 90 days.</p>
-      <h4>How to take part</h4>
+      <h3 class="qa-h">How to take part</h3>
       <p>Pick a school when you start and your sessions count toward it from then on. There is nothing
         to apply for.</p>
-      <h4>What the ranking measures</h4>
+      <h3 class="qa-h">What the ranking measures</h3>
       <div class="tw"><table>
         <thead><tr><th>Metric</th><th>Meaning</th></tr></thead>
         <tbody>
@@ -1935,9 +1946,9 @@ const ONBOARD = '../onboarding/index.html';
         </tbody></table></div>
       <p>Recoveries are counted for a reason. Time alone means <b>whoever endures longest wins</b>.
         Recovery presupposes slipping, so it puts value on the act of correcting itself.</p>
-      <h4>No individual ranking</h4>
+      <h3 class="qa-h">No individual ranking</h3>
       <p>Not lining people up by posture is a principle here. Rankings exist only at school level.</p>
-      <h4>Rewards</h4>
+      <h3 class="qa-h">Rewards</h3>
       <ul>
         <li>At season end, the <b>top school in each region</b> is decided.</li>
         <li>The <b>two biggest contributors</b> at that school (by time and recoveries) receive a small
@@ -1946,7 +1957,7 @@ const ONBOARD = '../onboarding/index.html';
       </ul>
       <blockquote><b>This is still beta.</b> The nature, scale and delivery of rewards are not final
         and may change. We will announce them in the service once settled.</blockquote>
-      <h4>Abuse is blocked</h4>
+      <h3 class="qa-h">Abuse is blocked</h3>
       <p>Only <b>time actually judged</b> counts toward a school score. Covering the camera or pointing
         it at a photo earns nothing.</p>`],
   ];

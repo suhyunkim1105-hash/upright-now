@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Gothic+A1:wght@400;500;700;800;900&display=swap">
+  <style>
+    body { margin: 0; background: #F2FAF8; }
+    a { color: #0D7769; } a:hover { color: #0C5A4F; }
+    * { box-sizing: border-box; }
+    /* Y2K 눌림 — 누를 때 요소는 3px 내려가고 그림자 오프셋은 3px 줄어듭니다.
+       그림자의 절대 위치가 그대로라 간격만 닫히며 종이에 붙습니다.
+       :active 한 순간만 칠해지므로 연속 애니메이션이 아닙니다. */
+    .y2k-btn { cursor: pointer; box-shadow: 6px 6px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); transition: transform .09s linear, box-shadow .09s linear; }
+    .y2k-btn:active { transform: translate(3px, 3px); box-shadow: 3px 3px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); }
+    .y2k-btn.plain { box-shadow: 6px 6px 0 #2B3230; }
+    .y2k-btn.plain:active { box-shadow: 3px 3px 0 #2B3230; }
+    .y2k-btn.sm { box-shadow: 4px 4px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); }
+    .y2k-btn.sm:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #2B3230, inset 0 2px 0 rgba(255,255,255,.45); }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: #F2FAF8; font-family: 'Gothic A1', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;">
+
+  <img src="campus.jpg" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 74%;">
+  <div style="position: absolute; inset: 0; background: linear-gradient(180deg, #F2FAF8 0%, rgba(242,250,248,0.94) 26%, rgba(242,250,248,0.60) 50%, rgba(242,250,248,0.26) 72%, rgba(242,250,248,0.40) 100%);"></div>
+  <div style="position: absolute; inset: 0; opacity: 0.5; background-image: repeating-linear-gradient(0deg, rgba(43,50,48,0.05) 0 1px, transparent 1px 3px);"></div>
+
+  <div style="position: relative; display: flex; flex-direction: column; align-items: center; height: 100%; padding: 26px 0 0;">
+
+    <div style="display: flex; gap: 44px; align-items: center;">
+      <a href="#" style="font-size: 14px; font-weight: 800; letter-spacing: 0.14em; color: {{ink}}; text-decoration: none;">홈</a>
+      <a href="#" style="font-size: 14px; font-weight: 500; letter-spacing: 0.14em; color: {{ink2}}; text-decoration: none;">랭킹전</a>
+      <a href="#" style="font-size: 14px; font-weight: 500; letter-spacing: 0.14em; color: {{ink2}}; text-decoration: none;">마이페이지</a>
+    </div>
+
+    <div style="position: relative; width: 880px; margin-top: 74px; background: rgba(255,255,255,0.96); border: 2px solid {{ink}}; box-shadow: 8px 8px 0 {{ink}};">
+
+      <div style="position: absolute; top: -17px; left: 40px; background: {{accent}}; border: 2px solid {{ink}}; padding: 5px 22px; font-size: 13px; font-weight: 900; letter-spacing: 0.16em; color: {{ink}};">비공개방</div>
+
+      <div style="display: flex; align-items: stretch;">
+
+        <div style="width: 300px; border-right: 2px solid {{ink}}; padding: 40px 26px 26px;">
+          <div style="font-size: 12px; font-weight: 900; letter-spacing: 0.16em; color: {{ink2}}; margin-bottom: 16px;">들어온 사람 2</div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 2px solid {{ink}}; background: {{tint}};">
+              <span style="width: 9px; height: 9px; background: {{accent}}; border: 2px solid {{ink}}; flex: none;"></span>
+              <span style="font-size: 14.5px; font-weight: 800; color: {{ink}};">익명의 기린</span>
+              <span style="margin-left: auto; font-size: 11px; font-weight: 800; letter-spacing: 0.1em; color: {{ink2}};">방장</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 2px solid {{ink}}; background: #FFFFFF;">
+              <span style="width: 9px; height: 9px; background: {{accent}}; border: 2px solid {{ink}}; flex: none;"></span>
+              <span style="font-size: 14.5px; font-weight: 800; color: {{ink}};">조용한 펭귄</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 2px dashed rgba(43,50,48,0.30); background: transparent;">
+              <span style="font-size: 13.5px; font-weight: 500; color: {{ink2}};">기다리는 중…</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex: 1; padding: 40px 34px 30px; display: flex; flex-direction: column; align-items: center; gap: 20px;">
+          <div style="font-size: 12px; font-weight: 900; letter-spacing: 0.16em; color: {{ink2}};">이 코드를 친구에게 보내세요</div>
+
+          <div style="display: flex; gap: 10px;">
+            <sc-for list="{{digits}}" as="d" hint-placeholder-count="6">
+              <div style="width: 66px; height: 84px; display: grid; place-items: center; background: {{tint}}; border: 2px solid {{ink}}; box-shadow: inset 0 2px 0 rgba(255,255,255,0.7); font-family: 'Archivo Black', 'Arial Black', sans-serif; font-size: 38px; color: {{ink}};">{{d.ch}}</div>
+            </sc-for>
+          </div>
+
+          <div style="display: flex; gap: 12px; width: 100%; margin-top: 4px;">
+            <button class="y2k-btn sm" type="button" style="font-family: inherit; flex: 1; font-size: 14.5px; font-weight: 900; letter-spacing: 0.06em; color: {{ink}}; background: #FFFFFF; border: 2px solid {{ink}}; padding: 12px 0; cursor: pointer; ">코드 복사</button>
+            <button class="y2k-btn sm" type="button" style="font-family: inherit; flex: 1; font-size: 14.5px; font-weight: 900; letter-spacing: 0.06em; color: {{ink}}; background: {{accent}}; border: 2px solid {{ink}}; padding: 12px 0; cursor: pointer; box-shadow: inset 0 2px 0 rgba(255,255,255,0.45);">시작하기</button>
+          </div>
+
+          <div style="width: 100%; border-top: 2px dotted rgba(43,50,48,0.28); padding-top: 14px; font-size: 12.5px; font-weight: 500; line-height: 1.7; color: {{ink2}}; text-align: center;">혼자 시작해도 돼요. 시작한 뒤에도 코드로 들어올 수 있어요.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <button type="button" style="font-family: inherit; font-size: 13.5px; font-weight: 700; letter-spacing: 0.08em; color: {{ink2}}; background: transparent; border: 0; padding: 8px 12px; margin-top: 22px; cursor: pointer; text-decoration: underline; text-underline-offset: 4px;">← 돌아가기</button>
+
+    <div style="margin-top: auto; width: 100%; display: flex; align-items: center; gap: 0; border-top: 2px solid {{ink}}; background: rgba(255,255,255,0.9); box-shadow: inset 0 2px 0 rgba(255,255,255,0.6);">
+      <div style="padding: 9px 22px; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; color: {{ink}}; border-right: 2px solid {{ink}};">명지대학교</div>
+      <div style="padding: 9px 22px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; color: {{ink2}}; border-right: 2px solid {{ink}};">비공개방 · 2명</div>
+      <div style="margin-left: auto; padding: 9px 22px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; color: {{ink2}};">카메라는 내 기기에서만 돌아가요</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#2DD4BF","options":["#2DD4BF","#56DCCA","#12A592","#0D7769"]}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      accent: this.props.accent ?? '#2DD4BF',
+      ink: '#2B3230',
+      ink2: '#5C6663',
+      tint: '#EFFBF9',
+      digits: 'MZLF74'.split('').map((ch) => ({ ch })),
+    };
+  }
+}
+</script>
+</body>
+</html>

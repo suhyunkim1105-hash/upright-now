@@ -1,0 +1,50 @@
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#EFF2F5;overflow:hidden}canvas{display:block}</style>
+<canvas id="cv"></canvas>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { M, box } from './parts.js';
+import { character, SPECIES, OUTFITS } from './chars.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xEFF2F5);
+/* 받침 — 캐릭터가 공중에 뜨지 않게 */
+box(scene, 20.4, .7, 4.6, .3, M(0xF0CE7E, .7), 0, -.35, 0).receiveShadow = true;
+box(scene, 19.8, .3, 4.0, .22, M(0x5FC15A, .78), 0, .02, 0).receiveShadow = true;
+
+const names = Object.keys(SPECIES);
+names.forEach((n, i) => {
+  character(scene, n, OUTFITS[i % OUTFITS.length], {
+    x: -8.05 + i * 2.3, z: 0, ry: 0.34, scale: 1.05, wave: i === 1 || i === 5,
+  });
+});
+
+scene.add(new THREE.AmbientLight(0xFFFFFF, .82));
+scene.add(new THREE.HemisphereLight(0xE8F4FF, 0xF6E6C4, .95));
+const key = new THREE.DirectionalLight(0xFFFAF0, 2.0);
+key.position.set(-9, 16, 12); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -14; key.shadow.camera.right = 14;
+key.shadow.camera.top = 9; key.shadow.camera.bottom = -6;
+key.shadow.camera.near = 1; key.shadow.camera.far = 44;
+key.shadow.bias = -.0004; key.shadow.radius = 4; key.shadow.normalBias = .02;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xCFE4F5, .8); fill.position.set(10, 7, -8); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xFFFFFF, .45); rim.position.set(0, 5, -14); scene.add(rim);
+
+const W = 1800, H = 660, F = 3.35;
+const cam = new THREE.OrthographicCamera(-F * (W / H), F * (W / H), F, -F, .1, 120);
+cam.position.set(0, 5.4, 20); cam.lookAt(0, 1.42, 0);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });
+r.setSize(W, H, false); r.setPixelRatio(1);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.06;
+r.outputColorSpace = THREE.SRGBColorSpace;
+const cv = document.getElementById('cv');
+cv.style.width = W + 'px'; cv.style.height = H + 'px';
+r.render(scene, cam);
+window.__ready = true;
+</script>

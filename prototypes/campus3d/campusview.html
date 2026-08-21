@@ -1,0 +1,46 @@
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#BFE4F2;overflow:hidden}canvas{display:block}</style>
+<canvas id="cv"></canvas>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { buildCampus } from './campus.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xBFE4F2);
+if (new URLSearchParams(location.search).get('fog') === '1')
+  scene.fog = new THREE.Fog(0xBFE4F2, 120, 210);
+buildCampus(scene);
+
+scene.add(new THREE.AmbientLight(0xFFFFFF, .72));
+scene.add(new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, .9));
+const key = new THREE.DirectionalLight(0xFFF6E4, 2.0);
+key.position.set(-52, 78, 48); key.castShadow = true;
+key.shadow.mapSize.set(4096, 4096);
+key.shadow.camera.left = -72; key.shadow.camera.right = 72;
+key.shadow.camera.top = 72; key.shadow.camera.bottom = -72;
+key.shadow.camera.near = 1; key.shadow.camera.far = 220;
+key.shadow.bias = -.0006; key.shadow.radius = 3; key.shadow.normalBias = .05;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xCFE4F5, .55); fill.position.set(60, 40, -40); scene.add(fill);
+
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1600), H = +(q.get('h') || 1100);
+const F = +(q.get('f') || 46);
+const cx = +(q.get('cx') || 0), cz = +(q.get('cz') || 0);
+const cam = new THREE.OrthographicCamera(-F * (W / H), F * (W / H), F, -F, .1, 400);
+const d = +(q.get('d') || 120);
+cam.position.set(cx + d, d * .86, cz + d); cam.lookAt(cx, 2, cz);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });
+r.setSize(W, H, false); r.setPixelRatio(1);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
+r.outputColorSpace = THREE.SRGBColorSpace;
+const cv = document.getElementById('cv');
+cv.style.width = W + 'px'; cv.style.height = H + 'px';
+r.render(scene, cam);
+window.__ready = true;
+window.__stats = { calls: r.info.render.calls, tris: r.info.render.triangles };
+</script>

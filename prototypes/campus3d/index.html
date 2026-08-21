@@ -1,0 +1,764 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>기린캠퍼스 3D</title>
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<style>
+  :root{ --ink:#2E3440; --paper:#FFF8EA; }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:#BFE4F2;
+    font-family:"Wanted Sans Variable","Wanted Sans","Pretendard","Apple SD Gothic Neo",sans-serif;
+    -webkit-user-select:none;user-select:none;touch-action:none}
+  canvas#cv{display:block;width:100%;height:100%}
+  .hud{position:fixed;inset:0;pointer-events:none;color:var(--ink)}
+  .card{background:rgba(255,248,234,.92);border:2px solid rgba(46,52,64,.14);
+    border-radius:16px;box-shadow:0 6px 18px rgba(46,52,64,.14)}
+  #zone{position:absolute;left:18px;top:16px;padding:10px 16px;line-height:1.25}
+  #zone b{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em}
+  #zone span{font-size:12.5px;opacity:.62}
+  #keys{position:absolute;left:18px;bottom:16px;padding:9px 13px;font-size:12px;
+    line-height:1.85;opacity:.94}
+  #keys kbd{display:inline-block;min-width:20px;padding:1px 6px;margin-right:3px;
+    background:#2E3440;color:#FFF8EA;border-radius:6px;font:600 11px/1.5 inherit;text-align:center}
+  #prompt{position:absolute;left:50%;bottom:104px;transform:translateX(-50%) scale(.9);
+    padding:11px 20px;font-size:15px;font-weight:700;opacity:0;transition:.16s}
+  #prompt.on{opacity:1;transform:translateX(-50%) scale(1)}
+  #prompt em{font-style:normal;color:#C4553F}
+  #toast{position:absolute;left:50%;top:34%;transform:translateX(-50%);
+    text-align:center;opacity:0;transition:.5s}
+  #toast.on{opacity:1}
+  #toast b{display:block;font-size:38px;font-weight:800;letter-spacing:-.03em;
+    text-shadow:0 2px 0 #FFF8EA,0 6px 20px rgba(46,52,64,.25)}
+  #toast span{font-size:14px;opacity:.7;text-shadow:0 2px 0 #FFF8EA}
+  #mini{position:absolute;right:16px;top:16px;padding:8px;border-radius:18px}
+  #mini canvas{display:block;border-radius:11px}
+  #mode{position:absolute;right:16px;bottom:16px;padding:8px 13px;font-size:12.5px;font-weight:700}
+  #fps{position:absolute;right:16px;bottom:52px;padding:5px 10px;font-size:11px;opacity:.72}
+  #load{position:fixed;inset:0;display:grid;place-items:center;background:#BFE4F2;
+    font-size:15px;font-weight:700;color:#2E3440;z-index:9;transition:.4s}
+  #load.gone{opacity:0;pointer-events:none}
+  #load i{display:block;font-style:normal;font-size:12px;opacity:.6;margin-top:6px;text-align:center}
+  #panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.94);
+    width:min(420px,88vw);padding:20px 22px 18px;opacity:0;pointer-events:none;transition:.18s}
+  #panel.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  #panel .tag{display:inline-block;padding:3px 9px;border-radius:99px;background:#2E3440;
+    color:#FFF8EA;font-size:11px;font-weight:700;letter-spacing:.02em}
+  #panel h3{margin:9px 0 8px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+  #panel p{margin:0 0 5px;font-size:13.5px;line-height:1.65;opacity:.82}
+  #panel .x{margin-top:13px;font-size:11.5px;opacity:.5}
+  #pip{position:absolute;right:16px;top:200px;width:150px;height:150px;border-radius:50%;
+    overflow:hidden;border:4px solid rgba(255,248,234,.95);box-shadow:0 6px 18px rgba(46,52,64,.2);
+    background:#DCEBF2}
+  #pip canvas{display:block;width:100%;height:100%}
+  #pipname{position:absolute;right:16px;top:356px;width:150px;text-align:center;
+    font-size:11.5px;font-weight:700;padding:4px 0}
+  #pick{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);display:flex;
+    gap:5px;align-items:center;padding:7px 9px;pointer-events:auto;flex-wrap:wrap;
+    justify-content:center;max-width:min(560px,92vw)}
+  #pick button{border:0;background:#EFE4D0;color:#2E3440;border-radius:99px;padding:5px 10px;
+    font:700 12px/1 inherit;cursor:pointer;transition:.12s}
+  #pick button:hover{background:#E0D2B8}
+  #pick button.on{background:#2E3440;color:#FFF8EA}
+  #pick .sw{width:22px;height:22px;padding:0;border-radius:8px;border:2px solid rgba(46,52,64,.15)}
+  #pick .sw.on{border-color:#2E3440;transform:scale(1.12)}
+  #pick i{width:1px;height:20px;background:rgba(46,52,64,.15);margin:0 3px}
+  #post{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);
+    width:min(420px,92vw);padding:13px 16px 12px;display:none}
+  #post.on{display:block}
+  #post .row{display:flex;align-items:center;gap:9px;margin-bottom:8px}
+  #post .st{padding:3px 10px;border-radius:99px;font-size:12px;font-weight:800;
+    background:#63C47C;color:#123A1E;transition:.25s}
+  #post .st.warn{background:#F2C14E;color:#4A3608}
+  #post .st.bad{background:#E8695A;color:#FFF0EC}
+  #post .nm{font-size:13px;font-weight:700;flex:1}
+  #post .tm{font-size:12px;opacity:.6;font-variant-numeric:tabular-nums}
+  #post .bar{height:9px;border-radius:99px;background:#E4DAC6;overflow:hidden}
+  #post .bar i{display:block;height:100%;width:0;border-radius:99px;background:#63C47C;
+    transition:width .22s,background .25s}
+  #post .hint{margin-top:7px;font-size:11.5px;opacity:.6}
+  #post button{margin-top:9px;border:0;background:#2E3440;color:#FFF8EA;border-radius:99px;
+    padding:6px 14px;font:700 12px/1 inherit;cursor:pointer;pointer-events:auto}
+  #bub{position:absolute;transform:translate(-50%,-100%);padding:7px 13px;font-size:13px;
+    font-weight:700;opacity:0;transition:.2s;white-space:nowrap}
+  #bub.on{opacity:1}
+  #bub::after{content:'';position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+    border:7px solid transparent;border-top-color:rgba(255,248,234,.92);border-bottom:0}
+  @media (max-width:720px){ #keys,#fps{display:none} #pip{width:104px;height:104px;top:auto;bottom:96px}
+    #pipname{width:104px;top:auto;bottom:76px} }
+</style>
+<canvas id="cv"></canvas>
+<div class="hud">
+  <div id="zone" class="card"><b>캠퍼스</b><span>중앙 광장</span></div>
+  <div id="prompt" class="card"><em>E</em> 들어가기</div>
+  <div id="toast"><b></b><span></span></div>
+  <div id="mini" class="card"><canvas width="168" height="168"></canvas></div>
+  <div id="mode" class="card">3인칭 · <kbd>Tab</kbd> 전환</div>
+  <div id="fps" class="card">–</div>
+  <div id="panel" class="card"><span class="tag"></span><h3></h3><div class="bd"></div>
+    <div class="x">아무 키나 눌러 닫기</div></div>
+  <div id="pip"><canvas width="300" height="300"></canvas></div>
+  <div id="pipname" class="card">나</div>
+  <div id="bub" class="card"></div>
+  <div id="post" class="card">
+    <div class="row"><span class="st">좋음</span><span class="nm">자세 세션</span><span class="tm">0:00</span></div>
+    <div class="bar"><i></i></div>
+    <div class="hint">시연용 곡선입니다 — 웹캠을 붙이면 <code>window.deskfit3d.setPosture(k)</code> 로 들어옵니다.</div>
+    <button id="stand">일어나기 (E)</button>
+  </div>
+  <div id="pick" class="card"></div>
+  <div id="keys" class="card">
+    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 걷기 &nbsp; <kbd>Shift</kbd> 뛰기<br>
+    끌기 시점 돌리기 &nbsp; 휠 확대 &nbsp; <kbd>Tab</kbd> 1인칭
+  </div>
+</div>
+<div id="load">기린캠퍼스를 세우는 중<i>건물 여섯 · 나무 이백 그루</i></div>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { character, SPECIES, OUTFITS, stride, sit, slouch } from './chars.js';
+import { buildCampus, BUILDINGS } from './campus.js';
+import { ROOMS, ROOM_SIZE, ROOM_NAME } from './rooms.js';
+import { bake } from './bake.js';
+import { SPOTS } from './spots.js';
+
+/* ══════════════════════════════════════════════════════════
+   0. 판 깔기
+   ══════════════════════════════════════════════════════════ */
+const cv = document.getElementById('cv');
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xBFE4F2);
+
+const cam = new THREE.PerspectiveCamera(48, 1, .1, 400);
+
+/* 빛 — 하나만 그림자를 지웁니다. 둘이면 그림자가 겹쳐 지저분합니다. */
+const amb = new THREE.AmbientLight(0xFFFFFF, .70);
+const hemi = new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, .85);
+const sun = new THREE.DirectionalLight(0xFFF6E4, 1.95);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 130;
+sun.shadow.bias = -.0006; sun.shadow.normalBias = .05; sun.shadow.radius = 3;
+const fill = new THREE.DirectionalLight(0xCFE4F5, .45);
+fill.position.set(40, 30, -30);
+scene.add(amb, hemi, sun, sun.target, fill);
+
+/* 그림자 상자는 **사람을 따라다녀야** 합니다. 섬 전체를 덮으면
+   2048 짜리 그림자맵이 한 칸에 4cm 를 담아 계단처럼 부서집니다. */
+const SHADOW_SPAN = 26;
+function aimSun(x, z) {
+  sun.position.set(x - 26, 40, z + 20);
+  sun.target.position.set(x, 0, z);
+  const c = sun.shadow.camera;
+  c.left = -SHADOW_SPAN; c.right = SHADOW_SPAN;
+  c.top = SHADOW_SPAN; c.bottom = -SHADOW_SPAN;
+  c.updateProjectionMatrix();
+}
+
+/* ══════════════════════════════════════════════════════════
+   1. 캠퍼스
+   ══════════════════════════════════════════════════════════ */
+const campusRoot = new THREE.Group(); scene.add(campusRoot);
+const CAMPUS = buildCampus(campusRoot);
+const ISLAND_R = CAMPUS.HALF - 2.6;
+/* 물줄기 — 굽기 전에 찾아 둡니다(투명이라 굽기에서 빠집니다) */
+const waterJets = [];
+campusRoot.traverse((o) => {
+  if (o.isMesh && o.material.transparent && o.geometry.type === 'CylinderGeometry'
+      && o.position.y > 2 && o.position.y < 3.2) { o.userData.y0 = o.position.y; waterJets.push(o); }
+});
+{
+  const t0 = performance.now();
+  const r = bake(campusRoot, { tile: 22 });
+  campusRoot.add(r.group);
+  console.log(`캠퍼스 굽기 ${r.before} → ${r.after} 덩이 (${(performance.now() - t0) | 0}ms)`);
+}
+
+/* ══════════════════════════════════════════════════════════
+   2. 사람
+   ══════════════════════════════════════════════════════════ */
+const SPEC = Object.keys(SPECIES);
+const saved = (() => { try { return JSON.parse(localStorage.getItem('girin3d') || '{}'); } catch { return {}; } })();
+const mySpecies = saved.species && SPECIES[saved.species] ? saved.species : '거북이';
+const myFit = OUTFITS[(saved.fit | 0) % OUTFITS.length] || OUTFITS[0];
+
+const playerRig = new THREE.Group(); scene.add(playerRig);
+let player = character(playerRig, mySpecies, myFit, { bag: 0x4A6EA8 });
+/* 정문 안쪽에서 광장을 바라보며 시작합니다 — 첫 화면에 분수가 들어옵니다 */
+const P = { x: 7.6, z: 7.6, dir: -Math.PI * .75, sp: 0, walk: 0 };
+
+/* 발밑 그림자 — 그림자맵이 흐릿할 때 사람이 떠 보이지 않게 받쳐 줍니다 */
+const blob = new THREE.Mesh(new THREE.CircleGeometry(.62, 20),
+  new THREE.MeshBasicMaterial({ color: 0x2E3440, transparent: true, opacity: .17, depthWrite: false }));
+blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
+
+/* 종과 옷 고르기 — 시연에서 제일 먼저 보여 주는 것이 이것입니다 */
+let curSpecies = mySpecies, curFit = (saved.fit | 0) % OUTFITS.length;
+const elPick = document.getElementById('pick');
+function paintPick() {
+  elPick.innerHTML =
+    SPEC.map((n) => `<button data-sp="${n}" class="${n === curSpecies ? 'on' : ''}">${n}</button>`).join('') +
+    '<i></i>' +
+    OUTFITS.map((o, i) => `<button data-fit="${i}" class="sw ${i === curFit ? 'on' : ''}"
+      style="background:#${o.top.toString(16).padStart(6, '0')}"></button>`).join('');
+}
+elPick.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.sp) curSpecies = b.dataset.sp;
+  if (b.dataset.fit) curFit = +b.dataset.fit;
+  rebuildMe(); paintPick();
+  try { localStorage.setItem('girin3d', JSON.stringify({ species: curSpecies, fit: curFit })); } catch {}
+});
+
+/* 지나다니는 사람들 — 빈 캠퍼스는 폐교로 보입니다 */
+const NPC = [];
+{
+  const plan = [
+    ['기린',   1, 30, .00,  .16], ['알파카', 2, 30, .38, -.13],
+    ['햄스터', 3, 24, .72,  .18], ['백조',   4, 24, 1.9, -.15],
+    ['펭귄',   5, 16, 2.7,  .20], ['개구리', 0, 16, 4.4, -.17],
+    ['고슴도치', 3, 36, 5.3, .12], ['거북이', 4, 36, 2.2, -.11],
+  ];
+  plan.forEach(([sp, fit, r, a0, w]) => {
+    const rig = new THREE.Group(); scene.add(rig);
+    const g = character(rig, sp, OUTFITS[fit], { bag: [0xE8695A, 0x63C47C, 0xF2C14E][fit % 3] });
+    NPC.push({ rig, g, r, a: a0, w });
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   3. 실내 — 문에 닿으면 그때 세우고, 한 번 세우면 남겨 둡니다
+   ══════════════════════════════════════════════════════════ */
+const roomCache = new Map();
+const roomRoot = new THREE.Group(); roomRoot.visible = false; scene.add(roomRoot);
+let room = null;               // { key, grid, size }
+
+function buildRoom(key) {
+  if (roomCache.has(key)) return roomCache.get(key);
+  const g = new THREE.Group();
+  ROOMS[key](g);
+  const size = ROOM_SIZE[key];
+  const grid = occupancy(g, size);
+  const r = bake(g);
+  g.add(r.group);
+  console.log(`${key} 굽기 ${r.before} → ${r.after} 덩이`);
+  const rec = { key, group: g, size, grid };
+  roomCache.set(key, rec);
+  return rec;
+}
+
+/* 가구 충돌 — 손으로 적지 않고 **형상에서 뽑습니다**.
+   방마다 백 개가 넘는 물건을 일일이 적으면 반드시 하나를 빠뜨립니다.
+   바닥에 붙은 납작한 것(마루 · 깔개)과 머리 위(등 · 현수막)는 뺍니다. */
+const CELL = .34;
+function occupancy(g, size) {
+  g.updateMatrixWorld(true);
+  const nx = Math.ceil(size.w / CELL), nz = Math.ceil(size.d / CELL);
+  const cells = new Uint8Array(nx * nz);
+  const bb = new THREE.Box3();
+  g.traverse((o) => {
+    if (!o.isMesh) return;
+    bb.setFromObject(o);
+    if (bb.max.y < .34 || bb.min.y > 1.7) return;          // 납작한 것 · 머리 위
+    const i0 = Math.max(0, Math.floor((bb.min.x + size.w / 2) / CELL));
+    const i1 = Math.min(nx - 1, Math.floor((bb.max.x + size.w / 2) / CELL));
+    const j0 = Math.max(0, Math.floor((bb.min.z + size.d / 2) / CELL));
+    const j1 = Math.min(nz - 1, Math.floor((bb.max.z + size.d / 2) / CELL));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) cells[j * nx + i] = 1;
+  });
+  return { nx, nz, cells, w: size.w, d: size.d };
+}
+
+/* ══════════════════════════════════════════════════════════
+   4. 못 지나가는 곳
+   ══════════════════════════════════════════════════════════ */
+const R_BODY = .52;
+function hitCampus(x, z) {
+  if (x * x + z * z > ISLAND_R * ISLAND_R) return true;
+  for (let k = 0; k < CAMPUS.colliders.length; k++) {
+    const c = CAMPUS.colliders[k];
+    if (c.camOnly) continue;                               // 카메라만 막는 것
+    const dx = x - c.x, dz = z - c.z;
+    if (dx * dx + dz * dz > 400) continue;                 // 멀면 건너뜁니다
+    const co = Math.cos(c.ry || 0), si = Math.sin(c.ry || 0);
+    const lx = co * dx - si * dz, lz = si * dx + co * dz;
+    if (Math.abs(lx) < c.w / 2 + R_BODY && Math.abs(lz) < c.d / 2 + R_BODY) return true;
+  }
+  return false;
+}
+function hitRoom(x, z) {
+  const G = room.grid;
+  if (Math.abs(x) > G.w / 2 - .3 || Math.abs(z) > G.d / 2 - .1) return true;
+  for (let sx = -1; sx <= 1; sx++) for (let sz = -1; sz <= 1; sz++) {
+    const i = Math.floor((x + sx * R_BODY + G.w / 2) / CELL);
+    const j = Math.floor((z + sz * R_BODY + G.d / 2) / CELL);
+    if (i < 0 || j < 0 || i >= G.nx || j >= G.nz) return true;
+    if (G.cells[j * G.nx + i]) return true;
+  }
+  return false;
+}
+const hit = (x, z) => (room ? hitRoom(x, z) : hitCampus(x, z));
+/* 카메라는 건물급(big)에만 막힙니다.
+   실내에서는 아예 안 막습니다 — 방은 벽이 둘뿐인 **잘라 낸 방** 이라,
+   카메라가 열린 쪽으로 빠져나가야 안이 보입니다. 가구에 카메라가
+   걸리면 화면이 통째로 책상 옆구리가 됩니다. */
+function hitCam(x, z) {
+  /* 실내에서는 **벽 둘(-x · -z)만** 막습니다. 열린 쪽으로는 카메라가
+     빠져나가야 안이 보이고, 가구에까지 걸리면 화면이 책상 옆구리가 됩니다.
+     벽을 안 막았더니 앉은 자리 뒤가 벽인 곳에서 화면이 통째로 회색이었습니다. */
+  if (room) return x < -room.size.w / 2 + .5 || z < -room.size.d / 2 + .5;
+  for (let k = 0; k < CAMPUS.colliders.length; k++) {
+    const c = CAMPUS.colliders[k];
+    if (!c.big) continue;
+    const dx = x - c.x, dz = z - c.z;
+    if (dx * dx + dz * dz > 900) continue;
+    const co = Math.cos(c.ry || 0), si = Math.sin(c.ry || 0);
+    const lx = co * dx - si * dz, lz = si * dx + co * dz;
+    if (Math.abs(lx) < c.w / 2 + .7 && Math.abs(lz) < c.d / 2 + .7) return true;
+  }
+  return false;
+}
+
+/* ══════════════════════════════════════════════════════════
+   5. 조작
+   ══════════════════════════════════════════════════════════ */
+const key = Object.create(null);
+addEventListener('keydown', (e) => {
+  if (panelOn) { e.preventDefault(); closePanel(); return; }
+  if (e.code === 'Tab') { e.preventDefault(); toggleView(); return; }
+  if (e.code === 'KeyE' || e.code === 'Space') { e.preventDefault(); interact(); return; }
+  key[e.code] = true;
+});
+addEventListener('keyup', (e) => { key[e.code] = false; });
+addEventListener('blur', () => { for (const k in key) key[k] = false; });
+
+let yaw = -Math.PI * .75, pitch = .55, dist = 11.5;
+let first = false;
+let drag = null;
+cv.addEventListener('pointerdown', (e) => {
+  if (first) { try { cv.requestPointerLock?.(); } catch {} return; }
+  drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', (e) => {
+  if (first && document.pointerLockElement === cv) {
+    yaw -= e.movementX * .0026; pitch = clamp(pitch - e.movementY * .0022, -.9, 1.1); return;
+  }
+  if (!drag) return;
+  yaw -= (e.clientX - drag.x) * .006;
+  pitch = clamp(pitch + (e.clientY - drag.y) * .004, .12, 1.22);
+  clampRoomYaw();
+  drag = { x: e.clientX, y: e.clientY };
+});
+addEventListener('pointerup', () => { drag = null; });
+cv.addEventListener('wheel', (e) => { e.preventDefault();
+  dist = clamp(dist + e.deltaY * .015, room ? 5.5 : 7, room ? 17 : 30); },
+  { passive: false });
+function toggleView() {
+  first = !first;
+  player.visible = !first;
+  blob.visible = !first;
+  pitch = first ? .05 : .62;
+  document.getElementById('mode').innerHTML =
+    (first ? '1인칭' : '3인칭') + ' · <kbd>Tab</kbd> 전환';
+  try { if (first) cv.requestPointerLock?.(); else document.exitPointerLock?.(); } catch {}
+}
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+/* 방은 벽이 뒤쪽 둘뿐입니다. 카메라가 벽 바깥으로 돌면 벽 등짝만 보입니다. */
+function clampRoomYaw() {
+  if (!room || first) return;
+  const mid = -Math.PI * .75;
+  let d = ((yaw - mid + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  yaw = mid + clamp(d, -.72, .72);
+}
+
+/* 손가락 — 왼쪽 절반은 걷고 오른쪽 절반은 돌립니다 */
+let stick = null;
+cv.addEventListener('touchstart', (e) => {
+  const t = e.changedTouches[0];
+  if (t.clientX < innerWidth / 2) stick = { id: t.identifier, x: t.clientX, y: t.clientY, dx: 0, dy: 0 };
+}, { passive: true });
+cv.addEventListener('touchmove', (e) => {
+  for (const t of e.changedTouches) {
+    if (stick && t.identifier === stick.id) {
+      stick.dx = clamp((t.clientX - stick.x) / 54, -1, 1);
+      stick.dy = clamp((t.clientY - stick.y) / 54, -1, 1);
+    }
+  }
+}, { passive: true });
+cv.addEventListener('touchend', (e) => {
+  for (const t of e.changedTouches) if (stick && t.identifier === stick.id) stick = null;
+}, { passive: true });
+
+/* ══════════════════════════════════════════════════════════
+   6. 드나들기
+   ══════════════════════════════════════════════════════════ */
+let near = null;                 // 지금 닿아 있는 문
+const elPrompt = document.getElementById('prompt');
+const elZone = document.getElementById('zone');
+const elToast = document.getElementById('toast');
+let toastT = 0;
+
+function toast(a, b) {
+  elToast.querySelector('b').textContent = a;
+  elToast.querySelector('span').textContent = b || '';
+  elToast.classList.add('on'); toastT = 1.9;
+}
+function setZone(a, b) {
+  elZone.querySelector('b').textContent = a;
+  elZone.querySelector('span').textContent = b || '';
+}
+const elPanel = document.getElementById('panel');
+let panelOn = false;
+function openPanel(s) {
+  elPanel.querySelector('.tag').textContent = s.tag;
+  elPanel.querySelector('h3').textContent = s.title;
+  elPanel.querySelector('.bd').innerHTML = (s.body || []).map((t) => `<p>${t}</p>`).join('');
+  elPanel.classList.add('on'); panelOn = true;
+}
+function closePanel() { elPanel.classList.remove('on'); panelOn = false; }
+
+let spot = null;                 // 지금 닿아 있는 자리
+/* ── 자세 세션 ──
+   이 서비스의 본체입니다. 앉으면 캐릭터가 실제로 앉고, 목이 무너지면
+   캐릭터도 같이 굽습니다. 지금 곡선은 시연용이고, 웹캠 판정이 붙으면
+   window.deskfit3d.setPosture(k) 한 줄로 갈아 끼웁니다. */
+const SESS = { on: false, k: 0, want: 0, t: 0, next: 0, demo: true, seat: null, title: '' };
+const elPost = document.getElementById('post');
+const elBub = document.getElementById('bub');
+document.getElementById('stand').addEventListener('click', () => endSession());
+
+function startSession(s) {
+  SESS.on = true; SESS.t = 0; SESS.k = 0; SESS.want = 0; SESS.next = 3.2;
+  SESS.seat = s.seat; SESS.title = s.title;
+  P.x = s.seat.x; P.z = s.seat.z; P.dir = s.seat.dir; P.sp = 0;
+  /* 카메라 자리 = P - forward(yaw)*r 입니다. 그래서 뒤에서 보려면
+     yaw 는 **바라보는 각 그대로** 여야 합니다. +π 를 더했더니
+     카메라가 얼굴 앞으로 가서 책상 밑을 비췄습니다. */
+  /* 카메라를 높이 두면 천장등 갓이 화면을 가립니다 — 낮게 앉습니다 */
+  yaw = s.seat.dir; pitch = .28; dist = 5.0;
+  sit(player, true); sit(pipMe, true);
+  elPost.querySelector('.nm').textContent = s.title;
+  elPost.classList.add('on');
+  document.getElementById('pick').style.display = 'none';
+}
+function endSession(quiet) {
+  SESS.on = false;
+  sit(player, false); sit(pipMe, false);
+  slouch(player, 0); slouch(pipMe, 0);
+  elPost.classList.remove('on'); elBub.classList.remove('on');
+  document.getElementById('pick').style.display = '';
+  if (quiet) return;
+  dist = 9.5; pitch = .74; yaw = -Math.PI * .75;
+  P.z += Math.cos(P.dir + Math.PI) * 1.1; P.x += Math.sin(P.dir + Math.PI) * 1.1;
+}
+/* 웹캠 판정이 붙는 자리 — 0(곧음)~1(무너짐) */
+window.deskfit3d = {
+  setPosture(k) { SESS.demo = false; SESS.want = Math.max(0, Math.min(1, k)); },
+  useDemo() { SESS.demo = true; },
+  get session() { return SESS.on; },
+};
+
+function interact() {
+  if (panelOn) { closePanel(); return; }
+  if (SESS.on) { endSession(); return; }
+  if (spot) { if (spot.seat) startSession(spot); else openPanel(spot); return; }
+  if (room) { leaveRoom(); return; }
+  if (near) enterRoom(near);
+}
+function spotsHere() { return SPOTS[room ? room.key : 'campus'] || []; }
+function enterRoom(portal) {
+  if (SESS.on) endSession(true);
+  const rec = buildRoom(portal.zone === 'clubshop' ? 'shop' : portal.zone);
+  roomRoot.clear(); roomRoot.add(rec.group);
+  room = rec;
+  roomRoot.visible = true; campusRoot.visible = false;
+  NPC.forEach((n) => (n.rig.visible = false));
+  scene.background.set(0xE7EEF4);
+  hemi.intensity = .78; amb.intensity = .80; sun.intensity = 1.5;
+  /* 문은 방의 앞(+z) 한가운데입니다 */
+  P.x = 0; P.z = rec.size.d / 2 - 3.0; P.dir = Math.PI;
+  /* 실내 시점 — 열린 모서리(+x +z) 쪽에서 비스듬히 내려다봅니다 */
+  yaw = -Math.PI * .75; pitch = .74; dist = 9.5;
+  P.back = portal;
+  const nm = ROOM_NAME[rec.key];
+  setZone(nm[0], nm[1]); toast(nm[0], nm[1]);
+  elPrompt.innerHTML = '<em>E</em> 나가기';
+}
+function leaveRoom() {
+  if (SESS.on) endSession(true);
+  const p = P.back;
+  roomRoot.visible = false; campusRoot.visible = true;
+  NPC.forEach((n) => (n.rig.visible = true));
+  scene.background.set(0xBFE4F2);
+  hemi.intensity = .85; amb.intensity = .70; sun.intensity = 1.95;
+  room = null;
+  /* 문에서 한 걸음 물러난 자리로 나옵니다 — 문에 겹치면 바로 다시 들어갑니다 */
+  const b = BUILDINGS.find((x) => x.zone === p.zone);
+  P.x = p.x + Math.sin(b.ry) * 2.6; P.z = p.z + Math.cos(b.ry) * 2.6;
+  P.dir = b.ry; yaw = b.ry + Math.PI; pitch = .55; dist = 11.5;
+  setZone('캠퍼스', '중앙 광장'); toast('캠퍼스', p.name + ' 앞');
+  elPrompt.innerHTML = '<em>E</em> 들어가기';
+}
+
+/* ══════════════════════════════════════════════════════════
+   7. 미니맵
+   ══════════════════════════════════════════════════════════ */
+const mm = document.querySelector('#mini canvas'), mx = mm.getContext('2d');
+const MMR = 78, MMS = MMR / CAMPUS.HALF;
+function drawMini() {
+  mx.clearRect(0, 0, 168, 168);
+  mx.save(); mx.translate(84, 84);
+  mx.fillStyle = '#8FD8EE'; mx.beginPath(); mx.arc(0, 0, 82, 0, 7); mx.fill();
+  mx.fillStyle = '#6FC85E'; mx.beginPath(); mx.arc(0, 0, MMR, 0, 7); mx.fill();
+  mx.strokeStyle = '#F0D49A'; mx.lineWidth = 4;
+  mx.beginPath(); mx.arc(0, 0, 30 * MMS, 0, 7); mx.stroke();
+  mx.fillStyle = '#F2E6CC'; mx.beginPath(); mx.arc(0, 0, 12 * MMS, 0, 7); mx.fill();
+  BUILDINGS.forEach((b) => {
+    mx.save(); mx.translate(b.x * MMS, b.z * MMS); mx.rotate(-b.ry);
+    mx.fillStyle = b.zone === 'library' || b.zone === 'mainhall' ? '#3F6BA8' : '#8E9AA8';
+    mx.fillRect(-b.w * b.s * MMS / 2, -b.d * b.s * MMS / 2, b.w * b.s * MMS, b.d * b.s * MMS);
+    mx.restore();
+  });
+  if (!room) {
+    mx.fillStyle = '#E8483C';
+    mx.beginPath(); mx.arc(P.x * MMS, P.z * MMS, 4.2, 0, 7); mx.fill();
+    mx.strokeStyle = '#FFF8EA'; mx.lineWidth = 1.6; mx.stroke();
+    mx.strokeStyle = '#E8483C'; mx.lineWidth = 2.4; mx.beginPath();
+    mx.moveTo(P.x * MMS, P.z * MMS);
+    mx.lineTo(P.x * MMS + Math.sin(P.dir) * 10, P.z * MMS + Math.cos(P.dir) * 10);
+    mx.stroke();
+  } else {
+    mx.fillStyle = '#2E3440'; mx.font = '700 13px sans-serif'; mx.textAlign = 'center';
+    mx.fillText('실내', 0, 4);
+  }
+  mx.restore();
+}
+
+/* ══════════════════════════════════════════════════════════
+   8. 한 판
+   ══════════════════════════════════════════════════════════ */
+/* 얼굴 창 — 교수님 지적("웹캠이 주된 기능인데 희미하다")에 대한 답입니다.
+   같은 씬을 작은 카메라로 한 번 더 그려서 **내 캐릭터 얼굴**을 크게 띄웁니다.
+   나중에 웹캠 화면을 이 원 안에 겹치면 둘이 한 자리에서 보입니다. */
+const pipCv = document.querySelector('#pip canvas');
+const pipR = new THREE.WebGLRenderer({ canvas: pipCv, antialias: true, alpha: true });
+pipR.setPixelRatio(1); pipR.setSize(300, 300, false);
+pipR.toneMapping = THREE.ACESFilmicToneMapping; pipR.toneMappingExposure = 1.08;
+pipR.outputColorSpace = THREE.SRGBColorSpace;
+const pipCam = new THREE.PerspectiveCamera(34, 1, .1, 40);
+const pipScene = new THREE.Scene();
+pipScene.background = null;
+{
+  pipScene.add(new THREE.AmbientLight(0xFFFFFF, .95));
+  pipScene.add(new THREE.HemisphereLight(0xE8F4FF, 0xF6E6C4, 1.0));
+  const k = new THREE.DirectionalLight(0xFFFAF0, 1.5); k.position.set(-3, 5, 6); pipScene.add(k);
+  const f = new THREE.DirectionalLight(0xCFE4F5, .6); f.position.set(4, 2, 3); pipScene.add(f);
+}
+/* 같은 캐릭터를 한 벌 더 세웁니다 — 본체를 옮겨 담으면 월드에서 사라집니다 */
+const pipRig = new THREE.Group(); pipScene.add(pipRig);
+let pipMe = character(pipRig, mySpecies, myFit, { bag: false });
+document.getElementById('pipname').textContent = mySpecies + ' · 나';
+
+/* 종을 바꾸면 몸을 새로 세웁니다. 옷은 몸이 같아서 색만 바뀝니다 —
+   3D 로 오면서 생긴 가장 큰 이득이 이것입니다(2D 때는 종마다 207장). */
+function rebuildMe() {
+  const y = playerRig.rotation.y;
+  playerRig.clear(); pipRig.clear();
+  player = character(playerRig, curSpecies, OUTFITS[curFit], { bag: 0x4A6EA8 });
+  pipMe = character(pipRig, curSpecies, OUTFITS[curFit], { bag: false });
+  playerRig.rotation.y = y;
+  player.visible = !first;
+  document.getElementById('pipname').textContent = curSpecies + ' · 나';
+}
+paintPick();
+
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false);
+  cam.aspect = w / h; cam.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+const elFps = document.getElementById('fps');
+let last = performance.now(), acc = 0, frames = 0, T = 0;
+
+let quality = 1;
+function tick(now) {
+  requestAnimationFrame(tick);
+  const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
+  /* 탭이 안 보이면 그리지 않습니다 — 자세 추정과 같은 CPU 를 씁니다 */
+  if (document.hidden) return;
+
+  /* ---- 걷기 ---- */
+  let ix = 0, iz = 0;
+  if (key.KeyW || key.ArrowUp) iz += 1;
+  if (key.KeyS || key.ArrowDown) iz -= 1;
+  if (key.KeyA || key.ArrowLeft) ix -= 1;
+  if (key.KeyD || key.ArrowRight) ix += 1;
+  if (stick) { ix += stick.dx; iz -= stick.dy; }
+  const mag = Math.hypot(ix, iz);
+  const run = (key.ShiftLeft || key.ShiftRight) ? 1.85 : 1;
+  const speed = (room ? 4.4 : 6.6) * run;
+  if (SESS.on) { ix = 0; iz = 0; }
+  if (mag > .06 && !SESS.on) {
+    ix /= mag; iz /= mag;
+    /* 화면 기준으로 움직입니다 — 카메라를 돌리면 W 의 뜻도 같이 돕니다 */
+    const s = Math.sin(yaw), c = Math.cos(yaw);
+    const wx = ix * c + iz * s, wz = -ix * s + iz * c;
+    const nx = P.x + wx * speed * dt, nz = P.z + wz * speed * dt;
+    if (!hit(nx, P.z)) P.x = nx;
+    if (!hit(P.x, nz)) P.z = nz;
+    P.dir = Math.atan2(wx, wz);
+    P.sp = Math.min(1, P.sp + dt * 7) * run;
+  } else {
+    P.sp = Math.max(0, P.sp - dt * 9);
+  }
+  P.walk += P.sp * dt;
+  playerRig.position.set(P.x, 0, P.z);
+  playerRig.rotation.y = smoothAngle(playerRig.rotation.y, P.dir, 1 - Math.pow(.0006, dt));
+  if (!SESS.on) stride(player, P.walk, P.sp);
+  blob.position.set(P.x, .22, P.z);
+  if (SESS.on && mag > .06) endSession();
+
+  /* ---- 문 · 말 걸 자리 ---- */
+  spot = null;
+  { let best = 1e9;
+    for (const s of spotsHere()) {
+      const d2 = (P.x - s.x) ** 2 + (P.z - s.z) ** 2;
+      if (d2 < s.r * s.r && d2 < best) { best = d2; spot = s; }
+    } }
+  if (!room) {
+    near = null;
+    for (const p of CAMPUS.portals)
+      if ((P.x - p.x) ** 2 + (P.z - p.z) ** 2 < p.r * p.r) { near = p; break; }
+    if (near) { elPrompt.innerHTML = `<em>E</em> ${near.name} 들어가기`; spot = null; }
+    else if (spot) elPrompt.innerHTML = `<em>E</em> ${spot.title}`;
+    elPrompt.classList.toggle('on', !!(near || spot) && !panelOn && !SESS.on);
+  } else {
+    const out = P.z > room.size.d / 2 - 1.1;
+    if (out) { elPrompt.innerHTML = '<em>E</em> 나가기'; spot = null; }
+    else if (spot) elPrompt.innerHTML = `<em>E</em> ${spot.title}`;
+    elPrompt.classList.toggle('on', !!(out || spot) && !panelOn && !SESS.on);
+    if (out && !SESS.on && P.sp > .2 && P.z > room.size.d / 2 - .5) leaveRoom();
+  }
+
+  /* ---- 지나다니는 사람 ---- */
+  if (!room) NPC.forEach((n) => {
+    n.a += n.w * dt * .12;
+    const x = Math.cos(n.a) * n.r, z = Math.sin(n.a) * n.r;
+    n.rig.position.set(x, 0, z);
+    n.rig.rotation.y = Math.atan2(-Math.sin(n.a) * Math.sign(n.w), Math.cos(n.a) * Math.sign(n.w));
+    stride(n.g, T * Math.abs(n.w) * 5.4, .82);
+  });
+
+  /* ---- 카메라 ---- */
+  if (first) {
+    cam.position.set(P.x, 1.86, P.z);
+    const dx = Math.sin(yaw), dz = Math.cos(yaw);
+    cam.lookAt(P.x + dx * 10, 1.86 + Math.tan(-pitch) * 10, P.z + dz * 10);
+  } else {
+    /* 카메라가 벽을 뚫고 들어가면 화면이 통째로 초록 벽이 됩니다.
+       사람에서 카메라 쪽으로 한 걸음씩 짚어 보고 막히기 전에 세웁니다. */
+    let d = dist;
+    const sx = -Math.sin(yaw), sz = -Math.cos(yaw), cp = Math.cos(pitch);
+    for (let t = 1.6; t <= dist; t += .7) {
+      if (hitCam(P.x + sx * cp * t, P.z + sz * cp * t)) { d = Math.max(room ? 2.4 : 3.4, t - 1.0); break; }
+    }
+    const h = Math.sin(pitch) * d, r = Math.cos(pitch) * d;
+    const want = new THREE.Vector3(P.x + sx * r, 1.2 + h, P.z + sz * r);
+    cam.position.lerp(want, 1 - Math.pow(.0009, dt));
+    cam.lookAt(P.x, 1.35, P.z);
+  }
+  aimSun(P.x, P.z);
+
+  /* ---- 자세 세션 ---- */
+  if (SESS.on) {
+    SESS.t += dt;
+    if (SESS.demo) {
+      SESS.next -= dt;
+      if (SESS.next <= 0) {
+        /* 오래 앉을수록 무너집니다 — 실제 데이터가 그렇게 생겼습니다 */
+        const drift = Math.min(.62, SESS.t / 90);
+        SESS.want = Math.max(0, Math.min(1, drift + (Math.sin(SESS.t * 1.7) * .5 + .5) * .55));
+        SESS.next = 2.4 + (SESS.t % 3);
+      }
+    }
+    SESS.k += (SESS.want - SESS.k) * Math.min(1, dt * 1.6);
+    slouch(player, SESS.k); slouch(pipMe, SESS.k);
+    const st = elPost.querySelector('.st'), bar = elPost.querySelector('.bar i');
+    const bad = SESS.k > .62, warn = !bad && SESS.k > .34;
+    st.className = 'st' + (bad ? ' bad' : warn ? ' warn' : '');
+    st.textContent = bad ? '굽음' : warn ? '주의' : '좋음';
+    bar.style.width = Math.round((1 - SESS.k) * 100) + '%';
+    bar.style.background = bad ? '#E8695A' : warn ? '#F2C14E' : '#63C47C';
+    const m = Math.floor(SESS.t / 60), sc = Math.floor(SESS.t % 60);
+    elPost.querySelector('.tm').textContent = m + ':' + String(sc).padStart(2, '0');
+    /* 말풍선 — 2D 월드가 하던 것을 그대로 */
+    const msg = bad ? '목이 앞으로 나왔어요' : warn ? '조금만 펴 볼까요' : '';
+    if (msg) {
+      const v = new THREE.Vector3(P.x, 2.55, P.z).project(cam);
+      elBub.style.left = ((v.x * .5 + .5) * innerWidth) + 'px';
+      elBub.style.top = ((-v.y * .5 + .5) * innerHeight - 8) + 'px';
+      elBub.textContent = msg;
+      elBub.classList.add('on');
+    } else elBub.classList.remove('on');
+  }
+
+  /* ---- 분수 ---- 굽지 않은(투명) 물줄기만 살짝 흔듭니다 */
+  if (!room && waterJets.length) waterJets.forEach((j, i) => {
+    j.scale.y = 1 + Math.sin(T * 3.1 + i) * .09;
+    j.position.y = j.userData.y0 + Math.sin(T * 3.1 + i) * .05;
+  });
+
+  /* ---- 알림 ---- */
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) elToast.classList.remove('on'); }
+  drawMini();
+
+  /* 얼굴 창 — 몸을 살짝 흔들고 걸을 때는 같이 걷습니다 */
+  pipMe.rotation.y = Math.sin(T * .5) * .28;
+  stride(pipMe, P.walk, P.sp * .6);
+  pipCam.position.set(0, 1.74, 3.0);
+  pipCam.lookAt(0, 1.52, 0);
+  pipR.render(pipScene, pipCam);
+
+  frames++; acc += dt;
+  if (acc > .7) {
+    const f = Math.round(frames / acc);
+    elFps.textContent = f + ' fps';
+    /* 느린 기계에서는 해상도를 한 단계 내립니다. 30fps 아래로 떨어지면
+       그림이 조금 무뎌지는 편이 끊기는 것보다 낫습니다. */
+    if (f < 28 && quality > .62) { quality = .62; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
+    else if (f > 55 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
+    frames = 0; acc = 0;
+  }
+  renderer.render(scene, cam);
+}
+function smoothAngle(a, b, t) {
+  let d = ((b - a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+  return a + d * t;
+}
+aimSun(P.x, P.z);
+requestAnimationFrame(tick);
+setTimeout(() => document.getElementById('load').classList.add('gone'), 260);
+toast('기린캠퍼스', '중앙 광장');
+window.__ready = true;
+window.__P = P;
+/* 자동 시험용 — 걸어서 이동하기엔 헤드리스 렌더가 너무 느립니다 */
+window.__tp = (x, z, dir) => { P.x = x; P.z = z; if (dir != null) { P.dir = dir; yaw = dir; } };
+window.__enter = (zone) => { const p = CAMPUS.portals.find((q) => q.zone === zone); if (p) enterRoom(p); };
+window.__leave = () => leaveRoom();
+window.__view = () => toggleView();
+window.__room = () => (room ? room.key : null);
+window.__k = (v) => { SESS.k = SESS.want = v; SESS.demo = false; };
+window.__sit = (t) => { const s = (SPOTS[room ? room.key : 'campus'] || []).find((q) => q.seat); if (s) startSession(s); if (t != null) { SESS.demo = false; SESS.want = t; } };
+window.__stats = () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles });
+</script>

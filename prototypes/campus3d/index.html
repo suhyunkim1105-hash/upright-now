@@ -243,7 +243,8 @@
   #post .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
   #post .bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--ok);
     transition:width .22s,background .25s}
-  #post .hint{margin-top:9px;font-size:10.5px;color:var(--tx3);line-height:1.5}
+  #post .hint{margin-top:9px;font-size:10.5px;color:var(--tx2);line-height:1.55}
+  #post .hint em{font-style:normal;color:var(--tx3)}
   #post button{margin-top:10px;border:0;background:var(--acc);color:#08251F;border-radius:99px;
     padding:7px 15px;font:800 11.5px/1 var(--ff);cursor:pointer;pointer-events:auto}
 
@@ -283,12 +284,17 @@
   #chat{position:absolute;left:16px;bottom:18px;width:min(340px,58vw);pointer-events:none}
   #chatlog{max-height:150px;overflow:hidden;display:flex;flex-direction:column;
     justify-content:flex-end;gap:4px}
-  #chatlog div{display:flex;gap:7px;align-items:baseline;background:var(--gl);
+  /* 채팅 줄에는 유리(backdrop-filter)를 쓰지 않습니다. 줄마다 합성 레이어가
+     하나씩 생기는데, WebGL 화면 위에서는 아예 안 그려지는 경우가 있었습니다
+     (헤드리스 검사에서 재현). 대신 배경을 조금 더 진하게 깔았습니다. */
+  #chatlog div{display:flex;gap:7px;align-items:baseline;background:rgba(19,23,30,.86);
     border:1px solid var(--ln2);border-radius:11px;padding:5px 10px;font-size:12px;color:var(--tx);
-    align-self:flex-start;max-width:100%;backdrop-filter:blur(10px);animation:cin .22s}
+    align-self:flex-start;max-width:100%;opacity:1;box-shadow:0 2px 8px rgba(6,10,17,.24)}
+  /* 채팅 줄에는 **등장 효과를 넣지 않습니다.** @keyframes 도 transition 도
+     써 봤는데, 갓 만든 요소에서는 opacity 0 에 멈춘 채 아예 안 보이는
+     경우가 있었습니다(헤드리스 검사에서 재현). 말은 보이는 게 먼저입니다. */
   #chatlog b{font-weight:800;color:var(--acc);flex:none}
   #chatlog.sys div b{color:var(--warn)}
-  @keyframes cin{from{opacity:0;transform:translateY(5px)}}
   #chatin{display:none;margin-top:7px;pointer-events:auto}
   #chatin.on{display:flex;gap:6px}
   #chatin input{flex:1;border:1px solid var(--ln);border-radius:12px;padding:9px 12px;
@@ -399,7 +405,8 @@
   <div id="post" class="g">
     <div class="row"><span class="st">좋음</span><span class="nm">자세 세션</span><span class="tm">0:00</span></div>
     <div class="bar"><i></i></div>
-    <div class="hint">시연용 곡선입니다 — 웹캠을 붙이면 <code>window.deskfit3d.setPosture(k)</code> 로 들어옵니다.</div>
+    <div class="hint">앉아 있는 동안 자세를 봅니다. 목이 무너지면 캐릭터도 같이 굽습니다.<br>
+      <em>지금은 웹캠 대신 시연용 곡선으로 움직입니다.</em></div>
     <button id="stand">일어나기 (E)</button>
   </div>
 

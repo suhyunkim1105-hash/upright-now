@@ -49,3 +49,13 @@ MIT License 전문은 각 원본 저장소의 `LICENSE` 또는 README에서 확�
 - 원본: [Tanat05/korcen.ts](https://github.com/Tanat05/korcen.ts)
 - 라이선스: Apache License 2.0
 - 파일: `prototypes/shared/korcen.js` — 3D 월드 채팅도 같은 사전을 씁니다
+
+### 픽셀 글꼴 — 갈무리(Galmuri)
+
+- 원본: [quiple/galmuri](https://github.com/quiple/galmuri)
+- 라이선스: SIL Open Font License 1.1 — 원문은 `prototypes/shared/fonts/Galmuri-OFL.md`
+- 파일: `prototypes/shared/fonts/Galmuri{7,9,11}.woff2`
+  (2D 오픈월드가 쓰던 `prototypes/openworld/assets/fonts/` 사본과 같은 파일)
+- 쓰는 곳: 픽셀 랜딩(`prototypes/landing-pixel`)·아이소메트릭 월드(`prototypes/campusiso`)
+- **크기는 설계 단위의 정수배로만 씁니다** — 7은 8px, 9는 10px, 11은 12px 과 그 배수.
+  사이 크기를 쓰면 획이 뭉개져서 갈무리를 쓰는 뜻이 없어집니다.

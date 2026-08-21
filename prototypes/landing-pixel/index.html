@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deskfit — 앉는 시간이 세계가 돼요</title>
+<meta name="description" content="웹캠이 자세를 판정하는 온라인 자습실. 영상은 브라우저 밖으로 나가지 않고, 앉은 시간은 우리 학교 이름으로 쌓입니다.">
+<meta property="og:title" content="Deskfit — 앉는 시간이 세계가 돼요">
+<meta property="og:description" content="웹캠이 자세를 판정하는 온라인 자습실. 개인정보는 로컬에만 남아요.">
+<link rel="icon" href="../landing/assets/favicon.ico">
+<style>
+/* ── 글꼴 ── Galmuri, SIL Open Font License 1.1
+   ../shared/fonts/Galmuri-OFL.md 에 원문을 두었습니다.
+   글자 크기는 반드시 설계 단위의 정수배로 씁니다 —
+   Galmuri11 은 12, Galmuri9 는 10, Galmuri7 은 8. 어긋나면 획이 뭉갭니다. */
+@font-face { font-family:'Galmuri11'; src:url('../shared/fonts/Galmuri11.woff2') format('woff2'); font-display:swap; }
+@font-face { font-family:'Galmuri9';  src:url('../shared/fonts/Galmuri9.woff2')  format('woff2'); font-display:swap; }
+@font-face { font-family:'Galmuri7';  src:url('../shared/fonts/Galmuri7.woff2')  format('woff2'); font-display:swap; }
+
+:root{
+  --ink:#241E2B; --ink2:#5E5470; --cream:#FFF6E2; --cream2:#F2E3C2;
+  --acc:#F2A03C; --accD:#C97A22; --leaf:#4FA85A; --leafD:#367F43;
+  --clay:#E8695A; --sea:#3E86C4; --plum:#8E6BB8;
+  --pane: 0 -4px 0 var(--cream), 0 4px 0 var(--cream), -4px 0 0 var(--cream), 4px 0 0 var(--cream),
+          0 -8px 0 var(--ink),   0 8px 0 var(--ink),   -8px 0 0 var(--ink),   8px 0 0 var(--ink);
+}
+*{box-sizing:border-box}
+html{ scroll-behavior:smooth; scroll-padding-top:96px; }
+body{
+  margin:0; background:#0E1428; color:var(--ink);
+  font:400 12px/2 'Galmuri11','Galmuri9',monospace;
+  word-break:keep-all; overflow-wrap:anywhere;
+  -webkit-font-smoothing:none; text-rendering:geometricPrecision;
+}
+img,canvas{ image-rendering:pixelated; image-rendering:crisp-edges; }
+a{ color:inherit; }
+
+#sky{ position:fixed; inset:0; width:100%; height:100%; z-index:0; display:block; }
+#veil{ position:fixed; inset:0; z-index:1; pointer-events:none;
+       background:radial-gradient(120% 80% at 50% 40%, transparent 40%, rgba(10,14,30,.35) 100%); }
+.wrap{ position:relative; z-index:2; }
+
+/* ── 픽셀 판때기 ── 모서리를 따 낸 8비트 대화상자 테두리 */
+.pnl{ background:var(--cream); margin:8px; padding:20px 22px; box-shadow:var(--pane); }
+.pnl.dark{ background:#2A2440; color:#FFF6E2;
+  box-shadow:0 -4px 0 #2A2440,0 4px 0 #2A2440,-4px 0 0 #2A2440,4px 0 0 #2A2440,
+             0 -8px 0 #FFF6E2,0 8px 0 #FFF6E2,-8px 0 0 #FFF6E2,8px 0 0 #FFF6E2; }
+
+/* ── 뼈대 ── */
+header.bar{ position:fixed; top:0; left:0; right:0; z-index:20; }
+.bar{ background:rgba(30,25,40,.94); border-bottom:4px solid #FFF6E2; }
+.bar .in{ max-width:1000px; margin:0 auto; padding:13px 24px; display:flex; align-items:center; gap:6px; }
+.bar a.nv{ font:400 12px/1 'Galmuri11'; color:#FFF6E2; text-decoration:none; padding:8px 10px; }
+.bar a.nv:hover{ background:#FFF6E2; color:var(--ink); }
+.bar .sp{ flex:1 }
+.bar .go{ background:var(--acc); color:var(--ink); padding:9px 14px; text-decoration:none;
+  font:400 12px/1 'Galmuri11'; box-shadow:0 4px 0 var(--accD); }
+.bar .go:hover{ transform:translateY(2px); box-shadow:0 2px 0 var(--accD); }
+.brand{ display:flex; align-items:center; gap:8px; margin-right:10px; color:#FFF6E2;
+  font:400 14px/1 'Galmuri11'; text-decoration:none; }
+.brand canvas{ width:24px; height:24px }
+
+.skip{ position:absolute; left:-9999px; }
+.skip:focus{ left:8px; top:8px; z-index:99; background:#FFF6E2; color:var(--ink); padding:8px 12px; }
+
+section{ position:relative; }
+.hold{ max-width:1000px; margin:0 auto; padding:0 24px; }
+.tall{ padding:120px 0; }
+
+h1,h2,h3{ margin:0; font-weight:400; }
+h2{ font:400 24px/1.5 'Galmuri11'; }
+h3{ font:400 14px/1.7 'Galmuri11'; }
+.eyebrow{ display:inline-block; font:400 10px/1 'Galmuri9'; letter-spacing:1px;
+  background:var(--ink); color:var(--cream); padding:7px 10px; margin-bottom:16px; }
+.lead{ font:400 12px/2.1 'Galmuri11'; color:var(--ink2); }
+p{ margin:0 0 14px; }
+p:last-child{ margin-bottom:0 }
+b,strong{ font-weight:400; background:linear-gradient(transparent 62%, #FFE08A 62%); }
+.dim{ color:var(--ink2) }
+
+/* ── 첫 화면 ── */
+#hero{ min-height:100svh; display:flex; flex-direction:column; justify-content:center; align-items:center;
+  text-align:center; padding:140px 24px 0; }
+#logo{ display:block; margin:0 auto 6px; }
+#hero .sub{ color:#FFF6E2; font:400 24px/1.7 'Galmuri11'; text-shadow:2px 2px 0 rgba(20,16,32,.85); margin:18px 0 0; }
+#hero .sub em{ font-style:normal; color:#FFD98A; }
+.start{ display:inline-flex; align-items:center; gap:10px; margin-top:34px;
+  background:var(--acc); color:var(--ink); text-decoration:none; padding:16px 26px;
+  font:400 16px/1 'Galmuri11'; box-shadow:0 6px 0 var(--accD), 0 6px 0 6px rgba(20,16,32,.35); }
+.start:hover{ transform:translateY(3px); box-shadow:0 3px 0 var(--accD), 0 3px 0 6px rgba(20,16,32,.35); }
+.start .blink{ animation:bk 1s steps(1) infinite; }
+@keyframes bk{ 50%{ opacity:0 } }
+.scrolltip{ margin:44px 0 0; color:#FFF6E2; font:400 10px/1 'Galmuri9'; opacity:.9; }
+.scrolltip i{ display:block; margin-top:10px; animation:dn 1.2s steps(3) infinite; font-style:normal; font-size:14px; }
+@keyframes dn{ 0%{transform:translateY(0)} 50%{transform:translateY(6px)} 100%{transform:translateY(0)} }
+.parade{ width:100%; display:block; margin-top:auto; }
+
+/* ── 장면 띠 ── 구획 사이를 걸어서 지나갑니다 */
+.band{ width:100%; display:block; }
+
+/* ── 격자 ── */
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+.grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+.grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+@media (max-width:820px){ .grid2,.grid3,.grid4{ grid-template-columns:1fr } }
+
+/* ── 표 ── */
+table{ border-collapse:collapse; width:100%; font:400 12px/1.9 'Galmuri11'; }
+th,td{ text-align:left; padding:9px 10px; border-bottom:2px solid #E3D6B8; vertical-align:top; }
+th{ font-weight:400; color:var(--ink2); border-bottom:4px solid var(--ink); }
+tr:last-child td{ border-bottom:0 }
+td.k{ color:var(--ink2); white-space:nowrap }
+
+/* ── 카운터 ── */
+.zero{ font:400 48px/1 'Galmuri11'; color:var(--clay); }
+.stepno{ display:inline-block; width:26px; height:26px; line-height:26px; text-align:center;
+  background:var(--ink); color:var(--cream); font:400 12px/26px 'Galmuri11'; margin-right:8px; }
+
+/* ── 캐릭터 ── */
+.mugs{ display:flex; flex-wrap:wrap; gap:12px; justify-content:center; }
+.mug{ background:var(--cream2); padding:10px 8px 8px; text-align:center; cursor:pointer;
+  box-shadow:0 -4px 0 var(--cream2),0 4px 0 var(--cream2),-4px 0 0 var(--cream2),4px 0 0 var(--cream2),
+             0 -8px 0 var(--ink),0 8px 0 var(--ink),-8px 0 0 var(--ink),8px 0 0 var(--ink); margin:8px; }
+.mug canvas{ width:64px; height:120px; display:block; margin:0 auto 6px; }
+.mug span{ font:400 12px/1 'Galmuri11'; }
+.mug.on{ background:#FFE9A8; box-shadow:0 -4px 0 #FFE9A8,0 4px 0 #FFE9A8,-4px 0 0 #FFE9A8,4px 0 0 #FFE9A8,
+             0 -8px 0 var(--clay),0 8px 0 var(--clay),-8px 0 0 var(--clay),8px 0 0 var(--clay); }
+
+/* ── 아이소 미리보기 ── */
+#isowrap{ background:#1B2440; padding:10px; margin:8px;
+  box-shadow:0 -4px 0 #1B2440,0 4px 0 #1B2440,-4px 0 0 #1B2440,4px 0 0 #1B2440,
+             0 -8px 0 #FFF6E2,0 8px 0 #FFF6E2,-8px 0 0 #FFF6E2,8px 0 0 #FFF6E2; }
+#iso{ width:100%; max-width:960px; margin:0 auto; display:block; }
+.legend{ display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:14px; color:#FFF6E2; font:400 12px/1.6 'Galmuri11'; }
+.legend i{ display:inline-block; width:12px; height:12px; margin-right:6px; vertical-align:-1px; }
+
+/* ── 리그 ── */
+.isle{ text-align:center; }
+.isle canvas{ width:100%; max-width:160px; display:block; margin:0 auto 8px; }
+
+/* ── 자주 묻는 질문 ── */
+details{ margin:8px 0 26px; }
+summary{ list-style:none; cursor:pointer; display:flex; gap:12px; align-items:flex-start;
+  font:400 14px/1.7 'Galmuri11'; }
+summary::-webkit-details-marker{ display:none }
+summary .no{ background:var(--acc); color:var(--ink); padding:2px 8px; font:400 12px/1.7 'Galmuri11'; }
+summary .ar{ margin-left:auto; color:var(--ink2); }
+details[open] summary .ar{ transform:scaleY(-1); }
+.ans{ margin-top:16px; padding-top:16px; border-top:2px dashed #D9C79E; }
+.note{ background:#FFF0CE; padding:12px 14px; margin:14px 0; border-left:6px solid var(--acc); }
+.warn{ background:#FFE2DC; padding:12px 14px; margin:14px 0; border-left:6px solid var(--clay); }
+ul.bul{ margin:0 0 14px; padding-left:18px; }
+ul.bul li{ margin:6px 0; }
+
+/* ── 마지막 부름 ── */
+#start .pnl{ text-align:center; }
+footer{ position:relative; z-index:2; color:#CFC6E0; padding:60px 24px 40px; text-align:center;
+  font:400 12px/2 'Galmuri11'; }
+footer a{ color:#FFE0A0; text-decoration:none; margin:0 8px; }
+footer a:hover{ text-decoration:underline }
+footer .fine{ color:#8E86A6; margin-top:16px; font:400 10px/1.8 'Galmuri9'; }
+
+@media (max-width:640px){
+  .hold{ padding:0 12px } .tall{ padding:80px 0 }
+  h2{ font-size:18px } .bar .in{ padding:10px 12px; gap:2px }
+  .bar a.nv{ padding:6px 5px; font-size:10px; font-family:'Galmuri9' }
+}
+@media (prefers-reduced-motion:reduce){ *{ animation:none !important } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<canvas id="sky" aria-hidden="true"></canvas>
+<div id="veil" aria-hidden="true"></div>
+
+<header class="bar">
+  <div class="in">
+    <a class="brand" href="#top"><canvas id="mark" width="16" height="16" aria-hidden="true"></canvas>Deskfit</a>
+    <a class="nv" href="#about">서비스</a>
+    <a class="nv" href="#camera">카메라</a>
+    <a class="nv" href="#world">월드</a>
+    <a class="nv" href="#league">랭킹전</a>
+    <a class="nv" href="#faq">FAQ</a>
+    <span class="sp"></span>
+    <a class="go" href="../onboarding/index.html">시작하기</a>
+  </div>
+</header>
+
+<div class="wrap" id="top">
+<main id="main">
+
+<!-- ══════════ 첫 화면 ══════════ -->
+<section id="hero">
+  <canvas id="logo" width="240" height="52" aria-label="기린캠퍼스"></canvas>
+  <p class="sub">앉는 시간이 <em>세계</em>가 돼요<br>거북목을 고치면서 집중을 시작해요</p>
+  <a class="start" href="../onboarding/index.html"><span class="blink">▶</span> 시작하기</a>
+  <p class="scrolltip">스크롤<i>▼</i></p>
+  <canvas class="parade" id="parade0" height="72" aria-hidden="true"></canvas>
+</section>
+
+<!-- ══════════ 소개 ══════════ -->
+<section id="about" class="tall">
+  <div class="hold">
+    <div class="pnl">
+      <span class="eyebrow">소개</span>
+      <h2>거북목을 고치면서<br>집중을 시작해요</h2>
+      <p class="lead" style="margin-top:14px">
+        Deskfit 은 웹캠으로 앉은 자세를 보는 온라인 자습실입니다.
+        집중할수록 내 캐릭터가 자라고, 앉은 시간은 우리 학교 이름으로 쌓여요.
+      </p>
+    </div>
+
+    <div class="grid2" style="margin-top:36px">
+      <div class="pnl">
+        <span class="eyebrow" style="background:var(--clay)">Deskfit 이 없던 대학생</span>
+        <canvas class="cut" data-cut="before" width="140" height="96" style="width:100%;max-width:280px;display:block;margin:6px auto 14px"></canvas>
+        <p>PC 앞에서 대학생은 잠을 줄이면서 건강한 자세도 함께 잃어 왔어요.
+           과제 하나 끝낼 때마다 목이 한 뼘씩 앞으로 나갑니다.</p>
+      </div>
+      <div class="pnl">
+        <span class="eyebrow" style="background:var(--leaf)">Deskfit 이 바꿀 대학생</span>
+        <canvas class="cut" data-cut="after" width="140" height="96" style="width:100%;max-width:280px;display:block;margin:6px auto 14px"></canvas>
+        <p>자세를 교정하며 집중해요. 집중하는 동안 친구들과 같은 캠퍼스를 걷고,
+           모은 코인으로 내 캐릭터와 방을 꾸며요.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<canvas class="band" id="band1" height="120" aria-hidden="true"></canvas>
+
+<!-- ══════════ 카메라의 약속 ══════════ -->
+<section id="camera" class="tall">
+  <div class="hold">
+    <div class="grid2" style="align-items:start">
+      <div class="pnl">
+        <span class="eyebrow">카메라의 약속</span>
+        <h2>카메라는<br>곁에 있을 뿐이에요</h2>
+        <p class="lead" style="margin-top:14px">
+          월드에 들어오기 전 나만의 자세 기준을 맞춰요.
+          그 다음엔 조용히 관찰하고 피드백만 할 뿐이에요.
+          세션이 끝나면 AI 가 평소 자세 습관을 문장으로 정리해 줍니다.
+        </p>
+      </div>
+      <div class="pnl dark" style="text-align:center">
+        <p class="dim" style="color:#BDB2D6;margin-bottom:6px">서버로 간 프레임</p>
+        <p class="zero"><span id="frames">0</span> 장</p>
+        <p style="margin-top:12px;color:#EDE4FF">분석은 브라우저 안에서 끝나요.<br>영상도, 좌표도 밖으로 나가지 않아요.</p>
+        <canvas id="cam" width="120" height="72" style="width:200px;margin:14px auto 0;display:block"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 어떻게 판정하나 ══════════ -->
+<section id="judge" class="tall" style="padding-top:0">
+  <div class="hold">
+    <div class="pnl">
+      <span class="eyebrow">자세를 어떻게 판정하나요</span>
+      <h2>정답 자세가 아니라<br>10초 전의 나와 비교해요</h2>
+      <p class="lead" style="margin-top:14px">
+        어깨선을 자로 삼아 머리의 위치와 거리를 재고, 세션 시작 10초 동안 등록한
+        내 평소 자세와의 차이만 봅니다. 남의 바른 자세와 겨루게 하지 않습니다.
+      </p>
+
+      <h3 style="margin-top:30px"><span class="stepno">1</span>몸에서 점을 찾습니다</h3>
+      <p>웹캠 화면에서 어깨·눈·귀·코·엉덩이의 위치를 찾아냅니다.
+         얼굴을 알아보는 게 아니라 뼈대 몇 개의 좌표만 잡습니다.</p>
+
+      <h3 style="margin-top:22px"><span class="stepno">2</span>어깨 너비를 1로 놓고 나머지를 잽니다</h3>
+      <p>사람마다 몸도 카메라 거리도 다릅니다. 그래서 두 어깨 사이 거리를 자로 삼고,
+         나머지 값을 전부 그 비율로 환산합니다. 책상에서 30cm 떨어져 앉든 60cm 든
+         같은 기준이 되도록. 이렇게 <b>10가지 값</b>을 매 프레임 계산합니다.</p>
+
+      <table style="margin:18px 0 6px">
+        <tr><th style="width:44%">무엇을 재나</th><th>무너지면</th></tr>
+        <tr><td class="k">얼굴 크기 비율</td><td>커짐 = 화면 쪽으로 다가옴</td></tr>
+        <tr><td class="k">눈–어깨 세로 거리</td><td>줄어듦 = 고개가 파묻힘</td></tr>
+        <tr><td class="k">눈–코 세로 간격</td><td>벌어짐 = 고개 숙임</td></tr>
+        <tr><td class="k">귀와 눈의 높이 차</td><td>귀가 올라감 = 고개 숙임</td></tr>
+        <tr><td class="k">어깨 너비</td><td>넓어짐 = 몸 전체가 앞으로</td></tr>
+        <tr><td class="k">머리의 좌우 치우침</td><td>한쪽으로 쏠림</td></tr>
+        <tr><td class="k">어깨 기울기</td><td>한쪽 어깨가 내려감</td></tr>
+        <tr><td class="k">상체 기울기</td><td>골반 대비 상체가 쏠림</td></tr>
+        <tr><td class="k">머리까지의 거리(cm)</td><td>가까워짐 = 머리가 앞으로</td></tr>
+        <tr><td class="k">고개 각도(도)</td><td>턱을 내림</td></tr>
+      </table>
+
+      <h3 style="margin-top:26px"><span class="stepno">3</span>10초 동안 내 기준을 만듭니다</h3>
+      <p>세션을 시작하면 10초간 지금 앉은 모습을 수백 번 재서, 각 값의 <b>중앙값</b>과
+         <b>흔들림 폭</b>을 기록합니다. 평균이 아니라 중앙값을 쓰는 이유는, 중간에 한 번
+         크게 움직여도 기준이 끌려가지 않게 하기 위해서예요.</p>
+
+      <h3 style="margin-top:22px"><span class="stepno">4</span>차이가 얼마나 벌어졌는지 봅니다</h3>
+      <p>지금 값이 내 중앙값에서 얼마나 벗어났는지를 <b>내 평소 흔들림 폭 대비</b>로
+         계산합니다. 원래 자주 움직이는 사람은 기준이 넉넉해지고, 거의 고정된 사람은
+         좁아집니다.</p>
+
+      <h3 style="margin-top:22px"><span class="stepno">5</span>여러 값이 동시에 벗어나야 인정합니다</h3>
+      <p>하나만 벗어나면 <b>주의</b>, 둘 이상이 벗어나면 <b>나쁨</b>입니다. 한 프레임
+         튀었다고 바로 바뀌지도 않아요 — 주의는 1.5초, 나쁨은 5초, 좋음 복귀는 2초 동안
+         그 상태가 이어져야 확정됩니다. 기침 한 번, 물 한 모금에 화면이 요란해지지
+         않게 하려는 장치예요.</p>
+
+      <div class="note">
+        <b>세션이 끝나면</b> 좋음·주의·나쁨 세 상태에 머문 시간과 회복 횟수가 남습니다.
+        여기에 AI 리포트를 열면 오늘 어느 시간대에 무너졌는지, 어떤 흐름이 반복됐는지를
+        문장으로 읽을 수 있어요. 리포트는 무료이고, 열지 않아도 숫자는 그대로 볼 수 있습니다.
+      </div>
+      <p class="dim">리포트는 자세에 점수나 등급을 매기지 않습니다. 의학적 판단도 하지 않아요.
+         언제·어떻게 무너졌는지의 <b>패턴</b>만 보여 줍니다.</p>
+    </div>
+  </div>
+</section>
+
+<canvas class="band" id="band2" height="120" aria-hidden="true"></canvas>
+
+<!-- ══════════ 캐릭터 ══════════ -->
+<section id="friends" class="tall">
+  <div class="hold">
+    <div class="pnl" style="text-align:center">
+      <span class="eyebrow">내 캐릭터</span>
+      <h2>여덟 마리가 기다리고 있어요</h2>
+      <p class="lead" style="margin:14px auto 0;max-width:520px">
+        한 마리로 시작해서 집중만 하면 모두 내 캐릭터가 될 수 있어요.
+        알을 사서 부화시키면 아직 없는 종이 나옵니다.
+      </p>
+      <div class="mugs" id="mugs" style="margin-top:26px"></div>
+      <p class="dim" style="margin-top:18px">눌러 보세요 — 옷이 바뀝니다. 상점에서 파는 옷 여덟 벌이 그대로예요.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 월드 ══════════ -->
+<section id="world" class="tall" style="padding-top:0">
+  <div class="hold">
+    <div class="pnl">
+      <span class="eyebrow">월드</span>
+      <h2>기린캠퍼스를 걸어 다녀요</h2>
+      <p class="lead" style="margin-top:14px">
+        건물 여섯 채가 있고 안까지 다 들어갑니다. 집중 세션은 도서관과 본관 자리에서 시작하고,
+        나머지는 쉬러 가는 곳이에요. 옆을 지나가는 캐릭터는 대부분 지금 같이 앉아 있는 사람입니다.
+      </p>
+    </div>
+
+    <div id="isowrap" style="margin-top:28px">
+      <canvas id="iso" width="480" height="344" aria-label="기린캠퍼스 아이소메트릭 조감도"></canvas>
+      <div class="legend">
+        <span><i style="background:#C9E2F2"></i>도서관 — 집중 세션 · 자리 앉기</span>
+        <span><i style="background:#F2C98A"></i>본관 — 집중 세션 · 학교 공지</span>
+        <span><i style="background:#F2A9A0"></i>학생회관 — 명예의 전당 · 게시판</span>
+        <span><i style="background:#B8E0A8"></i>학생식당 — 학식 · 자판기</span>
+        <span><i style="background:#C9B8E8"></i>미니게임관 — 네 가지 게임</span>
+        <span><i style="background:#F2DE9A"></i>기숙사 — 내 방 · 시간표 · 창밖 날씨</span>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-top:28px">
+      <div class="pnl"><h3>같이 앉기</h3><p class="dim">같은 구역에 있는 사람이 실시간으로 보여요.
+        말풍선으로 짧게 이야기할 수 있고, 욕설은 걸러집니다.</p></div>
+      <div class="pnl"><h3>꾸미기</h3><p class="dim">집중해서 모은 코인으로 옷과 가구를 삽니다.
+        기숙사 방에 가구를 놓으면 다음에 와도 그대로 있어요.</p></div>
+      <div class="pnl"><h3>쉬는 시간</h3><p class="dim">미니게임관에 네 가지가 있습니다.
+        동물 합치기, 같은 그림 찾기, 달리기, 2048.</p></div>
+    </div>
+  </div>
+</section>
+
+<canvas class="band" id="band3" height="120" aria-hidden="true"></canvas>
+
+<!-- ══════════ 랭킹전 ══════════ -->
+<section id="league" class="tall">
+  <div class="hold">
+    <div class="pnl">
+      <span class="eyebrow">이번 시즌 랭킹전</span>
+      <h2>우리 학교가<br>제일 오래 집중했어요</h2>
+      <p class="lead" style="margin-top:14px">
+        이번 시즌, 다섯 캠퍼스가 함께 앉았어요. 제일 오래 앉은 학교의 섬이 가장 밝게 빛나요.
+        개인 순위는 만들지 않습니다 — 자세로 사람을 줄 세우지 않겠다는 게 이 서비스의 원칙이에요.
+      </p>
+      <div id="isles" style="margin-top:26px;display:flex;flex-wrap:wrap;justify-content:center;gap:18px 26px"></div>
+      <table style="margin-top:26px">
+        <tr><th style="width:30%">지표</th><th>뜻</th></tr>
+        <tr><td class="k">참여 시간</td><td>그 학교 사람들이 카메라 앞에서 실제로 앉아 있던 시간의 합</td></tr>
+        <tr><td class="k">회복 횟수</td><td>자세가 무너졌다가 다시 돌아온 횟수의 합</td></tr>
+      </table>
+      <p style="margin-top:16px">회복을 함께 세는 이유가 있어요. 앉은 시간만 보면 오래 버틴 사람만
+        이깁니다. 회복은 무너졌다는 걸 전제로 하는 지표라, 자세를 고쳐 앉는 행동 자체에 값을 매깁니다.</p>
+      <div class="warn"><b>아직 베타입니다.</b> 보상의 내용·규모·지급 방식은 확정되지 않았고
+        바뀔 수 있어요. 정해지는 대로 서비스 안에 공지하겠습니다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════ 자주 묻는 질문 ══════════ -->
+<section id="faq" class="tall" style="padding-top:0">
+  <div class="hold">
+    <div class="pnl">
+      <span class="eyebrow">자주 묻는 질문</span>
+      <h2 style="margin-bottom:24px">궁금한 것들</h2>
+
+      <details id="privacy">
+        <summary><span class="no">01</span><span>개인정보와 영상은 어떻게 다뤄요?</span><span class="ar">▼</span></summary>
+        <div class="ans">
+          <p>영상은 이 브라우저 밖으로 나가지 않습니다. 판정은 기기 안에서 끝나고 프레임은
+             즉시 버려져요. 서버로 가는 건 "몇 분 앉았는가" 같은 숫자 몇 개뿐입니다.</p>
+          <h3 style="margin-top:18px">어디서 계산하나</h3>
+          <p>자세 판정 모델을 처음 한 번 내려받은 뒤로는 <b>브라우저 안에서</b> 돕니다.
+             계산하려고 영상을 어디로 보내지 않아요.</p>
+          <h3 style="margin-top:18px">서버로 가지 않는 것</h3>
+          <p>영상·사진·스냅샷, 자세 좌표 원본, 10초 동안 만든 내 기준값, 얼굴에서 뽑은 어떤 값도.</p>
+          <h3 style="margin-top:18px">세션이 끝날 때 서버로 가는 것 (전부)</h3>
+          <p>세션 ID, 앉은 시간(분), 캠퍼스에 머문 시간(분), 회복 횟수, 시작·종료 시각, 선택한 학교.
+             이 여섯 줄이 전부입니다.</p>
+          <div class="note">
+            <b>직접 확인해 보세요.</b> 말보다 확실합니다.
+            <ul class="bul" style="margin-top:10px;margin-bottom:0">
+              <li><b>Network 탭</b> — F12 로 개발자도구를 열고 세션을 돌려 보세요. 오가는 요청이
+                  전부 보입니다. 영상 업로드가 없다는 걸 눈으로 확인하실 수 있어요.</li>
+              <li><b>인터넷 끊기</b> — 모델을 한 번 받은 뒤 랜선을 뽑거나 와이파이를 꺼 보세요.
+                  자세 판정은 그대로 돕니다. 계산이 기기 안에서 돈다는 증거예요.</li>
+            </ul>
+          </div>
+          <h3 style="margin-top:18px">회원가입이 없습니다</h3>
+          <p>이메일·전화번호·비밀번호를 받지 않아요. 다른 사람에게 보이는 건 닉네임과 캐릭터뿐이고,
+             카메라 화면은 누구에게도 보이지 않습니다. 화면 공유 기능 자체가 없어요.</p>
+          <p class="dim">더 자세한 내용은
+             <a href="../landing/legal/privacy.html">개인정보처리방침</a>과
+             <a href="../landing/legal/camera.html">카메라 사용 고지</a>에 적어 두었습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="no">02</span><span>자리에서 일어나면 어떻게 되나요?</span><span class="ar">▼</span></summary>
+        <div class="ans">
+          <p>세션은 멈추지 않지만, 카메라에 몸이 안 보이는 동안은 자세 판정이 서 있습니다.
+             그 시간은 코인으로도 리포트로도 잡히지 않아요.</p>
+          <h3 style="margin-top:18px">세션은 계속됩니다</h3>
+          <p>자리에서 일어나도 세션이 끝나지 않고 캠퍼스도 그대로예요. 스트레칭하러 다녀오는 걸
+             벌주지 않습니다.</p>
+          <h3 style="margin-top:18px">다만 판정은 멈춥니다</h3>
+          <p>화면에서 벗어나면 상태가 <b>측정 준비</b>로 돌아가고, 그동안은 좋음·주의·나쁨 어느
+             쪽으로도 세지 않아요. 아래 경우가 그렇습니다.</p>
+          <ul class="bul">
+            <li>몸이 화면 밖으로 나감 — <span class="dim">화면에서 벗어났어요</span></li>
+            <li>너무 멀리 있어 어깨가 안 잡힘 — <span class="dim">조금 더 가까이 앉아 주세요</span></li>
+            <li>두 사람 이상이 잡힘 — <span class="dim">두 명 이상 보여요</span></li>
+          </ul>
+          <h3 style="margin-top:18px">그래서 생기는 일 두 가지</h3>
+          <p><b>① 코인이 그만큼 줄어듭니다.</b> 코인은 의자에 앉은 벽시계 시간이 아니라
+             판정이 실제로 돈 시간으로 계산해요. 자리를 오래 비우면 그 시간은 빠집니다.
+             카메라를 가려 두고 코인만 쌓는 걸 막기 위한 설계예요.</p>
+          <p><b>② AI 리포트가 그 구간을 읽지 못합니다.</b> 자세 값이 없는 구간이라 흐름이 끊깁니다.
+             자주 오래 비운 세션일수록 리포트가 볼 수 있는 게 줄어들어요.</p>
+          <div class="note">앉는 것과 카메라는 별개입니다. 카메라는 캠퍼스에 들어온 순간부터
+             세션이 끝날 때까지 계속 켜져 있어요. 도서관·본관 의자에 앉으면 화면 구석에 작은
+             카메라 창이 뜨는데, 그건 <b>표시 방식이 바뀌는 것</b>이지 그때 카메라가 켜지는 게 아닙니다.</div>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="no">03</span><span>어떤 장비가 필요한가요?</span><span class="ar">▼</span></summary>
+        <div class="ans">
+          <p>웹캠 달린 PC 와 크롬, 그리고 인터넷이면 끝입니다. 설치할 것도 결제할 것도 없어요.</p>
+          <table style="margin:14px 0">
+            <tr><th style="width:34%">필요한 것</th><th>설명</th></tr>
+            <tr><td class="k">데스크톱·노트북</td><td>책상 앞에서 쓰는 서비스라 데스크톱 화면만 지원합니다</td></tr>
+            <tr><td class="k">웹캠</td><td>노트북 내장 캠으로 충분해요. 외장 웹캠도 좋습니다</td></tr>
+            <tr><td class="k">크롬</td><td>최신 크롬 권장. 엣지·웨일 등 같은 계열도 됩니다</td></tr>
+            <tr><td class="k">인터넷</td><td>첫 실행 때 판정 모델을 받을 때 필요합니다</td></tr>
+          </table>
+          <p><b>설치할 게 없습니다.</b> 앱도 확장 프로그램도 없어요. 주소만 열면 시작됩니다.</p>
+          <p><b>카메라 위치 잡기.</b> 상반신이 화면에 들어오면 됩니다. 어깨 양쪽이 보이는 정도가
+             좋고, 화면과 너무 멀면 "조금 더 가까이 앉아 주세요" 가 떠요.</p>
+          <p><b>조명.</b> 역광이면 인식률이 떨어집니다. 창을 등지고 앉았다면 화면 쪽 조명을
+             밝게 해 주세요.</p>
+          <p><b>성능이 걱정된다면</b> 설정에서 저사양 모드를 켜면 그림자와 장식을 끄고 30fps 로
+             그립니다. 렌더링 부담이 줄어 카메라 판정에 여유가 생겨요.</p>
+          <p><b>카메라 없이도</b> 권한을 거부해도 캠퍼스는 걸어 다닐 수 있습니다.
+             자세 판정과 그에 따른 코인만 동작하지 않아요.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="no">04</span><span>개인 기록은 어떻게 하나요?</span><span class="ar">▼</span></summary>
+        <div class="ans">
+          <p>회원가입 없이도 기록이 남습니다. 기록은 기본적으로 내 브라우저 안에 쌓이고,
+             서버 저장을 쓸 때는 이름 없는 임의 ID 에만 묶여요.</p>
+          <h3 style="margin-top:18px">어떻게 가입 없이 기록이 되나</h3>
+          <p>브라우저에는 사이트마다 쓸 수 있는 저장 공간이 있습니다. 닉네임·캐릭터·코인·세션
+             기록을 전부 여기에 둬요. 서버에 계정을 만들 필요가 없는 이유입니다.</p>
+          <h3 style="margin-top:18px">브라우저에 남는 것</h3>
+          <p>닉네임과 캐릭터, 10초로 만든 내 자세 기준, 지난 세션 요약(최근 12개), 코인과 아이템,
+             방 꾸미기 상태, 환경 설정.</p>
+          <h3 style="margin-top:18px">랭킹에 참여하면</h3>
+          <p>세션 기록이 서버에도 쌓입니다. 이때도 이메일 같은 건 받지 않고, 자동으로 발급되는
+             임의의 문자열 ID 하나에만 묶여요. 그 ID 는 누구인지 알 수 없는 값입니다.</p>
+          <div class="warn">
+            <b>그래서 생기는 한계 — 솔직히 말씀드립니다.</b>
+            <ul class="bul" style="margin-top:10px;margin-bottom:0">
+              <li>브라우저 저장소를 지우면 복구할 수 없습니다. 되돌릴 열쇠(이메일·비밀번호)를
+                  애초에 받지 않기 때문이에요.</li>
+              <li>시크릿 모드로 쓰면 창을 닫는 순간 사라집니다.</li>
+              <li>다른 브라우저나 다른 기기로 접속하면 다른 사람이 됩니다.</li>
+            </ul>
+          </div>
+          <p><b>지우고 싶을 때</b> 설정의 전체 데이터 초기화 한 번이면 이 기기의 모든 기록이
+             사라집니다. 서버 기록까지 지우고 싶으면
+             <a href="mailto:ikmc554@mju.ac.kr">ikmc554@mju.ac.kr</a> 로 ID 를 알려 주세요.</p>
+          <p><b>네트워크가 끊겨도</b> 서버로 못 보낸 기록은 대기열에 남아 있다가, 다시 연결되면
+             알아서 올라갑니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="no">05</span><span>랭킹전 참여와 보상은 무엇인가요?</span><span class="ar">▼</span></summary>
+        <div class="ans">
+          <p>학교끼리 겨룹니다. 개인 순위는 없고, 같은 학교 사람들이 앉은 시간과 회복 횟수가
+             학교 점수로 모여요. 시즌은 90일입니다.</p>
+          <h3 style="margin-top:18px">어떻게 참여하나</h3>
+          <p>처음 시작할 때 학교를 고르면 그때부터 내 세션이 그 학교의 기록에 더해집니다.
+             따로 신청할 게 없어요.</p>
+          <h3 style="margin-top:18px">보상</h3>
+          <p>시즌이 끝나면 권역별 1위 학교를 가립니다. 그 학교에서 가장 많이 기여한 두 명
+             (참여 시간·회복 횟수 기준)에게 소정의 상품을 드립니다. 시즌 기록은 학생회관
+             명예의 전당에 남습니다.</p>
+          <h3 style="margin-top:18px">어뷰징은 막습니다</h3>
+          <p>학교 점수에 들어가는 시간은 <b>판정이 실제로 돈 시간</b>뿐이에요. 카메라를 가려
+             두거나 사진을 비춰 두는 방식은 점수가 되지 않습니다.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="no">06</span><span>공모전이나 대외활동 정보도 있나요?</span><span class="ar">▼</span></summary>
+        <div class="ans">
+          <p>본관 게시판에서 우리 학교 공지를 읽을 수 있습니다. 학교가 공식으로 여는 RSS 를
+             그대로 받아 오는 방식이라 원문 주소로 바로 넘어가요.</p>
+          <p>대외활동·공모전 사이트의 목록은 가져오지 않습니다. 링커리어 이용약관 제20조 4항이
+             크롤링·스크래핑을 금지하고 있어서, 저희는 목록 대신 <b>공식 링크만</b> 겁니다.
+             누르면 그쪽 사이트에서 직접 보시게 돼요.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<canvas class="band" id="band4" height="120" aria-hidden="true"></canvas>
+
+<!-- ══════════ 마지막 ══════════ -->
+<section id="start" class="tall">
+  <div class="hold">
+    <div class="pnl">
+      <span class="eyebrow">지금 시작해요</span>
+      <h2>오늘 집중 시간이<br>우리 학교 이름으로 쌓여요</h2>
+      <p class="lead" style="margin-top:14px">세션을 시작하고, 집중만 하면 돼요.</p>
+      <a class="start" href="../onboarding/index.html" style="margin-top:26px"><span class="blink">▶</span> 시작하기</a>
+      <canvas class="parade" id="parade1" height="72" style="margin-top:30px" aria-hidden="true"></canvas>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>웹캠이 자세를 판정하는 온라인 자습실 · 개인정보는 로컬에만 남아요</p>
+  <p style="margin-top:14px">
+    <a href="../landing/legal/terms.html">서비스 이용약관</a>
+    <a href="../landing/legal/privacy.html">개인정보처리방침</a>
+    <a href="../landing/legal/camera.html">카메라 사용 고지</a>
+    <a href="../landing/legal/security.html">보안 정책</a>
+    <a href="../landing/legal/accessibility.html">접근성 고지</a>
+    <a href="../landing/legal/licenses.html">오픈소스 라이선스</a>
+    <a href="../landing/legal/support.html">서비스 상태·문의</a>
+  </p>
+  <p class="fine">글꼴 Galmuri — SIL Open Font License 1.1<br>© Monkeyz. All rights reserved.</p>
+</footer>
+</div>
+
+<script type="module">
+import { SPEC_LIST, SPECIES, OUTFITS, frame, FRAME_W, FRAME_H } from './sprites.js';
+import * as S from './scene.js';
+
+/* ══════════ 공통 ══════════ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* 'rgb(…)' 도 '#rrggbb' 도 받습니다 — 하늘색이 두 형태로 오갑니다 */
+function parse(c) {
+  if (c[0] === '#') return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+  const m = c.match(/-?\d+/g);
+  return [+m[0], +m[1], +m[2]];
+}
+const mix = (a, b, t) => {
+  const A = parse(a), B = parse(b);
+  return `rgb(${A[0] + (B[0] - A[0]) * t | 0},${A[1] + (B[1] - A[1]) * t | 0},${A[2] + (B[2] - A[2]) * t | 0})`;
+};
+
+/* 화면 안에 들어온 캔버스만 그립니다 — 여덟 개가 동시에 돌면 노트북이 웁니다 */
+const live = new Set();
+const io = new IntersectionObserver((es) => es.forEach((e) => {
+  e.isIntersecting ? live.add(e.target) : live.delete(e.target);
+}), { rootMargin: '120px' });
+
+/* ══════════ 하늘 ══════════ */
+const sky = $('#sky'), sg = sky.getContext('2d');
+const PXS = 4;
+let SW = 0, SH = 0, prog = 0, scrollY = 0;
+
+const STARS = Array.from({ length: 150 }, (_, i) => {
+  const r = (n) => ((Math.sin(i * 12.9898 + n * 78.233) * 43758.5453) % 1 + 1) % 1;
+  return { x: r(1), y: r(2) * .62, ph: r(3) * 6.28, big: r(4) > .88 };
+});
+const CLOUDS = Array.from({ length: 7 }, (_, i) => ({
+  img: S.cloud(i + 1, 30 + i * 5, 11 + (i % 3) * 2),
+  x: (i * 0.17 + 0.05) % 1, y: 0.06 + ((i * 37) % 100) / 100 * 0.34, sp: 0.12 + (i % 4) * 0.05,
+}));
+/* 능선 — 사인 두 개를 겹치면 손으로 그린 것처럼 울퉁불퉁해집니다 */
+const ridge = (x, seed, amp) =>
+  Math.sin(x * 0.021 + seed) * amp + Math.sin(x * 0.0073 + seed * 2.3) * amp * 0.8 + Math.sin(x * 0.05 + seed * 3) * amp * 0.22;
+
+function sizeSky() {
+  SW = Math.ceil(innerWidth / PXS); SH = Math.ceil(innerHeight / PXS);
+  sky.width = SW; sky.height = SH; sg.imageSmoothingEnabled = false;
+}
+
+function disc(g, cx, cy, r, col) {
+  g.fillStyle = col;
+  for (let dy = -r; dy <= r; dy++) {
+    const h = Math.round(Math.sqrt(Math.max(0, r * r - dy * dy)));
+    if (h > 0) g.fillRect(Math.round(cx - h), Math.round(cy + dy), h * 2, 1);
+  }
+}
+
+function drawSky() {
+  if (!SW) return;
+  const p = S.skyAt(prog);
+  /* 띠를 나눠 칠하고 경계마다 한 줄씩 격자로 섞습니다 — 그라데이션 대신 디더 */
+  const N = 20, bh = Math.ceil(SH / N);
+  for (let i = 0; i < N; i++) {
+    const t = i / (N - 1);
+    const col = t < .5 ? mix(p.top, p.mid, t * 2) : mix(p.mid, p.low, (t - .5) * 2);
+    sg.fillStyle = col; sg.fillRect(0, i * bh, SW, bh + 1);
+    if (i < N - 1) {
+      const t2 = (i + 1) / (N - 1);
+      sg.fillStyle = t2 < .5 ? mix(p.top, p.mid, t2 * 2) : mix(p.mid, p.low, (t2 - .5) * 2);
+      for (let x = (i % 2); x < SW; x += 2) sg.fillRect(x, i * bh + bh - 1, 1, 1);
+    }
+  }
+  /* 별 */
+  if (p.star > .02) {
+    const tw = performance.now() / 700;
+    for (const s of STARS) {
+      const a = p.star * (.55 + .45 * Math.sin(tw + s.ph));
+      if (a <= .04) continue;
+      sg.fillStyle = `rgba(255,252,232,${a.toFixed(3)})`;
+      sg.fillRect((s.x * SW) | 0, (s.y * SH) | 0, s.big ? 2 : 1, s.big ? 2 : 1);
+    }
+  }
+  /* 해와 달 */
+  const sunA = clamp(1 - (prog - .52) / .18, 0, 1);
+  if (sunA > .01) {
+    const cx = SW * .16 + SW * .60 * prog, cy = SH * .60 - Math.sin(prog * Math.PI * .92) * SH * .40;
+    sg.globalAlpha = sunA * .35; disc(sg, cx, cy, 13, p.sun);
+    sg.globalAlpha = sunA;       disc(sg, cx, cy, 8, p.sun);
+    sg.globalAlpha = 1;
+  }
+  const moonA = clamp((prog - .60) / .22, 0, 1);
+  if (moonA > .01) {
+    const u = clamp((prog - .60) / .40, 0, 1);
+    const cx = SW * .80 - SW * .34 * u, cy = SH * .52 - Math.sin(u * Math.PI * .8) * SH * .32;
+    sg.globalAlpha = moonA * .28; disc(sg, cx, cy, 12, '#FFF6D0');
+    sg.globalAlpha = moonA;       disc(sg, cx, cy, 7, '#FFF6D0');
+    sg.globalCompositeOperation = 'destination-out';
+    disc(sg, cx + 4, cy - 2, 6, '#000');
+    sg.globalCompositeOperation = 'source-over';
+    sg.globalAlpha = 1;
+  }
+  /* 구름 — 낮에만 */
+  const cA = clamp(1 - Math.abs(prog - .35) / .45, 0, 1) * .95;
+  if (cA > .03) {
+    sg.globalAlpha = cA;
+    for (const c of CLOUDS) {
+      const x = ((c.x + prog * c.sp) % 1.2) * (SW + 60) - 40;
+      sg.drawImage(c.img, x | 0, (c.y * SH) | 0);
+    }
+    sg.globalAlpha = 1;
+  }
+  /* 능선 둘 — 스크롤에 따라 살짝 어긋나게 흘립니다 */
+  const off = scrollY * 0.012;
+  sg.fillStyle = p.far;
+  for (let x = 0; x < SW; x++) {
+    const y = SH * .70 + ridge(x + off, 1.7, 9);
+    sg.fillRect(x, y | 0, 1, SH - y);
+  }
+  sg.fillStyle = mix(p.far, '#000000', .12);
+  for (let x = 0; x < SW; x++) {
+    const y = SH * .70 + ridge(x + off, 1.7, 9);
+    sg.fillRect(x, y | 0, 1, 1);
+  }
+  const off2 = scrollY * 0.03;
+  sg.fillStyle = p.hill;
+  for (let x = 0; x < SW; x++) {
+    const y = SH * .84 + ridge(x + off2, 4.2, 7);
+    sg.fillRect(x, y | 0, 1, SH - y);
+  }
+  /* 앞 능선 위의 침엽수 — 두 번째 레퍼런스의 밤 숲입니다 */
+  sg.fillStyle = mix(p.hill, '#000000', .22);
+  for (let x = 3; x < SW; x += 7) {
+    const y = (SH * .84 + ridge(x + off2, 4.2, 7)) | 0;
+    const h = 7 + ((x * 37) % 5);
+    for (let k = 0; k < h; k++) {
+      const w = Math.max(1, Math.round((k / h) * 5)) | 0;
+      sg.fillRect(x - w, y - h + k, w * 2 + 1, 1);
+    }
+    sg.fillRect(x, y - 1, 1, 2);
+  }
+  /* 맨 아래 땅 */
+  sg.fillStyle = mix(p.hill, '#000000', .38);
+  sg.fillRect(0, (SH * .955) | 0, SW, SH);
+}
+
+/* ══════════ 스크롤 ══════════ */
+let queued = false;
+function onScroll() {
+  scrollY = scrollY0();
+  const max = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+  prog = clamp(scrollY / max, 0, 1);
+  if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; drawSky(); }); }
+}
+const scrollY0 = () => window.scrollY || document.documentElement.scrollTop || 0;
+addEventListener('scroll', onScroll, { passive: true });
+addEventListener('resize', () => { sizeSky(); sizeAll(); onScroll(); });
+
+/* ══════════ 걸어가는 띠 ══════════
+   스프라이트 컷은 **걸은 거리**로 넘깁니다. 시간으로 넘기면 발이 미끄러져요. */
+const STRIPS = [];
+function makeStrip(cv, { h, scale, seed = 1, walkers = 3, props = true, dark = false }) {
+  const g = cv.getContext('2d');
+  const st = { cv, g, h, scale, seed, dark, props, n: walkers, w: 0, bg: null, ws: [] };
+  const rnd = (() => { let s = seed * 7919 + 13; return () => ((s = (s * 1103515245 + 12345) % 2147483648) / 2147483648); })();
+  st.rnd = rnd;
+  st.ws = Array.from({ length: walkers }, (_, i) => ({
+    sp: SPEC_LIST[(seed * 3 + i * 2) % SPEC_LIST.length],
+    fit: (seed + i * 3) % OUTFITS.length,
+    x: rnd() * 400, v: 0.22 + rnd() * 0.22, dir: 2, d: 0, f: 0,
+  }));
+  STRIPS.push(st);
+  io.observe(cv);
+  return st;
+}
+function layoutStrip(st) {
+  const w = Math.max(80, Math.ceil(st.cv.clientWidth / st.scale));
+  st.w = w; st.cv.width = w; st.cv.height = st.h;
+  st.cv.style.height = (st.h * st.scale) + 'px';
+  st.g.imageSmoothingEnabled = false;
+  /* 배경은 한 번만 굽습니다 */
+  const b = S.mk(w, st.h);
+  const gh = 14;
+  b.x.drawImage(S.ground(w, gh, st.dark
+    ? { grassTop: '#3C6E4E', grass: '#2E5C42', grassD: '#264E38', grassDD: '#1E402E', soil: '#3A281A', soilD: '#2A1D12' }
+    : {}), 0, st.h - gh);
+  if (st.props) {
+    const line = st.h - gh + 1;
+    for (let i = 0; i < Math.ceil(w / 96); i++) {
+      const x = (i * 96 + ((st.seed * 37 + i * 53) % 60)) % Math.max(1, w - 24);
+      const kind = (i + st.seed) % 4;
+      if (kind === 0) b.x.drawImage(S.tree((i + st.seed) % 3), x, line - 30);
+      else if (kind === 1) b.x.drawImage(S.pine((i + st.seed) % 3), x, line - 32);
+      else if (kind === 2) b.x.drawImage(S.bush(), x, line - 10);
+      else { b.x.drawImage(S.bush(), x, line - 10);
+        b.x.drawImage(S.flower(['#F2A0B4', '#F2E08A', '#B9A6F2'][(i + st.seed) % 3]), x + 20, line - 8); }
+    }
+  }
+  st.bg = b.c;
+}
+function drawStrip(st, dt) {
+  if (!st.bg) return;
+  const g = st.g;
+  g.clearRect(0, 0, st.w, st.h);
+  g.drawImage(st.bg, 0, 0);
+  const foot = st.h - 12;
+  for (const w of st.ws) {
+    if (!RM) { w.x += w.v * dt; w.d += w.v * dt; }
+    if (w.d > 5) { w.d = 0; w.f = (w.f + 1) & 3; }
+    if (w.x > st.w + 20) w.x = -20;
+    g.drawImage(frame(w.sp, w.fit, w.dir, w.f), Math.round(w.x), foot - FRAME_H);
+  }
+}
+
+/* ══════════ 로고 · 마크 ══════════ */
+function logotype() {
+  const t1 = S.pixelText('Deskfit', { px: 44, color: '#FFF3D2', font: '400', family: "'Galmuri11',monospace",
+    outline: '#241E2B', shadow: '#C97A22' });
+  const t2 = S.pixelText('기린캠퍼스 오픈 캠퍼스', { px: 12, color: '#241E2B', font: '400', family: "'Galmuri11',monospace" });
+  const pad = 6, plateH = t2.height + 6;
+  const W = Math.max(t1.width, t2.width + 16) + pad * 2, H = t1.height + plateH + 8;
+  const b = S.mk(W, H);
+  b.x.drawImage(t1, ((W - t1.width) / 2) | 0, 0);
+  const pw = t2.width + 16, px = ((W - pw) / 2) | 0, py = t1.height + 4;
+  b.P(px, py, pw, plateH, '#FFD98A');
+  b.P(px, py, pw, 1, '#FFF3D2'); b.P(px, py + plateH - 1, pw, 1, '#C97A22');
+  b.x.drawImage(t2, px + 8, py + 3);
+  const cv = $('#logo');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  g.drawImage(b.c, 0, 0);
+  const sc = innerWidth < 620 ? 2 : 3;
+  cv.style.width = (W * sc) + 'px'; cv.style.height = (H * sc) + 'px';
+  cv.style.maxWidth = '92vw';
+}
+function markIcon() {
+  const cv = $('#mark'); cv.width = 16; cv.height = 16;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  const f = frame('기린', 0, 0, 0);
+  g.drawImage(f, 2, 0, 12, 16, 0, 0, 16, 21);
+}
+
+/* ══════════ 작은 그림들 ══════════ */
+function deskCut(cv, bad) {
+  const w = 140, h = 96;
+  cv.width = w; cv.height = h;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  const P = (a, b, c, d, col) => { g.fillStyle = col; g.fillRect(a, b, c, d); };
+  P(0, 0, w, h, bad ? '#3A3350' : '#DDF0E6');
+  /* 창 */
+  P(12, 12, 34, 26, bad ? '#20203A' : '#BFE4F2'); P(12, 12, 34, 2, '#241E2B'); P(28, 12, 2, 26, '#241E2B');
+  if (bad) { P(18, 18, 2, 2, '#FFF3D2'); P(36, 26, 2, 2, '#FFF3D2'); }
+  else { P(34, 18, 8, 8, '#FFE6A0'); }
+  /* 책상 */
+  P(16, 66, 108, 6, '#B98A5A'); P(16, 72, 108, 2, '#8A6238');
+  P(22, 74, 6, 20, '#8A6238'); P(112, 74, 6, 20, '#8A6238');
+  /* 모니터 */
+  P(74, 34, 40, 30, '#3A3648'); P(77, 37, 34, 24, bad ? '#5A6B8A' : '#9FD8F2');
+  P(90, 64, 8, 2, '#3A3648');
+  /* 사람 — 나쁜 쪽은 목이 앞으로 나가고 등이 굽습니다 */
+  const bx = 40, by = bad ? 44 : 40;
+  P(bx - 2, by + 12, 20, 22, bad ? '#E8695A' : '#4FA85A');
+  if (bad) { P(bx + 8, by + 8, 4, 8, '#F0C9A0'); P(bx + 12, by - 2, 16, 14, '#F0C9A0');
+    P(bx + 14, by - 4, 14, 4, '#5A4032'); P(bx + 24, by + 4, 2, 2, '#241E2B');
+    P(bx + 2, by + 14, 6, 14, '#D45244'); }
+  else { P(bx + 6, by + 6, 6, 8, '#F0C9A0'); P(bx + 2, by - 8, 16, 14, '#F0C9A0');
+    P(bx + 3, by - 10, 14, 4, '#5A4032'); P(bx + 13, by - 2, 2, 2, '#241E2B');
+    P(bx + 16, by + 14, 6, 14, '#3E8F4C'); }
+  /* 상태 말풍선 */
+  const tag = bad ? '거북목' : '좋음';
+  const t = S.pixelText(tag, { px: 12, color: '#241E2B', font: '400', family: "'Galmuri11',monospace" });
+  const tw = t.width + 10;
+  P(w - tw - 8, 8, tw, t.height + 6, bad ? '#FFC9C0' : '#CDF2C8');
+  P(w - tw - 8, 8, tw, 1, '#241E2B'); P(w - tw - 8, 8 + t.height + 5, tw, 1, '#241E2B');
+  P(w - tw - 8, 8, 1, t.height + 6, '#241E2B'); P(w - 9, 8, 1, t.height + 6, '#241E2B');
+  g.drawImage(t, w - tw - 3, 11);
+}
+
+function camPic(cv) {
+  cv.width = 120; cv.height = 72;
+  const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+  const P = (a, b, c, d, col) => { g.fillStyle = col; g.fillRect(a, b, c, d); };
+  P(0, 0, 120, 72, '#1B1730');
+  /* 노트북 */
+  P(20, 14, 54, 34, '#3E4A5A'); P(23, 17, 48, 28, '#0F2436');
+  P(14, 48, 66, 5, '#5A6878'); P(14, 53, 66, 2, '#2E3846');
+  /* 화면 속 사람 */
+  P(38, 28, 18, 17, '#2F6B8A'); P(42, 20, 10, 9, '#F0C9A0'); P(43, 18, 9, 3, '#5A4032');
+  P(45, 23, 2, 2, '#241E2B'); P(49, 23, 2, 2, '#241E2B');
+  /* 렌즈 */
+  P(45, 10, 4, 3, '#8E9AB0'); P(46, 11, 2, 1, '#F2F6FF');
+  /* 밖으로 나가려다 막힌 화살표 */
+  P(84, 26, 22, 3, '#E8695A'); P(103, 23, 3, 3, '#E8695A'); P(103, 29, 3, 3, '#E8695A');
+  for (let i = 0; i < 11; i++) { P(88 + i, 20 + i, 2, 2, '#FF5A45'); P(98 - i, 20 + i, 2, 2, '#FF5A45'); }
+  const t = S.pixelText('밖으로 안 나감', { px: 12, color: '#FFC9C0', font: '400', family: "'Galmuri11',monospace" });
+  g.drawImage(t, 120 - t.width - 4, 56);
+}
+
+/* ══════════ 캐릭터 카드 ══════════ */
+const BLURB = {
+  거북이: '오래 앉기의 명수. 서두르지 않아요.',
+  기린: '목을 곧게 펴는 게 특기예요.',
+  펭귄: '라운지파. 끊어 가며 오래 가요.',
+  햄스터: '게시판과 상점을 제일 좋아해요.',
+  개구리: '스트레칭 담당. 회복이 빨라요.',
+  고슴도치: '조용한 구석 자리를 골라요.',
+  알파카: '본관 단골. 느긋하게 다녀요.',
+  백조: '호숫가 산책으로 하루를 열어요.',
+};
+const MUGS = [];
+function buildMugs() {
+  const host = $('#mugs');
+  SPEC_LIST.forEach((sp, i) => {
+    const d = document.createElement('button');
+    d.className = 'mug'; d.type = 'button';
+    d.title = BLURB[sp] || '';
+    const cv = document.createElement('canvas');
+    cv.width = FRAME_W; cv.height = FRAME_H;
+    cv.getContext('2d').imageSmoothingEnabled = false;
+    const lab = document.createElement('span'); lab.textContent = sp;
+    const blb = document.createElement('small');
+    blb.style.cssText = 'display:block;font:400 10px/1.6 "Galmuri9";color:#5E5470;margin-top:4px;max-width:112px';
+    blb.textContent = BLURB[sp] || '';
+    d.append(cv, lab, blb);
+    host.appendChild(d);
+    const m = { cv, g: cv.getContext('2d'), sp, fit: i % OUTFITS.length, f: 0, t: 0, dir: 0, el: d };
+    d.addEventListener('click', () => {
+      m.fit = (m.fit + 1) % OUTFITS.length;
+      m.dir = (m.dir + 1) & 3;
+      $$('.mug').forEach((x) => x.classList.remove('on'));
+      d.classList.add('on');
+    });
+    MUGS.push(m);
+  });
+  io.observe(host);
+  MUGS.host = host;
+}
+function drawMugs(dt) {
+  if (!live.has(MUGS.host)) return;
+  for (const m of MUGS) {
+    if (!RM) { m.t += dt; if (m.t > 7) { m.t = 0; m.f = (m.f + 1) & 3; } }
+    m.g.clearRect(0, 0, FRAME_W, FRAME_H);
+    m.g.drawImage(frame(m.sp, m.fit, m.dir, m.f), 0, 0);
+  }
+}
+
+/* ══════════ 아이소 캠퍼스 ══════════ */
+const GW = 16, GH = 12, OX = 190, OY = 84;
+const g2s = (gx, gy) => ({ x: OX + (gx - gy) * 16, y: OY + (gx + gy) * 8 });
+
+/* 건물 여섯 — 사이를 두 칸씩 띄웁니다. 붙여 놓으면 한 덩어리로 보여요.
+   lab 은 이름표를 지붕 위에 달지 앞마당에 놓을지입니다. */
+const BLD = [
+  { n: '도서관',     gx: 0,  gy: 0,  s: 4, w: '#C9E2F2', r: '#5B84C4', lab: 'up' },
+  { n: '기숙사',     gx: 6,  gy: 0,  s: 3, w: '#F2DE9A', r: '#C97A22', lab: 'up' },
+  { n: '본관',       gx: 12, gy: 0,  s: 4, w: '#F2C98A', r: '#B0543A', lab: 'up' },
+  { n: '학생회관',   gx: 0,  gy: 8,  s: 3, w: '#F2A9A0', r: '#B0543A', lab: 'down' },
+  { n: '학생식당',   gx: 6,  gy: 9,  s: 3, w: '#B8E0A8', r: '#3E8F4C', lab: 'down' },
+  { n: '미니게임관', gx: 12, gy: 8,  s: 3, w: '#C9B8E8', r: '#6B4AA8', lab: 'down' },
+];
+const PATH = new Set();
+(() => {
+  const put = (x, y) => { if (x >= 0 && y >= 0 && x < GW && y < GH) PATH.add(y * GW + x); };
+  for (let x = 0; x < GW; x++) { put(x, 6); put(x, 7); }
+  for (let y = 0; y < GH; y++) { put(4, y); put(10, y); }
+  for (let y = 3; y < 6; y++) { put(1, y); put(14, y); }
+})();
+const PLAZA = new Set();
+for (let x = 5; x <= 9; x++) for (let y = 5; y <= 8; y++) PLAZA.add(y * GW + x);
+
+const ISO = { cv: null, g: null, bg: null, chars: [], blds: [], props: [] };
+
+function bakeIso() {
+  const cv = $('#iso'); ISO.cv = cv; ISO.g = cv.getContext('2d');
+  ISO.g.imageSmoothingEnabled = false;
+  const b = S.mk(cv.width, cv.height);
+  const grass = [S.isoTile('#6FBE68', '#8A5F3C', '#70492B', 14),
+                 S.isoTile('#66B461', '#8A5F3C', '#70492B', 14),
+                 S.isoTile('#78C86E', '#8A5F3C', '#70492B', 14)];
+  const road  = S.isoTile('#D9C9A8', '#8A5F3C', '#70492B', 14);
+  const plaza = S.isoTile('#EADCC0', '#8A5F3C', '#70492B', 14);
+  for (let d = 0; d <= GW + GH; d++) {
+    for (let gy = 0; gy < GH; gy++) {
+      const gx = d - gy; if (gx < 0 || gx >= GW) continue;
+      const k = gy * GW + gx, p = g2s(gx, gy);
+      const img = PLAZA.has(k) ? plaza : PATH.has(k) ? road : grass[(gx * 7 + gy * 3) % 3];
+      b.x.drawImage(img, p.x, p.y);
+    }
+  }
+  ISO.bg = b.c;
+
+  ISO.blds = BLD.map((bd) => {
+    const H = bd.s * 16, wallH = bd.s === 4 ? 44 : 36, roofH = 9;
+    const img = S.isoBuilding(H, wallH, roofH, bd.w, S.shade(bd.w, -26), bd.r, S.shade(bd.r, -30));
+    /* 창문 — 양쪽 벽에 두 줄씩. 벽면 위 모서리를 따라 내려가야 붙어 보입니다 */
+    const gg = img.getContext('2d');
+    gg.imageSmoothingEnabled = false;
+    const W = H * 2, wallTop = roofH + H / 2;
+    for (let col = 0; col < bd.s; col++) {
+      for (let row = 0; row < 2; row++) {
+        const lx = 5 + col * Math.floor(W / 2 / bd.s);
+        const ly = wallTop + (lx >> 1) + 10 + row * 14;
+        gg.fillStyle = '#3E5C82'; gg.fillRect(lx, ly, 7, 8);
+        gg.fillStyle = '#9FD8F2'; gg.fillRect(lx + 1, ly + 1, 5, 4);
+        const rx = W - 12 - col * Math.floor(W / 2 / bd.s);
+        const ry = wallTop + ((W - 1 - rx) >> 1) + 10 + row * 14;
+        gg.fillStyle = '#3E5C82'; gg.fillRect(rx, ry, 7, 8);
+        gg.fillStyle = '#9FD8F2'; gg.fillRect(rx + 1, ry + 1, 5, 4);
+      }
+    }
+    /* 정문 — 앞쪽 아래 꼭짓점 근처 */
+    gg.fillStyle = '#6B4728'; gg.fillRect(W / 2 - 5, roofH + H + wallH - 14, 10, 14);
+    gg.fillStyle = '#8A5F3C'; gg.fillRect(W / 2 - 4, roofH + H + wallH - 13, 8, 12);
+
+    const p = g2s(bd.gx, bd.gy);
+    const left = OX + (bd.gx - (bd.gy + bd.s - 1)) * 16;
+    return { img, x: left, y: p.y - wallH - roofH,
+      depth: bd.gx + bd.gy + (bd.s - 1) * 2,
+      name: bd.n, lab: bd.lab,
+      cx: left + bd.s * 16,
+      upY: p.y - wallH - roofH - 6,
+      dnY: p.y + bd.s * 16 + 6 };
+  });
+
+  const spots = [[15, 11], [0, 11], [15, 5], [0, 5], [5, 3], [9, 3], [3, 11], [12, 11], [11, 4], [2, 4]];
+  ISO.props = spots.filter(([x, y]) => !PATH.has(y * GW + x) && !PLAZA.has(y * GW + x)).map(([x, y], i) => {
+    const p = g2s(x, y);
+    const img = i % 2 ? S.pine(i % 3) : S.tree(i % 3);
+    return { img, x: p.x + 16 - img.width / 2, y: p.y + 8 - img.height, depth: x + y };
+  });
+  /* 광장 한가운데 동상 — 기린 하나가 서 있습니다 */
+  {
+    const p = g2s(7, 6);
+    const st = S.mk(20, 36);
+    st.P(3, 28, 14, 5, '#A8A092'); st.P(3, 28, 14, 1, '#CFC7B8'); st.P(2, 33, 16, 3, '#8E8678');
+    st.P(6, 14, 8, 15, '#D8D0C0'); st.P(6, 14, 2, 15, '#F0EADC');
+    st.x.drawImage(frame('기린', 2, 0, 0), 0, 0, 16, 30, 2, -2, 16, 26);
+    ISO.props.push({ img: st.c, x: p.x + 6, y: p.y - 26, depth: 7 + 6 });
+  }
+
+  ISO.chars = [
+    { sp: '기린',   fit: 0, path: [[4, 2], [4, 9], [10, 9], [10, 2]], i: 0, t: 0, f: 0, v: .022 },
+    { sp: '개구리', fit: 3, path: [[0, 6], [15, 6]], i: 0, t: 0, f: 0, v: .018 },
+    { sp: '햄스터', fit: 5, path: [[10, 7], [10, 11], [4, 11], [4, 7]], i: 0, t: 0, f: 0, v: .017 },
+    { sp: '백조',   fit: 2, path: [[14, 3], [14, 5], [10, 5]], i: 0, t: 0, f: 0, v: .016 },
+    { sp: '펭귄',   fit: 7, path: [[1, 3], [1, 5], [4, 5]], i: 0, t: 0, f: 0, v: .019 },
+    { sp: '알파카', fit: 6, path: [[6, 7], [9, 7], [9, 5], [6, 5]], i: 0, t: 0, f: 0, v: .014 },
+  ].map((c) => ({ ...c, gx: c.path[0][0], gy: c.path[0][1], dir: 2 }));
+  io.observe(cv);
+}
+
+/* 이름표는 **맨 마지막에** 한 번에 답니다 — 건물 사이에 끼면 가려집니다 */
+function isoLabels(g) {
+  for (const b of ISO.blds) {
+    const t = S.pixelText(b.name, { px: 10, color: '#241E2B', font: '400', family: "'Galmuri9',monospace" });
+    const w = t.width + 8, h = t.height + 4;
+    const x = Math.round(b.cx - w / 2);
+    const y = Math.round(b.lab === 'up' ? b.upY - h - 5 : b.dnY + 5);
+    g.fillStyle = '#241E2B'; g.fillRect(x - 1, y - 1, w + 2, h + 2);
+    g.fillStyle = '#FFF6E2'; g.fillRect(x, y, w, h);
+    g.drawImage(t, x + 4, y + 2);
+    /* 꼬리 — 위 이름표는 아래로, 아래 이름표는 위로 */
+    g.fillStyle = '#241E2B';
+    if (b.lab === 'up') g.fillRect(Math.round(b.cx) - 1, y + h + 1, 2, 4);
+    else g.fillRect(Math.round(b.cx) - 1, y - 5, 2, 4);
+  }
+}
+
+function drawIso(dt) {
+  if (!ISO.bg || !live.has(ISO.cv)) return;
+  const g = ISO.g;
+  g.clearRect(0, 0, ISO.cv.width, ISO.cv.height);
+  g.drawImage(ISO.bg, 0, 0);
+
+  const items = [...ISO.blds, ...ISO.props];
+  for (const c of ISO.chars) {
+    const na = c.path[c.i], nb = c.path[(c.i + 1) % c.path.length];
+    if (!RM) {
+      c.t += c.v * dt;
+      if (c.t >= 1) { c.t = 0; c.i = (c.i + 1) % c.path.length; }
+      c.f = (Math.floor(performance.now() / 150) + c.i) & 3;
+    }
+    const a = c.path[c.i], bb = c.path[(c.i + 1) % c.path.length];
+    c.gx = a[0] + (bb[0] - a[0]) * c.t;
+    c.gy = a[1] + (bb[1] - a[1]) * c.t;
+    const dx = bb[0] - a[0], dy = bb[1] - a[1];
+    /* 화면에서 어느 쪽으로 걷는지는 gx-gy 로 정해집니다 */
+    c.dir = (dx - dy) > 0 ? 2 : (dx - dy) < 0 ? 1 : (dx + dy > 0 ? 0 : 3);
+    const p = g2s(c.gx, c.gy);
+    items.push({ img: frame(c.sp, c.fit, c.dir, c.f), x: p.x + 8, y: p.y + 10 - FRAME_H, depth: c.gx + c.gy + .5 });
+  }
+  items.sort((a, b) => a.depth - b.depth);
+  for (const it of items) g.drawImage(it.img, Math.round(it.x), Math.round(it.y));
+  isoLabels(g);
+}
+
+/* ══════════ 학교 섬 ══════════ */
+const LEAGUE = [
+  { ko: '한빛대', hours: '12,480', col: '#5B84C4' },
+  { ko: '서령대', hours: '11,930', col: '#3E8F4C' },
+  { ko: '아라대', hours: '11,210', col: '#3E86C4' },
+  { ko: '미리내대', hours: '10,660', col: '#6B4AA8' },
+  { ko: '두루대', hours: '9,870', col: '#B0543A' },
+];
+function buildIsles() {
+  const host = $('#isles');
+  LEAGUE.forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'isle';
+    const cv = document.createElement('canvas');
+    cv.width = 80; cv.height = 76;
+    const g = cv.getContext('2d'); g.imageSmoothingEnabled = false;
+    const bright = 1 - i * 0.13;
+    /* 빛기둥 — 1등이 가장 밝습니다 */
+    g.fillStyle = `rgba(255,232,160,${(0.30 * bright).toFixed(2)})`;
+    g.fillRect(28, 0, 24, 34);
+    g.fillStyle = `rgba(255,244,208,${(0.45 * bright).toFixed(2)})`;
+    g.fillRect(34, 0, 12, 34);
+    const top = S.shade('#6FBE68', Math.round(-30 + 30 * bright));
+    g.drawImage(S.isoBlock(24, 16, top, '#8A5F3C', '#70492B'), 16, 26);
+    g.drawImage(S.isoBlock(14, 8, S.shade(s.col, 40), S.shade(s.col, -20), S.shade(s.col, -40)), 26, 22);
+    g.drawImage(frame(SPEC_LIST[i % SPEC_LIST.length], i, 0, 0), 0, 0, 16, 30, 32, 2, 16, 26);
+    d.appendChild(cv);
+    const n = document.createElement('div');
+    n.style.cssText = 'font:400 12px/1.6 "Galmuri11";color:#241E2B';
+    n.textContent = `${i + 1}위 ${s.ko}`;
+    const h = document.createElement('div');
+    h.style.cssText = 'font:400 10px/1.6 "Galmuri9";color:#5E5470';
+    h.textContent = `${s.hours} 시간`;
+    d.append(n, h);
+    host.appendChild(d);
+  });
+}
+
+/* ══════════ 배치 · 시작 ══════════ */
+function sizeAll() {
+  for (const st of STRIPS) layoutStrip(st);
+  const cv = $('#logo'); if (cv && cv.width > 8) { const sc = innerWidth < 620 ? 2 : 3;
+    cv.style.width = (cv.width * sc) + 'px'; cv.style.height = (cv.height * sc) + 'px'; }
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(4, (now - last) / 16.67); last = now;
+  for (const st of STRIPS) if (live.has(st.cv)) drawStrip(st, dt);
+  drawMugs(dt);
+  drawIso(dt);
+  if (S.skyAt(prog).star > .02) drawSky();     /* 별이 뜬 동안만 반짝임을 다시 그립니다 */
+  requestAnimationFrame(loop);
+}
+
+async function boot() {
+  try { await document.fonts.load('12px Galmuri11'); await document.fonts.load('10px Galmuri9'); } catch (_) {}
+  try { await document.fonts.ready; } catch (_) {}
+
+  sizeSky();
+  logotype(); markIcon();
+  deskCut($('.cut[data-cut="before"]'), true);
+  deskCut($('.cut[data-cut="after"]'), false);
+  camPic($('#cam'));
+  buildMugs(); buildIsles(); bakeIso();
+
+  makeStrip($('#parade0'), { h: 40, scale: 3, seed: 1, walkers: 5, props: false, dark: true });
+  makeStrip($('#band1'),   { h: 44, scale: 3, seed: 2, walkers: 3 });
+  makeStrip($('#band2'),   { h: 44, scale: 3, seed: 5, walkers: 4 });
+  makeStrip($('#band3'),   { h: 44, scale: 3, seed: 8, walkers: 3, dark: true });
+  makeStrip($('#band4'),   { h: 44, scale: 3, seed: 11, walkers: 4, dark: true });
+  makeStrip($('#parade1'), { h: 40, scale: 3, seed: 14, walkers: 5, props: false, dark: true });
+
+  sizeAll();
+  onScroll(); drawSky();
+  requestAnimationFrame(loop);
+  document.documentElement.dataset.ready = '1';
+  window.__ready = true;
+}
+boot();
+</script>
+</body>
+</html>

@@ -35,7 +35,7 @@ const fixFonts = (html) => html.replaceAll('../../public/fonts/', '/fonts/');
    목록에 없어서 배포본에서만 404 였고, 그러면 SPA 리라이트가 대신
    app.html 을 돌려줘 브라우저가 HTML 을 스크립트로 읽습니다
    ("Unexpected token '<'"). 로컬에서는 파일이 옆에 있어 안 드러납니다. */
-for (const name of ['landing', 'onboarding', 'openworld', 'room-flow', 'shared', 'campus3d']) {
+for (const name of ['landing', 'landing-pixel', 'onboarding', 'openworld', 'room-flow', 'shared', 'campus3d', 'campusiso']) {
   copyDir(`prototypes/${name}`, `dist/prototypes/${name}`, fixFonts);
 }
 
@@ -140,9 +140,11 @@ writeFileSync('dist/demo.html', `<!doctype html>
 <ul>
   <li><a href="/prototypes/openworld/index.html">기린캠퍼스 오픈월드 (2D)</a><br><small>앱 셸의 월드 탭이 이 파일을 iframe 으로 답니다</small></li>
   <li><a href="/prototypes/campus3d/index.html">기린캠퍼스 3D</a><br><small>걸어 다니는 3D 월드 — 건물 여섯 · 실내 여섯 · 1인칭/3인칭. UXI 교수님 지적 반영판</small></li>
+  <li><a href="/prototypes/campusiso/index.html">기린캠퍼스 아이소메트릭 (2D 픽셀)</a><br><small>3D 를 비스듬히 찍은 게 아니라 다이아 한 칸씩 찍어 만든 2D 픽셀 월드. 기능·텍스트는 3D 판과 같은 파일을 씁니다</small></li>
+  <li><a href="/prototypes/landing-pixel/index.html">픽셀 랜딩</a><br><small>스크롤하면 새벽에서 밤으로 — 동물이 걸어 다니는 픽셀 랜딩</small></li>
   <li><a href="/prototypes/campus3d/campusview.html">3D — 섬 전체 한 장</a><br><small>배치만 보는 그림</small></li>
   <li><a href="/prototypes/landing/index.html">랜딩 (원본 경로)</a><br><small>\`/\` 와 같은 화면. 이쪽은 상대경로 그대로입니다</small></li>
   <li><a href="/app.html">옛 React 본서비스</a><br><small>지금 흐름에서는 안 씁니다. 열면 주소가 \`/\` 로 바뀝니다(라우터의 * 규칙) — 안쪽 주소는 /growth · /shop 처럼 그대로 씁니다</small></li>
 </ul>
 `);
-console.log('dist/prototypes(6) + dist/index.html(랜딩) + dist/app.html + dist/demo.html 완료');
+console.log('dist/prototypes(8) + dist/index.html(랜딩) + dist/app.html + dist/demo.html 완료');

@@ -43,6 +43,12 @@ export function createPosture(opt = {}) {
   let k = 0, state = 'good';
   let cal = null;              // { t0, samples[], widths[] }
   let lastT = 0, badReason = '';
+  /* start() 는 카메라 허가와 모델 내려받기를 **기다립니다**. 그 사이에
+     stop() 이 불리면(창을 닫으면) 그때는 아직 stream 이 null 이라
+     끌 것이 없고, 잠시 뒤 허가가 떨어지면서 카메라가 켜집니다 — 창은
+     없는데 불만 들어옵니다. 그건 기능이 아니라 감시로 읽힙니다.
+     그래서 세대를 셉니다. stop() 이 지나갔으면 start() 는 스스로 접습니다. */
+  let gen = 0;
   let feat = null, featAt = 0;      // 러너가 읽는 마지막 축값
 
   const POSE = () => window.POSE;
@@ -57,14 +63,20 @@ export function createPosture(opt = {}) {
 
   async function start() {
     if (mode === 'live' || mode === 'loading' || mode === 'calibrating') return mode;
+    const my = ++gen;
     mode = 'asking'; say('카메라를 켜는 중');
+    let got = null;
     try {
-      stream = await navigator.mediaDevices.getUserMedia(window.CAM_CONSTRAINTS
+      got = await navigator.mediaDevices.getUserMedia(window.CAM_CONSTRAINTS
         || { video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' }, audio: false });
     } catch (e) {
+      if (my !== gen) return 'off';
       mode = 'denied'; say('카메라 없이 진행합니다');
       opt.onMode?.(mode); return mode;
     }
+    /* 기다리는 동안 그만뒀으면 방금 받은 것을 그 자리에서 끕니다 */
+    if (my !== gen) { got.getTracks().forEach((t) => t.stop()); return 'off'; }
+    stream = got;
     video = opt.video || document.createElement('video');
     video.playsInline = true; video.muted = true; video.autoplay = true;
     video.srcObject = stream;
@@ -75,9 +87,11 @@ export function createPosture(opt = {}) {
       if (!POSE()) throw new Error('posture.js 가 아직 안 왔습니다');
       await POSE().load();
     } catch (e) {
+      if (my !== gen) return 'off';
       mode = 'failed'; say('판정 모델을 못 받았어요'); opt.onMode?.(mode);
       return mode;
     }
+    if (my !== gen) { stop(); return 'off'; }
     smoother = new (POSE().Smoother)();
     arb = POSE().arbiter();
     profile = loadSaved();
@@ -90,6 +104,7 @@ export function createPosture(opt = {}) {
   }
 
   function stop() {
+    gen++;                                   // 기다리고 있는 start() 를 무효로
     cancelAnimationFrame(raf); raf = 0;
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
     if (video) { video.srcObject = null; }

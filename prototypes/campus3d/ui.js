@@ -251,7 +251,7 @@ export function furnShop(ctx) {
     + '<div class="lbl">가구</div><div class="buys">'
     + FURN.map(([id, nm, price, icon]) => {
       const n = ctx.furn[id] || 0;
-      return `<button class="buy" data-fbuy="${id}">
+      return `<button class="buy" data-fbuy="${esc(id)}">
         <span class="sw" style="background:#EFE4D0;display:grid;place-items:center;font-size:17px">${icon || '▫'}</span>
         ${nm}<br>${won(price)}${n ? ` · ${n}개` : ''}</button>`;
     }).join('') + '</div>'
@@ -406,10 +406,12 @@ export function decor(ctx) {
     tag: '방 꾸미기', title: '내 방 가구 놓기',
     html: (owned.length
       ? '<div class="lbl">놓을 수 있는 것</div><div class="buys">'
-        + owned.map(([id, nm]) => `<button class="buy" data-place="${id}">
-            <span class="sw" style="background:#EFE4D0;display:grid;place-items:center;font-size:17px">${
-              { plant: '🪴', lamp2: '💡', rug2: '🟫', books2: '📚', guitar2: '🎸', bear: '🧸' }[id]}</span>
-            ${nm}</button>`).join('') + '</div>'
+        /* 표의 네 번째 칸을 씁니다. 여섯 개짜리 표를 여기에 또 박아 뒀더니
+           새로 늘린 가구가 전부 'undefined' 라고 적혔습니다 — 같은 표를
+           두 곳에 적으면 한 곳만 고치는 날이 옵니다. */
+        + owned.map(([id, nm, , icon]) => `<button class="buy" data-place="${esc(id)}">
+            <span class="sw" style="background:#EFE4D0;display:grid;place-items:center;font-size:17px">${icon || '▫'}</span>
+            ${esc(nm)}</button>`).join('') + '</div>'
       : '<p class="note">놓을 가구가 없습니다. 동아리 상점의 <b>가구 가게</b>에서 사 오세요.</p>')
       + (ctx.placed.length
         ? `<p class="note">놓인 가구 ${ctx.placed.length}개 — <button class="tt on" data-clearall="1" style="width:auto;padding:4px 10px;background:#C4553F">전부 치우기</button></p>`
@@ -557,7 +559,12 @@ export function mypage(ctx) {
   const bad = SAVE.sessions.reduce((a, s2) => a + (s2.bad || 0), 0);
   const zones = {};
   SAVE.sessions.forEach((s2) => { zones[s2.zone] = (zones[s2.zone] || 0) + s2.sec; });
-  const base = ctx.baseline;
+  /* 옛 형식(존별로 잡던 것 · version 2)이 남아 있으면 features 가 없습니다.
+     그대로 Object.keys 를 하면 창을 **짓는 중에** 터져서 마이페이지가
+     아예 안 열립니다 — 눌러도 아무 일이 없는 것으로 보입니다.
+     기준선 하나 때문에 창이 안 열리면 안 되므로 없는 것으로 봅니다. */
+  const base = (ctx.baseline && ctx.baseline.features
+    && Object.keys(ctx.baseline.features).length) ? ctx.baseline : null;
   return {
     tag: '마이페이지', title: '내 기록',
     html: `<div class="wr" style="margin-bottom:10px">
@@ -748,7 +755,14 @@ export const INVITE = {
   KEY: 'girin.invites',
   ABC: 'ABCDEFGHJKMNPQRSTUVWXYZ23456789',
   LEN: 6,
-  all() { try { return JSON.parse(localStorage.getItem(this.KEY)) || {}; } catch { return {}; } },
+  all() {
+    /* 모양까지 봅니다. 예전 판이나 다른 탭이 숫자·글자를 넣어 두면
+       `a[code] = …` 가 엄격 모드에서 터져서 정문 창이 안 열립니다. */
+    try {
+      const v = JSON.parse(localStorage.getItem(this.KEY));
+      return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    } catch { return {}; }
+  },
   _put(a) { try { localStorage.setItem(this.KEY, JSON.stringify(a)); } catch {} },
   /** → supabase.from('invites').upsert(...) */
   publish(code, profile) { const a = this.all(); a[code] = Object.assign({ at: Date.now() }, profile); this._put(a); },

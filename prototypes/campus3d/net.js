@@ -177,7 +177,11 @@ export function createNet(opts) {
         const e = st[k] && st[k][0]; if (!e || e.id === me.id) return;
         live.add(e.id);
         const r = peer(e.id);
-        r.nick = e.nick || r.nick; r.species = e.species || r.species; r.fit = e.fit ?? r.fit;
+        /* 이름은 **남이 정하는 값**입니다. 말(say)은 아래에서 80자로 자르면서
+           이름만 그대로 받고 있었습니다. 글자로 만들어 자릅니다 — 화면에
+           넣는 쪽에서도 막지만, 들어오는 길목에서 한 번 더 막습니다. */
+        if (e.nick != null) r.nick = String(e.nick).slice(0, 24);
+        r.species = e.species || r.species; r.fit = e.fit ?? r.fit;
         if (!r.buf.length && typeof e.x === 'number')
           r.buf.push({ t: performance.now(), x: e.x, z: e.z, dir: e.dir || 0, moving: false });
       });
@@ -210,7 +214,12 @@ export function createNet(opts) {
     track();
   }
   function setZone(z) {
-    if (z !== zone && client) join(z); else zone = z;
+    /* `ch` 까지 봅니다. giveUp() 은 채널만 놓고 client 는 남기므로,
+       client 만 보면 **이미 포기한 뒤에도** join 이 돌았습니다. join 은
+       fellBack 을 지우고 봇을 걷어 가므로, 건물을 드나들 때마다 캠퍼스가
+       십수 초씩 비었고 문 하나에 소켓 두 번씩 다시 붙어 보려 했습니다 —
+       그 재시도가 웹캠 추론과 CPU 를 나눠 쓰는 것이 포기한 이유였습니다. */
+    if (z !== zone && client && ch) join(z); else zone = z;
     /* 봇은 바깥에만 있습니다. 방까지 흉내 내면 "이 방에 사람이 있다" 는
        거짓말이 되고, 들어간 사람은 없는 사람에게 말을 겁니다. */
     syncBots();
@@ -260,7 +269,7 @@ export function createNet(opts) {
         buf: [], say: '', sayT: 0, emo: '', emoT: 0,
       };
       /* 광장 언저리를 크게 도는 고리 하나씩.
-         ponytail: 길찾기가 없습니다 — net.js 는 지도를 모릅니다. 그래서
+         길찾기는 없습니다 — net.js 는 지도를 모릅니다. 그래서
          고리를 한가운데로만 잡아 둡니다. 봇을 건물 사이로 보낼 거면
          index.html 에서 길을 받아 와야 합니다. */
       const cx = (r() * 2 - 1) * 12, cz = (r() * 2 - 1) * 12;

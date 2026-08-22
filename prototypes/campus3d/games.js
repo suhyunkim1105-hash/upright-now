@@ -96,6 +96,11 @@ function close(score) {
     한 게임만 인자가 하나 더 붙으면 이 줄이 갈라지고, 갈라진 자리는
     다음에 게임을 붙일 때 빠뜨리기 좋은 자리입니다. */
 export function openGame(key, onDone, ctx) {
+  /* 이미 하나 열려 있으면 먼저 닫습니다. 안 닫으면 앞 게임의 rAF 와
+     자판 손잡이가 그대로 살아서 새 게임 칸에 점수를 적습니다.
+     지금은 부르는 쪽(index.html)이 막고 있지만, 막는 코드가 **다른 파일**에
+     있는 보호는 언젠가 사라집니다. */
+  if (host) close(0);
   closing = false; lastScore = 0; done = onDone; teardown = null;
   const body = shell(key);
   ({ memory, match3, run, n2048, suika, giraffeNeck, trackRace, pondFish, bookSort,
@@ -123,16 +128,26 @@ function memory(body) {
         style="${show ? `background:${A.color}` : ''}">${show ? A.emoji : '?'}</button>`;
     }).join('');
   };
+  let mt = 0;
   body.onclick = (e) => {
     const b = e.target.closest('button.mc'); if (!b) return;
     const r = MEM.selectCard(st, +b.dataset.i);
     if (!r.accepted) return;
     draw();
-    if (r.checking) setTimeout(() => {
-      const res = MEM.resolvePendingPair(st);
-      setScore(st.score); draw();
-      if (res.complete) over('다 맞췄어요', `${st.moves}번 만에 · 최고 연속 ${st.maxCombo}`, start);
-    }, MEM.ANIMAL_MEMORY_CONFIG.mismatchDelayMs);
+    /* 이 타이머는 **창보다 오래 삽니다.** 짝이 틀린 뒤 0.7초 안에 Esc 를
+       누르면 host 가 이미 null 인데 setScore 가 host 를 찾다가 터졌고,
+       그 사이에 다른 게임을 열면 앞 게임 점수가 새 게임 칸에 적혔습니다.
+       손잡이를 들고 있다가 닫을 때 같이 끕니다. */
+    if (r.checking) {
+      clearTimeout(mt);
+      mt = setTimeout(() => {
+        mt = 0;
+        if (!gameOpen()) return;
+        const res = MEM.resolvePendingPair(st);
+        setScore(st.score); draw();
+        if (res.complete) over('다 맞췄어요', `${st.moves}번 만에 · 최고 연속 ${st.maxCombo}`, start);
+      }, MEM.ANIMAL_MEMORY_CONFIG.mismatchDelayMs);
+    }
   };
   const loop = () => {
     MEM.tickGame(st, performance.now());
@@ -141,6 +156,7 @@ function memory(body) {
     if (st.status === 'PLAYING' && !body.querySelector('.mc.up:not(.ok)')) draw();
     raf = requestAnimationFrame(loop);
   };
+  teardown = () => { clearTimeout(mt); mt = 0; };
   start(); loop();
 }
 
@@ -172,7 +188,15 @@ function match3(body) {
   const loop = () => {
     const left = LIMIT - (performance.now() - t0) / 1000;
     setTime(`${Math.max(0, left).toFixed(0)}초`);
-    if (left <= 0) { over('시간 끝', `${score}점`, () => { board = M3.createBoard(); score = 0; t0 = performance.now(); setScore(0); draw(); }); return; }
+    /* 다시 시작할 때 loop() 를 도로 걸어야 합니다. 안 걸었더니 두 판째부터
+       시계가 '0초' 에 멈춘 채로 영영 안 끝났습니다 — 그만두기 말고는
+       나갈 길이 없고, 점수도 0 으로 나갑니다. */
+    if (left <= 0) {
+      over('시간 끝', `${score}점`, () => {
+        board = M3.createBoard(); score = 0; t0 = performance.now(); setScore(0); draw(); loop();
+      });
+      return;
+    }
     raf = requestAnimationFrame(loop);
   };
   setScore(0); draw(); loop();
@@ -230,7 +254,11 @@ function n2048(body) {
   hint.innerHTML = '방향키 · WASD · 화면을 밀어도 됩니다';
   body.appendChild(wrap); body.appendChild(hint);
 
-  let tb, score, best = +(localStorage.getItem('girin3d.2048') || 0), overed;
+  /* localStorage 를 **감싸서** 읽습니다. 쿠키·사이트 데이터를 막아 둔
+     브라우저에서는 getItem 자체가 던지는데, 그러면 openGame 이 통째로
+     터져서 판이 빈 채로 열리고 Esc 도 안 먹었습니다(Esc 를 다는 줄이
+     이 아래에 있습니다). 기록 하나 때문에 게임이 안 열리면 안 됩니다. */
+  let tb, score, best = +(ls('girin3d.2048', 0) || 0), overed;
   const empty = () => { const r = []; for (let y = 0; y < 4; y++) r.push([0, 0, 0, 0]); return r; };
   const spawn = () => {
     const free = [];

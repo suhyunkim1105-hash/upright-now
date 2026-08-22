@@ -569,15 +569,20 @@ scene.add(amb, hemi, sun, sun.target, fill);
    이러면 카메라가 움직여도 텍셀 경계가 제자리에 있어 가장자리가 안 떱니다. */
 const SPAN = 22;
 const SHADOW_RES = 2048;
-const TEXEL = (SPAN * 2) / SHADOW_RES;
+/* 텍셀 폭은 **지금 그림자 지도 크기에서** 그때그때 뽑습니다. 상수로
+   굳혀 뒀더니, 느릴 때 2048 을 1024 로 줄이는 칸이 생기면서 실제 눈금은
+   두 배가 됐는데 반올림은 옛 눈금으로 하고 있었습니다 — 깜빡임을 없애려고
+   만든 눈금이 그 순간부터 반 칸씩 어긋나서 깜빡임을 도로 만듭니다. */
+const texel = () => (SPAN * 2) / (sun.shadow.mapSize.width || SHADOW_RES);
 const LDIR = new THREE.Vector3(-26, 40, 20).normalize();       // 해가 서 있는 쪽
 const LRIGHT = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), LDIR).normalize();
 const LUP = new THREE.Vector3().crossVectors(LDIR, LRIGHT).normalize();
 const _sv = new THREE.Vector3(), _sw = new THREE.Vector3();
 function aimSun(x, z) {
   _sv.set(x, 0, z);
-  const a = Math.round(_sv.dot(LRIGHT) / TEXEL) * TEXEL;
-  const b = Math.round(_sv.dot(LUP) / TEXEL) * TEXEL;
+  const TX = texel();
+  const a = Math.round(_sv.dot(LRIGHT) / TX) * TX;
+  const b = Math.round(_sv.dot(LUP) / TX) * TX;
   const d = _sv.dot(LDIR);
   _sw.copy(LRIGHT).multiplyScalar(a).addScaledVector(LUP, b).addScaledVector(LDIR, d);
   sun.target.position.copy(_sw);
@@ -661,6 +666,9 @@ function mountRide() {
   rideG = ride(playerRig, rideId);
 }
 function setRide(id) {
+  /* 앉은 채로 타면 앉은 자세가 풀리고 소파에 선 채로 남습니다.
+     먼저 일어나게 합니다 — 자전거는 서서 끌고 나가는 것이 맞습니다. */
+  if (CSIT.on) standCasual();
   const next = (id && RIDES[id] && id !== rideId) ? id : null;
   rideId = next; SAVE.ride = next; UI.save();
   mountRide();
@@ -675,8 +683,6 @@ const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick:
 const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
 const P = { x: 5.0, z: 5.0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
-
-mountRide();                                    // 저장해 둔 탈것이 있으면 타고 시작합니다
 
 const blob = new THREE.Mesh(new THREE.CircleGeometry(.62, 20),
   new THREE.MeshBasicMaterial({ color: 0x2A3038, transparent: true, opacity: .18, depthWrite: false }));
@@ -752,6 +758,14 @@ function buildIndoor(key) {
 const roomCache = new Map();
 const roomRoot = new THREE.Group(); roomRoot.visible = false; scene.add(roomRoot);
 let room = null;
+
+/* 저장해 둔 탈것이 있으면 타고 시작합니다.
+   **여기서** 부릅니다. 캐릭터를 만든 자리에서 바로 불렀더니, 자전거를
+   탄 채로 새로고침한 사람은 화면이 영영 안 열렸습니다 — mountRide 가
+   `room` 을 보는데 그 let 이 아직 아래에 있었습니다(TDZ). 탈것이 없으면
+   `!rideId` 에서 끊겨 room 을 안 읽으므로 아무 일도 없었고, **타 본 사람만**
+   못 들어왔습니다. 그런 것은 시연 전날에 발견됩니다. */
+mountRide();
 
 const CELL = .25;
 function noColl(o) { let p = o; while (p) { if (p.userData && p.userData.noCollide) return true; p = p.parent; } return false; }
@@ -942,14 +956,20 @@ function findPath(sx, sz, tx, tz) {
      건물 벽을 눌렀을 때 "아무 일도 안 일어남" 이 제일 나쁩니다. */
   let ei = ti, ej = tj;
   if (blocked(ei, ej)) {
+    /* 세 칸(3.3m)만 둘러봤더니 **건물을 누르면 늘 null** 이었습니다 —
+       도서관이 열두 칸짜리라 한복판을 누르면 그 안에 빈 칸이 없습니다.
+       건물 반쪽이 넉넉히 들어가게 넓힙니다. */
     let bd = 1e9;
-    for (let dj = -3; dj <= 3; dj++) for (let di = -3; di <= 3; di++) {
+    for (let dj = -9; dj <= 9; dj++) for (let di = -9; di <= 9; di++) {
       const i = ti + di, j = tj + dj;
       if (blocked(i, j)) continue;
       const d = di * di + dj * dj;
       if (d < bd) { bd = d; ei = i; ej = j; }
     }
     if (bd > 1e8) return null;
+    /* 누른 자리가 벽 속이면 **그 앞**이 목적지입니다. 원래 누른 점을
+       마지막에 붙이면 도착하자마자 벽으로 파고듭니다. */
+    tx = ei * step; tz = ej * step;
   }
   const h = (i, j) => Math.hypot(i - ei, j - ej);
   const open = [{ i: si, j: sj, g: 0, f: h(si, sj) }];
@@ -1585,7 +1605,10 @@ chatBox.addEventListener('keydown', (e) => {
 });
 function pushChat(who, text) {
   const d = document.createElement('div');
-  d.innerHTML = `<b>${who}</b><span>${text.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]))}</span>`;
+  /* 이름도 **글로 취급**합니다. 글은 막아 두고 이름만 안 막아 뒀는데,
+     이름은 남이 정하는 값입니다(presence 로 옵니다) — 남이 정하는 값이
+     내 화면에서 태그가 되면 그건 남의 코드가 내 화면에서 도는 것입니다. */
+  d.innerHTML = `<b>${esc3(who)}</b><span>${esc3(text)}</span>`;
   elChatLog.appendChild(d);
   while (elChatLog.children.length > 6) elChatLog.firstChild.remove();
   setTimeout(() => d.remove(), 12000);
@@ -1596,6 +1619,8 @@ const myEl = document.createElement('div'); myEl.className = 'say3';
 myEl.style.display = 'none'; $('#tags').appendChild(myEl);
 const myIcon = document.createElement('div'); myIcon.className = 'emo3';
 myIcon.style.display = 'none'; $('#tags').appendChild(myIcon);
+const esc3 = (t) => String(t == null ? '' : t).slice(0, 120)
+  .replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function showEmoIcon(_, k) { myIcon.textContent = emoteIcon(k); myIcon.dataset.t = performance.now(); }
 
 /* ── 실시간 ── 못 붙어도 월드는 그대로 돕니다 */
@@ -1681,6 +1706,10 @@ function stopPlace(saveIt) {
        같은 검사입니다 — 이게 없으면 문 앞을 가구로 막고 갇힙니다. */
     if (!wouldStayWalkable(gx, gz)) {
       toast('거기는 안 돼요', '문에서 방 안쪽으로 못 지나가게 됩니다');
+      /* 미리보기를 씬에서 **빼고** 놓습니다. 참조만 지우면 씬에는 그대로
+         남는데 아무도 그것을 가리키고 있지 않아 영영 못 지웁니다 —
+         거절당할 때마다 캠퍼스에 유령 가구가 한 개씩 늘었습니다. */
+      scene.remove(PLACE.ghost);
       PLACE.ghost = null; PLACE.on = false; return;
     }
     SAVE.decor.push({ id: PLACE.id, x: +gx.toFixed(2), z: +gz.toFixed(2), ry: PLACE.ry });
@@ -1923,8 +1952,14 @@ function interact() {
   if (near) enterRoom(near);
 }
 const spotsHere = () => SPOTS[room ? room.key : 'campus'] || [];
+/* 눌러서 걷던 길은 문을 넘을 때 버립니다. 꼭짓점은 **바깥 좌표**인데
+   방에 들어가면 hit() 이 방 격자로 바뀝니다 — 그대로 두면 들어가자마자
+   바깥 어딘가를 향해 저 혼자 걸어 나갑니다. 실제로 학생회관에 들어간
+   지 3초 만에 도로 나왔습니다. */
+function dropWalk() { goTo = null; goPath = null; goEnd = null; goLastD = -1; goRetried = false; }
 function enterRoom(portal) {
   if (SESS.on) endSession(true);
+  dropWalk();
   closeDlg();
   const rec = buildRoom(portal.zone === 'clubshop' ? 'shop' : portal.zone);
   roomRoot.clear(); roomRoot.add(rec.group);
@@ -1945,6 +1980,7 @@ function enterRoom(portal) {
 }
 function leaveRoom() {
   if (SESS.on) endSession(true);
+  dropWalk();
   closeDlg();
   const p = P.back;
   roomRoot.visible = false; campusRoot.visible = true;
@@ -2395,7 +2431,7 @@ function rebuildMe() {
   /* playerRig.clear() 가 탈것까지 지웁니다 — 옷을 갈아입었다고 자전거가
      사라지면 안 되니 여기서 다시 답니다. */
   rideG = null; mountRide();
-  if (SESS.on) { sit(player, true); sit(pipMe, true); }
+  if (SESS.on || CSIT.on) { sit(player, true); sit(pipMe, true); }
   $('#pip .nm').textContent = myNick();
 }
 
@@ -2465,7 +2501,10 @@ function tick(now) {
      자세 판정과 3D 가 같은 탭에서 도는 화면이라 20fps 아래로 잘 내려갑니다.
      "움직이는 게 힘들다" 의 나머지 절반이 이것이었습니다. 0.1 로 올립니다. */
   const dt = Math.min(.1, (now - last) / 1000); last = now; T += dt;
-  if (document.hidden) return;
+  /* 탭이 숨어 있는 동안 fpsT0 를 안 옮기면, 돌아온 첫 프레임에 자리를
+     비운 시간이 통째로 한 칸에 실려 0fps 로 읽힙니다 — 그러면 사다리가
+     해상도를 내리고, 40fps 대에서는 올리는 칸에 안 걸려 그대로 남습니다. */
+  if (document.hidden) { fpsT0 = now; frames = 0; acc = 0; return; }
 
   /* ── 걷기 ── */
   let ix = 0, iz = 0;
@@ -2558,6 +2597,10 @@ function tick(now) {
   playerRig.rotation.y = smoothAngle(playerRig.rotation.y, P.dir, 1 - Math.pow(.00005, dt));
   /* 감정표현이 도는 동안은 그 자세가 이깁니다 */
   let emoting = false;
+  /* 앉아 있는 동안은 감정표현 자세를 안 씁니다. 앉은 채로 3을 눌렀더니
+     의자를 뚫고 일어선 채로 세션이 끝날 때까지 그대로 있었습니다 —
+     아래 갈래가 SESS.on 이면 다시 앉히지를 않습니다. */
+  if ((SESS.on || CSIT.on) && myEmo) myEmo = null;
   if (myEmo) {
     emoting = playEmotePose(player, myEmo.k, (now - myEmo.t0) / 1000);
     if (!emoting || P.sp > .3) myEmo = null;
@@ -2574,7 +2617,9 @@ function tick(now) {
   blob.position.set(P.x, .22, P.z);
   blob.scale.setScalar(1 - P.sp * .08);
   /* 탈것은 제 그림자를 들고 다닙니다. 둘 다 깔면 그림자가 두 겹이 됩니다. */
-  blob.visible = !first && !rideId;
+  /* rideId 가 아니라 **실제로 달려 있는지**를 봅니다. 실내에서는 내리므로
+     rideG 만 null 이 되는데, rideId 로 보면 방 안에서 그림자가 사라집니다. */
+  blob.visible = !first && !rideG;
   if (tutStep < TUT.length) {
     if (TUT[tutStep].k === 'move' && P.moved > 7) tutDone('move');
     if (TUT[tutStep].k === 'look' && turned > 1.6) tutDone('look');
@@ -2951,6 +2996,8 @@ window.__panel = (t) => { const s = spotsHere().find((q) => q.title === t); if (
 window.__emo = (k) => doEmote(k);
 window.__wheel = () => toggleEmo();
 window.__chat = (t) => { pushChat('나', t); mySay = { text: t, t0: performance.now() }; };
+window.__chatAs = (who, t) => pushChat(who, t);
+window.__netPeers = () => (net ? [...net.peers.entries()] : []);
 window.__game = (k) => openGame(k, () => {}, { posture: PZ });
 window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.error } : null);
 window.__scene = scene;

@@ -1175,7 +1175,13 @@ try {
     onMode: (m) => {
       elNet.classList.toggle('on', m === 'online');
       elNet.querySelector('span').textContent =
-        m === 'online' ? `접속 ${remotes.size + 1}명` : m === 'connecting' ? '연결 중' : '혼자';
+        m === 'online' ? `접속 ${remotes.size + 1}명`
+        : m === 'connecting' ? '연결 중'
+        /* net.js 가 서버를 놓으면 봇 몇을 대신 걸어 줍니다. 캠퍼스가 텅
+           비어 보이지 않게 하는 것이지 접속이 된 것이 아닙니다 — 3D 판과
+           같은 말을 씁니다. */
+        : m === 'local' ? '혼자 · 이웃은 흉내'
+        : '혼자';
     },
     onSay: (p, t) => {
       try { if (KORCEN?.isProfane?.(t)) t = '(가려진 말)'; } catch {}

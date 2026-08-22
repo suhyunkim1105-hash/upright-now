@@ -6,7 +6,6 @@
    남겨 둡니다(가짜로 흉내 내면 시연에서 반드시 들킵니다).
    ══════════════════════════════════════════════════════════ */
 
-import { FURN_MORE } from './room.js';
 
 const KEY = 'girin3d.save';
 const DEF = {
@@ -237,6 +236,36 @@ export function wearShop(ctx) {
 }
 
 /** 가구 목록 — 기숙사에 놓는 것들 */
+/* ── 가구 표 ──
+   **이 파일에 둡니다.** 처음에는 room.js 에 두고 여기서 import 했는데,
+   room.js 는 three.js 를 씁니다. ui.js 는 3D 월드와 2D 아이소메트릭 월드가
+   **같이 쓰는 파일**이라, 그 순간 2D 판이 "three 를 못 찾겠다" 며 통째로
+   안 열렸습니다. 표는 글자와 값일 뿐이고, 파는 일은 이 파일 몫입니다.
+   짓는 일은 room.js 의 buildFurn 이 id 로 받습니다.
+
+   id 는 2D 판 아이템 표와 같은 것을 씁니다 — 서버 구매(world_buy_item)가
+   두 판에서 하나로 이어져야 하므로 여기서 새 이름을 지으면 안 됩니다. */
+export const FURN_MORE = [
+  ['fur-cushion',   '방석',          25, '🟥'],
+  ['fur-rug-round', '둥근 러그',     45, '⭕'],
+  ['fur-beanbag',   '빈백',          70, '🛋'],
+  ['fur-chair',     '나무 의자',     35, '🪑'],
+  ['fur-sidetable', '협탁',          40, '🧰'],
+  ['fur-shelf',     '낮은 책장',     50, '📕'],
+  ['fur-drawers',   '서랍장',        60, '🗄'],
+  ['fur-laundry',   '빨래바구니',    30, '🧺'],
+  ['fur-suitcase',  '캐리어',        45, '🧳'],
+  ['fur-fridge',    '냉장고',        80, '🧊'],
+  ['fur-fan',       '선풍기',        40, '🌀'],
+  ['fur-tv',        '브라운관 TV',   75, '📺'],
+  ['fur-mirror',    '전신 거울',     55, '🪞'],
+  ['fur-fishtank',  '어항',          65, '🐟'],
+  ['fur-dumbbell',  '아령',          25, '🏋'],
+  ['fur-cattower',  '캣타워',        85, '🐈'],
+  ['fur-plant2',    '큰 화분',       55, '🌿'],
+  ['fur-floorlamp', '플로어 스탠드', 50, '🏮'],
+];
+
 /* 여섯은 처음부터 있던 것이고, 뒤엣것은 room.js 가 짓습니다.
    id 는 2D 판 아이템 표와 같은 것을 씁니다 — 서버 구매(world_buy_item)가
    두 판에서 하나로 이어져야 하므로 여기서 새 이름을 지으면 안 됩니다.

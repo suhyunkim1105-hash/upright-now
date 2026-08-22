@@ -1285,31 +1285,6 @@ export function floorLamp(g, x, z) {
   return p;
 }
 
-/* 상점에 붙일 표 — [id, 이름, 값, 아이콘].
-   앞의 셋은 ui.js 의 FURN 과 모양이 같아서 그대로 이어 붙이면 됩니다.
-   아이콘은 넷째 칸에 따로 둡니다 — 앞 셋만 읽는 쪽은 못 본 척 지나갑니다.
-   값은 기존 가구와 같은 20~90 대입니다. 여기만 몇백씩 부르면 상점의
-   반이 살 수 없는 물건이 되어, 목록이 늘어난 값을 못 합니다. */
-export const FURN_MORE = [
-  ['fur-cushion',   '방석',          25, '🟥'],
-  ['fur-rug-round', '둥근 러그',     45, '⭕'],
-  ['fur-beanbag',   '빈백',          70, '🛋'],
-  ['fur-chair',     '나무 의자',     35, '🪑'],
-  ['fur-sidetable', '협탁',          40, '🧰'],
-  ['fur-shelf',     '낮은 책장',     50, '📕'],
-  ['fur-drawers',   '서랍장',        60, '🗄'],
-  ['fur-laundry',   '빨래바구니',    30, '🧺'],
-  ['fur-suitcase',  '캐리어',        45, '🧳'],
-  ['fur-fridge',    '냉장고',        80, '🧊'],
-  ['fur-fan',       '선풍기',        40, '🌀'],
-  ['fur-tv',        '브라운관 TV',   75, '📺'],
-  ['fur-mirror',    '전신 거울',     55, '🪞'],
-  ['fur-fishtank',  '어항',          65, '🐟'],
-  ['fur-dumbbell',  '아령',          25, '🏋'],
-  ['fur-cattower',  '캣타워',        85, '🐈'],
-  ['fur-plant2',    '큰 화분',       55, '🌿'],
-  ['fur-floorlamp', '플로어 스탠드', 50, '🏮'],
-];
 
 /** 놓는 가구 한 점. rooms.js 의 decorItem 이 못 알아본 id 를 여기로
     넘기면 됩니다 — `else if (R.buildFurn(p, id)) { }`.

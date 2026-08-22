@@ -7,7 +7,7 @@
      · 광장에서 문까지 5~9칸. 걷는 시간을 줄입니다.
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
-import { M, box, cyl, prism, tree, bush } from './parts.js';
+import { M, roundedBox, cyl, prism, tree, bush } from './parts.js';
 import * as BLD from './bld.js';
 
 export const PAL = {
@@ -97,6 +97,36 @@ function zoneXZ(deg, r, lx, lz) {
   return [ca * r - sa * lx - ca * lz, sa * r + ca * lx - sa * lz];
 }
 const zoneRY = (deg) => -(deg * Math.PI / 180 + Math.PI / 2);
+
+/* ---------- 야외용 둥근 상자 ----------
+   parts.js 의 box 는 모서리를 늘 4마디로 깎습니다. 건물 여섯 채는 그래야
+   합니다 — 벽 모서리가 0.12~0.18 이고 현관에서 코앞에 붙어 섭니다.
+   야외는 사정이 다릅니다. 여기서 세우는 상자는 천 개가 넘는데 거의 다
+   벤치 살 · 길 판 · 잔디 얼룩이고 모서리 반지름이 **2~7cm** 입니다.
+   그 2cm 를 평면 여덟 마디 · 베벨 네 단으로 깎으면 조각 하나가 716면인데,
+   화면에서 그 모서리는 픽셀 한둘입니다. 재어 보니 야외 삼각형 89만 중
+   77만이 여기서 나왔습니다 — 한 군데 몰린 것이 아니라 전부가 이것입니다.
+
+   그래서 마디를 **반지름에 맞춥니다**. 산울타리(0.38)처럼 실제로 둥근
+   것만 전처럼 네 마디로 깎고, 손톱만 한 모서리는 한 마디로 끝냅니다.
+   가로세로 높이는 그대로입니다(베벨이 늘 반지름만큼 밖으로 나가므로
+   마디 수는 치수에 영향을 주지 않습니다). 실루엣은 그대로, 면수는 8분의 1. */
+const boxGeos = new Map();
+function box(p, w, h, d, r, mat, x, y, z) {
+  /* 치수가 같으면 형상을 다시 만들지 않고 나눠 씁니다. 산책로 판이 일흔둘,
+     벤치가 여덟 벌, 쓰레기통 살이 예순넷 — 똑같은 조각이 수십 개씩입니다.
+     bake 가 어차피 복사해서 옮겨 붙이므로 나눠 써도 손해가 없고, 대신
+     ExtrudeGeometry 를 천 번 삼각분할하던 시간이 없어집니다. */
+  const key = w + ',' + h + ',' + d + ',' + r;
+  let g = boxGeos.get(key);
+  if (!g) {
+    const rr = Math.min(r, w / 2, h / 2, d / 2);       // parts.js 가 자르는 값과 같습니다
+    boxGeos.set(key, g = roundedBox(w, h, d, r, rr < .09 ? 1 : rr < .25 ? 2 : 4));
+  }
+  const m = new THREE.Mesh(g, mat);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+  p.add(m); return m;
+}
 
 /* 바닥에 까는 판 — 타원 하나, 네모 하나.
    섬 잔디 윗면이 y=0.1 이라 그 위부터 씁니다. **겹치는 판은 반드시 높이를
@@ -300,7 +330,10 @@ export function lampPost(g, x, z, h = 4.2) {
   cyl(p, .13, .18, h, 12, met, 0, h / 2 + .5, 0);
   /* 등 — 사각 초롱 둘. 전 판은 원뿔이 너무 작아 **기둥만** 보였습니다 */
   [-1, 1].forEach((s) => {
-    const arm = new THREE.Mesh(new THREE.TorusGeometry(.62, .075, 6, 14, Math.PI / 2), met);
+    /* 팔은 90° 만 도는 토막입니다. 열넷이면 6.4° 마다 한 마디인데 팔 굵기가
+       7.5cm 라 그 차이가 화면에 안 나옵니다. 여덟이면 11°, 그래도 곡선입니다.
+       가로등이 스물여덟 개, 팔이 쉰여섯이라 마디 하나가 값이 셉니다. */
+    const arm = new THREE.Mesh(new THREE.TorusGeometry(.62, .075, 6, 8, Math.PI / 2), met);
     arm.position.set(0, h + .18, 0);
     arm.rotation.z = s > 0 ? Math.PI / 2 : 0;
     arm.rotation.y = s > 0 ? Math.PI : 0;
@@ -341,9 +374,10 @@ export function flowerBed(g, x, z, r = 2.0) {
     const fx = Math.cos(a) * rr, fz = Math.sin(a) * rr;
     cyl(p, .04, .04, .34, 5, M(PAL.leafDeep, .8), fx, .58, fz);
     const c = cols[Math.floor(rnd() * cols.length)];
-    const h = new THREE.Mesh(new THREE.SphereGeometry(.17, 8, 6), M(c, .68));
+    const h = new THREE.Mesh(new THREE.SphereGeometry(.17, 7, 5), M(c, .68));
     h.position.set(fx, .78, fz); h.scale.y = .6; h.castShadow = true; p.add(h);
-    const y = new THREE.Mesh(new THREE.SphereGeometry(.06, 6, 5), M(PAL.gold, .5));
+    /* 꽃술은 반지름 6cm 이고 그나마 아래쪽 절반이 꽃잎 안에 들어가 있습니다 */
+    const y = new THREE.Mesh(new THREE.SphereGeometry(.06, 5, 4), M(PAL.gold, .5));
     y.position.set(fx, .85, fz); p.add(y);
   }
   return p;
@@ -369,7 +403,7 @@ export function bikeRack(g, x, z, ry, n = 4) {
   box(p, n * 1.1 + .4, .18, 1.6, .06, M(PAL.stoneDark, .78), 0, .1, 0);
   for (let i = 0; i < n + 1; i++) {
     const dx = -n * .55 + i * 1.1;
-    const a = new THREE.Mesh(new THREE.TorusGeometry(.4, .06, 6, 14, Math.PI), M(PAL.metal, .4));
+    const a = new THREE.Mesh(new THREE.TorusGeometry(.4, .06, 6, 9, Math.PI), M(PAL.metal, .4));
     a.position.set(dx, .6, 0); p.add(a);
     [-1, 1].forEach((s) => cyl(p, .06, .06, .5, 6, M(PAL.metal, .4), dx + s * .4, .35, 0));
   }
@@ -377,7 +411,7 @@ export function bikeRack(g, x, z, ry, n = 4) {
   [[-n * .28, -.3, PAL.red], [n * .3, .25, PAL.teal]].forEach(([dx, rz, c]) => {
     const b = new THREE.Group(); b.position.set(dx, 0, 0); b.rotation.y = rz; p.add(b);
     [-.62, .62].forEach((wx) => {
-      const w = new THREE.Mesh(new THREE.TorusGeometry(.44, .07, 6, 18), M(0x3A3F4A, .6));
+      const w = new THREE.Mesh(new THREE.TorusGeometry(.44, .07, 6, 14), M(0x3A3F4A, .6));
       w.position.set(wx, .46, 0); w.rotation.y = Math.PI / 2; b.add(w);
       cyl(b, .06, .06, .1, 8, M(PAL.metal, .35), wx, .46, 0).rotation.z = Math.PI / 2;
     });
@@ -709,7 +743,9 @@ function lakePond(g, ctx, deg, r, WA, WB) {
       const t = k / 5 * Math.PI * 2 + i, h = .95 + (k % 3) * .25;
       cyl(rd, .045, .06, h, 6, M(0x4E8F63, .8), Math.cos(t) * .28, h / 2 + .1, Math.sin(t) * .28);
       if (k % 2 === 0) {
-        const cat = new THREE.Mesh(new THREE.CapsuleGeometry(.075, .26, 5, 8), M(0x8A5A32, .78));
+        /* 이삭은 굵기가 7.5cm 입니다. 캡슐 마디를 반으로 줄여도 물가에서
+           보이는 것은 갈색 막대기 하나로 똑같습니다. */
+        const cat = new THREE.Mesh(new THREE.CapsuleGeometry(.075, .26, 3, 6), M(0x8A5A32, .78));
         cat.position.set(Math.cos(t) * .28, h + .28, Math.sin(t) * .28); rd.add(cat);
       }
     }
@@ -942,6 +978,10 @@ export function buildCampus(scene) {
   /* --- 나무 --- */
   /* 섬에 나무만 260 그루입니다. 야외는 면수를 낮춘 판을 씁니다 —
      lod/seg 를 주면 tree() 가 갈래를 줄입니다. */
+  /* 수관 마디는 건드리지 않았습니다. lod 9 · seg 11 로 낮춰 재 봤더니
+     그루당 88면이 빠지는 대신 큰 나무(배율 1.8)의 윗선이 눈에 띄게
+     각졌습니다. 나무는 이 섬에서 가장 여러 번 되풀이되는 윤곽이라
+     여기서 각이 지면 섬 전체가 각져 보입니다. 9천 면을 포기합니다. */
   const TP = { trunk: PAL.trunk, leaf: PAL.leaf, lod: 11, seg: 13 };
   const spots = [];
   const far = (x, z, m) => spots.every((p) => Math.hypot(p[0] - x, p[1] - z) > m);

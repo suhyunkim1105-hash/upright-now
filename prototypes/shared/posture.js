@@ -365,6 +365,11 @@ var POSE = (function () {
     arbiter: arbiter, step: step, median: median, mad: mad,
     Smoother: Smoother,
     PRIMARY: PRIMARY, AUX: AUX,
+    /* 판정에 쓰는 눈금들. 밖에서 **읽기만** 합니다.
+       월드의 미니게임 하나가 자세를 조작 장치로 쓰는데, 그 판정을
+       여기와 똑같은 식으로 해야 합니다. 표를 저쪽에 베껴 두면 이쪽을
+       고칠 때 조용히 갈라져서, 같은 자세가 두 곳에서 다르게 읽힙니다. */
+    DIRECTION: DIRECTION, FLOOR: FLOOR, MAD_K: MAD_K, SENS: SENS,
     MIN_SHOULDER_WIDTH: MIN_SHOULDER_WIDTH,
     ready: function () { return !!poser; }
   };

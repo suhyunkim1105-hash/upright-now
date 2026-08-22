@@ -40,6 +40,9 @@ export const GAMES = {
   trackRace:   { title: '달리기 시합 100m', how: '← → 를 번갈아 밟아 100m 를 달립니다' },
   pondFish:    { title: '연못 낚시', how: '찌가 쑥 잠기는 순간 Space 로 챕니다' },
   bookSort:    { title: '책 정리', how: '청구기호가 작은 책부터 골라 꽂습니다' },
+  /* 이 열쇠도 2D 판 이름 그대로입니다 — 2D 는 코인을 'postureRun' 으로
+     적습니다. 이름이 갈리면 같은 게임이 두 판에서 다른 것으로 세어집니다. */
+  postureRun:  { title: '거북목 탈출 러너', how: '고개를 살짝 들면 뛰어넘어요 — 자판 Space 도 됩니다' },
 };
 
 let host = null, raf = 0, keyH = null, done = null, closing = false, teardown = null;
@@ -84,11 +87,19 @@ function close(score) {
   d?.(score || 0);
 }
 
-/** 미니게임 하나를 엽니다. 끝나면 onDone(점수) 를 부릅니다. */
-export function openGame(key, onDone) {
+/** 미니게임 하나를 엽니다. 끝나면 onDone(점수) 를 부릅니다.
+    ctx 는 게임에 물려 줄 바깥 장치입니다. 지금은 ctx.posture(웹캠 자세)
+    하나뿐이고 거북목 탈출 러너만 씁니다 — 없어도 그 게임은 자판으로
+    그대로 굴러갑니다. 부르는 쪽이 안 넘길 수도 있으므로 없는 것을
+    기본으로 놓습니다.
+    갈래마다 인자를 달리 넘기지 않고 **다 (body, ctx) 로 넘깁니다.**
+    한 게임만 인자가 하나 더 붙으면 이 줄이 갈라지고, 갈라진 자리는
+    다음에 게임을 붙일 때 빠뜨리기 좋은 자리입니다. */
+export function openGame(key, onDone, ctx) {
   closing = false; lastScore = 0; done = onDone; teardown = null;
   const body = shell(key);
-  ({ memory, match3, run, n2048, suika, giraffeNeck, trackRace, pondFish, bookSort })[key](body);
+  ({ memory, match3, run, n2048, suika, giraffeNeck, trackRace, pondFish, bookSort,
+     postureRun })[key](body, ctx);
   const esc = (e) => { if (e.code === 'Escape') { e.preventDefault(); close(lastScore); } };
   addEventListener('keydown', esc);
   const old = done;
@@ -1889,6 +1900,491 @@ function bookSort(body) {
       if (x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h) { pick(h.i); return; }
   });
   teardown = () => { if (B.swap) clearTimeout(B.swap); };
+  start();
+  raf = requestAnimationFrame(loop);
+}
+
+/* ---------- ⑩ 거북목 탈출 러너 ----------
+   2D: startPostureRun / postureRunTick / drawPostureRun / postureLift.
+   숫자는 전부 원본입니다 — 한 바퀴 400m, 미터당 24px, 중력 2250,
+   뛰는 힘 -645(체공 0.57초), 목숨 셋, 뛰기 0.7 · 재장전 0.3배.
+
+   이 파일에서 자세를 **조작 장치로** 쓰는 하나뿐인 게임입니다. 고개를
+   살짝 들면 뜁니다. 그것 하나라 규칙을 설명할 것이 없고, 시키는 동작이
+   마침 목에 좋은 쪽입니다.
+
+   ---- 옮기면서도 그대로 지킨 것 셋 ----
+
+   1) **절대 각도로 판정하지 않습니다.** 판정식은 여기 없습니다 — 부르는
+      쪽이 넘겨주는 ctx.posture.lift() 가 "자기 기준에서 얼마나 들었나" 를
+      허용치 배수로 돌려줍니다. 원래 고개가 앞으로 나와 있는 사람도 자기
+      기준에서 조금만 들면 뜁니다. 절대값으로 잡으면 그 사람은 이 게임을
+      **아예 못 합니다.**
+
+   2) **카메라 없이도 됩니다.** ctx 가 아예 안 오는 판(다른 호출자, 웹캠
+      모듈이 빠진 빌드)에서도 조용히 자판으로 갑니다. 카메라를 켜 둔
+      사람도 Space·↑ 를 같이 씁니다 — 조작을 카메라 뒤에 잠그지 않습니다.
+
+   3) **자세에 점수를 매기지 않습니다.** 고개를 든 횟수도 크기도 기록하지
+      않고 아무 데도 안 보냅니다. 성적은 달린 거리로만 납니다. 숙이라고
+      시키는 조작(엎드리기)은 넣지 않았고, 한 바퀴로 끝나는 것도 같은
+      이유입니다 — 목을 몇 바퀴씩 젖히게 시키는 게임이 되면 안 됩니다.
+
+   접두사가 RUN_ 이 아니라 PRUN_ 인 것은 이 파일의 run() 이 이미 Phaser
+   동물 러너의 자리이기 때문입니다. 같은 접두사를 쓰면 두 게임의 상수가
+   한 이름에서 섞입니다. */
+const PRUN_LAP_M = 400;          // 트랙 한 바퀴. 이 이상은 목에 일을 시키는 것이 됩니다
+const PRUN_PX_M = 24;            // 그림 픽셀 / 미터
+const PRUN_LAP_PX = PRUN_LAP_M * PRUN_PX_M;
+const PRUN_LIVES = 3;
+/* 체공 0.57초. 더 길게 두면 "고개를 들고 기다리기" 가 유리해지는데,
+   그건 이 게임이 시키면 안 되는 자세입니다. */
+const PRUN_G = 2250;             // 중력 px/s²
+const PRUN_V0 = -645;            // 뛰는 힘 — 0.57초 떠 있습니다
+const PRUN_W = 880, PRUN_H = 300, PRUN_GY = 232, PRUN_ME = 128;
+/* 허용치(tol) 배수로 읽습니다. 판정이 "기준에서 벗어났다" 고 보기
+   시작하는 값이 1.0 이므로, 0.7 은 그보다 작은 **분명하지만 가벼운**
+   움직임입니다. 여기를 더 올리면 목을 크게 젖혀야 합니다. */
+const PRUN_JUMP_AT = 0.7;
+const PRUN_REARM_AT = 0.3;       // 여기까지 돌아와야 다시 뜁니다
+/* 축값이 이만큼 안 오면 그 동안은 자판으로 물러납니다. 한 프레임 빠졌다고
+   글자를 바꾸면 조작 표시가 깜빡이기만 하고 아무것도 안 알려 줍니다. */
+const PRUN_STALE_MS = 700;
+const PRUN_KINDS = ['book', 'monitor', 'chair'];
+/* 넘어야 하는 높이. 셋 다 92px(뛰는 높이) 아래입니다 — 못 넘는 것을
+   세워 두면 그건 장애물이 아니라 함정입니다. */
+const prunObsH = (kind) => (kind === 'monitor' ? 45 : kind === 'chair' ? 39 : 30);
+
+function postureRun(body, ctx) {
+  body.className = 'gbody';
+  const P = pal();
+
+  /* 조작 갈래는 캔버스 밖 머리줄에 적습니다. 캔버스 안에만 두면 "지금
+     카메라로 하는 중인지 자판으로 하는 중인지" 가 그림에 묻힙니다. */
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex;gap:16px;flex-wrap:wrap;justify-content:center;'
+    + 'width:100%;max-width:560px;font:600 11.5px inherit;color:var(--ink2)';
+  head.innerHTML = '<span>조작 <b>준비 중</b></span>'
+    + '<span>남은 거리 <b>' + PRUN_LAP_M + 'm</b></span>'
+    + '<span>연속 통과 <b>0개</b></span>'
+    + '<span>부딪힘 <b>0 / ' + PRUN_LIVES + '</b></span>';
+  for (const b of head.querySelectorAll('b')) b.style.cssText = 'font-weight:800;color:var(--ink)';
+  const [elMode, elDist, elClear, elLife] = head.querySelectorAll('b');
+  body.appendChild(head);
+
+  const cv = document.createElement('canvas');
+  cv.style.cssText = `width:100%;aspect-ratio:${PRUN_W}/${PRUN_H};display:block;`
+    + 'cursor:pointer;touch-action:manipulation';
+  body.appendChild(cv);
+
+  const bar = document.createElement('div');
+  bar.style.cssText = 'width:100%;max-width:560px;height:10px;border-radius:99px;'
+    + 'overflow:hidden;background:rgba(34,42,51,.10)';
+  const fill = document.createElement('i');
+  fill.style.cssText = 'display:block;width:0%;height:100%;background:var(--acc);'
+    + 'transition:width .1s linear';
+  bar.appendChild(fill);
+  body.appendChild(bar);
+
+  const say = sayLine(body, '시작합니다. 고개를 들 준비!');
+  const note = document.createElement('p');
+  note.style.cssText = 'margin:0;font:600 11px/1.5 inherit;color:var(--ink2);opacity:.75;'
+    + 'text-align:center;max-width:520px';
+  note.textContent = '고개를 살짝 들었다가 제자리로 돌아오면 한 번 뜁니다. 억지로 젖히지 '
+    + '않으셔도 되고, 카메라가 없으면 Space · ↑ 로 하시면 돼요. 이 게임은 자세에 점수를 '
+    + `매기지 않습니다 — 고개 움직임을 조작으로만 씁니다. ${PRUN_LIVES}번 부딪히면 그 판은 `
+    + '끝이에요. 뒤로 갈수록 장애물이 촘촘해지고, 200m 부터는 둘씩 붙어 나오기도 해요.';
+  body.appendChild(note);
+
+  /* 자세 입력은 부르는 쪽이 넘겨줍니다. ctx 도 ctx.posture 도 없을 수
+     있어서 한 번만 걸러 두고, 아래에서는 POS 가 있는지만 봅니다. */
+  const POS = (ctx && ctx.posture) || null;
+  const posMode = () => { try { return POS ? POS.mode : 'off'; } catch { return 'off'; } };
+  /** 기준선 대비 고개를 든 정도. 안 잡히면 null 이고, 그때는 자판입니다. */
+  function readLift() {
+    if (!POS || typeof POS.lift !== 'function') return null;
+    let v = null;
+    try { v = POS.lift(); } catch { return null; }
+    return typeof v === 'number' && isFinite(v) ? v : null;
+  }
+
+  const R = { dist: 0, spd: 300, y: 0, vy: 0, lives: PRUN_LIVES, invuln: 0,
+              obs: [], nextAt: 700, lift: null, liveAt: 0, armed: true, mode: 'key',
+              jumps: 0, step: 0, clear: 0, bestClear: 0, shake: 0, land: 0, cloud: 0,
+              over: false, won: false, last: 0, rowsAt: 0 };
+
+  function jump() {
+    if (R.over || R.y > 0) return;
+    R.vy = PRUN_V0; R.y = 0.001; R.jumps++;
+    /* 발밑 먼지 — 뛴 자리에 흔적이 남아야 "내가 뛰었다" 가 됩니다 */
+    FX.puff(PRUN_ME + 14, PRUN_GY - 2, 'rgba(232,206,180,.85)', 6);
+  }
+
+  function paintRows() {
+    if (!cv.isConnected) return;
+    /* 조작 갈래는 매 프레임 다시 정하지만 글자는 여기서만 만집니다. */
+    elMode.textContent = R.mode === 'pose' ? '카메라로 조작'
+      : (posMode() === 'asking' || posMode() === 'loading' || posMode() === 'calibrating')
+        ? '준비 중' : '자판으로 조작';
+    const m = R.dist / PRUN_PX_M;
+    const left = Math.max(0, Math.ceil(PRUN_LAP_M - m));
+    elDist.textContent = left + 'm';
+    elClear.textContent = R.clear + '개';
+    /* 몇 번 부딪혔는지로 씁니다. 남은 목숨으로 쓰면 "1번 더 괜찮아요" 를
+       띄운 다음 판이 끝나서, 화면이 거짓말을 합니다. */
+    elLife.textContent = (PRUN_LIVES - Math.max(0, R.lives)) + ' / ' + PRUN_LIVES;
+    fill.style.width = Math.min(100, (R.dist / PRUN_LAP_PX) * 100) + '%';
+    /* 성적은 **달린 거리** 하나입니다. 고개를 든 횟수도 크기도 점수에
+       안 들어갑니다 — 자세에 점수를 매기지 않는다는 것이 그 뜻입니다. */
+    setScore(Math.min(PRUN_LAP_M, Math.floor(m)));
+    setTime(R.over ? (R.won ? '완주' : '중단') : left + 'm 남음');
+  }
+
+  function finish(won) {
+    if (R.over) return;
+    R.over = true; R.won = won;
+    paintRows();
+    if (won) {
+      FX.burst(PRUN_ME + 20, PRUN_GY - 70, '#FFE9A8', 26, 210);
+      say('한 바퀴 다 돌았어요. 최고 ' + R.bestClear + '개 연속 통과.');
+      over('한 바퀴 완주!',
+           PRUN_LAP_M + 'm · ' + R.jumps + '번 뛰었어요 · 최고 ' + R.bestClear + '개 연속 통과',
+           start);
+    } else {
+      /* 2D 는 완주해야 코인입니다 — 실패한 판은 0 점입니다(달리기 시합 ·
+         책 정리와 같은 규칙). 간 거리는 아래 글로만 남깁니다. */
+      setScore(0);
+      say('세 번 부딪혔어요. 장애물이 보이면 조금 일찍 들어 주세요.');
+      over('세 번 부딪혔어요',
+           Math.floor(R.dist / PRUN_PX_M) + 'm 에서 끝 · 조금 일찍 들면 넉넉히 넘어갑니다',
+           start);
+    }
+  }
+
+  function loop(now) {
+    raf = requestAnimationFrame(loop);
+    const dt = Math.min(0.05, (now - R.last) / 1000);
+    R.last = now;
+    if (dt <= 0) { draw(); return; }
+    FX.update(dt);
+    R.shake = Math.max(0, R.shake - dt * 2.4);
+    R.land = Math.max(0, R.land - dt * 5);
+    /* 끝난 뒤에도 계속 그립니다 — 먼지가 가라앉는 것까지 보여야 판이
+       끊긴 것이 아니라 끝난 것으로 읽힙니다. */
+    if (R.over) { draw(); return; }
+
+    /* ---- 조작 ----
+       갈래를 **매 프레임** 다시 정합니다. 판 도중에 기준 잡기가 끝나면
+       그 자리에서 고개 조작이 살아나야 합니다. */
+    const before = R.mode;
+    const lift = readLift();
+    if (lift !== null) { R.lift = lift; R.liveAt = now; } else R.lift = null;
+    R.mode = POS && R.liveAt && now - R.liveAt < PRUN_STALE_MS ? 'pose' : 'key';
+    if (lift !== null) {
+      /* 한 번 들면 한 번만 뜁니다. 들고 있는다고 연달아 뛰면 "든 채로
+         버티기" 가 유리해지는데, 그건 이 게임이 시키면 안 되는 동작입니다. */
+      if (R.armed && lift >= PRUN_JUMP_AT) { R.armed = false; jump(); }
+      else if (!R.armed && lift <= PRUN_REARM_AT) R.armed = true;
+    } else R.armed = true;
+    if (before !== R.mode) paintRows();
+
+    /* ---- 달리기 ----
+       조금씩 빨라집니다 — 한 바퀴 동안 300 -> 500(px/s). 끝에 가서 숨이
+       차야 완주가 완주로 느껴집니다. */
+    R.spd = Math.min(500, R.spd + 7.5 * dt);
+    R.dist += R.spd * dt;
+    R.step += R.spd * dt;
+    R.cloud += dt;
+    if (R.invuln > 0) R.invuln -= dt;
+    /* y 는 땅에서 뜬 높이(위가 +), vy 는 화면 좌표 방향(위가 -)입니다. */
+    if (R.y > 0 || R.vy !== 0) {
+      const wasUp = R.y > 0;
+      R.vy += PRUN_G * dt;
+      R.y = Math.max(0, R.y - R.vy * dt);
+      if (R.y <= 0) {
+        R.y = 0; R.vy = 0;
+        /* 착지 — 눌렸다 펴집니다. 이게 없으면 공중에서 바닥으로
+           순간이동하는 것으로 보입니다. */
+        if (wasUp) { R.land = 1; FX.puff(PRUN_ME + 14, PRUN_GY - 2, 'rgba(232,206,180,.85)', 7); }
+      }
+    }
+
+    /* ---- 장애물 ----
+       간격이 거리에 따라 좁아집니다(첫 100m 는 넉넉하게, 마지막 100m 는
+       빠듯하게). 200m 부터는 둘이 붙어 나오기도 합니다 — 한 번 뛰어 둘을
+       넘는 자리라, 뛰는 때를 고르는 재미가 생깁니다. */
+    if (R.dist >= R.nextAt && R.dist < PRUN_LAP_PX - 600) {
+      const at = R.dist + PRUN_W + 40;
+      const prog = R.dist / PRUN_LAP_PX;
+      R.obs.push({ at, kind: PRUN_KINDS[(Math.random() * 3) | 0], hit: false });
+      if (prog > 0.5 && Math.random() < 0.34)
+        R.obs.push({ at: at + 118, kind: PRUN_KINDS[(Math.random() * 3) | 0], hit: false });
+      R.nextAt = R.dist + (760 - prog * 260) + Math.random() * 300;
+    }
+    R.obs = R.obs.filter((o) => o.at - R.dist > -90);
+    for (const o of R.obs) {
+      const sx = o.at - R.dist;
+      if (sx < PRUN_ME + 30 && sx > PRUN_ME - 33 && R.y < prunObsH(o.kind) && R.invuln <= 0) {
+        R.lives -= 1; R.invuln = 1.0; R.spd *= 0.75; R.clear = 0; R.shake = 1;
+        FX.burst(PRUN_ME + 20, PRUN_GY - 26, '#E0483A', 14, 160);
+        paintRows();
+        say(R.lives > 0 ? '부딪혔어요. ' + R.lives + '번 더 부딪히면 끝이에요.' : '');
+        if (R.lives <= 0) { draw(); return finish(false); }
+      }
+      /* 넘어간 것을 셉니다. 통과가 아무 표시도 없으면 뛰어넘은 보람이
+         없고, 뛰어야 하는 이유도 안 배웁니다. */
+      if (!o.hit && sx < PRUN_ME - 33) {
+        o.hit = true;
+        R.clear++; R.bestClear = Math.max(R.bestClear, R.clear);
+        if (R.clear % 5 === 0)
+          FX.say(PRUN_ME + 30, PRUN_GY - 90, R.clear + '개 연속 통과!', '#FFD98A', 22);
+        paintRows();
+      }
+    }
+
+    if (R.dist >= PRUN_LAP_PX) { R.dist = PRUN_LAP_PX; draw(); return finish(true); }
+    draw();
+    /* 숫자 줄은 초당 열 번이면 충분합니다. 프레임마다 고치면 60분의 1초마다
+       DOM 을 다섯 번씩 만지는데, 눈은 그 차이를 못 봅니다. */
+    if (now - R.rowsAt > 100) { R.rowsAt = now; paintRows(); }
+  }
+
+  /* ---- 그림 ----
+     트랙은 붉은 우레탄, 안쪽은 잔디. 월드의 운동장과 같은 색이라 창을 열면
+     방금 서 있던 자리가 옆에서 흘러갑니다.
+     층은 다섯입니다 — 하늘 · 구름 · 관중석 · 잔디 인필드 · 트랙. 층마다
+     흐르는 속도가 다르고(0.035 ~ 1.15), 그 차이가 곧 깊이입니다. 한 겹만
+     흘리면 배경이 종이처럼 미끄러집니다. */
+  function draw() {
+    const g = fitCv(cv, PRUN_W, PRUN_H);
+    if (!g) return;
+    const d = R.dist, W = PRUN_W;
+    if (R.shake > 0)
+      g.translate((Math.random() - 0.5) * R.shake * 12, (Math.random() - 0.5) * R.shake * 8);
+
+    const sky = g.createLinearGradient(0, 0, 0, PRUN_GY);
+    sky.addColorStop(0, '#A8D8E8'); sky.addColorStop(0.7, '#D6ECEF'); sky.addColorStop(1, '#EAF3E4');
+    g.fillStyle = sky; g.fillRect(0, 0, W, PRUN_GY);
+
+    /* 구름 — 가장 느립니다. 뭉치 셋이 한 덩이입니다. */
+    for (let i = 0; i < 4; i++) {
+      const x = ((i * 260 - d * 0.035 - R.cloud * 6) % (W + 300) + W + 300) % (W + 300) - 150;
+      const y = 26 + (i % 3) * 22;
+      disc(g, x, y, 22, 'rgba(255,255,255,.85)');
+      disc(g, x + 24, y + 5, 17, 'rgba(255,255,255,.85)');
+      disc(g, x - 22, y + 7, 14, 'rgba(255,255,255,.8)');
+      g.fillStyle = 'rgba(255,255,255,.85)'; g.fillRect(x - 22, y, 48, 9);
+    }
+    /* 먼 나무 — 관중석 뒤 */
+    for (let i = 0; i < 12; i++) {
+      const x = ((i * 92 - d * 0.09) % (W + 120) + W + 120) % (W + 120) - 60;
+      g.fillStyle = '#6B4A2E'; g.fillRect(x + 9, 108, 6, 22);
+      disc(g, x + 12, 104, 17, '#4E9E63');
+      disc(g, x + 6, 98, 11, '#6FBE7F');
+    }
+    /* 관중석 — 계단 셋에 앉은 사람들. 색 점만 뿌리면 색종이가 흩어진
+       것으로 보여서 **머리와 몸통 두 조각**으로 사람 꼴을 만듭니다.
+       색은 채도를 낮춘 것들만 씁니다 — 관중이 주자보다 눈에 띄면 안 됩니다. */
+    g.fillStyle = '#9FB6A6'; g.fillRect(0, 130, W, 46);
+    const CROWD = ['#B9705F', '#B49653', '#5E7FA0', '#7E6B9E', '#5FA093', '#A46A78'];
+    for (let r = 0; r < 3; r++) {
+      const y = 131 + r * 15;
+      g.fillStyle = r % 2 ? '#B7CCBC' : '#A9C0AF';
+      g.fillRect(0, y, W, 15);
+      g.fillStyle = 'rgba(42,35,32,.14)'; g.fillRect(0, y + 14, W, 1);
+      for (let i = 0; i < 72; i++) {
+        const x = ((i * 14 + r * 7 - d * 0.14) % (W + 40) + W + 40) % (W + 40) - 20;
+        /* 응원 — 몇은 위아래로 조금 움직입니다. 다 멈춰 있으면 인형입니다. */
+        const hop = ((i + r) % 7 === 0) ? Math.round(Math.sin(R.cloud * 4 + i) * 1.5) : 0;
+        g.fillStyle = CROWD[(i * 3 + r * 2) % CROWD.length];
+        g.fillRect(x, y + 6 + hop, 9, 8);
+        g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(x, y + 6 + hop, 9, 2);
+        g.fillStyle = '#8A6A55'; g.fillRect(x + 2, y + 2 + hop, 5, 5);
+      }
+    }
+    g.fillStyle = '#7E9C86'; g.fillRect(0, 176, W, 8);
+    g.fillStyle = '#93AE99'; g.fillRect(0, 176, W, 3);
+
+    /* 잔디 인필드는 **트랙 뒤**입니다. 발이 닿는 줄(PRUN_GY)보다 위에서
+       붉은 우레탄이 시작해야 "트랙 위를 달린다" 로 읽힙니다 — 경계선에
+       발을 딱 붙여 놓으면 잔디에 서 있는 것처럼 보입니다. */
+    g.fillStyle = '#8FBF7A'; g.fillRect(0, 184, W, 22);
+    g.fillStyle = '#A3CE8B'; g.fillRect(0, 184, W, 4);
+    g.fillStyle = '#79AE68';
+    for (let i = 0; i < 40; i++) {
+      const x = ((i * 47 - d * 0.5) % (W + 60) + W + 60) % (W + 60) - 30;
+      g.fillRect(x, 190 + (i % 3) * 5, 4, 4);
+    }
+    g.fillStyle = '#C4553F'; g.fillRect(0, 206, W, PRUN_H - 206);
+    g.fillStyle = '#D96A50'; g.fillRect(0, 206, W, 4);
+    g.fillStyle = '#B04A36'; g.fillRect(0, PRUN_GY - 2, W, 2);
+    /* 레인 선 · 100m 표지 */
+    g.fillStyle = '#F4EDE4';
+    for (let i = 0; i < 22; i++) {
+      const x = ((i * 72 - d) % (W + 72) + W + 72) % (W + 72) - 72;
+      g.fillRect(x, PRUN_GY + 24, 38, 4);
+    }
+    g.fillStyle = '#A8422F'; g.fillRect(0, PRUN_GY + 44, W, 3);
+    g.fillStyle = 'rgba(244,237,228,.5)';
+    for (let i = 0; i < 30; i++) {
+      const x = ((i * 44 - d * 1.15) % (W + 44) + W + 44) % (W + 44) - 44;
+      g.fillRect(x, PRUN_GY + 52, 20, 3);
+    }
+    /* 100m 마다 표지판. "얼마나 왔나" 를 막대 말고 트랙 위에서도 봅니다. */
+    g.textBaseline = 'middle';
+    for (let m = 100; m < PRUN_LAP_M; m += 100) {
+      const x = m * PRUN_PX_M - d + PRUN_ME;
+      if (x < -60 || x > W + 20) continue;
+      g.fillStyle = '#F4EDE4'; g.fillRect(x, PRUN_GY - 4, 3, 6);
+      g.fillStyle = 'rgba(42,35,32,.62)'; g.fillRect(x - 16, 186, 40, 18);
+      g.fillStyle = '#FFF6F3'; g.font = F7(12); g.textAlign = 'center';
+      g.fillText(m + 'm', x + 4, 195);
+      g.textAlign = 'left';
+    }
+    g.textBaseline = 'alphabetic';
+
+    /* 장애물 — 책상에서 굴러 나온 것들. 운동장 허들 자리에 이것들이
+       서 있는 것이 이 게임의 농담입니다. */
+    for (const o of R.obs) {
+      const x = Math.round(o.at - d);
+      if (x < -60 || x > W + 20) continue;
+      /* 접지 그림자 — 셋 다 바닥에 붙어 있어야 뛰어넘을 것으로 보입니다 */
+      g.fillStyle = 'rgba(80,30,20,.28)'; g.fillRect(x - 3, PRUN_GY - 3, 40, 5);
+      if (o.kind === 'book') {
+        [['#D8442C', 0], ['#E8C34A', 10], ['#3F8F5C', 20]].forEach(([c, dy]) => {
+          g.fillStyle = '#6B2A1C'; g.fillRect(x - 1, PRUN_GY - 10 - dy, 35, 10);
+          g.fillStyle = c; g.fillRect(x, PRUN_GY - 9 - dy, 33, 8);
+          g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(x, PRUN_GY - 9 - dy, 33, 2);
+          g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x, PRUN_GY - 3 - dy, 33, 2);
+        });
+      } else if (o.kind === 'monitor') {
+        g.fillStyle = '#4A525C'; g.fillRect(x + 12, PRUN_GY - 15, 12, 15);
+        g.fillRect(x + 3, PRUN_GY - 6, 30, 6);
+        g.fillStyle = '#2E343B'; g.fillRect(x - 1, PRUN_GY - 46, 38, 33);
+        g.fillStyle = '#3A4048'; g.fillRect(x, PRUN_GY - 45, 36, 31);
+        g.fillStyle = '#8FD3E8'; g.fillRect(x + 3, PRUN_GY - 42, 30, 25);
+        g.fillStyle = '#CDEAF5'; g.fillRect(x + 3, PRUN_GY - 42, 30, 6);
+        g.fillStyle = 'rgba(255,255,255,.5)';
+        g.fillRect(x + 5, PRUN_GY - 34, 14, 3); g.fillRect(x + 5, PRUN_GY - 28, 20, 3);
+      } else {
+        g.fillStyle = '#6B4A2E'; g.fillRect(x - 1, PRUN_GY - 19, 38, 8);
+        g.fillStyle = '#8A6039'; g.fillRect(x, PRUN_GY - 18, 36, 6);
+        g.fillStyle = '#B08050'; g.fillRect(x, PRUN_GY - 18, 36, 2);
+        g.fillStyle = '#8A6039'; g.fillRect(x + 1, PRUN_GY - 40, 8, 23);
+        g.fillStyle = '#B08050'; g.fillRect(x + 1, PRUN_GY - 40, 8, 3);
+        g.fillStyle = '#6B4A2E';
+        g.fillRect(x + 3, PRUN_GY - 11, 6, 11); g.fillRect(x + 28, PRUN_GY - 11, 6, 11);
+      }
+    }
+
+    /* 기린 — 달리는 사람 자리. chars.js 는 three.js 모듈이라 여기서는
+       못 씁니다. 캔버스 게임의 그림은 이 파일 안에서 끝냅니다. */
+    const y = PRUN_GY - R.y;
+    const air = R.y > 0.5;
+    /* 그림자는 늘 땅에 붙어 있고 뜬 만큼 작아집니다. 이게 없으면 공중에
+       있는지 그냥 위에 그려진 것인지 구별이 안 됩니다. */
+    g.fillStyle = 'rgba(90,40,28,' + (0.3 - Math.min(0.22, R.y / 460)).toFixed(2) + ')';
+    g.fillRect(PRUN_ME + 2 + Math.min(7, R.y / 16), PRUN_GY - 3, 28 - Math.min(13, R.y / 8), 5);
+    /* 부딪힌 뒤 잠깐은 깜빡입니다 — 무적인 동안 또 부딪힌 줄 알면
+       목숨이 왜 안 줄었는지 설명이 안 됩니다. */
+    const blink = R.invuln > 0 && ((performance.now() / 90) | 0) % 2 === 0;
+    if (!blink) {
+      const sq = R.land * 0.16;                 // 착지 눌림 — 0.2초 동안 납작해집니다
+      g.save();
+      g.translate(PRUN_ME + 15, y);
+      g.scale(1 + sq, 1 - sq);
+      g.translate(-(PRUN_ME + 15), -y);
+      const swing = air ? 0 : Math.sin(R.step / 15) * 6;
+      g.fillStyle = '#9B5B2B';
+      g.fillRect(PRUN_ME + 3, y - 18 + (air ? 6 : 0), 6, air ? 12 : 18 + swing);
+      g.fillRect(PRUN_ME + 18, y - 18 + (air ? 6 : 0), 6, air ? 12 : 18 - swing);
+      g.fillStyle = '#6B4A2E';
+      g.fillRect(PRUN_ME + 3, y - 3 + (air ? 3 : 0), 6, 3);
+      g.fillRect(PRUN_ME + 18, y - 3 + (air ? 3 : 0), 6, 3);
+      g.fillStyle = '#9B5B2B'; g.fillRect(PRUN_ME - 1, y - 40, 32, 24);
+      g.fillStyle = '#E8AD50'; g.fillRect(PRUN_ME, y - 39, 30, 22);
+      g.fillStyle = '#F0C378'; g.fillRect(PRUN_ME, y - 39, 30, 5);
+      g.fillStyle = '#C98536'; g.fillRect(PRUN_ME, y - 22, 30, 5);
+      g.fillStyle = '#B66D31';
+      [[4, -35], [18, -32], [9, -26], [22, -24]].forEach(([a, b]) => g.fillRect(PRUN_ME + a, y + b, 7, 6));
+      g.fillStyle = '#9B5B2B';
+      g.fillRect(PRUN_ME - 6, y - 34, 7, 4 + (air ? 0 : Math.sin(R.step / 15) * 2));
+      /* 목 — 뛰는 동안 더 곧게 섭니다. 이 게임이 파는 그림이 그것입니다. */
+      const nh = air ? 46 : 36;
+      g.fillStyle = '#9B5B2B'; g.fillRect(PRUN_ME + 17, y - 40 - nh, 12, nh);
+      g.fillStyle = '#E8AD50'; g.fillRect(PRUN_ME + 18, y - 40 - nh, 10, nh);
+      g.fillStyle = '#F0C378'; g.fillRect(PRUN_ME + 18, y - 40 - nh, 3, nh);
+      g.fillStyle = '#B66D31';
+      for (let k = 0; k < 3; k++) g.fillRect(PRUN_ME + 21, y - 34 - nh + k * 12, 5, 5);
+      g.fillStyle = '#9B5B2B'; g.fillRect(PRUN_ME + 15, y - 48 - nh, 21, 13);
+      g.fillStyle = '#E8AD50'; g.fillRect(PRUN_ME + 16, y - 47 - nh, 19, 11);
+      g.fillStyle = '#F0C378'; g.fillRect(PRUN_ME + 16, y - 47 - nh, 19, 3);
+      g.fillStyle = '#E8AD50'; g.fillRect(PRUN_ME + 33, y - 44 - nh, 8, 7);   // 주둥이
+      g.fillStyle = '#2A2520'; g.fillRect(PRUN_ME + 28, y - 44 - nh, 3, 3);   // 눈
+      g.fillStyle = '#9B5B2B';
+      g.fillRect(PRUN_ME + 19, y - 55 - nh, 3, 7); g.fillRect(PRUN_ME + 26, y - 55 - nh, 3, 7);
+      g.fillStyle = '#6B4A2E';
+      g.fillRect(PRUN_ME + 18, y - 58 - nh, 5, 4); g.fillRect(PRUN_ME + 25, y - 58 - nh, 5, 4);
+      g.restore();
+    }
+
+    FX.draw(g);
+
+    /* 고개 막대 — 얼마나 들었는지. 조작이 눈에 보여야 "내가 뭘 해서
+       뛰었는지" 를 배웁니다. 점수가 아니라 **입력 표시**이고, 판이 끝나면
+       사라집니다 — 어디에도 안 남습니다. */
+    if (R.mode === 'pose') {
+      const gx = W - 46, gy = 22, gh = 150;
+      g.fillStyle = 'rgba(255,255,255,.84)'; g.fillRect(gx - 8, gy - 20, 40, gh + 34);
+      g.fillStyle = P.ink2; g.font = F7(11); g.textAlign = 'center';
+      g.fillText('고개', gx + 12, gy - 8);
+      g.fillStyle = '#D8D2CC'; g.fillRect(gx, gy, 24, gh);
+      const t = Math.max(0, Math.min(1, ((R.lift || 0) + 0.5) / 2.2));
+      g.fillStyle = R.armed ? '#2E9E5B' : '#9A8E88';
+      g.fillRect(gx, gy + gh - gh * t, 24, gh * t);
+      g.fillStyle = '#E0483A';
+      g.fillRect(gx - 6, gy + gh - gh * ((PRUN_JUMP_AT + 0.5) / 2.2), 36, 3);
+      g.font = F7(10); g.fillText('뛰기', gx + 12, gy + gh + 12);
+      g.textAlign = 'left';
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  function start() {
+    FX.reset();
+    R.dist = 0; R.spd = 300; R.y = 0; R.vy = 0; R.lives = PRUN_LIVES; R.invuln = 0;
+    R.obs = []; R.nextAt = 700; R.armed = true; R.jumps = 0; R.step = 0; R.rowsAt = 0;
+    R.clear = 0; R.bestClear = 0; R.shake = 0; R.land = 0; R.cloud = 0;
+    R.over = false; R.won = false; R.lift = null; R.liveAt = 0;
+    R.last = performance.now();
+    paintRows();
+    say(R.mode === 'pose' ? '고개를 살짝 들면 뜁니다. 출발!' : '시작합니다. Space 로 뛰어 주세요.');
+  }
+
+  /* 자판은 **늘** 먹습니다. 카메라가 도는 동안에도 그대로 두는 것은
+     조작을 카메라 뒤에 잠그지 않기 위해서입니다. */
+  const kd = (e) => {
+    if (e.code !== 'Space' && e.code !== 'ArrowUp' && e.code !== 'KeyW') return;
+    e.preventDefault();
+    if (!R.over) jump();
+  };
+  addEventListener('keydown', kd);
+  /* 손가락으로 하는 사람에게는 자판이 없습니다 — 판을 두드려도 뜁니다. */
+  cv.addEventListener('pointerdown', () => { if (!R.over) jump(); });
+
+  /* 카메라는 이 게임이 켠 것이므로 이 게임이 끕니다. 창을 닫고도 불이
+     켜져 있으면 그건 게임이 아니라 감시로 읽힙니다. */
+  teardown = () => {
+    removeEventListener('keydown', kd);
+    try { POS?.stop?.(); } catch { /* 무시 */ }
+  };
+
+  /* 켜지는 데 몇 초 걸립니다(권한 · 모델 · 기준 잡기). 그 동안에도 판은
+     이미 굴러가고 있고 Space 로 됩니다 — 기다리게 하지 않습니다. */
+  if (POS && typeof POS.start === 'function') {
+    Promise.resolve().then(() => POS.start()).then(paintRows, paintRows);
+  }
+
   start();
   raf = requestAnimationFrame(loop);
 }

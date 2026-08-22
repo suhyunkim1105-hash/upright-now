@@ -461,7 +461,7 @@
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
-    <div class="cap"><b>기린캠퍼스</b><i></i><span>건물을 누르면 그 앞으로 · <kbd>M</kbd> 닫기</span></div>
+    <div class="cap"><b>기린캠퍼스</b><i></i><span>누르거나 앞의 <b>숫자</b>를 치면 그 앞으로 · <kbd>M</kbd> 닫기</span></div>
     <canvas width="1240" height="1240"></canvas>
     <div class="lg">
       <span><i style="background:#E8483C"></i>나</span>
@@ -477,10 +477,11 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { character, SPECIES, OUTFITS, WEAR, WEAR_FREE, normalizeLook, stride, idle, sit, slouch, look, face } from './chars.js';
+import { character, SPECIES, OUTFITS, WEAR, WEAR_FREE, normalizeLook, stride, idle, sit, slouch, look, face,
+  RIDES, ride, rideOn, rideOff, TINTS, TINTABLE, applyTint } from './chars.js';
 import { buildCampus, BUILDINGS } from './campus.js';
 import { ROOMS, ROOM_SIZE, ROOM_NAME, decorItem } from './rooms.js';
-import { seatsBegin, seatsTake } from './room.js';
+import { seatsBegin, seatsTake, setOutside, setClockHour, tickClocks } from './room.js';
 import { bake } from './bake.js';
 import { SPOTS } from './spots.js';
 import { NPCS } from './npcs.js';
@@ -634,6 +635,39 @@ function payCoins(n) {
 }
 let curFit = (SAVE.fit | 0) % OUTFITS.length;   // NPC 프리셋 색만 씁니다
 
+/* ══ 탈것 ══
+   존이 일곱이 되고 미니게임이 흩어지면서 광장에서 동아리 거리까지
+   걷는 데 스무 걸음이 넘습니다. 지도(M)로 건너뛸 수는 있지만 그건
+   **월드를 건너뛰는 것**이라, 자주 쓰면 걸어 다닐 이유가 사라집니다.
+   걷는 것을 빠르게 만드는 쪽이 맞습니다.
+
+   속도는 곱입니다 — Shift 와 겹칩니다. 그게 맞습니다(자전거로 내리막을
+   가는 것과 같습니다). 다만 곱이 커지면 한 프레임에 벽 두께를 넘어가
+   충돌 검사를 건너뛰므로 표의 천장이 1.8 입니다.
+
+   실내에서는 안 탑니다. 열람실 통로에서 자전거를 타는 그림이 우선
+   말이 안 되고, 방은 좁아서 빨라질 것도 없습니다. */
+/* 값은 2D 판 상점표 그대로입니다 — 두 판에서 같은 물건이 다른 값이면
+   서버 잔액과 안 맞습니다. */
+const RIDE_PRICE = { 'ride-skate': 260, 'ride-kick': 320, 'ride-bike': 480, 'ride-cloud': 900 };
+const RIDE_LIST = Object.keys(RIDES).map((id) => [id, RIDES[id].name, RIDE_PRICE[id], RIDES[id].mult]);
+SAVE.ownedRide = Array.isArray(SAVE.ownedRide) ? SAVE.ownedRide : [];
+let rideId = SAVE.ride && RIDES[SAVE.ride] && SAVE.ownedRide.includes(SAVE.ride) ? SAVE.ride : null;
+let rideG = null;
+function rideMult() { return (rideId && !room && !SESS.on && !CSIT.on) ? RIDES[rideId].mult : 1; }
+function mountRide() {
+  if (rideG) { rideG.parent?.remove(rideG); rideG = null; }
+  if (!rideId || room) { rideOff(player); return; }
+  rideG = ride(playerRig, rideId);
+}
+function setRide(id) {
+  const next = (id && RIDES[id] && id !== rideId) ? id : null;
+  rideId = next; SAVE.ride = next; UI.save();
+  mountRide();
+  toast(next ? RIDES[next].name + ' 을 탔어요' : '내렸어요',
+    next ? `걷는 속도 ×${RIDES[next].mult.toFixed(2)} — 실내에서는 자동으로 내립니다` : '다시 걸어갑니다');
+}
+
 /* 배경음악 — 2D 판이 쓰던 열 곡 그대로 */
 const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick: SAVE.bgmPick || 'auto' });
 
@@ -641,6 +675,8 @@ const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick:
 const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
 const P = { x: 5.0, z: 5.0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+
+mountRide();                                    // 저장해 둔 탈것이 있으면 타고 시작합니다
 
 const blob = new THREE.Mesh(new THREE.CircleGeometry(.62, 20),
   new THREE.MeshBasicMaterial({ color: 0x2A3038, transparent: true, opacity: .18, depthWrite: false }));
@@ -686,7 +722,11 @@ function gazeTarget() {
 /* ══════ 3. 지나다니는 사람 ══════ */
 const NPC = NPCS.map((d, i) => {
   const rig = new THREE.Group(); scene.add(rig);
-  const g = character(rig, d.species, OUTFITS[d.fit], { bag: d.bag });
+  /* 지나다니는 사람은 **덜 잘게** 짓습니다. 실루엣은 그대로이고
+     삼각형만 3분의 1로 줄어듭니다. 열둘이 늘 화면에 있어서, 여기가
+     캠퍼스 전체 도형 값과 맞먹었습니다. 말을 걸면 창이 열리지
+     이 몸을 코앞에서 들여다보는 화면이 아닙니다. */
+  const g = character(rig, d.species, OUTFITS[d.fit], { bag: d.bag, lod: 1 });
   const el = document.createElement('div');
   el.className = 'tag3'; el.textContent = d.name; $('#tags').appendChild(el);
   return { d, rig, g, el, leg: i % d.route.length, t: 0, wait: i * .7, walk: 0, sp: 0, dir: 0, line: 0 };
@@ -701,7 +741,7 @@ function buildIndoor(key) {
   (INDOOR[key] || []).forEach((d, i) => {
     const rig = new THREE.Group(); rig.position.set(d.x, 0, d.z); rig.rotation.y = d.dir;
     inRoot.add(rig);
-    const g = character(rig, d.species, OUTFITS[d.fit], { bag: false });
+    const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1 });
     const el = document.createElement('div');
     el.className = 'tag3'; el.textContent = d.name; $('#tags').appendChild(el);
     inNPC.push({ d, rig, g, el, line: 0, seed: i + 3 });
@@ -822,6 +862,12 @@ addEventListener('keydown', (e) => {
   if (gameOpen()) return;
   if (e.code === 'Enter') { e.preventDefault(); if (emoOn) toggleEmo(false); openChat(); return; }
   if (e.code === 'KeyG') { e.preventDefault(); toggleEmo(); return; }
+  if (mapOn && /^Digit[0-9]$/.test(e.code)) {
+    e.preventDefault();
+    const i = (+e.code.slice(5) + 9) % 10;             // 1..9,0 → 0..9
+    if (PLACES[i]) goPlace(PLACES[i]);
+    return;
+  }
   if (/^Digit[1-8]$/.test(e.code)) { e.preventDefault(); doEmote(EMOTES[+e.code.slice(5) - 1].k); toggleEmo(false); return; }
   if (e.code === 'Escape') {
     if (emoOn) { e.preventDefault(); toggleEmo(false); return; } e.preventDefault(); if (panelOn) closePanel(); else if (dlgOn) closeDlg(); else if (mapOn) toggleMap(); return; }
@@ -873,12 +919,92 @@ cv.addEventListener('pointermove', (e) => {
   drag = { x: e.clientX, y: e.clientY };
 });
 addEventListener('pointerup', () => { drag = null; });
-/* 눌러서 걸어가기 — 2D 판에는 클릭 길찾기가 있었습니다. 여기서는 A* 대신
-   **바닥의 그 점까지 곧장** 갑니다. 벽에 닿으면 기존 미끄러짐이 받아 주고,
-   1.5초 동안 못 나아가면 스스로 그만둡니다(막다른 곳에서 계속 비비지 않게). */
+/* ── 눌러서 걸어가기 ──
+   전에는 **곧장** 갔습니다. 그래서 건물이 사이에 끼면 벽에 붙어 비비다가
+   1.5초 뒤에 스스로 그만뒀습니다 — 도서관 뒤를 누르면 아무 데도 안 갑니다.
+   2D 판에는 A* 가 있었으니 여기도 길을 찾습니다.
+
+   격자는 1.1m 입니다. 사람 반지름이 0.46 이라 이보다 잘게 쪼개면 칸이
+   여덟 배로 늘고, 이보다 굵으면 건물 사이 통로가 통째로 막힌 것으로
+   읽힙니다. 실내는 방이 작아서 0.55m 로 반 나눕니다.
+
+   대각선을 허용하되 **모서리를 자르지 않습니다**(양옆이 다 뚫려 있을
+   때만). 그러지 않으면 건물 모서리를 스치듯 지나가다 벽에 낍니다. */
+const PATH_CAP = 4200;               // 이보다 오래 찾으면 포기하고 곧장 갑니다
+function findPath(sx, sz, tx, tz) {
+  const step = room ? .55 : 1.1;
+  const gx = (v) => Math.round(v / step);
+  const key = (i, j) => i * 4096 + j;
+  const si = gx(sx), sj = gx(sz), ti = gx(tx), tj = gx(tz);
+  if (si === ti && sj === tj) return [{ x: tx, z: tz }];
+  const blocked = (i, j) => hit(i * step, j * step);
+  /* 목표 칸이 막혀 있으면 그 언저리에서 제일 가까운 빈 칸을 씁니다 —
+     건물 벽을 눌렀을 때 "아무 일도 안 일어남" 이 제일 나쁩니다. */
+  let ei = ti, ej = tj;
+  if (blocked(ei, ej)) {
+    let bd = 1e9;
+    for (let dj = -3; dj <= 3; dj++) for (let di = -3; di <= 3; di++) {
+      const i = ti + di, j = tj + dj;
+      if (blocked(i, j)) continue;
+      const d = di * di + dj * dj;
+      if (d < bd) { bd = d; ei = i; ej = j; }
+    }
+    if (bd > 1e8) return null;
+  }
+  const h = (i, j) => Math.hypot(i - ei, j - ej);
+  const open = [{ i: si, j: sj, g: 0, f: h(si, sj) }];
+  const came = new Map(), best = new Map([[key(si, sj), 0]]);
+  let seen = 0;
+  while (open.length) {
+    /* 힙 대신 선형 탐색입니다. 칸이 수천이라 이 쪽이 짧고, 누를 때
+       한 번만 도는 계산입니다 — 매 프레임 도는 것이 아닙니다. */
+    let bi = 0;
+    for (let k = 1; k < open.length; k++) if (open[k].f < open[bi].f) bi = k;
+    const cur = open.splice(bi, 1)[0];
+    if (cur.i === ei && cur.j === ej) {
+      const out = [];
+      let k = key(cur.i, cur.j), ci = cur.i, cj = cur.j;
+      while (came.has(k)) { out.push({ x: ci * step, z: cj * step });
+        const pv = came.get(k); ci = pv >> 12; cj = (pv & 4095) - 2048; k = key(ci, cj); }
+      out.reverse();
+      out.push({ x: tx, z: tz });
+      return simplify(out);
+    }
+    if (++seen > PATH_CAP) return null;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      if (!di && !dj) continue;
+      const i = cur.i + di, j = cur.j + dj;
+      if (blocked(i, j)) continue;
+      if (di && dj && (blocked(cur.i + di, cur.j) || blocked(cur.i, cur.j + dj))) continue;
+      const ng = cur.g + (di && dj ? 1.4142 : 1);
+      const kk = key(i, j);
+      if (best.has(kk) && best.get(kk) <= ng) continue;
+      best.set(kk, ng);
+      came.set(kk, (cur.i << 12) | (cur.j + 2048));
+      open.push({ i, j, g: ng, f: ng + h(i, j) });
+    }
+  }
+  return null;
+}
+/* 격자를 그대로 따라가면 계단처럼 걷습니다. 중간에 있어도 그만인
+   꼭짓점은 빼고, 눈으로 이어지는 것만 남깁니다. */
+function simplify(pts) {
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = out[out.length - 1], b = pts[i + 1];
+    if (!clearLine(a.x, a.z, b.x, b.z)) out.push(pts[i]);
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+function clearLine(x0, z0, x1, z1) {
+  const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / .34);
+  for (let k = 1; k < n; k++) if (hit(x0 + (x1 - x0) * k / n, z0 + (z1 - z0) * k / n)) return false;
+  return true;
+}
 const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
 const _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _pt = new THREE.Vector3();
-let goTo = null, goStall = 0, goFrom = null;
+let goTo = null, goStall = 0, goFrom = null, goPath = null, goEnd = null, goRetried = false, goLastD = -1;
 cv.addEventListener('pointerdown', (e) => { goFrom = { x: e.clientX, y: e.clientY, t: performance.now() }; });
 cv.addEventListener('pointerup', (e) => {
   if (!goFrom || first || panelOn || mapOn || SESS.on) { goFrom = null; return; }
@@ -890,7 +1016,12 @@ cv.addEventListener('pointerup', (e) => {
   _ray.setFromCamera(_ndc, cam);
   if (!_ray.ray.intersectPlane(_plane, _pt)) return;
   if (Math.hypot(_pt.x, _pt.z) > (room ? 99 : ISLAND_R)) return;
-  goTo = { x: _pt.x, z: _pt.z }; goStall = 0;
+  /* 길이 안 나오면(섬 밖·완전히 막힌 곳) 예전처럼 곧장 갑니다 —
+     못 가는 것보다 벽에 붙어 보다 그만두는 쪽이 덜 답답합니다. */
+  goPath = findPath(P.x, P.z, _pt.x, _pt.z);
+  goTo = goPath ? goPath.shift() : { x: _pt.x, z: _pt.z };
+  goEnd = { x: _pt.x, z: _pt.z };
+  goStall = 0; goLastD = -1; goRetried = false;
 });
 cv.addEventListener('wheel', (e) => { e.preventDefault();
   dist = clamp(dist + e.deltaY * .015, room ? 4.5 : 5.5, room ? 18 : 34); }, { passive: false });
@@ -969,7 +1100,15 @@ function panelFor(s) {
     });
     case 'wear-shop': return UI.wearShop({
       wear: WEAR, owned: SAVE.owned2, coins: SAVE.coins, server: !!(SRV && SRV.configured),
+      rides: RIDE_LIST, ownedRide: SAVE.ownedRide,
       onBuy: (id, slot, again) => buyWear(id, slot, again),
+      onBuyRide: (id, again) => {
+        if (SAVE.ownedRide.includes(id)) return;
+        if (!payCoins(RIDE_PRICE[id])) return;
+        SAVE.ownedRide.push(id); UI.save();
+        toast(RIDES[id].name + ' 샀어요', '옷장(C)에서 탑니다');
+        again();
+      },
     });
     case 'furn-shop': return UI.furnShop({
       coins: SAVE.coins, furn: SAVE.furn,
@@ -1019,6 +1158,7 @@ function panelFor(s) {
     case 'school': return schoolView();
     case 'weather': return weatherView();
     case 'bus': return UI.bus();
+    case 'invite': return UI.invitePanel({ nick: myNick(), school: SAVE.school, species: curSpecies });
     case 'decor': return UI.decor({
       furn: SAVE.furn,
       placedCount: SAVE.decor.reduce((m, d) => (m[d.id] = (m[d.id] || 0) + 1, m), {}),
@@ -1031,10 +1171,27 @@ function panelFor(s) {
       on(root, again) {
         root.querySelector('.bd').onclick = (e) => {
           const b = e.target.closest('button'); if (!b) return;
+          if (b.dataset.tint) {
+            SAVE.look.tint = SAVE.look.tint || {};
+            const c = b.dataset.tc;
+            if (c) SAVE.look.tint[b.dataset.tint] = +c; else delete SAVE.look.tint[b.dataset.tint];
+            UI.save();
+            /* 통째로 다시 짓지 않고 재질 색만 바꿉니다 — 색을 하나 눌러
+               볼 때마다 캐릭터를 새로 만들면 옷장이 뚝뚝 끊깁니다. */
+            applyTint(player, SAVE.look); applyTint(pipMe, SAVE.look);
+            net?.setLook(curSpecies, myLook(), myNick());
+            again(); return;
+          }
+          if (b.dataset.ride !== undefined) {
+            const id = b.dataset.ride;
+            if (id && !SAVE.ownedRide.includes(id)) return;
+            setRide(id || null); again(); return;
+          }
           if (b.dataset.sp) { curSpecies = b.dataset.sp; SAVE.species = curSpecies; }
           else if (b.dataset.wslot) { SAVE.look[b.dataset.wslot] = b.dataset.wid; }
           else if (b.dataset.cslot) { SAVE.look[b.dataset.cslot] = +b.dataset.c; }
           else if (b.dataset.snd) { sndToggle(); again(); return; }
+          else if (b.dataset.shadow) { setShadows(!renderer.shadowMap.enabled); again(); return; }
           else if (b.dataset.sc) {
             SAVE.school = b.dataset.sc; idbarPaint();
             /* 과잠 띠를 학교 색으로 */
@@ -1229,8 +1386,15 @@ function weatherView() {
 }
 
 /* ══════ 8. 자세 세션 ══════ */
+/* ── 세션 시계 ──
+   앉은 시간은 **벽시계**로 셉니다. 예전에는 프레임마다 dt 를 더했는데,
+   dt 에는 0.1초 천장이 있습니다(한 프레임에 벽을 뚫고 지나가지 않게).
+   그래서 10fps 아래로 내려가면 시계가 실제보다 느리게 갔습니다 —
+   재 봤습니다: 16.5초를 앉아 있었는데 3.1초로 셌습니다.
+   느린 노트북을 쓰는 사람이 25분 앉아 있고 8분어치 코인을 받는 셈입니다.
+   걸음은 dt 로, 시간은 시계로. 둘은 원래 다른 것입니다. */
 const SESS = { on: false, k: 0, want: 0, t: 0, judged: 0, next: 0, demo: true,
-  bad: 0, wasBad: false, from: null, title: '', live: '' };
+  bad: 0, wasBad: false, from: null, title: '', live: '', t0: 0, dw: 0 };
 
 /* ── 웹캠 자세 판정 ──
    `../shared/posture.js` 에 카메라를 물립니다. 거부하거나 모델을 못 받으면
@@ -1261,7 +1425,7 @@ const PZ = createPosture({
 $('#stand').addEventListener('click', () => endSession());
 function startSession(s) {
   Object.assign(SESS, { on: true, t: 0, judged: 0, tWarn: 0, tBad: 0, axes: {},
-    k: 0, want: 0, next: 3.2, bad: 0, wasBad: false,
+    k: 0, want: 0, next: 3.2, bad: 0, wasBad: false, t0: performance.now(), dw: 0,
     live: '', title: s.title, from: { x: P.x, z: P.z, dir: P.dir } });
   PZ.start();
   P.x = s.seat.x; P.z = s.seat.z; P.dir = s.seat.dir; P.sp = 0;
@@ -1443,7 +1607,14 @@ try {
     onMode: (m) => {
       elNet.classList.toggle('on', m === 'online');
       elNet.querySelector('span').textContent =
-        m === 'online' ? `접속 ${remotes.size + 1}명` : m === 'connecting' ? '연결 중' : '혼자';
+        m === 'online' ? `접속 ${remotes.size + 1}명`
+        : m === 'connecting' ? '연결 중'
+        /* 서버에 못 붙으면 net.js 가 봇 몇을 대신 걸어 줍니다. 캠퍼스가
+           텅 비어 보이지 않게 하는 것이지 **접속이 된 것이 아닙니다** —
+           그러니 화면에도 흉내라고 적습니다. 여기서 '접속' 이라고 쓰면
+           그건 거짓말이 됩니다. */
+        : m === 'local' ? '혼자 · 이웃은 흉내'
+        : '혼자';
     },
     onSay: (p, t) => {
       try { if (KORCEN?.isProfane?.(t)) t = '(가려진 말)'; } catch {}
@@ -1470,7 +1641,8 @@ function remoteFor(p) {
     if (r) { r.el.remove(); r.say.remove(); r.emoEl.remove(); scene.remove(r.rig); }
     const rig = new THREE.Group(); scene.add(rig);
     const fitVal = typeof p.fit === 'object' && p.fit ? p.fit : OUTFITS[(p.fit | 0) % OUTFITS.length];
-    const g = character(rig, SPECIES[p.species] ? p.species : '거북이', fitVal, {});
+    /* 남의 캐릭터도 덜 잘게 — 몇 명이 들어올지 모르는 자리입니다 */
+    const g = character(rig, SPECIES[p.species] ? p.species : '거북이', fitVal, { lod: 1 });
     const el = document.createElement('div'); el.className = 'tag3'; $('#tags').appendChild(el);
     const say = document.createElement('div'); say.className = 'say3'; say.style.display = 'none'; $('#tags').appendChild(say);
     const emoEl = document.createElement('div'); emoEl.className = 'emo3'; emoEl.style.display = 'none'; $('#tags').appendChild(emoEl);
@@ -1665,6 +1837,24 @@ document.addEventListener('visibilitychange', () => {
   try { if (document.hidden) SND.ctx?.suspend(); else if (SND.on) SND.ctx?.resume(); } catch {}
 });
 
+/* ── 하늘 한 번에 ──
+   전에는 `SKY.apply()` 하나였습니다. 그런데 밖이 밤인데 실내 창밖은
+   대낮이라, 기숙사에서 자정에 커튼을 열면 정오였습니다. 창유리와
+   벽시계는 하늘과 **같은 값**을 봐야 하므로 부르는 자리를 하나로 묶습니다.
+   따로 부르면 언젠가 한 쪽만 부르는 곳이 생깁니다. */
+let skySeen = -1;
+function applySky(indoor) {
+  const s = SKY.apply(indoor);
+  /* 창유리는 하늘색이 눈에 띄게 바뀔 때만 다시 칠합니다 — 매 프레임
+     재질을 건드리면 그 자체가 프레임을 먹습니다. */
+  const tag = (Math.round(s.night * 40) * 8) + ({ clear: 0, cloud: 1, rain: 2, snow: 3 }[SKY.weather] || 0);
+  if (tag !== skySeen) {
+    skySeen = tag;
+    try { setOutside({ sky: s.sky, night: s.night, weather: SKY.weather }); } catch (e) {}
+  }
+  return s;
+}
+
 /* ══════ 9. 드나들기 ══════ */
 let near = null, spot = null, npcNear = null, spotD = 1e9, npcD = 1e9;
 /* 아무 의자에나 앉기 — 방을 지을 때 적어 둔 자리 목록에서 찾습니다.
@@ -1701,6 +1891,8 @@ function interact() {
   if (npcNear) { openDlg(npcNear); return; }
   if (spot) {
     if (spot.game) {
+      /* 러너 하나만 자세를 조작으로 씁니다. 카메라를 못 켜도 그 게임은
+         자판으로 그대로 돌아갑니다 — 조작을 카메라 뒤에 잠그지 않습니다. */
       openGame(spot.game, (score) => {
         if (score <= 0) return;
         /* 2D 판 규칙 그대로 — 클리어 10코인, 게임별 하루 한 번 */
@@ -1714,7 +1906,7 @@ function interact() {
           toast('코인 +10', spot.title);
         }
         UI.save();
-      });
+      }, { posture: PZ });
       return;
     }
     if (spot.seat) startSession(spot); else openPanel(spot);
@@ -1738,12 +1930,13 @@ function enterRoom(portal) {
   roomRoot.clear(); roomRoot.add(rec.group);
   room = rec; roomRoot.visible = true; campusRoot.visible = false;
   NPC.forEach((n) => { n.rig.visible = false; n.el.style.display = 'none'; });
-  SKY.apply(true);
+  applySky(true);
   const sp = freeSpotNear(rec.grid, 0, rec.size.d / 2 - 3.4);
   P.x = sp.x; P.z = sp.z; P.dir = Math.PI; P.sp = 0;
   yaw = -Math.PI * .75; pitch = .64; dist = 10.6; camD = dist;
   P.back = portal;
   buildIndoor(rec.key);
+  mountRide();                        // 실내에서는 내립니다
   net?.setZone(rec.key);
   sndZone(rec.key); BGM.setZone(rec.key);
   const nm = ROOM_NAME[rec.key];
@@ -1757,11 +1950,12 @@ function leaveRoom() {
   roomRoot.visible = false; campusRoot.visible = true;
   NPC.forEach((n) => { n.rig.visible = true; });
   room = null;
-  SKY.apply(false);
+  applySky(false);
   const b = BUILDINGS.find((x) => x.zone === p.zone);
   P.x = p.x + Math.sin(b.ry) * 2.8; P.z = p.z + Math.cos(b.ry) * 2.8;
   P.dir = b.ry; yaw = b.ry + Math.PI; pitch = .55; dist = 11.5; camD = dist; P.sp = 0;
   inNPC.forEach((n) => n.el.remove()); inRoot.clear(); inNPC = [];
+  mountRide();                        // 밖에 나오면 다시 탑니다
   net?.setZone('campus');
   setZone('캠퍼스', '중앙 광장'); toast('캠퍼스', p.name + ' 앞');
   sndZone('campus'); BGM.setZone('campus');
@@ -1878,9 +2072,32 @@ function toggleMap() {
   $('#map').classList.toggle('on', mapOn); dockOn('map', mapOn);
   if (mapOn) { drawMap(); tutDone('map'); }
 }
-/* 지도에서 건물을 누르면 그 앞으로 갑니다.
-   2D 월드에 있던 **빠른 이동** 입니다. 섬이 80칸이라 이게 없으면
-   건물 하나 보러 20초씩 걷습니다. */
+/* ── 빠른 이동 ──
+   섬이 80칸이라 이게 없으면 건물 하나 보러 20초씩 걷습니다.
+   2D 판에서는 **지도가 열려 있을 때만** 숫자가 자리로 걸렸습니다.
+   지도를 닫은 채로 숫자를 쓰면 감정표현(1~8)과 부딪히고, 무엇보다
+   어디로 가는지 안 보고 누르게 됩니다. 그래서 여기도 같게 둡니다. */
+const PLACES = BUILDINGS.map((b) => ({ key: b.zone, name: b.name, b }))
+  .concat([
+    { key: 'plaza', name: '중앙 광장', at: { x: 0, z: 8.2, ry: Math.PI } },
+    { key: 'field', name: '운동장', at: { x: -13.4, z: -14.2, ry: -Math.PI * .25 } },
+    { key: 'lake', name: '호수', at: { x: -19.4, z: 25.4, ry: Math.PI * .2 } },
+    { key: 'club', name: '동아리 거리', at: { x: 12.4, z: 28.4, ry: Math.PI * .1 } },
+  ]);
+function goPlace(pl) {
+  if (room) return;
+  if (pl.b) {
+    const po = CAMPUS.portals.find((q) => q.zone === pl.b.zone);
+    P.x = po ? po.x + Math.sin(pl.b.ry) * 3.4 : pl.b.x;
+    P.z = po ? po.z + Math.cos(pl.b.ry) * 3.4 : pl.b.z;
+    P.dir = pl.b.ry + Math.PI;
+  } else { P.x = pl.at.x; P.z = pl.at.z; P.dir = pl.at.ry; }
+  P.sp = 0; goTo = null; goPath = null; goEnd = null;
+  yaw = P.dir; playerRig.rotation.y = P.dir;
+  unstick();
+  if (mapOn) toggleMap();
+  toast(pl.name, pl.b ? '문 앞으로 왔어요' : '여기예요');
+}
 mapCv.addEventListener('click', (e) => {
   if (!mapOn || room) return;
   const r = mapCv.getBoundingClientRect();
@@ -1897,13 +2114,7 @@ mapCv.addEventListener('click', (e) => {
   });
   e.stopPropagation();
   if (!best) { toggleMap(); return; }
-  const po = CAMPUS.portals.find((q) => q.zone === best.zone);
-  const tx = po ? po.x + Math.sin(best.ry) * 3.4 : best.x;
-  const tz = po ? po.z + Math.cos(best.ry) * 3.4 : best.z;
-  P.x = tx; P.z = tz; P.dir = best.ry + Math.PI; P.sp = 0;
-  yaw = P.dir; playerRig.rotation.y = P.dir;
-  unstick();
-  toggleMap(); toast(best.name, '문 앞으로 왔어요');
+  goPlace({ name: best.name, b: best });
 });
 $('#map').addEventListener('click', () => { if (mapOn) toggleMap(); });
 function drawMap() {
@@ -1923,8 +2134,14 @@ function drawMap() {
       mg.fillStyle = 'rgba(255,255,255,.8)'; mg.strokeStyle = 'rgba(20,28,38,.3)'; mg.lineWidth = 1;
       NPC.forEach((n) => { const [x2, y2] = uv(n.rig.position.x, n.rig.position.z);
         mg.beginPath(); mg.arc(x2, y2, 3.4, 0, TAU); mg.fill(); mg.stroke(); });
-      BUILDINGS.forEach((b) => { const [x2, y2] = uv(b.x, b.z); mapLabel(mg, b.name, x2, y2 - 16, 12); });
-      { const [x2, y2] = uv(0, 12); mapLabel(mg, '중앙 광장', x2, y2, 11); }
+      /* 이름 앞에 번호. 지도를 연 채로 이 숫자를 누르면 그리로 갑니다 —
+         적어 두지 않으면 있는 줄을 모릅니다. */
+      const numOf = (k) => { const i = PLACES.findIndex((q) => q.key === k); return i < 0 ? '' : ((i + 1) % 10) + '. '; };
+      BUILDINGS.forEach((b) => { const [x2, y2] = uv(b.x, b.z); mapLabel(mg, numOf(b.zone) + b.name, x2, y2 - 16, 12); });
+      { const [x2, y2] = uv(0, 12); mapLabel(mg, numOf('plaza') + '중앙 광장', x2, y2, 11); }
+      { const [x2, y2] = uv(-13.4, -14.2); mapLabel(mg, numOf('field') + '운동장', x2, y2, 10.5); }
+      { const [x2, y2] = uv(-19.4, 25.4); mapLabel(mg, numOf('lake') + '호수', x2, y2, 10.5); }
+      { const [x2, y2] = uv(12.4, 28.4); mapLabel(mg, numOf('club') + '동아리 거리', x2, y2, 10.5); }
       { const [x2, y2] = uv(20.5, 20.5); mapLabel(mg, '정문', x2, y2 + 14, 10.5); }
       { const [x2, y2] = uv(P.x, P.z); mapMe(mg, x2, y2, P.dir + Math.PI * .25, 7); }
     } else {
@@ -2071,14 +2288,54 @@ function wardrobeHTML() {
             class="${L[idKey] === id ? 'on' : ''}"
             title="${own ? label : label + ' — 옷 가게(동아리 상점)에서 삽니다'}">${own ? label : '🔒 ' + label}</button>`;
         }).join('');
-      if (cKey && L[idKey] !== 'none')
+      /* ── 색 ──
+         한 옷에 색 고르는 줄이 **두 개** 있으면 안 됩니다. 처음에 그렇게
+         두었더니 팔레트에서 초록을 골라도 염색이 이겨서 아무 일이 안
+         일어났습니다 — 눌리는데 안 바뀌는 단추가 제일 나쁩니다.
+         그래서 하나만 냅니다. 염색되는 옷이면 염색 여덟 색이 그 옷의
+         색이고, 아니면 예전 팔레트가 그대로 그 옷의 색입니다.
+
+         염색이 여덟뿐인 이유는 chars.js 의 TINTS 주석에 있습니다. 과잠은
+         학교 색이고 학사모는 졸업식 규정이며 청바지는 데님이라, 그것들은
+         애초에 고르는 물건이 아닙니다. */
+      if (TINTABLE.includes(L[idKey])) {
+        const now = (L.tint || {})[L[idKey]];
+        row += '<i></i>' + `<button data-tint="${L[idKey]}" data-tc=""
+          class="sw ${now ? '' : 'on'}" title="기본색"
+          style="background:#${(L[cKey] ?? 0xF2F2F2).toString(16).padStart(6, '0')};
+          box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)"></button>`
+          + TINTS.map((t) => `<button data-tint="${L[idKey]}" data-tc="${t.hex}"
+            class="sw ${now === t.hex ? 'on' : ''}" title="${t.name}"
+            style="background:#${t.hex.toString(16).padStart(6, '0')}"></button>`).join('');
+      } else if (cKey && L[idKey] !== 'none') {
         row += '<i></i>' + LOOK_PAL.map((c) => `<button data-cslot="${cKey}" data-c="${c}"
           class="sw ${L[cKey] === c ? 'on' : ''}" style="background:#${c.toString(16).padStart(6, '0')}"></button>`).join('');
+      }
       return row + '</div>';
     }).join('')
+    + '<div class="lbl">탈것</div><div class="wr">'
+    + `<button data-ride="" class="${rideId ? '' : 'on'}">걷기</button>`
+    + RIDE_LIST.map(([id, nm, price, mult]) => {
+      const own = SAVE.ownedRide.includes(id);
+      return `<button data-ride="${id}" ${own ? '' : 'disabled'} class="${rideId === id ? 'on' : ''}"
+        title="${own ? '걷는 속도 ×' + mult.toFixed(2) : nm + ' — 옷 가게(동아리 상점)에서 삽니다'}"
+        >${own ? nm : '🔒 ' + nm}</button>`;
+    }).join('')
+    + '</div>'
     + '<div class="lbl">설정</div><div class="wr">'
     + `<button data-snd="1" class="${SND.on ? 'on' : ''}">장소 소리 ${SND.on ? '켬' : '끔'}</button>`
+    + `<button data-shadow="1" class="${renderer.shadowMap.enabled ? 'on' : ''}"
+        title="느린 기기에서는 저절로 꺼집니다">그림자 ${renderer.shadowMap.enabled ? '켬' : '끔'}</button>`
     + '</div>';
+}
+/* 그림자를 켜고 끄는 자리 한 곳. 재질을 다시 컴파일해야 해서 잠깐
+   멈추므로, 프레임 안에서 매번 부르면 안 됩니다. */
+function setShadows(on) {
+  if (renderer.shadowMap.enabled === on) return;
+  renderer.shadowMap.enabled = on;
+  shadowsOff = !on;
+  scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+  SAVE.shadow = on; UI.save();
 }
 function openWardrobe() {
   if (SESS.on || dlgOn) return;
@@ -2113,6 +2370,7 @@ function toggleHelp(v) {
 }
 
 /* ══════ 13. 얼굴 창 ══════ */
+const elPip = $('#pip');
 const pipR = new THREE.WebGLRenderer({ canvas: $('#pip canvas'), antialias: true, alpha: true });
 pipR.setPixelRatio(1); pipR.setSize(316, 240, false);
 pipR.toneMapping = THREE.ACESFilmicToneMapping; pipR.toneMappingExposure = 1.08;
@@ -2134,6 +2392,9 @@ function rebuildMe() {
   pipMe = character(pipRig, curSpecies, myLook(), { bag: false });
   playerRig.rotation.y = y;
   player.visible = !first;
+  /* playerRig.clear() 가 탈것까지 지웁니다 — 옷을 갈아입었다고 자전거가
+     사라지면 안 되니 여기서 다시 답니다. */
+  rideG = null; mountRide();
   if (SESS.on) { sit(player, true); sit(pipMe, true); }
   $('#pip .nm').textContent = myNick();
 }
@@ -2191,7 +2452,10 @@ function resize() {
 addEventListener('resize', resize); resize();
 
 const elFps = $('#foot .fps');
-let last = performance.now(), acc = 0, frames = 0, T = 0, quality = 1;
+let last = performance.now(), acc = 0, frames = 0, T = 0, quality = 1, fpsNow = 0, pipT = 0;
+let fpsT0 = performance.now();
+/* 그림자를 스스로 껐는지. 껐다고 말만 하고 되돌릴 자리가 없으면 그건 거짓말입니다 */
+let shadowsOff = false;
 const v3 = new THREE.Vector3();
 
 function tick(now) {
@@ -2213,21 +2477,40 @@ function tick(now) {
     if (stick) { ix += stick.dx; iz -= stick.dy; }
   }
   let mag = Math.hypot(ix, iz);
-  if (mag > .06) goTo = null;                          // 키를 잡으면 자동 걷기는 그만둡니다
+  const run = (key.ShiftLeft || key.ShiftRight) ? 1.75 : 1;
+  if (mag > .06) { goTo = null; goPath = null; goEnd = null; }   // 키를 잡으면 자동 걷기는 그만둡니다
   if (goTo && !SESS.on && !CSIT.on) {
     const dx = goTo.x - P.x, dz = goTo.z - P.z, d = Math.hypot(dx, dz);
-    if (d < .55) goTo = null;
+    /* 꼭짓점을 언제 지난 것으로 볼지.
+
+       처음에는 0.5m 로 고정해 뒀는데, 한 프레임에 0.62m 씩 걷습니다
+       (6.2m/s × dt 0.1). 그러면 **0.5m 안으로는 영영 못 들어갑니다** —
+       꼭짓점을 사이에 두고 앞뒤로 넘나들며 제자리를 돕니다. 실제로
+       도서관 뒤를 눌렀더니 반대편으로 흘러갔습니다.
+
+       그래서 한 걸음 폭에 맞춰 늘리고, 그와 별개로 **지나쳤는지**도
+       봅니다(지난 프레임보다 멀어졌으면 지나친 것입니다). 마지막 점은
+       조금 더 엄격하게 봅니다 — 거기서는 정확히 서야 합니다. */
+    const stepLen = (room ? 3.9 : 6.2) * run * rideMult() * dt;
+    const mid = goPath && goPath.length;
+    const near = mid ? Math.max(.5, stepLen * 1.5) : Math.max(.55, stepLen * .9);
+    if (d < near || (mid && goLastD >= 0 && d > goLastD + .02)) {
+      goTo = mid ? goPath.shift() : null;
+      goLastD = -1;
+      if (!goTo) { goPath = null; goEnd = null; }
+    } else goLastD = d;
+    if (!goTo) { /* 다 왔습니다 */ }
     else {
+      const dx2 = goTo.x - P.x, dz2 = goTo.z - P.z, d2 = Math.hypot(dx2, dz2) || 1;
       /* 화면 기준 입력으로 되돌립니다 — 아래 계산이 한 벌만 있게 하려고요 */
-      const c = Math.cos(yaw), sn = Math.sin(yaw);
-      ix = -dx / d * c + dz / d * sn * 0;               // 아래에서 다시 풀므로 여기선 방향만
-      iz = 0;
-      P.dirWant = Math.atan2(dx / d, dz / d);
+      /* 방향은 아래에서 P.dirWant 로 다시 풀립니다. 여기서는 "입력이
+         있다" 만 알리면 됩니다. */
+      ix = 0; iz = 1;
+      P.dirWant = Math.atan2(dx2 / d2, dz2 / d2);
       mag = 1;
     }
   }
-  const run = (key.ShiftLeft || key.ShiftRight) ? 1.75 : 1;
-  const speed = (room ? 3.9 : 6.2) * run;
+  const speed = (room ? 3.9 : 6.2) * run * rideMult();
   const px = P.x, pz = P.z;
   if (mag > .06 && !SESS.on) {
     ix /= mag; iz /= mag;
@@ -2254,7 +2537,17 @@ function tick(now) {
   }
   const step = Math.hypot(P.x - px, P.z - pz);
   /* 1.5초 동안 거의 못 나아가면 자동 걷기를 접습니다 */
-  if (goTo) { goStall = step < .01 * (dt * 60) ? goStall + dt : 0; if (goStall > 1.5) goTo = null; }
+  if (goTo) {
+    goStall = step < .01 * (dt * 60) ? goStall + dt : 0;
+    /* 0.6초 못 나아가면 **한 번만** 길을 다시 찾습니다. 사람이 앞을
+       막고 서 있는 경우가 대부분이라, 다시 찾으면 대개 돌아갑니다. */
+    if (goStall > .6 && goEnd && !goRetried) {
+      goRetried = true;
+      const np = findPath(P.x, P.z, goEnd.x, goEnd.z);
+      if (np && np.length) { goPath = np; goTo = goPath.shift(); goStall = 0; goLastD = -1; }
+    }
+    if (goStall > 1.6) { goTo = null; goPath = null; goEnd = null; }
+  } else goRetried = false;
   P.moved += step;
   P.walk += step / 1.15;                    // 보폭 1.15 — 발이 안 미끄러집니다
   if (SESS.on || CSIT.on) { ix = 0; iz = 0; }
@@ -2270,13 +2563,18 @@ function tick(now) {
     if (!emoting || P.sp > .3) myEmo = null;
   }
   if (!SESS.on && !CSIT.on && !emoting) {
-    if (P.sp > .04) stride(player, P.walk, P.sp); else idle(player, T, 0);
+    /* 탈것을 탔으면 걷는 다리를 안 씁니다 — 안장 위에서 걸어가는 그림이
+       2D 판에서 그대로 지적받았던 것입니다. */
+    if (rideId && rideG) rideOn(player, rideG, rideId, T, P.sp);
+    else if (P.sp > .04) stride(player, P.walk, P.sp); else idle(player, T, 0);
     const gt = gazeTarget();
     if (gt) gaze(player, P.x, P.z, playerRig.rotation.y, gt.x, gt.z, gt.y);
     else { player.userData.looking = false; look(player, 0, 0, .1); }
   }
   blob.position.set(P.x, .22, P.z);
   blob.scale.setScalar(1 - P.sp * .08);
+  /* 탈것은 제 그림자를 들고 다닙니다. 둘 다 깔면 그림자가 두 겹이 됩니다. */
+  blob.visible = !first && !rideId;
   if (tutStep < TUT.length) {
     if (TUT[tutStep].k === 'move' && P.moved > 7) tutDone('move');
     if (TUT[tutStep].k === 'look' && turned > 1.6) tutDone('look');
@@ -2456,9 +2754,12 @@ function tick(now) {
 
   /* ── 자세 세션 ── */
   if (SESS.on) {
-    SESS.t += dt;
+    /* 벽시계 — 화면이 느려도 앉은 시간은 앉은 시간입니다 */
+    const wall = (now - SESS.t0) / 1000;
+    const dw = SESS.dw = Math.max(0, Math.min(1.5, wall - SESS.t));  // 탭이 잠들었다 깨면 한 번에 튀지 않게
+    SESS.t = wall;
     /* 판정이 실제로 돈 시간만 따로 셉니다 — 코인과 리포트가 이걸 씁니다 */
-    if (SESS.demo || (PZ.mode === 'live' && SESS.live && SESS.live !== 'idle')) SESS.judged += dt;
+    if (SESS.demo || (PZ.mode === 'live' && SESS.live && SESS.live !== 'idle')) SESS.judged += dw;
     if (PZ.mode === 'live') SESS.want = PZ.k;
     if (SESS.demo) {
       SESS.next -= dt;
@@ -2485,7 +2786,9 @@ function tick(now) {
     if (SESS.wasBad && !bad) SESS.recoverT = 1.8;
     SESS.wasBad = bad;
     if (SESS.recoverT > 0) SESS.recoverT -= dt;
-    if (bad) SESS.tBad += dt; else if (warn) SESS.tWarn += dt;
+    /* 여기도 벽시계입니다 — 리포트의 띠가 SESS.t 와 같은 자로 재야
+       '20분 중 6분 굽음' 이 맞아떨어집니다. */
+    if (bad) SESS.tBad += SESS.dw; else if (warn) SESS.tWarn += SESS.dw;
     const fs = bad ? 'bad' : (SESS.recoverT > 0 ? 'recover' : warn ? 'warn' : 'good');
     if (fs !== SESS.face) { SESS.face = fs; face(player, fs); face(pipMe, fs); }
     const st = elPost.querySelector('.st'), bar = elPost.querySelector('.bar i');
@@ -2516,7 +2819,7 @@ function tick(now) {
   }
 
   /* ── 하늘 · 날씨 ── */
-  SKY.apply(!!room);
+  applySky(!!room);
   if (!room) SKY.tick(dt, P.x, P.z);
 
   /* ── 호수와 천막 ── 백조·연잎·물고기는 상태를 안 들고 시각에서 자리를
@@ -2543,23 +2846,45 @@ function tick(now) {
   drawMini();
   if (mapOn) drawMap();
 
-  pipMe.rotation.y = Math.sin(T * .5) * .26;
-  if (!SESS.on) { if (P.sp > .04) stride(pipMe, P.walk, P.sp * .7); else idle(pipMe, T, 1); }
-  pipCam.position.set(0, 1.06, 3.95); pipCam.lookAt(0, .93, 0);
-  pipR.render(pipScene, pipCam);
+  /* ── 오른쪽 미리보기 ──
+     이 작은 창은 **두 번째 씬을 통째로 다시 그립니다.** 큰 화면과 같은
+     빈도로 돌릴 이유가 없습니다 — 손바닥만 한 칸에서 24fps 와 60fps 는
+     구분이 안 되고, 아낀 프레임은 걷는 감각으로 돌아옵니다.
+     화면에 안 보일 때는 아예 안 그립니다. */
+  pipT += dt;
+  if (pipT > .042 && elPip.offsetParent !== null) {
+    pipT = 0;
+    pipMe.rotation.y = Math.sin(T * .5) * .26;
+    if (!SESS.on) { if (P.sp > .04) stride(pipMe, P.walk, P.sp * .7); else idle(pipMe, T, 1); }
+    pipCam.position.set(0, 1.06, 3.95); pipCam.lookAt(0, .93, 0);
+    pipR.render(pipScene, pipCam);
+  }
 
-  frames++; acc += dt;
+  /* fps 도 벽시계로 셉니다. dt 를 더해서 나누면 **dt 천장(0.1)이
+     그대로 하한 10fps 가 됩니다** — 실제로 3fps 로 기어도 화면에는
+     10fps 라고 적혔고, 그 아래 칸의 화질 사다리는 영영 안 눌렸습니다.
+     느린 것을 느리다고 말해야 사다리가 일을 합니다. */
+  frames++; acc += (now - fpsT0) / 1000; fpsT0 = now;
   if (acc > .7) {
     const f = Math.round(frames / acc);
+    fpsNow = f;
     elFps.textContent = f + ' fps';
     /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
        이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
        느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
     if (f < 30 && quality > .75) { quality = .75; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
+    /* 끄기 전에 **반으로 줄여** 봅니다. 2048 → 1024 면 그림자 그리는 값이
+       사분의 일이 되는데, 이 그림체에서 가장자리가 부드러워지는 것 말고는
+       티가 잘 안 납니다. 있는 그림자가 없는 그림자보다 낫습니다. */
+    else if (f < 26 && sun.shadow.mapSize.width > 1024) {
+      sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.map?.dispose(); sun.shadow.map = null;
+    }
     else if (f < 22 && renderer.shadowMap.enabled) {
       renderer.shadowMap.enabled = false;
       scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
-      toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 설정에서 되돌릴 수 있어요');
+      shadowsOff = true;
+      toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
     }
     else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
     frames = 0; acc = 0;
@@ -2591,7 +2916,7 @@ toast('기린캠퍼스', '중앙 광장');
 
 idbarPaint();
 checkStreak();
-if (SAVE.hour !== undefined && SAVE.hour !== null) SKY.setHour(SAVE.hour);
+if (SAVE.hour !== undefined && SAVE.hour !== null) { SKY.setHour(SAVE.hour); setClockHour(SAVE.hour); }
 pullWeather();
 setInterval(pullWeather, 1800000);
 /* 로드가 끝나면: ① 지도 사진 한 장 ② 방 여섯을 미리 지어 둡니다.
@@ -2600,11 +2925,12 @@ setInterval(pullWeather, 1800000);
 setTimeout(shootMap, 900);
 ['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k, i) =>
   setTimeout(() => { try { buildRoom(k); } catch {} }, 2400 + i * 650));
+if (SAVE.shadow === false) setShadows(false);
 window.__ready = true;
 window.__P = P;
 window.__aim = (x, z) => aimSun(x, z);
 /* 시연에서 밤을 보여 주려면 __hour(21). 되돌리려면 __hour(null). */
-window.__hour = (h) => { SKY.setHour(h); SAVE.hour = h; UI.save(); };
+window.__hour = (h) => { SKY.setHour(h); setClockHour(h); skySeen = -1; SAVE.hour = h; UI.save(); };
 window.__wx = (k) => SKY.setWeather(k);
 window.__hit = (x, z) => hitCampus(x, z);
 window.__sess = () => SESS;
@@ -2625,7 +2951,19 @@ window.__panel = (t) => { const s = spotsHere().find((q) => q.title === t); if (
 window.__emo = (k) => doEmote(k);
 window.__wheel = () => toggleEmo();
 window.__chat = (t) => { pushChat('나', t); mySay = { text: t, t0: performance.now() }; };
-window.__game = (k) => openGame(k, () => {});
+window.__game = (k) => openGame(k, () => {}, { posture: PZ });
+window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.error } : null);
+window.__scene = scene;
+window.__renderer = renderer;
+window.__ride = () => rideId;
+window.__setRide = (id) => setRide(id);
+window.__path = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.length : null; };
+window.__pathPts = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.map((v)=>[+v.x.toFixed(1), +v.z.toFixed(1)]) : null; };
+window.__go = () => ({ p: [+P.x.toFixed(1), +P.z.toFixed(1)], to: goTo && [+goTo.x.toFixed(1), +goTo.z.toFixed(1)],
+  left: goPath ? goPath.length : null, stall: +goStall.toFixed(2), dirWant: +(P.dirWant||0).toFixed(2) });
+window.__walkTo = (tx, tz) => { goPath = findPath(P.x, P.z, tx, tz); goTo = goPath ? goPath.shift() : { x: tx, z: tz }; goEnd = { x: tx, z: tz }; goStall = 0; goRetried = false; goLastD = -1; };
+window.__perf = () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles,
+  geo: renderer.info.memory.geometries, tex: renderer.info.memory.textures, fps: +fpsNow.toFixed(1) });
 window.__cam = () => ({ p: cam.position.toArray().map((v)=>+v.toFixed(1)),
   yaw:+yaw.toFixed(2), pitch:+pitch.toFixed(2), dist:+dist.toFixed(1),
   campus: campusRoot.visible, room: !!room, kids: campusRoot.children.length });

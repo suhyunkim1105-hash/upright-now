@@ -6,6 +6,8 @@
    남겨 둡니다(가짜로 흉내 내면 시연에서 반드시 들킵니다).
    ══════════════════════════════════════════════════════════ */
 
+import { FURN_MORE } from './room.js';
+
 const KEY = 'girin3d.save';
 const DEF = {
   nick: '', school: '', species: '거북이', fit: 0,
@@ -214,11 +216,19 @@ export function wearShop(ctx) {
             class="${own ? 'own' : ''}">${label}${own ? ' ✓' : ' · ' + won(price)}</button>`;
         }).join('') + '</div>';
     }).join('')
-    + '<p class="note">산 옷은 <b>옷장(C)</b> 어디서든 갈아입습니다. 값은 서버 값표가 정합니다 — 이 화면은 보여 줄 뿐입니다.</p>';
+    + (ctx.rides ? '<div class="lbl">탈것</div><div class="wr">'
+      + ctx.rides.map(([id, nm, price, mult]) => {
+        const own = (ctx.ownedRide || []).includes(id);
+        return `<button data-rbuy="${id}" ${own ? 'disabled' : ''} class="${own ? 'own' : ''}"
+          title="걷는 속도 ×${mult.toFixed(2)}">${nm} ×${mult.toFixed(2)}${own ? ' ✓' : ' · ' + won(price)}</button>`;
+      }).join('') + '</div>' : '')
+    + '<p class="note">산 옷은 <b>옷장(C)</b> 어디서든 갈아입습니다. 탈것도 옷장에서 타고 내립니다 — 실내에 들어가면 저절로 내려요. 값은 서버 값표가 정합니다 — 이 화면은 보여 줄 뿐입니다.</p>';
   return {
     tag: '옷 가게', title: '동아리 옷 상점', html,
     on(root, again) {
       root.querySelector('.bd').onclick = (e) => {
+        const r = e.target.closest('button[data-rbuy]');
+        if (r && !r.disabled) { ctx.onBuyRide?.(r.dataset.rbuy, again); return; }
         const b = e.target.closest('button[data-buy]'); if (!b || b.disabled) return;
         ctx.onBuy(b.dataset.buy, b.dataset.slot, again);
       };
@@ -227,18 +237,22 @@ export function wearShop(ctx) {
 }
 
 /** 가구 목록 — 기숙사에 놓는 것들 */
+/* 여섯은 처음부터 있던 것이고, 뒤엣것은 room.js 가 짓습니다.
+   id 는 2D 판 아이템 표와 같은 것을 씁니다 — 서버 구매(world_buy_item)가
+   두 판에서 하나로 이어져야 하므로 여기서 새 이름을 지으면 안 됩니다.
+   네 번째 칸은 상점에 보여 줄 글자입니다. */
 export const FURN = [
-  ['plant', '화분', 30], ['lamp2', '스탠드', 40], ['rug2', '깔개', 40],
-  ['books2', '책 더미', 20], ['guitar2', '기타', 80], ['bear', '곰인형', 60],
+  ['plant', '화분', 30, '🪴'], ['lamp2', '스탠드', 40, '💡'], ['rug2', '깔개', 40, '🟫'],
+  ['books2', '책 더미', 20, '📚'], ['guitar2', '기타', 80, '🎸'], ['bear', '곰인형', 60, '🧸'],
+  ...FURN_MORE,
 ];
 export function furnShop(ctx) {
   const html = coinbar(ctx.coins)
     + '<div class="lbl">가구</div><div class="buys">'
-    + FURN.map(([id, nm, price]) => {
+    + FURN.map(([id, nm, price, icon]) => {
       const n = ctx.furn[id] || 0;
       return `<button class="buy" data-fbuy="${id}">
-        <span class="sw" style="background:#EFE4D0;display:grid;place-items:center;font-size:17px">${
-          { plant: '🪴', lamp2: '💡', rug2: '🟫', books2: '📚', guitar2: '🎸', bear: '🧸' }[id]}</span>
+        <span class="sw" style="background:#EFE4D0;display:grid;place-items:center;font-size:17px">${icon || '▫'}</span>
         ${nm}<br>${won(price)}${n ? ` · ${n}개` : ''}</button>`;
     }).join('') + '</div>'
     + '<p class="note">산 가구는 기숙사 <b>방 꾸미기</b> 게시판에서 놓습니다.</p>';
@@ -712,6 +726,121 @@ export function schoolAuth(ctx) {
           email: bd.querySelector('#smail')?.value?.trim(),
           code: bd.querySelector('#scode')?.value?.trim(),
         }, again);
+      };
+    },
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   초대 코드 — 정문에서 건네는 여섯 자리
+
+   2D 판에도 있던 것인데 3D 로 옮기면서 정문이 문구만 있는 자리로
+   남아 있었습니다. 코드 자체는 본 서비스 기능이라(서버 invites 표)
+   여기서 만드는 형식과 글자표를 그쪽과 같게 맞춰 둡니다.
+
+   글자표에서 0·O·1·I 를 뺐습니다. 여섯 자리를 사람이 불러 주고
+   사람이 받아 적는 물건이라, 저 넷이 섞이면 절반은 틀립니다.
+
+   지금은 이 기기 안에만 남습니다. 서버가 붙는 자리는 각 메서드
+   주석에 적어 뒀습니다 — 지우면 그 설계까지 같이 사라집니다.
+   ══════════════════════════════════════════════════════════ */
+export const INVITE = {
+  KEY: 'girin.invites',
+  ABC: 'ABCDEFGHJKMNPQRSTUVWXYZ23456789',
+  LEN: 6,
+  all() { try { return JSON.parse(localStorage.getItem(this.KEY)) || {}; } catch { return {}; } },
+  _put(a) { try { localStorage.setItem(this.KEY, JSON.stringify(a)); } catch {} },
+  /** → supabase.from('invites').upsert(...) */
+  publish(code, profile) { const a = this.all(); a[code] = Object.assign({ at: Date.now() }, profile); this._put(a); },
+  /** → supabase.from('invites').select().eq('code', code) */
+  lookup(code) { return this.all()[String(code || '').toUpperCase().trim()] || null; },
+  /** → supabase.from('invites').delete().eq('code', code) */
+  revoke(code) { const a = this.all(); delete a[code]; this._put(a); },
+  make() {
+    let c = '';
+    /* Math.random 으로 충분합니다 — 이 코드는 비밀이 아니라 약속입니다.
+       친구에게 불러 줄 여섯 글자이지 남의 방을 지키는 자물쇠가 아닙니다. */
+    for (let i = 0; i < this.LEN; i++) c += this.ABC[Math.floor(Math.random() * this.ABC.length)];
+    return c;
+  },
+  valid(code) {
+    const c = String(code || '').toUpperCase().trim();
+    return c.length === this.LEN && [...c].every((ch) => this.ABC.includes(ch));
+  },
+  /** 내 코드. 없으면 만들고, 있으면 프로필만 갱신합니다 */
+  mine(profile) {
+    if (!SAVE.invite || !this.valid(SAVE.invite)) { SAVE.invite = this.make(); save(); }
+    this.publish(SAVE.invite, Object.assign({ self: true }, profile || {}));
+    return SAVE.invite;
+  },
+};
+
+/** 정문 — 초대 코드를 만들고 건네는 자리 */
+export function invitePanel(ctx) {
+  const code = INVITE.mine({ nickname: ctx.nick, school: ctx.school, species: ctx.species });
+  const url = (() => {
+    try { const u = new URL(location.href); u.searchParams.set('invite', code); return u.toString(); }
+    catch { return location.href; }
+  })();
+  const friends = Object.entries(INVITE.all())
+    .filter(([c, v]) => c !== code && !v.self)
+    .sort((a, b) => (b[1].at || 0) - (a[1].at || 0)).slice(0, 6);
+  const html = `
+    <p>친구에게 이 여섯 자리를 불러 주세요. 같은 코드를 넣으면 서로가 이웃 목록에 뜹니다.</p>
+    <div style="display:grid;place-items:center;margin:14px 0 10px">
+      <b style="font:800 30px/1.1 ui-monospace,Menlo,monospace;letter-spacing:.18em;
+        background:var(--surface-3,#F2EFE7);border:1px solid var(--line-2,#DDD6C8);
+        border-radius:14px;padding:12px 18px">${esc(code)}</b>
+    </div>
+    <div class="wr">
+      <button data-inv="copy">코드 복사</button>
+      <button data-inv="link">초대 링크 복사</button>
+      <button data-inv="new">새로 만들기</button>
+    </div>
+    <div class="lbl">코드 넣기</div>
+    <div class="wr" style="align-items:center">
+      <input class="invin" maxlength="6" placeholder="ABC123" autocomplete="off"
+        style="flex:1;min-width:130px;text-transform:uppercase;letter-spacing:.16em;
+        font:700 16px/1 ui-monospace,Menlo,monospace;padding:10px 12px;border-radius:10px;
+        border:1px solid var(--line-2,#DDD6C8);background:var(--surface-2,#fff);color:inherit">
+      <button data-inv="add">넣기</button>
+    </div>
+    <p class="hint invmsg" aria-live="polite"></p>
+    <div class="lbl">받아 둔 코드</div>
+    ${friends.length
+      ? '<div class="wr">' + friends.map(([c, v]) =>
+        `<button data-drop="${esc(c)}" title="지우기">${esc(c)}${v.nickname ? ' · ' + esc(v.nickname) : ''} ✕</button>`).join('') + '</div>'
+      : '<p class="hint">아직 없어요.</p>'}
+    <p class="note">코드는 <b>이 기기에만</b> 남습니다. 서버가 붙으면 같은 코드로 진짜 이웃이 이어집니다.
+    코드에는 별명·학교·종만 들어 있고, 자세 기록은 들어가지 않습니다.</p>`;
+  return {
+    tag: '정문', title: '기린캠퍼스 정문', html,
+    on(root, again) {
+      const msg = root.querySelector('.invmsg');
+      const inp = root.querySelector('.invin');
+      if (inp) inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') root.querySelector('[data-inv="add"]').click(); };
+      const copy = (t, ok) => {
+        /* navigator.clipboard 는 https 나 localhost 에서만 삽니다. 안 되면
+           조용히 실패하는 대신 코드를 그대로 보여 줍니다 — 받아적을 수 있게. */
+        try { navigator.clipboard.writeText(t).then(() => { msg.textContent = ok; },
+          () => { msg.textContent = t; }); }
+        catch { msg.textContent = t; }
+      };
+      root.querySelector('.bd').onclick = (e) => {
+        const d = e.target.closest('button[data-drop]');
+        if (d) { INVITE.revoke(d.dataset.drop); again(); return; }
+        const b = e.target.closest('button[data-inv]'); if (!b) return;
+        const k = b.dataset.inv;
+        if (k === 'copy') copy(code, '코드를 복사했어요');
+        else if (k === 'link') copy(url, '초대 링크를 복사했어요');
+        else if (k === 'new') { INVITE.revoke(code); SAVE.invite = null; save(); again(); }
+        else if (k === 'add') {
+          const v = (inp.value || '').toUpperCase().trim();
+          if (!INVITE.valid(v)) { msg.textContent = '여섯 자리를 정확히 넣어 주세요 (0·O·1·I 는 안 씁니다)'; return; }
+          if (v === code) { msg.textContent = '내 코드예요'; return; }
+          INVITE.publish(v, { nickname: '', school: '', at: Date.now() });
+          again();
+        }
       };
     },
   };

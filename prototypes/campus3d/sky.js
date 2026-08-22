@@ -58,6 +58,7 @@ export function createSky(THREE, ctx) {
   const { scene, sun, hemi, amb, campusRoot, roomRoot } = ctx;
   let hour = null;            // null 이면 실제 시각
   let weather = 'clear';      // clear · rain · snow · cloud
+  let lastIndoor = false;
   let lit = -1;               // 지금 불이 켜져 있는 정도(중복 적용 방지)
   const glass = [];           // 창·가로등 유리 재질
   const rainG = { pts: null, vel: null, n: 0 };
@@ -115,7 +116,8 @@ export function createSky(THREE, ctx) {
   function setWeather(k) {
     if (k === weather) return;
     weather = k;
-    if (k === 'rain' || k === 'snow') makeRain(k); else dropRain();
+    if (k === 'rain' || k === 'snow') { makeRain(k); if (rainG.pts) rainG.pts.visible = !lastIndoor; }
+    else dropRain();
   }
 
   function nowHour() {
@@ -126,6 +128,11 @@ export function createSky(THREE, ctx) {
 
   function apply(indoor) {
     const s = skyAt(nowHour());
+    /* 비·눈은 **밖에만** 옵니다. 알갱이는 씬에 바로 달려 있어서
+       방에 들어가도 그대로 떠 있었습니다 — 기숙사 안에 눈이 내렸습니다.
+       tick 을 멈추는 것만으로는 멈춘 알갱이가 남습니다. */
+    lastIndoor = !!indoor;
+    if (rainG.pts) rainG.pts.visible = !indoor;
     /* 흐리거나 비가 오면 한 단계 눌러 줍니다 — 맑은 날과 같으면 날씨가 안 보입니다 */
     const dull = weather === 'clear' ? 1 : weather === 'cloud' ? .82 : .68;
     if (!indoor) {

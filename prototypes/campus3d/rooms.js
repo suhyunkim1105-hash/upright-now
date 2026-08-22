@@ -381,5 +381,10 @@ export function decorItem(g, d) {
     { const mz = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), brD);
       mz.position.set(0, .53, .16); mz.scale.set(1, .8, .7); p.add(mz); }
   }
+  /* 여섯 말고는 room.js 의 표에 물어봅니다. 2D 판 기숙사에는 놓을 수 있는
+     물건이 스무 가지쯤 있었는데 여기는 여섯이라, 방을 꾸며도 다 같은
+     방이 됐습니다. 새 것을 이 if 사슬에 계속 붙이면 이 함수가 천 줄이
+     되므로, 짓는 일은 저쪽에 두고 여기서는 넘기기만 합니다. */
+  else if (R.buildFurn) R.buildFurn(p, id);
   return p;
 };

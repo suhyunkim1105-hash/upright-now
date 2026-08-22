@@ -11,9 +11,17 @@ export const M = (c, r = .55, extra) => new THREE.MeshStandardMaterial(
 /** 둥근 상자.
     반지름이 두께의 절반보다 크면 베벨이 위아래로 따로 붙어 실제 높이가
     부풀어 오릅니다(0.6 짜리가 1.81 로 나왔던 적이 있습니다). 여기서 자릅니다. */
-export function roundedBox(w, h, d, r, seg = 4) {
+/* seg 은 모서리를 몇 조각으로 깎을지입니다. 예전에는 크기와 상관없이
+   늘 4 였습니다 — 그래서 2cm 짜리 벤치 널빤지 하나가 716 삼각형이었고,
+   섬 전체의 삼각형 절반이 **눈에 안 보이는 모서리**였습니다.
+   재 봤습니다: 반지름이 9cm 아래면 1 조각과 4 조각이 화면에서
+   구분이 안 됩니다(1~3px 띠). 25cm 아래는 2 조각이면 충분합니다.
+   그 위(울타리·기둥)는 깎은 자리가 실제로 보이므로 4 를 그대로 둡니다.
+   seg 을 직접 넘기면 그 값이 이깁니다 — 부르는 쪽이 더 잘 압니다. */
+export function roundedBox(w, h, d, r, seg) {
   const eps = 1e-5;
   r = Math.max(.004, Math.min(r, w / 2 - .004, h / 2 - .004, d / 2 - .004));
+  if (seg === undefined) seg = r < .09 ? 1 : r < .25 ? 2 : 4;
   const rr = r - eps;
   const s = new THREE.Shape();
   s.absarc(eps, eps, eps, -Math.PI / 2, -Math.PI, true);

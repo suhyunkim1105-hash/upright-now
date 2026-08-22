@@ -22,6 +22,19 @@ const CAL_MIN_PER_FEATURE = 20;
 /* 상태를 굽은 정도(0~1)로 옮깁니다. 캐릭터가 굽는 정도이자 막대의 값입니다 */
 const K_OF = { good: .10, warning: .48, bad: .88 };
 
+/* ── 고개를 든 정도 ──
+   미니게임 하나(거북목 탈출 러너)가 자세를 **조작 장치로** 씁니다.
+   판정과 **똑같은 식**을 쓰고 부호만 뒤집습니다. 절대 각도로 재면
+   원래 고개가 앞으로 나와 있는 사람은 아무리 들어도 문턱을 못 넘어서
+   그 게임을 아예 못 합니다. 자기 기준선(median) 대비로 읽어야
+   누구나 같은 크기의 움직임으로 같은 만큼 뜁니다.
+
+   축 넷은 다 "숙임" 이 이탈 방향이라 뒤집으면 그대로 "듦" 이 됩니다.
+   하나만 쓰면 그 축이 빠진 기준에서 게임이 안 돌아가므로 있는 것만
+   모아 중앙값을 씁니다 — 한 축이 튀어도 조작이 안 흔들립니다. */
+const LIFT_AXES = ['headPitchDeg', 'facePitchRatio', 'earEyeRatio', 'headHeightRatio'];
+const LIFT_STALE_MS = 700;      // 이보다 오래된 값은 안 씁니다
+
 export function createPosture(opt = {}) {
   const say = opt.onStatus || (() => {});
   let video = null, stream = null, raf = 0;
@@ -30,6 +43,7 @@ export function createPosture(opt = {}) {
   let k = 0, state = 'good';
   let cal = null;              // { t0, samples[], widths[] }
   let lastT = 0, badReason = '';
+  let feat = null, featAt = 0;      // 러너가 읽는 마지막 축값
 
   const POSE = () => window.POSE;
 
@@ -79,7 +93,7 @@ export function createPosture(opt = {}) {
     cancelAnimationFrame(raf); raf = 0;
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
     if (video) { video.srcObject = null; }
-    mode = 'off'; k = 0; state = 'good'; cal = null;
+    mode = 'off'; k = 0; state = 'good'; cal = null; feat = null; featAt = 0;
     opt.onMode?.(mode);
   }
 
@@ -133,6 +147,7 @@ export function createPosture(opt = {}) {
     }
     if (a.severeRotation) { badReason = '정면을 봐 주세요'; quality(false); return; }
     badReason = '';
+    feat = a.features; featAt = now;
 
     if (mode === 'calibrating') {
       cal.samples.push({ f: a.features });
@@ -164,8 +179,31 @@ export function createPosture(opt = {}) {
     }
   }
 
+  /** 기준선 대비 고개를 든 정도(허용치 배수). 양수 = 들었음.
+      자세가 안 잡히거나 기준이 없으면 null — 부르는 쪽은 그때 자판으로
+      물러납니다. 카메라 뒤에 조작을 잠그지 않는 것이 규칙입니다. */
+  function lift() {
+    const P = POSE();
+    if (!P || !feat || performance.now() - featAt > LIFT_STALE_MS) return null;
+    const prof = (profile && profile.features) || profile;
+    if (!prof) return null;
+    const mult = (P.SENS && P.SENS[opt.sens || 'default']) || 1;
+    const vals = [];
+    for (const key of LIFT_AXES) {
+      const v = feat[key], st = prof[key];
+      if (v === undefined || !st) continue;
+      const tol = mult * Math.max(P.FLOOR[key], st.mad * P.MAD_K);
+      if (!(tol > 0)) continue;
+      vals.push(-((v - st.median) * P.DIRECTION[key]) / tol);
+    }
+    if (!vals.length) return null;
+    vals.sort((a, b) => a - b);
+    const mid = vals.length >> 1;
+    return vals.length % 2 ? vals[mid] : (vals[mid - 1] + vals[mid]) / 2;
+  }
+
   return {
-    start, stop,
+    start, stop, lift,
     get mode() { return mode; },
     get k() { return k; },
     get state() { return state; },

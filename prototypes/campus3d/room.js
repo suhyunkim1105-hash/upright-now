@@ -19,6 +19,19 @@ export const IN = {
 };
 const BOOKS = [0xE8695A, 0xF2C14E, 0x5B84C4, 0x63C47C, 0x9B7BD4, 0xE8935A, 0x3FB3A2, 0xD96B8E];
 
+/* 팔레트 — 같은 색·같은 거칠기는 재질 한 장을 나눠 씁니다.
+   부품마다 M() 을 새로 부르면 방 하나에 재질이 수백 장 생깁니다.
+   구우면 색으로 묶이니 방 안에서는 티가 안 나지만, **굽지 않는 것**
+   — 방 꾸미기 유령 미리 보기와 바늘 — 은 그대로 드로우콜이 되고,
+   방을 다시 지을 때마다 또 한 벌씩 쌓입니다. */
+const PAL = new Map();
+export function P(c, r = .55) {
+  const k = c * 1000 + Math.round(r * 100);
+  let m = PAL.get(k);
+  if (!m) PAL.set(k, m = M(c, r));
+  return m;
+}
+
 /** 방 껍데기 — 바닥 무늬 · 벽 둘 · 걸레받이 · 몰딩 */
 export function shell(g, w, d, h, opt = {}) {
   const fa = opt.floorA || IN.floorA, fb = opt.floorB || IN.floorB;
@@ -39,11 +52,83 @@ export function shell(g, w, d, h, opt = {}) {
   box(g, w, .24, .2, .05, M(IN.wallTop, .6), 0, h - .12, -d / 2 + .25);
   box(g, .2, .24, d, .05, M(IN.wallTop, .6), -w / 2 + .25, h - .12, 0);
 }
+/* ════════════════════════════════════════════════════════
+   창밖 — 하늘색 · 밤 · 날씨.
+
+   유리 뒤가 늘 같아서, 자정에 기숙사에 들어가도 **창만 한낮**
+   이었습니다. 밖은 sky.js 가 시각을 따라 바꾸는데 실내 창만 그대로라,
+   창이 바깥으로 난 구멍이 아니라 벽에 붙인 파란 스티커로 보였습니다.
+
+   창유리 재질은 **모든 창이 한 장을 나눠 씁니다.** 창마다 따로 뽑으면
+   방을 다시 지을 때마다(기숙사는 가구를 놓을 때마다 다시 짓습니다)
+   목록이 불어나고, 나중에 지은 창만 옛 하늘을 칠한 채로 남습니다.
+   두 장이면 setOutside 한 번에 열세 개가 다 바뀝니다.
+   ════════════════════════════════════════════════════════ */
+const WINMATS = [];                        // [0] 유리(하늘) · [1] 유리에 비친 방
+/* sky.js 의 collect 는 재질을 **색 값으로** 골라냅니다(밤에 건물 창을
+   켜려고). 창밖 색이 우연히 그 목록과 같아지면 저쪽이 emissive 를
+   덮어써서, 여기서 칠한 하늘이 밤마다 한 단계씩 튀게 됩니다.
+   겹치면 명도만 아주 조금 밀어 둡니다 — 눈에는 안 보이고, 색으로
+   고르는 쪽은 더 이상 못 알아봅니다. */
+const SKY_PICKS = new Set([
+  0x9EDCEB, 0xBFEAF5, 0xCFEFFA, 0xBFE4F2, 0xD8F2FA, 0xA9DDF2, 0x9FD8EE,
+  0xFFF2CE, 0xFFF8EA, 0xFFE8C0, 0xE8F4FF,
+]);
+const unpick = (c) => { if (SKY_PICKS.has(c.getHex())) c.offsetHSL(0, 0, .004); return c; };
+const _sky = new THREE.Color(), _mix = new THREE.Color();
+const DUSK = new THREE.Color(0x1B2440);    // 밤 유리의 바탕 — 검정이 아니라 남색
+const WARM = new THREE.Color(0xFFDCA8);    // 유리에 비친 방 불빛
+const PALE = new THREE.Color(0xF2FAFF);
+const GREY = new THREE.Color(0x9AA6B2);
+function winMats() {
+  if (!WINMATS.length) {
+    WINMATS.push(M(0xBEE7F6, .2, { emissive: 0x9FD8EE, emissiveIntensity: .38 }));
+    WINMATS.push(M(0xE2F2FC, .16, { emissive: 0xBFE0F0, emissiveIntensity: .18 }));
+  }
+  return WINMATS;
+}
+/** 창밖을 칠합니다 — 지금까지 세운 창 전부에 한 번에 걸립니다.
+    sky.js 의 skyAt(h) 결과를 그대로 넣을 수 있게 칸 이름을 맞췄습니다.
+      setOutside(Object.assign({}, skyAt(hour), { weather: weatherKind(wx) }))
+    { sky, night, rain, snow } 만 넣어도 됩니다. */
+export function setOutside(opt) {
+  const o = opt || {};
+  const kind = o.weather || (o.snow ? 'snow' : o.rain ? 'rain' : o.cloud ? 'cloud' : 'clear');
+  const night = Math.max(0, Math.min(1, typeof o.night === 'number' ? o.night : 0));
+  const pane = winMats()[0], refl = WINMATS[1];
+  _sky.set(o.sky === undefined || o.sky === null ? 0xBEE7F6 : o.sky);
+  /* 비·눈은 **채도를 먼저 깎고** 밝기를 조금 내립니다. 밝기만 내리면
+     파란 하늘이 그냥 어두워져서 흐린 날이 아니라 초저녁으로 보입니다.
+     눈은 흐리되 밝습니다 — 쌓인 눈이 빛을 되돌려 주기 때문입니다. */
+  const dull = kind === 'clear' ? 0 : kind === 'cloud' ? .24 : kind === 'snow' ? .3 : .36;
+  if (dull) _sky.lerp(kind === 'snow' ? PALE : GREY, dull);
+  if (kind === 'rain') _sky.multiplyScalar(.9);
+  /* 유리 — 밤에는 눌러서 짙은 남색 유리로. 0 까지 내리면 벽에 뚫린
+     검은 구멍이 되어, 방보다 창이 더 눈에 띕니다. */
+  _mix.copy(_sky).multiplyScalar(1 - night * .6).lerp(DUSK, night * .5);
+  pane.color.copy(unpick(_mix));
+  /* 실내는 실내등이 따로 있어서, 색만 칠하면 유리가 그냥 **파란 벽**
+     입니다. 낮에는 유리가 스스로 밝아야 '밖' 으로 읽힙니다. */
+  pane.emissive.copy(_sky);
+  pane.emissiveIntensity = .04 + .5 * (1 - night) * (kind === 'clear' ? 1 : .8);
+  pane.needsUpdate = true;
+  /* 비친 방 — 낮에는 하늘의 밝은 쪽, 밤에는 등불 한 점.
+     밤 창을 어둡기만 하고 끝내면 유리가 아니라 판자로 보입니다. */
+  _mix.copy(_sky).lerp(PALE, .34 * (1 - night)).lerp(WARM, night * .72);
+  refl.color.copy(unpick(_mix));
+  refl.emissive.copy(_sky).lerp(WARM, night);
+  refl.emissiveIntensity = .16 * (1 - night) + .34 * night;
+  refl.needsUpdate = true;
+}
 /** 창 — 뒤벽에 붙입니다. 밖이 밝아야 실내가 실내로 읽힙니다. */
 export function window3(g, x, y, d, w = 1.9, h = 1.9) {
   const p = new THREE.Group(); p.position.set(x, y, -d / 2 + .18); g.add(p);
+  const pane = winMats()[0], refl = WINMATS[1];
   box(p, w + .3, h + .3, .16, .05, M(IN.woodLight, .6), 0, 0, 0);
-  box(p, w, h, .12, .03, M(0xBFEAF5, .2, { emissive: 0x9FD8EE, emissiveIntensity: .35 }), 0, 0, .04);
+  box(p, w, h, .12, .03, pane, 0, 0, .04);
+  /* 유리에 비친 방 한 조각. 이 한 장이 없으면 밤 창이 색만 짙은
+     평면이라, 유리가 아니라 벽에 덧댄 판자로 보입니다. */
+  box(p, w * .46, h * .38, .13, .03, refl, -w * .2, h * .2, .05);
   box(p, .09, h, .16, .02, M(IN.woodLight, .6), 0, 0, .07);
   box(p, w, .09, .16, .02, M(IN.woodLight, .6), 0, 0, .07);
   box(p, w + .5, .16, .34, .05, M(IN.woodLight, .6), 0, -h / 2 - .18, .1);
@@ -305,14 +390,103 @@ export function striplight(g, x, z, y = 3.6, w = 3.0) {
   [-1, 1].forEach((s) => cyl(p, .015, .015, .3, 6, M(IN.metalDark, .4), s * (w / 2 - .3), .15, 0));
   return p;
 }
-/** 벽시계 */
+/* ════════════════════════════════════════════════════════
+   벽시계 바늘 — 실제 시각.
+
+   전 판은 바늘을 판에 그려 붙여서 여섯 방의 시계가 전부 3시였습니다.
+   방마다 하나뿐이라 티가 안 날 것 같지만, 하늘은 시각을 따라가는데
+   시계만 안 따라가면 그 자리가 **멈춘 그림**으로 읽힙니다.
+
+   바늘은 초당 한 번만 돌립니다. 여기서 requestAnimationFrame 을 하나
+   더 여는 것은 이 화면에서 제일 하면 안 되는 일입니다 — 걷는 프레임과
+   웹캠 자세 추정이 같은 탭에서 예산을 나눠 씁니다. 초당 한 번이면
+   시침·분침이 움직이는 폭보다 촘촘합니다.
+
+   시계는 WeakRef 로 잡습니다. 기숙사는 가구를 놓을 때마다 방을 통째로
+   다시 짓는데, 목록이 옛 방을 세게 잡고 있으면 버려진 방의 바늘을
+   영원히 돌리게 됩니다(그리고 옛 방이 통째로 안 버려집니다).
+   ════════════════════════════════════════════════════════ */
+const CLOCKS = [];
+const wref = typeof WeakRef === 'function' ? (o) => new WeakRef(o) : (o) => ({ deref: () => o });
+let clockTimer = 0, clockHour = null;
+
+/** 바늘을 지금 시각에 맞춥니다. date 를 주면 그 시각으로 한 번만 칠합니다.
+    돌아오는 값은 아직 살아 있는 시계 수입니다. */
+export function tickClocks(date) {
+  let h;
+  if (date) h = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  else if (clockHour !== null) h = clockHour;
+  else { const d = new Date(); h = d.getHours() + d.getMinutes() / 60 + d.getSeconds() / 3600; }
+  /* 시침은 분을 따라 **조금씩** 갑니다. 정시에 딱 붙여 두면 12시 59분에
+     12시를 가리켜서, 시각이 아니라 고장 난 시계로 읽힙니다. */
+  const hd = -((h % 12) / 12) * Math.PI * 2;
+  const md = -(h % 1) * Math.PI * 2;
+  let live = 0;
+  for (let i = 0; i < CLOCKS.length; i++) {
+    const c = CLOCKS[i].deref();
+    if (!c) continue;
+    c.userData.hourHand.rotation.z = hd;
+    c.userData.minHand.rotation.z = md;
+    CLOCKS[live++] = CLOCKS[i];
+  }
+  CLOCKS.length = live;
+  if (!live) stopClocks();
+  return live;
+}
+/** sky.js 의 setHour 와 짝입니다 — 하늘만 밤으로 돌려 놓고 시계는 낮이면
+    시연 화면에서 둘이 어긋나 보입니다. null 이면 실제 시각. */
+export function setClockHour(h) {
+  clockHour = (h === null || h === undefined) ? null : h;
+  tickClocks();
+}
+/** 초당 한 번짜리 공용 타이머. 시계를 처음 세울 때 저절로 켜집니다. */
+export function startClocks(ms = 1000) {
+  if (clockTimer || typeof setInterval !== 'function') return;
+  clockTimer = setInterval(() => tickClocks(), ms);
+  tickClocks();
+}
+export function stopClocks() {
+  if (clockTimer) { clearInterval(clockTimer); clockTimer = 0; }
+}
+
+/** 벽시계 — 바늘이 실제 시각을 가리킵니다.
+    초침은 달지 않았습니다. r 이 0.42(기숙사는 0.34)라 초침 폭이 2cm 도
+    안 되는데, 3/4 부감 카메라에서 그 굵기는 선이 아니라 **얼룩**입니다.
+    게다가 1초마다 눈에 띄게 튀어서, 없는 편이 조용합니다. */
 export function clock(g, x, y, z, ry = 0, r = .42) {
   const p = new THREE.Group(); p.position.set(x, y, z); p.rotation.y = ry; g.add(p);
   cyl(p, r, r, .12, 26, M(IN.woodDark, .5), 0, 0, 0).rotation.x = Math.PI / 2;
   cyl(p, r - .07, r - .07, .14, 26, M(IN.paper, .45), 0, 0, .02).rotation.x = Math.PI / 2;
-  box(p, .05, r * .95, .16, .02, M(IN.ink, .4), 0, r * .18, .05);
-  box(p, r * .62, .05, .16, .02, M(0xE8695A, .4), r * .2, 0, .05);
+  /* 눈금 넷 — 바늘만 돌면 어디를 가리키는지 안 읽힙니다. 12·3·6·9 만
+     찍어도 시각이 잡힙니다. 열두 개는 이 크기에서 그냥 톱니입니다. */
+  [0, 1, 2, 3].forEach((i) => {
+    const a = i * Math.PI / 2;
+    /* 눈금은 바늘보다 **얕게** 둡니다. 같은 깊이면 12·3·6·9 를 지날 때
+       바늘이 눈금 뒤로 사라져서, 그 네 곳에서만 시계가 끊겨 보입니다. */
+    box(p, .05, r * .18, .13, .02, P(IN.ink, .4),
+        Math.sin(a) * (r - .13), Math.cos(a) * (r - .13), .05).rotation.z = -a;
+  });
+  /* 바늘 묶음 — 굽기에서 뺍니다. 합쳐지면 형상이 방 좌표로 구워져서
+     아무리 돌려도 안 움직입니다(바로 그래서 전 판이 3시였습니다). */
+  const hands = new THREE.Group();
+  hands.name = 'clockHands'; hands.position.z = .05; hands.userData.noBake = true; p.add(hands);
+  const hand = (len, wid, back) => {
+    const pv = new THREE.Group(); pv.userData.noBake = true; hands.add(pv);
+    const m = box(pv, wid, len, .14, .015, P(IN.ink, .4), 0, len / 2 - back, 0);
+    m.castShadow = false; m.userData.noBake = true;
+    return pv;
+  };
+  /* 시침은 짧고 두껍게, 분침은 길고 얇게. 둘이 같은 굵기면 겹치는
+     순간 어느 쪽이 시침인지 못 고릅니다. */
+  const hourHand = hand(r * .52, r * .17, r * .09);
+  const minHand = hand(r * .86, r * .095, r * .11);
   cyl(p, .05, .05, .18, 10, M(IN.ink, .4), 0, 0, .05).rotation.x = Math.PI / 2;
+  p.userData.hands = hands;
+  p.userData.hourHand = hourHand;
+  p.userData.minHand = minHand;
+  CLOCKS.push(wref(p));
+  startClocks();                                  // 첫 시계가 타이머를 켭니다
+  tickClocks();                                   // 세운 그 순간부터 맞습니다
   return p;
 }
 /** 벽 포스터 · 액자 — 벽이 비면 방이 창고입니다 */
@@ -886,4 +1060,293 @@ export function bench(g, x, z, ry, w = 3.0, col = IN.wood) {
     box(p, .3, .12, 1.06, .05, M(IN.woodDark, .74), s * (w / 2 - .2), .06, 0);
   });
   return p;
+}
+
+/* ══════════════════════════════════════════════════════════
+   놓는 가구 — 방 꾸미기.
+
+   2D 판 기숙사에는 놓을 수 있는 것이 스물넷이었는데 3D 는 여섯이었습니다.
+   방 꾸미기를 열면 살 것이 한 줄로 끝나서, 코인을 모을 이유가 없어집니다.
+   상점이 비면 방도 빕니다.
+
+   **id 는 2D 표에서 그대로 가져옵니다.** openworld/index.html 의 SHOP 에
+   f-seat · f-floor · f-store · f-live · f-hobby · f-green 칸으로 적혀 있는
+   것들이고, 서버 아이템 표도 같은 이름을 봅니다. 여기서 이름을 새로
+   지으면 한쪽에서 산 물건이 다른 쪽에서 사라집니다. 2D 에 없는 것만
+   같은 규칙(fur-…)으로 새로 답니다.
+
+   높이는 대개 0.9 아래로 맞춥니다 — 3/4 부감이라 키 큰 것을 방 가운데
+   놓으면 그 뒤가 통째로 안 보입니다. 스탠드·화분·캣타워처럼 원래 키가
+   큰 것은 대신 **얇게** 만들어 시야를 덜 막습니다.
+   ══════════════════════════════════════════════════════════ */
+
+/* 여러 벌이 나눠 쓰는 재질 — 발광·투명은 P() 로 못 묶으니 여기 둡니다 */
+const SHADE = M(0xF6E8C8, .55, { side: THREE.DoubleSide });
+const BULB = M(0xFFF0C4, .4, { emissive: 0xFFD98A, emissiveIntensity: .85 });
+const TVSCR = M(0x2A3A48, .25, { emissive: 0x4EA8C8, emissiveIntensity: .45 });
+/* 어항 유리만 투명입니다. 굽기는 투명 재질을 안 합치므로(그리는 순서가
+   깨집니다) 어항 하나가 드로우콜 하나입니다 — 그래서 물·모래·물고기는
+   전부 불투명으로 두고, 정말 유리인 한 겹만 투명하게 씁니다. */
+const TANKGLASS = M(0x8FD6E8, .1, { transparent: true, opacity: .4 });
+
+/** 방석 — 밟고 다닙니다. 높이 0.2 라 통행 격자가 안 막습니다(0.34 부터 막습니다) */
+export function cushion(g, x, z, ry = 0, col = 0xE8695A) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, .74, .14, .74, .07, P(col, .84), 0, .07, 0).castShadow = false;
+  box(p, .58, .1, .58, .05, P(col, .7), 0, .15, 0).castShadow = false;
+  cyl(p, .05, .05, .04, 10, P(0xFFF0DC, .8), 0, .19, 0);            // 가운데 단추
+  return p;
+}
+/** 둥근 러그 — 네모 깔개(rug)와 무늬가 달라야 둘 다 놓을 맛이 납니다 */
+export function roundRug(g, x, z, col = 0x63C47C, inner = 0xF2F8EE, r = 1.1) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
+  const flat = (m) => { m.castShadow = false; return m; };
+  flat(cyl(p, r, r, .06, 28, P(col, .92), 0, .05, 0));
+  flat(cyl(p, r * .74, r * .74, .06, 26, P(inner, .92), 0, .075, 0));
+  flat(cyl(p, r * .4, r * .4, .06, 24, P(col, .92), 0, .1, 0));
+  return p;
+}
+/** 빈백 — 공을 그냥 놓으면 구슬입니다. 눌러서 앉은 자국을 냅니다 */
+export function beanbag(g, x, z, ry = 0, col = 0x9B7BD4) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  const lo = P(col, .86), hi = P(col, .7);
+  const b = new THREE.Mesh(new THREE.SphereGeometry(.52, 16, 12), lo);
+  b.position.y = .3; b.scale.set(1, .62, 1); b.castShadow = true; b.receiveShadow = true; p.add(b);
+  const bk = new THREE.Mesh(new THREE.SphereGeometry(.38, 14, 10), hi);
+  bk.position.set(0, .5, -.24); bk.scale.set(1, .92, .7); bk.castShadow = true; p.add(bk);
+  box(p, .5, .09, .44, .04, hi, 0, .38, .12);                       // 앉은 자국
+  return p;
+}
+/** 협탁 — 침대 옆 한 칸. 서랍 하나에 손잡이 하나면 협탁으로 읽힙니다 */
+export function sideTable(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, .7, .1, .56, .04, P(IN.wood, .68), 0, .54, 0);
+  box(p, .6, .26, .48, .04, P(IN.woodLight, .62), 0, .38, .02);
+  cyl(p, .04, .04, .1, 8, P(IN.gold, .35), 0, .38, .27).rotation.x = Math.PI / 2;
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) =>
+    cyl(p, .035, .045, .5, 8, P(IN.woodDark, .72), sx * .27, .25, sz * .2));
+  return p;
+}
+/** 낮은 책장 — 큰 서가(shelf)는 2.4 라 방 가운데 놓으면 벽이 됩니다 */
+export function lowShelf(g, x, z, ry = 0, w = 1.5) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, w, .84, .38, .05, P(IN.woodDark, .76), 0, .42, 0);
+  box(p, w - .14, .7, .3, .04, P(IN.wood, .72), 0, .42, .05);
+  [0, 1].forEach((r) => {
+    box(p, w - .2, .06, .32, .02, P(IN.woodDark, .7), 0, .16 + r * .34, .07);
+    let bx = -w / 2 + .16;
+    while (bx < w / 2 - .22) {
+      const bw = .09 + ((bx * 31 + r * 11) % 4) * .02;
+      const bh = .22 + ((bx * 47 + r * 5) % 3) * .04;
+      box(p, bw, bh, .26, .02, P(BOOKS[Math.abs(Math.round(bx * 19 + r * 3)) % BOOKS.length], .68),
+          bx + bw / 2, .19 + r * .34 + bh / 2, .1);
+      bx += bw + .015;
+    }
+  });
+  return p;
+}
+/** 서랍장 — 옷장(2.6)은 너무 큽니다. 서랍 셋짜리 낮은 것 */
+export function drawers(g, x, z, ry = 0, col = IN.wood) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, 1.0, .86, .5, .06, P(IN.woodDark, .76), 0, .43, 0);
+  [0, 1, 2].forEach((r) => {
+    box(p, .88, .22, .46, .04, P(col, .7), 0, .17 + r * .26, .04);
+    cyl(p, .045, .045, .1, 10, P(IN.gold, .35), 0, .17 + r * .26, .27).rotation.x = Math.PI / 2;
+  });
+  box(p, 1.06, .06, .56, .03, P(IN.woodLight, .62), 0, .89, 0);
+  return p;
+}
+/** 캐리어 — 세워 둡니다. 눕히면 그냥 상자입니다 */
+export function suitcase(g, x, z, ry = 0, col = 0x3FB3A2) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, .58, .7, .3, .07, P(col, .5), 0, .4, 0);
+  box(p, .5, .04, .28, .02, P(0xF6F8FA, .4), 0, .4, .02);           // 지퍼
+  [-1, 1].forEach((s) => box(p, .05, .3, .05, .02, P(0x3A3F4A, .5), s * .18, .82, -.06));
+  box(p, .34, .06, .06, .02, P(0x3A3F4A, .45), 0, .95, -.06);       // 손잡이
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) =>
+    cyl(p, .055, .055, .05, 10, P(0x2A3A48, .4), sx * .2, .05, sz * .1).rotation.z = Math.PI / 2);
+  return p;
+}
+/** 선풍기 — 1 미터에 조금 못 미치지만 기둥이 얇아 뒤가 다 보입니다.
+    날개는 돌리지 않습니다. 돌리려면 매 프레임이 필요한데, 방 구석의
+    날개 한 장에 걷는 프레임을 나눠 줄 수는 없습니다. */
+export function fan(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  cyl(p, .26, .3, .06, 14, P(IN.metalDark, .5), 0, .03, 0);
+  cyl(p, .04, .05, .5, 8, P(IN.metal, .45), 0, .33, 0);
+  const hd = new THREE.Group(); hd.position.set(0, .66, 0); hd.rotation.y = .3; p.add(hd);
+  cyl(hd, .1, .1, .16, 12, P(IN.metalDark, .5), 0, 0, -.06).rotation.x = Math.PI / 2;
+  [0, 1, 2].forEach((i) => {
+    const a = i * Math.PI * 2 / 3;
+    box(hd, .34, .16, .03, .06, P(0xEAF2F6, .4), Math.cos(a) * .15, Math.sin(a) * .15, .04)
+      .rotation.z = a;
+  });
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.26, .022, 8, 22), P(IN.metal, .4));
+  ring.position.z = .06; ring.castShadow = true; hd.add(ring);
+  cyl(hd, .05, .05, .04, 10, P(0xE8695A, .4), 0, 0, .08).rotation.x = Math.PI / 2;
+  return p;
+}
+/** 브라운관 TV — 뒤가 깊어야 브라운관입니다. 납작하면 요즘 TV 고,
+    요즘 TV 는 이 방의 나머지와 시대가 안 맞습니다 */
+export function crtTv(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, 1.0, .3, .5, .05, P(IN.woodDark, .74), 0, .15, 0);
+  box(p, .86, .56, .6, .07, P(0xE8E0CE, .6), 0, .58, 0);
+  box(p, .58, .42, .1, .05, TVSCR, -.08, .6, .3);
+  [0, 1].forEach((i) => cyl(p, .05, .05, .05, 10, P(0x3A3F4A, .4), .3, .7 - i * .17, .3)
+    .rotation.x = Math.PI / 2);
+  [-1, 1].forEach((s) => cyl(p, .012, .012, .48, 6, P(IN.metal, .35), s * .14, 1.06, -.14)
+    .rotation.z = s * .42);                                          // 안테나
+  return p;
+}
+/** 아령 한 쌍 — 바닥에 굴러다니는 것 하나쯤 있어야 사람 사는 방입니다 */
+export function dumbbell(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  [[0, 0], [.26, .3]].forEach(([dx, dz], i) => {
+    cyl(p, .028, .028, .4, 8, P(IN.metal, .4), dx, .13, dz).rotation.z = Math.PI / 2;
+    [-1, 1].forEach((s) => cyl(p, .13, .13, .1, 14, P(i ? 0x3A3F4A : 0x5B84C4, .45),
+      dx + s * .16, .13, dz).rotation.z = Math.PI / 2);
+  });
+  return p;
+}
+/** 어항 — 물이 있어야 어항입니다. 빈 상자면 그냥 상자입니다 */
+export function fishTank(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, .9, .4, .44, .05, P(IN.woodDark, .74), 0, .2, 0);
+  /* 물은 **뒷판 한 장**입니다. 상자를 물로 꽉 채우면 불투명이라
+     물고기와 수초가 그 안에 파묻혀 아예 안 보입니다. */
+  box(p, .78, .32, .07, .02, P(0x8FD6E8, .3), 0, .6, -.15);         // 물
+  box(p, .78, .07, .34, .02, P(0xE8D8B0, .8), 0, .45, 0);           // 모래
+  [[-.24, .04], [.02, -.02], [.26, .06]].forEach(([dx, dz], i) =>
+    box(p, .07, .24 + i * .05, .07, .03, P(IN.greenDark, .8), dx, .58, dz));   // 수초
+  [[-.1, .66, .1, 0xE8935A], [.16, .54, .06, 0xF2C14E]].forEach(([dx, dy, dz, c]) => {
+    const f = new THREE.Mesh(new THREE.SphereGeometry(.06, 10, 8), P(c, .6));
+    f.position.set(dx, dy, dz); f.scale.set(1.5, 1, .4); p.add(f);
+  });
+  box(p, .8, .4, .38, .03, TANKGLASS, 0, .62, 0);
+  box(p, .86, .06, .42, .03, P(IN.metalDark, .5), 0, .85, 0);       // 뚜껑
+  return p;
+}
+/** 캣타워 — 기둥이 얇아 키가 커도 뒤가 보입니다 */
+export function catTower(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, .9, .12, .9, .05, P(0xC9B49A, .8), 0, .06, 0);
+  cyl(p, .11, .11, .6, 12, P(0xD8C4A0, .86), 0, .42, 0);            // 사이잘 기둥
+  box(p, .62, .1, .62, .05, P(0xE8DCC8, .8), .1, .77, .1);
+  cyl(p, .1, .1, .42, 12, P(0xD8C4A0, .86), .1, 1.03, .1);
+  const bd = new THREE.Mesh(new THREE.CylinderGeometry(.34, .3, .2, 16), P(0xF2C8B8, .85));
+  bd.position.set(.1, 1.34, .1); bd.castShadow = true; bd.receiveShadow = true; p.add(bd);
+  cyl(p, .26, .26, .06, 16, P(0xE0A898, .85), .1, 1.42, .1);        // 안쪽 방석
+  cyl(p, .012, .012, .3, 6, P(0x8E6238, .7), .48, 1.12, .1);        // 매단 공
+  const bl = new THREE.Mesh(new THREE.SphereGeometry(.08, 10, 8), P(0xE8695A, .7));
+  bl.position.set(.48, .95, .1); p.add(bl);
+  return p;
+}
+/** 전신 거울 — 벽거울(mirror)과 달리 바닥에 세웁니다. 뒤로 살짝
+    기울여야 세워 둔 것으로 보입니다. 똑바로 세우면 벽에 붙은 것 같습니다 */
+export function standMirror(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  box(p, .96, .08, .44, .04, P(IN.woodDark, .72), 0, .04, 0);
+  [-1, 1].forEach((s) => cyl(p, .04, .05, .3, 8, P(IN.woodDark, .72), s * .34, .18, 0));
+  const fr = new THREE.Group(); fr.position.set(0, 1.0, 0); fr.rotation.x = -.1; p.add(fr);
+  box(fr, .84, 1.6, .1, .05, P(IN.woodDark, .6), 0, 0, 0);
+  box(fr, .7, 1.46, .09, .03, P(0xDCE8F0, .12), 0, 0, .04);
+  box(fr, .32, .58, .1, .03, P(0xF0F6FA, .1), -.14, .3, .06);       // 비친 빛 한 줄
+  return p;
+}
+/** 큰 화분 — 잎을 공으로 붙이면 관엽이 아니라 브로콜리입니다.
+    넓적한 잎을 줄기에서 벌려 답니다 */
+export function plantTall(g, x, z, s = 1) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.scale.setScalar(s); g.add(p);
+  cyl(p, .3, .23, .52, 12, P(0xC4694A, .75), 0, .26, 0);
+  cyl(p, .33, .33, .09, 12, P(0xA8563C, .7), 0, .52, 0);
+  cyl(p, .05, .06, .9, 6, P(0x6E5A3C, .8), 0, .95, 0);
+  [[0, .3], [1.2, .5], [2.4, .36], [3.6, .55], [4.8, .42], [5.7, .6]].forEach(([a, r], i) => {
+    const lf = new THREE.Mesh(new THREE.SphereGeometry(.3, 12, 8),
+      P(i % 2 ? IN.green : IN.greenDark, .8));
+    lf.position.set(Math.cos(a) * r, 1.02 + (i % 3) * .22, Math.sin(a) * r);
+    lf.scale.set(1.35, .28, .8); lf.rotation.y = -a; lf.rotation.z = .34;
+    lf.castShadow = true; p.add(lf);
+  });
+  return p;
+}
+/** 플로어 스탠드 — 탁상등(lamp)은 책상 위 물건이라 바닥에 놓으면
+    발치에서 혼자 빛납니다. 세우는 것은 따로 있어야 합니다 */
+export function floorLamp(g, x, z) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
+  cyl(p, .24, .28, .06, 14, P(IN.metalDark, .5), 0, .03, 0);
+  cyl(p, .028, .028, 1.28, 8, P(IN.metalDark, .5), 0, .68, 0);
+  /* 갓은 양면입니다 — 한 면만 그리면 부감 카메라에서 갓 **안쪽**이
+     뚫려 보여, 등이 아니라 깨진 컵이 됩니다. */
+  const sh = new THREE.Mesh(new THREE.CylinderGeometry(.2, .26, .34, 18, 1, true), SHADE);
+  sh.position.y = 1.44; sh.castShadow = true; p.add(sh);
+  const b = new THREE.Mesh(new THREE.SphereGeometry(.1, 12, 10), BULB);
+  b.position.y = 1.4; p.add(b);
+  return p;
+}
+
+/* 상점에 붙일 표 — [id, 이름, 값, 아이콘].
+   앞의 셋은 ui.js 의 FURN 과 모양이 같아서 그대로 이어 붙이면 됩니다.
+   아이콘은 넷째 칸에 따로 둡니다 — 앞 셋만 읽는 쪽은 못 본 척 지나갑니다.
+   값은 기존 가구와 같은 20~90 대입니다. 여기만 몇백씩 부르면 상점의
+   반이 살 수 없는 물건이 되어, 목록이 늘어난 값을 못 합니다. */
+export const FURN_MORE = [
+  ['fur-cushion',   '방석',          25, '🟥'],
+  ['fur-rug-round', '둥근 러그',     45, '⭕'],
+  ['fur-beanbag',   '빈백',          70, '🛋'],
+  ['fur-chair',     '나무 의자',     35, '🪑'],
+  ['fur-sidetable', '협탁',          40, '🧰'],
+  ['fur-shelf',     '낮은 책장',     50, '📕'],
+  ['fur-drawers',   '서랍장',        60, '🗄'],
+  ['fur-laundry',   '빨래바구니',    30, '🧺'],
+  ['fur-suitcase',  '캐리어',        45, '🧳'],
+  ['fur-fridge',    '냉장고',        80, '🧊'],
+  ['fur-fan',       '선풍기',        40, '🌀'],
+  ['fur-tv',        '브라운관 TV',   75, '📺'],
+  ['fur-mirror',    '전신 거울',     55, '🪞'],
+  ['fur-fishtank',  '어항',          65, '🐟'],
+  ['fur-dumbbell',  '아령',          25, '🏋'],
+  ['fur-cattower',  '캣타워',        85, '🐈'],
+  ['fur-plant2',    '큰 화분',       55, '🌿'],
+  ['fur-floorlamp', '플로어 스탠드', 50, '🏮'],
+];
+
+/** 놓는 가구 한 점. rooms.js 의 decorItem 이 못 알아본 id 를 여기로
+    넘기면 됩니다 — `else if (R.buildFurn(p, id)) { }`.
+    그린 것이 있으면 true, 모르는 id 면 false 를 돌려줍니다. */
+export function buildFurn(p, id) {
+  /* 가구는 방 좌표가 아니라 **놓은 자리 그룹 안**(0,0)에서 그려집니다.
+     여기서 chair 를 그냥 부르면 앉는 자리가 방 한가운데 (0,0) 에
+     등록돼서, 전혀 엉뚱한 데서 '앉기' 가 뜹니다. 등록을 잠깐 꺼 두고,
+     자리는 그룹의 좌표로 직접 적습니다. */
+  const keep = SEATREG;
+  SEATREG = null;
+  let seat = 0;
+  try {
+    if (id === 'fur-cushion') cushion(p, 0, 0, 0);
+    else if (id === 'fur-rug-round') roundRug(p, 0, 0);
+    else if (id === 'fur-beanbag') { beanbag(p, 0, 0, 0); seat = 1; }
+    else if (id === 'fur-chair') { chair(p, 0, 0, 0, IN.wood); seat = 1; }
+    else if (id === 'fur-sidetable') sideTable(p, 0, 0, 0);
+    else if (id === 'fur-shelf') lowShelf(p, 0, 0, 0);
+    else if (id === 'fur-drawers') drawers(p, 0, 0, 0);
+    else if (id === 'fur-laundry') laundry(p, 0, 0);
+    else if (id === 'fur-suitcase') suitcase(p, 0, 0, 0);
+    else if (id === 'fur-fridge') fridge(p, 0, 0, 0);
+    else if (id === 'fur-fan') fan(p, 0, 0, 0);
+    else if (id === 'fur-tv') crtTv(p, 0, 0, 0);
+    else if (id === 'fur-mirror') standMirror(p, 0, 0, 0);
+    else if (id === 'fur-fishtank') fishTank(p, 0, 0, 0);
+    else if (id === 'fur-dumbbell') dumbbell(p, 0, 0, 0);
+    else if (id === 'fur-cattower') catTower(p, 0, 0, 0);
+    else if (id === 'fur-plant2') plantTall(p, 0, 0, 1);
+    else if (id === 'fur-floorlamp') floorLamp(p, 0, 0);
+    else return false;
+  } finally { SEATREG = keep; }
+  /* 앉는 자리는 전부 'sofa' 로 답니다. 'chair' 로 달면 기숙사에서는
+     앉는 순간 자세 세션이 켜집니다 — 방 한가운데 의자를 놓고 잠깐
+     앉으려던 사람에게 웹캠이 켜지는 것은 놀랄 일입니다.
+     놓는 가구는 **쉬는 자리**까지만 합니다. */
+  if (seat) regSeat(p.position.x, p.position.z, p.rotation.y, 'sofa');
+  return true;
 }

@@ -141,27 +141,49 @@ function flash(root, msg) {
 /* ---------- 공지 · 공고 ----------
    실제 연동은 api/notice.ts 가 합니다(명지대 RSS 확인 완료).
    여기서는 그 자리와 **크롤링하면 안 되는 이유**를 같이 남깁니다. */
-export function notices(kind) {
-  const school = [
-    ['08/22', '2학기 수강신청 정정 기간 안내'],
-    ['08/21', '도서관 하계 단축 운영 (~08/30)'],
-    ['08/20', '교내 장학금 2차 신청 접수'],
-    ['08/19', '학사일정 변경 공지'],
-  ];
-  const out = [
-    ['D-3', '대학생 UX 공모전 — 개인/팀'],
-    ['D-9', '교내 창업경진대회 서류 마감'],
-    ['D-14', '여름 서포터즈 15기 모집'],
-  ];
-  const L = kind === 'school' ? school : out;
-  return {
-    tag: kind === 'school' ? '공지' : '공고',
-    title: kind === 'school' ? '학교 공지사항' : '대외활동 · 공모전',
-    html: `<ul class="feed">${L.map(([d, t]) => `<li><b>${d}</b><span>${esc(t)}</span></li>`).join('')}</ul>
-      <p class="note">${kind === 'school'
-        ? '명지대 RSS 는 연결 확인했습니다. 나머지 아홉 곳은 게시판 id 를 확인 중입니다.'
-        : '링커리어·올콘은 이용약관 제20조에서 크롤링을 금지합니다. 공식 링크로만 보냅니다.'}</p>`,
-  };
+export const BOARD_LINKS = [
+  ['링커리어', 'https://linkareer.com/list/contest'],
+  ['올콘', 'https://www.all-con.co.kr/'],
+  ['위비티', 'https://www.wevity.com/'],
+  ['캠퍼스픽', 'https://www.campuspick.com/contest'],
+];
+/**
+ * 학교 공지 — `/api/notice` 가 학교 RSS 를 받아 옵니다(2D 판과 같은 함수).
+ * rows 가 undefined 면 "받는 중", null 이면 "못 받았음" 입니다.
+ */
+export function notices(kind, rows) {
+  if (kind !== 'school') {
+    return {
+      tag: '공고', title: '대외활동 · 공모전',
+      html: `<p>마감이 가까운 순서로 보려면 아래 사이트에서 직접 보세요.</p>
+        <div class="wr">${BOARD_LINKS.map(([n, u]) =>
+          `<button data-open="${u}">${n} ↗</button>`).join('')}</div>
+        <div class="note"><b>왜 목록을 안 가져오나</b><br>
+        링커리어 이용약관 제20조 4항이 크롤링·스크래핑을 금지합니다.
+        에브리타임은 2022년에 크롤링으로 유죄 판결이 났습니다.
+        그래서 저희는 목록 대신 <b>공식 링크만</b> 겁니다 — 누르면 그쪽에서 직접 보시게 됩니다.</div>`,
+      on(root) {
+        root.querySelector('.bd').onclick = (e) => {
+          const b = e.target.closest('button[data-open]'); if (!b) return;
+          window.open(b.dataset.open, '_blank', 'noopener');
+        };
+      },
+    };
+  }
+  let body;
+  if (rows === undefined) body = '<p class="note">학교 공지를 받아 오는 중입니다…</p>';
+  else if (!rows || !rows.length) {
+    body = `<p>지금은 공지를 못 받아왔습니다.</p>
+      <p class="note">배포본에서는 <code>/api/notice</code> 가 학교 RSS 를 받아 옵니다.
+      명지대는 연결을 확인했고, 나머지 아홉 곳은 게시판 id 를 확인 중입니다.</p>`;
+  } else {
+    body = `<ul class="feed">${rows.slice(0, 12).map((r) =>
+      `<li><b>${esc(r.date || '')}</b><span>${r.link
+        ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.title)}</a>`
+        : esc(r.title)}</span></li>`).join('')}</ul>
+      <p class="note">학교가 공식으로 여는 RSS 를 그대로 받아 옵니다. 누르면 원문으로 갑니다.</p>`;
+  }
+  return { tag: '공지', title: '학교 공지사항', html: body };
 }
 
 /* ---------- 아직 2D 월드에 있는 것 ---------- */
@@ -372,5 +394,240 @@ export function decor(ctx) {
         ctx.onPlace(b.dataset.place);
       };
     },
+  };
+}
+
+/* ══════════════════════════════════════════════════════════
+   2D 판에 있던 창들 — 회고 · 코인 · 마이페이지 · 안내 · 개인정보.
+   3D 로 옮기면서 빠져 있었습니다. 숫자는 전부 실제 기록에서 나옵니다.
+   ══════════════════════════════════════════════════════════ */
+
+const mmss = (s) => `${Math.floor(s / 60)}분 ${Math.round(s % 60)}초`;
+const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : 0);
+
+/* 스트레칭 처방 — 어느 축이 오래 벗어났는지로 고릅니다.
+   "목이 아프면 목 스트레칭" 이 아니라, **판정이 실제로 잡아낸 축**에서 옵니다. */
+const STRETCH = {
+  facePitchRatio: ['턱 당기기', '턱을 목 쪽으로 살짝 당기고 5초. 열 번.'],
+  earEyeRatio: ['턱 당기기', '턱을 목 쪽으로 살짝 당기고 5초. 열 번.'],
+  headPitchDeg: ['목 뒤 늘이기', '두 손을 뒤통수에 얹고 천천히 숙였다 펴기. 다섯 번.'],
+  headHeightRatio: ['어깨 으쓱', '어깨를 귀까지 올렸다 툭 떨어뜨리기. 열 번.'],
+  shoulderSpan: ['가슴 열기', '문틀에 팔을 대고 한 발 앞으로. 20초씩 양쪽.'],
+  faceScaleRatio: ['모니터 밀기', '화면을 팔 길이만큼 밀고 눈높이를 화면 위쪽에 맞추기.'],
+  headDistanceCm: ['모니터 밀기', '화면을 팔 길이만큼 밀고 눈높이를 화면 위쪽에 맞추기.'],
+  shoulderTiltRatio: ['옆구리 늘이기', '한 팔을 머리 위로 넘겨 반대쪽으로 20초씩.'],
+  lateralOffsetRatio: ['앉은 자리 고치기', '엉덩이를 등받이 끝까지 붙이고 발바닥을 바닥에.'],
+  torsoLean: ['골반 세우기', '엉덩이를 등받이 끝까지 붙이고 배에 살짝 힘.'],
+};
+function stretchPlan(axes) {
+  const list = Object.entries(axes || {}).filter(([k, v]) => STRETCH[k] && v > 20)
+    .sort((a, b) => b[1] - a[1]).slice(0, 2);
+  if (!list.length) return null;
+  const seen = new Set();
+  return list.map(([k]) => STRETCH[k]).filter((s2) => {
+    if (seen.has(s2[0])) return false; seen.add(s2[0]); return true;
+  });
+}
+/* 자세 나이 — 유지력 0.5 · 회복 0.3 · 무너진 깊이 0.2.
+   점수가 아니라 **버릇을 읽는 한 줄**입니다. 의학적 판단이 아닙니다. */
+function postureAge(se) {
+  const t = Math.max(1, se.judged || se.sec);
+  const hold = 1 - Math.min(1, (se.tBad || 0) / t / .35);
+  const back = 1 - Math.min(1, (se.bad || 0) / Math.max(1, t / 300) / 3);
+  const depth = 1 - Math.min(1, ((se.tBad || 0) + (se.tWarn || 0) * .4) / t / .5);
+  const good = hold * .5 + back * .3 + depth * .2;
+  return Math.round(65 - good * 45);
+}
+
+/** 세션 회고 — 이번 세션과 지난 세션 */
+export function retro(ctx) {
+  const last = ctx?.last || SAVE.sessions[SAVE.sessions.length - 1] || null;
+  const past = SAVE.sessions.slice(-30).reverse();
+  let now = '<p>아직 마친 세션이 없습니다. 도서관이나 본관 자리에서 앉아 보세요.</p>';
+  if (last) {
+    const t = Math.max(1, last.judged || last.sec);
+    const g = Math.max(0, t - (last.tWarn || 0) - (last.tBad || 0));
+    const plan = stretchPlan(last.axes);
+    const age = postureAge(last);
+    now = `<div class="kv"><span>앉은 시간</span><b>${mmss(last.sec)}</b></div>
+      <div class="kv"><span>판정이 돈 시간</span><b>${mmss(last.judged || last.sec)}</b></div>
+      <div class="kv"><span>회복</span><b>${last.bad || 0}번</b></div>
+      <div class="lbl">이번 세션의 자세</div>
+      <div class="bars" style="height:26px;align-items:stretch">
+        <div class="bar" style="flex:${Math.max(1, g)}"><i style="width:100%;height:100%;background:#63C47C"></i></div>
+        <div class="bar" style="flex:${Math.max(1, last.tWarn || 0)}"><i style="width:100%;height:100%;background:#F2C14E"></i></div>
+        <div class="bar" style="flex:${Math.max(1, last.tBad || 0)}"><i style="width:100%;height:100%;background:#E8695A"></i></div>
+      </div>
+      <p class="note">좋음 ${pct(g, t)}% · 주의 ${pct(last.tWarn || 0, t)}% · 굽음 ${pct(last.tBad || 0, t)}%</p>
+      <div class="lbl">자세 나이</div>
+      <div class="kv"><span>이번 세션 기준</span><b>${age}세</b></div>
+      <p class="note">유지력·회복 속도·무너진 깊이로 계산한 <b>버릇의 나이</b>입니다.
+        점수도 등급도 아니고, 의학적 판단은 하지 않습니다.</p>
+      ${plan ? `<div class="lbl">오늘 이거 두 개만</div>` + plan.map(([n, d]) =>
+        `<div class="kv" style="display:block"><b>${esc(n)}</b><br><span>${esc(d)}</span></div>`).join('')
+        : '<p class="note">오래 벗어난 축이 없었습니다. 오늘은 잘 앉으셨어요.</p>'}`;
+  }
+  const rows = past.length ? `<ul class="feed">${past.map((se) => {
+    const d = new Date(se.t || Date.now());
+    return `<li><b>${d.getMonth() + 1}/${d.getDate()}</b><span>${mmss(se.sec)} · 회복 ${se.bad || 0}번
+      · ${se.zone === 'campus' ? '캠퍼스' : (ROOM_LABEL[se.zone] || se.zone)}</span></li>`;
+  }).join('')}</ul>` : '<p class="note">지난 기록이 없습니다.</p>';
+  return {
+    tag: '회고', title: '세션 회고',
+    html: `<div class="wr" style="margin-bottom:10px">
+        <button data-tab="now" class="on">이번 세션</button><button data-tab="past">지난 세션</button></div>
+      <div data-pane="now">${now}</div>
+      <div data-pane="past" style="display:none">${rows}</div>`,
+    on(root) {
+      root.querySelector('.bd').onclick = (e) => {
+        const b = e.target.closest('button[data-tab]'); if (!b) return;
+        root.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+        root.querySelectorAll('[data-pane]').forEach((x) =>
+          { x.style.display = x.dataset.pane === b.dataset.tab ? '' : 'none'; });
+      };
+    },
+  };
+}
+const ROOM_LABEL = { library: '도서관', mainhall: '본관', dorm: '기숙사',
+  union: '학생회관', arcade: '미니게임관', shop: '동아리 상점' };
+
+/** 코인 — 어떻게 벌고 어디에 쓰는지 한 장에 */
+export function coinPanel(ctx) {
+  const d = SAVE.coinDay?.date === new Date().toISOString().slice(0, 10) ? SAVE.coinDay.got : 0;
+  const run = SAVE.attend?.run || 0;
+  return {
+    tag: '코인', title: '코인',
+    html: `${coinbar(ctx.coins, ctx.server ? ' <i style="font-style:normal;color:#8B94A1">· 서버 잔액</i>' : '')}
+      <div class="kv"><span>오늘 받은 코인</span><b>${d} / 300</b></div>
+      <div class="kv"><span>연속 출석</span><b>${run}일</b></div>
+      <div class="lbl">어떻게 버나</div>
+      <table class="tt"><tbody>
+        <tr><th><b>5분 앉기</b></th><td>10코인</td></tr>
+        <tr><th><b>15분</b></th><td>30코인</td></tr>
+        <tr><th><b>30분</b></th><td>40코인</td></tr>
+        <tr><th><b>50분</b></th><td>60코인</td></tr>
+        <tr><th><b>회복</b></th><td>한 번에 5코인 · 세션당 다섯 번까지</td></tr>
+        <tr><th><b>미니게임</b></th><td>10코인 · 게임별 하루 한 번</td></tr>
+        <tr><th><b>연속 출석</b></th><td>3·7·14·30·60일에 5·15·30·60·100코인</td></tr>
+        <tr><th><b>하루 상한</b></th><td>300코인</td></tr>
+      </tbody></table>
+      <div class="note"><b>앉은 시간이 아니라 판정이 돈 시간으로 셉니다.</b>
+        카메라를 가려 두거나 자리를 비운 동안은 안 세요 — 그래야 코인이 실제로 앉은 값이 됩니다.</div>
+      <div class="lbl">어디에 쓰나</div>
+      <table class="tt"><tbody>
+        <tr><th><b>옷</b></th><td>상의·하의·신발·모자·안경·가방</td></tr>
+        <tr><th><b>가구</b></th><td>기숙사 방에 놓습니다</td></tr>
+        <tr><th><b>알</b></th><td>40코인 — 아직 없는 종이 깨어납니다</td></tr>
+      </tbody></table>`,
+  };
+}
+
+/** 마이페이지 — 내 정보 · 자세 기준 · 설정 */
+export function mypage(ctx) {
+  const total = SAVE.sessions.reduce((a, s2) => a + s2.sec, 0);
+  const judged = SAVE.sessions.reduce((a, s2) => a + (s2.judged || s2.sec), 0);
+  const bad = SAVE.sessions.reduce((a, s2) => a + (s2.bad || 0), 0);
+  const zones = {};
+  SAVE.sessions.forEach((s2) => { zones[s2.zone] = (zones[s2.zone] || 0) + s2.sec; });
+  const base = ctx.baseline;
+  return {
+    tag: '마이페이지', title: '내 기록',
+    html: `<div class="wr" style="margin-bottom:10px">
+        <button data-tab="me" class="on">내 정보</button>
+        <button data-tab="cal">자세 기준</button>
+        <button data-tab="set">설정</button></div>
+      <div data-pane="me">
+        <div class="kv"><span>세션</span><b>${SAVE.sessions.length}번</b></div>
+        <div class="kv"><span>앉은 시간</span><b>${mmss(total)}</b></div>
+        <div class="kv"><span>판정이 돈 시간</span><b>${mmss(judged)}</b></div>
+        <div class="kv"><span>회복</span><b>${bad}번</b></div>
+        <div class="kv"><span>코인</span><b>🪙 ${ctx.coins}</b></div>
+        <div class="lbl">어디서 앉았나</div>
+        ${Object.keys(zones).length ? Object.entries(zones).sort((a, b) => b[1] - a[1]).map(([z, v]) =>
+          `<div class="kv"><span>${ROOM_LABEL[z] || z}</span><b>${mmss(v)}</b></div>`).join('')
+          : '<p class="note">아직 없습니다.</p>'}
+        <div class="wr" style="margin-top:12px"><button data-do="retro">세션 회고 열기</button></div>
+      </div>
+      <div data-pane="cal" style="display:none">
+        ${base ? `<div class="kv"><span>기준 잡은 때</span><b>${new Date(base.createdAt).toLocaleString('ko-KR')}</b></div>
+          <div class="kv"><span>쓰는 축</span><b>${Object.keys(base.features).length}개</b></div>
+          <div class="kv"><span>표본</span><b>${base.sampleCount}개</b></div>`
+          : '<p>아직 기준이 없습니다. 자리에 앉으면 10초 동안 지금 앉은 모습을 기준으로 잡습니다.</p>'}
+        <div class="note">정답 자세와 비교하지 않습니다. <b>10초 전의 나</b>와만 비교합니다.
+          의자를 바꾸거나 책상 높이가 달라졌으면 기준을 다시 잡는 게 낫습니다.</div>
+        <div class="wr"><button data-do="recal">기준 다시 잡기</button></div>
+      </div>
+      <div data-pane="set" style="display:none">
+        <div class="lbl">소리</div>
+        <div class="wr"><button data-do="snd" class="${ctx.snd ? 'on' : ''}">장소 소리 ${ctx.snd ? '켬' : '끔'}</button></div>
+        <div class="lbl">기록</div>
+        <div class="wr"><button data-do="wipe">이 기기 기록 전체 지우기</button></div>
+        <p class="note">지우면 되돌릴 수 없습니다 — 되돌릴 열쇠(이메일·비밀번호)를 애초에 안 받습니다.
+          서버 기록까지 지우려면 <b>ikmc554@mju.ac.kr</b> 로 ID 를 알려 주세요.</p>
+      </div>`,
+    on(root, again) {
+      root.querySelector('.bd').onclick = (e) => {
+        const t = e.target.closest('button[data-tab]');
+        if (t) {
+          root.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === t));
+          root.querySelectorAll('[data-pane]').forEach((x) =>
+            { x.style.display = x.dataset.pane === t.dataset.tab ? '' : 'none'; });
+          return;
+        }
+        const b = e.target.closest('button[data-do]'); if (!b) return;
+        ctx.onDo(b.dataset.do, again);
+      };
+    },
+  };
+}
+
+/** 안내 — 처음 온 사람이 읽는 일곱 줄 */
+export function guide() {
+  return {
+    tag: '안내', title: 'Deskfit 안내',
+    html: `<ol style="margin:0 0 10px 18px;padding:0;font-size:13.5px;line-height:1.9">
+        <li>도서관이나 본관 자리 앞에서 <b>E</b> — 자세 세션이 시작됩니다.</li>
+        <li>처음이면 10초 동안 지금 앉은 모습을 기준으로 잡습니다.</li>
+        <li>그 뒤로는 <b>기준 대비</b> 얼마나 벗어났는지만 봅니다. 정답 자세와 겨루지 않아요.</li>
+        <li>무너지면 캐릭터가 같이 굽고 말풍선이 뜹니다.</li>
+        <li>일어나면 세션이 끝나고 코인이 들어옵니다.</li>
+        <li>코인으로 옷·가구·알을 삽니다. 알에서 새 종이 깨어나요.</li>
+        <li>앉은 시간은 학교 점수로 모입니다 — 개인 순위는 만들지 않습니다.</li>
+      </ol>
+      <div class="lbl">조작</div>
+      <table class="tt"><tbody>
+        <tr><th><b>W A S D</b></th><td>걷기 · Shift 로 뛰기</td></tr>
+        <tr><th><b>E</b></th><td>말 걸기 · 들어가기 · 앉기</td></tr>
+        <tr><th><b>Z X</b></th><td>시점 좌우로 돌리기</td></tr>
+        <tr><th><b>M</b></th><td>지도 — 건물을 누르면 그 앞으로</td></tr>
+        <tr><th><b>C</b></th><td>옷장</td></tr>
+        <tr><th><b>G · 1~8</b></th><td>감정표현</td></tr>
+        <tr><th><b>Enter</b></th><td>채팅</td></tr>
+        <tr><th><b>Tab</b></th><td>1인칭 · 3인칭</td></tr>
+      </tbody></table>`,
+  };
+}
+
+/** 개인정보 — 서버로 가는 것과 안 가는 것 */
+export function privacy() {
+  return {
+    tag: '개인정보', title: '카메라와 개인정보',
+    html: `<p>영상은 이 브라우저 밖으로 나가지 않습니다. 판정은 기기 안에서 끝나고
+        프레임은 즉시 버려집니다.</p>
+      <div class="lbl">서버로 가지 않는 것</div>
+      <p>영상·사진·스냅샷, 자세 좌표 원본, 10초로 만든 내 기준값, 얼굴에서 뽑은 어떤 값도.</p>
+      <div class="lbl">세션이 끝날 때 서버로 가는 것 (전부)</div>
+      <table class="tt"><tbody>
+        <tr><th><b>세션 ID</b></th><td>기기가 만든 임의 문자열</td></tr>
+        <tr><th><b>앉은 시간</b></th><td>분</td></tr>
+        <tr><th><b>캠퍼스 시간</b></th><td>분</td></tr>
+        <tr><th><b>회복 횟수</b></th><td>번</td></tr>
+        <tr><th><b>시작·종료</b></th><td>시각</td></tr>
+        <tr><th><b>학교</b></th><td>고른 학교 이름</td></tr>
+      </tbody></table>
+      <div class="note"><b>직접 확인해 보세요.</b> F12 로 개발자도구를 열고 세션을 돌리면
+        오가는 요청이 전부 보입니다. 모델을 한 번 받은 뒤 랜선을 뽑아도 자세 판정은 그대로 돕니다.</div>
+      <p class="note">회원가입이 없습니다. 이메일·전화번호·비밀번호를 받지 않고,
+        다른 사람에게 보이는 건 닉네임과 캐릭터뿐입니다. 화면 공유 기능 자체가 없습니다.</p>`,
   };
 }

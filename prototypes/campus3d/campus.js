@@ -57,14 +57,19 @@ function ground(g) {
   flat(cyl(g, HALF + 1.4, HALF + 1.4, 2.2, 72, M(PAL.soil, .88), 0, -1.1, 0));  // 흙 벼랑
   flat(cyl(g, HALF, HALF, 2.2, 72, M(PAL.grassDark, .86), 0, -1.06, 0));
   flat(cyl(g, HALF - .5, HALF - .5, 2.2, 72, M(PAL.grass, .86), 0, -1.0, 0));
-  /* 잔디 얼룩 — 한 색으로 두면 당구대입니다 */
+  /* 잔디 얼룩 — 한 색으로 두면 당구대입니다.
+
+     **높이를 한 장씩 어긋나게 깝니다.** 전 판은 150장을 전부 y=0.04 에
+     깔았는데, 자리가 무작위라 서로 겹치는 곳이 수십 군데였습니다. 겹친
+     두 면의 깊이가 완전히 같으면 어느 쪽을 그릴지 카메라가 조금만 움직여도
+     뒤집힙니다 — 걸을 때마다 잔디가 번쩍이던 것이 이것입니다. */
   for (let i = 0; i < 150; i++) {
     const a = rnd() * Math.PI * 2, r = 6 + rnd() * (HALF - 13);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (Math.hypot(x, z) < PLAZA_R + 2) continue;
     const w = 3 + rnd() * 6;
     flat(box(g, w, .14, w * (.6 + rnd() * .7), 1.4,
-             M(rnd() < .5 ? PAL.grassDark : PAL.grassLight, .86), x, .04, z));
+             M(rnd() < .5 ? PAL.grassDark : PAL.grassLight, .86), x, .04 + i * .0005, z));
   }
 }
 
@@ -112,8 +117,12 @@ function ringPath(g, r = 30, w = 4.0) {
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     const L = (Math.PI * 2 * r) / seg + .6;
     const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = -a; g.add(p);
-    const b = box(p, L, .28, w, .5, M(PAL.path, .8), 0, .16, 0); b.castShadow = false;
-    const e = box(p, L, .28, w - .9, .4, M(PAL.pathDark, .8), 0, .19, 0); e.castShadow = false;
+    /* 칸끼리 0.6 씩 **겹치게** 놓습니다(안 그러면 다각형이라 틈이 벌어집니다).
+       겹치는 두 면이 같은 높이면 그 자리가 통째로 떱니다 — 산책로 일흔두
+       군데가 전부 그랬습니다. 한 칸씩 번갈아 아주 조금 올립니다. */
+    const lift = (i % 2) * .0016;
+    const b = box(p, L, .28, w, .5, M(PAL.path, .8), 0, .16 + lift, 0); b.castShadow = false;
+    const e = box(p, L, .28, w - .9, .4, M(PAL.pathDark, .8), 0, .19 + lift, 0); e.castShadow = false;
   }
 }
 

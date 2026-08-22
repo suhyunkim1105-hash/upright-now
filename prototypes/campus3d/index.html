@@ -66,6 +66,11 @@
   #pip .fr{position:relative;border-radius:var(--r2);overflow:hidden;height:120px;
     background:radial-gradient(120% 100% at 50% 0%,#3B4A5C 0%,#222B37 100%)}
   #pip canvas{display:block;width:100%;height:100%}
+  /* 카메라가 실제로 켜져 있다는 것을 눈으로 보여 줍니다 — 캐릭터만 있으면
+     "판정하는 척" 으로 보입니다. 작게, 구석에. */
+  #pipcam{position:absolute;right:6px;bottom:6px;width:52px;height:39px;object-fit:cover;
+    border-radius:7px;border:1px solid var(--ln);display:none;transform:scaleX(-1);
+    box-shadow:0 2px 8px rgba(6,10,17,.4);z-index:2}
   #pip .row{display:flex;align-items:center;gap:6px;margin-top:7px;padding:0 2px}
   #pip .nm{font-size:11.5px;font-weight:800;letter-spacing:-.01em}
   #pip .st{margin-left:auto;padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:800;
@@ -386,7 +391,8 @@
     </div>
     <div id="pip" class="g">
       <div class="ghead">내 자세</div>
-      <div class="fr"><canvas width="316" height="240"></canvas></div>
+      <div class="fr"><canvas width="316" height="240"></canvas>
+      <video id="pipcam" autoplay playsinline muted></video></div>
       <div class="row"><span class="nm">나</span><span class="st">좋음</span></div>
     </div>
     <div id="net" class="g"><i></i><span>혼자</span><b></b></div>
@@ -417,7 +423,7 @@
     <div class="row"><span class="st">좋음</span><span class="nm">자세 세션</span><span class="tm">0:00</span></div>
     <div class="bar"><i></i></div>
     <div class="hint">앉아 있는 동안 자세를 봅니다. 목이 무너지면 캐릭터도 같이 굽습니다.<br>
-      <em>지금은 웹캠 대신 시연용 곡선으로 움직입니다.</em></div>
+      <em class="pz">카메라를 켜는 중</em></div>
     <button id="stand">일어나기 (E)</button>
   </div>
 
@@ -447,6 +453,7 @@
     <div class="r"><kbd>G</kbd><span>감정표현</span></div>
     <div class="r"><kbd>C</kbd><span>옷장</span></div>
     <div class="r"><kbd>Enter</kbd><span>채팅</span></div>
+    <div class="r"><kbd>Z</kbd><kbd>X</kbd><span>시점 좌우로 돌리기</span></div>
     <div class="r"><kbd>드래그</kbd><span>시점 돌리기</span></div>
     <div class="r"><kbd>휠</kbd><span>멀리 · 가까이</span></div>
   </div>
@@ -482,6 +489,7 @@ import { NPCS as _N, INDOOR } from './npcs.js';
 import { createNet } from './net.js';
 import { EMOTES, EMOTE_BY_KEY, playEmoteSound, playEmotePose, emoteIcon } from './emote.js';
 import { openGame, gameOpen } from './games.js';
+import { createPosture } from './posture-live.js';
 
 const $ = (s) => document.querySelector(s);
 /* 2D 판의 서버 저장·욕설 필터를 **그대로** 끌어옵니다 — 규칙을 두 벌 쓰면 어긋납니다 */
@@ -493,6 +501,9 @@ function injectScript(src) {
   });
 }
 let SRV = null;                                  // window.WORLD_SAVE
+/* 자세 판정 엔진은 온보딩·메인과 **같은 파일**입니다. 사본을 만들면
+   기준을 잡은 곳과 판정하는 곳의 계산이 조용히 갈라집니다. */
+injectScript('../shared/posture.js');
 injectScript('../shared/config.js')
   .then(() => injectScript('../openworld/save.js'))
   .then(() => {
@@ -522,7 +533,11 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xBFE4F2);
-const cam = new THREE.PerspectiveCamera(48, 1, .1, 400);
+/* near 를 0.1 에서 0.25 로 올립니다 — 깊이 버퍼의 정밀도는 near 에 반비례합니다.
+   0.1 이면 20칸 앞에서 겨우 0.1mm 를 구분하는데, 길과 잔디가 1cm 차이로
+   겹쳐 있어서 그 정도로는 앞뒤가 뒤집힙니다. 1인칭 눈높이에서도 0.25 는
+   안전합니다(머리보다 가까운 것은 어차피 안 보입니다). */
+const cam = new THREE.PerspectiveCamera(48, 1, .25, 400);
 
 const amb = new THREE.AmbientLight(0xFFFFFF, .70);
 const hemi = new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, .85);
@@ -530,24 +545,42 @@ const sun = new THREE.DirectionalLight(0xFFF6E4, 1.95);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 130;
-sun.shadow.bias = -.0006; sun.shadow.normalBias = .05; sun.shadow.radius = 3;
+/* 얕은 각도로 넓게 받는 바닥에는 normalBias 가 bias 보다 훨씬 잘 듣습니다 */
+sun.shadow.bias = -.0002; sun.shadow.normalBias = .14; sun.shadow.radius = 2;
 const fill = new THREE.DirectionalLight(0xCFE4F5, .45);
 fill.position.set(40, 30, -30);
 scene.add(amb, hemi, sun, sun.target, fill);
 
 /* 그림자 상자는 사람을 따라다닙니다 — 섬 전체를 덮으면 한 칸에 4cm 라 부서집니다.
-   그리고 **텍셀 격자에 스냅해서** 따라다닙니다. 매 프레임 그림자 카메라가
-   미끄러지면 바닥의 그림자 가장자리가 텍셀 사이에서 지글거립니다 —
-   잔디와 길이 걸을 때마다 번쩍이던 원인이 이것입니다. */
-const SPAN = 26;
-const TEXEL = (SPAN * 2) / 2048;
-const SNAP = TEXEL * 8;                        // 여덟 텍셀 단위로 이동 — 스냅이 굵을수록 조용합니다
+
+   **텍셀 격자에 맞춰 따라다닙니다. 단, 빛 공간에서.**
+   전 판은 세계 좌표 x·z 를 여덟 텍셀 단위로 반올림했습니다. 그런데 해는
+   비스듬히 서 있어서 세계의 x·z 격자와 그림자 지도의 텍셀 격자가 **서로
+   비뚤어져 있습니다.** 그래서 아무리 반올림해도 텍셀에는 안 맞고, 대신
+   0.2칸을 걸을 때마다 그림자 지도 전체가 여덟 텍셀씩 **덜컥 뛰었습니다.**
+   바닥 픽셀의 97%가 한 걸음마다 바뀌었습니다 — 바닥이 깜빡이던 정체입니다.
+
+   고치는 방법은 반올림을 **빛이 보는 축 위에서** 하는 것입니다. 그림자
+   카메라의 가로·세로 축에 각각 투영해 한 텍셀 단위로 맞추고 되돌립니다.
+   이러면 카메라가 움직여도 텍셀 경계가 제자리에 있어 가장자리가 안 떱니다. */
+const SPAN = 22;
+const SHADOW_RES = 2048;
+const TEXEL = (SPAN * 2) / SHADOW_RES;
+const LDIR = new THREE.Vector3(-26, 40, 20).normalize();       // 해가 서 있는 쪽
+const LRIGHT = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), LDIR).normalize();
+const LUP = new THREE.Vector3().crossVectors(LDIR, LRIGHT).normalize();
+const _sv = new THREE.Vector3(), _sw = new THREE.Vector3();
 function aimSun(x, z) {
-  const sx = Math.round(x / SNAP) * SNAP, sz = Math.round(z / SNAP) * SNAP;
-  sun.position.set(sx - 26, 40, sz + 20);
-  sun.target.position.set(sx, 0, sz);
+  _sv.set(x, 0, z);
+  const a = Math.round(_sv.dot(LRIGHT) / TEXEL) * TEXEL;
+  const b = Math.round(_sv.dot(LUP) / TEXEL) * TEXEL;
+  const d = _sv.dot(LDIR);
+  _sw.copy(LRIGHT).multiplyScalar(a).addScaledVector(LUP, b).addScaledVector(LDIR, d);
+  sun.target.position.copy(_sw);
+  sun.position.copy(_sw).addScaledVector(LDIR, 62);
   const c = sun.shadow.camera;
   c.left = -SPAN; c.right = SPAN; c.top = SPAN; c.bottom = -SPAN;
+  c.near = 1; c.far = 140;
   c.updateProjectionMatrix();
 }
 
@@ -727,9 +760,21 @@ function hitGrid(G, x, z) {
   return false;
 }
 const hit = (x, z) => (room ? hitGrid(room.grid, x, z) : hitCampus(x, z));
+/* 끼었을 때만 밀어냅니다. 매 프레임 무조건 부르면, 경계에 서 있을 때
+   밀려났다 돌아왔다 하며 캐릭터가 떱니다. 두 프레임 이상 끼어 있을 때만
+   움직이고, 밀어내는 거리도 1.5칸으로 제한합니다. */
+let stuckN = 0;
 function unstick() {
-  if (!hit(P.x, P.z)) return;
-  for (let r = .25; r <= 5; r += .25)
+  if (!hit(P.x, P.z)) { stuckN = 0; return; }
+  if (++stuckN < 3) return;
+  stuckN = 0;
+  for (let r = .25; r <= 1.5; r += .25)
+    for (let a = 0; a < 16; a++) {
+      const t = (a / 16) * TAU, nx = P.x + Math.cos(t) * r, nz = P.z + Math.sin(t) * r;
+      if (!hit(nx, nz)) { P.x = nx; P.z = nz; return; }
+    }
+  /* 1.5칸 안에 빈 곳이 없으면 광장으로 보냅니다 — 갇히는 것보다 낫습니다 */
+  for (let r = 1.75; r <= 6; r += .25)
     for (let a = 0; a < 16; a++) {
       const t = (a / 16) * TAU, nx = P.x + Math.cos(t) * r, nz = P.z + Math.sin(t) * r;
       if (!hit(nx, nz)) { P.x = nx; P.z = nz; return; }
@@ -761,6 +806,10 @@ addEventListener('keydown', (e) => {
   if (panelOn) { if (e.code === 'KeyE' || e.code === 'Enter') { e.preventDefault(); closePanel(); } return; }
   if (e.code === 'Tab') { e.preventDefault(); toggleView(); return; }
   if (e.code === 'KeyM') { e.preventDefault(); toggleMap(); return; }
+  /* 시점을 키로도 돌립니다. 끌기만 되면 걷다가 손을 떼고 끌어야 해서
+     한 손으로는 방향을 못 바꿉니다 — "움직이기 힘들다" 의 절반입니다. */
+  if (e.code === 'KeyZ' || e.code === 'Comma') { turnCam(-1); return; }
+  if (e.code === 'KeyX' || e.code === 'Period') { turnCam(1); return; }
   if (e.code === 'KeyC') { e.preventDefault(); openWardrobe(); return; }
   if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleHelp(); return; }
   if (PLACE.on) {
@@ -775,6 +824,10 @@ addEventListener('keyup', (e) => { key[e.code] = false; });
 addEventListener('blur', () => { for (const k in key) key[k] = false; });
 
 let yaw = -Math.PI * .75, pitch = .55, dist = 11.5, camD = 11.5, drag = null;
+/* 마지막으로 시점을 직접 건드린 시각. 직접 돌린 직후에는 자동 추적을
+   쉬게 합니다 — 내가 돌린 걸 카메라가 도로 되돌리면 싸우는 느낌이 납니다. */
+let camHold = 0;
+function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; turned += .55; clampRoomYaw(); }
 cv.addEventListener('pointerdown', (e) => {
   if (first) { try { cv.requestPointerLock?.(); } catch {} return; }
   drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
@@ -788,6 +841,7 @@ cv.addEventListener('pointermove', (e) => {
   }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  camHold = performance.now() + 1400;
   yaw -= dx * (first ? .005 : .006);
   pitch = first ? clamp(pitch + dy * .004, -1.15, 1.15) : clamp(pitch + dy * .004, .04, 1.35);
   if (!first) clampRoomYaw();
@@ -843,8 +897,26 @@ function panelFor(s) {
     case 'records': return UI.records();
     case 'card': return UI.studentCard();
     case 'shop': return panelFor({ panel: 'wardrobe' });
-    case 'notice-school': return UI.notices('school');
+    case 'notice-school': return noticeView();
     case 'notice-out': return UI.notices('out');
+    case 'retro': return UI.retro({ last: SAVE.sessions[SAVE.sessions.length - 1] });
+    case 'coins': return UI.coinPanel({ coins: SAVE.coins, server: !!(SRV && SRV.configured) });
+    case 'guide': return UI.guide();
+    case 'privacy': return UI.privacy();
+    case 'mypage': return UI.mypage({
+      coins: SAVE.coins, snd: SND.on,
+      baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
+      onDo: (k, again) => {
+        if (k === 'snd') { sndToggle(); again(); }
+        else if (k === 'retro') openPanel({ tag: '회고', title: '세션 회고', panel: 'retro' });
+        else if (k === 'recal') { PZ.clearBaseline(); toast('기준을 지웠어요', '다음에 앉을 때 10초 동안 다시 잡습니다'); again(); }
+        else if (k === 'wipe') {
+          if (!confirm('이 기기의 모든 기록을 지웁니다. 되돌릴 수 없습니다.')) return;
+          try { localStorage.clear(); } catch (_) {}
+          location.reload();
+        }
+      },
+    });
     case 'wear-shop': return UI.wearShop({
       wear: WEAR, owned: SAVE.owned2, coins: SAVE.coins, server: !!(SRV && SRV.configured),
       onBuy: (id, slot, again) => buyWear(id, slot, again),
@@ -1028,6 +1100,23 @@ function fameView() {
   return UI.fame({ rows: SRV && SRV.configured ? fameRows : null, myschool: SAVE.school });
 }
 
+/* 학교 공지 — /api/notice 가 학교 RSS 를 받아 옵니다(2D 판과 같은 주소) */
+let ntRows;
+function noticeView() {
+  if (ntRows === undefined) {
+    ntRows = null;
+    fetch('/api/notice?school=mju.ac.kr')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        ntRows = Array.isArray(j) ? j : (j && Array.isArray(j.items) ? j.items : null);
+        redrawPanel();
+      })
+      .catch(() => { ntRows = null; redrawPanel(); });
+    return UI.notices('school', undefined);
+  }
+  return UI.notices('school', ntRows);
+}
+
 /* 창밖 날씨 — /api/weather 는 배포본에서만 있습니다 */
 let wxData;
 function weatherView() {
@@ -1042,11 +1131,41 @@ function weatherView() {
 }
 
 /* ══════ 8. 자세 세션 ══════ */
-const SESS = { on: false, k: 0, want: 0, t: 0, next: 0, demo: true, bad: 0, wasBad: false, from: null, title: '' };
+const SESS = { on: false, k: 0, want: 0, t: 0, judged: 0, next: 0, demo: true,
+  bad: 0, wasBad: false, from: null, title: '', live: '' };
+
+/* ── 웹캠 자세 판정 ──
+   `../shared/posture.js` 에 카메라를 물립니다. 거부하거나 모델을 못 받으면
+   시연용 곡선으로 물러납니다 — 캠퍼스는 그대로 걸어 다닙니다. */
+const pzHint = () => elPost.querySelector('.hint .pz');
+const PZ = createPosture({
+  onStatus: (t) => { const e = pzHint(); if (e) e.textContent = t || ''; },
+  onMode: (m) => {
+    SESS.demo = !(m === 'live' || m === 'calibrating');
+    const e = pzHint(); if (!e) return;
+    if (m === 'denied') e.textContent = '카메라를 안 켜서 시연용 곡선으로 움직입니다';
+    else if (m === 'failed') e.textContent = '판정 모델을 못 받아 시연용 곡선으로 움직입니다';
+    else if (m === 'live') e.textContent = '웹캠이 실제로 자세를 보고 있어요';
+    $('#pipcam').style.display = (m === 'live' || m === 'calibrating') ? 'block' : 'none';
+    if ((m === 'live' || m === 'calibrating') && PZ.video) $('#pipcam').srcObject = PZ.video.srcObject;
+  },
+  onCalib: (p) => {
+    const e = pzHint(); if (e) e.textContent = `기준 잡는 중 ${Math.round(p * 100)}% — 평소처럼 앉아 계세요`;
+  },
+  onState: (st, kk, v) => {
+    SESS.live = st;
+    /* 어느 축이 오래 벗어났는지를 세션 내내 모읍니다 — 회고의 스트레칭
+       처방이 이 숫자에서 나옵니다. 안 모으면 처방이 그냥 덕담이 됩니다. */
+    if (v && v.details) for (const d of v.details)
+      if (d.deviation > 1) SESS.axes[d.key] = (SESS.axes[d.key] || 0) + .066;
+  },
+});
 $('#stand').addEventListener('click', () => endSession());
 function startSession(s) {
-  Object.assign(SESS, { on: true, t: 0, k: 0, want: 0, next: 3.2, bad: 0, wasBad: false,
-    title: s.title, from: { x: P.x, z: P.z, dir: P.dir } });
+  Object.assign(SESS, { on: true, t: 0, judged: 0, tWarn: 0, tBad: 0, axes: {},
+    k: 0, want: 0, next: 3.2, bad: 0, wasBad: false,
+    live: '', title: s.title, from: { x: P.x, z: P.z, dir: P.dir } });
+  PZ.start();
   P.x = s.seat.x; P.z = s.seat.z; P.dir = s.seat.dir; P.sp = 0;
   yaw = seatYaw(s.seat); pitch = .34; dist = 5.0; camD = dist;
   sit(player, true); sit(pipMe, true);
@@ -1057,7 +1176,9 @@ function startSession(s) {
 }
 function endSession(quiet) {
   if (SESS.on && SESS.t > 4) {
-    SAVE.sessions.push({ t: Math.round(SESS.t), sec: SESS.t, bad: SESS.bad, zone: room ? room.key : 'campus' });
+    SAVE.sessions.push({ t: Date.now(), sec: SESS.t, judged: SESS.judged,
+      bad: SESS.bad, tWarn: SESS.tWarn, tBad: SESS.tBad, axes: SESS.axes,
+      zone: room ? room.key : 'campus' });
     if (SAVE.sessions.length > 60) SAVE.sessions.shift();
     if (SRV?.configured) {
       /* 코인은 서버가 지급합니다 — 여기서 더하면 두 번 받게 됩니다 */
@@ -1067,14 +1188,24 @@ function endSession(quiet) {
         recoveries: SESS.bad, chairMinutes: SESS.t / 60,
         startedAt: Date.now() - SESS.t * 1000, endedAt: Date.now(),
       }).then(() => SRV.balance()).then((b) => {
-        if (typeof b === 'number') { SAVE.coins = b; UI.save(); }
-      }).catch(() => {});
+        if (typeof b === 'number') { SAVE.coins = b; UI.save(); return; }
+        throw new Error('잔액을 못 받았습니다');
+      }).catch(() => {
+        /* 서버가 안 붙으면 이 기기 코인으로 줍니다. 안 그러면 오프라인에서
+           앉은 시간이 통째로 사라집니다 — 다음에 붙을 때 서버 잔액이 이깁니다. */
+        SAVE.coins += sessionCoins(SESS.judged || SESS.t, SESS.bad); UI.save();
+      });
     } else {
-      SAVE.coins += Math.min(30, Math.floor(SESS.t / 30));
+      /* 2D 판의 규칙 그대로 — **판정이 실제로 돈 시간**으로 계산합니다.
+         의자에 앉은 벽시계 시간이 아니라서, 카메라를 가려 두고 코인만
+         쌓는 것이 안 됩니다. 완주 구간 · 회복 · 연속 출석 · 하루 상한. */
+      SAVE.coins += sessionCoins(SESS.judged || SESS.t, SESS.bad);
     }
     UI.save();
   }
   SESS.on = false; SESS.face = ''; SESS.recoverT = 0;
+  PZ.stop();
+  $('#pipcam').style.display = 'none';
   sit(player, false); sit(pipMe, false);
   slouch(player, 0); slouch(pipMe, 0);
   face(player, 'good'); face(pipMe, 'good');
@@ -1086,6 +1217,46 @@ function endSession(quiet) {
   if (SESS.from) { P.x = SESS.from.x; P.z = SESS.from.z; P.dir = SESS.from.dir; }
   unstick();
 }
+/* 완주 구간 4단계 · 회복 5코인(다섯 번까지) · 하루 상한 300 */
+const COIN_TIERS = [[50 * 60, 60], [30 * 60, 40], [15 * 60, 30], [5 * 60, 10]];
+const STREAK_STEPS = [[60, 100], [30, 60], [14, 30], [7, 15], [3, 5]];
+const DAILY_CAP = 300;
+function today() { return new Date().toISOString().slice(0, 10); }
+function coinDay() {
+  if (SAVE.coinDay?.date !== today()) SAVE.coinDay = { date: today(), got: 0 };
+  return SAVE.coinDay;
+}
+/** 하루 상한을 지키며 줍니다. 넘치는 만큼은 안 줍니다 */
+function grantCoins(n, why) {
+  const d = coinDay();
+  const give = Math.max(0, Math.min(n, DAILY_CAP - d.got));
+  if (give <= 0) { toast('오늘 몫을 다 받았어요', `하루 ${DAILY_CAP}코인까지예요 — 내일 또 줘요`); return 0; }
+  d.got += give; SAVE.coins += give; UI.save();
+  if (why) toast(`코인 +${give}`, why);
+  return give;
+}
+function sessionCoins(sec, recover) {
+  let n = 0;
+  for (const [need, give] of COIN_TIERS) if (sec >= need) { n = give; break; }
+  n += Math.min(5, recover) * 5;
+  const d = coinDay();
+  const give = Math.max(0, Math.min(n, DAILY_CAP - d.got));
+  d.got += give;
+  return give;
+}
+/** 연속 출석 — 하루 한 번, 끊기면 1일부터 */
+function checkStreak() {
+  const t = today();
+  if (SAVE.attend?.date === t) return;
+  const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const run = SAVE.attend?.date === y ? (SAVE.attend.run || 0) + 1 : 1;
+  SAVE.attend = { date: t, run };
+  UI.save();
+  for (const [need, give] of STREAK_STEPS)
+    if (run === need) { grantCoins(give, `${run}일 연속 출석`); return; }
+  if (run > 1) toast(`${run}일 연속`, '오늘도 왔어요');
+}
+
 window.deskfit3d = {
   setPosture(k) { SESS.demo = false; SESS.want = clamp(k, 0, 1); },
   useDemo() { SESS.demo = true; },
@@ -1879,7 +2050,11 @@ const v3 = new THREE.Vector3();
 
 function tick(now) {
   requestAnimationFrame(tick);
-  const dt = Math.min(.05, (now - last) / 1000); last = now; T += dt;
+  /* dt 를 0.05 로 자르면 20fps 아래에서는 **세상이 슬로모션이 됩니다** —
+     한 프레임에 0.05초씩만 흐르니 실제로는 3초를 눌러도 1초만큼만 걷습니다.
+     자세 판정과 3D 가 같은 탭에서 도는 화면이라 20fps 아래로 잘 내려갑니다.
+     "움직이는 게 힘들다" 의 나머지 절반이 이것이었습니다. 0.1 로 올립니다. */
+  const dt = Math.min(.1, (now - last) / 1000); last = now; T += dt;
   if (document.hidden) return;
 
   /* ── 걷기 ── */
@@ -1906,6 +2081,13 @@ function tick(now) {
     if (!hit(P.x, nz)) P.z = nz;
     P.dir = Math.atan2(wx, wz);
     P.sp = Math.min(run, P.sp + dt * 8);
+    /* 앞으로 걸을 때만 카메라가 뒤로 따라옵니다.
+       옆걸음(A·D)에도 따라 돌면 카메라가 돌고 → 그 방향으로 다시 걷게 되어
+       제자리에서 빙글빙글 돕니다. 그래서 **앞 입력이 셀 때만** 돕니다. */
+    if (!first && iz > .55 && Math.abs(ix) < .55 && performance.now() > camHold) {
+      yaw = smoothAngle(yaw, P.dir, 1 - Math.pow(.28, dt));
+      if (room) clampRoomYaw();
+    }
   } else {
     P.sp = Math.max(0, P.sp - dt * 10);
   }
@@ -2089,7 +2271,10 @@ function tick(now) {
     const sx = -Math.sin(yaw), sz = -Math.cos(yaw), cp = Math.cos(pitch);
     for (let t = 1.6; t <= dist; t += .5)
       if (hitCam(P.x + sx * cp * t, P.z + sz * cp * t)) { want = Math.max(room ? 2.4 : 3.4, t - .8); break; }
-    camD += (want - camD) * Math.min(1, dt * (want < camD ? 14 : 2.2));
+    /* 가리면 빠르게 당기고, 풀리면 **적당히 빠르게** 물러납니다.
+       2.2 는 0.45초짜리라 건물을 스쳐 지나갈 때마다 카메라가 코앞에
+       붙어 있는 시간이 길었습니다. */
+    camD += (want - camD) * Math.min(1, dt * (want < camD ? 14 : 5));
     const d = camD;
     const h = Math.sin(pitch) * d, r = Math.cos(pitch) * d;
     cam.position.lerp(v3.set(P.x + sx * r, 1.2 + h, P.z + sz * r), 1 - Math.pow(.0009, dt));
@@ -2100,6 +2285,9 @@ function tick(now) {
   /* ── 자세 세션 ── */
   if (SESS.on) {
     SESS.t += dt;
+    /* 판정이 실제로 돈 시간만 따로 셉니다 — 코인과 리포트가 이걸 씁니다 */
+    if (SESS.demo || (PZ.mode === 'live' && SESS.live && SESS.live !== 'idle')) SESS.judged += dt;
+    if (PZ.mode === 'live') SESS.want = PZ.k;
     if (SESS.demo) {
       SESS.next -= dt;
       if (SESS.next <= 0) {
@@ -2112,7 +2300,11 @@ function tick(now) {
     slouch(player, SESS.k); slouch(pipMe, SESS.k);
     /* 상태 다섯 — 2D 판의 얼굴 다섯을 그대로 잇습니다.
        굽었다가 펴는 중이면 1.8초 동안 '회복'(웃는 눈)을 보여 줍니다. */
-    const bad = SESS.k > .62, warn = !bad && SESS.k > .34;
+    /* 라벨은 판정기의 상태를 그대로 씁니다. 굽은 정도(k)로 다시 문턱을
+       잡으면 엔진이 'bad' 라고 한 순간과 화면이 어긋납니다. */
+    const idle = PZ.mode === 'live' && SESS.live === 'idle';
+    const bad = PZ.mode === 'live' ? SESS.live === 'bad' : SESS.k > .62;
+    const warn = PZ.mode === 'live' ? SESS.live === 'warning' : (!bad && SESS.k > .34);
     if (bad && !SESS.wasBad) {
       SESS.bad++;
       /* 무너지는 순간 한 번만 — 낮은 이중 톤. 계속 울리면 잔소리가 됩니다 */
@@ -2121,12 +2313,13 @@ function tick(now) {
     if (SESS.wasBad && !bad) SESS.recoverT = 1.8;
     SESS.wasBad = bad;
     if (SESS.recoverT > 0) SESS.recoverT -= dt;
+    if (bad) SESS.tBad += dt; else if (warn) SESS.tWarn += dt;
     const fs = bad ? 'bad' : (SESS.recoverT > 0 ? 'recover' : warn ? 'warn' : 'good');
     if (fs !== SESS.face) { SESS.face = fs; face(player, fs); face(pipMe, fs); }
     const st = elPost.querySelector('.st'), bar = elPost.querySelector('.bar i');
     const pst = $('#pip .st');
     st.className = 'st' + (bad ? ' bad' : warn ? ' warn' : '');
-    st.textContent = bad ? '굽음' : SESS.recoverT > 0 ? '회복' : warn ? '주의' : '좋음';
+    st.textContent = idle ? '측정 준비' : bad ? '굽음' : SESS.recoverT > 0 ? '회복' : warn ? '주의' : '좋음';
     pst.className = 'st' + (bad ? ' bad' : warn ? ' warn' : '');
     pst.textContent = st.textContent;
     bar.style.width = Math.round((1 - SESS.k) * 100) + '%';
@@ -2169,8 +2362,16 @@ function tick(now) {
   if (acc > .7) {
     const f = Math.round(frames / acc);
     elFps.textContent = f + ' fps';
-    if (f < 28 && quality > .62) { quality = .62; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
-    else if (f > 55 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
+    /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
+       이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
+       느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
+    if (f < 30 && quality > .75) { quality = .75; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
+    else if (f < 22 && renderer.shadowMap.enabled) {
+      renderer.shadowMap.enabled = false;
+      scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+      toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 설정에서 되돌릴 수 있어요');
+    }
+    else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
     frames = 0; acc = 0;
   }
   renderer.render(scene, cam);
@@ -2199,6 +2400,7 @@ setTimeout(() => $('#load').classList.add('gone'), 260);
 toast('기린캠퍼스', '중앙 광장');
 
 idbarPaint();
+checkStreak();
 /* 로드가 끝나면: ① 지도 사진 한 장 ② 방 여섯을 미리 지어 둡니다.
    문에 닿고서야 지으면 그 순간 화면이 몇 백 ms 얼었습니다 —
    "들어갈 때 몇 초 깨진다" 의 정체가 이것입니다. */
@@ -2207,6 +2409,13 @@ setTimeout(shootMap, 900);
   setTimeout(() => { try { buildRoom(k); } catch {} }, 2400 + i * 650));
 window.__ready = true;
 window.__P = P;
+window.__aim = (x, z) => aimSun(x, z);
+window.__hit = (x, z) => hitCampus(x, z);
+window.__sess = () => SESS;
+window.__portals = () => CAMPUS.portals;
+window.__spotsCampus = () => SPOTS.campus;
+window.__panelKind = (k, t) => openPanel({ tag: '검사', title: t || k, panel: k, body: ['검사용 문구 한 줄.', '두 줄째.'] });
+window.__panelSize = () => { const e = $('#panel'); const r = e.getBoundingClientRect(); const bd = e.querySelector('.bd'); return { w: Math.round(r.width), h: Math.round(r.height), scrollH: bd.scrollHeight, clientH: bd.clientHeight, overflowX: bd.scrollWidth - bd.clientWidth, empty: bd.textContent.trim().length < 3 }; };
 window.__tp = (x, z, dir) => { P.x = x; P.z = z; if (dir != null) { P.dir = dir; yaw = dir; } };
 window.__enter = (zone) => { const p = CAMPUS.portals.find((q) => q.zone === zone); if (p) enterRoom(p); };
 window.__leave = () => leaveRoom();

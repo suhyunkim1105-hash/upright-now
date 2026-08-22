@@ -490,6 +490,8 @@ import { createNet } from './net.js';
 import { EMOTES, EMOTE_BY_KEY, playEmoteSound, playEmotePose, emoteIcon } from './emote.js';
 import { openGame, gameOpen } from './games.js';
 import { createPosture } from './posture-live.js';
+import { createSky, weatherKind } from './sky.js';
+import { createMusic, MUSIC } from './music.js';
 
 const $ = (s) => document.querySelector(s);
 /* 2D 판의 서버 저장·욕설 필터를 **그대로** 끌어옵니다 — 규칙을 두 벌 쓰면 어긋납니다 */
@@ -504,6 +506,7 @@ let SRV = null;                                  // window.WORLD_SAVE
 /* 자세 판정 엔진은 온보딩·메인과 **같은 파일**입니다. 사본을 만들면
    기준을 잡은 곳과 판정하는 곳의 계산이 조용히 갈라집니다. */
 injectScript('../shared/posture.js');
+injectScript('../shared/school-auth.js');
 injectScript('../shared/config.js')
   .then(() => injectScript('../openworld/save.js'))
   .then(() => {
@@ -593,9 +596,23 @@ campusRoot.traverse((o) => {
   if (o.isMesh && o.material.transparent && o.geometry.type === 'CylinderGeometry'
       && o.position.y > 2 && o.position.y < 3.2) { o.userData.y0 = o.position.y; waterJets.push(o); }
 });
+/* 하늘 · 불 · 날씨 — 배경색 하나로 고정이던 것을 시각과 날씨에 맡깁니다 */
+const SKY = createSky(THREE, { scene, sun, hemi, amb, campusRoot, roomRoot: null });
 { const t0 = performance.now(); const r = bake(campusRoot, { tile: 22 });
   campusRoot.add(r.group);
   console.log(`캠퍼스 굽기 ${r.before} → ${r.after} (${(performance.now() - t0) | 0}ms)`); }
+SKY.collect(campusRoot);
+/* 기상청 값을 한 번 받아 창밖과 하늘을 맞춥니다 — 창은 비 오는데 하늘이
+   맑으면 그 어긋남이 제일 먼저 눈에 띕니다. 30분마다 다시 봅니다. */
+function pullWeather() {
+  fetch('/api/weather').then((r) => (r.ok ? r.json() : null)).then((j) => {
+    wxData = j ? { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' } : null;
+    SKY.setWeather(weatherKind(wxData));
+  }).catch(() => {});
+}
+
+/* 호수에 사는 것들 — 같은 형식이라 한 줄로 묶습니다 */
+const LAKE_LIFE = [...(CAMPUS.swans || []), ...(CAMPUS.lotus || []), ...(CAMPUS.fish || [])];
 
 /* ══════ 2. 나 ══════ */
 const SPEC = Object.keys(SPECIES);
@@ -616,6 +633,10 @@ function payCoins(n) {
   SAVE.coins -= n; UI.save(); return true;
 }
 let curFit = (SAVE.fit | 0) % OUTFITS.length;   // NPC 프리셋 색만 씁니다
+
+/* 배경음악 — 2D 판이 쓰던 열 곡 그대로 */
+const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick: SAVE.bgmPick || 'auto' });
+
 
 const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
@@ -728,6 +749,7 @@ function buildRoom(key) {
   const grid = occupancy(g, size);
   const r = bake(g);
   g.add(r.group);
+  SKY.collect(g);
   const rec = { key, group: g, size, grid, seats };
   roomCache.set(key, rec);
   return rec;
@@ -827,6 +849,8 @@ let yaw = -Math.PI * .75, pitch = .55, dist = 11.5, camD = 11.5, drag = null;
 /* 마지막으로 시점을 직접 건드린 시각. 직접 돌린 직후에는 자동 추적을
    쉬게 합니다 — 내가 돌린 걸 카메라가 도로 되돌리면 싸우는 느낌이 납니다. */
 let camHold = 0;
+/* 사람이 정한 각도(pitch)와 **가림 때문에 잠깐 올라간 각도**를 따로 둡니다 */
+let camPitch = .55;
 function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; turned += .55; clampRoomYaw(); }
 cv.addEventListener('pointerdown', (e) => {
   if (first) { try { cv.requestPointerLock?.(); } catch {} return; }
@@ -849,6 +873,25 @@ cv.addEventListener('pointermove', (e) => {
   drag = { x: e.clientX, y: e.clientY };
 });
 addEventListener('pointerup', () => { drag = null; });
+/* 눌러서 걸어가기 — 2D 판에는 클릭 길찾기가 있었습니다. 여기서는 A* 대신
+   **바닥의 그 점까지 곧장** 갑니다. 벽에 닿으면 기존 미끄러짐이 받아 주고,
+   1.5초 동안 못 나아가면 스스로 그만둡니다(막다른 곳에서 계속 비비지 않게). */
+const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
+const _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _pt = new THREE.Vector3();
+let goTo = null, goStall = 0, goFrom = null;
+cv.addEventListener('pointerdown', (e) => { goFrom = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+cv.addEventListener('pointerup', (e) => {
+  if (!goFrom || first || panelOn || mapOn || SESS.on) { goFrom = null; return; }
+  const moved = Math.hypot(e.clientX - goFrom.x, e.clientY - goFrom.y);
+  const held = performance.now() - goFrom.t;
+  goFrom = null;
+  if (moved > 6 || held > 420) return;                 // 끌었으면 시점 돌리기입니다
+  _ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  _ray.setFromCamera(_ndc, cam);
+  if (!_ray.ray.intersectPlane(_plane, _pt)) return;
+  if (Math.hypot(_pt.x, _pt.z) > (room ? 99 : ISLAND_R)) return;
+  goTo = { x: _pt.x, z: _pt.z }; goStall = 0;
+});
 cv.addEventListener('wheel', (e) => { e.preventDefault();
   dist = clamp(dist + e.deltaY * .015, room ? 4.5 : 5.5, room ? 18 : 34); }, { passive: false });
 function toggleView() {
@@ -904,10 +947,17 @@ function panelFor(s) {
     case 'guide': return UI.guide();
     case 'privacy': return UI.privacy();
     case 'mypage': return UI.mypage({
-      coins: SAVE.coins, snd: SND.on,
+      coins: SAVE.coins, snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
       baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
       onDo: (k, again) => {
         if (k === 'snd') { sndToggle(); again(); }
+        else if (k === 'bgm') { BGM.setOn(!BGM.on); SAVE.bgm = BGM.on; UI.save(); again(); }
+        else if (k.startsWith('bgm:')) {
+          const id = k.slice(4); BGM.setPick(id); SAVE.bgmPick = id; UI.save(); again();
+        }
+        else if (k.startsWith('vol:')) {
+          BGM.setVol(+k.slice(4)); SAVE.bgmVol = BGM.vol; UI.save(); again();
+        }
         else if (k === 'retro') openPanel({ tag: '회고', title: '세션 회고', panel: 'retro' });
         else if (k === 'recal') { PZ.clearBaseline(); toast('기준을 지웠어요', '다음에 앉을 때 10초 동안 다시 잡습니다'); again(); }
         else if (k === 'wipe') {
@@ -966,6 +1016,7 @@ function panelFor(s) {
       },
     });
     case 'fame': return fameView();
+    case 'school': return schoolView();
     case 'weather': return weatherView();
     case 'bus': return UI.bus();
     case 'decor': return UI.decor({
@@ -1030,6 +1081,13 @@ function closePanel() {
 let dlgWho = null;
 function openDlg(n) {
   dlgWho = n;
+  /* 처음 만나는 사람에게는 한 번만 5코인 — 2D 판의 `once:npc_…` 규칙입니다.
+     캠퍼스를 한 바퀴 돌 이유가 되고, 두 번째부터는 안 줍니다. */
+  SAVE.metNpc = SAVE.metNpc || [];
+  if (!SAVE.metNpc.includes(n.d.name)) {
+    SAVE.metNpc.push(n.d.name); UI.save();
+    grantCoins(5, n.d.name + ' 과 처음 인사했어요');
+  }
   /* 말 걸면 **그 자리에 멈춥니다.** 전에는 걷던 사람이 그대로 걸어가 버려서
      창이 열리자마자 상대가 화면 밖으로 사라졌습니다. */
   n.paused = true;
@@ -1087,6 +1145,45 @@ function buyWear(id, slot, again) {
   } else if (payCoins(item[2])) done();
 }
 
+/* 학교 인증 — 학교 메일로 여섯 자리를 받습니다(shared/school-auth.js).
+   목록에서 고르기만 하면 아무나 남의 학교 점수를 올릴 수 있어서, 랭킹전이
+   학교 대항인 이상 여기는 인증이 있어야 말이 됩니다. */
+const SA = { state: SAVE.schoolVerifiedAt ? 'done' : 'idle', email: SAVE.schoolMail || '', err: '' };
+function schoolView() {
+  const A = window.SchoolAuth;
+  return UI.schoolAuth({
+    configured: !!(A && A.configured), state: SA.state, email: SA.email, err: SA.err,
+    onDo: (k, v, again) => {
+      SA.err = '';
+      if (k === 'back') { SA.state = 'idle'; again(); return; }
+      if (k === 'reset') { SA.state = 'idle'; SAVE.schoolVerifiedAt = 0; UI.save(); again(); return; }
+      if (k === 'send') {
+        const m = (v.email || '').toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+$/.test(m)) { SA.err = '메일 주소 형식이 아닙니다.'; again(); return; }
+        if (!/\.ac\.kr$|^.*@skku\.edu$/.test(m)) { SA.err = '학교 메일(ac.kr)만 됩니다.'; again(); return; }
+        SA.email = m; SA.state = 'sending'; again();
+        A.sendCode(m).then(() => { SA.state = 'code'; again(); })
+          .catch((e) => { SA.state = 'idle'; SA.err = '보내지 못했습니다 — 잠시 뒤에 다시 해 주세요.'; again(); });
+        return;
+      }
+      if (k === 'verify') {
+        const c = (v.code || '').replace(/\D/g, '');
+        if (c.length !== 6) { SA.err = '여섯 자리를 넣어 주세요.'; again(); return; }
+        A.verifyCode(SA.email, c).then((r) => {
+          if (!r) { SA.err = '번호가 맞지 않습니다.'; again(); return; }
+          const dom = SA.email.split('@')[1] || '';
+          const hit = SCHOOLS.find((q) => DOMAIN_OF[q.name] === dom);
+          SAVE.school = hit ? hit.name : (SAVE.school || dom);
+          SAVE.schoolMail = SA.email; SAVE.schoolVerifiedAt = Date.now();
+          UI.save(); idbarPaint();
+          SA.state = 'done'; again();
+          toast('학교 인증 끝', SAVE.school + ' 로 쌓입니다');
+        }).catch(() => { SA.err = '확인하지 못했습니다.'; again(); });
+      }
+    },
+  });
+}
+
 /* 명예의 전당 — 서버 집계를 실제로 부릅니다 */
 let fameRows;
 function fameView() {
@@ -1095,9 +1192,10 @@ function fameView() {
       fameRows = (r && r.ok && Array.isArray(r.data)) ? r.data : null;
       redrawPanel();
     }).catch(() => { fameRows = null; redrawPanel(); });
-    return UI.fame({ rows: undefined, myschool: SAVE.school });
+    return UI.fame({ rows: undefined, myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt });
   }
-  return UI.fame({ rows: SRV && SRV.configured ? fameRows : null, myschool: SAVE.school });
+  return UI.fame({ rows: SRV && SRV.configured ? fameRows : null, myschool: SAVE.school,
+    verified: !!SAVE.schoolVerifiedAt });
 }
 
 /* 학교 공지 — /api/notice 가 학교 RSS 를 받아 옵니다(2D 판과 같은 주소) */
@@ -1289,6 +1387,16 @@ function doEmote(k) {
   showEmoIcon(myEl, k);
 }
 let chatting = false, lastSay = 0;
+/* 도배 — 한 줄 간격(1.2초)만으로는 열 줄을 12초에 쏟습니다.
+   2D 판처럼 **창(10초)에 몇 줄인지**도 같이 봅니다. */
+const sayLog = [];
+function sayAllowed() {
+  const now = performance.now();
+  while (sayLog.length && now - sayLog[0] > 10000) sayLog.shift();
+  if (sayLog.length >= 5) { toast('천천히', '10초에 다섯 줄까지예요'); return false; }
+  if (now - lastSay < 1200) { toast('천천히', '도배는 안 돼요'); return false; }
+  sayLog.push(now); lastSay = now; return true;
+}
 function openChat() {
   chatting = true; elChatIn.classList.add('on'); chatBox.value = ''; chatBox.focus();
   dockOn('chat', true);
@@ -1304,8 +1412,7 @@ chatBox.addEventListener('keydown', (e) => {
     if (!t) { closeChat(); return; }
     /* 욕설 — 2D 판과 같은 korcen 사전을 씁니다 */
     try { if (KORCEN?.isProfane?.(t)) { toast('고운 말', '그 말은 보낼 수 없어요'); return; } } catch {}
-    if (performance.now() - lastSay < 1200) { toast('천천히', '도배는 안 돼요'); return; }
-    lastSay = performance.now();
+    if (!sayAllowed()) return;
     closeChat();
     pushChat(myNick(), t);
     net?.say(t);
@@ -1398,11 +1505,45 @@ function stopPlace(saveIt) {
   if (!PLACE.on) return;
   if (saveIt) {
     const [gx, gz] = placePos();
+    /* 놓기 전에 **문에서 방 전체에 닿는지** 봅니다. 2D 판의 dormConnected 와
+       같은 검사입니다 — 이게 없으면 문 앞을 가구로 막고 갇힙니다. */
+    if (!wouldStayWalkable(gx, gz)) {
+      toast('거기는 안 돼요', '문에서 방 안쪽으로 못 지나가게 됩니다');
+      PLACE.ghost = null; PLACE.on = false; return;
+    }
     SAVE.decor.push({ id: PLACE.id, x: +gx.toFixed(2), z: +gz.toFixed(2), ry: PLACE.ry });
     UI.save(); rebuildDorm();
     if (SRV?.configured) SRV.setDecor(SAVE.decor.map((d, i) => ({ room_id: 'dorm3d', item_id: d.id, x: Math.round(d.x * 10), y: Math.round(d.z * 10) })));
   }
   scene.remove(PLACE.ghost); PLACE.ghost = null; PLACE.on = false;
+}
+/* 이 자리에 놓아도 방이 이어져 있는지 — 문 앞에서 물을 채워 봅니다 */
+function wouldStayWalkable(gx, gz) {
+  const G = room?.grid; if (!G) return true;
+  const R = 0.7;                                   // 가구가 먹을 반경(대충)
+  const blocked = (x, z) => hitGrid(G, x, z) || (Math.abs(x - gx) < R && Math.abs(z - gz) < R);
+  const S = CELL * 2, nx = Math.ceil(G.w / S), nz = Math.ceil(G.d / S);
+  const seen = new Uint8Array(nx * nz);
+  const xy = (i, j) => [-G.w / 2 + (i + .5) * S, -G.d / 2 + (j + .5) * S];
+  const si = Math.floor((0 + G.w / 2) / S), sj = Math.floor((G.d / 2 - 1.4 + G.d / 2) / S);
+  const q = [[si, sj]]; seen[sj * nx + si] = 1;
+  let n = 0;
+  while (q.length) {
+    const [i, j] = q.pop(); n++;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const a = i + di, c = j + dj;
+      if (a < 0 || c < 0 || a >= nx || c >= nz || seen[c * nx + a]) continue;
+      const [x, z] = xy(a, c);
+      if (blocked(x, z)) continue;
+      seen[c * nx + a] = 1; q.push([a, c]);
+    }
+  }
+  /* 지금 걸을 수 있는 칸의 8할에 못 닿으면 방을 가른 것입니다 */
+  let free = 0;
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+    const [x, z] = xy(i, j); if (!hitGrid(G, x, z)) free++;
+  }
+  return free === 0 || n / free > .8;
 }
 function placePos() {
   const gx = Math.round((P.x + Math.sin(P.dir) * 1.4) * 2) / 2;
@@ -1597,15 +1738,14 @@ function enterRoom(portal) {
   roomRoot.clear(); roomRoot.add(rec.group);
   room = rec; roomRoot.visible = true; campusRoot.visible = false;
   NPC.forEach((n) => { n.rig.visible = false; n.el.style.display = 'none'; });
-  scene.background.set(0xE7EEF4);
-  hemi.intensity = .78; amb.intensity = .80; sun.intensity = 1.5;
+  SKY.apply(true);
   const sp = freeSpotNear(rec.grid, 0, rec.size.d / 2 - 3.4);
   P.x = sp.x; P.z = sp.z; P.dir = Math.PI; P.sp = 0;
   yaw = -Math.PI * .75; pitch = .64; dist = 10.6; camD = dist;
   P.back = portal;
   buildIndoor(rec.key);
   net?.setZone(rec.key);
-  sndZone(rec.key);
+  sndZone(rec.key); BGM.setZone(rec.key);
   const nm = ROOM_NAME[rec.key];
   setZone(nm[0], nm[1]); toast(nm[0], nm[1]);
   tutDone('enter');
@@ -1616,16 +1756,15 @@ function leaveRoom() {
   const p = P.back;
   roomRoot.visible = false; campusRoot.visible = true;
   NPC.forEach((n) => { n.rig.visible = true; });
-  scene.background.set(0xBFE4F2);
-  hemi.intensity = .85; amb.intensity = .70; sun.intensity = 1.95;
   room = null;
+  SKY.apply(false);
   const b = BUILDINGS.find((x) => x.zone === p.zone);
   P.x = p.x + Math.sin(b.ry) * 2.8; P.z = p.z + Math.cos(b.ry) * 2.8;
   P.dir = b.ry; yaw = b.ry + Math.PI; pitch = .55; dist = 11.5; camD = dist; P.sp = 0;
   inNPC.forEach((n) => n.el.remove()); inRoot.clear(); inNPC = [];
   net?.setZone('campus');
   setZone('캠퍼스', '중앙 광장'); toast('캠퍼스', p.name + ' 앞');
-  sndZone('campus');
+  sndZone('campus'); BGM.setZone('campus');
 }
 
 /* ══════ 10. 지도 ══════ */
@@ -1863,6 +2002,13 @@ function tutDone(k) {
 paintTut();
 
 /* 학교 열 곳 — 2D 판과 같은 목록·색입니다. 과잠 띠와 이름줄에 씁니다. */
+/* 학교 메일 도메인 — 인증한 주소에서 학교를 알아냅니다 */
+const DOMAIN_OF = {
+  '서울대학교': 'snu.ac.kr', '연세대학교': 'yonsei.ac.kr', '고려대학교': 'korea.ac.kr',
+  '성균관대학교': 'skku.edu', '한양대학교': 'hanyang.ac.kr', '중앙대학교': 'cau.ac.kr',
+  '경희대학교': 'khu.ac.kr', '이화여자대학교': 'ewha.ac.kr', '서강대학교': 'sogang.ac.kr',
+  '명지대학교': 'mju.ac.kr',
+};
 const SCHOOLS = [
   { name: '서울대학교', c: 0x00468B }, { name: '연세대학교', c: 0x0F4C81 },
   { name: '고려대학교', c: 0x862633 }, { name: '성균관대학교', c: 0x00563F },
@@ -2066,7 +2212,20 @@ function tick(now) {
     if (key.KeyD || key.ArrowRight) ix += 1;
     if (stick) { ix += stick.dx; iz -= stick.dy; }
   }
-  const mag = Math.hypot(ix, iz);
+  let mag = Math.hypot(ix, iz);
+  if (mag > .06) goTo = null;                          // 키를 잡으면 자동 걷기는 그만둡니다
+  if (goTo && !SESS.on && !CSIT.on) {
+    const dx = goTo.x - P.x, dz = goTo.z - P.z, d = Math.hypot(dx, dz);
+    if (d < .55) goTo = null;
+    else {
+      /* 화면 기준 입력으로 되돌립니다 — 아래 계산이 한 벌만 있게 하려고요 */
+      const c = Math.cos(yaw), sn = Math.sin(yaw);
+      ix = -dx / d * c + dz / d * sn * 0;               // 아래에서 다시 풀므로 여기선 방향만
+      iz = 0;
+      P.dirWant = Math.atan2(dx / d, dz / d);
+      mag = 1;
+    }
+  }
   const run = (key.ShiftLeft || key.ShiftRight) ? 1.75 : 1;
   const speed = (room ? 3.9 : 6.2) * run;
   const px = P.x, pz = P.z;
@@ -2075,7 +2234,9 @@ function tick(now) {
     /* 앞 = (sin yaw, cos yaw), 오른쪽 = 앞×위 = (-cos yaw, sin yaw).
        전 판은 오른쪽 부호가 반대라 A 와 D 가 뒤바뀌어 있었습니다. */
     const s = Math.sin(yaw), c = Math.cos(yaw);
-    const wx = -ix * c + iz * s, wz = ix * s + iz * c;
+    let wx = -ix * c + iz * s, wz = ix * s + iz * c;
+    /* 눌러서 걸어가는 중이면 방향은 목표가 정합니다 */
+    if (goTo) { wx = Math.sin(P.dirWant); wz = Math.cos(P.dirWant); }
     const nx = P.x + wx * speed * dt, nz = P.z + wz * speed * dt;
     if (!hit(nx, P.z)) P.x = nx;
     if (!hit(P.x, nz)) P.z = nz;
@@ -2092,6 +2253,8 @@ function tick(now) {
     P.sp = Math.max(0, P.sp - dt * 10);
   }
   const step = Math.hypot(P.x - px, P.z - pz);
+  /* 1.5초 동안 거의 못 나아가면 자동 걷기를 접습니다 */
+  if (goTo) { goStall = step < .01 * (dt * 60) ? goStall + dt : 0; if (goStall > 1.5) goTo = null; }
   P.moved += step;
   P.walk += step / 1.15;                    // 보폭 1.15 — 발이 안 미끄러집니다
   if (SESS.on || CSIT.on) { ix = 0; iz = 0; }
@@ -2267,16 +2430,25 @@ function tick(now) {
        검사 결과가 프레임마다 널뛰어서, 걷는 내내 줌이 들쭉날쭉했습니다.
        목표 거리만 계산해 두고 실제 거리는 감쇠로 따라갑니다 —
        가려지면 빠르게(벽 속을 보지 않게), 풀리면 천천히. */
-    let want = dist;
-    const sx = -Math.sin(yaw), sz = -Math.cos(yaw), cp = Math.cos(pitch);
+    let want = dist, wantPitch = pitch;
+    const sx = -Math.sin(yaw), sz = -Math.cos(yaw), cp = Math.cos(camPitch);
+    let blocked = 0;
     for (let t = 1.6; t <= dist; t += .5)
-      if (hitCam(P.x + sx * cp * t, P.z + sz * cp * t)) { want = Math.max(room ? 2.4 : 3.4, t - .8); break; }
+      if (hitCam(P.x + sx * cp * t, P.z + sz * cp * t)) { blocked = t; break; }
+    if (blocked) {
+      /* 가리면 **먼저 위로 올라갑니다.** 당기기부터 하면 건물 옆을 지날
+         때마다 카메라가 뒤통수에 딱 붙어서 앞이 하나도 안 보입니다 —
+         "움직이기 힘들다" 의 마지막 조각입니다. 올라가도 안 되면 그때 당깁니다. */
+      wantPitch = Math.min(1.16, pitch + .5);
+      want = Math.max(room ? 4.2 : 6.5, blocked - .6);
+    }
+    camPitch += (wantPitch - camPitch) * Math.min(1, dt * (wantPitch > camPitch ? 7 : 2.6));
     /* 가리면 빠르게 당기고, 풀리면 **적당히 빠르게** 물러납니다.
        2.2 는 0.45초짜리라 건물을 스쳐 지나갈 때마다 카메라가 코앞에
        붙어 있는 시간이 길었습니다. */
     camD += (want - camD) * Math.min(1, dt * (want < camD ? 14 : 5));
     const d = camD;
-    const h = Math.sin(pitch) * d, r = Math.cos(pitch) * d;
+    const h = Math.sin(camPitch) * d, r = Math.cos(camPitch) * d;
     cam.position.lerp(v3.set(P.x + sx * r, 1.2 + h, P.z + sz * r), 1 - Math.pow(.0009, dt));
     cam.lookAt(P.x, 1.35, P.z);
   }
@@ -2343,6 +2515,24 @@ function tick(now) {
     PLACE.ghost.rotation.y = PLACE.ry;
   }
 
+  /* ── 하늘 · 날씨 ── */
+  SKY.apply(!!room);
+  if (!room) SKY.tick(dt, P.x, P.z);
+
+  /* ── 호수와 천막 ── 백조·연잎·물고기는 상태를 안 들고 시각에서 자리를
+     계산합니다. 그래야 탭이 멈췄다 돌아와도 어긋날 것이 없습니다. */
+  if (!room) {
+    for (const w of LAKE_LIFE) {
+      const a = T * w.sp + w.phase;
+      w.mesh.position.x = w.cx + Math.cos(a) * w.rx;
+      w.mesh.position.z = w.cz + Math.sin(a * .61 + w.phase) * w.rz;
+      w.mesh.position.y = w.y0 + Math.sin(T * 1.3 + w.phase) * .03;
+      if (w.heading) w.mesh.rotation.y = Math.sin(a) < 0 ? 0 : Math.PI;
+    }
+    for (const f of (CAMPUS.flutter || []))
+      f.mesh.rotation[f.axis] = Math.sin(T * 1.7 + f.phase) * f.amp;
+  }
+
   /* ── 분수 ── */
   if (!room) waterJets.forEach((j, i) => {
     j.scale.y = 1 + Math.sin(T * 3.1 + i) * .09;
@@ -2401,6 +2591,9 @@ toast('기린캠퍼스', '중앙 광장');
 
 idbarPaint();
 checkStreak();
+if (SAVE.hour !== undefined && SAVE.hour !== null) SKY.setHour(SAVE.hour);
+pullWeather();
+setInterval(pullWeather, 1800000);
 /* 로드가 끝나면: ① 지도 사진 한 장 ② 방 여섯을 미리 지어 둡니다.
    문에 닿고서야 지으면 그 순간 화면이 몇 백 ms 얼었습니다 —
    "들어갈 때 몇 초 깨진다" 의 정체가 이것입니다. */
@@ -2410,6 +2603,9 @@ setTimeout(shootMap, 900);
 window.__ready = true;
 window.__P = P;
 window.__aim = (x, z) => aimSun(x, z);
+/* 시연에서 밤을 보여 주려면 __hour(21). 되돌리려면 __hour(null). */
+window.__hour = (h) => { SKY.setHour(h); SAVE.hour = h; UI.save(); };
+window.__wx = (k) => SKY.setWeather(k);
 window.__hit = (x, z) => hitCampus(x, z);
 window.__sess = () => SESS;
 window.__portals = () => CAMPUS.portals;

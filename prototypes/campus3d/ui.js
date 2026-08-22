@@ -340,10 +340,24 @@ export function fame(ctx) {
   else body = '<ul class="feed">' + ctx.rows.map((r, i) =>
     `<li><b>${i + 1}위</b><span>${esc(r.school || r.name || '')} — ${
       Math.round((r.score ?? r.avg ?? 0) * 10) / 10}점${r.n ? ` · ${r.n}명` : ''}</span></li>`).join('') + '</ul>';
+  /* 시즌 — 90일 한 바퀴. 언제 끝나는지 안 보이면 랭킹전이 아니라 그냥 표입니다 */
+  const S = season();
+  const head = `<div class="kv"><span>${S.n}시즌</span><b>${S.left}일 남음</b></div>
+    <div class="bars" style="height:10px;margin:6px 0 14px">
+      <div class="bar" style="flex:${S.done}"><i style="width:100%;height:100%;background:#2DD4BF"></i></div>
+      <div class="bar" style="flex:${100 - S.done}"><i style="width:100%;height:100%;background:rgba(34,42,51,.12)"></i></div>
+    </div>`;
   return {
-    tag: '명예의 전당', title: '학교 순위', html: body
-      + (ctx.myschool ? `<p class="note">내 학교 — <b>${esc(ctx.myschool)}</b>. 오늘 앉은 시간이 여기에 쌓입니다.</p>`
-        : '<p class="note">옷장(C)에서 학교를 고르면 내 시간이 학교 점수로 쌓입니다.</p>'),
+    tag: '명예의 전당', title: '이번 시즌 랭킹전', html: head + body
+      + (ctx.myschool ? `<p class="note">내 학교 — <b>${esc(ctx.myschool)}</b>${
+          ctx.verified ? ' <b>· 인증됨</b>' : ' <i style="font-style:normal;color:#8B94A1">· 아직 메일 인증 전</i>'}. 오늘 앉은 시간이 여기에 쌓입니다.</p>`
+        : '<p class="note">학생회관 창구에서 학교를 인증하면 내 시간이 학교 점수로 쌓입니다.</p>')
+      + `<div class="note"><b>무엇으로 순위를 매기나</b><br>
+        참여 시간(그 학교 사람들이 카메라 앞에서 실제로 앉아 있던 시간의 합)과
+        회복 횟수(무너졌다가 다시 돌아온 횟수의 합)입니다.
+        회복을 같이 세는 이유가 있어요 — 앉은 시간만 보면 <b>오래 버틴 사람만 이깁니다.</b>
+        회복은 무너졌다는 걸 전제로 하는 지표라, 고쳐 앉는 행동 자체에 값을 매깁니다.<br>
+        <b>개인 순위는 만들지 않습니다.</b> 자세로 사람을 줄 세우지 않겠다는 게 이 서비스의 원칙입니다.</div>`,
   };
 }
 
@@ -559,7 +573,17 @@ export function mypage(ctx) {
       </div>
       <div data-pane="set" style="display:none">
         <div class="lbl">소리</div>
-        <div class="wr"><button data-do="snd" class="${ctx.snd ? 'on' : ''}">장소 소리 ${ctx.snd ? '켬' : '끔'}</button></div>
+        <div class="wr"><button data-do="snd" class="${ctx.snd ? 'on' : ''}">장소 소리 ${ctx.snd ? '켬' : '끔'}</button>
+          <button data-do="bgm" class="${ctx.bgm ? 'on' : ''}">배경음악 ${ctx.bgm ? '켬' : '끔'}</button></div>
+        <div class="lbl">음량</div>
+        <div class="wr">${[0, .25, .45, .7, 1].map((v) =>
+          `<button data-do="vol:${v}" class="${Math.abs((ctx.bgmVol ?? .45) - v) < .01 ? 'on' : ''}">${
+            v === 0 ? '없음' : Math.round(v * 100) + '%'}</button>`).join('')}</div>
+        <div class="lbl">곡</div>
+        <div class="wr"><button data-do="bgm:auto" class="${ctx.bgmPick === 'auto' ? 'on' : ''}">장소 따라</button>${
+          Object.entries(ctx.music || {}).map(([id, m]) =>
+            `<button data-do="bgm:${id}" class="${ctx.bgmPick === id ? 'on' : ''}" title="${esc(m.by)}">${esc(m.name)}</button>`).join('')}</div>
+        <p class="note">곡은 전부 CC0 입니다. 만든 사람은 단추에 손을 올리면 나옵니다.</p>
         <div class="lbl">기록</div>
         <div class="wr"><button data-do="wipe">이 기기 기록 전체 지우기</button></div>
         <p class="note">지우면 되돌릴 수 없습니다 — 되돌릴 열쇠(이메일·비밀번호)를 애초에 안 받습니다.
@@ -629,5 +653,66 @@ export function privacy() {
         오가는 요청이 전부 보입니다. 모델을 한 번 받은 뒤 랜선을 뽑아도 자세 판정은 그대로 돕니다.</div>
       <p class="note">회원가입이 없습니다. 이메일·전화번호·비밀번호를 받지 않고,
         다른 사람에게 보이는 건 닉네임과 캐릭터뿐입니다. 화면 공유 기능 자체가 없습니다.</p>`,
+  };
+}
+
+/* 시즌 — 90일. 시작일을 코드에 박아 두면 다음 시즌에 또 고쳐야 하므로
+   에폭에서 계산합니다. 2D 판의 seasonNow 와 같은 기준(90일)입니다. */
+const SEASON_EPOCH = Date.UTC(2026, 5, 1);
+export function season() {
+  const day = 86400000, len = 90;
+  const past = Math.max(0, Math.floor((Date.now() - SEASON_EPOCH) / day));
+  const n = Math.floor(past / len) + 1;
+  const inSeason = past % len;
+  return { n, day: inSeason + 1, left: len - inSeason, done: Math.round((inSeason / len) * 100) };
+}
+
+/* ---------- 학교 메일 인증 ----------
+   학교를 목록에서 고르기만 하면 아무나 남의 학교 점수를 올릴 수 있습니다.
+   랭킹전이 학교 대항인 이상 여기는 인증이 있어야 말이 됩니다. */
+export function schoolAuth(ctx) {
+  const st = ctx.state;                    // idle · sending · code · done · off
+  const school = SAVE.school || '';
+  let body;
+  if (!ctx.configured) {
+    body = `<p>이 판본에는 메일 서버 설정이 없어 인증을 못 합니다.</p>
+      <p class="note">배포본에서는 <b>학교 메일(ac.kr)</b>로 여섯 자리 번호를 보내고,
+      그 번호를 여기 넣으면 학교가 정해집니다. 지금은 옷장(C)에서 목록으로 고를 수 있습니다.</p>`;
+  } else if (st === 'done') {
+    body = `<div class="card-id"><div class="ph" style="display:grid;place-items:center;font-size:30px">🎓</div>
+        <div class="info"><b>${esc(school || '학교')}</b>
+        <span>${SAVE.schoolVerifiedAt ? new Date(SAVE.schoolVerifiedAt).toLocaleDateString('ko-KR') : ''} 인증됨</span>
+        <span>이제 앉은 시간이 이 학교 점수로 쌓입니다.</span></div></div>
+      <div class="wr" style="margin-top:12px"><button data-do="reset">다른 학교로 다시 인증</button></div>`;
+  } else if (st === 'code') {
+    body = `<p><b>${esc(ctx.email)}</b> 로 여섯 자리를 보냈습니다. 메일함을 열어 주세요.</p>
+      <input class="nick" id="scode" inputmode="numeric" maxlength="6" placeholder="6자리 번호">
+      <div class="wr" style="margin-top:10px"><button data-do="verify">확인</button>
+        <button data-do="back">주소 다시 넣기</button></div>
+      ${ctx.err ? `<p class="note" style="color:#C0392B">${esc(ctx.err)}</p>` : ''}
+      <p class="note">링크가 아니라 번호를 쓰는 이유 — 메일 앱이 링크를 자기 브라우저에서 열면
+      로그인이 <b>그쪽</b>에 생겨서, 이 탭은 로그인 안 된 화면 그대로입니다.</p>`;
+  } else {
+    body = `<p>학교 메일 주소를 넣어 주세요. <b>ac.kr</b> 로 끝나는 주소만 됩니다.</p>
+      <input class="nick" id="smail" type="email" placeholder="학번@학교.ac.kr" value="${esc(ctx.email || '')}">
+      <div class="wr" style="margin-top:10px"><button data-do="send" ${st === 'sending' ? 'disabled' : ''}>
+        ${st === 'sending' ? '보내는 중…' : '번호 받기'}</button></div>
+      ${ctx.err ? `<p class="note" style="color:#C0392B">${esc(ctx.err)}</p>` : ''}
+      <p class="note">주소는 학교를 알아내는 데만 씁니다. 메일함을 읽지 않고,
+      광고도 보내지 않습니다. 다른 사람에게 보이는 건 닉네임과 캐릭터뿐입니다.</p>`;
+  }
+  return {
+    tag: '창구', title: '학교 인증', html: body,
+    on(root, again) {
+      const bd = root.querySelector('.bd');
+      bd.querySelectorAll('input').forEach((i) => { i.onkeydown = (e) => e.stopPropagation(); });
+      bd.onclick = (e) => {
+        const b = e.target.closest('button[data-do]'); if (!b || b.disabled) return;
+        ctx.onDo(b.dataset.do, {
+          email: bd.querySelector('#smail')?.value?.trim(),
+          code: bd.querySelector('#scode')?.value?.trim(),
+        }, again);
+      };
+    },
   };
 }

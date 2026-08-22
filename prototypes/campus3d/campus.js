@@ -41,6 +41,78 @@ export const BUILDINGS = [
 const PLAZA_R = 12;
 const HALF = 40;                       // 섬 반지름
 
+/* ══════════════════════════════════════════════════════════
+   야외 구역 셋 — 운동장 · 호수 · 동아리 거리
+   2D 판(prototypes/openworld)에는 있는데 여기만 없던 것들입니다.
+
+   자리를 고르는 데 시간을 거의 다 썼습니다. 섬은 이미 꽉 차 있습니다 —
+   광장 반지름 12, 건물 여섯이 19~27, 건물마다 16칸짜리 앞마당 돌판,
+   광장에서 문까지 뻗은 대로 일곱, 그리고 반지름 30 을 도는 산책로.
+   재어 보니 셋이 들어갈 만한 땅은 세 군데뿐이었습니다.
+
+     · 북서 안쪽(φ225°, r21.7) — 대로가 안 지나가는 **유일한** 사분면입니다.
+       가장 넓으니 가장 큰 것(트랙)이 갑니다.
+     · 남서 바깥(φ135°, r35.4) — 산책로와 바다 사이 띠. 좁고 길어서
+       못을 옆으로 눕히면 딱 맞고, 산책로가 그대로 물가 길이 됩니다.
+     · 남동 바깥(φ67°,  r34.8) — 정문에서 나오면 오른쪽. 장은 원래 문
+       옆에 섭니다. 남동 **안쪽**은 도서관 앞마당과 정문 대로가 다 먹었습니다.
+
+   셋 다 **섬 둘레에 맞춰** 세웁니다 — 로컬 +x 는 접선, +z 는 섬 안쪽.
+   섬이 원판이라 세계축으로 놓으면 구역마다 바다를 등지는 각도가 달라지는데,
+   접선/안쪽으로 적으면 어느 각도로 옮겨도 앞뒤가 그대로고 충돌 상자도
+   ry 하나로 끝납니다.
+   ══════════════════════════════════════════════════════════ */
+
+/* 구역이 차지하는 땅. 나무 · 잔디 얼룩 · 벚나무는 무작위로 뿌리는 것이라
+   여기 적어 두지 않으면 트랙 한복판에 나무가 서고 못 위에 잔디가 뜹니다.
+   실제 넓이보다 넉넉하게 잡습니다 — 가장자리에 나무가 반쯤 걸치는 것도
+   구역 밖에서 보면 구역이 찌그러진 것으로 보입니다. */
+export const ZONES = [
+  { deg: 225, r: 21.7, a:  9.6, b: 8.2 },   // 운동장
+  { deg: 135, r: 35.4, a: 11.5, b: 5.4 },   // 호수
+  { deg:  67, r: 34.8, a: 10.5, b: 5.2 },   // 동아리 거리
+];
+export function inZone(x, z, pad = 0) {
+  for (const Z of ZONES) {
+    const A = Z.deg * Math.PI / 180, ca = Math.cos(A), sa = Math.sin(A);
+    const dx = x - ca * Z.r, dz = z - sa * Z.r;
+    const lx = -sa * dx + ca * dz, lz = -ca * dx - sa * dz;
+    if ((lx / (Z.a + pad)) ** 2 + (lz / (Z.b + pad)) ** 2 < 1) return true;
+  }
+  return false;
+}
+/* 구역 그룹 — 로컬 +x 접선, +z 섬 안쪽 */
+function zoneAt(g, deg, r) {
+  const a = deg * Math.PI / 180;
+  const p = new THREE.Group();
+  p.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
+  p.rotation.y = -(a + Math.PI / 2);
+  g.add(p);
+  return p;
+}
+/* 로컬 좌표를 섬 좌표로. 충돌 상자는 buildCampus 가 섬 좌표로 들고 있어서
+   넣기 전에 한 번 옮겨 줘야 합니다. */
+function zoneXZ(deg, r, lx, lz) {
+  const a = deg * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a);
+  return [ca * r - sa * lx - ca * lz, sa * r + ca * lx - sa * lz];
+}
+const zoneRY = (deg) => -(deg * Math.PI / 180 + Math.PI / 2);
+
+/* 바닥에 까는 판 — 타원 하나, 네모 하나.
+   섬 잔디 윗면이 y=0.1 이라 그 위부터 씁니다. **겹치는 판은 반드시 높이를
+   어긋나게** 받습니다. 같은 높이로 겹치면 카메라가 조금만 움직여도 어느
+   면을 그릴지 뒤집혀 바닥이 껌뻑입니다 — 잔디 얼룩과 산책로에서 이미 한 번
+   잡은 버그입니다. 여기서는 한 겹당 0.01 씩. */
+function layEll(p, rx, rz, y, mat, seg = 56) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, .1, seg), mat);
+  m.position.y = y; m.scale.set(rx, 1, rz);
+  m.castShadow = false; m.receiveShadow = true; p.add(m); return m;
+}
+function layBox(p, w, d, y, mat, x, z, ry = 0) {
+  const m = box(p, w, .1, d, .04, mat, x, y, z);
+  m.rotation.y = ry; m.castShadow = false; return m;
+}
+
 /* 씨 고정 난수 — 나무 자리가 새로 고칠 때마다 바뀌면 안 됩니다 */
 let _s = 20260821;
 const rnd = () => (_s = (_s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
@@ -67,6 +139,9 @@ function ground(g) {
     const a = rnd() * Math.PI * 2, r = 6 + rnd() * (HALF - 13);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (Math.hypot(x, z) < PLAZA_R + 2) continue;
+    /* 구역 바닥은 구역이 직접 깝니다. 얼룩이 그 밑에 깔리면 판 가장자리
+       마다 초록이 삐져나와 판이 잘려 보입니다. */
+    if (inZone(x, z, 1.2)) continue;
     const w = 3 + rnd() * 6;
     flat(box(g, w, .14, w * (.6 + rnd() * .7), 1.4,
              M(rnd() < .5 ? PAL.grassDark : PAL.grassLight, .86), x, .04 + i * .0005, z));
@@ -414,6 +489,9 @@ export function flagPole(g, x, z, col = 0x3F6BA8) {
     bevelThickness: .03, bevelSegments: 2, steps: 1 });
   const m = new THREE.Mesh(ge, M(col, .62));
   m.position.set(.06, 4.6, 0); m.castShadow = true; p.add(m);
+  /* 천은 굽지 않고 밖으로 꺼내 둡니다 — 깃발이 안 움직이면 그건 깃발이
+     아니라 장대에 붙인 판입니다. 움직이는 일은 index.html 이 합니다. */
+  m.userData.noBake = true; p.userData.flag = m;
   const k = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), M(PAL.gold, .35));
   k.position.y = 6.24; p.add(k);
   return p;
@@ -443,6 +521,265 @@ export function stumpSet(g, x, z) {
   return p;
 }
 
+/* ---------- 천막 ----------
+   2D 는 뼈대와 천을 따로 구워 **천만** 바람에 눕혔습니다. 3D 도 같습니다 —
+   천 그룹의 회전축을 용마루에 두면 회전 한 번으로 자락이 들리고, 기둥과
+   판매대는 제자리에 있습니다. 파는 자리가 같이 흔들리면 장이 아니라
+   천막이 무너지는 것으로 보입니다. */
+function tentStall(p, x, z, ry, cloth, clothDark) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; p.add(g);
+  [-1, 1].forEach((sx) => [-1, 1].forEach((sz) =>
+    cyl(g, .085, .105, 2.5, 8, M(PAL.woodDark, .74), sx * 1.55, 1.25, sz * .72)));
+  box(g, 3.3, .52, 1.15, .08, M(PAL.wood, .72), 0, 1.02, .4);          // 판매대
+  box(g, 3.42, .12, 1.28, .05, M(0xC99A64, .68), 0, 1.32, .4);
+  box(g, 3.3, .84, .12, .05, M(PAL.woodDark, .74), 0, .44, .95);
+  /* 판 위에 물건이 없으면 장이 아니라 빈 천막입니다 */
+  [[-1.05, PAL.teal], [-.35, PAL.gold], [.4, PAL.blue], [1.1, PAL.pink]].forEach(([gx, gc], i) =>
+    box(g, .4, .32, .32, .06, M(gc, .6), gx, 1.54, .4 - (i % 2) * .28));
+  /* 천 — 용마루가 그룹 원점에 오도록 지붕을 아래로 내려 답니다 */
+  const cl = new THREE.Group(); cl.position.set(0, 3.25, 0); g.add(cl);
+  cl.userData.noBake = true;
+  prism(cl, 2.9, .95, 4.2, M(cloth, .78), 0, -.95, 0, .07).rotation.y = Math.PI / 2;
+  box(cl, 4.4, .17, .19, .06, M(0x6B4423, .74), 0, -.02, 0);           // 용마루
+  /* 자락 — 아래 가장자리가 물결이어야 천으로 읽힙니다.
+     굽지 않는 그룹이라 조각 하나가 드로우콜 하나입니다. 다섯이면 물결로
+     읽히고 여덟은 그냥 비쌉니다. */
+  [-1, 1].forEach((sz) => {
+    for (let i = 0; i < 5; i++) {
+      const b = new THREE.Mesh(new THREE.SphereGeometry(.23, 8, 6), M(i % 2 ? cloth : clothDark, .78));
+      b.position.set(-1.72 + i * .86, -.97, sz * 1.43); b.scale.set(1, .7, .6); cl.add(b);
+    }
+  });
+  g.userData.cloth = cl;
+  return g;
+}
+
+/* ---------- 운동장 ----------
+   2D 의 paintTrack 을 그대로 옮깁니다 — 바깥 연석 · 우레탄 · 레인 선 ·
+   인필드 · 잔디깎이 자국 · 출발선. 레인 선이 없으면 붉은 도넛입니다.
+   트랙은 **밟고 다니는 것**이라 충돌 상자에 안 넣습니다. 넣는 것은
+   깃대와 벤치뿐입니다. */
+function trackField(g, ctx, deg, r, A, B) {
+  const p = zoneAt(g, deg, r), ry = zoneRY(deg);
+  const put = (lx, lz, w, d) => { const [x, z] = zoneXZ(deg, r, lx, lz); ctx.solid(x, z, w, d, ry); };
+  const ure = M(0xBF563C, .88), ureAlt = M(0xB44F36, .88), lane = M(0xF0E7D8, .82);
+  layEll(p, A + .55, B + .55, .10, M(0x7E8C6A, .86));          // 바깥 연석
+  layEll(p, A, B, .11, ure);                                   // 우레탄
+  /* 레인 — 흰 타원을 깔고 한 겹 안을 다시 우레탄으로 덮어 선만 남깁니다.
+     2D 가 쓴 방법 그대로입니다. 선을 따로 그리면 타원 곡률이 안 맞습니다. */
+  for (let k = 0; k < 4; k++) {
+    const ax = A - .3 - k * .72, bz = B - .26 - k * .62;
+    layEll(p, ax, bz, .12 + k * .02, lane);
+    layEll(p, ax - .14, bz - .12, .13 + k * .02, k % 2 ? ureAlt : ure);
+  }
+  const IX = A - 3.1, IZ = B - 2.7;
+  layEll(p, IX + .28, IZ + .28, .20, M(0xE8DFCB, .84));        // 안쪽 연석
+  layEll(p, IX, IZ, .21, M(0x57A053, .84));                    // 인필드
+  /* 잔디깎이 자국 — 이게 있어야 운동장이지, 없으면 초록 타원입니다 */
+  for (let i = -3; i <= 3; i++) {
+    const t = i / 3.6, w = Math.sqrt(Math.max(0, 1 - t * t));
+    layBox(p, .46, IZ * 2 * w - .3, .22, M(0x8FD08A, .84), IX * t, 0);
+  }
+  layBox(p, .26, B - IZ - .5, .23, M(0xFFF6E8, .82), 0, (B + IZ) / 2);   // 출발선
+
+  /* 깃대 둘 — 트랙 양 끝. 2D 도 트랙 목에 깃대를 세워 멀리서 "여기가
+     운동장" 을 알렸습니다. 천은 바람에 눕습니다(ctx.flutter). */
+  [[-(A + 1.3), 0x3F6BA8, 0], [A + 1.3, 0xE8735C, 1.7]].forEach(([lx, col, ph]) => {
+    const fp = flagPole(p, lx, 0, col);
+    ctx.flutter.push({ mesh: fp.userData.flag, phase: ph, amp: .17, axis: 'y' });
+    put(lx, 0, 1.2, 1.2);
+  });
+  /* 벤치 넷 — 안쪽 둘 · 바깥 둘.
+     안쪽 벤치를 트랙 모서리(로컬 x ±5)에 놓으면 광장 화단(반지름 15.6)
+     과 겹칩니다. 화단은 광장 것이라 못 옮기니 벤치를 가운데로 모읍니다. */
+  [[-2.2, B + 1.6, Math.PI], [2.2, B + 1.6, Math.PI],
+   [-5.4, -(B - .8), 0], [5.4, -(B - .8), 0]].forEach(([lx, lz, br]) => {
+    benchOut(p, lx, lz, br); put(lx, lz, 3.4, 1.2);
+  });
+  return p;
+}
+
+/* ---------- 호수 ----------
+   2D 의 paintPond + LAKE + drawLakeLotus/Fish/Swan 을 옮깁니다.
+   2D 가 못을 **곧은 네모**로 판 이유는 오토타일이 대각선에서 조각을 못
+   물려서였습니다. 3D 에는 그 제약이 없으니 타원으로 팝니다 — 산책로와
+   바다 사이 띠가 좁고 길어서 옆으로 누운 타원이 그 땅에 딱 맞고,
+   덕분에 반지름 30 산책로가 그대로 물가 길이 됩니다.
+
+   물은 못 건너야 합니다. 타원을 네모 여럿으로 근사해 충돌 상자에 넣되
+   **낚시터 밑은 비웁니다** — 데크 위에 못 서면 그냥 물가에 놓인 그림입니다
+   (2D 도 같은 이유로 데크를 anchor 0 으로 뒀습니다). */
+function lakePond(g, ctx, deg, r, WA, WB) {
+  const p = zoneAt(g, deg, r), ry = zoneRY(deg);
+  const put = (lx, lz, w, d, rr = ry) => { const [x, z] = zoneXZ(deg, r, lx, lz); ctx.solid(x, z, w, d, rr); };
+  const RA = WA + .85, RB = WB + .7;
+  layEll(p, RA, RB, .10, M(PAL.stoneDark, .82));               // 돌 테
+  layEll(p, RA - .38, RB - .32, .11, M(0x8E93A6, .8));
+  layEll(p, WA, WB, .12, M(PAL.waterDeep, .3));                // 깊은 쪽 — 테두리 그늘
+  layEll(p, WA - .3, WB - .24, .13, M(PAL.water, .22,
+    { transparent: true, opacity: .84, emissive: 0x2A7C9E, emissiveIntensity: .1 }));
+
+  /* 물 충돌 — 타원을 세로 슬래브 열넷으로 **내접**시킵니다. 바깥 모서리
+     높이로 자르면 상자가 물 밖 잔디로 안 삐져나가고, 대신 양 끝에 얇게
+     남는 틈은 사람 반지름(0.46)이 덮습니다. 가운데 가로 띠 하나를 더 얹어
+     뾰족한 끝까지 막습니다. */
+  const NS = 14, DECK_X = 1.3, DECK_Z = 1.15;
+  for (let k = 0; k < NS; k++) {
+    const u0 = -WA + (k * 2 * WA) / NS, u1 = u0 + (2 * WA) / NS;
+    const uo = Math.max(Math.abs(u0), Math.abs(u1));
+    const hz = WB * Math.sqrt(Math.max(0, 1 - (uo / WA) ** 2));
+    if (hz < .25) continue;
+    const uc = (u0 + u1) / 2;
+    const zTop = Math.abs(uc) < DECK_X ? Math.min(hz, DECK_Z) : hz;   // 낚시터 밑은 비웁니다
+    put(uc, (zTop - hz) / 2, u1 - u0, zTop + hz);
+  }
+  put(0, 0, WA * 1.96, 1.1);
+
+  /* 연잎 · 물고기 · 백조 — 자리를 여기서 안 정합니다.
+     2D 의 LAKE.at 과 같은 생각입니다: 상태를 안 들고 시각에서 바로 세면
+     탭이 가려져 프레임을 건너뛰어도 돌아왔을 때 자리가 안 튑니다(그건 물
+     위를 순간이동하는 것으로 보입니다). 여기서는 **떠 있는 것만 만들어
+     내보내고** 매 프레임 옮기는 일은 index.html 이 합니다. */
+  /* 도는 **중심**을 같이 내보냅니다. 중심이 없으면 모두가 못 한가운데를
+     돌아서 백조 셋이 한 점에 겹칩니다. 그리고 처음 자리를 t=0 값으로
+     미리 놓아 둡니다 — 배선 전에도, 첫 프레임에도 제자리에서 시작합니다. */
+  const drift = (mesh, y0, arr, sp, rx, rz, ph, heading) => {
+    mesh.userData.noBake = true;
+    const cx = mesh.position.x, cz = mesh.position.z;
+    mesh.position.set(cx + Math.cos(ph) * rx, y0, cz + Math.sin(ph * 1.61) * rz);
+    arr.push({ mesh, y0, cx, cz, phase: ph, sp, rx, rz, heading: !!heading });
+  };
+  /* 연잎 넷 */
+  [[-3.6, -.4, 0], [1.9, .55, 1.9], [-1.1, -.9, 3.4], [4.4, .25, 5.0]].forEach(([lx, lz, ph], i) => {
+    const l = new THREE.Group(); l.position.set(lx, .21, lz); p.add(l);
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(.52, .52, .06, 14),
+      M(i % 2 ? 0x31994B : 0x2B8A45, .8));
+    pad.castShadow = false; l.add(pad);
+    const nt = new THREE.Mesh(new THREE.BoxGeometry(.5, .09, .17), M(0x176334, .8));
+    nt.position.set(.3, .02, 0); l.add(nt);
+    if (i % 2 === 0) {                                          // 꽃은 한 잎 걸러
+      cyl(l, .045, .045, .22, 6, M(0x2B8A45, .8), -.1, .13, .08);
+      const f = new THREE.Mesh(new THREE.SphereGeometry(.19, 10, 8), M(i % 4 ? 0xF49BC5 : 0xFFD36A, .66));
+      f.position.set(-.1, .27, .08); f.scale.y = .8; l.add(f);
+    }
+    drift(l, .21, ctx.lotus, .10 + i * .013, .55, .3, ph, false);
+  });
+  /* 물고기 셋 — 물낯 바로 위에 납작하게. 2D 도 물 위에 그립니다 */
+  [[-2.4, .8, .8], [3.2, -.7, 2.6], [.4, .9, 4.4]].forEach(([lx, lz, ph], i) => {
+    const f = new THREE.Group(); f.position.set(lx, .20, lz); p.add(f);
+    const bd = new THREE.Mesh(new THREE.SphereGeometry(.26, 10, 8), M(i ? 0xE8834A : 0xE8C24A, .6));
+    bd.scale.set(1.5, .42, .8); f.add(bd);
+    const tl = new THREE.Mesh(new THREE.ConeGeometry(.2, .34, 6), M(i ? 0xD06A34 : 0xD0A234, .6));
+    tl.position.set(-.46, 0, 0); tl.rotation.z = Math.PI / 2; tl.scale.set(1, 1, .5); f.add(tl);
+    drift(f, .20, ctx.fish, .19 + i * .04, 1.6, .7, ph, true);
+  });
+  /* 백조 셋 — 주기가 서로 안 맞아떨어져야(28초 · 37초 · 22초) 셋이 대형을
+     짜고 도는 것으로 안 보입니다. 2D 가 고른 값을 그대로 씁니다. */
+  [[.224, 3.4, 1.0, 0.0, -1.2, .1], [.170, 2.6, .85, 2.3, 1.6, -.3],
+   [.286, 2.0, .6, 4.1, -3.0, .4]].forEach(([sp, rx, rz, ph, cx, cz]) => {
+    const s = new THREE.Group(); s.position.set(cx, .30, cz); p.add(s);
+    const wht = M(0xFFFFFF, .66);
+    const bd = new THREE.Mesh(new THREE.CapsuleGeometry(.3, .34, 6, 12), wht);
+    bd.rotation.z = Math.PI / 2; bd.castShadow = true; s.add(bd);
+    const wg = new THREE.Mesh(new THREE.SphereGeometry(.34, 12, 9), wht);
+    wg.position.set(-.06, .14, 0); wg.scale.set(1.1, .7, 1.15); wg.castShadow = true; s.add(wg);
+    const nk = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+      new THREE.Vector3(.22, .16, 0), new THREE.Vector3(.5, .58, 0),
+      new THREE.Vector3(.44, .86, 0), new THREE.Vector3(.66, .92, 0)]), 12, .085, 8), wht);
+    nk.castShadow = true; s.add(nk);
+    const hd = new THREE.Mesh(new THREE.SphereGeometry(.16, 10, 8), wht);
+    hd.position.set(.7, .93, 0); s.add(hd);
+    const bk = new THREE.Mesh(new THREE.ConeGeometry(.09, .3, 6), M(0xF0913A, .5));
+    bk.position.set(.92, .9, 0); bk.rotation.z = -Math.PI / 2; s.add(bk);
+    [-1, 1].forEach((sz) => {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 5), M(0x2A2320, .5));
+      e.position.set(.79, .99, sz * .09); s.add(e);
+    });
+    drift(s, .30, ctx.swans, sp, rx, rz, ph, true);
+  });
+
+  /* ---- 물가 ----
+     부들은 **물 밖**입니다(2D 의 판단 그대로). 물 안에 풀이 서 있으면
+     사람이 쌓은 못이 아니라 내버려 둔 웅덩이가 됩니다. 밟고 지나갈 수
+     있으니 충돌 상자에 안 넣습니다. */
+  [[-6.2, WB + .45], [-4.4, WB + .95], [4.9, WB + .5], [6.6, WB + .9],
+   [-5.6, -(WB + .55)], [5.9, -(WB + .45)]].forEach(([lx, lz], i) => {
+    const rd = new THREE.Group(); rd.position.set(lx, 0, lz); p.add(rd);
+    for (let k = 0; k < 5; k++) {
+      const t = k / 5 * Math.PI * 2 + i, h = .95 + (k % 3) * .25;
+      cyl(rd, .045, .06, h, 6, M(0x4E8F63, .8), Math.cos(t) * .28, h / 2 + .1, Math.sin(t) * .28);
+      if (k % 2 === 0) {
+        const cat = new THREE.Mesh(new THREE.CapsuleGeometry(.075, .26, 5, 8), M(0x8A5A32, .78));
+        cat.position.set(Math.cos(t) * .28, h + .28, Math.sin(t) * .28); rd.add(cat);
+      }
+    }
+  });
+  /* 벤치 둘 — 못 **양 끝** 잔디. 안쪽 물가는 산책로가 바로 붙어 있어서
+     한 뼘도 안 남습니다. 돌 테 위에도 못 놓습니다: 테가 좁아 좌면이 그
+     폭을 먹으면 못을 한 바퀴 도는 길이 거기서 끊깁니다. */
+  [[-(RA + 1.2), Math.PI / 2], [RA + 1.2, -Math.PI / 2]].forEach(([lx, br]) => {
+    benchOut(p, lx, 1.1, br); put(lx, 1.1, 1.2, 3.4);
+  });
+  /* 낚시터 — 안쪽 테에서 물 쪽으로 내민 널판. 서서 찌를 보는 자리이므로
+     막지 않습니다(위 슬래브에서 이 폭만큼 비워 뒀습니다). */
+  const dk = new THREE.Group(); dk.position.set(0, 0, (DECK_Z + RB) / 2); p.add(dk);
+  for (let i = 0; i < 5; i++)
+    layBox(dk, 2.3, .38, .14 + i * .008, M(i % 2 ? 0xA97A4C : 0xB98756, .76), 0, -.85 + i * .42);
+  [-1, 1].forEach((s) => layBox(dk, 2.5, .13, .19, M(0x6B4A2E, .76), 0, s * 1.06));
+  [-1, 1].forEach((s) => cyl(dk, .09, .09, .5, 8, M(0x5E5449, .8), s * 1.05, -.1, -.9));
+  cyl(dk, .26, .21, .34, 12, M(0x8C99A6, .5), -.75, .35, .55);
+  cyl(dk, .27, .27, .05, 12, M(0x465260, .5), -.75, .53, .55);
+  { const rod = cyl(dk, .025, .035, 2.1, 6, M(0x6B4A2E, .7), .6, .8, -.5);
+    rod.rotation.x = .95; rod.rotation.z = -.12; }
+  return p;
+}
+
+/* ---------- 동아리 거리 ----------
+   2D 는 천막 셋을 세워 놓고 여는 것이 하나도 없었고, 그래서 가게를 건물
+   안으로 들여보내고 천막은 **가게 앞에 장이 선 표시**로 남겼습니다.
+   여기도 같습니다 — 여는 것은 없고, 정문에서 걸어 들어오는 길 옆에
+   천막 둘 · 게시판 둘 · 벤치 둘 · 파라솔이 한 줄로 섭니다.
+   가운데 통로는 반드시 두 칸 넘게 비웁니다. 장터에서 못 지나가면
+   그건 장이 아니라 바리케이드입니다. */
+function clubStreet(g, ctx, deg, r) {
+  const p = zoneAt(g, deg, r), ry = zoneRY(deg);
+  const put = (lx, lz, w, d, rr = ry) => { const [x, z] = zoneXZ(deg, r, lx, lz); ctx.solid(x, z, w, d, rr); };
+  /* 바닥 — 포석. 조각끼리 **안 겹치게** 틈을 두고 깔면 높이를 어긋낼 일이
+     아예 없습니다. 밑판 둘과는 0.01 씩 띄웁니다. */
+  layBox(p, 15.4, 6.8, .10, M(0x8E8471, .84), 0, 0);
+  layBox(p, 14.8, 6.2, .11, M(0xC6BCA6, .84), 0, 0);
+  for (let j = 0; j < 5; j++) for (let i = 0; i < 14; i++) {
+    const x = -7.15 + i * 1.1 + (j % 2 ? .55 : 0), z = -2.4 + j * 1.2;
+    if (Math.abs(x) > 7.2) continue;
+    layBox(p, 1.0, 1.1, .12, M((i + j) % 3 ? 0xCBC2AC : 0xD3CAB5, .84), x, z);
+  }
+  /* 천막 둘 — 빨강은 옷, 노랑은 안내(2D 의 tentA · tentC 색 그대로).
+     바다 쪽에 세워 산책로에서 오는 쪽을 마주 보게 합니다. */
+  [[-4.6, 0xE8695A, 0xB3392E, 0], [-.4, 0xE0AE3C, 0xA87A20, 2.1]].forEach(([lx, cl, cd, ph]) => {
+    const t = tentStall(p, lx, -2.0, 0, cl, cd);
+    ctx.flutter.push({ mesh: t.userData.cloth, phase: ph, amp: .075, axis: 'x' });
+    put(lx, -2.0, 3.4, 1.3);
+  });
+  /* 게시판 둘 + 그 앞 벤치 둘 — 붙여서 "판 읽고 앉는 자리" 한 덩어리로
+     만듭니다. 따로 세우면 거리 한복판에 벤치 둘이 떠 있습니다. */
+  [-5.6, 2.4].forEach((lx) => {
+    boardOut(p, lx, 2.5, Math.PI); put(lx, 2.5, 3.8, 1.0);
+    benchOut(p, lx, 1.3, Math.PI);  put(lx, 1.3, 3.4, 1.2);
+  });
+  /* 파라솔 탁자 — 거리 끝. 벤치가 등지고 앉는 자리라면 여기는 마주 앉는
+     자리입니다. 장터에 있어야 하는 것은 앉는 자리가 아니라 같이 앉는
+     자리입니다. 상자 깊이는 탁자까지만 재서 통로를 안 먹게 합니다. */
+  picnicSet(p, 5.6, 1.8, .22); put(5.6, 1.8, 2.8, 2.2);
+  /* 나무 상자 — 판 옆이 비면 장이 아니라 천막 둘입니다 */
+  [[3.2, -2.2, .3], [4.1, -1.9, -.5], [6.4, -2.1, .8]].forEach(([lx, lz, rr]) => {
+    box(p, .8, .62, .8, .07, M(PAL.wood, .74), lx, .42, lz).rotation.y = rr;
+    box(p, .84, .1, .84, .05, M(PAL.woodDark, .74), lx, .76, lz).rotation.y = rr;
+    put(lx, lz, .95, .95);
+  });
+  binOut(p, 7.0, 2.3);
+  return p;
+}
+
 /* ══════════════════════════════════════════════════════════
    캠퍼스 조립
    ══════════════════════════════════════════════════════════ */
@@ -458,6 +795,12 @@ export function buildCampus(scene) {
      화면이 통째로 그 물건 속살이 되는 것들(정문 아치 같은). */
   const camOnly = (x, z, w, d, ry = 0) =>
     colliders.push({ x, z, w, d, ry, big: true, camOnly: true });
+  /* 움직이는 것 — 여기서는 **만들어 놓기만** 합니다. 매 프레임 옮기는 일은
+     index.html 이 합니다(그쪽에 이미 시계와 프레임 루프가 있습니다).
+     campus.js 가 자기 시계를 하나 더 들면 탭이 가려졌다 돌아왔을 때
+     두 시계가 어긋나고, 그러면 백조가 물 위를 순간이동합니다. */
+  const swans = [], lotus = [], fish = [], flutter = [];
+  const ctx = { solid, swans, lotus, fish, flutter };
 
   ground(g);
   ringPath(g, 30, 4.2);
@@ -535,14 +878,25 @@ export function buildCampus(scene) {
   /* 정문에서 광장까지 대각선 길 */
   pathTo(g, 24, 24, 6.0);
 
+  /* --- 야외 구역 셋 --- */
+  /* 북서 — 운동장. 대로가 안 지나가는 유일한 사분면이라 가장 넓습니다. */
+  trackField(g, ctx, 225, 21.7, 7.2, 5.5);
+  /* 남서 — 호수. 산책로(r30)와 바다 사이 띠. 산책로가 곧 물가 길입니다. */
+  lakePond(g, ctx, 135, 35.4, 7.2, 2.6);
+  /* 남동 — 동아리 거리. 정문에서 나오면 오른쪽. */
+  clubStreet(g, ctx, 67, 34.8);
+
   /* --- 북서 잔디마당 — 소풍 자리 --- */
+  /* 소풍 자리는 트랙 **바깥**(산책로 너머)으로 밀립니다. 안쪽 셋 중
+     (-26,-22) 만 남기고 나머지는 트랙 연석과 겹쳤습니다. */
   [[-26, -22, .3], [-20, -28, -.5], [-30, -29, .9]].forEach(([x, z, r]) => {
     picnicSet(g, x, z, r); solid(x, z, 2.8, 2.8, r);
   });
   stumpSet(g, -24, -17);
-  flagPole(g, -17, -13, 0x3F6BA8);  solid(-17, -13, 1.2, 1.2);
+  /* 깃대는 트랙이 자기 것으로 둘 세웁니다(trackField). 여기 있던 (-17,-13)
+     은 트랙 인필드 한복판이라 뺍니다. 동쪽 짝은 그대로 둡니다. */
   flagPole(g, 17, -13, 0xE8735C);   solid(17, -13, 1.2, 1.2);
-  hedge(g, -24, -13, 11, 0, 1.1);   solid(-24, -13, 11, 1.1, 0, true);
+  /* 산울타리도 (-24,-13) 짜리는 트랙을 가로질러 뺐습니다. 북쪽 것만 남깁니다. */
   hedge(g, -29.5, -18, 11, Math.PI / 2, 1.1); solid(-29.5, -18, 1.1, 11, 0, true);
 
   /* --- 남서 잔디마당 — 상점 앞 광장 --- */
@@ -550,10 +904,14 @@ export function buildCampus(scene) {
   benchOut(g, -12, 22, .6); solid(-12, 22, 3.4, 1.2, .6);
   benchOut(g, -8, 26, .9);  solid(-8, 26, 3.4, 1.2, .9);
   flowerBed(g, -14, 27, 2.4); solid(-14, 27, 5.2, 5.2);
-  picnicSet(g, -27, 27, .2); solid(-27, 27, 2.8, 2.8);
+  /* (-27,27) 소풍 자리는 호수 물 위였습니다. 못가에는 벤치를 놓았으니
+     여기서는 뺍니다 — 어차피 걸어갈 수 있는 반지름(37.4) 밖이었습니다. */
 
   /* --- 기숙사 앞 · 학생회관 앞 --- */
-  bikeRack(g, -9, -20, 0, 4); solid(-9, -20, 5.0, 1.8);
+  /* 서쪽 거치대는 트랙 동쪽 끝(깃대 자리)을 5칸이나 물고 있었습니다.
+     기숙사 앞마당 돌판 안으로 당겨 붙입니다 — 세우는 곳이 포장 위라
+     오히려 제자리를 찾은 셈이고, 북 대로(|x|<2.5)는 그대로 비어 있습니다. */
+  bikeRack(g, -5.6, -16.4, 0, 4); solid(-5.6, -16.4, 5.0, 1.8);
   bikeRack(g, 9, -20, 0, 4);  solid(9, -20, 5.0, 1.8);
   benchOut(g, -7, -14, Math.PI); solid(-7, -14, 3.4, 1.2, Math.PI);
   benchOut(g, 7, -14, Math.PI);  solid(7, -14, 3.4, 1.2, Math.PI);
@@ -594,6 +952,7 @@ export function buildCampus(scene) {
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 14.5)) continue;
     if (Math.hypot(x, z) < 17) continue;
     if (Math.abs(Math.hypot(x, z) - 30) < 3.8) continue;          // 산책로 위
+    if (inZone(x, z, 1.0)) continue;                              // 운동장 · 호수 · 동아리 거리
     if (Math.hypot(x - 20.5, z - 20.5) < 12) continue;            // 정문 앞
     if (Math.abs(x - z) < 4.5 && x > 12 && z > 12) continue;      // 정문 길
     const ang = Math.atan2(z, x);
@@ -620,6 +979,9 @@ export function buildCampus(scene) {
     const tx = Math.cos(a) * r, tz = Math.sin(a) * r;
     /* 건물 등 뒤도 비웁니다 — 지붕에 수관이 겹치면 벽에 나무가 박힌 것처럼 보입니다 */
     if (BUILDINGS.some((b) => Math.hypot(b.x - tx, b.z - tz) < 11.5)) continue;
+    /* 바깥 숲은 반지름 33~38 인데 호수와 동아리 거리가 바로 그 띠에
+       있습니다. 안 비우면 못 한가운데에서 나무가 자랍니다. */
+    if (inZone(tx, tz, 1.4)) continue;
     const pink = i % 11 === 0;
     tree(g, { ...TP, leaf: pink ? 0xF7B8CE : PAL.leafDeep, trunk: PAL.trunk }, tx, tz, 1.0 + rnd() * .8);
     if (i % 3 === 0) bush(g, TP, Math.cos(a) * (r - 3.4), Math.sin(a) * (r - 3.4), .6 + rnd() * .6);
@@ -630,6 +992,7 @@ export function buildCampus(scene) {
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 11)) continue;
     if (Math.abs(Math.hypot(x, z) - 30) < 3.2) continue;
+    if (inZone(x, z, 1.0)) continue;
     bush(g, TP, x, z, .55 + rnd() * .6);
   }
 
@@ -641,10 +1004,31 @@ export function buildCampus(scene) {
       const z = Math.sin(a) * 24 + Math.sin(a + Math.PI / 2) * s2 * 4.2;
       if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 12.5)) return;
       if (Math.hypot(x - 20.5, z - 20.5) < 11) return;
+      if (inZone(x, z, .8)) return;                 // 트랙 인필드에 벚나무가 섰었습니다
       tree(g, { trunk: 0x9E6A48, leaf: 0xF7B8CE, lod: 11, seg: 13 }, x, z, 1.05);
       solid(x, z, 1.0, 1.0);
     });
   }
 
-  return { group: g, colliders, portals, HALF, PLAZA_R };
+  /* 움직이는 것들을 밖으로 내보냅니다 — 배열만 주고 끝냅니다.
+     항목 하나가 들고 있는 것:
+       swans / lotus / fish  { mesh, y0, cx, cz, phase, sp, rx, rz, heading }
+         mesh 는 **호수 그룹의 자식**이라 자리는 전부 못 로컬 좌표입니다.
+         한 프레임에 이렇게 옮기면 2D 판(LAKE.at)과 같은 궤적이 나옵니다 —
+           const a = t * sp + phase;
+           mesh.position.x = cx + Math.cos(a) * rx;
+           mesh.position.z = cz + Math.sin(a * 0.61 + phase) * rz;
+           mesh.position.y = y0 + Math.sin(t * 1.3 + phase) * 0.03;
+           if (heading) mesh.rotation.y = Math.sin(a) < 0 ? 0 : Math.PI;
+             (모형이 +x 를 보고 서 있습니다. x 의 도함수는 -sin a 이니
+              sin a < 0 이면 +x 쪽으로 갑니다. 젓는 쪽과 보는 쪽이 다르면
+              그건 헤엄이 아니라 미끄러짐입니다.)
+         x 는 코사인, z 는 주기를 0.61 배로 어긋낸 사인입니다. 둘의 주기가
+         같으면 타원 한 바퀴라 시계 바늘처럼 읽혀서, 정처 없이 떠다니는
+         것으로 안 보입니다. 처음 자리는 여기서 t=0 값으로 이미 놓았습니다.
+       flutter               { mesh, phase, amp, axis }
+         천막 천(axis 'x' — 축이 용마루라 자락이 들립니다)과 깃발
+         (axis 'y' — 축이 장대입니다). mesh.rotation[axis] =
+         Math.sin(t * 1.7 + phase) * amp 면 충분합니다. */
+  return { group: g, colliders, portals, HALF, PLAZA_R, swans, lotus, fish, flutter };
 }

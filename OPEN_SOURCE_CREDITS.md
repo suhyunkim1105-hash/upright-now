@@ -59,3 +59,19 @@ MIT License 전문은 각 원본 저장소의 `LICENSE` 또는 README에서 확�
 - 쓰는 곳: 픽셀 랜딩(`prototypes/landing-pixel`)·아이소메트릭 월드(`prototypes/campusiso`)
 - **크기는 설계 단위의 정수배로만 씁니다** — 7은 8px, 9는 10px, 11은 12px 과 그 배수.
   사이 크기를 쓰면 획이 뭉개져서 갈무리를 쓰는 뜻이 없어집니다.
+
+### 배경음악 열 곡 — CC0
+
+- 파일: `prototypes/openworld/assets/audio/*.ogg` (2D 월드와 3D 월드가 **같은 파일**을 씁니다)
+- 라이선스: CC0 1.0 (Public Domain Dedication) — freesound.org
+- 만든 사람: LightMister · SondreDrakensson · Erokia · szegvari · Leszek_Szary ·
+  michorvath · Rolly-SFX · pinkinblue · Hakren
+- 3D 월드에서 부르는 곳: `prototypes/campus3d/music.js` (장소별 기본 곡은 2D 와 같은 배정)
+
+### 자세 판정 — MediaPipe Tasks Vision
+
+- 원본: [google-ai-edge/mediapipe](https://github.com/google-ai-edge/mediapipe) tasks-vision 0.10.35
+- 라이선스: Apache License 2.0
+- 파일: `prototypes/shared/posture.js` 가 CDN 에서 wasm 과 모델을 받습니다
+  (pose_landmarker_full · face_landmarker, 둘 다 Apache 2.0)
+- **영상은 서버로 가지 않습니다.** 모델을 한 번 받은 뒤로는 전부 브라우저 안에서 돕니다.

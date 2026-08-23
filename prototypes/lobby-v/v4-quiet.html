@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="variant" content="4">
+<title>시안 4 · 절제 — Deskfit</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="nav.css">
+
+<style>
+/* ==================================================================
+   시안 4 · 절제 — 깊이를 거의 버리고 타이포로 끈다
+
+   가설: 클레이를 더 잘하는 길이 아니라 **덜 하는 길**이 있다.
+   Pitch 를 실측하면 페이지 전체에 의미 있는 그림자가 사실상 하나고
+   (라벤더로 물든 0 20px 60px -20px), 화면은 180px·자간 -7.2px 짜리
+   타이포가 끕니다. Joon 은 CTA 에 그림자가 아예 없습니다.
+
+   이 시안이 걸고 있는 것
+     · inset 0 개 — 화면 어디에도 안쪽 그림자가 없습니다
+     · 그림자는 세션 시작 하나에만, 그것도 한 겹. 음수 spread -22px 로
+       조여 번짐 대신 접지를 만듭니다
+     · 워드마크를 키우고 자간을 -.04em 까지 조입니다
+     · **가운데 정렬을 버립니다** — 왼쪽 정렬 기둥. 가운데 정렬 히어로는
+       모든 서비스가 같아 보이는 가장 큰 이유입니다
+     · 여백이 위계를 만듭니다. 판을 깔지 않습니다
+
+   위험: 게임인데 너무 얌전해 보일 수 있습니다. 그 대신 월드에
+   들어가는 순간의 대비가 커집니다 — 조용한 문에서 시끄러운 방으로.
+   ================================================================== */
+
+:root {
+  --teal:      #2DD4BF;
+  --teal-600:  #12A592;
+  --teal-700:  #0D7769;
+  --teal-800:  #0C5A4F;
+  --teal-50:   #EFFBF9;
+  --ink-toss:  #191F28;
+  --ink:       #17201E;
+  --ink-2:     #4E5956;
+  --ink-3:     #79847F;
+  --paper:     #FFFFFF;
+  --line:      #DCE4E2;
+
+  --s-2: 16px; --s-3: 24px; --s-4: 40px; --s-5: 72px;
+
+  --r-lg:   24px;
+  --r-pill: 999px;
+
+  /* 이 화면에 있는 유일한 그림자입니다. 청록으로 물들이고, 음수
+     spread 로 요소보다 좁혀 바닥에 닿게 합니다. */
+  --lift:      0 22px 50px -22px rgba(13,119,105,.66);
+  --lift-more: 0 30px 62px -22px rgba(13,119,105,.74);
+
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Wanted Sans Variable", "Wanted Sans", system-ui, sans-serif;
+  color: var(--ink);
+  background: #EDF3F0;
+  overflow: hidden;
+}
+
+/* 배경 — 더 밝게 씁니다. 요소가 조용하니 배경이 조금 더 말해도
+   싸우지 않습니다. */
+.bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; background: #EDF3F0; }
+.bg-blur {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; filter: blur(44px) saturate(1.02) brightness(1.05); transform: scale(1.2);
+}
+.bg-room { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; aspect-ratio: 1672 / 941; }
+.bg-room img {
+  width: 100%; height: 100%; display: block;
+  mask-image: linear-gradient(180deg, transparent 0, #000 70px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 70px);
+}
+/* 글자가 앉는 왼쪽만 아주 옅게 씻어 냅니다 — 판을 까는 대신
+   배경을 눕히는 쪽입니다. */
+.bg::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(96deg, rgba(237,243,240,.92) 0%, rgba(237,243,240,.66) 38%, transparent 66%);
+}
+
+.shell {
+  position: relative; height: 100%;
+  display: grid; align-items: center;
+  padding: var(--s-5) clamp(32px, 7vw, 104px) 96px;
+}
+.stage { width: min(1140px, 100%); margin: 0 auto; }
+
+.view {
+  display: none; flex-direction: column; align-items: flex-start;
+  opacity: 0; transform: translateY(12px);
+  transition: opacity 420ms var(--ease), transform 420ms var(--ease);
+}
+.view.on { display: flex; opacity: 1; transform: none; }
+.view[hidden] { display: none; }
+
+/* ---------------- 로비 ---------------- */
+.eyebrow {
+  margin: 0 0 var(--s-3);
+  font-size: 12.5px; font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--teal-700);
+}
+.wordmark {
+  margin: 0;
+  font-size: clamp(64px, 9.5vw, 132px);
+  font-weight: 900;
+  /* Pitch 실측 -7.2px / 180px = -0.04em. 큰 글자는 조여야 단단합니다. */
+  letter-spacing: -.042em;
+  line-height: .92;
+  color: var(--ink-toss);
+}
+.tagline {
+  margin: var(--s-3) 0 0;
+  max-width: 18ch;
+  font-size: clamp(20px, 2.3vw, 27px);
+  font-weight: 600;
+  line-height: 1.42;
+  letter-spacing: -.018em;
+  color: var(--ink-2);
+}
+.tagline b { color: var(--teal-700); font-weight: 700; }
+
+/* 세션 시작 — 화면에서 그림자를 가진 유일한 물건입니다.
+   inset 이 없고, 물든 그림자 한 겹이 전부입니다. */
+.start {
+  margin-top: var(--s-4);
+  padding: 20px 42px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--teal);
+  color: #06332B;
+  font: inherit;
+  font-size: 18px; font-weight: 800; letter-spacing: -.012em;
+  cursor: pointer;
+  box-shadow: var(--lift);
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+.start:hover { transform: translateY(-3px); box-shadow: var(--lift-more); }
+.start:active { transform: translateY(1px); box-shadow: 0 12px 26px -16px rgba(13,119,105,.6); }
+.start:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 4px; }
+
+/* 마이페이지·랭킹전 — 글자 링크에 가깝습니다. 그림자도 판도 없습니다.
+   Joon 의 CTA 가 그림자 0 인 것과 같은 판단입니다. */
+.cnav { margin-top: var(--s-4); display: flex; gap: 10px; }
+.cnav button {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,.72);
+  color: var(--ink-2);
+  font: inherit; font-size: 14px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: none;
+  transition: background 180ms var(--ease), color 180ms var(--ease), transform 180ms var(--ease);
+}
+.cnav button:hover { background: #fff; color: var(--ink); transform: translateY(-2px); }
+.cnav button:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+.cnav .ico { font-size: 15px; line-height: 1; opacity: .85; }
+
+/* ---------------- 고르기 ---------------- */
+.ask {
+  margin: 0 0 var(--s-4);
+  font-size: clamp(30px, 4.2vw, 52px);
+  font-weight: 800; letter-spacing: -.032em; line-height: 1.06;
+  color: var(--ink-toss);
+  max-width: 14ch;
+}
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); width: 100%; }
+.panel {
+  position: relative;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  aspect-ratio: 16 / 10;
+  padding: var(--s-3);
+  border: 0;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  overflow: hidden;
+  cursor: pointer; font: inherit; text-align: left;
+  box-shadow: 0 18px 40px -24px rgba(13,60,52,.6);
+  transition: transform 280ms var(--ease), box-shadow 280ms var(--ease);
+}
+.panel:hover { transform: translateY(-5px); box-shadow: 0 30px 56px -26px rgba(13,60,52,.66); }
+.panel:active { transform: translateY(-1px); }
+.panel:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 4px; }
+.panel.sel { outline: 2px solid var(--teal); outline-offset: -2px; }
+.panel .media, .panel .room { position: absolute; inset: 0; }
+.panel .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.panel .media .still { display: none; }
+.panel .veil { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 46%, rgba(10,22,20,.66) 100%); }
+.panel .name {
+  position: relative; color: #fff;
+  font-size: 21px; font-weight: 800; letter-spacing: -.022em;
+  text-shadow: 0 2px 10px rgba(0,0,0,.34);
+}
+.panel .bar { display: none; }
+.panel.light { background: linear-gradient(180deg, #FFFDF6 0%, #F4EFE2 100%); }
+.panel.light .room { display: flex; align-items: flex-end; justify-content: center; gap: 6%; padding: 0 10% 22%; }
+.panel.light figure { margin: 0; position: relative; }
+.panel.light img { width: 74px; height: auto; display: block; image-rendering: pixelated; }
+.panel.light .b img { width: 88px; }
+.panel.light .gnd {
+  position: absolute; left: 50%; bottom: -8px; translate: -50% 0;
+  width: 72%; height: 12px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(13,60,52,.22), transparent 70%);
+}
+.panel.light .veil { background: linear-gradient(180deg, transparent 56%, rgba(24,20,10,.36) 100%); }
+
+.confirm { display: flex; align-items: center; gap: var(--s-2); margin-top: var(--s-4); }
+.go {
+  padding: 18px 38px; border: 0; border-radius: var(--r-pill);
+  background: var(--teal); color: #06332B;
+  font: inherit; font-size: 16.5px; font-weight: 800; letter-spacing: -.012em;
+  cursor: pointer; box-shadow: var(--lift);
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+.go:hover { transform: translateY(-3px); box-shadow: var(--lift-more); }
+.go:active { transform: translateY(1px); }
+.go:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 4px; }
+.back {
+  padding: 18px 8px; border: 0; background: transparent;
+  color: var(--ink-3); font: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer; text-underline-offset: 5px;
+  transition: color 180ms var(--ease);
+}
+.back:hover { color: var(--ink-2); text-decoration: underline; }
+.back:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; border-radius: 8px; }
+
+/* ---------------- 문 앞 확인 ---------------- */
+.gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center; padding: var(--s-4);
+  background: rgba(18,30,27,.4);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  opacity: 0; transition: opacity 260ms var(--ease);
+}
+.gate.on { opacity: 1; }
+.gate[hidden] { display: none; }
+.gate-box {
+  width: min(440px, 100%);
+  padding: var(--s-4);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: 0 40px 80px -40px rgba(13,60,52,.7);
+  transform: translateY(14px);
+  transition: transform 300ms var(--ease);
+}
+.gate.on .gate-box { transform: none; }
+.gate-ico {
+  display: grid; place-items: center;
+  width: 46px; height: 46px; margin: 0 0 var(--s-3);
+  border-radius: var(--r-pill);
+  background: var(--teal-50);
+  color: var(--teal-700); font-size: 21px;
+}
+.gate-box h2 { margin: 0 0 10px; font-size: 23px; font-weight: 800; letter-spacing: -.028em; line-height: 1.25; }
+.gate-box p { margin: 0 0 var(--s-4); font-size: 15px; line-height: 1.7; color: var(--ink-2); }
+.gate-acts { display: flex; align-items: center; gap: var(--s-2); }
+.gate-go {
+  flex: 1; text-align: center;
+  padding: 16px; border-radius: var(--r-pill);
+  background: var(--teal); color: #06332B;
+  font-size: 15.5px; font-weight: 800; text-decoration: none;
+  box-shadow: var(--lift);
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+.gate-go:hover { transform: translateY(-2px); box-shadow: var(--lift-more); }
+.gate-go:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 4px; }
+.gate-x {
+  padding: 16px 6px; border: 0; background: transparent;
+  color: var(--ink-3); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.gate-x:hover { color: var(--ink-2); text-decoration: underline; text-underline-offset: 5px; }
+.gate-x:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 2px; border-radius: 8px; }
+
+.note-chip {
+  position: fixed; left: 18px; top: 18px; z-index: 150;
+  padding: 8px 15px; border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.82);
+  font-size: 12.5px; font-weight: 700; color: var(--ink-2);
+}
+.note-chip b { color: var(--teal-700); }
+
+@media (prefers-reduced-motion: reduce) {
+  .view, .start, .cnav button, .panel, .go, .back, .gate, .gate-box, .gate-go { transition: none; }
+  .start:hover, .cnav button:hover, .panel:hover, .go:hover, .gate-go:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <img class="bg-blur" src="../lobby/assets/campus-hero.jpg" alt="">
+  <div class="bg-room"><img src="../lobby/assets/campus-hero.jpg" alt=""></div>
+</div>
+
+<p class="note-chip"><b>시안 4</b> · 절제 — 그림자 하나, 타이포가 끈다</p>
+
+<main class="shell">
+  <div class="stage">
+
+    <section class="view on" id="v-lobby" aria-labelledby="wm">
+      <p class="eyebrow">우리 학교 온라인 자습실</p>
+      <h1 class="wordmark" id="wm">Deskfit</h1>
+      <p class="tagline">자세교정과 공부를 <b>한 번에</b></p>
+      <button class="start" type="button" id="start">세션 시작</button>
+
+      <nav class="cnav" aria-label="바로 가기">
+        <button type="button" onclick="location.href='../mypage/index.html'">
+          <span class="ico" aria-hidden="true">🪪</span>마이페이지
+        </button>
+        <button type="button" onclick="location.href='../league/index.html'">
+          <span class="ico" aria-hidden="true">🏆</span>랭킹전
+        </button>
+      </nav>
+    </section>
+
+    <section class="view" id="v-choose" aria-labelledby="ask" hidden>
+      <h1 class="ask" id="ask">둘 중 어디로 앉을까요</h1>
+
+      <div class="panels" role="group" aria-label="세션 종류">
+        <button class="panel dark" type="button" id="p-open" aria-pressed="true">
+          <span class="media">
+            <img class="anim" src="../lobby/assets/world-3d.webp" alt="캠퍼스 위로 카메라가 천천히 들어가는 장면">
+            <img class="still" src="../lobby/assets/world-still.jpg" alt="캠퍼스 전경">
+          </span>
+          <span class="veil"></span>
+          <span class="name">온라인</span>
+          <span class="bar"></span>
+        </button>
+
+        <button class="panel light" type="button" id="p-invite" aria-pressed="false">
+          <span class="room">
+            <figure class="a"><img src="../lobby/assets/char-turtle.png" alt=""><span class="gnd"></span></figure>
+            <figure class="b"><img src="../lobby/assets/char-penguin.png" alt=""><span class="gnd"></span></figure>
+            <figure class="c"><img src="../lobby/assets/char-frog.png" alt=""><span class="gnd"></span></figure>
+          </span>
+          <span class="veil"></span>
+          <span class="name">초대</span>
+          <span class="bar"></span>
+        </button>
+      </div>
+
+      <div class="confirm">
+        <button class="go" type="button" id="go">캠퍼스로 들어가기</button>
+        <button class="back" type="button" id="back">돌아가기</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h" hidden>
+  <div class="gate-box">
+    <span class="gate-ico" id="gate-ico" aria-hidden="true"></span>
+    <h2 id="gate-h"></h2>
+    <p id="gate-p"></p>
+    <div class="gate-acts">
+      <a class="gate-go" id="gate-go" href="#"></a>
+      <button class="gate-x" type="button" id="gate-x">나중에</button>
+    </div>
+  </div>
+</div>
+
+<script src="variant.js"></script>
+</body>
+</html>

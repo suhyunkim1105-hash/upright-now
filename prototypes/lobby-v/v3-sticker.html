@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="variant" content="3">
+<title>시안 3 · 스티커 — Deskfit</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="nav.css">
+
+<style>
+/* ==================================================================
+   시안 3 · 스티커 — 사진을 이기려 하지 않고, 사진 위에 붙는다
+
+   가설: 우리 로비의 진짜 제약은 클레이 문법이 아니라 **배경이
+   사진이라는 것**이다. 흐린 그림자는 복잡한 배경 위에서 안 먹힌다.
+   흐림 뒤에 숨는 대신, 배경과 무관하게 형태를 지키는 쪽으로 간다.
+
+   폴가이즈를 실측하면 정확히 이 답입니다 —
+     border: 4px solid #fff
+     box-shadow: 2px 2px 4px rgba(0,0,0,.25)   ← 거의 안 흐림
+     반경 30px 알약 · 채도 높은 채움
+
+   그래서 이 시안은
+     · 모든 요소에 밝은 대비 외곽선 4px
+     · 그림자는 blur 0 의 단단한 오프셋 — 스티커가 지는 그림자
+     · 워드마크도 스티커로(글자 외곽선 + 단단한 그림자)
+     · 배경 사진을 더 열어 둠 — 요소가 안 묻히니 판을 깔 이유가 줄어듭니다
+     · 누르면 자기 그림자 안으로 들어갑니다
+
+   위험: 화면이 시끄러워지기 쉽습니다. 그래서 외곽선 색을 흰색 하나로
+   고정하고, 채도 높은 채움은 세션 시작 하나에만 씁니다.
+   ================================================================== */
+
+:root {
+  --teal:      #2DD4BF;
+  --teal-deep: #12A592;
+  --teal-700:  #0D7769;
+  --teal-800:  #0C5A4F;
+  --ink:       #17201E;
+  --ink-toss:  #191F28;
+  --ink-2:     #55605D;
+  --ink-3:     #79847F;
+  --paper:     #FFFFFF;
+  --edge:      #FFFFFF;              /* 외곽선은 흰색 하나로 고정 */
+  --cast:      rgba(14, 44, 38, .34); /* 스티커가 지는 그림자 */
+
+  --s-2: 16px; --s-3: 22px; --s-4: 34px; --s-5: 64px;
+
+  --r-lg:   30px;
+  --r-pill: 999px;
+
+  --edge-w: 4px;
+
+  /* 단단한 오프셋 그림자 — blur 를 0~2 로 묶습니다. 흐리면 스티커가
+     아니라 다시 클레이가 됩니다. */
+  --cast-1: 3px 4px 0 var(--cast);
+  --cast-2: 5px 7px 0 var(--cast);
+  --cast-0: 0 0 0 var(--cast);
+
+  --ease: cubic-bezier(.2, .9, .3, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Wanted Sans Variable", "Wanted Sans", system-ui, sans-serif;
+  color: var(--ink);
+  background: #E9F1EC;
+  overflow: hidden;
+}
+
+/* 배경 — 흐린 판을 약하게 씁니다. 요소가 외곽선으로 스스로 서기
+   때문에 배경을 눌러 줄 이유가 줄어듭니다. */
+.bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; background: #E9F1EC; }
+.bg-blur {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; filter: blur(30px) saturate(1.12); transform: scale(1.16);
+}
+.bg-room { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; aspect-ratio: 1672 / 941; }
+.bg-room img {
+  width: 100%; height: 100%; display: block;
+  mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+}
+
+.shell { position: relative; height: 100%; display: grid; place-items: center; padding: var(--s-5) var(--s-4) 92px; }
+.stage { width: min(1140px, 100%); }
+.view {
+  display: none; flex-direction: column; align-items: center;
+  opacity: 0; transform: translateY(8px) scale(.99);
+  transition: opacity 280ms var(--ease), transform 280ms var(--ease);
+}
+.view.on { display: flex; opacity: 1; transform: none; }
+.view[hidden] { display: none; }
+
+/* ---------------- 로비 ---------------- */
+/* 워드마크도 스티커입니다. 글자에 흰 외곽선을 두르고 단단한 그림자를
+   답니다. paint-order 로 획을 글자 뒤로 보내야 속이 안 갉힙니다. */
+.wordmark {
+  margin: 0;
+  font-size: clamp(56px, 7vw, 96px);
+  font-weight: 900;
+  letter-spacing: -.022em;
+  line-height: 1;
+  color: var(--ink-toss);
+  -webkit-text-stroke: 9px var(--edge);
+  paint-order: stroke fill;
+  filter: drop-shadow(4px 6px 0 var(--cast));
+}
+.tagline {
+  margin: 16px 0 0;
+  padding: 9px 20px;
+  border: var(--edge-w) solid var(--edge);
+  border-radius: var(--r-pill);
+  background: rgba(23,32,30,.72);
+  color: #EAF3F0;
+  font-size: 16px; font-weight: 700;
+  box-shadow: var(--cast-1);
+}
+.tagline b { color: var(--teal); }
+
+/* 스티커 공통 */
+.stick {
+  border: var(--edge-w) solid var(--edge);
+  border-radius: var(--r-pill);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: var(--cast-1);
+  transition: transform 110ms var(--ease), box-shadow 110ms var(--ease);
+}
+.stick:hover { transform: translate(-1px, -2px); box-shadow: var(--cast-2); }
+/* 누르면 자기 그림자 안으로 들어갑니다 — 오프셋만큼 이동하고
+   그림자가 사라지면, 바닥에 눌러 붙은 것으로 읽힙니다. */
+.stick:active { transform: translate(3px, 4px); box-shadow: var(--cast-0); }
+.stick:focus-visible { outline: 4px solid var(--teal-800); outline-offset: 3px; }
+
+.start {
+  margin-top: 40px;
+  padding: 22px 48px;
+  background: var(--teal);
+  color: #06332B;
+  font-size: 21px; font-weight: 800; letter-spacing: -.012em;
+}
+
+.cnav { margin-top: 20px; display: flex; gap: 12px; }
+.cnav .stick {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 22px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14.5px; font-weight: 800;
+}
+.cnav .ico { font-size: 17px; line-height: 1; }
+
+/* ---------------- 고르기 ---------------- */
+.ask {
+  margin: 0 0 var(--s-4);
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 900; letter-spacing: -.022em;
+  color: var(--ink-toss);
+  -webkit-text-stroke: 7px var(--edge);
+  paint-order: stroke fill;
+  filter: drop-shadow(3px 4px 0 var(--cast));
+}
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); width: 100%; }
+.panel {
+  position: relative;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  aspect-ratio: 16 / 10;
+  padding: var(--s-3);
+  border: var(--edge-w) solid var(--edge);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  overflow: hidden;
+  cursor: pointer; font: inherit; text-align: left;
+  box-shadow: var(--cast-2);
+  transition: transform 110ms var(--ease), box-shadow 110ms var(--ease);
+}
+.panel:hover { transform: translate(-2px, -3px); box-shadow: 7px 10px 0 var(--cast); }
+.panel:active { transform: translate(5px, 7px); box-shadow: var(--cast-0); }
+.panel:focus-visible { outline: 4px solid var(--teal-800); outline-offset: 3px; }
+/* 고른 것은 외곽선이 청록으로 바뀝니다. 두께는 그대로 — 두꺼워지면
+   칸 크기가 흔들립니다. */
+.panel.sel { border-color: var(--teal); }
+.panel .media, .panel .room { position: absolute; inset: 0; }
+.panel .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.panel .media .still { display: none; }
+.panel .veil { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(10,22,20,.74) 100%); }
+.panel .name {
+  position: relative; color: #fff; font-size: 24px; font-weight: 900;
+  letter-spacing: -.018em;
+  -webkit-text-stroke: 5px rgba(14,44,38,.55);
+  paint-order: stroke fill;
+}
+.panel .bar { display: none; }
+.panel.light { background: linear-gradient(180deg, #FFFDF6 0%, #F3EEE0 100%); }
+.panel.light .room { display: flex; align-items: flex-end; justify-content: center; gap: 6%; padding: 0 10% 22%; }
+.panel.light figure { margin: 0; position: relative; }
+.panel.light img { width: 74px; height: auto; display: block; image-rendering: pixelated; }
+.panel.light .b img { width: 88px; }
+.panel.light .gnd {
+  position: absolute; left: 50%; bottom: -8px; translate: -50% 0;
+  width: 72%; height: 12px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(13,60,52,.3), transparent 70%);
+}
+.panel.light .veil { background: linear-gradient(180deg, transparent 50%, rgba(24,20,10,.5) 100%); }
+
+.confirm { display: flex; gap: 12px; margin-top: var(--s-4); }
+.go { padding: 17px 36px; background: var(--teal); color: #06332B; font-size: 17px; font-weight: 800; }
+.back { padding: 17px 26px; background: var(--paper); color: var(--ink-2); font-size: 15px; font-weight: 800; }
+
+/* ---------------- 문 앞 확인 ---------------- */
+.gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center; padding: var(--s-4);
+  background: rgba(12,22,20,.5);
+  opacity: 0; transition: opacity 180ms var(--ease);
+}
+.gate.on { opacity: 1; }
+.gate[hidden] { display: none; }
+.gate-box {
+  width: min(430px, 100%);
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  border: var(--edge-w) solid var(--edge);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  text-align: center;
+  box-shadow: 6px 8px 0 rgba(6,20,18,.42);
+  transform: translateY(10px);
+  transition: transform 200ms var(--ease);
+}
+.gate.on .gate-box { transform: none; }
+.gate-ico {
+  display: grid; place-items: center;
+  width: 60px; height: 60px; margin: 0 auto var(--s-2);
+  border: var(--edge-w) solid var(--edge);
+  border-radius: var(--r-pill);
+  background: var(--teal);
+  color: #06332B; font-size: 24px;
+  box-shadow: var(--cast-1);
+}
+.gate-box h2 { margin: 0 0 8px; font-size: 20px; font-weight: 900; letter-spacing: -.018em; }
+.gate-box p { margin: 0 0 var(--s-3); font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
+.gate-acts { display: flex; flex-direction: column; gap: 10px; }
+.gate-go {
+  display: block; padding: 16px;
+  border: var(--edge-w) solid var(--edge);
+  border-radius: var(--r-pill);
+  background: var(--teal); color: #06332B;
+  font-size: 16px; font-weight: 800; text-decoration: none;
+  box-shadow: var(--cast-1);
+  transition: transform 110ms var(--ease), box-shadow 110ms var(--ease);
+}
+.gate-go:hover { transform: translate(-1px, -2px); box-shadow: var(--cast-2); }
+.gate-go:active { transform: translate(3px, 4px); box-shadow: var(--cast-0); }
+.gate-go:focus-visible { outline: 4px solid var(--teal-800); outline-offset: 3px; }
+.gate-x {
+  padding: 13px; border: 0; border-radius: var(--r-pill);
+  background: transparent; color: var(--ink-3);
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.gate-x:hover { color: var(--ink-2); background: #F1F5F4; }
+.gate-x:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 2px; }
+
+.note-chip {
+  position: fixed; left: 18px; top: 18px; z-index: 150;
+  padding: 8px 15px;
+  border: 3px solid var(--edge);
+  border-radius: var(--r-pill);
+  background: rgba(23,32,30,.8);
+  color: #EAF3F0;
+  font-size: 12.5px; font-weight: 700;
+  box-shadow: var(--cast-1);
+}
+.note-chip b { color: var(--teal); }
+
+@media (prefers-reduced-motion: reduce) {
+  .view, .stick, .panel, .gate, .gate-box, .gate-go { transition: none; }
+  .stick:hover, .stick:active, .panel:hover, .panel:active,
+  .gate-go:hover, .gate-go:active { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <img class="bg-blur" src="../lobby/assets/campus-hero.jpg" alt="">
+  <div class="bg-room"><img src="../lobby/assets/campus-hero.jpg" alt=""></div>
+</div>
+
+<p class="note-chip"><b>시안 3</b> · 스티커 — 사진 위에 붙는다</p>
+
+<main class="shell">
+  <div class="stage">
+
+    <section class="view on" id="v-lobby" aria-labelledby="wm">
+      <h1 class="wordmark" id="wm">Deskfit</h1>
+      <p class="tagline">자세교정과 공부를 <b>한 번에</b></p>
+      <button class="stick start" type="button" id="start">세션 시작</button>
+
+      <nav class="cnav" aria-label="바로 가기">
+        <button class="stick" type="button" onclick="location.href='../mypage/index.html'">
+          <span class="ico" aria-hidden="true">🪪</span>마이페이지
+        </button>
+        <button class="stick" type="button" onclick="location.href='../league/index.html'">
+          <span class="ico" aria-hidden="true">🏆</span>랭킹전
+        </button>
+      </nav>
+    </section>
+
+    <section class="view" id="v-choose" aria-labelledby="ask" hidden>
+      <h1 class="ask" id="ask">둘 중 어디로 앉을까요</h1>
+
+      <div class="panels" role="group" aria-label="세션 종류">
+        <button class="panel dark" type="button" id="p-open" aria-pressed="true">
+          <span class="media">
+            <img class="anim" src="../lobby/assets/world-3d.webp" alt="캠퍼스 위로 카메라가 천천히 들어가는 장면">
+            <img class="still" src="../lobby/assets/world-still.jpg" alt="캠퍼스 전경">
+          </span>
+          <span class="veil"></span>
+          <span class="name">온라인</span>
+          <span class="bar"></span>
+        </button>
+
+        <button class="panel light" type="button" id="p-invite" aria-pressed="false">
+          <span class="room">
+            <figure class="a"><img src="../lobby/assets/char-turtle.png" alt=""><span class="gnd"></span></figure>
+            <figure class="b"><img src="../lobby/assets/char-penguin.png" alt=""><span class="gnd"></span></figure>
+            <figure class="c"><img src="../lobby/assets/char-frog.png" alt=""><span class="gnd"></span></figure>
+          </span>
+          <span class="veil"></span>
+          <span class="name">초대</span>
+          <span class="bar"></span>
+        </button>
+      </div>
+
+      <div class="confirm">
+        <button class="stick go" type="button" id="go">캠퍼스로 들어가기</button>
+        <button class="stick back" type="button" id="back">돌아가기</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h" hidden>
+  <div class="gate-box">
+    <span class="gate-ico" id="gate-ico" aria-hidden="true"></span>
+    <h2 id="gate-h"></h2>
+    <p id="gate-p"></p>
+    <div class="gate-acts">
+      <a class="gate-go" id="gate-go" href="#"></a>
+      <button class="gate-x" type="button" id="gate-x">나중에 할게요</button>
+    </div>
+  </div>
+</div>
+
+<script src="variant.js"></script>
+</body>
+</html>

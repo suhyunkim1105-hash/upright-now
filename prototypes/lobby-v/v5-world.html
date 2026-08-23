@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="variant" content="5">
+<title>시안 5 · 월드 — Deskfit</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="nav.css">
+
+<style>
+/* ==================================================================
+   시안 5 · 월드 — 점토는 껍데기가 아니라 물건에 붙는다
+
+   가설: Dribbble claymorphism 상위 작업 대부분이 아이콘과 일러스트다.
+   잘하는 사람들은 클레이를 패널·버튼이 아니라 **화면 속 물건**에 쓴다.
+   우리는 이미 그 물건을 갖고 있다 — 캐릭터 여덟 종, 그리고 저폴리 월드.
+
+   그래서 이 시안은 껍데기를 거의 지우고 **캐릭터를 화면의 주인공**으로
+   올립니다. 게임 타이틀 화면의 문법입니다.
+
+   여기서만 하는 것
+     · 캐릭터가 화면 한가운데. 숨 쉬듯 아주 느리게 떠오릅니다(7초)
+     · 떠오를 때 **접지 그림자가 같이 좁아집니다** — 이게 없으면
+       그냥 위아래로 움직이는 그림이지, 무게가 안 생깁니다
+     · UI 는 HUD 로 줄어듭니다. 워드마크는 왼쪽 위 작게, 바로 가기는
+       오른쪽 위 동그라미 둘
+     · 세션 시작만 점토로 남습니다 — 화면에서 부푼 것은 캐릭터와
+       이 버튼 둘뿐입니다
+
+   위험: 캐릭터 그림 품질이 그대로 화면 품질이 됩니다. 지금 쓰는 것은
+   2D 픽셀 판이라, campus3d 의 저폴리 캐릭터를 끼우면 훨씬 좋아집니다.
+   ================================================================== */
+
+:root {
+  --teal:      #2DD4BF;
+  --teal-400:  #56DCCA;
+  --teal-600:  #12A592;
+  --teal-700:  #0D7769;
+  --teal-800:  #0C5A4F;
+  --ink:       #17201E;
+  --ink-toss:  #191F28;
+  --ink-2:     #55605D;
+  --ink-3:     #79847F;
+  --paper:     #FFFFFF;
+
+  --s-2: 16px; --s-3: 22px; --s-4: 34px;
+
+  --r-lg:   24px;
+  --r-pill: 999px;
+
+  /* HUD 는 거의 평면입니다 — 물든 그림자 한 겹. */
+  --hud: 0 10px 26px -12px rgba(13,60,52,.5);
+
+  /* 세션 시작 하나만 점토. */
+  --hero:
+    inset 0 6px 11px rgba(255,255,255,.74),
+    inset 0 -11px 17px rgba(11,86,76,.34),
+    0 10px 16px -5px rgba(13,119,105,.38),
+    0 28px 46px -14px rgba(13,119,105,.5);
+  --hero-lift:
+    inset 0 6px 11px rgba(255,255,255,.8),
+    inset 0 -11px 17px rgba(11,86,76,.32),
+    0 13px 20px -5px rgba(13,119,105,.38),
+    0 38px 58px -14px rgba(13,119,105,.52);
+  --hero-press:
+    inset 0 9px 15px rgba(11,86,76,.42),
+    inset 0 -4px 8px rgba(255,255,255,.44),
+    0 3px 7px -3px rgba(13,119,105,.3);
+
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Wanted Sans Variable", "Wanted Sans", system-ui, sans-serif;
+  color: var(--ink);
+  background: #E9F1EC;
+  overflow: hidden;
+}
+
+.bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; background: #E9F1EC; }
+.bg-blur {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; filter: blur(34px) saturate(1.08); transform: scale(1.18);
+}
+.bg-room { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; aspect-ratio: 1672 / 941; }
+.bg-room img {
+  width: 100%; height: 100%; display: block;
+  mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+}
+
+/* ---------------- HUD ----------------
+   화면 모서리에 붙는 것들. 깊이를 거의 안 씁니다 — 부푼 것은
+   캐릭터와 세션 시작 버튼 둘뿐이어야 합니다. */
+.hud-mark {
+  position: fixed; left: clamp(20px, 3vw, 40px); top: clamp(20px, 3vw, 36px);
+  z-index: 20; display: flex; flex-direction: column; gap: 3px;
+}
+.hud-mark .wm {
+  margin: 0;
+  font-size: clamp(26px, 2.6vw, 34px);
+  font-weight: 900; letter-spacing: -.03em; line-height: 1;
+  color: var(--ink-toss);
+  text-shadow: 0 1px 0 rgba(255,255,255,.9);
+}
+.hud-mark .tagline {
+  margin: 0;
+  font-size: 13.5px; font-weight: 600; color: var(--ink-2);
+  text-shadow: 0 1px 0 rgba(255,255,255,.8);
+}
+.hud-mark .tagline b { color: var(--teal-700); font-weight: 700; }
+
+.hud-nav {
+  position: fixed; right: clamp(20px, 3vw, 40px); top: clamp(20px, 3vw, 36px);
+  z-index: 20; display: flex; gap: 10px;
+}
+.hud-nav button {
+  width: 50px; height: 50px;
+  display: grid; place-items: center;
+  border: 0; border-radius: var(--r-pill);
+  background: rgba(255,255,255,.9);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  font-size: 20px; cursor: pointer;
+  box-shadow: var(--hud);
+  transition: transform 180ms var(--ease), background 180ms var(--ease);
+}
+.hud-nav button:hover { transform: translateY(-3px); background: #fff; }
+.hud-nav button:active { transform: translateY(0); }
+.hud-nav button:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+
+/* 이름표는 호버할 때만 나옵니다 — 평소에는 화면이 조용해야 캐릭터가 삽니다. */
+.hud-nav .wrap { position: relative; }
+.hud-nav .lab {
+  position: absolute; top: 58px; left: 50%; translate: -50% 0;
+  padding: 5px 11px; border-radius: var(--r-pill);
+  background: rgba(23,32,30,.86); color: #fff;
+  font-size: 12px; font-weight: 600; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity 160ms var(--ease);
+}
+.hud-nav .wrap:hover .lab,
+.hud-nav button:focus-visible + .lab { opacity: 1; }
+
+/* ---------------- 무대 ---------------- */
+.shell { position: relative; height: 100%; display: grid; place-items: center; padding: 96px var(--s-4); }
+.stage { width: min(1140px, 100%); }
+.view {
+  display: none; flex-direction: column; align-items: center;
+  opacity: 0; transform: translateY(10px);
+  transition: opacity 380ms var(--ease), transform 380ms var(--ease);
+}
+.view.on { display: flex; opacity: 1; transform: none; }
+.view[hidden] { display: none; }
+
+/* ---- 캐릭터 ----
+   화면의 주인공. 아주 느리게 떠오르고, 떠오르는 만큼 접지 그림자가
+   좁아집니다. 그림자가 같이 안 움직이면 무게가 안 생깁니다. */
+.hero-char { position: relative; display: grid; place-items: end center; }
+.hero-char img {
+  position: relative; z-index: 1;
+  width: clamp(150px, 19vw, 236px); height: auto; display: block;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 18px 24px rgba(13,60,52,.28));
+  animation: breathe 7s ease-in-out infinite;
+}
+.hero-char .gnd {
+  position: absolute; bottom: -14px; left: 50%; translate: -50% 0;
+  width: 62%; height: 26px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(13,60,52,.34), rgba(13,60,52,0) 70%);
+  animation: gnd 7s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50%      { transform: translateY(-14px) scale(1.015); }
+}
+@keyframes gnd {
+  0%, 100% { transform: translateX(-50%) scaleX(1)   scaleY(1);   opacity: 1; }
+  50%      { transform: translateX(-50%) scaleX(.86) scaleY(.78); opacity: .72; }
+}
+
+.blurb {
+  margin: var(--s-4) 0 0;
+  font-size: 15.5px; font-weight: 600; color: var(--ink-2);
+  text-shadow: 0 1px 0 rgba(255,255,255,.86);
+}
+.blurb b { color: var(--teal-700); font-weight: 700; }
+
+.start {
+  margin-top: var(--s-3);
+  padding: 21px 46px;
+  border: 0;
+  border-bottom: 5px solid var(--teal-800);
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--teal-400) 0%, var(--teal) 58%, var(--teal-600) 100%);
+  color: #06332B;
+  font: inherit; font-size: 19px; font-weight: 800; letter-spacing: -.012em;
+  cursor: pointer;
+  box-shadow: var(--hero);
+  transition: transform 170ms var(--ease), box-shadow 170ms var(--ease);
+}
+.start:hover { transform: translateY(-3px); box-shadow: var(--hero-lift); }
+.start:active {
+  transform: translateY(5px); border-bottom-width: 0; margin-bottom: 5px;
+  box-shadow: var(--hero-press);
+}
+.start:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 4px; }
+
+/* ---------------- 고르기 ---------------- */
+.ask {
+  margin: 0 0 var(--s-4);
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 800; letter-spacing: -.026em;
+  color: var(--ink-toss);
+  text-shadow: 0 1px 0 rgba(255,255,255,.9);
+}
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); width: 100%; }
+.panel {
+  position: relative;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  aspect-ratio: 16 / 10;
+  padding: var(--s-3);
+  border: 0; border-radius: var(--r-lg);
+  background: var(--paper);
+  overflow: hidden; cursor: pointer; font: inherit; text-align: left;
+  box-shadow: 0 16px 38px -18px rgba(13,60,52,.56);
+  transition: transform 240ms var(--ease), box-shadow 240ms var(--ease);
+}
+.panel:hover { transform: translateY(-5px); box-shadow: 0 28px 54px -20px rgba(13,60,52,.6); }
+.panel:active { transform: translateY(-1px); }
+.panel:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 4px; }
+.panel.sel { outline: 3px solid var(--teal); outline-offset: -3px; }
+.panel .media, .panel .room { position: absolute; inset: 0; }
+.panel .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.panel .media .still { display: none; }
+.panel .veil { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 42%, rgba(10,22,20,.7) 100%); }
+.panel .name {
+  position: relative; color: #fff; font-size: 22px; font-weight: 800;
+  letter-spacing: -.02em; text-shadow: 0 2px 8px rgba(0,0,0,.42);
+}
+.panel .bar { display: none; }
+.panel.light { background: linear-gradient(180deg, #FFFDF6 0%, #F3EEE0 100%); }
+.panel.light .room { display: flex; align-items: flex-end; justify-content: center; gap: 6%; padding: 0 10% 22%; }
+.panel.light figure { margin: 0; position: relative; }
+.panel.light img { width: 74px; height: auto; display: block; image-rendering: pixelated; }
+.panel.light .b img { width: 88px; }
+.panel.light .gnd {
+  position: absolute; left: 50%; bottom: -8px; translate: -50% 0;
+  width: 72%; height: 12px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(13,60,52,.26), transparent 70%);
+}
+.panel.light .veil { background: linear-gradient(180deg, transparent 52%, rgba(24,20,10,.42) 100%); }
+
+.confirm { display: flex; gap: 12px; margin-top: var(--s-4); }
+.go {
+  padding: 17px 36px; border: 0;
+  border-bottom: 4px solid var(--teal-800);
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--teal-400), var(--teal) 60%, var(--teal-600));
+  color: #06332B; font: inherit; font-size: 16.5px; font-weight: 800;
+  cursor: pointer; box-shadow: var(--hero);
+  transition: transform 170ms var(--ease), box-shadow 170ms var(--ease);
+}
+.go:hover { transform: translateY(-3px); box-shadow: var(--hero-lift); }
+.go:active { transform: translateY(4px); border-bottom-width: 0; margin-bottom: 4px; box-shadow: var(--hero-press); }
+.go:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 4px; }
+.back {
+  padding: 17px 26px; border: 0; border-radius: var(--r-pill);
+  background: rgba(255,255,255,.88); color: var(--ink-2);
+  font: inherit; font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: var(--hud);
+  transition: transform 180ms var(--ease);
+}
+.back:hover { transform: translateY(-2px); }
+.back:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+
+/* ---------------- 문 앞 확인 ---------------- */
+.gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center; padding: var(--s-4);
+  background: rgba(12,22,20,.46);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  opacity: 0; transition: opacity 220ms var(--ease);
+}
+.gate.on { opacity: 1; }
+.gate[hidden] { display: none; }
+.gate-box {
+  width: min(430px, 100%);
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  border-radius: var(--r-lg);
+  background: var(--paper); text-align: center;
+  box-shadow: 0 36px 72px -32px rgba(13,60,52,.72);
+  transform: translateY(12px) scale(.98);
+  transition: transform 280ms var(--ease);
+}
+.gate.on .gate-box { transform: none; }
+.gate-ico {
+  display: grid; place-items: center;
+  width: 58px; height: 58px; margin: 0 auto var(--s-2);
+  border-radius: var(--r-pill);
+  background: #EFFBF9; color: var(--teal-700); font-size: 24px;
+  box-shadow: inset 0 4px 9px rgba(13,60,52,.14), inset 0 -2px 4px rgba(255,255,255,.9);
+}
+.gate-box h2 { margin: 0 0 8px; font-size: 20px; font-weight: 800; letter-spacing: -.022em; }
+.gate-box p { margin: 0 0 var(--s-3); font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
+.gate-acts { display: flex; flex-direction: column; gap: 9px; }
+.gate-go {
+  display: block; padding: 15px;
+  border-radius: var(--r-pill);
+  border-bottom: 4px solid var(--teal-800);
+  background: linear-gradient(180deg, var(--teal-400), var(--teal) 60%, var(--teal-600));
+  color: #06332B; font-size: 15.5px; font-weight: 800; text-decoration: none;
+  box-shadow: var(--hero);
+  transition: transform 170ms var(--ease), box-shadow 170ms var(--ease);
+}
+.gate-go:hover { transform: translateY(-2px); box-shadow: var(--hero-lift); }
+.gate-go:active { transform: translateY(4px); border-bottom-width: 0; margin-bottom: 4px; }
+.gate-go:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 3px; }
+.gate-x {
+  padding: 12px; border: 0; border-radius: var(--r-pill);
+  background: transparent; color: var(--ink-3);
+  font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.gate-x:hover { color: var(--ink-2); background: #F1F5F4; }
+.gate-x:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 2px; }
+
+.note-chip {
+  position: fixed; left: 50%; translate: -50% 0; bottom: 58px; z-index: 150;
+  padding: 8px 15px; border-radius: var(--r-pill);
+  background: rgba(255,255,255,.84);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: 12.5px; font-weight: 700; color: var(--ink-2);
+  box-shadow: var(--hud);
+}
+.note-chip b { color: var(--teal-700); }
+
+/* 고르는 화면에서는 HUD 를 물러나게 합니다 — 판이 화면을 채우므로
+   모서리 요소가 같이 서 있으면 시선이 흩어집니다. */
+body.picking .hud-mark, body.picking .hud-nav { opacity: .38; }
+.hud-mark, .hud-nav { transition: opacity 300ms var(--ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-char img, .hero-char .gnd { animation: none; }
+  .view, .start, .panel, .go, .back, .hud-nav button, .gate, .gate-box, .gate-go { transition: none; }
+  .start:hover, .panel:hover, .go:hover, .back:hover, .hud-nav button:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <img class="bg-blur" src="../lobby/assets/campus-hero.jpg" alt="">
+  <div class="bg-room"><img src="../lobby/assets/campus-hero.jpg" alt=""></div>
+</div>
+
+<div class="hud-mark">
+  <p class="wm" id="wm">Deskfit</p>
+  <p class="tagline">자세교정과 공부를 <b>한 번에</b></p>
+</div>
+
+<nav class="hud-nav" aria-label="바로 가기">
+  <span class="wrap">
+    <button type="button" aria-label="마이페이지" onclick="location.href='../mypage/index.html'">🪪</button>
+    <span class="lab" aria-hidden="true">마이페이지</span>
+  </span>
+  <span class="wrap">
+    <button type="button" aria-label="랭킹전" onclick="location.href='../league/index.html'">🏆</button>
+    <span class="lab" aria-hidden="true">랭킹전</span>
+  </span>
+</nav>
+
+<p class="note-chip"><b>시안 5</b> · 월드 — 캐릭터가 주인공</p>
+
+<main class="shell">
+  <div class="stage">
+
+    <section class="view on" id="v-lobby" aria-labelledby="wm">
+      <div class="hero-char">
+        <span class="gnd" aria-hidden="true"></span>
+        <img src="../lobby/assets/char-turtle.png" alt="거북이 캐릭터가 캠퍼스 앞에 서 있어요">
+      </div>
+      <p class="blurb">오늘도 <b>같은 자리</b>에서 기다렸어요</p>
+      <button class="start" type="button" id="start">세션 시작</button>
+    </section>
+
+    <section class="view" id="v-choose" aria-labelledby="ask" hidden>
+      <h1 class="ask" id="ask">둘 중 어디로 앉을까요</h1>
+
+      <div class="panels" role="group" aria-label="세션 종류">
+        <button class="panel dark" type="button" id="p-open" aria-pressed="true">
+          <span class="media">
+            <img class="anim" src="../lobby/assets/world-3d.webp" alt="캠퍼스 위로 카메라가 천천히 들어가는 장면">
+            <img class="still" src="../lobby/assets/world-still.jpg" alt="캠퍼스 전경">
+          </span>
+          <span class="veil"></span>
+          <span class="name">온라인</span>
+          <span class="bar"></span>
+        </button>
+
+        <button class="panel light" type="button" id="p-invite" aria-pressed="false">
+          <span class="room">
+            <figure class="a"><img src="../lobby/assets/char-turtle.png" alt=""><span class="gnd"></span></figure>
+            <figure class="b"><img src="../lobby/assets/char-penguin.png" alt=""><span class="gnd"></span></figure>
+            <figure class="c"><img src="../lobby/assets/char-frog.png" alt=""><span class="gnd"></span></figure>
+          </span>
+          <span class="veil"></span>
+          <span class="name">초대</span>
+          <span class="bar"></span>
+        </button>
+      </div>
+
+      <div class="confirm">
+        <button class="go" type="button" id="go">캠퍼스로 들어가기</button>
+        <button class="back" type="button" id="back">돌아가기</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h" hidden>
+  <div class="gate-box">
+    <span class="gate-ico" id="gate-ico" aria-hidden="true"></span>
+    <h2 id="gate-h"></h2>
+    <p id="gate-p"></p>
+    <div class="gate-acts">
+      <a class="gate-go" id="gate-go" href="#"></a>
+      <button class="gate-x" type="button" id="gate-x">나중에 할게요</button>
+    </div>
+  </div>
+</div>
+
+<script src="variant.js"></script>
+</body>
+</html>

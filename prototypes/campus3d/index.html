@@ -898,8 +898,11 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyM') { e.preventDefault(); toggleMap(); return; }
   /* 시점을 키로도 돌립니다. 끌기만 되면 걷다가 손을 떼고 끌어야 해서
      한 손으로는 방향을 못 바꿉니다 — "움직이기 힘들다" 의 절반입니다. */
-  if (e.code === 'KeyZ' || e.code === 'Comma') { turnCam(-1); return; }
-  if (e.code === 'KeyX' || e.code === 'Period') { turnCam(1); return; }
+  /* e.repeat 을 거릅니다. 안 거르면 키를 **누르고 있는 동안** 운영체제
+     자동 반복이 초당 서른 번쯤 들어와서, 한 번에 0.55 라디안씩 초당
+     16 라디안으로 화면이 팽팽 돕니다. 한 번 누르면 한 번 돕니다. */
+  if (e.code === 'KeyZ' || e.code === 'Comma') { if (!e.repeat) turnCam(-1); return; }
+  if (e.code === 'KeyX' || e.code === 'Period') { if (!e.repeat) turnCam(1); return; }
   if (e.code === 'KeyC') { e.preventDefault(); openWardrobe(); return; }
   if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleHelp(); return; }
   if (PLACE.on) {
@@ -914,12 +917,12 @@ addEventListener('keyup', (e) => { key[e.code] = false; });
 addEventListener('blur', () => { for (const k in key) key[k] = false; });
 
 let yaw = -Math.PI * .75, pitch = .55, dist = 11.5, camD = 11.5, drag = null;
-/* 마지막으로 시점을 직접 건드린 시각. 직접 돌린 직후에는 자동 추적을
-   쉬게 합니다 — 내가 돌린 걸 카메라가 도로 되돌리면 싸우는 느낌이 납니다. */
-let camHold = 0;
+/* 자동 추적을 뺐으므로 "직접 돌린 직후에는 쉰다" 는 장치도 같이 뺍니다.
+   쓰는 곳 없는 상태를 남겨 두면 다음 사람이 그게 뭔가를 지켜 준다고
+   믿습니다 — 이번 버그가 딱 그런 식으로 났습니다. */
 /* 사람이 정한 각도(pitch)와 **가림 때문에 잠깐 올라간 각도**를 따로 둡니다 */
 let camPitch = .55;
-function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; turned += .55; clampRoomYaw(); }
+function turnCam(dir) { yaw -= dir * .55; turned += .55; clampRoomYaw(); }
 cv.addEventListener('pointerdown', (e) => {
   if (first) { try { cv.requestPointerLock?.(); } catch {} return; }
   drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
@@ -933,7 +936,6 @@ cv.addEventListener('pointermove', (e) => {
   }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-  camHold = performance.now() + 1400;
   yaw -= dx * (first ? .005 : .006);
   pitch = first ? clamp(pitch + dy * .004, -1.15, 1.15) : clamp(pitch + dy * .004, .04, 1.35);
   if (!first) clampRoomYaw();
@@ -2572,16 +2574,33 @@ function tick(now) {
     if (!hit(P.x, nz)) P.z = nz;
     P.dir = Math.atan2(wx, wz);
     P.sp = Math.min(run, P.sp + dt * 8);
-    /* 앞으로 걸을 때만 카메라가 뒤로 따라옵니다.
-       옆걸음(A·D)에도 따라 돌면 카메라가 돌고 → 그 방향으로 다시 걷게 되어
-       제자리에서 빙글빙글 돕니다. 그래서 **앞 입력이 셀 때만** 돕니다. */
-    if (!first && iz > .55 && Math.abs(ix) < .55 && performance.now() > camHold) {
-      yaw = smoothAngle(yaw, P.dir, 1 - Math.pow(.28, dt));
-      if (room) clampRoomYaw();
-    }
+    /* ── 카메라는 스스로 안 돕니다 ──
+       여기에 "앞으로 걸으면 카메라가 뒤따라 돈다" 가 있었습니다. 지웁니다.
+
+       왜 없어도 되는지: 걷는 방향은 **카메라 기준**으로 풉니다
+       (wx = -ix·cos yaw + iz·sin yaw). 그래서 W 만 누르면 P.dir 이 yaw 와
+       **정확히 같습니다** — 따라 돌 각도 자체가 없습니다. 자판만 쓰는
+       사람에게 이 줄은 원래 아무 일도 안 했습니다.
+
+       왜 있으면 안 되는지: 각도가 벌어지는 경우가 둘인데 둘 다 나쁩니다.
+       ① 옆 성분이 조금 섞이면(아날로그 스틱·터치) 카메라가 그 각도를
+          쫓아 돌고, 돌아간 카메라 기준으로 다시 걸어서 각도가 그대로
+          남습니다 — 멈추지 않고 **계속 빙빙 돕니다.** 자판은 옆 성분이
+          0 아니면 45도라 `|ix| < .55` 로 가려졌지만, 스틱은 그 사이
+          아무 값이나 나옵니다.
+       ② 눌러서 걸어가는 중에는 방향을 길이 정하므로 각도가 큽니다.
+          그래서 길이 건물을 끼고 돌면 화면이 통째로 휙 돌아갑니다.
+          A* 를 넣으면서 이 줄이 그 경우에 처음으로 살아났습니다 —
+          "캐릭터가 계속 빙빙 돈다" 가 이것이었습니다.
+
+       카메라는 사람이 끌거나(마우스) Z·X 로 돌릴 때만 돕니다. */
   } else {
     P.sp = Math.max(0, P.sp - dt * 10);
   }
+  /* yaw 는 끌면 계속 더해지기만 해서 몇 분이면 수백 라디안이 됩니다.
+     각도로는 같지만 큰 수에서 sin·cos 을 하면 정밀도가 깎입니다.
+     한 바퀴 안으로 접어 둡니다 — 화면에는 아무 변화가 없습니다. */
+  yaw = ((yaw + Math.PI) % TAU + TAU) % TAU - Math.PI;
   const step = Math.hypot(P.x - px, P.z - pz);
   /* 1.5초 동안 거의 못 나아가면 자동 걷기를 접습니다 */
   if (goTo) {
@@ -3011,10 +3030,13 @@ window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.
 window.__scene = scene;
 window.__renderer = renderer;
 window.__ride = () => rideId;
-window.__setCam = (y, pi, d) => { yaw = y; pitch = camPitch = pi; dist = camD = d; camHold = performance.now() + 9e5; };
+window.__setCam = (y, pi, d) => { yaw = y; pitch = camPitch = pi; dist = camD = d; };
 window.__setRide = (id) => setRide(id);
 window.__path = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.length : null; };
 window.__pathPts = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.map((v)=>[+v.x.toFixed(1), +v.z.toFixed(1)]) : null; };
+window.__spin = () => ({ yaw:+yaw.toFixed(3), dir:+P.dir.toFixed(3), rigY:+playerRig.rotation.y.toFixed(3),
+  sp:+P.sp.toFixed(2), x:+P.x.toFixed(2), z:+P.z.toFixed(2), goTo: !!goTo,
+  ride: rideId, first, moved:+P.moved.toFixed(1) });
 window.__go = () => ({ p: [+P.x.toFixed(1), +P.z.toFixed(1)], to: goTo && [+goTo.x.toFixed(1), +goTo.z.toFixed(1)],
   left: goPath ? goPath.length : null, stall: +goStall.toFixed(2), dirWant: +(P.dirWant||0).toFixed(2) });
 window.__walkTo = (tx, tz) => { goPath = findPath(P.x, P.z, tx, tz); goTo = goPath ? goPath.shift() : { x: tx, z: tz }; goEnd = { x: tx, z: tz }; goStall = 0; goRetried = false; goLastD = -1; };

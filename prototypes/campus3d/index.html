@@ -227,6 +227,154 @@
     font:700 14px var(--ff);color:var(--ink);background:rgba(34,42,51,.03);outline:none}
   #panel input.nick:focus{border-color:var(--acc2);background:#fff}
 
+
+  /* ══════════════════════════════════════════════════════
+     클레이 — 창의 재질
+
+     여기 있던 것은 종이였습니다. 흰 바닥에 1.5px 실선 테두리, 표와
+     줄글. 3D 월드 위에 종이 문서가 뜨는 꼴이라 창만 다른 앱 같았습니다.
+
+     찰흙은 **테두리로 모양을 만들지 않습니다.** 밝은 쪽에서 빛이
+     들어오고 반대쪽에 그늘이 지는 것으로 두께가 보입니다. 그래서
+     그림자를 넷으로 씁니다 — 바깥 아래 그늘 · 바깥 위 하이라이트 ·
+     안쪽 위 밝은 선 · 안쪽 아래 어두운 선. 테두리는 뺍니다.
+
+     눌린 것(고른 것)은 색을 채우는 대신 **안으로 들어갑니다**.
+     찰흙을 손가락으로 누른 자국이라, 어느 것이 눌려 있는지가
+     색맹인 사람에게도 보입니다.
+     ══════════════════════════════════════════════════════ */
+  :root{
+    /* 찰흙의 색. 처음에 크림(#FBF6EC)으로 뒀는데 베이지가 너무 셌습니다 —
+       월드 자체가 하늘·잔디·물이라 창만 따뜻한 쪽으로 떨어져 나왔습니다.
+       흰색에 파랑을 아주 조금 섞은 쪽으로 옮깁니다. 그림자도 갈색이 아니라
+       **남색 계열**로 져야 같은 빛 아래 있는 것으로 보입니다. */
+    --clay:#F6F9FD;                       /* 창 바닥 */
+    --clay2:#EAF0F8;                      /* 한 단 낮은 면 */
+    --clay3:#DAE3EF;                      /* 눌린 면 */
+    --clayUp:0 10px 22px -8px rgba(58,80,112,.30), 0 -4px 12px -6px rgba(255,255,255,.95),
+             inset 0 2px 0 rgba(255,255,255,.96), inset 0 -3px 0 rgba(86,110,146,.13);
+    --clayUp2:0 5px 12px -5px rgba(58,80,112,.26), inset 0 1.5px 0 rgba(255,255,255,.95),
+             inset 0 -2px 0 rgba(86,110,146,.12);
+    --clayIn:inset 0 3px 7px rgba(62,84,118,.22), inset 0 -1.5px 0 rgba(255,255,255,.75);
+    /* 글자도 갈색을 뺍니다 */
+    --cInk:#22303F; --cInk2:#3F4E60; --cInk3:#79879A;
+    --mint:#B7EBE1; --mintD:#12867A;
+    --peach:#FBD6CE; --peachD:#B75844;
+    --lilac:#DCD8F6; --lilacD:#6355B0;
+    --lemon:#F2E7B4; --lemonD:#8A7620;
+    --sky:#CCE1F8; --skyD:#2A66A6;
+  }
+  #panel{background:var(--clay);border:0;
+    box-shadow:0 30px 70px -24px rgba(40,58,84,.44), 0 -6px 20px -10px rgba(255,255,255,.9),
+      inset 0 3px 0 rgba(255,255,255,.95), inset 0 -5px 0 rgba(86,110,146,.13);
+    border-radius:30px}
+  #panel .ph{background:transparent;border-bottom:0;padding:22px 26px 6px}
+  #panel .bd{padding:10px 26px 8px}
+  #panel .tag{background:var(--clay3);color:var(--cInk3);box-shadow:var(--clayIn);
+    padding:5px 12px;font-size:10.5px;letter-spacing:.04em}
+  #panel h3{margin:11px 0 0;font-size:22px}
+  #panel .x{padding:12px 26px 20px}
+  #panel p{color:var(--cInk2)}
+  #panel .note{background:var(--clay2);box-shadow:var(--clayIn);border-radius:16px;
+    padding:12px 14px;color:var(--cInk3);margin-top:14px}
+
+  /* 픽토그램 — 스물두 개가 한 벌이라 굵기를 여기서 한 번만 정합니다 */
+  .pic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .pic.lg{width:28px;height:28px;stroke-width:1.6}
+
+  /* 칸 — 줄글 대신 이걸 씁니다 */
+  .cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px;margin:4px 0 6px}
+  .cg.two{grid-template-columns:1fr 1fr}
+  .cc{display:flex;flex-direction:column;gap:7px;padding:14px 13px;border-radius:20px;
+    background:var(--clay2);box-shadow:var(--clayUp2);border:0;cursor:default;
+    font:700 12px/1.35 var(--ff);color:var(--cInk2);text-align:left;transition:transform .12s,box-shadow .12s}
+  button.cc{cursor:pointer}
+  button.cc:hover{transform:translateY(-2px)}
+  button.cc:active,.cc.on{box-shadow:var(--clayIn);background:var(--clay3);transform:none}
+  .cc .ic{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;
+    background:var(--mint);color:var(--mintD);box-shadow:var(--clayUp2)}
+  .cc.on .ic{box-shadow:none}
+  .cc b{font-size:14px;font-weight:800;color:var(--cInk);letter-spacing:-.01em}
+  .cc small{font-size:10.5px;font-weight:700;color:var(--cInk3);line-height:1.45}
+  .cc .big{font:800 22px/1 var(--ff);color:var(--cInk);letter-spacing:-.02em}
+  .ic.peach{background:var(--peach);color:var(--peachD)}
+  .ic.lilac{background:var(--lilac);color:var(--lilacD)}
+  .ic.lemon{background:var(--lemon);color:var(--lemonD)}
+  .ic.sky{background:var(--sky);color:var(--skyD)}
+
+  /* 줄 — 아이콘 + 이름 + 값. 표를 대신합니다 */
+  .rw{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:17px;
+    background:var(--clay2);box-shadow:var(--clayUp2);margin-bottom:7px;
+    font:700 13px var(--ff);color:var(--cInk2);width:100%;border:0;text-align:left}
+  button.rw{cursor:pointer;transition:transform .12s}
+  button.rw:hover{transform:translateY(-1px)}
+  button.rw:active{box-shadow:var(--clayIn)}
+  .rw .ic{width:32px;height:32px;border-radius:11px;display:grid;place-items:center}
+  .rw .ic .pic{width:19px;height:19px}
+  .rw span.t{flex:1;min-width:0}
+  .rw span.t em{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:var(--cInk3);margin-top:2px}
+  .rw span.v{font-weight:800;color:var(--cInk);font-size:13.5px;white-space:nowrap}
+
+  /* 채워지는 막대 */
+  .mtr{height:11px;border-radius:99px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
+  .mtr i{display:block;height:100%;border-radius:99px;background:var(--mintD);
+    box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5)}
+
+  /* 기존 부품도 같은 재질로 */
+  .kv{border-bottom:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:15px;
+    padding:10px 13px;margin-bottom:6px;color:var(--cInk3)}
+  .kv b{color:var(--cInk)}
+  .wr button{border:0;background:var(--clay2);box-shadow:var(--clayUp2);color:var(--cInk2);
+    padding:8px 14px;border-radius:99px}
+  .wr button:hover{color:var(--cInk);transform:translateY(-1px)}
+  .wr button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .wr button:disabled{opacity:.42;box-shadow:none;background:var(--clay3)}
+  .wr button.sw{box-shadow:var(--clayUp2);border:0}
+  .wr button.sw.on{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.55);transform:none}
+  button.buy{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:18px;
+    padding:12px 12px;color:var(--cInk2);gap:8px}
+  button.buy:hover{transform:translateY(-2px)}
+  button.buy.on,button.buy:active{box-shadow:var(--clayIn);background:var(--clay3)}
+  button.buy .sw{border-radius:12px;box-shadow:var(--clayUp2)}
+  .lbl{color:var(--cInk3);margin:18px 0 9px}
+  .lbl::after{background:rgba(86,110,146,.20)}
+  ul.feed li{border-bottom:0;background:var(--clay2);box-shadow:var(--clayUp2);
+    border-radius:15px;padding:10px 13px;margin-bottom:6px;color:var(--cInk2)}
+  ul.feed li b{color:var(--mintD)}
+  #panel input.nick,#panel select,#panel input[type=text]{border:0;background:var(--clay2);
+    box-shadow:var(--clayIn);border-radius:14px;padding:11px 13px;color:var(--cInk);
+    font:700 14px var(--ff);outline:none}
+  #panel input.nick:focus,#panel select:focus{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.4)}
+  button.tt{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:13px;
+    color:var(--cInk3)}
+  button.tt.on{box-shadow:var(--clayIn);color:#fff}
+  table.tt{border-spacing:5px}
+  table.tt th{color:var(--cInk3)}
+  .card-id{border:0;background:linear-gradient(135deg,var(--mint),var(--sky));
+    box-shadow:var(--clayUp);border-radius:22px;padding:16px}
+  .card-id .ph{box-shadow:var(--clayUp2)}
+
+  /* 얼굴을 끄면 그림만 내립니다 — 판정은 그대로 돕니다 */
+  #pip .fr.hide{visibility:hidden}
+  #pip .fr.hide::after{content:'얼굴 꺼짐 · 판정은 계속';visibility:visible;position:absolute;
+    inset:0;display:grid;place-items:center;font:700 11px var(--ff);color:var(--tx3);
+    background:var(--gl2);border-radius:inherit}
+  #stack.left{right:auto;left:14px}
+  #sbtn{display:flex;gap:6px;margin:10px 0 2px}
+  #sbtn button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
+    background:var(--gl3);border:1px solid var(--ln);border-radius:12px;padding:8px 4px;
+    color:var(--tx2);font:700 10px/1.1 var(--ff);cursor:pointer;transition:.12s}
+  #sbtn button:hover{color:var(--tx);border-color:rgba(255,255,255,.28)}
+  #sbtn button[aria-pressed=true]{background:var(--acc);border-color:transparent;color:#08312B}
+  #sbtn .pic{width:18px;height:18px}
+  #zoomer{position:absolute;right:14px;bottom:96px;display:flex;flex-direction:column;
+    padding:5px;gap:5px;pointer-events:auto}
+  #zoomer button{width:34px;height:32px;border:0;background:var(--gl3);border-radius:9px;
+    color:var(--tx);font:800 17px/1 var(--ff);cursor:pointer}
+  #zoomer button:hover{background:rgba(255,255,255,.2)}
+  @media (max-width:760px){#zoomer{display:none}}
+
   /* ── 지도 ── */
   #map{position:absolute;inset:0;display:none;place-items:center;
     background:rgba(12,17,24,.62);backdrop-filter:blur(5px);pointer-events:auto}
@@ -378,10 +526,43 @@
     #dock button{width:40px;padding:9px 0}
   }
 </style>
-<canvas id="cv"></canvas>
+<canvas id="cv" tabindex="0" aria-label="기린캠퍼스 3D 월드. WASD 로 걷고 E 로 상호작용합니다"></canvas>
 <div class="hud">
-  <div id="zone" class="g"><i class="dot"></i><div><b>캠퍼스</b><span class="sub">중앙 광장</span></div></div>
-  <div id="tags"></div>
+  <div id="zone" class="g" role="status" aria-live="polite"><i class="dot"></i><div><b>캠퍼스</b><span class="sub">중앙 광장</span></div></div>
+  <!-- ── 픽토그램 ──
+     바깥에서 아이콘을 받아오지 않습니다. 이 월드는 웹캠 추론과 같은 탭에서
+     돌기 때문에 요청 하나가 아깝고, 무엇보다 아이콘이 안 오면 창이 글자만
+     남습니다. 스물두 개를 한 벌로 심어 두고 <use> 로 꺼내 씁니다.
+     선 굵기와 격자(24)를 한 벌로 맞춰 둬야 나란히 놓았을 때 따로 안 놉니다. -->
+<svg id="picto" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+ <defs>
+  <g id="pic-book"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5A1.5 1.5 0 0 1 20 20.5z"/></g>
+  <g id="pic-seat"><path d="M6 4h12v7H6z"/><path d="M4.5 12.5h15"/><path d="M7 15v4M17 15v4"/></g>
+  <g id="pic-clock"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></g>
+  <g id="pic-bell"><path d="M6.5 17V11a5.5 5.5 0 0 1 11 0v6"/><path d="M4.5 17h15"/><path d="M10 20h4"/></g>
+  <g id="pic-cal"><rect x="4" y="6" width="16" height="14" rx="2.5"/><path d="M4 10.5h16M9 4v4M15 4v4"/></g>
+  <g id="pic-music"><path d="M10 17V6l8-1.6V15"/><circle cx="7.6" cy="17.2" r="2.6"/><circle cx="15.6" cy="15.2" r="2.6"/></g>
+  <g id="pic-board"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M8 9h8M8 12.5h5"/><path d="M9 20l3-3 3 3"/></g>
+  <g id="pic-cup"><path d="M6 4h10v6a5 5 0 0 1-10 0z"/><path d="M16 5.5h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8.5 20h7M11 15v5"/></g>
+  <g id="pic-coin"><circle cx="12" cy="12" r="8"/><path d="M12 8.2v7.6M14.2 10H11a1.6 1.6 0 0 0 0 3.2h2a1.6 1.6 0 0 1 0 3.2H9.8"/></g>
+  <g id="pic-shirt"><path d="M9 4l3 2 3-2 4.5 2.5-1.8 3.6L16 9.4V20H8V9.4l-1.7.7L4.5 6.5z"/></g>
+  <g id="pic-sofa"><path d="M5 12V9a2 2 0 0 1 4 0v3h6V9a2 2 0 0 1 4 0v3"/><rect x="3.5" y="12" width="17" height="5.5" rx="2"/><path d="M6.5 17.5V19M17.5 17.5V19"/></g>
+  <g id="pic-egg"><path d="M12 4c3.3 0 6 4.4 6 8.2A6 6 0 0 1 6 12.2C6 8.4 8.7 4 12 4z"/></g>
+  <g id="pic-cam"><rect x="3.5" y="7" width="12.5" height="10" rx="2.5"/><path d="M16 11.5l4.5-2.8v6.6L16 12.5z"/></g>
+  <g id="pic-leaf"><path d="M19 5C10 5 5 9 5 15a4 4 0 0 0 4 4c6 0 10-5 10-14z"/><path d="M8.5 15.5c2.5-2.5 5-4 8-5"/></g>
+  <g id="pic-run"><circle cx="14.5" cy="5.5" r="2"/><path d="M8 20l3-4.5 3.5-2-1-4 3.5 3 3 .5"/><path d="M11 9L7.5 11l-.5 3"/></g>
+  <g id="pic-fish"><path d="M3.5 12c3-4 6.5-5.5 10-5.5S19.5 9 20.5 12c-1 3-3.5 5.5-7 5.5S6.5 16 3.5 12z"/><circle cx="9" cy="11" r=".9" fill="currentColor" stroke="none"/></g>
+  <g id="pic-ticket"><rect x="3.5" y="7" width="17" height="10" rx="2.5"/><path d="M9.5 7v10" stroke-dasharray="2 2.4"/></g>
+  <g id="pic-bus"><rect x="5" y="4.5" width="14" height="12" rx="2.5"/><path d="M5 11h14M8 20v-1.5M16 20v-1.5"/><circle cx="8.5" cy="14" r=".9" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14" r=".9" fill="currentColor" stroke="none"/></g>
+  <g id="pic-sun"><circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></g>
+  <g id="pic-user"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-5.6 7-5.6s6.2 1.8 7 5.6"/></g>
+  <g id="pic-map"><path d="M9 5L3.5 7v12L9 17l6 2 5.5-2V5L15 7z"/><path d="M9 5v12M15 7v12"/></g>
+  <g id="pic-heart"><path d="M12 19.5C6.5 15.8 4 13.2 4 10.2A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 8 2.2c0 3-2.5 5.6-8 9.3z"/></g>
+  <g id="pic-chart"><path d="M4.5 19h15"/><path d="M7.5 19V12M12 19V6.5M16.5 19v-4.5"/></g>
+  <g id="pic-key"><circle cx="8" cy="12" r="4"/><path d="M12 12h8M17.5 12v3M20 12v2.4"/></g>
+ </defs>
+</svg>
+<div id="tags"></div>
 
   <!-- 오른쪽 한 기둥 — 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
   <div id="stack">
@@ -399,8 +580,8 @@
   </div>
 
   <div id="idbar" class="g"><b class="nm">기린</b><i></i><span class="sc">학교 미설정</span><em class="tm"></em></div>
-  <div id="prompt" class="g"><em>E</em><span>들어가기</span></div>
-  <div id="toast"><b></b><span></span></div>
+  <div id="prompt" class="g" role="status" aria-live="polite"><em>E</em><span>들어가기</span></div>
+  <div id="toast" role="status" aria-live="polite"><b></b><span></span></div>
   <div id="bub"></div>
 
   <div id="dlg" class="g">
@@ -408,8 +589,8 @@
     <div class="more"><kbd>E</kbd> 다음 · <kbd>Esc</kbd> 그만</div>
   </div>
 
-  <div id="panel">
-    <div class="ph"><span class="tag"></span><h3></h3></div>
+  <div id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-h">
+    <div class="ph"><span class="tag"></span><h3 id="panel-h"></h3></div>
     <div class="bd"></div>
     <div class="x"><kbd>Esc</kbd> 로 닫기</div>
   </div>
@@ -424,6 +605,15 @@
     <div class="bar"><i></i></div>
     <div class="hint">앉아 있는 동안 자세를 봅니다. 목이 무너지면 캐릭터도 같이 굽습니다.<br>
       <em class="pz">카메라를 켜는 중</em></div>
+    <!-- 2D 판 세션 화면에 있던 단추 셋. 얼굴 창 위에 붙어 있었습니다. -->
+    <div id="sbtn">
+      <button id="s-quiet" aria-pressed="false" title="회의 모드 — 알림만 끕니다. 판정은 계속 돕니다">
+        <svg class="pic"><use href="#pic-bell"/></svg><span>회의 모드</span></button>
+      <button id="s-face" aria-pressed="false" title="얼굴 끄기 — 판정은 계속 돕니다">
+        <svg class="pic"><use href="#pic-cam"/></svg><span>얼굴 끄기</span></button>
+      <button id="s-move" title="얼굴 창을 반대쪽으로 옮깁니다">
+        <svg class="pic"><use href="#pic-map"/></svg><span>자리 옮기기</span></button>
+    </div>
     <button id="stand">일어나기 (E)</button>
   </div>
 
@@ -458,6 +648,12 @@
     <div class="r"><kbd>휠</kbd><span>멀리 · 가까이</span></div>
   </div>
 
+  <!-- 확대·축소. 2D 판에는 +/− 단추가 있었는데 3D 는 휠만 됐습니다.
+       휠이 없는 트랙패드와 태블릿에서는 배율을 아예 못 바꿉니다. -->
+  <div id="zoomer" class="g">
+    <button id="z-in" aria-label="확대">+</button>
+    <button id="z-out" aria-label="축소">−</button>
+  </div>
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
@@ -1121,6 +1317,7 @@ function panelFor(s) {
         }
         else if (k === 'retro') openPanel({ tag: '회고', title: '세션 회고', panel: 'retro' });
         else if (k === 'recal') { PZ.clearBaseline(); toast('기준을 지웠어요', '다음에 앉을 때 10초 동안 다시 잡습니다'); again(); }
+        else if (k === 'tour') { closePanel(); openTour(0); }
         else if (k === 'wipe') {
           if (!confirm('이 기기의 모든 기록을 지웁니다. 되돌릴 수 없습니다.')) return;
           try { localStorage.clear(); } catch (_) {}
@@ -1188,6 +1385,12 @@ function panelFor(s) {
     case 'school': return schoolView();
     case 'weather': return weatherView();
     case 'bus': return UI.bus();
+    case 'tour': return UI.tour({ step: tourStep,
+      onStep: (i) => { tourStep = i; },
+      onDone: () => { closePanel(); SAVE.seenTour = true; UI.save(); } });
+    case 'radio': return UI.radio({ bgm: BGM.on });
+    case 'calendar': return UI.calendar();
+    case 'today': return UI.today();
     case 'invite': return UI.invitePanel({ nick: myNick(), school: SAVE.school, species: curSpecies });
     case 'decor': return UI.decor({
       furn: SAVE.furn,
@@ -1245,6 +1448,36 @@ function panelFor(s) {
   }
 }
 let panelSpot = null, redrawPanel = () => {};
+/* ══ 초점 가두기 ══
+   창이 열려 있는데 Tab 을 누르면 초점이 창 **뒤의 월드**로 빠져나갔습니다.
+   키보드나 화면 낭독기를 쓰는 사람에게는 창이 닫힌 것과 같습니다 —
+   눈으로는 창이 떠 있는데 Enter 를 눌러도 창이 반응하지 않습니다.
+
+   창 안에서만 돌게 묶고, 닫을 때 **원래 있던 자리로 초점을 돌려 놓습니다.**
+   안 돌려놓으면 창을 닫을 때마다 초점이 문서 맨 앞으로 튑니다. */
+let trapEl = null, trapFrom = null, trapKey = null;
+function trapFocus(el) {
+  untrapFocus();
+  trapEl = el; trapFrom = document.activeElement;
+  const q = () => [...el.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+    .filter((n) => !n.disabled && n.offsetParent !== null);
+  trapKey = (e) => {
+    if (e.code !== 'Tab') return;
+    const f = q(); if (!f.length) { e.preventDefault(); return; }
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    else if (!el.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+  };
+  addEventListener('keydown', trapKey, true);
+  const f = q(); if (f.length) setTimeout(() => f[0].focus(), 30);
+}
+function untrapFocus() {
+  if (trapKey) removeEventListener('keydown', trapKey, true);
+  trapKey = null; trapEl = null;
+  if (trapFrom && document.body.contains(trapFrom)) { try { trapFrom.focus(); } catch (_) {} }
+  trapFrom = null;
+}
 function openPanel(s) {
   panelSpot = s;
   const draw = () => {
@@ -1256,10 +1489,12 @@ function openPanel(s) {
   };
   redrawPanel = draw; draw();
   elPanel.classList.add('on'); panelOn = true;
+  trapFocus(elPanel);
   elTut.style.display = 'none';
   dockOn('wear', s.panel === 'wardrobe');
 }
 function closePanel() {
+  untrapFocus();
   elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {};
   elTut.style.display = '';
   dockOn('wear', false);
@@ -1452,6 +1687,12 @@ const PZ = createPosture({
       if (d.deviation > 1) SESS.axes[d.key] = (SESS.axes[d.key] || 0) + .066;
   },
 });
+$('#s-quiet').addEventListener('click', () => setQuiet(!QUIET.on));
+$('#s-face').addEventListener('click', () => setFaceOff(!faceOff));
+$('#s-move').addEventListener('click', flipPip);
+if (SAVE.pipLeft) $('#stack').classList.add('left');
+$('#z-in').addEventListener('click', () => { dist = clamp(dist - 1.6, room ? 4.5 : 5.5, room ? 18 : 34); });
+$('#z-out').addEventListener('click', () => { dist = clamp(dist + 1.6, room ? 4.5 : 5.5, room ? 18 : 34); });
 $('#stand').addEventListener('click', () => endSession());
 function startSession(s) {
   Object.assign(SESS, { on: true, t: 0, judged: 0, tWarn: 0, tBad: 0, axes: {},
@@ -1496,6 +1737,7 @@ function endSession(quiet) {
     UI.save();
   }
   SESS.on = false; SESS.face = ''; SESS.recoverT = 0;
+  if (QUIET.on) { QUIET.on = false; QUIET.snap = null; $('#s-quiet').setAttribute('aria-pressed', 'false'); $('#s-quiet').querySelector('span').textContent = '회의 모드'; }
   PZ.stop();
   $('#pipcam').style.display = 'none';
   sit(player, false); sit(pipMe, false);
@@ -1900,14 +2142,47 @@ let near = null, spot = null, npcNear = null, spotD = 1e9, npcD = 1e9;
    도서관·본관·기숙사 의자는 앉는 순간 자세 세션이 시작되고,
    소파·벤치·식당 의자는 그냥 앉아서 쉽니다. */
 const CSIT = { on: false, from: null };
+/* 발밑 의자.
+
+   전에는 이 함수를 `interact()` 안에서만 불렀습니다. 그래서 의자
+   앞에 서도 **화면에 아무 말이 없었고**, 앉을 수 있다는 걸 알 방법이
+   없었습니다. 도서관에 의자가 서른 개 있는데 아무도 못 앉았습니다.
+   이제 매 프레임 찾아서 안내에 씁니다.
+
+   반경은 1.6m 입니다. 처음에 0.95 로 조였다가 다시 늘렸습니다 —
+   **의자에는 그만큼 가까이 못 섭니다.** 의자도 책상도 못 지나가는
+   물건이라, 서 있을 수 있는 제일 가까운 자리를 재 봤더니 0.6~2.0m
+   (중앙값 0.7~0.8)였습니다. 0.95 로 두면 책상에 깊이 들어간 의자
+   아홉 개가 영영 안 잡힙니다.
+
+   대신 **바라보는 쪽 의자를 우선**합니다. 나란한 의자 사이에 서면
+   둘 다 반경 안에 드는데, 거리만 보면 몸이 반 칸 기울었다고 옆
+   의자가 잡힙니다. 내가 보고 있는 쪽이 내가 앉으려는 쪽입니다. */
+let seatNear = null, seatD = 1e9;
 function nearSeat() {
   if (!room || !room.seats) return null;
-  let best = null, bd = 1.15 * 1.15;
+  let best = null, bs = 1e9, bd = 1e9;
+  const fx = Math.sin(P.dir), fz = Math.cos(P.dir);
   for (const q of room.seats) {
-    const d2 = (P.x - q.x) ** 2 + (P.z - q.z) ** 2;
-    if (d2 < bd) { bd = d2; best = q; }
+    const dx = q.x - P.x, dz = q.z - P.z, d = Math.hypot(dx, dz);
+    if (d > 1.6) continue;
+    /* 앞쪽이면 최대 0.45m 만큼 가깝게 쳐 줍니다 */
+    const face = d < .01 ? 1 : (dx / d) * fx + (dz / d) * fz;
+    const sc = d - Math.max(0, face) * .45;
+    if (sc < bs) { bs = sc; bd = d; best = q; }
   }
+  seatD = best ? bd : 1e9;
   return best;
+}
+/* 이 의자에 앉으면 세션이 시작되는가. 열람실·강의실·내 방의 **의자**만
+   그렇습니다. 소파와 벤치는 그냥 쉬는 자리입니다 — 2D 판과 같은 규칙. */
+function seatIsSession(q) {
+  return !!q && q.kind === 'chair'
+    && (room.key === 'library' || room.key === 'mainhall' || room.key === 'dorm');
+}
+function takeSeat(q) {
+  if (seatIsSession(q)) startSession({ title: ROOM_NAME[room.key][0] + ' · 자세 세션', seat: q });
+  else sitCasual(q);
 }
 function sitCasual(q) {
   CSIT.on = true; CSIT.from = { x: P.x, z: P.z, dir: P.dir };
@@ -1927,6 +2202,13 @@ function interact() {
   if (dlgOn) { openDlg(dlgWho); return; }        // 다음 줄
   if (SESS.on) { endSession(); return; }
   if (CSIT.on) { standCasual(); return; }
+  /* **발밑 의자가 사람·자리보다 먼저입니다.**
+     자리(spot)는 반지름 2.4~3.4m 짜리 넓은 구역이고 의자는 그 안에
+     콕 박힌 물건입니다. 자리를 먼저 보면, 도서관 어느 의자 앞에서
+     눌러도 자리 창이 열리거나 방마다 정해진 의자 하나로 순간이동해서
+     서른 개가 있어도 쓸 수 있는 건 하나였습니다.
+     내가 의자 앞까지 걸어갔으면 그건 그 의자를 뜻합니다. */
+  if (seatNear) { takeSeat(seatNear); return; }
   if (npcNear) { openDlg(npcNear); return; }
   if (spot) {
     if (spot.game) {
@@ -1951,13 +2233,7 @@ function interact() {
     if (spot.seat) startSession(spot); else openPanel(spot);
     return;
   }
-  { const q = nearSeat();
-    if (q) {
-      if (q.kind === 'chair' && (room.key === 'library' || room.key === 'mainhall' || room.key === 'dorm'))
-        startSession({ title: ROOM_NAME[room.key][0] + ' · 자세 세션', seat: q });
-      else sitCasual(q);
-      return;
-    } }
+
   if (room) { leaveRoom(); return; }
   if (near) enterRoom(near);
 }
@@ -2244,6 +2520,10 @@ const TUT = [
   { k: 'sit', t: '열람석 앞에서 E — 앉으면 세션이 시작됩니다', p: '목이 무너지면 캐릭터도 같이 굽습니다.' },
 ];
 let tutStep = SAVE.seenTutorial ? TUT.length : 0;
+/* 처음 안내 넉 장. 조작 힌트(TUT)와는 다른 것입니다 — 저쪽은 "어떻게
+   움직이나", 이쪽은 "여기가 무엇을 하는 곳인가" 입니다. */
+let tourStep = 0;
+function openTour(i) { tourStep = i | 0; openPanel({ tag: '처음 안내', title: '기린캠퍼스', panel: 'tour' }); }
 let moved0 = 0, turned = 0;
 const elTut = $('#tut');
 elTut.querySelector('.skip').addEventListener('click', () => { tutStep = TUT.length; paintTut(); SAVE.seenTutorial = true; UI.save(); });
@@ -2289,6 +2569,57 @@ function idbarTime(t) {
   el.classList.add('on');
   el.textContent = Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
 }
+/* ══ 회의 모드 ══
+   회의·발표 중에는 캐릭터가 말을 걸면 안 됩니다. 그런데 **측정을 끄면
+   안 됩니다** — 코인의 분모가 판정 시간이라, 측정을 끄는 순간 회의 시간이
+   통째로 0 이 되고 회의가 잦은 사람은 이 앱을 쓸 이유가 없어집니다.
+   그래서 **알림만** 끕니다. 말풍선과 소리만 멈추고 판정은 계속 돕니다.
+
+   구현은 스냅숏 하나입니다. 켤 때 지금까지의 누적을 적어 두고 끌 때
+   차이를 냅니다 — 회의용 카운터를 따로 두면 두 군데서 같은 값을 세게
+   되고, 둘이 어긋나면 어느 쪽이 맞는지 알 수 없습니다.
+
+   새로고침 뒤로 **안 남깁니다.** 회의는 한 번 지나가는 것인데 이 상태가
+   남으면 알림이 꺼진 줄 모르고 계속 쓰다가 자세 알림을 영영 잃습니다. */
+const QUIET = { on: false, at: 0, snap: null };
+function quietSnap() { return { t: SESS.t, bad: SESS.tBad, warn: SESS.tWarn, n: SESS.bad }; }
+function setQuiet(on) {
+  on = !!on;
+  if (on === QUIET.on) return;
+  if (on) { QUIET.on = true; QUIET.at = performance.now(); QUIET.snap = quietSnap(); elBub.classList.remove('on'); }
+  else {
+    QUIET.on = false;
+    const a = QUIET.snap; QUIET.snap = null;
+    if (a) {
+      const t = Math.max(0, SESS.t - a.t), bad = Math.max(0, SESS.tBad - a.bad);
+      const m = Math.round(t / 60);
+      toast('회의 모드를 껐어요',
+        t < 30 ? '그동안도 재고 있었어요'
+        : `${m}분 동안 알림만 껐고, 그중 ${Math.round(bad)}초가 굽은 자세였어요`);
+    }
+  }
+  const b = $('#s-quiet');
+  b.setAttribute('aria-pressed', String(QUIET.on));
+  b.querySelector('span').textContent = QUIET.on ? '알림 켜기' : '회의 모드';
+}
+/* ══ 얼굴 끄기 ══ 판정은 그대로 돌고 **화면만** 끕니다. 화면 공유 중에
+   내 얼굴이 같이 나가는 것이 싫은 경우가 실제로 제일 많습니다. */
+let faceOff = false;
+function setFaceOff(on) {
+  faceOff = !!on;
+  $('#pip .fr').classList.toggle('hide', faceOff);
+  const b = $('#s-face');
+  b.setAttribute('aria-pressed', String(faceOff));
+  b.querySelector('span').textContent = faceOff ? '얼굴 켜기' : '얼굴 끄기';
+}
+/* ══ 자리 옮기기 ══ 얼굴 창이 오른쪽에 고정이라, 오른쪽에 무언가를 띄워
+   두고 쓰는 사람은 늘 가립니다. 왼쪽으로 넘깁니다. */
+function flipPip() {
+  const on = !$('#stack').classList.contains('left');
+  $('#stack').classList.toggle('left', on);
+  SAVE.pipLeft = on; UI.save();
+}
+
 /* 무너지는 순간의 낮은 이중 톤 */
 let _ac = null;
 function warnBeep() {
@@ -2654,6 +2985,7 @@ function tick(now) {
 
   /* ── 문 · 자리 · 사람 ── */
   spot = null; npcNear = null; spotD = 1e9; npcD = 1e9;
+  seatNear = (room && !panelOn && !SESS.on && !CSIT.on) ? nearSeat() : null;
   if (!panelOn) {
     let best = 1e9;
     for (const s of spotsHere()) {
@@ -2679,9 +3011,19 @@ function tick(now) {
     elPrompt.classList.toggle('on', !!(near || spot || npcNear) && !panelOn && !SESS.on && !dlgOn && !mapOn);
   } else {
     const out = P.z > room.size.d / 2 - 1.3;
-    if (out) { elPrompt.innerHTML = '<em>E</em><span>나가기</span>'; spot = null; }
+    /* 의자 안내. 이 줄이 없어서 앉는 기능이 통째로 안 보였습니다. */
+    /* 의자가 제일 먼저입니다. 뒷벽에 붙은 벤치는 문턱 안쪽에 걸쳐
+       있어서 '나가기' 가 이기고 있었고, 창구 앞 의자는 직원에게
+       말 걸기가 이기고 있었습니다. 발밑에 의자가 있으면 의자입니다.
+       (걸어서 문턱을 넘으면 그대로 나가지므로 나가는 길은 안 막힙니다.) */
+    if (seatNear) {
+      elPrompt.innerHTML = `<em>E</em><span>${seatIsSession(seatNear) ? '앉아서 자세 세션 시작' : '앉기'}</span>`;
+      spot = null; npcNear = null;
+    }
+    else if (out) { elPrompt.innerHTML = '<em>E</em><span>나가기</span>'; spot = null; }
+    else if (npcNear) elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
     else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
-    elPrompt.classList.toggle('on', !!(out || spot) && !panelOn && !SESS.on && !mapOn);
+    elPrompt.classList.toggle('on', !!(out || spot || seatNear || npcNear) && !panelOn && !SESS.on && !mapOn);
     if (out && !SESS.on && P.sp > .2 && P.z > room.size.d / 2 - .55) leaveRoom();
   }
   /* 대화는 상대가 잠깐 감지에서 빠졌다고 닫지 않습니다 — 내가 **걸어서
@@ -2852,8 +3194,10 @@ function tick(now) {
     const warn = PZ.mode === 'live' ? SESS.live === 'warning' : (!bad && SESS.k > .34);
     if (bad && !SESS.wasBad) {
       SESS.bad++;
-      /* 무너지는 순간 한 번만 — 낮은 이중 톤. 계속 울리면 잔소리가 됩니다 */
-      warnBeep();
+      /* 무너지는 순간 한 번만 — 낮은 이중 톤. 계속 울리면 잔소리가 됩니다.
+         회의 모드면 **세기만 하고 안 울립니다** — 세는 것을 멈추면
+         회의 시간이 코인에서 통째로 사라집니다. */
+      if (!QUIET.on) warnBeep();
     }
     if (SESS.wasBad && !bad) SESS.recoverT = 1.8;
     SESS.wasBad = bad;
@@ -2874,7 +3218,7 @@ function tick(now) {
     elPost.querySelector('.tm').textContent =
       Math.floor(SESS.t / 60) + ':' + String(Math.floor(SESS.t % 60)).padStart(2, '0');
     idbarTime(SESS.t);
-    const msg = bad ? '목이 앞으로 나왔어요' : warn ? '조금만 펴 볼까요' : '';
+    const msg = QUIET.on ? '' : bad ? '목이 앞으로 나왔어요' : warn ? '조금만 펴 볼까요' : '';
     if (msg && !first) {
       v3.set(P.x, 2.5, P.z).project(cam);
       elBub.style.left = ((v3.x * .5 + .5) * innerWidth) + 'px';
@@ -2998,6 +3342,9 @@ setTimeout(shootMap, 900);
 ['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k, i) =>
   setTimeout(() => { try { buildRoom(k); } catch {} }, 2400 + i * 650));
 if (SAVE.shadow === false) setShadows(false);
+/* 처음 들어온 사람에게 넉 장을 한 번 보여 줍니다. 조작 힌트는 그 뒤에
+   이어지므로, 세계가 무엇인지 → 어떻게 움직이는지 순서가 됩니다. */
+if (!SAVE.seenTour) setTimeout(() => { if (!panelOn && !SAVE.seenTour) openTour(0); }, 1400);
 window.__ready = true;
 window.__P = P;
 window.__aim = (x, z) => aimSun(x, z);
@@ -3030,6 +3377,10 @@ window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.
 window.__scene = scene;
 window.__renderer = renderer;
 window.__ride = () => rideId;
+window.__seats = () => (room ? room.seats : []);
+window.__grid = () => (room ? room.grid : null);
+window.__hitRoom = (x,z) => (room ? hitGrid(room.grid, x, z) : true);
+window.__place = () => PLACE.on;
 window.__setCam = (y, pi, d) => { yaw = y; pitch = camPitch = pi; dist = camD = d; };
 window.__setRide = (id) => setRide(id);
 window.__path = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.length : null; };

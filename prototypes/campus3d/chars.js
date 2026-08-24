@@ -61,11 +61,31 @@ export const BARE = true;
 /* 1.17 은 컸습니다 — 몸이 머리에 매달린 것처럼 보였습니다.
    랜딩 렌더는 앉은 자세라 머리 비중이 더 커 보이는 것이고, 선 자세
    기준으로 재면 1.08 이 그 체감입니다. */
-export const HEAD_Y = 1.45;
+export const HEAD_Y = 1.30;
 /* 1.17 → 1.08 → 1.0. 키울수록 랜딩과 **멀어졌습니다** — 저쪽은 머리가
    크긴 해도 과장돼 있지 않고, 몸이 작아서 커 보이는 쪽입니다. */
 export const HEAD_S = 1.0;
-const NECK_Y = 1.27;
+
+/* ══ 몸 비례 ══
+   서 있는 렌더 넷(거북이·기린·펭귄·햄스터)을 재 보면 이렇습니다.
+
+     머리   위에서 45%
+     몸통   가운데 40%
+     다리   아래 15% — 사실상 발만 보입니다
+
+   우리 것은 다리가 23%, 머리가 33% 라 **사람 비례**였습니다. 그래서
+   같은 얼굴을 붙여도 저쪽은 인형, 우리 쪽은 작은 사람으로 보였습니다.
+
+   고치는 곳은 머리가 아니라 **아래쪽**입니다. 머리를 키우면 가분수가
+   되지만, 다리를 줄이고 몸통을 내리면 같은 머리가 저절로 커 보입니다 —
+   렌더의 머리가 큰 것도 머리를 키워서가 아니라 몸이 작아서입니다.
+
+   몸통 폭도 줄입니다. 저쪽 몸은 머리보다 확실히 좁아 물방울로 떨어지는데,
+   우리 것은 어깨가 머리만큼 넓어 사람 실루엣이 났습니다. */
+export const LEG_Y = .27;      // 다리 뿌리 = 다리 전체 길이
+export const TORSO_Y = .27;    // 몸통 바닥
+const TORSO_W = .90;           // 몸통 가로 배율 — 머리보다 좁게
+const NECK_Y = 1.10;
 
 /* ── 멀리 있는 사람 (character 의 opt.lod) ──
    아래 접기(fold)가 **그리는 횟수**를 줄입니다. 면 수는 그대로입니다.
@@ -767,17 +787,17 @@ function buildChar(parent, species, fit, opt) {
   /* ── 다리 ── 짧고 굵게. 신발은 앞코가 나와야 신발로 보입니다. */
   [-.17, .17].forEach((x, li) => {
     const leg = new THREE.Group();
-    leg.position.set(x, .44, 0); g.add(leg); parts.legs.push(leg);
-    cyl(leg, .145, .15, .22, 14, bot, 0, -.11, 0);
-    ell(leg, .148, shortsOn ? skin : bot, 0, -.21, 0, 1, .86, 1);      // 무릎
+    leg.position.set(x, LEG_Y, 0); g.add(leg); parts.legs.push(leg);
+    cyl(leg, .145, .15, .135, 14, bot, 0, -.068, 0);
+    ell(leg, .148, shortsOn ? skin : bot, 0, -.128, 0, 1, .86, 1);     // 무릎
     if (shortsOn) {                                                     // 반바지단
       const hem2 = new THREE.Mesh(torG(.145, .026, S(6), S(14, 8)),
         dye('bottom', M(mix(botC, 0x000000, .18), .6), (c) => mix(c, 0x000000, .18)));
       hem2.rotation.x = Math.PI / 2; hem2.position.y = -.19; leg.add(hem2);
     }
     const shin = new THREE.Group();
-    shin.position.set(0, -.22, 0); leg.add(shin); parts.shins.push(shin);
-    cyl(shin, .138, .145, .22, 14, shortsOn ? skin : bot, 0, -.11, 0);
+    shin.position.set(0, -.135, 0); leg.add(shin); parts.shins.push(shin);
+    cyl(shin, .138, .145, .135, 14, shortsOn ? skin : bot, 0, -.068, 0);
     if (L.bottomId === 'trainers') {                                    // 옆줄
       box(leg, .02, .2, .04, .008, M(0xFFF6E6, .6), (li ? 1 : -1) * .148, -.11, 0);
       box(shin, .02, .2, .04, .008, M(0xFFF6E6, .6), (li ? 1 : -1) * .142, -.11, 0);
@@ -809,7 +829,8 @@ function buildChar(parent, species, fit, opt) {
   const lathe = (prof, seg = 26) =>
     latheG(prof.map(([y, r]) => new THREE.Vector2(Math.max(.004, r), y)), S(seg, 12));
   const torso = new THREE.Group();
-  torso.position.y = .44; g.add(torso); parts.torso = torso;
+  torso.position.y = TORSO_Y; g.add(torso); parts.torso = torso;
+  torso.scale.set(TORSO_W, 1, TORSO_W);
   {
     const p = new THREE.Mesh(lathe([[-.02, 0], [0, .30], [.06, .345], [.16, .35], [.22, .335]]), bot);
     p.castShadow = p.receiveShadow = true; p.scale.z = .88; torso.add(p);
@@ -852,8 +873,10 @@ function buildChar(parent, species, fit, opt) {
   const sleeveMat = varsity ? dye('top', M(topC, .6)) : top;
   [-1, 1].forEach((sgn) => {
     const arm = new THREE.Group();
-    arm.position.set(sgn * .33, 1.08, 0);
-    arm.rotation.z = opt.wave && sgn > 0 ? 2.15 : sgn * .22;
+    /* 렌더의 팔은 **몸에 붙은 짧은 뭉치**입니다. 벌어져 있으면 사람이
+       팔을 든 것으로 보입니다. 뿌리를 안으로 당기고 각도를 줄입니다. */
+    arm.position.set(sgn * .285, .90, 0);
+    arm.rotation.z = opt.wave && sgn > 0 ? 2.15 : sgn * .13;
     arm.rotation.x = -.08;
     g.add(arm); parts.arms.push(arm);
     ell(arm, .115, bodyTop, 0, -.03, 0, 1, 1, 1);
@@ -861,14 +884,14 @@ function buildChar(parent, species, fit, opt) {
       cyl(arm, .105, .1, .12, 12, bodyTop, 0, -.1, 0).castShadow = true;
       const cuff = new THREE.Mesh(torG(.096, .02, S(6), S(16, 8)), trim);
       cuff.rotation.x = Math.PI / 2; cuff.position.y = -.17; arm.add(cuff);
-      cyl(arm, .095, .085, .2, 12, skin, 0, -.27, 0).castShadow = true;
+      cyl(arm, .095, .085, .13, 12, skin, 0, -.22, 0).castShadow = true;
     } else {
       cyl(arm, .105, .088, .3, 12, sleeveMat, 0, -.19, 0).castShadow = true;
       const cuff = new THREE.Mesh(torG(.086, .026, S(6), S(16, 8)),
         varsity ? M(vBody, .55) : trim);
       cuff.rotation.x = Math.PI / 2; arm.add(cuff); cuff.position.y = -.34;
     }
-    ell(arm, .105, skin, 0, -.42, .012, 1.02, 1.12, .88);
+    ell(arm, .105, skin, 0, -.30, .012, 1.02, 1.12, .88);
   });
 
   /* ── 목 · 머리 ── */
@@ -1064,7 +1087,7 @@ export function stride(g, t, sp) {
   P.arms[0].rotation.z = b[0] * (1 - k * .3);
   P.arms[1].rotation.z = b[1] * (1 - k * .3);
   const bob = Math.abs(c) * .06 * k;
-  P.torso.position.y = .44 + bob;
+  P.torso.position.y = TORSO_Y + bob;
   P.torso.rotation.x = k * .11;
   P.torso.rotation.y = s * .12;
   P.torso.rotation.z = 0;
@@ -1105,7 +1128,7 @@ export function idle(g, t, seed = 0) {
     } }
   const P = g.userData.parts; if (!P) return;
   const br = Math.sin(t * 1.5 + seed) * .013;
-  P.torso.position.y = .44 + br;
+  P.torso.position.y = TORSO_Y + br;
   P.torso.rotation.x = 0; P.torso.rotation.y = 0; P.torso.rotation.z = 0;
   P.head.position.y = HEAD_Y + br;
   P.head.position.z = 0;
@@ -1150,7 +1173,7 @@ export function sit(g, on) {
     r.rotation.x = on ? -1.0 : -.1;
     r.rotation.z = on ? (i ? .2 : -.2) : g.userData.base.armZ[i];
   });
-  P.torso.position.y = .44; P.torso.rotation.y = 0;
+  P.torso.position.y = TORSO_Y; P.torso.rotation.y = 0;
   P.head.position.y = HEAD_Y; P.head.rotation.y = 0;
   g.userData.sitting = on;
 }
@@ -1161,7 +1184,7 @@ export function slouch(g, k) {
   const P = g.userData.parts; if (!P) return;
   const t = Math.max(0, Math.min(1, k));
   P.torso.rotation.x = t * .36;
-  P.torso.position.y = .44 - t * .06;
+  P.torso.position.y = TORSO_Y - t * .06;
   P.head.rotation.x = t * .54;
   P.head.position.z = t * .32;
   P.head.position.y = HEAD_Y - t * .12;

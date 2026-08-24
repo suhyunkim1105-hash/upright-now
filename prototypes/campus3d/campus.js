@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { M, roundedBox, cyl, prism, tree, bush } from './parts.js';
 import * as BLD from './bld.js';
 import { buildGrounds, OUTER } from './grounds.js';
+import { buildFaculties } from './faculty.js';
 
 export const PAL = {
   grass: 0x6FC85E, grassDark: 0x57B04A, grassLight: 0x86D46E,
@@ -24,20 +25,35 @@ export const PAL = {
 
 /* 건물 여섯 — 자리 · 방향 · 크기 · 안으로 들어갈 곳.
    ry 는 정면(+z)이 도는 각도입니다. 정면 방향 = (sin ry, cos ry). */
-export const BUILDINGS = [
-  { key: 'mainHall', zone: 'mainhall', name: '본관',       sub: '강의실 · 대중음악',
-    x: -23, z: 0,   ry:  Math.PI / 2,     s: 1.22, w: 9.6,  d: 6.2, front: 2.5 },
-  { key: 'library',  zone: 'library',  name: '도서관',     sub: '백색소음 · 오래 앉는 자리',
-    x:  23, z: 0,   ry: -Math.PI / 2,     s: 1.22, w: 10.0, d: 6.4, front: 2.4 },
-  { key: 'dorm',     zone: 'dorm',     name: '기숙사',     sub: '내 방 · 1인실',
-    x:   0, z: -22, ry:  0,               s: 1.06, w: 8.2,  d: 5.4, front: 1.9 },
-  { key: 'union',    zone: 'union',    name: '학생회관',   sub: '볼일 보는 곳',
-    x:   0, z:  22, ry:  Math.PI,         s: 1.06, w: 9.0,  d: 5.6, front: 1.9 },
-  { key: 'arcade',   zone: 'arcade',   name: '미니게임관', sub: '3분만 놀고 가는 곳',
-    x:  19, z: -19, ry: -Math.PI / 4,     s: 1.08, w: 8.4,  d: 5.6, front: 1.9 },
+/* 정문 축. campus.js 와 grounds.js 가 같은 값을 봐야 축이 안 갈라집니다. */
+const AXIS = Math.atan2(20.5, 20.5);
+
+/* 건물 여섯 — 정문 축 기준 상대각(도)과 반지름으로 놓습니다.
+   deg 0 이 정문 쪽, 180 이 그 반대(본관 자리)입니다. */
+const PLACE = [
+  { key: 'mainHall', zone: 'mainhall', name: '본관',        sub: '강의실 · 대중음악',
+    deg: 180, r: 60,  s: 1.90, w: 9.6,  d: 6.2, front: 2.5 },
+  { key: 'library',  zone: 'library',  name: '도서관',      sub: '백색소음 · 오래 앉는 자리',
+    deg: 125, r: 52,  s: 1.90, w: 10.0, d: 6.4, front: 2.4 },
+  { key: 'union',    zone: 'union',    name: '학생회관',    sub: '볼일 보는 곳',
+    deg: 235, r: 52,  s: 1.60, w: 9.0,  d: 5.6, front: 1.9 },
+  { key: 'arcade',   zone: 'arcade',   name: '미니게임관',  sub: '3분만 놀고 가는 곳',
+    deg: 60,  r: 74,  s: 1.60, w: 8.4,  d: 5.6, front: 1.9 },
   { key: 'shop',     zone: 'clubshop', name: '동아리 상점', sub: '옷 · 가구 · 알',
-    x: -19, z:  19, ry:  Math.PI * .75,   s: 1.08, w: 8.0,  d: 5.2, front: 1.8 },
+    deg: 300, r: 74,  s: 1.60, w: 8.0,  d: 5.2, front: 1.8 },
+  /* 기숙사는 가장 바깥입니다 — 실제 대학도 기숙사가 강의동 뒤에 있습니다 */
+  { key: 'dorm',     zone: 'dorm',     name: '기숙사',      sub: '내 방 · 1인실',
+    deg: 180, r: 104, s: 1.60, w: 8.2,  d: 5.4, front: 1.9 },
 ];
+
+export const BUILDINGS = PLACE.map((p) => {
+  const th = AXIS + p.deg * Math.PI / 180;
+  const x = Math.cos(th) * p.r, z = Math.sin(th) * p.r;
+  /* 정면이 광장을 보게 합니다 */
+  const ry = Math.atan2(-Math.cos(th), -Math.sin(th));
+  return { key: p.key, zone: p.zone, name: p.name, sub: p.sub,
+           x, z, ry, s: p.s, w: p.w, d: p.d, front: p.front, deg: p.deg, r: p.r };
+});
 
 const PLAZA_R = 12;
 /* 안쪽 반지름 — 광장 · 건물 여섯 · 앞마당 · 대로가 사는 곳입니다.
@@ -845,7 +861,11 @@ export function buildCampus(scene) {
   const ctx = { solid, swans, lotus, fish, flutter };
 
   ground(g);
+  /* 안쪽 고리 — 광장 둘레 산책로 */
   ringPath(g, 30, 4.2);
+  /* 바깥 고리 — 건물 여섯을 잇습니다. 실제 캠퍼스의 순환도로 자리고,
+     이게 없으면 건물끼리 가려면 매번 광장을 거쳐야 합니다. */
+  ringPath(g, 63, 5.0);
   plaza(g);
 
   /* --- 건물 여섯 --- */
@@ -995,7 +1015,7 @@ export function buildCampus(scene) {
     const a = rnd() * Math.PI * 2, r = 17 + rnd() * (CORE - 19);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     /* 건물 · 길 · 광장 위에는 안 심습니다 */
-    if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 14.5)) continue;
+    if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 22)) continue;
     if (Math.hypot(x, z) < 17) continue;
     if (Math.abs(Math.hypot(x, z) - 30) < 3.8) continue;          // 산책로 위
     if (inZone(x, z, 1.0)) continue;                              // 운동장 · 호수 · 동아리 거리
@@ -1079,7 +1099,17 @@ export function buildCampus(scene) {
   /* 바깥 캠퍼스 — 안쪽이 다 선 뒤에 짓습니다. 안쪽에 이미 있는 것
      위에 나무를 심지 않도록 inCore 로 물어봅니다. */
   const inCore = (x, z) => Math.hypot(x, z) < CORE + 2;
-  const grounds = buildGrounds(g, solid, inCore);
+  /* 건물 자리를 바깥에도 알려 줍니다 — 안 알려 주면 건물 정면에
+     나무가 서서 여섯 채가 다 가려집니다. */
+  /* 단과대학 열여덟 — 들어갈 수 없는 배경 건물입니다.
+     여섯 채만으로는 캠퍼스가 아니라 마을입니다. 실내를 만들지 않는 대신
+     겉모습으로만 "여기가 대학이다" 를 말합니다. */
+  const FAC = buildFaculties(g, AXIS, solid, null);
 
-  return { group: g, colliders, portals, HALF, CORE, PLAZA_R, swans, lotus, fish, flutter, grounds };
+  const avoid = (x, z, m) =>
+    BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < m) ||
+    FAC.some((f) => Math.hypot(f.x - x, f.z - z) < m + Math.max(f.w, f.d) * .35);
+  const grounds = buildGrounds(g, solid, inCore, avoid);
+
+  return { group: g, colliders, portals, HALF, CORE, PLAZA_R, swans, lotus, fish, flutter, grounds, faculties: FAC, AXIS };
 }

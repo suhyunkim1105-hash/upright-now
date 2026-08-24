@@ -173,13 +173,16 @@ function boulevards(g, solid) {
    대학이 섬과 갈리는 지점입니다. 섬은 둥글고, 대학은 **네모난 잔디밭을
    건물이 둘러싼 모양**입니다. 여기서는 건물을 더 세우지 않고 낮은
    울타리와 나무로 네모를 만듭니다 — 기하가 거의 안 듭니다. */
+/* 건물 사이에 눕히는 사각 잔디밭.
+   전 판은 반지름 66~74 에 나무로 둘러싼 마당을 뒀는데, 이제 그 자리가
+   건물 자리입니다. 건물이 없는 각도에만, 그리고 **건물보다 안쪽**에
+   깝니다 — 실제 대학의 앞마당이 그 자리에 있습니다. */
 function quads(g, solid, pushTree) {
   const QUADS = [
-    { r: 66, a: GATE_A + Math.PI * .5,  w: 30, d: 22 },
-    { r: 66, a: GATE_A + Math.PI * 1.0, w: 26, d: 26 },
-    { r: 66, a: GATE_A + Math.PI * 1.5, w: 30, d: 22 },
-    { r: 74, a: GATE_A + Math.PI * .25, w: 22, d: 18 },
-    { r: 74, a: GATE_A + Math.PI * 1.75, w: 22, d: 18 },
+    { r: 40, a: GATE_A + Math.PI * .50, w: 26, d: 18 },
+    { r: 40, a: GATE_A + Math.PI * 1.50, w: 26, d: 18 },
+    { r: 66, a: GATE_A + Math.PI * .511, w: 24, d: 18 },
+    { r: 66, a: GATE_A + Math.PI * 1.489, w: 24, d: 18 },
   ];
   const kerb = M(PAL2.roadEdge, .84);
   const lawn = M(PAL2.lawnLight, .9);
@@ -196,17 +199,13 @@ function quads(g, solid, pushTree) {
     const co = Math.cos(q.a), si = Math.sin(q.a);
     const put = (lx, lz) => pushTree(cx + co * lx - si * lz, cz + si * lx + co * lz,
                                      .95 + rnd() * .35, 0);
-    const nx = Math.max(3, Math.round(q.w / 7));
-    const nz = Math.max(2, Math.round(q.d / 7));
+    /* 네 변을 다 두르면 울타리가 됩니다. **긴 두 변에만** 세웁니다 —
+       마당이 열려 있어야 가로질러 걸을 수 있고, 그게 대학 잔디밭입니다. */
+    const nx = Math.max(3, Math.round(q.w / 9));
     for (let i = 0; i <= nx; i++) {
       const lx = -q.w / 2 + (q.w / nx) * i;
-      put(lx, -q.d / 2 - 2.0);
-      put(lx,  q.d / 2 + 2.0);
-    }
-    for (let j = 1; j < nz; j++) {
-      const lz = -q.d / 2 + (q.d / nz) * j;
-      put(-q.w / 2 - 2.0, lz);
-      put( q.w / 2 + 2.0, lz);
+      put(lx, -q.d / 2 - 2.4);
+      put(lx,  q.d / 2 + 2.4);
     }
   }
 }
@@ -422,7 +421,8 @@ function instancedProps(g, trees, lamps, solid) {
 /* ══════════════════════════════════════════════════════════
    짓기
    ══════════════════════════════════════════════════════════ */
-export function buildGrounds(parent, solid, inCore) {
+/** @param avoid (x, z, m) => 건물 등 비켜야 할 것에 m 칸 안으로 붙었는가 */
+export function buildGrounds(parent, solid, inCore, avoid) {
   const g = new THREE.Group();
   g.name = 'grounds';
   parent.add(g);
@@ -454,18 +454,22 @@ export function buildGrounds(parent, solid, inCore) {
     }
     return Math.abs(r - 92) < 4.5;                 // 순환로
   };
+  /* 420 → 210. 캠퍼스는 숲이 아닙니다 — 나무가 빽빽하면 건물 사이가
+     산길로 보입니다. 길가와 잔디 가장자리에만 남깁니다. */
   let tries = 0;
-  while (trees.length < 420 && tries < 6000) {
+  while (trees.length < 210 && tries < 6000) {
     tries++;
     const a = rnd() * TAU;
     const r = OUTER.core + 3 + rnd() * (OUTER.wall - OUTER.core - 6);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (inCore && inCore(x, z)) continue;
     if (onLane(x, z)) continue;
+    /* 건물과 그 앞마당은 비웁니다 — 건물 앞에 나무가 서면 정면이 가립니다 */
+    if (avoid && avoid(x, z, 26)) continue;
     /* 마당 안에는 안 심습니다 — 마당은 비어 있어야 마당입니다 */
     let inQuad = false;
-    for (const q of [[66, .5, 30, 22], [66, 1, 26, 26], [66, 1.5, 30, 22],
-                     [74, .25, 22, 18], [74, 1.75, 22, 18]]) {
+    for (const q of [[40, .5, 26, 18], [40, 1.5, 26, 18],
+                     [66, .511, 24, 18], [66, 1.489, 24, 18]]) {
       const qa = GATE_A + Math.PI * q[1];
       const dx = x - Math.cos(qa) * q[0], dz = z - Math.sin(qa) * q[0];
       const co = Math.cos(-qa), si = Math.sin(-qa);

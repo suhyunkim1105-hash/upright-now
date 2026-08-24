@@ -2975,7 +2975,14 @@ function tick(now) {
   });
 
   /* ── 카메라 ── */
-  if (first) {
+  /* 개발용 잠금 — __W.lock(x, y, z, tx, ty, tz) 로 카메라를 세워 둡니다.
+     화면을 찍어 확인할 때 씁니다. 그냥 cam 을 밖에서 잡으면 이 블록이
+     매 프레임 덮어써서 어디를 보는지 알 수 없습니다. */
+  if (window.__camLock) { const L = window.__camLock;
+    cam.position.set(L[0], L[1], L[2]); cam.up.set(0, 1, 0);
+    cam.lookAt(L[3], L[4], L[5]);
+    if (L[6]) { cam.fov = L[6]; cam.updateProjectionMatrix(); }
+  } else if (first) {
     cam.position.set(P.x, 1.84 + Math.sin(P.walk * TAU * 2) * .022 * P.sp, P.z);
     const f = new THREE.Vector3(Math.sin(yaw), -Math.tan(pitch), Math.cos(yaw));
     cam.lookAt(cam.position.x + f.x * 10, cam.position.y + f.y * 10, cam.position.z + f.z * 10);
@@ -3194,6 +3201,8 @@ window.__P = P;
 window.__aim = (x, z) => aimSun(x, z);
 /* 시연에서 밤을 보여 주려면 __hour(21). 되돌리려면 __hour(null). */
 window.__hour = (h) => { SKY.setHour(h); setClockHour(h); skySeen = -1; SAVE.hour = h; UI.save(); };
+/* 카메라 고정 — __W.lock(...) · 풀려면 __W.lock(null) */
+window.__W.lock = (...a) => { window.__camLock = a[0] === null ? null : a; };
 window.__wx = (k) => SKY.setWeather(k);
 window.__hit = (x, z) => hitCampus(x, z);
 window.__sess = () => SESS;

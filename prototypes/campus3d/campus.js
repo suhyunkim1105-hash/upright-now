@@ -195,22 +195,34 @@ function ground(g) {
 }
 
 /* ---------- 광장 ---------- */
+/* 사색의 광장 — 원에서 **네모**로.
+
+   반지름 12 짜리 원판이었습니다. 원은 옛 극좌표 배치의 흔적이고, 부지가
+   네모가 된 지금은 아무것도 가리키지 않습니다. 방사 무늬 열여섯은 더
+   나빴습니다 — 살이 사방을 가리키는데 그 끝에 아무것도 없었습니다.
+
+   이제 도서관과 학생회관이 좌우에서 마주 보는 **방**입니다. 면 사이
+   49칸 · 건물 높이 15칸이라 위요비 1:3.3 — 실제 대학 안뜰이 사는 범위가
+   1:3 안팎입니다. 전 판은 가장 가까운 건물이 50칸 밖이라 1:6.7 이었고,
+   그래서 광장이 아니라 잔디에 난 원이었습니다.
+
+   줄눈도 격자로 바꿉니다. 축과 나란히 달려 축을 거듭 말합니다. */
+const PLAZA = { x: 25, z0: -24, z1: 44 };
+
 function plaza(g) {
   const flat = (m) => { m.castShadow = false; return m; };
-  flat(cyl(g, PLAZA_R + .7, PLAZA_R + .7, .34, 64, M(PAL.kerb, .7), 0, .14, 0));
-  flat(cyl(g, PLAZA_R, PLAZA_R, .36, 64, M(PAL.stone, .74), 0, .2, 0));
-  /* 방사 무늬 — 광장은 무늬가 있어야 광장입니다 */
-  for (let i = 0; i < 16; i++) {
-    const a = (i / 16) * Math.PI * 2;
-    const m = flat(box(g, .5, .1, PLAZA_R - 1.4, .05, M(PAL.stoneDark, .78),
-                       Math.cos(a) * (PLAZA_R / 2 + .5), .38, Math.sin(a) * (PLAZA_R / 2 + .5)));
-    m.rotation.y = -a + Math.PI / 2;
-  }
-  [4.6, 8.2].forEach((r) => {
-    const t = new THREE.Mesh(new THREE.TorusGeometry(r, .16, 6, 56), M(PAL.stoneDark, .78));
-    t.rotation.x = Math.PI / 2; t.position.y = .39; g.add(t);
-  });
+  const { x: X, z0, z1 } = PLAZA, cz = (z0 + z1) / 2, D = z1 - z0;
+  flat(box(g, X * 2 + 1.8, .34, D + 1.8, .9, M(PAL.kerb, .7), 0, .14, cz));
+  flat(box(g, X * 2, .36, D, .7, M(PAL.stone, .74), 0, .2, cz));
+  for (let i = 1; i < 9; i++)
+    flat(box(g, X * 2 - 3.4, .1, .42, .05, M(PAL.stoneDark, .78), 0, .38, z0 + (D / 9) * i));
+  for (const x of [-17, -8.5, 8.5, 17])
+    flat(box(g, .42, .1, D - 3.4, .05, M(PAL.stoneDark, .78), x, .38, cz));
 }
+
+/* 광장 위인지 — 나무 · 소품이 여기 서면 안 됩니다 */
+const onPlaza = (x, z, m = 0) =>
+  Math.abs(x) < PLAZA.x + m && z > PLAZA.z0 - m && z < PLAZA.z1 + m;
 
 /* ---------- 길 ---------- */
 function pathTo(g, x, z, w = 5.4) {
@@ -925,8 +937,8 @@ export function buildCampus(scene) {
   /* 서쪽 거치대는 트랙 동쪽 끝(깃대 자리)을 5칸이나 물고 있었습니다.
      기숙사 앞마당 돌판 안으로 당겨 붙입니다 — 세우는 곳이 포장 위라
      오히려 제자리를 찾은 셈이고, 북 대로(|x|<2.5)는 그대로 비어 있습니다. */
-  bikeRack(g, -5.6, -16.4, 0, 4); solid(-5.6, -16.4, 5.0, 1.8);
-  bikeRack(g, 9, -20, 0, 4);  solid(9, -20, 5.0, 1.8);
+  /* 거치대 둘도 뺐습니다. 포장 위라 남겨 뒀는데, 위에서 보니 분수 옆
+     잔디에 아무 건물도 없이 서 있었습니다. 세울 자리는 문 앞입니다. */
   /* 벤치 · 자판기 · 쓰레기통을 뺐습니다. 거치대는 포장 위에 서 있어
      자리가 설명되므로 남깁니다. */
 
@@ -946,7 +958,10 @@ export function buildCampus(scene) {
   const far = (x, z, m) => spots.every((p) => Math.hypot(p[0] - x, p[1] - z) > m);
   /* 86 → 18. 나무는 건물을 가리려고 있는 게 아닙니다 */
   /* 18 → 5. 안쪽은 광장과 앞마당이라 나무가 설 자리가 아닙니다 */
-  for (let i = 0; i < 460 && spots.length < 5; i++) {
+  /* 다섯도 뺍니다. 반지름 17~40 에 뿌렸는데 그 자리가 이제 광장(x ±25,
+     z -24~44)과 본관 앞마당입니다 — 포장 한복판에 나무가 섰습니다.
+     나무는 가장자리 띠(plan.js WOODS)가 맡습니다. */
+  for (let i = 0; i < 460 && spots.length < 0; i++) {
     const a = rnd() * Math.PI * 2, r = 17 + rnd() * (CORE - 19);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     /* 건물 · 길 · 광장 위에는 안 심습니다 */
@@ -993,7 +1008,7 @@ export function buildCampus(scene) {
   }
   /* 덤불 흩뿌리기 */
   /* 덤불 90 → 16 → 4 */
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < 0; i++) {
     const a = rnd() * Math.PI * 2, r = 18 + rnd() * (CORE - 21);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 11)) continue;
@@ -1012,7 +1027,8 @@ export function buildCampus(scene) {
       if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 12.5)) return;
       if (Math.hypot(x - 20.5, z - 20.5) < 11) return;
       if (inZone(x, z, .8)) return;                 // 트랙 인필드에 벚나무가 섰었습니다
-      tree(g, { trunk: 0x9E6A48, leaf: 0xF7B8CE, lod: 11, seg: 13 }, x, z, 1.05);
+      /* 벚꽃 셋도 뺐습니다 — 반지름 21·30 자리인데 이제 광장 포장입니다.
+         물방울 모양이라 킷 나무 옆에 서면 저 혼자 다른 그림이기도 했습니다. */
       solid(x, z, 1.0, 1.0);
     });
   }

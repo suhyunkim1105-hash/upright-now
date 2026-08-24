@@ -149,7 +149,11 @@ export function createSky(THREE, ctx) {
       scene.fog.color.copy(scene.background);
       /* 비·눈은 실제로 시야를 줄입니다 — 날씨가 안개로도 보여야 합니다 */
       const wx = weather === 'clear' ? 1 : weather === 'cloud' ? 1.35 : 1.9;
-      scene.fog.density = indoor ? .0006 : .0075 * wx;
+      /* 밀도 .0075 는 200칸에서 90% 불투명입니다 — 부지가 320칸인데
+         반대편이 안 보였습니다. 넓은 화면이 통째로 분홍 안개가 되던
+         정체입니다. .0040 이면 200칸에서 47% — 깊이는 남고 담과 건물은
+         보입니다. 흐림 · 비는 배수로 그대로 짙어집니다. */
+      scene.fog.density = indoor ? .0006 : .0040 * wx;
     }
     /* 밤에는 **빛의 색까지** 파랗게 기울입니다. 세기만 낮추면 파스텔 재질이
        그대로 밝게 남아서 "어두운 낮" 이 됩니다 — 밤으로 안 읽힙니다. */

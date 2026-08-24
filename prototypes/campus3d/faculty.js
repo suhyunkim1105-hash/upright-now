@@ -148,6 +148,14 @@ function cyl(p, rt, rb, h, seg, mat, x, y, z) {
    조금 늘 뿐이고, 창턱은 인스턴스 하나를 더 쓰고, 띠와 기둥은 상자라
    bake 가 삼켜 드로우콜이 안 늘어납니다. */
 function windowWall(p, w, h, cols, rows, mat, frameMat, x, y, z, ry, arched = true) {
+  /* 들어가지 않는 건물에 창을 촘촘히 박으면, 맵 전체가 격자 무늬가 되어
+     어지럽습니다. 칸을 굵게 잡아 창 수를 줄이고, 대신 남는 벽이
+     덩어리(색 · 그림자 · 처마)로 보이게 합니다 — 멀리서 건물을 알아보게
+     하는 것은 창이 아니라 실루엣과 색입니다.
+
+     칸이 너무 좁으면(2.6 미만) 열을 절반으로 줄입니다. */
+  if (cols > 4 && w / cols < 2.6) cols = Math.max(4, Math.round(cols / 2));
+  if (rows > 3 && h / rows < 3.0) rows = Math.max(3, Math.round(rows * .75));
   const gw = w / cols, gh = h / rows;
   /* 창 대 벽 비율 — .56 이면 창끼리 거의 닿아 커튼월이 됩니다.
      벽돌 건물의 창은 벽이 절반 이상 남아야 벽으로 읽힙니다. */

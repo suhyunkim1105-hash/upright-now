@@ -209,7 +209,9 @@ function ground(g) {
    줄눈도 격자로 바꿉니다. 축과 나란히 달려 축을 거듭 말합니다. */
 /* 세 채가 커지면서 광장도 커집니다. 도서관 면(x -41)에서 학생회관
    면(x 41)까지 83칸, 본관 면(z -44)에서 대로가 닿는 z 34 까지 78칸. */
-const PLAZA = { x: 40, z0: -42, z1: 34 };
+/* 도서관 면(x -29)에서 학생회관 면(x 29)까지 58, 본관 면(z -31)에서
+   대로가 닿는 z 30 까지 61. 높이 18 이라 위요비 1:3.2. */
+const PLAZA = { x: 29, z0: -31, z1: 30 };
 
 function plaza(g) {
   const flat = (m) => { m.castShadow = false; return m; };
@@ -265,26 +267,53 @@ function ringPath(g, r = 30, w = 4.0) {
    교수님 : "가운데 표지판 날리고 동상에 분수 같이 있는 걸로 작게". */
 export function fountain(g, x = 0, z = 0) {
   const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
-  cyl(p, 5.0, 5.3, .5, 48, M(PAL.kerb, .68), 0, .55, 0);          // 바깥 테
-  cyl(p, 4.4, 4.4, .4, 48, M(PAL.stoneDark, .74), 0, .78, 0);
-  cyl(p, 4.3, 4.3, .3, 48, M(PAL.water, .18, {
-    transparent: true, opacity: .88, emissive: 0x2A7C9E, emissiveIntensity: .12 }), 0, .9, 0);
-  cyl(p, 2.2, 2.5, 1.1, 32, M(PAL.stone, .72), 0, 1.35, 0);        // 가운데 기둥
-  cyl(p, 2.9, 2.9, .22, 32, M(PAL.kerb, .68), 0, 1.98, 0);         // 윗 접시
-  cyl(p, 2.6, 2.6, .16, 32, M(PAL.water, .2, { transparent: true, opacity: .85 }), 0, 2.06, 0);
-  cyl(p, 1.0, 1.25, 1.4, 20, M(PAL.stone, .72), 0, 2.75, 0);       // 좌대
-  cyl(p, 1.45, 1.45, .24, 20, M(PAL.kerb, .68), 0, 3.55, 0);
-  box(p, 1.5, .5, .16, .06, M(0x3F6BA8, .5), 0, 3.0, 1.0);         // 명판
-  statue(p, 0, 3.66, 0).scale.setScalar(1.28);
-  /* 물줄기 — 여덟 갈래. 투명한 기둥 여덟이면 물로 읽힙니다 */
   const wat = M(0xCFEFFA, .12, { transparent: true, opacity: .5 });
-  /* 벚꽃 8 → 3. 사진 찍는 자리 하나면 충분합니다 */
-  for (let i = 0; i < 3; i++) {
-    const a = (i / 8) * Math.PI * 2;
-    const j = new THREE.Mesh(new THREE.CylinderGeometry(.07, .13, 1.5, 8), wat);
-    j.position.set(Math.cos(a) * 1.5, 2.6, Math.sin(a) * 1.5);
-    j.rotation.z = Math.cos(a) * .34; j.rotation.x = -Math.sin(a) * .34;
-    p.add(j);
+  const stone = M(PAL.stone, .72), kerb = M(PAL.kerb, .68);
+  const pool = M(PAL.water, .18, { transparent: true, opacity: .86,
+    emissive: 0x2A7C9E, emissiveIntensity: .1 });
+
+  /* ── 아래 못 ── 앉을 수 있게 테를 넓고 낮게 */
+  cyl(p, 6.4, 6.7, .42, 56, kerb, 0, .21, 0);                     // 앉는 테
+  cyl(p, 6.0, 6.0, .22, 56, stone, 0, .5, 0);
+  cyl(p, 5.6, 5.6, .3, 56, pool, 0, .58, 0);                      // 물
+  /* 테 안쪽 몰딩 한 줄 — 테가 두 겹이면 돌로 깎은 것으로 보입니다 */
+  { const t = new THREE.Mesh(new THREE.TorusGeometry(6.0, .16, 8, 60), kerb);
+    t.rotation.x = Math.PI / 2; t.position.y = .44; t.castShadow = true; p.add(t); }
+
+  /* ── 대 ── 아래로 갈수록 굵은 세 마디 */
+  cyl(p, 1.5, 2.1, .5, 28, stone, 0, .82, 0);
+  cyl(p, .78, 1.1, 1.5, 24, stone, 0, 1.82, 0);
+  cyl(p, 1.0, .78, .26, 24, kerb, 0, 2.7, 0);
+
+  /* ── 가운데 접시 ── 넘친 물이 아래로 떨어집니다 */
+  cyl(p, 3.0, 2.4, .3, 40, kerb, 0, 2.98, 0);
+  cyl(p, 2.8, 2.8, .14, 40, pool, 0, 3.14, 0);
+  { const t = new THREE.Mesh(new THREE.TorusGeometry(2.95, .13, 8, 44), kerb);
+    t.rotation.x = Math.PI / 2; t.position.y = 3.12; t.castShadow = true; p.add(t); }
+
+  /* ── 위 대와 작은 접시 ── */
+  cyl(p, .42, .62, 1.3, 18, stone, 0, 3.8, 0);
+  cyl(p, 1.5, 1.1, .24, 30, kerb, 0, 4.52, 0);
+  cyl(p, 1.35, 1.35, .1, 30, pool, 0, 4.64, 0);
+  /* 꼭대기 — 봉오리. 동상 대신 이것이 축의 끝입니다 */
+  cyl(p, .16, .3, .7, 14, stone, 0, 5.0, 0);
+  { const b = new THREE.Mesh(new THREE.SphereGeometry(.42, 18, 14), kerb);
+    b.position.y = 5.5; b.castShadow = true; p.add(b); }
+
+  /* ── 물 ── 꼭대기에서 솟고, 접시에서 넘쳐 아래로 */
+  { const jet = new THREE.Mesh(new THREE.CylinderGeometry(.09, .05, 1.5, 10), wat);
+    jet.position.y = 6.3; p.add(jet); }
+  for (let i = 0; i < 10; i++) {                                   // 위 접시 → 가운데
+    const a = (i / 10) * Math.PI * 2;
+    const f = new THREE.Mesh(new THREE.CylinderGeometry(.05, .09, 1.32, 6), wat);
+    f.position.set(Math.cos(a) * 1.42, 3.9, Math.sin(a) * 1.42);
+    p.add(f);
+  }
+  for (let i = 0; i < 14; i++) {                                   // 가운데 → 못
+    const a = ((i + .5) / 14) * Math.PI * 2;
+    const f = new THREE.Mesh(new THREE.CylinderGeometry(.06, .11, 2.3, 6), wat);
+    f.position.set(Math.cos(a) * 2.92, 1.85, Math.sin(a) * 2.92);
+    p.add(f);
   }
   for (let i = 0; i < 14; i++) {                                   // 물방울
     const a = rnd() * Math.PI * 2, r = 1.2 + rnd() * 2.6;

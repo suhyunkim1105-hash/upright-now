@@ -117,9 +117,13 @@ export const BUILDINGS = [
 
      면 사이 83칸 · 높이 28칸이라 위요비 1:3.0. 대학 중앙 광장이
      사는 자리입니다. */
-  { n: '본관',     enter: 'mainHall', x: 0, z: -58, face: 'S', s: 3.0, w: 28, d: 9.4, front: 1.9 },
-  { n: '도서관',   enter: 'library',  x: -56, z: -12, face: 'E', s: 3.0, w: 15, d: 10, front: 1.6 },
-  { n: '학생회관', enter: 'union',    x:  56, z: -12, face: 'W', s: 3.0, w: 14, d: 9.4, front: 1.6 },
+  /* 배율 3.0 은 픽셀맵의 체감보다 컸습니다. 픽셀맵 본관은 폭 14칸 ·
+     깊이 9칸이고 캐릭터가 한 칸이니, 월드로 옮기면 50 남짓입니다 —
+     84 는 그 1.7 배라 광장 한 변이 통째로 벽이 됐습니다.
+     본관 2.0(56×19) · 도서관 2.2(33×22) · 학생회관 2.2(31×21). */
+  { n: '본관',     enter: 'mainHall', x: 0, z: -42, face: 'S', s: 2.0, w: 28, d: 9.4, front: 2.2 },
+  { n: '도서관',   enter: 'library',  x: -40, z: -6, face: 'E', s: 2.2, w: 15, d: 10, front: 1.9 },
+  { n: '학생회관', enter: 'union',    x:  40, z: -6, face: 'W', s: 2.2, w: 14, d: 9.4, front: 1.9 },
 
   /* ══ 인문사회 지구 — 서쪽 안뜰 44×44, 동쪽으로 엽니다 ══
      ㄷ자 날개끼리 **물지 않습니다**. 전 판은 모서리에서 상자 둘이 서로를
@@ -141,8 +145,8 @@ export const BUILDINGS = [
   /* ══ 예술 · 생활 지구 — 동쪽 안뜰 43×46, 서쪽으로 엽니다 ══ */
   { n: '예술디자인대학', kind: 'atrium',  x: 104, z: -34, face: 'S', w: 46, d: 12, h: 13 },
   { n: '박물관',         kind: 'library', x: 130, z:  -4, face: 'W', w: 44, d: 12, h: 12 },
-  { n: '미니게임관',  enter: 'arcade', x:  92, z: 22, face: 'N', s: 1.6, w: 8.4, d: 5.6, front: 1.9 },
-  { n: '동아리 상점', enter: 'shop',   x: 112, z: 24, face: 'N', s: 1.6, w: 8.0, d: 5.2, front: 1.8 },
+  { n: '미니게임관',  enter: 'arcade', x:  90, z: 24, face: 'N', s: 2.2, w: 8.4, d: 5.6, front: 1.9 },
+  { n: '동아리 상점', enter: 'shop',   x: 116, z: 24, face: 'N', s: 2.2, w: 8.0, d: 5.2, front: 1.8 },
 
   /* ══ 대로변 — 광장에서 밀려난 둘이 여기로 ══
      대로가 정문에서 광장까지 96칸입니다. 그 중간을 잡아 주는 것이
@@ -348,6 +352,8 @@ function ground(g) {
    조각 여럿으로 나눠 깔면 굽은 길이 됩니다. */
 function roads(g) {
   const roadM = M(PAL.road, .92), edgeM = M(PAL.roadEdge, .86);
+  /* 줄눈은 길보다 살짝 어둡게, 가운데 선은 살짝 밝게 */
+  const jointM = M(0xC7C0AF, .9), centerM = M(0xEDE8DA, .88);
   const out = [];
   for (const r of ROADS) {
     const curve = new THREE.CatmullRomCurve3(
@@ -359,8 +365,17 @@ function roads(g) {
       const mx = (A.x + B.x) / 2, mz = (A.z + B.z) / 2;
       const len = Math.hypot(B.x - A.x, B.z - A.z) * 1.25;
       const dir = Math.atan2(B.z - A.z, B.x - A.x);
-      slab(g, r.w + 1.4, len, edgeM, mx, LAYER.roadEdge, mz, -(dir + Math.PI / 2));
-      slab(g, r.w, len, roadM, mx, LAYER.road, mz, -(dir + Math.PI / 2));
+      const ry2 = -(dir + Math.PI / 2);
+      /* 연석 — 길보다 넓게 한 겹. 길이 잔디 위에 얹힌 판이 아니라
+         **파인 자리**로 보이게 합니다. */
+      slab(g, r.w + 1.6, len, edgeM, mx, LAYER.roadEdge, mz, ry2);
+      slab(g, r.w, len, roadM, mx, LAYER.road, mz, ry2);
+      /* 줄눈 — 길 방향에 **직각**으로. 광장 포장의 격자와 같은 어휘라
+         길과 광장이 한 재료로 읽힙니다. 조각마다 한 줄이면 간격이
+         저절로 일정합니다(조각 길이가 곡률과 무관하게 같으므로). */
+      slab(g, r.w - .5, .34, jointM, mx, LAYER.road + .002, mz, ry2);
+      /* 가운데 선 — 축과 순환로에만. 보행로에 그으면 찻길이 됩니다 */
+      if (r.w >= 11) slab(g, .42, len, centerM, mx, LAYER.road + .002, mz, ry2);
     }
     out.push({ curve, w: r.w });
   }
@@ -898,7 +913,13 @@ function annexes(g, solid, avoid) {
   const files = [].concat(KIT.CITY.small, KIT.CITY.wide);
   const spots = new Map();
   let i = 0;
-  for (const [x, z] of ANNEX) {
+  /* 부속동을 세우지 않습니다.
+
+     City Kit 의 작은 상자들이었습니다. 대학 건물 사이에 3~4층짜리
+     시내 건물이 끼어 있으면 그것만 다른 세계에서 온 것으로 보이고,
+     크기가 작아 "미니미니한 장식" 이 됩니다. 대학에는 저런 크기의
+     독립 건물이 거의 없습니다 — 있으면 부속 시설이라 본동에 붙습니다. */
+  for (const [x, z] of []) {
     if (avoid && avoid(x, z, 20)) continue;
     const f = files[i % files.length];
     if (!spots.has(f)) spots.set(f, []);

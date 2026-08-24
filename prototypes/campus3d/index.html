@@ -102,6 +102,24 @@
     border-radius:7px;background:var(--acc);color:#08251F;font-weight:800;font-size:11.5px}
 
   /* ── 오른쪽 아래 · 상태 ── */
+  /* 조준점 — 잠겨 있을 때만. 커서가 사라졌는데 겨누는 데가 안 보이면
+     그것대로 답답합니다. 가운데 점 하나와 얇은 링. */
+  #xhair{position:fixed;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;
+    z-index:60;pointer-events:none;opacity:0;transition:opacity .16s}
+  #xhair.on{opacity:1}
+  #xhair::before,#xhair::after{content:'';position:absolute;border-radius:50%}
+  #xhair::before{inset:0;border:1.5px solid rgba(255,255,255,.5);
+    box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
+  #xhair::after{inset:9px;background:#fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
+  /* 조준점 — 마우스가 잠겨 있을 때만. 커서가 사라졌는데 어디를
+     겨누는지 안 보이면 그것대로 답답합니다. */
+  #xhair{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;
+    z-index:60;pointer-events:none;opacity:0;transition:opacity .16s}
+  #xhair.on{opacity:1}
+  #xhair::before,#xhair::after{content:'';position:absolute;border-radius:50%}
+  #xhair::before{inset:0;border:1.5px solid rgba(255,255,255,.52);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.26)}
+  #xhair::after{inset:9px;background:#fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
   #foot{position:absolute;right:16px;bottom:18px;display:flex;align-items:center;gap:8px;
     padding:6px 11px;font-size:10.5px;font-weight:700;color:var(--tx2)}
   #foot .fps{color:var(--tx3);font-variant-numeric:tabular-nums}
@@ -458,6 +476,7 @@
     <div class="r"><kbd>휠</kbd><span>멀리 · 가까이</span></div>
   </div>
 
+  <div id="xhair" aria-hidden="true"></div>
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
@@ -1083,7 +1102,7 @@ let camHold = 0;
 let camPitch = .55;
 function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; turned += .55; clampRoomYaw(); }
 cv.addEventListener('pointerdown', (e) => {
-  if (first) { try { cv.requestPointerLock?.(); } catch {} return; }
+  if (first) { syncLock(); return; }
   drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener('pointermove', (e) => {
@@ -1216,13 +1235,37 @@ cv.addEventListener('pointerup', (e) => {
 });
 cv.addEventListener('wheel', (e) => { e.preventDefault();
   dist = clamp(dist + e.deltaY * .015, room ? 4.5 : 5.5, room ? 18 : 34); }, { passive: false });
+/* ── 마우스 잠금은 **상태에서 유도**합니다 ──
+
+   전 판은 시점을 바꿀 때만 잠그고 풀었습니다. 그래서 1인칭에서 패널이
+   열리면 커서가 잠긴 채라, 버튼을 누르려면 ESC 로 풀고 → 누르고 →
+   화면을 다시 눌러 잠그고 → 시점을 되찾는 네 걸음이 필요했습니다.
+
+   잠글 조건은 하나뿐입니다: **1인칭이고, 열린 창이 없을 때.**
+   그 외에는 전부 풀립니다. 창이 닫히면 저절로 다시 잠깁니다.
+
+   그리고 잠겨 있는 동안에는 화면 가운데에 조준점을 그립니다 — 커서가
+   사라진 채로 무엇을 겨누는지 모르면 그것대로 답답합니다. */
+function wantLock() { return first && !panelOn && !dlgOn && !mapOn && !room; }
+function syncLock() {
+  const want = wantLock();
+  try {
+    if (want && document.pointerLockElement !== cv) cv.requestPointerLock?.();
+    else if (!want && document.pointerLockElement === cv) document.exitPointerLock?.();
+  } catch {}
+  $('#xhair').classList.toggle('on', want);
+}
+document.addEventListener('pointerlockchange', () => {
+  $('#xhair').classList.toggle('on', document.pointerLockElement === cv);
+});
+
 function toggleView() {
   first = !first;
   player.visible = !first; blob.visible = !first;
   pitch = first ? 0 : .58;
   $('#foot .md').textContent = first ? '1인칭' : '3인칭';
   dockOn('view', first);
-  try { if (first) cv.requestPointerLock?.(); else document.exitPointerLock?.(); } catch {}
+  syncLock();
 }
 function clampRoomYaw() {
   if (!room || first) return;
@@ -1416,12 +1459,12 @@ function openPanel(s) {
     if (v.on) v.on(elPanel, draw);
   };
   redrawPanel = draw; draw();
-  elPanel.classList.add('on'); panelOn = true;
+  elPanel.classList.add('on'); panelOn = true; syncLock();
   elTut.style.display = 'none';
   dockOn('wear', s.panel === 'wardrobe');
 }
 function closePanel() {
-  elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {};
+  elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
 }
@@ -1444,11 +1487,11 @@ function openDlg(n) {
   elDlg.querySelector('span').textContent = n.d.species;
   elDlg.querySelector('p').textContent = n.d.lines[n.line % n.d.lines.length];
   n.line++;
-  elDlg.classList.add('on'); dlgOn = true;
+  elDlg.classList.add('on'); dlgOn = true; syncLock();
 }
 function closeDlg() {
   if (dlgWho) { dlgWho.paused = false; dlgWho.faceMe = false; dlgWho.wait = .8; }
-  elDlg.classList.remove('on'); dlgOn = false; dlgWho = null;
+  elDlg.classList.remove('on'); dlgOn = false; dlgWho = null; syncLock();
 }
 
 /* 앉은 카메라가 설 자리 고르기 —
@@ -2246,12 +2289,28 @@ function shootMap() {
     r2.setSize(S, S, false);
     r2.outputColorSpace = THREE.SRGBColorSpace;
     r2.toneMapping = THREE.ACESFilmicToneMapping; r2.toneMappingExposure = 1.05;
-    const halfW = CAMPUS.HALF + 7;
-    const mc = new THREE.OrthographicCamera(-halfW, halfW, halfW, -halfW, 1, 300);
-    /* 남동쪽 위에서 30도 — 건물 옆면이 살짝 보여야 입체로 읽힙니다 */
-    mc.position.set(34, 92, 34);
+    /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다. 그리고 카메라가
+       높이 92 에 far 300 이면 먼 구석이 잘립니다 — 캠퍼스를 넓히고도
+       이 값이 그대로라 지도가 옛 섬 크기로 찍히고 있었습니다. */
+    /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다.
+
+       그리고 **정직하게 내려다봅니다.** 비스듬히 두면 높은 건물이 옆으로
+       누워 낮은 것을 덮고, 지도에서 길이 사라집니다. 지도는 어디로
+       가는지 보는 것이지 조감도가 아닙니다. 살짝만 기울입니다.
+
+       far 는 넉넉히 — 400 높이에서 900 이면 바닥까지 여유가 있습니다.
+       전 판은 높이 92 에 far 300 이라, 캠퍼스를 320 으로 넓힌 뒤로는
+       먼 구석이 잘려 옛 섬 크기로 찍히고 있었습니다. */
+    const halfW = CAMPUS.SITE.hx + 14;
+    const mc = new THREE.OrthographicCamera(-halfW, halfW, halfW, -halfW, .5, 1200);
+    mc.position.set(46, 420, 46);
     mc.lookAt(0, 0, 0);
     const wasBg = scene.background;
+    /* **안개를 끕니다.** 밀도 .0040 에서 420 칸 위에서 내려다보면
+       exp(-(0.004*420)^2) ≈ 0.06 — 94% 가 안개입니다. 지도가 통째로
+       까맣게 찍히던 정체입니다. 지도는 안개 너머를 보는 그림입니다. */
+    const wasFog = scene.fog;
+    scene.fog = null;
     scene.background = new THREE.Color(0x8FD8EE);
     const wasVis = { room: roomRoot.visible, campus: campusRoot.visible, player: playerRig.visible };
     roomRoot.visible = false; campusRoot.visible = true; playerRig.visible = false;
@@ -2260,7 +2319,7 @@ function shootMap() {
     const img = new Image();
     img.src = r2.domElement.toDataURL('image/png');
     MAPSHOT.img = img; MAPSHOT.cam = mc;
-    scene.background = wasBg;
+    scene.background = wasBg; scene.fog = wasFog;
     roomRoot.visible = wasVis.room; campusRoot.visible = wasVis.campus; playerRig.visible = wasVis.player;
     NPC.forEach((n) => (n.rig.visible = !room));
     r2.dispose();
@@ -2276,7 +2335,7 @@ function mapUV(x, z) {
 const mapCv = $('#map canvas'), mg = mapCv.getContext('2d');
 function toggleMap() {
   mapOn = !mapOn;
-  $('#map').classList.toggle('on', mapOn); dockOn('map', mapOn);
+  $('#map').classList.toggle('on', mapOn); dockOn('map', mapOn); syncLock();
   if (mapOn) { drawMap(); tutDone('map'); }
 }
 /* ── 빠른 이동 ──
@@ -2286,10 +2345,17 @@ function toggleMap() {
    어디로 가는지 안 보고 누르게 됩니다. 그래서 여기도 같게 둡니다. */
 const PLACES = BUILDINGS.map((b) => ({ key: b.zone, name: b.name, b }))
   .concat([
-    { key: 'plaza', name: '중앙 광장', at: { x: 0, z: 8.2, ry: Math.PI } },
-    { key: 'field', name: '운동장', at: { x: -13.4, z: -14.2, ry: -Math.PI * .25 } },
-    { key: 'lake', name: '호수', at: { x: -19.4, z: 25.4, ry: Math.PI * .2 } },
-    { key: 'club', name: '동아리 거리', at: { x: 12.4, z: 28.4, ry: Math.PI * .1 } },
+    /* 옛 80칸 섬 좌표였습니다 — 운동장이 (-13,-14), 호수가 (-19,25).
+       지금 운동장은 (-84,66), 호수는 (118,70) 이라 셋 다 엉뚱한 잔디
+       한복판으로 보내고 있었습니다. */
+    { key: 'plaza', name: '중앙 광장', at: { x: 0, z: 12, ry: Math.PI } },
+    { key: 'gate', name: '정문', at: { x: 0, z: 118, ry: Math.PI } },
+    { key: 'field', name: '운동장', at: { x: -60, z: 50, ry: Math.PI * .8 } },
+    { key: 'lake', name: '호수', at: { x: 104, z: 58, ry: Math.PI * .6 } },
+    { key: 'quadW', name: '인문사회 안뜰', at: { x: -78, z: -6, ry: -Math.PI / 2 } },
+    { key: 'quadN', name: '자연공학 안뜰', at: { x: 0, z: -76, ry: 0 } },
+    { key: 'quadE', name: '예술 안뜰', at: { x: 82, z: -6, ry: Math.PI / 2 } },
+    { key: 'dormyard', name: '기숙사 마당', at: { x: 92, z: -89, ry: -Math.PI / 2 } },
   ]);
 function goPlace(pl) {
   if (room) return;
@@ -2326,7 +2392,7 @@ mapCv.addEventListener('click', (e) => {
 $('#map').addEventListener('click', () => { if (mapOn) toggleMap(); });
 function drawMap() {
   const S = 620, C = S / 2;
-  $('#map .cap i').textContent = room ? ROOM_NAME[room.key] : '섬 전체';
+  $('#map .cap i').textContent = room ? ROOM_NAME[room.key] : '캠퍼스 전체';
   mg.setTransform(2, 0, 0, 2, 0, 0);
   mg.clearRect(0, 0, S, S);
   mg.textAlign = 'center'; mg.textBaseline = 'middle';
@@ -2345,11 +2411,13 @@ function drawMap() {
          적어 두지 않으면 있는 줄을 모릅니다. */
       const numOf = (k) => { const i = PLACES.findIndex((q) => q.key === k); return i < 0 ? '' : ((i + 1) % 10) + '. '; };
       BUILDINGS.forEach((b) => { const [x2, y2] = uv(b.x, b.z); mapLabel(mg, numOf(b.zone) + b.name, x2, y2 - 16, 12); });
-      { const [x2, y2] = uv(0, 12); mapLabel(mg, numOf('plaza') + '중앙 광장', x2, y2, 11); }
-      { const [x2, y2] = uv(-13.4, -14.2); mapLabel(mg, numOf('field') + '운동장', x2, y2, 10.5); }
-      { const [x2, y2] = uv(-19.4, 25.4); mapLabel(mg, numOf('lake') + '호수', x2, y2, 10.5); }
-      { const [x2, y2] = uv(12.4, 28.4); mapLabel(mg, numOf('club') + '동아리 거리', x2, y2, 10.5); }
-      { const [x2, y2] = uv(20.5, 20.5); mapLabel(mg, '정문', x2, y2 + 14, 10.5); }
+      /* 라벨 자리도 옛 80칸 섬 좌표였습니다 — 운동장이 (-13,-14) 라
+         지도 한복판 잔디에 '운동장' 이 적혀 있었습니다. PLACES 를
+         그대로 읽으면 다시 갈라지지 않습니다. */
+      PLACES.filter((q) => q.at).forEach((q) => {
+        const [x2, y2] = uv(q.at.x, q.at.z);
+        mapLabel(mg, numOf(q.key) + q.name, x2, y2, 10.5);
+      });
       { const [x2, y2] = uv(P.x, P.z); mapMe(mg, x2, y2, P.dir + Math.PI * .25, 7); }
     } else {
       mg.save(); mg.translate(C, C);

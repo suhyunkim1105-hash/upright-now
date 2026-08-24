@@ -20,6 +20,6 @@
  * 이 파일이 커밋되므로 더더욱 안 됩니다.
  */
 window.GIRIN_SUPABASE = {
-  url: 'https://obwzfoiplcjzrewdmlyw.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id3pmb2lwbGNqenJld2RtbHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MTQ1NDksImV4cCI6MjEwMDQ5MDU0OX0.OX2fSWt6WoP7YZYrcpU3t5t6f4Ss28rFZ2d7w044-GA',
+  url: 'https://bxvmrztewydugkdoympf.supabase.co',
+  anonKey: 'sb_publishable_MVhrA6NV6YlH9KriLpgItA_Za_ptUhp',
 };

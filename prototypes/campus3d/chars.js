@@ -14,7 +14,10 @@ import * as THREE from 'three';
 import { M, roundedBox } from './parts.js';
 import { mergeGeometries } from './vendor/BufferGeometryUtils.js';
 
-const SK = { ink: 0x241F24, white: 0xFFFFFF, blush: 0xF49AA4, gum: 0xE08A94 };
+const SK = { ink: 0x2E2A2E, white: 0xFFFFFF, blush: 0xF4A2A6, gum: 0xE08A94 };
+
+/* 랜딩 에셋을 그대로 쓸지 — 끄면 아래의 3D 로 빚은 판으로 돌아갑니다 */
+export const SPRITE_ON = true;
 
 /* ══ 비례 ══
    랜딩 3D 에셋과 나란히 놓고 맞췄습니다.
@@ -27,8 +30,11 @@ const SK = { ink: 0x241F24, white: 0xFFFFFF, blush: 0xF49AA4, gum: 0xE08A94 };
    HEAD_Y 는 걷기 · 쉬기 · 앉기 · 타기가 모두 쓰는 값이라 상수로
    묶었습니다 — 전에는 여덟 군데에 1.48 이 흩어져 있어서 한 군데만
    고치면 걸을 때와 앉을 때 머리 높이가 달라졌습니다. */
-export const HEAD_Y = 1.42;
-export const HEAD_S = 1.17;
+/* 1.17 은 컸습니다 — 몸이 머리에 매달린 것처럼 보였습니다.
+   랜딩 렌더는 앉은 자세라 머리 비중이 더 커 보이는 것이고, 선 자세
+   기준으로 재면 1.08 이 그 체감입니다. */
+export const HEAD_Y = 1.45;
+export const HEAD_S = 1.08;
 const NECK_Y = 1.27;
 
 /* ── 멀리 있는 사람 (character 의 opt.lod) ──
@@ -115,11 +121,15 @@ function eyes(p, y, z, r, gap, opt = {}) {
        얼굴에서 유일하게 매끄러운 곳입니다. 나머지가 전부 무광 클레이라
        여기만 반들거려도 재질이 갈라지지 않습니다 — 오히려 그 대비가
        눈을 얼굴의 주인공으로 만듭니다. */
-    made.push(ell(p, r * 1.1, M(SK.ink, .12, { metalness: .04 }), dx, y, z, .96, 1.05, .66));
+    /* 1.1 배 + metalness 를 되돌립니다. 키운 검은 알에 금속성까지 주니
+       환경광이 비쳐 **튀어나온 젖은 눈**이 됐습니다 — 랜딩 에셋의 눈은
+       크기가 아니라 **빛점 하나**가 만드는 반짝임입니다. 알은 원래
+       크기로, 광택은 거칠기만 낮춰서(무광 .3 → 반광 .18) 냅니다. */
+    made.push(ell(p, r, M(SK.ink, .18), dx, y, z, .96, 1.04, .62));
     /* 하이라이트는 **크게 하나** — 개구리 눈이 유일하게 합격한 이유가
        이 큰 빛점이었습니다. 작은 점 두 개는 멀리서 사라집니다. */
-    ell(p, r * .42, M(SK.white, .12), dx - s * r * .3, y + r * .34, z + r * .46, 1, 1, .55);
-    ell(p, r * .17, M(SK.white, .12), dx + s * r * .34, y - r * .36, z + r * .38, 1, 1, .5);
+    ell(p, r * .40, M(SK.white, .16), dx - s * r * .3, y + r * .3, z + r * .42, 1, 1, .55);
+    ell(p, r * .15, M(SK.white, .16), dx + s * r * .32, y - r * .34, z + r * .34, 1, 1, .5);
   });
   /* 눈 덩어리를 기억해 둡니다 — 깜빡임이 이 목록의 y 를 눌러서 만듭니다 */
   p.userData.eyeMeshes = (p.userData.eyeMeshes || []).concat(made);
@@ -129,7 +139,10 @@ function eyes(p, y, z, r, gap, opt = {}) {
 function cheeks(p, x, y, z, r = .1) {
   /* 랜딩 쪽 볼은 더 큽니다 — 얼굴 반지름의 4분의 1쯤 되는 분홍 타원.
      작으면 점으로 보이고, 점은 멀리서 사라집니다. */
-  [-x, x].forEach((dx) => ell(p, r * 1.22, M(SK.blush, .82), dx, y, z, 1, .66, .3));
+  /* 1.22 배도 과했습니다 — 큰 볼이 큰 눈과 붙으니 얼굴이 밀집돼
+     보였습니다. 랜딩 쪽 볼은 크기보다 **자리**가 낮습니다. 살짝만 키우고
+     원래 톤으로. */
+  [-x, x].forEach((dx) => ell(p, r * 1.08, M(SK.blush, .8), dx, y, z, 1, .68, .3));
 }
 
 /* 주둥이 — 둥글게 튀어나오고, 코와 입선이 붙습니다 */
@@ -553,7 +566,112 @@ function foldPart(root, key, o) {
   return bins.length;
 }
 
+/* ══════════════════════════════════════════════════════════
+   랜딩 에셋을 그대로 세웁니다
+
+   랜딩의 캐릭터 여덟은 이미 그려져 있고(prototypes/landing/assets/
+   char-*.png), 그것이 이 제품의 캐릭터입니다. 3D 로 다시 빚으면 아무리
+   맞춰도 **다른 그림**이 됩니다 — 비례와 재질을 맞춘 뒤에도 랜딩과
+   월드를 나란히 놓으면 둘로 보였습니다.
+
+   그래서 다시 빚지 않고 **그 그림을 그대로** 세웁니다. 판 하나에
+   에셋을 붙이고 세로축만 카메라를 향해 돌립니다.
+
+   빌보드에서 늘 걸리는 것 셋을 막았습니다.
+
+     **세로축만** 돌립니다. THREE.Sprite 처럼 완전 빌보드로 두면 위에서
+     내려다볼 때 캐릭터가 카메라 쪽으로 눕습니다 — 땅에 선 것이 아니라
+     바닥에 붙은 스티커가 됩니다.
+
+     **그림자를 안 던집니다.** 투명한 판이 던지는 그림자는 캐릭터 모양이
+     아니라 네모입니다. 대신 발밑에 타원 하나를 깝니다.
+
+     **NearestFilter · 톤매핑 끔.** 픽셀 그림은 보간하면 뭉개지고,
+     AgX 를 태우면 랜딩과 색이 어긋납니다. "에셋 그대로" 가 요구사항이니
+     색 파이프라인을 통과시키지 않습니다.
+
+   걷기·앉기·감정표현은 parts 를 만지는데 판 하나에는 다리도 팔도
+   없습니다. 그 함수들이 터지지 않게 **빈 뼈대**를 물려 둡니다 —
+   동작은 아무 일도 안 하고, 대신 걸을 때 판이 조금 들썩입니다.
+   ══════════════════════════════════════════════════════════ */
+const SPRITE_FILE = {
+  거북이: 'turtle', 기린: 'giraffe', 알파카: 'alpaca', 햄스터: 'hamster',
+  고슴도치: 'hedgehog', 개구리: 'frog', 백조: 'swan', 펭귄: 'penguin',
+};
+const SPRITE_TEX = new Map();
+const _texLoader = new THREE.TextureLoader();
+function spriteTex(species) {
+  const f = SPRITE_FILE[species] || 'turtle';
+  if (SPRITE_TEX.has(f)) return SPRITE_TEX.get(f);
+  const t = _texLoader.load('../landing/assets/char-' + f + '.png');
+  t.magFilter = THREE.NearestFilter;
+  t.minFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.colorSpace = THREE.SRGBColorSpace;
+  SPRITE_TEX.set(f, t);
+  return t;
+}
+
+const _sp = new THREE.Vector3(), _sq = new THREE.Quaternion(), _se = new THREE.Euler();
+
+function spriteChar(parent, species, opt) {
+  const g = new THREE.Group();
+  g.position.set(opt.x || 0, 0, opt.z || 0);
+  g.rotation.y = opt.ry || 0;
+  g.scale.setScalar(opt.scale || 1);
+  parent.add(g);
+
+  const H = 1.94, W = H * .56;                    // 에셋 가로세로비
+  const board = new THREE.Group();
+  board.position.y = H / 2;
+  g.add(board);
+
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(W, H),
+    new THREE.MeshBasicMaterial({ map: spriteTex(species), transparent: true,
+      alphaTest: .5, toneMapped: false }));
+  m.castShadow = false; m.receiveShadow = false;
+  board.add(m);
+
+  /* 세로축만 카메라를 향합니다.
+
+     훅을 **메시**에 겁니다. 처음에 board(Group)에 걸었더니 캐릭터가
+     통째로 안 보였습니다 — three 는 실제로 그리는 것(Mesh·Line·Points)
+     에만 onBeforeRender 를 부르고 Group 은 그리지 않으므로 한 번도
+     호출되지 않았고, 판이 기본 방향(카메라와 나란한 옆면)으로 남아
+     두께 0 인 선이 됐습니다. */
+  m.onBeforeRender = function (r, sc, cam) {
+    const b = this.parent;
+    b.getWorldPosition(_sp);
+    const want = Math.atan2(cam.position.x - _sp.x, cam.position.z - _sp.z);
+    b.parent.getWorldQuaternion(_sq);
+    _se.setFromQuaternion(_sq, 'YXZ');
+    b.rotation.y = want - _se.y;
+    b.updateMatrixWorld(true);
+  };
+
+  /* 발밑 그림자 — 판이 던지는 네모 대신 */
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(.42, 18),
+    new THREE.MeshBasicMaterial({ color: 0x2A3038, transparent: true, opacity: .22,
+      depthWrite: false }));
+  sh.rotation.x = -Math.PI / 2; sh.position.y = .015; sh.renderOrder = 1;
+  g.add(sh);
+
+  /* 빈 뼈대 — stride · idle · 감정표현이 터지지 않게 */
+  const dummy = () => { const d = new THREE.Group(); board.add(d); return d; };
+  const parts = {
+    legs: [dummy(), dummy()], shins: [dummy(), dummy()], arms: [dummy(), dummy()],
+    head: dummy(), torso: dummy(), neck: null, eyes: [], wear: {},
+    sprite: m, board, H,
+  };
+  g.userData.parts = parts;
+  g.userData.base = { armZ: [0, 0] };
+  g.userData.seed = Math.random() * 10;
+  g.userData.sprite = true;
+  return g;
+}
+
 export function character(parent, species, fit, opt = {}) {
+  if (SPRITE_ON) return spriteChar(parent, species, opt);
   /* 짓는 동안만 성기게. 끝나면 반드시 되돌립니다 — 안 되돌리면 그다음에
      세우는 사람이 이유 없이 성기게 나옵니다. */
   LOD = opt.lod ? 1 : 0;
@@ -881,6 +999,14 @@ export function applyTint(g, look) {
     몸은 두 배 빠르기로 튀며, 빠를수록 앞으로 기웁니다. */
 export function stride(g, t, sp) {
   const P = g.userData.parts; if (!P) return;
+  /* 판 하나는 다리가 없으니 걷는 대신 **들썩입니다**. 완전히 가만히
+     미끄러지면 얼음판 위를 밀려가는 것으로 보입니다. */
+  if (P.sprite) {
+    const k = Math.min(1, sp), f = t * Math.PI * 2;
+    P.board.position.y = P.H / 2 + Math.abs(Math.sin(f)) * .07 * k;
+    P.board.rotation.z = Math.sin(f) * .045 * k;
+    return;
+  }
   const k = Math.min(1, sp);
   const A = .34 + k * .38;
   const f = t * Math.PI * 2;
@@ -928,6 +1054,12 @@ export function look(g, ax, ay, k = .35) {
 }
 
 export function idle(g, t, seed = 0) {
+  { const P = g.userData.parts;
+    if (P && P.sprite) {                       // 숨 쉬듯 아주 조금
+      P.board.position.y = P.H / 2 + Math.sin(t * 1.5 + seed) * .015;
+      P.board.rotation.z = 0;
+      return;
+    } }
   const P = g.userData.parts; if (!P) return;
   const br = Math.sin(t * 1.5 + seed) * .013;
   P.torso.position.y = .44 + br;

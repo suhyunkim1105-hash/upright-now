@@ -120,7 +120,9 @@
      pointer-events:none 이라야 자기 밑의 버튼을 가리지 않습니다. */
   /* 자체 커서 — 잠겨 있든 아니든 늘 이것만 보입니다 */
   #gcur{position:absolute;left:0;top:0;z-index:400;pointer-events:none;opacity:0;
-    filter:drop-shadow(0 2px 5px rgba(20,30,26,.45));transition:opacity .12s}
+    /* 테가 없으니 그림자가 바탕에서 떼어 놓는 몫을 혼자 합니다 */
+    filter:drop-shadow(0 2px 6px rgba(10,40,36,.55)) drop-shadow(0 0 1px rgba(10,40,36,.5));
+    transition:opacity .12s}
   #gcur.on{opacity:1}
   #gcur svg{position:absolute;left:0;top:0;width:32px;height:32px;transition:transform .1s,opacity .1s}
   #gcur .ring{opacity:0;transform:translate(-14px,-14px) scale(.7)}
@@ -131,6 +133,14 @@
   /* 누르는 동안 살짝 눌립니다 — 클릭이 먹었는지 눈으로 압니다 */
   #gcur.press svg{transform:translate(-2px,-1px) scale(.84)}
   #gcur.press .ring{transform:translate(-14px,-14px) scale(.84)}
+  /* 시점을 돌리는 동안 — 커서를 숨깁니다.
+
+     돌리는 내내 화살표가 화면을 가로지르면 "무언가를 끌고 있다" 로
+     보이지, "둘러보고 있다" 로 안 보입니다. 게다가 마우스가 화면
+     가장자리에 닿으면 거기서 멈춰 버려 **입력이 끊긴 것처럼 느껴집니다** —
+     실제로는 아래 포인터 잠금이 그 한계를 없앱니다. */
+  #gcur.look{opacity:0}
+  #gcur.look .arrow,#gcur.look .ring{opacity:0}
   #xhair::before,#xhair::after{content:'';position:absolute;border-radius:50%}
   #xhair::before{inset:0;border:1.5px solid rgba(255,255,255,.5);
     box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
@@ -503,22 +513,26 @@
   <div id="xhair" aria-hidden="true"></div>
   <div id="gcur" class="on" aria-hidden="true">
     <svg class="arrow" viewBox="0 0 28 28" width="28" height="28">
-      <!-- 클레이 화살표 — 모서리를 둥글려 월드의 재질과 같은 어휘로.
-           흰 화살표에 검은 테는 OS 커서의 모양이라, 그걸 그대로 그리면
-           우리 커서를 만든 뜻이 없습니다. 먹색 몸에 청록 심. -->
-      <path d="M5.5 3.4 L5.5 20.2 Q5.5 21.6 6.7 20.7 L10.4 17.4 L13.2 23.4
-               Q13.7 24.5 14.9 24 L17.1 23 Q18.3 22.5 17.8 21.4 L15.1 15.6
-               L20.1 15.2 Q21.6 15.1 20.6 14 L6.9 2.8 Q5.5 1.8 5.5 3.4 Z"
-        fill="#1E2A26" stroke="#F7FBF9" stroke-width="1.5" stroke-linejoin="round"/>
-      <path d="M8.2 7.2 L8.2 15.6 L10.6 13.6 L12.6 17.6 L14 17 L12 13
-               L15.4 12.8 Z" fill="#2DD4BF"/>
+      <!-- 우리 색 하나로만 된 둥근 커서.
+
+           흰 테를 뺐습니다. 테는 밝은 바탕에서도 보이게 하려고 두르는
+           것인데, 그것이 곧 OS 커서의 생김새라 아무리 안쪽을 칠해도
+           "윈도우 커서에 색을 입힌 것" 으로 보입니다. 대신 짙은 청록으로
+           한 겹 두르고 그림자를 조금 세게 줍니다 — 같은 색 계열 안에서
+           명암만으로 떠 있게 하는 쪽이 우리 월드의 방식입니다. -->
+      <path d="M6 4.2 Q6 2.2 7.6 3.4 L20.4 14.2 Q21.8 15.4 20 15.6
+               L15.2 16 L17.6 21.4 Q18.1 22.6 16.9 23 L15 23.8
+               Q13.8 24.2 13.3 23 L10.9 17.7 L7.5 20.8 Q6 22 6 20.2 Z"
+        fill="#2DD4BF" stroke="#0E6F63" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="M8.6 7.4 L8.6 16.4 L11 14.2 L13.4 19.4 L14.6 18.9 L12.4 13.7 L16.6 13.4 Z"
+        fill="#7DEBDD" opacity=".85"/>
     </svg>
     <svg class="ring" viewBox="0 0 28 28" width="28" height="28">
-      <!-- 누를 수 있는 것 위 — 화살표 대신 고리. 손 모양 대신 고리를
-           쓰는 이유는 조준점과 같은 어휘라 시점 전환에도 안 갈라지기 때문. -->
-      <circle cx="14" cy="14" r="7.5" fill="none" stroke="#F7FBF9" stroke-width="3.2"/>
-      <circle cx="14" cy="14" r="7.5" fill="none" stroke="#1E2A26" stroke-width="1.6"/>
-      <circle cx="14" cy="14" r="2.4" fill="#2DD4BF" stroke="#1E2A26" stroke-width="1"/>
+      <!-- 누를 수 있는 것 위 — 둥근 고리. 조준점과 같은 어휘입니다. -->
+      <circle cx="14" cy="14" r="8" fill="#2DD4BF" opacity=".22"/>
+      <circle cx="14" cy="14" r="8" fill="none" stroke="#2DD4BF" stroke-width="2.8"/>
+      <circle cx="14" cy="14" r="8" fill="none" stroke="#0E6F63" stroke-width="1.1"/>
+      <circle cx="14" cy="14" r="2.6" fill="#7DEBDD" stroke="#0E6F63" stroke-width="1"/>
     </svg>
   </div>
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
@@ -1150,6 +1164,15 @@ function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; tu
 cv.addEventListener('pointerdown', (e) => {
   if (first) { if (CUR.live) { curClick(); return; } syncLock(); return; }
   drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
+  /* 누르는 동안 포인터를 잠급니다.
+
+     "시점이 잘 안 돌아간다" 의 정체는 감도가 아니라 **화면 가장자리**
+     였습니다. 마우스가 끝에 닿으면 clientX 가 더 안 늘어나므로 계속
+     밀어도 카메라가 멈춥니다 — 입력을 못 받는 것처럼 느껴집니다.
+     잠그면 movementX 가 끝없이 오므로 한 방향으로 얼마든지 돌립니다.
+     떼면 바로 풉니다. */
+  try { cv.requestPointerLock?.(); } catch {}
+  curEl().classList.add('look');
 });
 cv.addEventListener('pointermove', (e) => {
   if (first && document.pointerLockElement === cv) {
@@ -1160,10 +1183,20 @@ cv.addEventListener('pointermove', (e) => {
     pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
     turned += Math.abs(e.movementX) * .0024; return;
   }
+  /* 3인칭에서 누른 채 잠겨 있으면 movement 를 그대로 씁니다 —
+     화면 끝에 걸리지 않고, 감도도 한 단계 올립니다(.006 → .0075). */
+  if (!first && drag && document.pointerLockElement === cv) {
+    camHold = performance.now() + 1400;
+    yaw -= e.movementX * .0075;
+    pitch = clamp(pitch + e.movementY * .005, .04, 1.35);
+    turned += Math.abs(e.movementX) * .0075;
+    if (room) clampRoomYaw();
+    return;
+  }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   camHold = performance.now() + 1400;
-  yaw -= dx * (first ? .005 : .006);
+  yaw -= dx * (first ? .005 : .0075);
   pitch = first ? clamp(pitch + dy * .004, -1.15, 1.15) : clamp(pitch + dy * .004, .04, 1.35);
   if (!first) clampRoomYaw();
   turned += Math.abs(dx) * .006;
@@ -1263,6 +1296,12 @@ const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
 const _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _pt = new THREE.Vector3();
 let goTo = null, goStall = 0, goFrom = null, goPath = null, goEnd = null, goRetried = false, goLastD = -1;
 cv.addEventListener('pointerdown', (e) => { goFrom = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+function endLook() {
+  curEl().classList.remove('look');
+  if (!first && document.pointerLockElement === cv) { try { document.exitPointerLock?.(); } catch {} }
+}
+addEventListener('pointerup', endLook, true);
+addEventListener('pointercancel', endLook, true);
 cv.addEventListener('pointerup', (e) => {
   if (!goFrom || first || panelOn || mapOn || SESS.on) { goFrom = null; return; }
   const moved = Math.hypot(e.clientX - goFrom.x, e.clientY - goFrom.y);
@@ -3436,7 +3475,66 @@ window.__P = P;
 window.__aim = (x, z) => aimSun(x, z);
 /* 시연에서 밤을 보여 주려면 __hour(21). 되돌리려면 __hour(null). */
 /* 개발용 — 실내로 바로 들어갑니다 */
-window.__enter = (k) => { try { buildRoom(k); } catch (e) { console.warn(e); } };
+/* 실내 보행 감사 — 문에서 물을 채워 봅니다.
+   걸을 수 있는 바닥 비율 · 문에서 닿는 비율 · 말 걸 자리(SPOTS) 도달을
+   한 번에 잽니다. 실내를 키운 뒤 실버그는 대부분 여기서 걸립니다. */
+/* 격자를 글자 그림으로 — 어느 칸이 막혔는지 눈으로 봅니다.
+   . 빈칸  # 가구  o 말 걸 자리  X 막힌 말 걸 자리 */
+window.__gridArt = () => {
+  if (!room) return '실내 아님';
+  const G = room.grid, rows = [];
+  const sp = (SPOTS[room.key] || []);
+  for (let j = 0; j < G.nz; j++) {
+    let line = '';
+    for (let i = 0; i < G.nx; i++) {
+      const x = -G.w / 2 + (i + .5) * CELL, z = -G.d / 2 + (j + .5) * CELL;
+      const blocked = hitGrid(G, x, z);
+      const s2 = sp.find((q) => Math.abs(q.x - x) < CELL && Math.abs(q.z - z) < CELL);
+      line += s2 ? (blocked ? 'X' : 'o') : (blocked ? '#' : '.');
+    }
+    rows.push(line);
+  }
+  return 'x ' + (-G.w / 2).toFixed(1) + ' → ' + (G.w / 2).toFixed(1) + '  칸 ' + CELL + String.fromCharCode(10) + rows.join(String.fromCharCode(10));
+};
+
+window.__walkAudit = () => {
+  if (!room) return null;
+  const G = room.grid;
+  const free = [], id = (i, j) => j * G.nx + i;
+  let nFree = 0;
+  for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++) {
+    const x = -G.w / 2 + (i + .5) * CELL, z = -G.d / 2 + (j + .5) * CELL;
+    free.push(hitGrid(G, x, z) ? 0 : 1);
+    if (free[free.length - 1]) nFree++;
+  }
+  /* 문(= 지금 서 있는 자리)에서 물 채우기 */
+  const seen = new Uint8Array(G.nx * G.nz);
+  const si = Math.floor((P.x + G.w / 2) / CELL), sj = Math.floor((P.z + G.d / 2) / CELL);
+  const q = [[si, sj]]; seen[id(si, sj)] = 1;
+  let reach = 0;
+  while (q.length) {
+    const [i, j] = q.pop();
+    if (!free[id(i, j)]) continue;
+    reach++;
+    for (const [di, dj] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const ni = i + di, nj = j + dj;
+      if (ni < 0 || nj < 0 || ni >= G.nx || nj >= G.nz || seen[id(ni, nj)]) continue;
+      seen[id(ni, nj)] = 1; q.push([ni, nj]);
+    }
+  }
+  /* 말 걸 자리 도달 */
+  const spots = (SPOTS[room.key] || []).map((sp) => {
+    const i = Math.floor((sp.x + G.w / 2) / CELL), j = Math.floor((sp.z + G.d / 2) / CELL);
+    const ok = i >= 0 && j >= 0 && i < G.nx && j < G.nz && seen[id(i, j)] && free[id(i, j)];
+    return (sp.tag || '?') + (ok ? '○' : '✕');
+  });
+  return { 빈바닥: (nFree / free.length * 100).toFixed(0) + '%',
+           문에서닿음: (nFree ? reach / nFree * 100 : 0).toFixed(0) + '%',
+           자리: spots };
+};
+
+window.__roomInfo = () => ({ root: roomRoot, size: room ? ROOM_SIZE[room.key] : null });
+/* __enter 는 아래 포털 판(3530줄께)이 진짜입니다 — 짓기만 하는 판이 위에 하나 더 있어서, 포털 zone(clubshop)과 방 key(shop)가 갈리는 상점에서 조용히 아무 일도 안 했습니다. */
 window.__hour = (h) => { SKY.setHour(h); setClockHour(h); skySeen = -1; SAVE.hour = h; UI.save(); };
 /* 카메라 고정 — __W.lock(...) · 풀려면 __W.lock(null) */
 window.__W.lock = (...a) => { window.__camLock = a[0] === null ? null : a; };

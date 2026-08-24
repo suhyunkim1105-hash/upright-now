@@ -1312,5 +1312,806 @@
   "kb": 114,
   "mats": 4,
   "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-sports-car.glb",
+  "name": "Sports Car",
+  "lic": "CC0",
+  "kb": 171,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-car.glb",
+  "name": "Car",
+  "lic": "CC0",
+  "kb": 161,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-police-car.glb",
+  "name": "Police Car",
+  "lic": "CC0",
+  "kb": 176,
+  "mats": 8,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-sports-car-2.glb",
+  "name": "Sports Car",
+  "lic": "CC0",
+  "kb": 167,
+  "mats": 7,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-car-2.glb",
+  "name": "Car",
+  "lic": "CC0",
+  "kb": 170,
+  "mats": 7,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-2.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-3.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-grass.glb",
+  "name": "Grass",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-4.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 27,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-5.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 37,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-6.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 56,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-7.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-8.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 78,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-9.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 49,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-10.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 54,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-11.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 22,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-12.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 66,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-13.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 52,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "park",
+  "file": "park-tree.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-bush.glb",
+  "name": "Bush",
+  "lic": "CC0",
+  "kb": 27,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-tree-large.glb",
+  "name": "Tree Large",
+  "lic": "CC0",
+  "kb": 35,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-bush-large.glb",
+  "name": "Bush Large",
+  "lic": "CC0",
+  "kb": 29,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-street-lantern.glb",
+  "name": "Street Lantern",
+  "lic": "CC0",
+  "kb": 36,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-bench.glb",
+  "name": "Bench",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-trashcan.glb",
+  "name": "Trashcan",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-fountain.glb",
+  "name": "Fountain",
+  "lic": "CC0",
+  "kb": 84,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-streetlight.glb",
+  "name": "Streetlight",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-fire-hydrant.glb",
+  "name": "Fire Hydrant",
+  "lic": "CC0",
+  "kb": 29,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-bench.glb",
+  "name": "Bench",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-traffic-light.glb",
+  "name": "Traffic light",
+  "lic": "CC0",
+  "kb": 51,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-traffic-light-2.glb",
+  "name": "Traffic light",
+  "lic": "CC0",
+  "kb": 45,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-trafficlight-b.glb",
+  "name": "Trafficlight B",
+  "lic": "CC0",
+  "kb": 56,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-bush.glb",
+  "name": "Bush",
+  "lic": "CC0",
+  "kb": 161,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-bush-with-flowers.glb",
+  "name": "Bush with Flowers",
+  "lic": "CC0",
+  "kb": 791,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2374,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-2.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2329,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-3.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2422,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-4.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2481,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2539,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-2.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2543,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-5.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2329,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-3.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2547,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-4.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2562,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-grass.glb",
+  "name": "Grass",
+  "lic": "CC0",
+  "kb": 78,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-grass-wispy.glb",
+  "name": "Grass Wispy",
+  "lic": "CC0",
+  "kb": 95,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tall-grass.glb",
+  "name": "Tall Grass",
+  "lic": "CC0",
+  "kb": 86,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-grass-wispy-2.glb",
+  "name": "Grass Wispy",
+  "lic": "CC0",
+  "kb": 99,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-2.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-3.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 520,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-4.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-5.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-single.glb",
+  "name": "Flower Single",
+  "lic": "CC0",
+  "kb": 1194,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-group.glb",
+  "name": "Flower Group",
+  "lic": "CC0",
+  "kb": 1213,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-single-2.glb",
+  "name": "Flower Single",
+  "lic": "CC0",
+  "kb": 1209,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-group-2.glb",
+  "name": "Flower Group",
+  "lic": "CC0",
+  "kb": 1253,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2176,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-5.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2537,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-smal.glb",
+  "name": "Rock Path Square Smal",
+  "lic": "CC0",
+  "kb": 828,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-smal-2.glb",
+  "name": "Rock Path Square Smal",
+  "lic": "CC0",
+  "kb": 843,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-smal-3.glb",
+  "name": "Rock Path Square Smal",
+  "lic": "CC0",
+  "kb": 829,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-thin.glb",
+  "name": "Rock Path Square Thin",
+  "lic": "CC0",
+  "kb": 910,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-small.glb",
+  "name": "Rock Path Round Small",
+  "lic": "CC0",
+  "kb": 856,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-small-2.glb",
+  "name": "Rock Path Round Small",
+  "lic": "CC0",
+  "kb": 856,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-thin.glb",
+  "name": "Rock Path Round Thin",
+  "lic": "CC0",
+  "kb": 939,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-small-3.glb",
+  "name": "Rock Path Round Small",
+  "lic": "CC0",
+  "kb": 864,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-wide.glb",
+  "name": "Rock Path Round Wide",
+  "lic": "CC0",
+  "kb": 1020,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-wide.glb",
+  "name": "Rock Path Square Wide",
+  "lic": "CC0",
+  "kb": 941,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-medium.glb",
+  "name": "Rock Medium",
+  "lic": "CC0",
+  "kb": 1036,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-medium-2.glb",
+  "name": "Rock Medium",
+  "lic": "CC0",
+  "kb": 1040,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-medium-3.glb",
+  "name": "Rock Medium",
+  "lic": "CC0",
+  "kb": 1047,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-2.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2097,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-3.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2170,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-4.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2208,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-5.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2168,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 2977,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-2.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 2958,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-3.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 3004,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-4.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 3046,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-5.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 3017,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "house",
+  "file": "house-house.glb",
+  "name": "House",
+  "lic": "CC0",
+  "kb": 23,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 47,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-2.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 49,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-3.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 46,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-4.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 37,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-5.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 40,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-6.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-house-2.glb",
+  "name": "House",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 5,
+  "tex": 0
  }
 ]

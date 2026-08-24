@@ -86,7 +86,41 @@ export const HEAD_S = 1.06;
    우리 것은 어깨가 머리만큼 넓어 사람 실루엣이 났습니다. */
 export const LEG_Y = .27;      // 다리 뿌리 = 다리 전체 길이
 export const TORSO_Y = .27;    // 몸통 바닥
-const TORSO_W = .90;           // 몸통 가로 배율 — 머리보다 좁게
+
+/* ══ 종마다 다른 몸 ══
+
+   여기까지 **하나의 틀에 종별 머리만 갈아 끼우고** 있었습니다. 그래서
+   일곱이 다 같은 실루엣으로 나왔고, 어느 것도 레퍼런스와 안 맞았습니다.
+
+   레퍼런스를 나란히 놓고 보면 몸이 종마다 다릅니다.
+
+     기린      목이 있습니다. 몸은 작고 위로 길게 뽑힙니다
+     펭귄      머리와 몸이 거의 같은 폭으로 붙습니다. 지느러미가 깁니다
+     햄스터    가장 넓고 낮습니다. 귀가 커서 머리가 더 커 보입니다
+     고슴도치  가시 덩어리가 등과 머리를 통째로 덮어 윤곽이 뾰족합니다
+     개구리    눈이 정수리에 얹혀 머리 위가 봉긋합니다
+     알파카    털 때문에 몸이 부풀고 머리는 작습니다
+     거북이    머리가 크고 몸은 딱지에 가려 짧습니다
+
+   그 차이가 곧 동물의 개성이므로, 하나의 값으로 맞추면 안 됩니다.
+   아래 표가 종마다 몸을 다시 그립니다.
+
+     bh   몸통 높이     bw   몸통 폭
+     nk   목 길이(0 이면 목 없음)
+     hy   머리 중심 높이   hs   머리 배율
+     ft   발 크기        ay   팔 뿌리 높이   ar   팔 굵기 */
+const BODY = {
+  기린:     { bh: .62, bw: .36, nk: .30, hy: 1.34, hs: .92, ft: .145, ay: .46, ar: .115 },
+  펭귄:     { bh: .84, bw: .46, nk: .00, hy: 1.20, hs: 1.12, ft: .185, ay: .54, ar: .155 },
+  거북이:   { bh: .68, bw: .43, nk: .04, hy: 1.14, hs: 1.10, ft: .165, ay: .46, ar: .135 },
+  알파카:   { bh: .76, bw: .45, nk: .10, hy: 1.22, hs: .98, ft: .155, ay: .50, ar: .130 },
+  햄스터:   { bh: .70, bw: .48, nk: .00, hy: 1.12, hs: 1.14, ft: .175, ay: .46, ar: .145 },
+  고슴도치: { bh: .74, bw: .47, nk: .00, hy: 1.16, hs: 1.02, ft: .165, ay: .48, ar: .135 },
+  개구리:   { bh: .70, bw: .44, nk: .00, hy: 1.14, hs: 1.10, ft: .175, ay: .46, ar: .140 },
+};
+const bodyOf = (sp) => BODY[sp] || BODY.거북이;
+
+
 const NECK_Y = 1.10;
 
 /* ── 멀리 있는 사람 (character 의 opt.lod) ──
@@ -343,20 +377,6 @@ const HEADS = {
     ell(h, .035, M(0x3E7A34, .4), .075, .1, .44, 1, 1, .6);
     [-.42, .42].forEach((x) => ell(h, .1, M(SK.blush, .74), x, -.12, .26, 1, .7, .34));
   },
-  백조(h, C) {
-    ell(h, .44, M(C.skin), 0, .04, 0, .98, 1.04, .95);
-    /* 부리 — 넓적한 주황 부리 + **까만 밑동**. 이 검은 자국이
-       오리와 백조를 가릅니다. */
-    ell(h, .17, M(C.beak, .5), 0, -.13, .46, .7, .4, .9);
-    ell(h, .14, M(C.beakDark, .5), 0, -.18, .45, .6, .26, .8);
-    ell(h, .045, M(SK.ink, .32), 0, -.05, .49, 1.4, .5, .5);
-    eyes(h, .1, .4, .1, .17);
-    /* 정수리 깃 — 뒤로 눕는 세 장. 백조의 우아함은 이 곡선입니다 */
-    [[0, .5, -.06, .12], [-.12, .47, -.14, .1], [.12, .47, -.14, .1]]
-      .forEach(([x, y, z, r]) => { const f = ell(h, r, M(C.skin), x, y, z, .6, 1.3, .6);
-        f.rotation.x = -.6; });
-    cheeks(h, .26, -.08, .38, .08);
-  },
   펭귄(h, C) {
     ell(h, .48, M(C.skin), 0, .02, 0, 1, .97, .95);
     /* 흰 얼굴판 **하나**가 눈과 입을 다 감쌉니다 — 조각내면 가면이 됩니다 */
@@ -377,7 +397,6 @@ export const SPECIES = {
   햄스터:   { skin: 0xE8B87A, snout: 0xFFF0DC, inner: 0xF4A2A6 },
   고슴도치: { skin: 0xDDBA92, snout: 0xFFF0DC, quill: 0x9A7450, quillDark: 0x7C5B3C },
   개구리:   { skin: 0x7FC96A, belly: 0xE2F2C8 },
-  백조:     { skin: 0xFFFFFF, beak: 0xF2933C, beakDark: 0xD9761F },
   펭귄:     { skin: 0x3E4A5A, belly: 0xFFFFFF, beak: 0xF2933C, beakDark: 0xD9761F },
 };
 /* 옷 — 몸이 같으니 색만 바꾸면 여덟 종이 다 입습니다.
@@ -656,7 +675,7 @@ function foldPart(root, key, o) {
    ══════════════════════════════════════════════════════════ */
 const SPRITE_FILE = {
   거북이: 'turtle', 기린: 'giraffe', 알파카: 'alpaca', 햄스터: 'hamster',
-  고슴도치: 'hedgehog', 개구리: 'frog', 백조: 'swan', 펭귄: 'penguin',
+  고슴도치: 'hedgehog', 개구리: 'frog', 펭귄: 'penguin',
 };
 const SPRITE_TEX = new Map();
 const _texLoader = new THREE.TextureLoader();
@@ -809,14 +828,17 @@ function buildChar(parent, species, fit, opt) {
   const lathe = (prof, seg = 30) =>
     latheG(prof.map(([y, r]) => new THREE.Vector2(Math.max(.004, r), y)), S(seg, 14));
 
+  const BP = bodyOf(species);
   const torso = new THREE.Group();
   torso.position.y = TORSO_Y; g.add(torso); parts.torso = torso;
   {
-    /* 옆선 — 바닥에서 살짝 좁고, 배에서 가장 넓고, 위로 갈수록 좁아집니다.
-       위를 완전히 닫지 않는 이유는 머리가 그 위에 파묻히기 때문입니다. */
+    /* 옆선을 종의 높이·폭으로 다시 그립니다. 비율은 유지하고 값만
+       표에서 읽으므로, 기린은 좁고 길게 · 햄스터는 넓고 낮게 나옵니다. */
+    const H = BP.bh, W = BP.bw;
     const body = new THREE.Mesh(lathe([
-      [.00, .00], [.02, .22], [.06, .32], [.14, .40], [.24, .445],
-      [.36, .455], [.48, .44], [.58, .40], [.66, .35], [.72, .29], [.76, .22], [.78, .00],
+      [.00, .00], [H * .03, W * .48], [H * .08, W * .70], [H * .18, W * .88],
+      [H * .31, W * .98], [H * .46, W * 1.0], [H * .62, W * .96], [H * .74, W * .87],
+      [H * .85, W * .76], [H * .92, W * .62], [H * .97, W * .46], [H, .00],
     ]), skin);
     body.castShadow = body.receiveShadow = true;
     body.scale.z = .92;
@@ -824,36 +846,40 @@ function buildChar(parent, species, fit, opt) {
 
     /* 배 — 종에 따라 밝은 면이 앞에 있습니다(개구리 · 펭귄 · 거북이) */
     if (C.belly) {
-      const b = new THREE.Mesh(sphG(.36, S(22, 11), S(16, 8)), M(C.belly, .72));
-      b.position.set(0, .34, .18); b.scale.set(.86, 1.05, .62);
+      const b = new THREE.Mesh(sphG(BP.bw * .80, S(22, 11), S(16, 8)), M(C.belly, .72));
+      b.position.set(0, BP.bh * .46, BP.bw * .40); b.scale.set(.86, 1.12, .60);
       b.castShadow = false; b.receiveShadow = true; torso.add(b);
     }
     /* 알파카 · 고슴도치 — 몸에도 털이 붙습니다 */
     if (C.wool) {
-      const pts = [[-.3, .5, .18], [.3, .5, .18], [0, .62, .2], [-.34, .3, .1], [.34, .3, .1],
-                   [0, .2, .3], [-.18, .62, .0], [.18, .62, .0]];
-      pts.forEach(([x, y, z], k) => ell(torso, .17 - (k % 3) * .02, M(C.wool, .92), x, y, z));
+      const W2 = BP.bw, H2 = BP.bh;
+      const pts = [[-.68, .62, .40], [.68, .62, .40], [0, .80, .44], [-.78, .38, .22],
+                   [.78, .38, .22], [0, .26, .66], [-.40, .82, .0], [.40, .82, .0]];
+      pts.forEach(([x, y, z], k) =>
+        ell(torso, W2 * (.40 - (k % 3) * .05), M(C.wool, .92), x * W2, y * H2, z * W2));
     }
     if (C.quill) {
-      for (let k = 0; k < 14; k++) {
-        const a = (k / 14) * Math.PI * 2;
-        const r = .40 + (k % 2) * .03, y = .30 + (k % 3) * .13;
-        const q = new THREE.Mesh(sphG(.13, S(12, 7), S(10, 6)),
-                                 M(k % 2 ? C.quillDark : C.quill, .82));
-        q.position.set(Math.sin(a) * r * .9, y, Math.cos(a) * r * -.72 - .08);
-        q.scale.set(.8, .8, 1.5);
-        q.lookAt(q.position.x * 2, y + .1, q.position.z * 2 - .4);
+      /* 가시는 **등을 덮는 덩어리**입니다. 낱개로 흩뿌리면 등에 박은
+         못이 되고, 겹쳐 쌓아야 밤송이 한 덩이로 읽힙니다. */
+      for (let k = 0; k < 22; k++) {
+        const a = (k / 22) * Math.PI * 2;
+        const r = BP.bw * (.92 + (k % 2) * .07), y = BP.bh * (.34 + (k % 4) * .17);
+        const q = new THREE.Mesh(sphG(BP.bw * .32, S(12, 7), S(10, 6)),
+                                 M(k % 2 ? C.quillDark : C.quill, .84));
+        q.position.set(Math.sin(a) * r * .92, y, Math.cos(a) * r * -.78 - BP.bw * .18);
+        q.scale.set(.72, .72, 1.6);
+        q.lookAt(q.position.x * 2, y + .12, q.position.z * 2 - .5);
         q.castShadow = true; torso.add(q);
       }
     }
   }
 
   /* ── 발 ── 다리가 아니라 발입니다. parts.legs 에 넣어 걷기가 씁니다. */
-  [-.20, .20].forEach((x) => {
+  [-BP.bw * .46, BP.bw * .46].forEach((x) => {
     const leg = new THREE.Group();
     leg.position.set(x, TORSO_Y + .04, 0); g.add(leg); parts.legs.push(leg);
     /* 발은 원본에서 전체 높이의 6% 이고 **앞으로 넓게** 퍼집니다 */
-    const foot = ell(leg, .175, C.beak ? M(C.beak, .5) : skin, 0, -.02, .07, 1.15, .55, 1.5);
+    const foot = ell(leg, BP.ft, C.beak ? M(C.beak, .5) : skin, 0, -.02, .07, 1.15, .55, 1.5);
     foot.castShadow = true;
     /* 정강이 자리는 비워 둡니다 — 굽힐 관절이 없지만 걷기가 찾습니다 */
     const shin = new THREE.Group(); leg.add(shin); parts.shins.push(shin);
@@ -862,25 +888,33 @@ function buildChar(parent, species, fit, opt) {
   /* ── 팔 ── 옆구리에 붙은 짧은 뭉치 */
   [-1, 1].forEach((sgn) => {
     const arm = new THREE.Group();
-    arm.position.set(sgn * .40, .50, .02);
+    arm.position.set(sgn * (BP.bw * .94), TORSO_Y + BP.ay, .02);
     arm.rotation.z = opt.wave && sgn > 0 ? 2.15 : sgn * .16;
     g.add(arm); parts.arms.push(arm);
-    const a = ell(arm, .135, skin, 0, -.10, 0, .92, 1.45, .92);
+    /* 펭귄은 지느러미라 길고 납작합니다 */
+    const fin = species === '펭귄';
+    const a = ell(arm, BP.ar, skin, 0, -.10, 0, .82, fin ? 2.1 : 1.45, fin ? .66 : .92);
     a.castShadow = true;
   });
   g.userData.base = { armZ: [-.16, .16] };
 
   /* ── 목 · 머리 ── */
-  /* 목이 없습니다. 레퍼런스는 머리가 몸 위에 그대로 얹혀 파묻힙니다 —
-     목을 그리면 그 순간 사람이 됩니다. */
-  parts.neck = null;
+  /* 목은 **기린과 알파카에만** 있습니다. 나머지는 머리가 몸에 그대로
+     얹혀 파묻힙니다 — 목을 그리면 그 순간 사람이 됩니다. 기린은
+     반대로 목이 없으면 기린이 아닙니다. */
+  parts.neck = BP.nk > .02
+    ? cyl(g, BP.bw * .34, BP.bw * .44, BP.nk, 14,
+          C.snout ? M(C.skin) : skin, 0, TORSO_Y + BP.bh - .02 + BP.nk / 2, 0)
+    : null;
   const h = new THREE.Group();
-  h.position.y = HEAD_Y;
-  h.scale.setScalar(HEAD_S);
+  h.position.y = BP.hy;
+  h.scale.setScalar(BP.hs);
   g.add(h);
   HEADS[species](h, C);
   h.traverse((o) => { o.castShadow = true; o.receiveShadow = true; });
   parts.head = h;
+  parts.headY = BP.hy;
+  parts.headY = BP.hy;
   parts.eyes = h.userData.eyeMeshes || [];
   parts.eyes.forEach((m) => (m.userData.sy = m.scale.y));
 
@@ -889,7 +923,7 @@ function buildChar(parent, species, fit, opt) {
 
   /* ── 모자 — 종마다 정수리 높이가 달라서 한 표로 맞춥니다 ── */
   const HAT_FIT = { 알파카: [.56, -.02, 1.1], 고슴도치: [.52, -.06, 1.05], 개구리: [.5, -.16, 1.05],
-    기린: [.46, -.02, 1.0], 백조: [.5, -.04, .95] };
+    기린: [.46, -.02, 1.0] };
   if (L.hatId && L.hatId !== 'none') {
     const [hy, hz, hs] = HAT_FIT[species] || [.42, 0, 1];
     const hat = new THREE.Group(); hat.position.set(0, hy, hz); hat.scale.setScalar(hs); h.add(hat);

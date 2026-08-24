@@ -41,6 +41,25 @@ export const GATE = { x: 0, z: 130 };
 export const AXIS_X = 0;                 // 축이 x=0 을 따라 남북으로 뻗습니다
 
 const TAU = Math.PI * 2;
+
+/* 바닥 층 — **위로 갈수록 나중에 덮습니다.** 값을 직접 쓰지 말고
+   반드시 여기서 가져다 씁니다. 0.004 씩 벌려 두어 z-fighting 도 없습니다.
+   (잔디 얼룩이 도로를 덮어 백양로가 사라졌던 적이 있습니다.) */
+export const LAYER = {
+  lawn:      .080,   // 부지 전체 잔디
+  blot:      .084,   // 잔디 얼룩 — 얼룩끼리만 미세하게 겹칩니다
+  blotStep:  .00005, // 얼룩 한 장마다 올리는 값. 120장 × 이 값 = 0.006
+  fieldBase: .092,   // 운동장 · 주차장 바탕
+  field:     .100,   // 운동장 안쪽 면
+  fieldLine: .106,   // 흰 선
+  courtKerb: .112,   // 건물 앞마당 연석
+  court:     .116,   // 건물 앞마당
+  roadEdge:  .122,   // 길 가장자리
+  road:      .126,   // 길
+  walkEdge:  .132,   // 진입로 가장자리
+  walk:      .136,   // 진입로
+  doorYard:  .140,   // 문 앞 마당 — 가장 위
+};
 let _s = 20260825;
 const rnd = () => (_s = (_s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 
@@ -222,7 +241,7 @@ function ground(g) {
   const disc = new THREE.Mesh(
     new THREE.PlaneGeometry(SITE.w, SITE.d), M(PAL.lawn, .9));
   disc.rotation.x = -Math.PI / 2;
-  disc.position.y = .09;
+  disc.position.y = LAYER.lawn;
   disc.castShadow = false; disc.receiveShadow = true;
   g.add(disc);
 
@@ -235,7 +254,7 @@ function ground(g) {
     const m = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 20), rnd() < .5 ? a : b);
     m.rotation.x = -Math.PI / 2;
     m.scale.set(1, .5 + rnd() * .9, 1);
-    m.position.set(x, .095 + i * .0004, z);
+    m.position.set(x, LAYER.blot + i * LAYER.blotStep, z);
     m.castShadow = false; m.receiveShadow = true;
     g.add(m);
   }
@@ -257,8 +276,8 @@ function roads(g) {
       const mx = (A.x + B.x) / 2, mz = (A.z + B.z) / 2;
       const len = Math.hypot(B.x - A.x, B.z - A.z) * 1.25;
       const dir = Math.atan2(B.z - A.z, B.x - A.x);
-      slab(g, r.w + 1.4, len, edgeM, mx, .102, mz, -(dir + Math.PI / 2));
-      slab(g, r.w, len, roadM, mx, .106, mz, -(dir + Math.PI / 2));
+      slab(g, r.w + 1.4, len, edgeM, mx, LAYER.roadEdge, mz, -(dir + Math.PI / 2));
+      slab(g, r.w, len, roadM, mx, LAYER.road, mz, -(dir + Math.PI / 2));
     }
     out.push({ curve, w: r.w });
   }
@@ -273,43 +292,43 @@ function fields(g, solid) {
       /* 트랙 — 바깥 타원 붉은 우레탄, 안쪽 초록 축구장 */
       const outer = new THREE.Mesh(new THREE.CircleGeometry(.5, 48), M(PAL.track, .94));
       outer.rotation.x = -Math.PI / 2; outer.scale.set(w, d, 1);
-      outer.position.set(x, .11, z); outer.receiveShadow = true; outer.castShadow = false;
+      outer.position.set(x, LAYER.fieldBase, z); outer.receiveShadow = true; outer.castShadow = false;
       g.add(outer);
       const inner = new THREE.Mesh(new THREE.CircleGeometry(.5, 48), M(PAL.turf, .92));
       inner.rotation.x = -Math.PI / 2; inner.scale.set(w - 22, d - 18, 1);
-      inner.position.set(x, .118, z); inner.receiveShadow = true; inner.castShadow = false;
+      inner.position.set(x, LAYER.field, z); inner.receiveShadow = true; inner.castShadow = false;
       g.add(inner);
-      slab(g, w - 34, d - 26, M(PAL.turf, .92), x, .124, z, ry);
+      slab(g, w - 34, d - 26, M(PAL.turf, .92), x, LAYER.fieldLine, z, ry);
       /* 흰 선 — 축구장이라는 표시 */
-      slab(g, w - 34, .5, M(PAL.turfLine, .9), x, .13, z, ry);
-      for (const sz of [-1, 1]) slab(g, .5, d - 26, M(PAL.turfLine, .9), x + sz * (w - 34) / 2, .13, z, ry);
+      slab(g, w - 34, .5, M(PAL.turfLine, .9), x, LAYER.fieldLine, z, ry);
+      for (const sz of [-1, 1]) slab(g, .5, d - 26, M(PAL.turfLine, .9), x + sz * (w - 34) / 2, LAYER.fieldLine, z, ry);
     } else if (t === 'tennis') {
-      slab(g, w, d, M(PAL.court, .92), x, .11, z, ry);
+      slab(g, w, d, M(PAL.court, .92), x, LAYER.fieldBase, z, ry);
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
         const cx = x + (i - .5) * w * .48, cz = z + (j - .5) * d * .48;
         slab(g, w * .42, d * .42, M(PAL.clay, .93), cx, .118, cz, ry);
         slab(g, w * .38, .3, M(PAL.courtLine, .9), cx, .124, cz, ry);
       }
     } else if (t === 'court') {
-      slab(g, w, d, M(PAL.clay, .93), x, .11, z, ry);
-      slab(g, w - 3, d - 3, M(PAL.court, .92), x, .116, z, ry);
-      slab(g, .4, d - 3, M(PAL.courtLine, .9), x, .122, z, ry);
+      slab(g, w, d, M(PAL.clay, .93), x, LAYER.fieldBase, z, ry);
+      slab(g, w - 3, d - 3, M(PAL.court, .92), x, LAYER.field, z, ry);
+      slab(g, .4, d - 3, M(PAL.courtLine, .9), x, LAYER.fieldLine, z, ry);
     } else if (t === 'ball') {
       /* 야구장 — 부채꼴 잔디에 흙 내야 */
       const fan = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 28, Math.PI * .25, Math.PI * .5),
         M(PAL.turf, .92));
-      fan.rotation.x = -Math.PI / 2; fan.position.set(x, .11, z);
+      fan.rotation.x = -Math.PI / 2; fan.position.set(x, LAYER.fieldBase, z);
       fan.receiveShadow = true; fan.castShadow = false; g.add(fan);
       const dirt = new THREE.Mesh(new THREE.CircleGeometry(w * .2, 20, Math.PI * .25, Math.PI * .5),
         M(PAL.clay, .93));
-      dirt.rotation.x = -Math.PI / 2; dirt.position.set(x, .118, z);
+      dirt.rotation.x = -Math.PI / 2; dirt.position.set(x, LAYER.field, z);
       dirt.receiveShadow = true; dirt.castShadow = false; g.add(dirt);
     } else if (t === 'rugby') {
-      slab(g, w, d, M(PAL.turf, .92), x, .11, z, ry);
+      slab(g, w, d, M(PAL.turf, .92), x, LAYER.fieldBase, z, ry);
       for (let i = 0; i <= 5; i++)
-        slab(g, .4, d, M(PAL.turfLine, .9), x - w / 2 + (w / 5) * i, .118, z, ry);
+        slab(g, .4, d, M(PAL.turfLine, .9), x - w / 2 + (w / 5) * i, LAYER.field, z, ry);
     } else if (t === 'lot') {
-      slab(g, w, d, M(PAL.lotDark, .94), x, .11, z, ry);
+      slab(g, w, d, M(PAL.lotDark, .94), x, LAYER.fieldBase, z, ry);
       /* 주차 칸 — 선만 그으면 주차장으로 읽힙니다 */
       const rows = Math.floor(d / 11);
       for (let r2 = 0; r2 < rows; r2++) {
@@ -321,10 +340,10 @@ function fields(g, solid) {
     } else if (t === 'pond') {
       const e = new THREE.Mesh(new THREE.CircleGeometry(.5, 34), M(PAL.sand, .9));
       e.rotation.x = -Math.PI / 2; e.scale.set(w + 6, d + 6, 1);
-      e.position.set(x, .108, z); e.receiveShadow = true; e.castShadow = false; g.add(e);
+      e.position.set(x, LAYER.fieldBase, z); e.receiveShadow = true; e.castShadow = false; g.add(e);
       const p2 = new THREE.Mesh(new THREE.CircleGeometry(.5, 34), M(PAL.water, .25));
       p2.rotation.x = -Math.PI / 2; p2.scale.set(w, d, 1);
-      p2.position.set(x, .115, z); p2.receiveShadow = false; p2.castShadow = false; g.add(p2);
+      p2.position.set(x, LAYER.field, z); p2.receiveShadow = false; p2.castShadow = false; g.add(p2);
       solid(x, z, w * .8, d * .8, 0, false);
     } else if (t === 'amphi') {
       /* 야외극장 — 반원 계단 */
@@ -334,11 +353,11 @@ function fields(g, solid) {
         const ring = new THREE.Mesh(
           new THREE.CylinderGeometry(rr, rr, .42, 30, 1, false, Math.PI * .15, Math.PI * 1.2),
           M(i % 2 ? PAL.stone : PAL.stoneDark, .86));
-        ring.position.set(x, .12 + i * .38, z);
+        ring.position.set(x, LAYER.field + i * .38, z);
         ring.castShadow = true; ring.receiveShadow = true;
         g.add(ring);
       }
-      slab(g, w * .4, d * .28, M(PAL.stone, .84), x, .14, z + d * .3, 0);
+      slab(g, w * .4, d * .28, M(PAL.stone, .84), x, LAYER.field, z + d * .3, 0);
       solid(x, z, w * .7, d * .7, 0, false);
     }
   };
@@ -372,7 +391,7 @@ function allee(built, avoid) {
   for (const i of ALLEE) {
     const r = built[i];
     if (!r) continue;
-    const n = Math.round(r.curve.getLength() / 17);
+    const n = Math.round(r.curve.getLength() / 11);
     for (let k = 1; k < n; k++) {
       const t = k / n;
       const p = r.curve.getPointAt(t);
@@ -382,7 +401,7 @@ function allee(built, avoid) {
         const off = r.w / 2 + 3.4;
         const x = p.x + nx * off * sd, z = p.z + nz * off * sd;
         if (Math.abs(x) > SITE.hx - 4 || Math.abs(z) > SITE.hz - 4) continue;
-        if (avoid && avoid(x, z, 22)) continue;
+        if (avoid && avoid(x, z, 14)) continue;
         trees.push({ x, z, s: 1.0 + rnd() * .4, kind: (k + (sd > 0 ? 1 : 0)) % 3, ry: rnd() * TAU });
       }
     }
@@ -598,8 +617,8 @@ function forecourts(g, buildings) {
   for (const b of buildings) {
     const ry = ryOf(b.face);
     const bw = (b.w || 20) * (b.s || 1), bd = (b.d || 11) * (b.s || 1);
-    slab(g, bw + 9, bd + 11, kerb, b.x, .100, b.z, -ry);
-    slab(g, bw + 7, bd + 9, stone, b.x, .104, b.z, -ry);
+    slab(g, bw + 9, bd + 11, kerb, b.x, LAYER.courtKerb, b.z, -ry);
+    slab(g, bw + 7, bd + 9, stone, b.x, LAYER.court, b.z, -ry);
   }
 }
 
@@ -665,10 +684,10 @@ export function approaches(g, built, buildings) {
     if (len < 3 || len > 64) continue;        // 붙어 있거나 너무 멀면 안 놓습니다
     const mx = (best.x + dx) / 2, mz = (best.z + dz) / 2;
     const dir = Math.atan2(dx - best.x, dz - best.z);
-    slab(g, 5.4, len, edgeM, mx, .103, mz, -dir + Math.PI / 2 - Math.PI / 2);
-    slab(g, 4.2, len, walkM, mx, .107, mz, -dir + Math.PI / 2 - Math.PI / 2);
+    slab(g, 5.4, len, edgeM, mx, LAYER.walkEdge, mz, -dir + Math.PI / 2 - Math.PI / 2);
+    slab(g, 4.2, len, walkM, mx, LAYER.walk, mz, -dir + Math.PI / 2 - Math.PI / 2);
     /* 문 앞 마당 — 길 끝이 그냥 잘리면 어색합니다 */
-    slab(g, 8.5, 6.5, walkM, dx, .109, dz, -ry);
+    slab(g, 8.5, 6.5, walkM, dx, LAYER.doorYard, dz, -ry);
   }
 }
 

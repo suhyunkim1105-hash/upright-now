@@ -89,13 +89,50 @@ html = html.replace(/<script src="\.\.\/shared\/([\w.-]+)"><\/script>\n?/g, (m, 
   const p = resolve(here, '../shared/' + name);
   if (!existsSync(p)) { console.error('없는 스크립트: ' + p); process.exit(1); }
   inlined++;
-  return `<script>\n/* ---- ${name} (단독본용 인라인) ---- */\n${readFileSync(p, 'utf8')}</script>\n`;
+  /* 본문 속 </script> (calibrate.js 머리 주석의 사용 예시)가 스크립트
+     블록을 조기 종료시키지 않도록 이스케이프합니다. */
+  const body = readFileSync(p, 'utf8').replace(/<\/script/gi, '<\\/script');
+  return `<script>\n/* ---- ${name} (단독본용 인라인) ---- */\n${body}</script>\n`;
 });
 /* korcen.js · config.js · school-auth.js */
 if (inlined < 3) { console.error('스크립트를 다 못 넣었습니다 (' + inlined + '개).'); process.exit(1); }
 
-/* ---- 3. 남은 외부 참조가 있는지 확인 ---- */
-const leftover = [...html.matchAll(/(?:src|href)="((?!data:|#)[^"]+)"/g)].map((m) => m[1]);
+/* ---- 3. 그림·아이콘 — 파비콘 둘, 로고, 캐릭터 판 넉 장 ---- */
+const assetDir = resolve(here, '../landing/assets');
+const mime = { svg: 'image/svg+xml', ico: 'image/x-icon', webp: 'image/webp' };
+let assetBytes = 0;
+const dataUri = (name) => {
+  const p = resolve(assetDir, name);
+  if (!existsSync(p)) { console.error('없는 에셋: ' + p); process.exit(1); }
+  const data = readFileSync(p);
+  assetBytes += data.length;
+  return `data:${mime[name.split('.').pop()]};base64,${data.toString('base64')}`;
+};
+
+/* 로고와 파비콘은 제품에서 뺐습니다. 예전에는 여기서 data URI 로
+   박아 넣었는데, 자산 자체가 없으므로 이 단계도 없습니다. */
+
+/* loadPets() 가 JS 로 부르는 넉 장. src 속성이 아니라 아래 leftover 검사에
+   안 걸리고, 단독본에서 조용히 빈 캔버스가 됩니다. PET_DIR 결합식을
+   data URI 표로 바꿔 넣습니다. */
+const petSrc = {};
+for (const id of ['turtle', 'giraffe', 'penguin', 'frog']) petSrc[id] = dataUri(`char-${id}-cut.webp`);
+const petDirLine = "const PET_DIR = '../landing/assets/';";
+const petSrcLine = "img.src = PET_DIR + 'char-' + sp.id + '-cut.webp';";
+if (!html.includes(petDirLine) || !html.includes(petSrcLine)) {
+  console.error('loadPets 의 경로 코드를 못 찾았습니다. index.html 이 바뀌었는지 확인하세요.');
+  process.exit(1);
+}
+html = html
+  .replace(petDirLine, '/* 단독본 — 캐릭터 판 넉 장을 data URI 로 인라인 */\nconst PET_SRC = ' + JSON.stringify(petSrc) + ';')
+  .replace(petSrcLine, 'img.src = PET_SRC[sp.id];');
+
+/* ---- 4. 남은 외부 참조가 있는지 확인 ----
+   인라인된 스크립트 본문은 빼고 봅니다 — calibrate.js 머리 주석의 사용
+   예시(<script src="...">)가 진짜 참조처럼 걸립니다. 태그 자체는 남겨
+   두므로, 안 넣은 <script src>·<link href> 는 여전히 잡힙니다. */
+const scanned = html.replace(/(<script[^>]*>)[\s\S]*?(<\/script>)/g, '$1$2');
+const leftover = [...scanned.matchAll(/(?:src|href)="((?!data:|#)[^"]+)"/g)].map((m) => m[1]);
 if (leftover.length) {
   console.error('아직 밖을 보는 참조가 남았습니다: ' + leftover.join(', '));
   process.exit(1);
@@ -104,5 +141,5 @@ if (leftover.length) {
 writeFileSync(out, html, 'utf8');
 const kb = (n) => Math.round(n / 1024) + ' KB';
 console.log(`standalone.html  ${kb(Buffer.byteLength(html))}`);
-console.log(`  서체 ${kept}/${faces.length} subset · ${kb(bytes)}  ·  스크립트 ${inlined}개`);
+console.log(`  서체 ${kept}/${faces.length} subset · ${kb(bytes)}  ·  스크립트 ${inlined}개  ·  그림 7장 ${kb(assetBytes)}`);
 console.log('  외부 요청 0 — 파일 하나로 열립니다.');

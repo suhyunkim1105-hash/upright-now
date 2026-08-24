@@ -37,6 +37,29 @@
 (function (global) {
   'use strict';
 
+  /* ---- 흉내 스위치 ----
+     주소에 `?mock` 을 붙이면 설정이 멀쩡해도 메일을 안 보냅니다.
+     MVP 동안 화면과 흐름만 보는 일이 잦은데, 볼 때마다 진짜 메일이
+     나가고 받은 편지함을 뒤져 여덟 자리를 옮겨 적어야 하면 디자인을
+     고칠 때마다 1 분씩 사라집니다.
+
+     한 번 켜면 이 브라우저에 남습니다 — 장을 넘길 때마다 주소에 다시
+     붙일 수는 없으니까요. `?live` 로 끕니다.
+
+     안전한 이유는 이것이 **화면 쪽 스위치일 뿐**이라는 데 있습니다.
+     흉내로 통과해도 세션이 안 생기므로 서버에서 할 수 있는 일이
+     늘지 않습니다. 그리고 흉내로 도는 동안에는 화면에 그렇게 적습니다
+     (아래 reason) — 가짜 통과를 진짜 로그인으로 착각하면 안 됩니다. */
+  const MOCK_KEY = 'girin.mockAuth';
+  try {
+    const q = new URLSearchParams(global.location ? global.location.search : '');
+    if (q.has('mock')) global.localStorage.setItem(MOCK_KEY, '1');
+    if (q.has('live')) global.localStorage.removeItem(MOCK_KEY);
+  } catch (e) { /* localStorage 가 막힌 브라우저 - 그냥 진짜로 돕니다 */ }
+  const forcedMock = (() => {
+    try { return global.localStorage.getItem(MOCK_KEY) === '1'; } catch (e) { return false; }
+  })();
+
   const CFG = global.GIRIN_SUPABASE || {};
   const URL_BASE = (CFG.url || '').replace(/\/+$/, '');
   const ANON = CFG.anonKey || '';
@@ -174,10 +197,13 @@
     configured,
     servedOverHttp,
     /** 진짜 로그인을 걸 수 있는 상태인가. 아니면 화면이 흉내로 넘어갑니다. */
-    get live() { return configured && servedOverHttp; },
+    get live() { return configured && servedOverHttp && !forcedMock; },
+    /** 주소로 흉내를 켜 둔 상태인가. 화면이 문구를 가릅니다. */
+    forcedMock,
     /** 왜 못 쓰는지 - 화면에 그대로 띄웁니다. 조용히 흉내로 넘어가면
         가짜 통과를 진짜로 착각합니다. */
     get reason() {
+      if (forcedMock) return '주소에 ?mock 을 붙여 두었습니다 (?live 로 되돌립니다)';
       if (!configured) return 'Supabase 설정이 없습니다 (prototypes/shared/config.js)';
       if (!servedOverHttp) return 'file:// 에서는 로그인할 수 없습니다 (npx http-server . -p 8177 -c-1)';
       return '';

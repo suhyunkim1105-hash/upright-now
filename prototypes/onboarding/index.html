@@ -3,8 +3,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Deskfit - 시작하기</title>
-<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="../landing/assets/favicon.ico" sizes="48x48">
 
 <!-- Wanted Sans — 유니코드 구간별 92 subset 을 이 CSS 가 부릅니다.
      읽는 글자만 내려받으므로 한 벌을 통째로 받는 것보다 가볍습니다. -->
@@ -110,6 +108,62 @@
 
     --sh:    0 8px 24px rgba(20, 40, 38, .10);
     --sh-lg: 0 24px 56px rgba(20, 40, 38, .16);
+
+    /* ---- 클레이 ----
+       **지금은 버튼만 씁니다.** 판·입력칸·알은 손으로 그은 선(--stroke +
+       #wobble) 그대로입니다 — 재질을 한 번에 다 갈면 무엇이 좋아졌는지
+       알 수 없고, 되돌릴 지점도 없어집니다.
+
+       세 겹입니다. 위에서 들어온 빛(inset 밝은), 아래로 말리는 그늘
+       (inset 어두운), 바닥에 지는 그림자(바깥). 이 셋이 있어야 눌러
+       붙인 색이 아니라 **부푼 덩어리**로 보입니다.
+
+       그늘은 순검정이 아니라 청록을 섞은 어두운 값입니다. 순검정 그늘은
+       점토가 아니라 플라스틱이 됩니다.
+
+       두께에 계단을 둡니다 — 주 버튼(--clay-hero)이 화면에서 가장 두껍고,
+       보조 버튼(--clay-sm)은 한 단 낮습니다. 둘이 같으면 어느 쪽을
+       눌러야 하는지가 사라집니다. */
+    --clay-sm:
+      inset 0 2px 4px rgba(255,255,255,.62),
+      inset 0 -3px 6px rgba(13,60,52,.09),
+      0 5px 12px rgba(23,32,30,.10);
+    --clay-sm-lift:
+      inset 0 2px 4px rgba(255,255,255,.70),
+      inset 0 -3px 6px rgba(13,60,52,.09),
+      0 9px 18px rgba(23,32,30,.13);
+    /* 누르면 빛과 그늘이 뒤집힙니다. 위가 어두워지고 아래가 밝아지면서
+       물건이 안으로 들어갑니다. */
+    --clay-press:
+      inset 0 4px 9px rgba(13,60,52,.16),
+      inset 0 -2px 5px rgba(255,255,255,.55),
+      0 2px 5px rgba(23,32,30,.09);
+    /* 파인 것. 바깥 그림자가 없어야 홈으로 읽힙니다. 꺼진 버튼이 씁니다 —
+       솟은 것은 누르는 것이고, 파인 것은 지금 못 누르는 것입니다. */
+    --clay-in:
+      inset 0 4px 9px rgba(13,60,52,.13),
+      inset 0 -2px 4px rgba(255,255,255,.80);
+    /* 청록 위. 흰 하이라이트를 6px 까지 올리고 아래 그늘을 청록으로
+       깝니다 — 청록 위에서 검정 그늘은 때가 탄 것처럼 보입니다.
+       바깥 확산 두 겹 중 가까운 것이 바닥에 붙이고, 먼 것이 높이를 만듭니다. */
+    --clay-hero:
+      inset 0 6px 10px rgba(255,255,255,.60),
+      inset 0 -10px 16px rgba(11,86,76,.32),
+      inset 0 -1px 0 rgba(11,86,76,.20),
+      0 6px 10px rgba(13,119,105,.18),
+      0 22px 34px -8px rgba(13,119,105,.38),
+      0 40px 60px -22px rgba(23,32,30,.26);
+    --clay-hero-lift:
+      inset 0 6px 10px rgba(255,255,255,.66),
+      inset 0 -10px 16px rgba(11,86,76,.30),
+      inset 0 -1px 0 rgba(11,86,76,.20),
+      0 8px 12px rgba(13,119,105,.18),
+      0 30px 44px -8px rgba(13,119,105,.40),
+      0 54px 74px -24px rgba(23,32,30,.28);
+    --clay-hero-press:
+      inset 0 8px 14px rgba(11,86,76,.38),
+      inset 0 -4px 8px rgba(255,255,255,.36),
+      0 2px 5px rgba(13,119,105,.18);
     /* ---- 모서리 ----
        모양이 뜻을 나릅니다. 알약은 누르는 것, 16 은 담는 판, 12 는
        글자를 받는 것. 값이 9종이었을 때는 10·11·12·14·16 이 뒤섞여
@@ -417,57 +471,56 @@
     .calRing .fill { transition: none; }
   }
 
+  /* ---------------- 버튼 — 클레이 ----------------
+     손으로 그은 판(::before + 2px --stroke + #wobble + 각진 오프셋
+     그림자)에서 점토로 넘어왔습니다. 우리 캐릭터가 전부 점토로 빚은
+     물건인데 버튼만 종이를 오려 붙인 것이면 한 화면에서 두 재질이
+     싸웁니다.
+
+     ::before 판을 뺐습니다. 채움과 그림자를 버튼 자신이 들면 되고,
+     남겨 두면 그 위에 얹힌 inset 그림자가 판에 가려 안 보입니다.
+     알·입력칸·카드는 아직 손그림 그대로입니다 — 이번에는 버튼만입니다. */
   .cta {
     appearance: none; border: 0; cursor: pointer;
-    /* ::before 로 판을 까는 규칙이 아래에 있습니다. 여기 position 이
-       없으면 그 판이 버튼이 아니라 **조상 박스 전체**에 대고 자리를
-       잡아, 화면만 한 회색 덩어리가 됩니다. */
     position: relative;
     display: inline-flex; align-items: center; gap: var(--sp-sm); white-space: nowrap;
     padding: var(--sp-lg) var(--sp-xl); border-radius: var(--r-pill);
     background: var(--teal); color: var(--on-teal);
     font: 700 15.5px/1 'Wanted Sans Variable', sans-serif; letter-spacing: 0;
-    background: transparent;
-    box-shadow: none;
-    transition: transform 90ms var(--ease-press), filter 90ms var(--ease-press);
+    box-shadow: var(--clay-hero);
+    transition: transform 140ms var(--ease), box-shadow 140ms var(--ease),
+                background .16s var(--ease);
   }
-  /* 채움과 테두리는 뒤에 깔린 판이 맡습니다. 글자는 이 판 위에 그대로
-     놓여 안 밀립니다. */
-  .cta::before {
-    content: ''; position: absolute; inset: -1px; z-index: -1;
-    border-radius: inherit;
-    background: var(--teal); border: 2px solid var(--stroke);
-    filter: url(#wobble);
-    transition: background .16s var(--ease);
-  }
-  .cta:hover::before { background: var(--teal-400); }
-  /* 손으로 그린 그림자 - 흐린 번짐이 아니라 한 번 더 그은 선입니다.
-     누르면 종이에 붙으며 그림자가 줄어듭니다. */
-  .cta { filter: drop-shadow(2px 3px 0 rgba(74, 84, 81, .16)); }
+  .cta:hover { background: var(--teal-400); box-shadow: var(--clay-hero-lift); transform: translateY(-3px); }
   /* :active 라 **누르는 순간** 반응합니다. 떼는 순간을 기다리면 죽은
-     버튼이 됩니다. 종이에 붙으면서 아주 살짝 줄어듭니다 - 밀려 내려가기만
-     하면 미끄러진 것이고, 같이 줄어야 눌린 것입니다. */
-  .cta:active { transform: translate(1px, 2px) scale(.985); filter: drop-shadow(1px 1px 0 rgba(74, 84, 81, .16)); }
+     버튼이 됩니다. 빛과 그늘이 뒤집히면서 바닥까지 내려앉습니다 —
+     밀려 내려가기만 하면 미끄러진 것이고, 그림자가 같이 뒤집혀야
+     눌린 것입니다. */
+  .cta:active {
+    background: var(--teal-600);
+    box-shadow: var(--clay-hero-press);
+    transform: translateY(1px);
+    transition-duration: 90ms;
+    transition-timing-function: var(--ease-press);
+  }
   .cta svg { width: 17px; height: 17px; }
 
-  /* 보조 버튼도 단을 답니다. 하나만 눌리고 하나는 안 눌리면 그쪽이
-     고장 난 것처럼 보입니다. 단만 중성색입니다. */
+  /* 보조 버튼도 부풉니다. 하나만 눌리고 하나는 안 눌리면 그쪽이 고장 난
+     것처럼 보입니다. 다만 **한 단 얇습니다** — 둘이 같은 두께면 어느
+     쪽을 눌러야 하는지가 사라집니다. */
   .ghost {
-    appearance: none; cursor: pointer; position: relative; isolation: isolate;
+    appearance: none; cursor: pointer; position: relative;
     padding: var(--sp-md) var(--sp-xl); border-radius: var(--r-pill);
-    background: transparent; border: 0; color: var(--ink-2);
+    background: var(--surface); border: 0; color: var(--ink-2);
     font: 750 14.5px/1 'Wanted Sans Variable', sans-serif;
-    filter: drop-shadow(2px 3px 0 rgba(74, 84, 81, .10));
-    transition: transform 90ms var(--ease-press), filter 90ms var(--ease-press), color .16s var(--ease);
+    box-shadow: var(--clay-sm);
+    transition: transform 140ms var(--ease), box-shadow 140ms var(--ease), color .16s var(--ease);
   }
-  .ghost::before {
-    content: ''; position: absolute; inset: -1px; z-index: -1;
-    border-radius: inherit;
-    background: var(--surface); border: 2px solid var(--stroke);
-    filter: url(#wobble);
+  .ghost:hover { color: var(--ink); box-shadow: var(--clay-sm-lift); transform: translateY(-2px); }
+  .ghost:active {
+    box-shadow: var(--clay-press); transform: translateY(0);
+    transition-duration: 90ms; transition-timing-function: var(--ease-press);
   }
-  .ghost:hover { color: var(--ink); }
-  .ghost:active { transform: translate(1px, 2px); filter: drop-shadow(1px 1px 0 rgba(74, 84, 81, .10)); }
 
   .ctaRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .note { margin: 0; font-size: 12.5px; color: var(--ink-2); }
@@ -496,9 +549,11 @@
   }
 
   .topbar { display: flex; align-items: center; gap: var(--sp-lg); padding-bottom: var(--sp-xl); }
-  /* 랜딩에서 넘어온 사람이 같은 제품인지 확인할 곳이 여기밖에 없습니다 -
-     일곱 장 내내 마크가 한 장도 없었습니다. 진행 막대 오른쪽 끝에 둡니다. */
-  .topbar .mark { width: 37px; height: 22px; flex: none; opacity: .9; }
+  /* 로고가 있던 자리입니다. 폭을 **뒤로 버튼과 같게**(36px) 둡니다 —
+     막대가 진짜 가운데에 오려면 좌우 균형추가 같아야 하는데, 로고 폭
+     37px 을 그대로 남겨 두면 1px 씩 어긋나고 로고가 없으니 그 어긋남을
+     설명해 줄 것도 없습니다. 지워 버리면 막대가 오른쪽으로 튑니다. */
+  .topbar .mark { width: 36px; flex: none; }
   .backBtn {
     appearance: none; cursor: pointer; flex: none;
     width: 36px; height: 36px; border-radius: 50%;
@@ -673,12 +728,18 @@
 
      Duolingo 가 Duo 로 하는 일이고, 이 제품에서는 그 자리가 비어
      있었습니다. */
-  .narr { display: flex; align-items: flex-start; gap: var(--sp-md); }
+  /* 12px 이었습니다. 픽셀 스프라이트 시절에는 그림 자체에 빈 여백이
+     붙어 있어 그걸로 충분했는데, 클레이 렌더는 몸에 딱 맞게 잘려 있어
+     같은 값이 절반으로 줄어든 셈이 됐습니다. 게다가 말풍선 꼬리가
+     왼쪽으로 8px 더 나오므로, 실제로 남는 공기는 4px 이었습니다.
+     24px 로 벌리면 꼬리를 빼고도 16px 이 남아 말풍선이 캐릭터에
+     붙어 있지 않고 **옆에서** 말하는 그림이 됩니다. */
+  .narr { display: flex; align-items: flex-start; gap: var(--sp-xl); }
   .narr canvas {
-    /* 32×48 원본의 **정확히 2배**. 전에는 56×56 이라 1.75 배였고, 게다가
-       2:3 그림을 정사각에 넣어 가로세로 배율이 서로 달랐습니다 — 픽셀
-       폭이 1px 과 2px 로 섞여 격자가 흔들리던 원인입니다. */
-    width: 64px; height: 96px; flex: none; image-rendering: pixelated;
+    /* 2:3 을 지킵니다. 정사각에 넣으면 가로세로 배율이 달라져 종마다
+       다르게 찌그러집니다. 알은 아직 픽셀 그림이라 전역 pixelated 가
+       필요하고, 캐릭터 칸만 여기서 풉니다. */
+    width: 64px; height: 96px; flex: none; image-rendering: auto;
     /* 살짝 튕깁니다. 말할 때 몸이 안 움직이면 인형입니다. */
     animation: narrBob 2.8s ease-in-out infinite;
   }
@@ -717,14 +778,14 @@
                   목록이고, 겹치면 장면입니다
        공통 영역 — 캐릭터와 말풍선이 한 덩어리, 입력칸은 별개. 지금까지는
                   셋이 같은 간격이라 셋 다 형제로 읽혔습니다 */
-  .meet { display: flex; align-items: flex-start; gap: 0; padding-top: var(--sp-xs); }
+  .meet { display: flex; align-items: flex-start; gap: var(--sp-xl); padding-top: var(--sp-xs); }
   .meet canvas {
-    /* 32×48 원본의 정확히 4배. 116 처럼 안 떨어지는 배수로 늘리면 픽셀
-       폭이 3px 과 4px 로 섞여 격자가 흔들립니다. 세로도 48 의 4배인
-       192 여야 합니다 — 128 로 두면 그림이 3분의 2 로 눌립니다. */
-    width: 128px; height: 192px; flex: none; image-rendering: pixelated;
-    /* 겹침. 음수 여백이라 말풍선 폭은 그대로 두고 깊이만 만듭니다. */
-    margin-right: -10px; position: relative; z-index: 1;
+    /* 2:3. 128×128 로 두면 그림이 3분의 2 로 눌립니다. */
+    width: 128px; height: 192px; flex: none; image-rendering: auto;
+    /* 겹쳐 두었던 자리입니다. 픽셀 스프라이트는 가장자리가 비어 있어
+       10px 겹쳐야 비로소 맞닿아 보였는데, 클레이 렌더는 몸이 칸 끝까지
+       차 있어 그대로 두면 말풍선을 파고듭니다. */
+    position: relative; z-index: 1;
     animation: narrBob 3.4s ease-in-out infinite;
   }
   .meet .bubble {
@@ -925,10 +986,10 @@
      크기가 CSS 로 안 변하므로 여기 남는 것은 도착한 뒤의 숨쉬기뿐입니다.
      지연을 두는 이유 - 커지는 동안 같이 흔들리면 두 움직임이 싸웁니다. */
   .pet { position: relative; }
-  /* 버퍼가 128×192(원본 32×48 의 4배)이므로 CSS 도 같은 값입니다.
-     128×128 로 두면 브라우저가 세로만 0.67 배로 눌러, 캔버스 안에서
-     아무리 또렷하게 그려도 화면에서 다시 뭉갰습니다. */
-  .pet canvas { width: 128px; height: 192px; image-rendering: pixelated; }
+  /* 버퍼가 256×384 이므로 CSS 도 같은 2:3 입니다. 정사각으로 두면
+     브라우저가 세로만 눌러, 캔버스 안에서 아무리 또렷하게 그려도
+     화면에서 다시 뭉갭니다. */
+  .pet canvas { width: 128px; height: 192px; image-rendering: auto; }
   @media (prefers-reduced-motion: no-preference) {
     .pet canvas { animation: petBob 2.9s ease-in-out infinite .62s; }
   }
@@ -973,15 +1034,19 @@
   .field .err.on { display: flex; }
   .field .err svg { width: 14px; height: 14px; flex: none; }
 
-  /* ---------------- 인증번호 여섯 칸 ----------------
-     한 칸짜리 입력칸은 여섯 자리가 들어갔는지 세어 봐야 압니다. 칸을
+  /* ---------------- 인증번호 칸 ----------------
+     한 칸짜리 입력칸은 몇 자리가 들어갔는지 세어 봐야 압니다. 칸을
      나누면 **몇 개 남았는지가 그림으로** 보입니다.
 
-     입력칸은 여전히 **하나**입니다 - 여섯 개로 쪼개면 붙여넣기,
+     입력칸은 여전히 **하나**입니다 - 여러 개로 쪼개면 붙여넣기,
      지우기, 자동완성(one-time-code)을 전부 직접 만들어야 하고 그 셋이
      인증 화면에서 제일 많이 쓰입니다. 진짜 입력칸을 투명하게 깔고
-     그 아래 칸을 그립니다. shadcn 의 InputOTP 가 쓰는 구조입니다. */
-  .otp { position: relative; }
+     그 아래 칸을 그립니다. shadcn 의 InputOTP 가 쓰는 구조입니다.
+
+     **칸 수는 여기서 안 정합니다.** `SchoolAuth.OTP_LEN` 이 정하고 JS 가
+     `--otp-n` 으로 내려 줍니다 — 프로젝트의 mailer_otp_length 와 칸 수가
+     따로 놀면 확인 버튼이 영원히 안 열립니다. */
+  .otp { position: relative; --otp-n: 6; --otp-gap: var(--sp-sm); }
   .otp input {
     /* 진짜 입력칸. 칸 위에 통째로 깔려 있고 글자만 안 보입니다 -
        없애면 붙여넣기와 자동완성(one-time-code)이 같이 사라집니다. */
@@ -993,7 +1058,12 @@
      초점 테두리는 그대로 둡니다 - 키보드로 오는 사람이 여길 못 찾습니다. */
   .otp input:focus { background: none; }
   .otp input:focus-visible { outline-offset: 6px; }
-  .otp .cells { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--sp-sm); }
+  .otp .cells { display: grid; grid-template-columns: repeat(var(--otp-n), 1fr); gap: var(--otp-gap); }
+  /* 일곱 칸부터는 같은 폭에 더 많이 들어가야 합니다. 사이를 먼저 줄이고,
+     그래도 모자라면 칸을 낮춥니다 — 폭을 줄이면 숫자가 세로로 길쭉해져서
+     칸이 아니라 막대로 보입니다. */
+  .otp[data-n="7"], .otp[data-n="8"] { --otp-gap: 8px; }
+  .otp[data-n="7"] .cells i, .otp[data-n="8"] .cells i { height: 56px; font-size: 21px; }
   .otp .cells i {
     height: 62px; display: grid; place-items: center;
     background: var(--bg); border: 2px solid var(--stroke); border-radius: var(--r-md);
@@ -1027,9 +1097,17 @@
   /* 잠긴 글자도 읽혀야 합니다. ink-3 은 이 바탕에서 4.02 라, 무엇이
      잠겨 있는지 알 수 없게 됩니다 - 다음에 뭘 해야 하는지는 잠긴
      버튼이 말해 주는 경우가 많습니다. */
-  .cta[disabled] { color: var(--ink-2); cursor: not-allowed; transform: none; filter: none; }
-  .cta[disabled]::before,
-  .cta[disabled]:hover::before { background: var(--surface-3); border-color: var(--line-2); }
+  /* 꺼진 버튼은 **파입니다.** 색만 흐리게 하면 "지금 못 누른다" 가
+     아니라 "연하게 칠한 버튼" 으로 보입니다. 솟은 것은 누르는 것이고,
+     파인 것은 지금 못 누르는 것입니다. */
+  .cta[disabled],
+  .cta[disabled]:hover,
+  .cta[disabled]:active {
+    color: var(--ink-3); cursor: not-allowed;
+    background: var(--surface-3);
+    box-shadow: var(--clay-in);
+    transform: none;
+  }
 
   /* 보내는 동안 - 원형 스피너 대신 버튼 안에서 점 셋이 뜁니다.
      버튼이 자기 상태를 말하는 편이 화면 어딘가의 스피너보다 낫습니다. */
@@ -1062,7 +1140,8 @@
     padding: var(--sp-lg); border-radius: var(--r-lg); background: var(--surface-2);
     border: 1px solid var(--line);
   }
-  .whoami canvas { width: 68px; height: 68px; flex: none; }
+  /* 2:3 — 정사각으로 두면 캐릭터가 옆으로 눌립니다 */
+  .whoami canvas { width: 46px; height: 68px; flex: none; image-rendering: auto; }
   .whoami .meta { min-width: 0; display: flex; flex-direction: column; gap: var(--sp-xs); }
   .whoami .nm { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
   .whoami .sc { font-size: 13px; color: var(--ink-2); }
@@ -1156,7 +1235,9 @@
         </button>
         <div class="bar" role="progressbar" aria-valuemin="1" aria-valuemax="7"
              aria-valuenow="1" aria-label="가입 진행" id="bar"><i></i></div>
-        <img class="mark" src="../landing/assets/logo.svg" alt="Deskfit" width="37" height="22">
+        <!-- 심벌은 뺐습니다. 이 줄에서 브랜드를 말하는 것은 진행 막대와
+             그 아래 제목이고, 헤더의 그림 하나는 거기에 보태는 게 없었습니다. -->
+        <span class="mark" aria-hidden="true"></span>
       </header>
 
       <div class="card">
@@ -1187,7 +1268,7 @@
                  예전에는 버퍼가 128×128 이라 2:3 캐릭터를 정사각에 넣느라
                  세로가 눌렸습니다. -->
             <div class="pet" id="petWrap" hidden>
-              <canvas id="petCv" width="128" height="192" role="img"></canvas>
+              <canvas id="petCv" width="256" height="384" role="img"></canvas>
             </div>
             <div class="hatchFlash" id="hatchFlash" aria-hidden="true"></div>
           </div>
@@ -1200,7 +1281,7 @@
         <!-- 3. 닉네임 -->
         <section class="step" id="s3" aria-labelledby="s3h">
           <h2 id="s3h"><span id="petName">이 친구</span>의 이름을 지어 주세요</h2>
-          <div class="meet"><canvas class="narrPet" width="32" height="48" aria-hidden="true"></canvas>
+          <div class="meet"><canvas class="narrPet" width="256" height="384" aria-hidden="true"></canvas>
             <p class="bubble">캠퍼스에서 내 머리 위에 떠. 나중에 바꿔도 돼.</p></div>
           <div class="field">
             <label for="nick">이름</label>
@@ -1227,7 +1308,7 @@
              이 제품이 파는 것은 결국 그 약속입니다. -->
         <section class="step" id="s4" aria-labelledby="s4h">
           <h2 id="s4h"><span id="aboutPet">이 친구는</span> 이렇게 자라요</h2>
-          <div class="narr"><canvas class="narrPet" width="32" height="48" aria-hidden="true"></canvas>
+          <div class="narr"><canvas class="narrPet" width="256" height="384" aria-hidden="true"></canvas>
             <p class="bubble">세 가지만 알면 돼.</p></div>
 
           <ul class="about">
@@ -1260,7 +1341,7 @@
         <!-- 5. 학교 인증 -->
         <section class="step" id="s5" aria-labelledby="s5h">
           <h2 id="s5h">학교 이메일을 알려 주세요</h2>
-          <div class="meet"><canvas class="narrPet" width="32" height="48" aria-hidden="true"></canvas>
+          <div class="meet"><canvas class="narrPet" width="256" height="384" aria-hidden="true"></canvas>
             <p class="bubble">학교끼리 순위를 매기거든. 비밀번호는 안 만들어.</p></div>
 
           <div id="mailStage">
@@ -1282,14 +1363,16 @@
           <div id="codeStage" hidden>
             <div class="mailSent">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
-              <p><b id="sentTo">주소</b>로 인증번호 6자리를 보냈어요.</p>
+              <p><b id="sentTo">주소</b>로 인증번호 <span id="codeLenText">8자리</span>를 보냈어요.</p>
             </div>
             <div class="field" style="margin-top:16px">
               <label for="code">인증번호</label>
               <div class="otp" id="otp">
-                <div class="cells" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                <input id="code" type="text" inputmode="numeric" maxlength="6"
-                       autocomplete="one-time-code" aria-describedby="codeErr" aria-label="인증번호 6자리">
+                <!-- 칸은 JS 가 SchoolAuth.OTP_LEN 만큼 그립니다. 여기에
+                     개수를 적어 두면 설정을 바꿨을 때 이 줄만 남습니다. -->
+                <div class="cells" aria-hidden="true"></div>
+                <input id="code" type="text" inputmode="numeric"
+                       autocomplete="one-time-code" aria-describedby="codeErr" aria-label="인증번호">
               </div>
               <span class="err" id="codeErr" role="alert">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
@@ -1327,7 +1410,7 @@
 
           <!-- 6a. 예고 -->
           <div class="phase" id="camIntro">
-            <div class="narr"><canvas class="narrPet" width="32" height="48" aria-hidden="true"></canvas>
+            <div class="narr"><canvas class="narrPet" width="256" height="384" aria-hidden="true"></canvas>
               <p class="bubble">자세를 보려면 카메라가 필요해. 먼저 알려줄게.</p></div>
 
             <ul class="about">
@@ -1431,7 +1514,7 @@
                노트북이 없거나 공공장소에 있는 사람을 여기서 잃으면
                되돌릴 방법이 없습니다. -->
           <div class="phase" id="camDenied" hidden>
-            <div class="narr"><canvas class="narrPet" width="32" height="48" aria-hidden="true"></canvas>
+            <div class="narr"><canvas class="narrPet" width="256" height="384" aria-hidden="true"></canvas>
               <p class="bubble">괜찮아. 카메라 없이도 들어갈 수 있어.</p></div>
             <ul class="about">
               <li>
@@ -1454,7 +1537,7 @@
           <h2 id="s7h">준비가 끝났어요</h2>
 
           <div class="whoami">
-            <canvas id="doneCv" width="32" height="32" role="img" aria-label="내 캐릭터"></canvas>
+            <canvas id="doneCv" width="256" height="384" role="img" aria-label="내 캐릭터"></canvas>
             <div class="meta">
               <span class="nm" id="doneNick">닉네임</span>
               <span class="sc" id="doneSchool">학교</span>
@@ -1572,7 +1655,7 @@ function eggCanvas(key, shell, shellLit, shellDark, spot) {
   return c;
 }
 
-/* ==================== 새끼 여덟 ====================
+/* ==================== 새끼 넷 ====================
    손으로 그리지 않고 **월드의 시트를 그대로 씁니다.**
    `prototypes/openworld/assets/characters/<종>.png` 는 128×48, 곧 32×48
    네 컷이고 프레임 0 이 앞모습입니다. 부화한 얼굴과 월드에서 걷는 얼굴이
@@ -1584,16 +1667,19 @@ function eggCanvas(key, shell, shellLit, shellDark, spot) {
 
    그림은 나중에 옵니다. 먼저 빈 칸을 만들어 두고, 다 받으면 이미 그려 둔
    자리를 다시 칠합니다. 안 그러면 첫 화면에서 말풍선 옆이 비어 보입니다. */
-const PET_SHEET = '../openworld/assets/characters/';
-/* 시트 한 컷은 32×48 입니다. 예전에는 이걸 32×32 칸에 **비율 맞춰 줄여**
-   21×32 로 넣었는데, 픽셀 그림을 0.667 배로 줄이면 세 줄 중 한 줄이
-   통째로 버려집니다. 눈·입처럼 1~2px 짜리 선이 먼저 사라지고, 그 상태로
-   다시 4 배 키우니 깨져 보였습니다.
+/* 알에서 나오는 것은 **랜딩에 쓰는 그 렌더**입니다. 픽셀 시트로 뽑던
+   판은 여기서 끝냅니다 — 랜딩에서 클레이를 보고 들어온 사람에게 알을
+   깨자마자 다른 그림을 주면, 고른 캐릭터를 못 받은 것으로 읽힙니다.
 
-   지금은 **원본 크기 그대로** 담습니다. 줄이지도 늘이지도 않으므로
-   시트에 있는 픽셀이 하나도 안 사라집니다. 화면에서 키우는 일은
-   정수배로만 하고(2배·4배), 그때 nearest-neighbour 를 씁니다. */
-const PET_W = 32, PET_H = 48;
+   렌더 원본은 크림 배경이 박힌 사각형이라 그대로는 말풍선 옆에 못
+   세웁니다. 배경을 따낸 판(`char-<종>-cut.webp`)을 씁니다.
+
+   담는 칸은 2:3 입니다. 캐릭터마다 몸 비율이 달라(기린은 길고 개구리는
+   넓습니다) 칸에 맞춰 늘이면 종마다 다르게 찌그러집니다. 비율을 지킨 채
+   칸 안에 넣고 **발을 바닥에 붙입니다** — 가운데에 맞추면 키가 작은
+   종이 공중에 뜹니다. */
+const PET_DIR = '../landing/assets/';
+const PET_W = 256, PET_H = 384;
 function loadPets() {
   let left = SPECIES.length;
   SPECIES.forEach((sp) => {
@@ -1603,14 +1689,16 @@ function loadPets() {
     const img = new Image();
     img.onload = () => {
       const g = c.getContext('2d');
-      g.imageSmoothingEnabled = false;
-      /* 프레임 0(앞모습)을 1:1 로 옮깁니다 — 배율이 1 이라 손실이 없습니다. */
+      g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = 'high';
       g.clearRect(0, 0, PET_W, PET_H);
-      g.drawImage(img, 0, 0, PET_W, PET_H, 0, 0, PET_W, PET_H);
+      const k = Math.min(PET_W / img.width, PET_H / img.height);
+      const w = img.width * k, h = img.height * k;
+      g.drawImage(img, (PET_W - w) / 2, PET_H - h, w, h);
       if (--left === 0) { try { paintNarr(); } catch (e) { /* 아직 화면 전 */ } }
     };
     img.onerror = () => { if (--left === 0) { try { paintNarr(); } catch (e) { /* 무시 */ } } };
-    img.src = PET_SHEET + sp.id + '.png';
+    img.src = PET_DIR + 'char-' + sp.id + '-cut.webp';
   });
 }
 
@@ -1643,18 +1731,28 @@ const eulreul = (w) => josa(w, '을를');
 
    짝은 자리로 고정입니다. 무작위로 돌리면 새로고침해서 다시 뽑게 되고,
    그때부터 이건 선택이 아니라 뽑기입니다. */
-/* 여덟 종. 월드의 32×48 시트와 **같은 목록**입니다 — 한쪽만 고치면
-   부화한 캐릭터와 월드에서 걷는 캐릭터가 달라집니다. 새끼 그림도 그
-   시트의 앞모습 한 컷(프레임 0)을 그대로 씁니다. */
+/* 네 종.
+   ------------------------------------------------------------------
+   **여덟이었다가 넷으로 줄였습니다.** 기준은 취향이 아니라 **점토 렌더가
+   있느냐**입니다. 우리 화면의 재질은 클레이모피즘인데, 네 종만 점토로
+   구워져 있고(`landing/assets/char-{turtle,giraffe,penguin,frog}-3d.webp`)
+   나머지 넷은 픽셀 시트뿐입니다. 여덟을 다 열어 두면 부화 화면에서
+   반은 점토, 반은 픽셀이 나오고 — 고른 사람은 자기가 진 쪽을 뽑았다고
+   느낍니다. 없는 것을 고를 수 있게 두는 것이 더 나쁩니다.
+
+   지운 넷(햄스터·고슴도치·알파카·백조)의 **픽셀 시트와 종별 아이템은
+   지우지 않았습니다.** 월드와 홈은 여덟을 그대로 알고 있어서, 이미
+   그 종으로 가입한 사람의 저장이 깨지지 않습니다. 여기서 새로 못 고를
+   뿐입니다. 점토 렌더가 나오면 이 배열에 다시 넣으면 됩니다.
+
+   월드의 32×48 시트와 **같은 id** 를 씁니다 — 한쪽만 고치면 부화한
+   캐릭터와 월드에서 걷는 캐릭터가 달라집니다. 새끼 그림도 그 시트의
+   앞모습 한 컷(프레임 0)을 그대로 씁니다. */
 const SPECIES = [
   { id: 'turtle',   name: '거북이',   line: '느려도 끝까지 가. 오래 앉아 있는 건 자신 있어.' },
   { id: 'giraffe',  name: '기린',     line: '목이 길어서 그만큼 더 신경 써.' },
   { id: 'penguin',  name: '펭귄',     line: '허리 펴고 서는 건 원래 잘해.' },
-  { id: 'hamster',  name: '햄스터',   line: '짧게 자주 쉬는 걸 좋아해.' },
   { id: 'frog',     name: '개구리',   line: '한 번에 멀리 가는 대신 자주 멈춰.' },
-  { id: 'hedgehog', name: '고슴도치', line: '웅크리는 버릇, 같이 고쳐 보자.' },
-  { id: 'alpaca',   name: '알파카',   line: '천천히 오래. 그게 내 속도야.' },
-  { id: 'swan',     name: '백조',     line: '보이는 데는 우아하게, 안 보이는 데선 열심히.' },
 ];
 SPECIES.forEach((sp) => { sp.egg = 'egg_' + sp.id; sp.pet = 'pet_' + sp.id; });
 
@@ -1662,7 +1760,7 @@ SPECIES.forEach((sp) => { sp.egg = 'egg_' + sp.id; sp.pet = 'pet_' + sp.id; });
    **알 색은 종 색이 아니고, 자리에도 고정되지 않습니다.** 색이 종에
    묶이면 "노란 알은 기린" 이라는 정보가 사람들 사이에 돌고, 그 순간
    고르는 게 아니라 답을 아는 것이 됩니다. 그래서 스무 가지를 두고
-   **가입할 때마다 여덟 개를 새로 뽑아** 여덟 종에 섞어 붙입니다.
+   **가입할 때마다 종 수만큼 새로 뽑아** 섞어 붙입니다.
    [겉, 밝은면, 그늘, 무늬] 네 값이 한 벌입니다. */
 const EGG_PALETTES = [
   ['#F3E3C0', '#FFF7E4', '#D6BE93', '#C4A97C'],   // 모래
@@ -1749,6 +1847,20 @@ const S = Object.assign(
 );
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } };
 const spec = () => SPECIES.find((s) => s.id === S.species) || null;
+
+/* 여덟 종에서 넷으로 줄이면서 생긴 구멍을 막습니다.
+   전에 햄스터·고슴도치·알파카·백조를 고른 채로 저장해 둔 사람이 다시
+   열면 `spec()` 이 null 이 됩니다. 그러면 알도 새끼도 안 그려지는데
+   화면은 부화 단계에 그대로 서 있어서, **아무 일도 안 일어나는 화면**에
+   갇힙니다. 에러도 안 납니다 — 그리는 함수들이 전부 null 을 조용히
+   넘기게 되어 있어서요.
+
+   고른 것을 지우고 1장으로 되돌립니다. 뽑아 둔 알 색도 종 수가 달라
+   못 쓰므로 같이 버립니다. */
+if (S.species && !spec()) {
+  S.species = null; S.cracks = 0; S.eggColors = null; S.step = 1;
+  save();
+}
 
 const $ = (id) => document.getElementById(id);
 const STEPS = 7;
@@ -1881,29 +1993,24 @@ $('back').addEventListener('click', () => {
 
    fx/fy 는 안 골렸을 때 밀려나는 방향입니다. 집 자리에서 바깥쪽으로
    더 나가야 고른 알과 안 겹칩니다. */
-/* 여덟 자리.
-   앞서 타원으로 돌렸더니 **가운데가 뻥 뚫렸습니다.** 도형을 기준으로
-   두면 그 도형의 안쪽은 늘 빕니다. 그래서 도형을 버리고 **면을 채웁니다.**
+/* 네 자리.
+   여덟일 때는 지그재그 세 줄(3–2–3)로 면을 채웠습니다. 넷이 되면 그
+   배열이 성기게 벌어져서, 같은 좌표를 그대로 쓰면 화면 네 귀퉁이에
+   하나씩 붙고 가운데가 통째로 빕니다 — 앞서 타원으로 돌렸을 때와 같은
+   증상입니다.
 
-   지그재그 세 줄(3–2–3)로 깔고, 가운데 줄을 반 칸 어긋나게 둡니다 —
-   벌집처럼 서로의 틈을 메우는 배열이라 큰 빈 자리가 안 생깁니다.
-   그 위에서 각 알을 조금씩 다르게 밀어 규칙이 안 보이게 합니다:
-   같은 줄이라도 높이가 다르고, 간격도 일정하지 않습니다.
+   그래서 **모으고 기울입니다.** 넷을 정사각형으로 놓으면 격자가 보이고
+   격자가 보이면 고르는 게 아니라 순서를 세게 됩니다. 마름모로 살짝
+   돌려 x·y 를 서로 다르게 어긋내면, 규칙 없이 놓인 한 무리로 읽힙니다.
 
-   알은 72×108 이라 중심 사이가 100 은 떨어져야 안 붙어 보입니다.
+   알은 72×108 이라 중심 사이가 100 은 떨어져야 안 붙어 보입니다. 여기
+   가장 가까운 짝이 162 입니다.
    fx/fy 는 안 골렸을 때 밀려나는 방향입니다. */
 const EGG_SLOTS = [
-  /* 윗줄 셋 */
-  { x: -184, y: -118, fx: -430, fy: -260, dur: '3.6s', delay: '0s'    },
-  { x:   -6, y: -140, fx:  -20, fy: -320, dur: '4.4s', delay: '-1.1s' },
-  { x:  178, y: -110, fx:  420, fy: -250, dur: '3.9s', delay: '-2.3s' },
-  /* 가운뎃줄 둘 — 반 칸 어긋나 위아래 줄의 틈을 메웁니다 */
-  { x:  -96, y:   -6, fx: -240, fy:  -14, dur: '4.7s', delay: '-0.6s' },
-  { x:   92, y:   14, fx:  240, fy:   32, dur: '3.8s', delay: '-1.7s' },
-  /* 아랫줄 셋 */
-  { x: -176, y:  126, fx: -420, fy:  290, dur: '4.2s', delay: '-2.9s' },
-  { x:    4, y:  146, fx:   10, fy:  330, dur: '4.0s', delay: '-0.3s' },
-  { x:  186, y:  118, fx:  430, fy:  270, dur: '3.7s', delay: '-2.0s' },
+  { x: -146, y: -100, fx: -420, fy: -250, dur: '3.6s', delay: '0s'    },
+  { x:  152, y:  -68, fx:  430, fy: -230, dur: '4.4s', delay: '-1.1s' },
+  { x: -120, y:  112, fx: -410, fy:  280, dur: '4.0s', delay: '-2.3s' },
+  { x:  164, y:   96, fx:  430, fy:  260, dur: '3.8s', delay: '-0.6s' },
 ];
 
 function paintEggs() {
@@ -1911,7 +2018,7 @@ function paintEggs() {
   stage.textContent = '';
   stage.classList.remove('picked');
 
-  /* 이번 가입에 쓸 색 여덟. 스무 가지에서 뽑아 종 순서대로 붙입니다 —
+  /* 이번 가입에 쓸 색. 스무 가지에서 뽑아 종 순서대로 붙입니다 —
      종과 색이 묶이지 않으므로 "무슨 색이면 무슨 캐릭터" 가 성립하지
      않습니다. 뽑은 결과는 저장돼 새로고침해도 그대로입니다. */
   const colors = pickEggColors();
@@ -2063,63 +2170,48 @@ $('tapEgg').addEventListener('click', () => {
   }, 260);
 });
 
-/* ---- 등장: 포켓몬 문 진입 연출을 크기만 뒤집은 것 ----
+/* ---- 등장 ----
 
-   2·4세대에서 주인공이 문으로 들어갈 때 스프라이트가 **이산 배율로**
-   작아지며 사라집니다. 매끄럽게 줄어드는 게 아니라 몇 단계로 툭툭
-   끊깁니다 - DS 가 아핀 변환 행렬을 프레임마다 갈아치웠기 때문입니다.
-   우리는 방향만 뒤집습니다. 월드에서 걸어다니는 크기로 나타나
-   주인공 크기까지 커집니다.
+   월드에서 걸어다니는 크기로 나타나 주인공 크기까지 커집니다.
 
-   지켜야 하는 것 셋. 하나라도 빠지면 픽셀 게임이 아니라 확대한
-   그림이 됩니다.
+   전 판은 포켓몬 2·4세대의 문 진입 연출을 뒤집은 것이었습니다 — 아홉
+   칸으로 툭툭 끊어 키우고 최근접 이웃으로 그렸습니다. 그 끊김이 **픽셀
+   그림이라서** 맞았던 것입니다. 매끄럽게 보간하면 픽셀이 뭉개지니까요.
 
-     최근접 이웃  imageSmoothingEnabled = false. 이게 전부입니다.
-                 CSS transform: scale() 은 합성 단계에서 쌍선형 보간을
-                 하므로 0.25 배에서 뭉갭니다. image-rendering: pixelated
-                 는 캔버스 자기 확대에만 듣고 합성 변환에는 안 듭니다.
-                 그래서 CSS 가 아니라 캔버스 안에서 다시 그립니다 -
-                 하드웨어가 하던 것과 같고, 요소 박스는 128px 고정이라
-                 레이아웃도 안 건드립니다.
-     이산 단계    아홉 칸, 560ms = 초당 16단. 픽셀 표준 8~12fps 보다
-                 살짝 빠른 이유는 배율 범위가 네 배라 12단으로는
-                 한 칸이 너무 크게 뛰기 때문입니다.
-     발 고정      가운데를 잡으면 캐릭터가 위로 떠오르고, 그러면
-                 도착하는 게 아니라 확대되는 그림이 됩니다. 발이 땅에
-                 박혀 있어야 커지는 것이 몸으로 읽힙니다.
+   지금 나오는 것은 클레이 렌더라 반대입니다. 이산 단계로 끊으면 그냥
+   버벅이는 확대가 됩니다. 이어지게 키우고, 뒤로 갈수록 느려지게 해서
+   도착하는 느낌을 만듭니다.
 
-   32 → 43 → 53 → 64 → 75 → 85 → 96 → 107 → 117 → 128.
-   정수가 아닌 배율에서 픽셀 폭이 3px 과 4px 로 섞이는데, 그
-   불균일함이 연출의 정체입니다. 마지막 칸만 정확히 4배로 떨어집니다. */
-/* 커지는 연출. 배율로 셉니다 — 원본이 32×48 이라 픽셀이 안 흔들리려면
-   **가로세로 같은 배율**이어야 하고, 끝값은 정수배(4배)여야 합니다.
-   예전에는 크기를 정사각 px 로 세어(32→128) 세로가 눌린 채 커졌습니다. */
-const ZOOM_STEPS = 9, ZOOM_MS = 560, ZOOM_FROM = 1, ZOOM_TO = 4;
-const PET_BOX_W = PET_W * ZOOM_TO, PET_BOX_H = PET_H * ZOOM_TO;   // 128×192
+   발 고정은 그대로 둡니다. 가운데를 잡으면 캐릭터가 위로 떠오르고,
+   그러면 도착하는 게 아니라 확대되는 그림이 됩니다. */
+const ZOOM_MS = 620, ZOOM_FROM = .34;
+const PET_BOX_W = PET_W, PET_BOX_H = PET_H;
 
 function petZoom(sp) {
   const cv = $('petCv'), g = cv.getContext('2d');
   /** k 배로 그립니다. 발끝을 바닥에 붙이고 가로만 가운데로 둡니다. */
   const draw = (k) => {
-    g.imageSmoothingEnabled = false;   // clearRect 뒤에 풀리는 브라우저가 있어 매번 켭니다
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
     g.clearRect(0, 0, PET_BOX_W, PET_BOX_H);
-    const w = Math.round(PET_W * k), h = Math.round(PET_H * k);
+    const w = PET_W * k, h = PET_H * k;
     g.drawImage(ART[sp.pet], 0, 0, PET_W, PET_H,
-                Math.round((PET_BOX_W - w) / 2), PET_BOX_H - h, w, h);
+                (PET_BOX_W - w) / 2, PET_BOX_H - h, w, h);
   };
-  if (RM.matches) return draw(ZOOM_TO);   // 모션을 끄면 그냥 서 있습니다
+  if (RM.matches) return draw(1);         // 모션을 끄면 그냥 서 있습니다
 
   const t0 = Date.now();
   let last = -1;
   const tick = () => {
     /* 칸 번호를 **시각에서 역산**합니다. 프레임을 세면 탭이 가려져
        스로틀될 때 연출이 느려진 채로 끝까지 갑니다. */
-    const i = Math.min(ZOOM_STEPS, Math.floor((Date.now() - t0) / (ZOOM_MS / ZOOM_STEPS)));
-    if (i !== last) {
-      last = i;
-      draw(ZOOM_FROM + (ZOOM_TO - ZOOM_FROM) * i / ZOOM_STEPS);
+    const p = Math.min(1, (Date.now() - t0) / ZOOM_MS);
+    if (p !== last) {
+      last = p;
+      const e = 1 - Math.pow(1 - p, 3);    // 뒤로 갈수록 느려집니다 — 도착하는 박자
+      draw(ZOOM_FROM + (1 - ZOOM_FROM) * e);
     }
-    if (i < ZOOM_STEPS) requestAnimationFrame(tick);
+    if (p < 1) requestAnimationFrame(tick);
   };
   tick();
 }
@@ -2320,10 +2412,28 @@ $('reMail').addEventListener('click', () => {
 });
 $('reMail').dataset.label0 = $('reMail').textContent;
 
-/* ---- 여섯 칸 그리기 ----
-   입력칸은 하나뿐이고, 칸은 그 값을 비추기만 합니다. 여섯 개의 진짜
+/* ---- 인증번호 칸 그리기 ----
+   입력칸은 하나뿐이고, 칸은 그 값을 비추기만 합니다. 자릿수만큼 진짜
    입력칸으로 쪼개면 붙여넣기·백스페이스·자동완성을 전부 손으로 다시
-   만들어야 하는데, 인증 화면에서 제일 많이 쓰이는 게 그 셋입니다. */
+   만들어야 하는데, 인증 화면에서 제일 많이 쓰이는 게 그 셋입니다.
+
+   **칸 수는 shared/school-auth.js 가 정합니다.** 여기에 6 을 박아 두던
+   때, 프로젝트의 mailer_otp_length 가 8 로 올라가자 메일에는 여덟 자리가
+   오는데 칸은 여섯이라 확인 버튼이 영원히 안 열렸습니다. */
+const OTP_LEN = (window.SchoolAuth && window.SchoolAuth.OTP_LEN) || 8;
+const OTP_MIN = (window.SchoolAuth && window.SchoolAuth.OTP_MIN) || Math.min(6, OTP_LEN);
+
+(function buildOtp() {
+  const box = $('otp');
+  box.style.setProperty('--otp-n', String(OTP_LEN));
+  box.setAttribute('data-n', String(OTP_LEN));
+  box.querySelector('.cells').innerHTML = '<i></i>'.repeat(OTP_LEN);
+  const input = $('code');
+  input.setAttribute('maxlength', String(OTP_LEN));
+  input.setAttribute('aria-label', '인증번호 ' + OTP_LEN + '자리');
+  $('codeLenText').textContent = OTP_LEN + '자리';
+})();
+
 const OTP_CELLS = [...$('otp').querySelectorAll('.cells i')];
 function paintOtp() {
   const v = $('code').value;
@@ -2331,29 +2441,34 @@ function paintOtp() {
   OTP_CELLS.forEach((c, i) => {
     c.textContent = v[i] || '';
     c.toggleAttribute('data-on', i < v.length);
-    /* 커서는 다음에 받을 칸에만. 여섯 개가 다 차면 갈 곳이 없습니다. */
-    c.toggleAttribute('data-now', here && i === v.length && v.length < 6);
+    /* 커서는 다음에 받을 칸에만. 칸이 다 차면 갈 곳이 없습니다. */
+    c.toggleAttribute('data-now', here && i === v.length && v.length < OTP_LEN);
   });
 }
+/** 확인 버튼은 OTP_MIN 부터 열립니다. 설정과 서버가 어긋나 있는 동안에도
+    번호를 넣어 볼 수는 있어야 하고, 자릿수 판정은 서버가 합니다 —
+    화면이 미리 막으면 서버가 뭐라고 하는지조차 못 봅니다. */
+const codeReady = () => $('code').value.length >= OTP_MIN;
+
 $('code').addEventListener('focus', paintOtp);
 $('code').addEventListener('blur', paintOtp);
 $('code').addEventListener('input', () => {
-  $('code').value = $('code').value.replace(/\D/g, '').slice(0, 6);
+  $('code').value = $('code').value.replace(/\D/g, '').slice(0, OTP_LEN);
   $('codeErr').classList.remove('on');
   $('otp').removeAttribute('data-bad');
   $('code').setAttribute('aria-invalid', 'false');
-  $('verify').disabled = $('code').value.length !== 6;
+  $('verify').disabled = !codeReady();
   paintOtp();
 });
 $('code').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && $('code').value.length === 6) $('verify').click();
+  if (e.key === 'Enter' && codeReady()) $('verify').click();
 });
 
 function codeError(msg) {
   $('codeErr').classList.add('on');
   $('codeErrText').textContent = msg;
   $('code').setAttribute('aria-invalid', 'true');
-  /* 여섯 칸 전부가 틀렸다고 말합니다. 한 칸만 붉히면 그 칸이 틀린
+  /* 칸 전부가 틀렸다고 말합니다. 한 칸만 붉히면 그 칸이 틀린
      것처럼 보이는데, 틀린 것은 번호 전체입니다. */
   $('otp').setAttribute('data-bad', '');
   $('code').focus();
@@ -2399,9 +2514,11 @@ $('verify').addEventListener('click', async () => {
   if (!LIVE_AUTH) {
     setTimeout(() => {
       busy(btn, false, '인증하기');
-      /* 흉내라 어떤 번호든 통과시킵니다. 000000 만 실패로 두어 오류
-         화면도 눈으로 확인할 수 있게 했습니다. */
-      if ($('code').value === '000000') {
+      /* 흉내라 어떤 번호든 통과시킵니다. **전부 0** 만 실패로 두어 오류
+         화면도 눈으로 확인할 수 있게 했습니다 — 예전에는 '000000' 을
+         글자 그대로 비교해서, 자릿수가 여덟로 바뀌자 실패 화면을 볼
+         길이 사라졌습니다. */
+      if (/^0+$/.test($('code').value)) {
         codeError('번호가 맞지 않아요. 메일을 다시 확인해 주세요.');
         return;
       }

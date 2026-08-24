@@ -10,8 +10,6 @@
 <meta property="og:description" content="웹캠이 앉은 자세를 조용히 봐 주는 온라인 자습실. 영상은 브라우저 밖으로 나가지 않아요.">
 <meta property="og:image" content="assets/still-campus.webp">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="assets/favicon.ico" sizes="48x48">
 <link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
 <style>
 /* ============================================================
@@ -39,6 +37,53 @@
   --line:rgba(43,50,48,.16);
   --line-soft:rgba(43,50,48,.08);
   --gutter:1.25rem;
+
+  /* ---- 클레이 ----
+     **버튼만 씁니다.** 카드·표·패널은 기존 결 그대로입니다 — 랜딩 전체를
+     한 번에 갈면 스크롤 체인 29화면이 다 흔들리고, 무엇이 좋아졌는지
+     비교할 자리가 없어집니다.
+
+     세 겹: 위에서 들어온 빛(inset 밝은) · 아래로 말리는 그늘(inset
+     어두운) · 바닥에 지는 그림자(바깥). 그늘은 순검정이 아니라 청록을
+     섞은 어두운 값입니다 — 순검정 그늘은 점토가 아니라 플라스틱입니다.
+
+     이 페이지의 버튼은 **먹 위**에 앉습니다(hero-typo · 스크롤 체인).
+     그래서 바깥 확산을 청록으로 깔았습니다. 검정 위에 검정 그림자는
+     아무 말도 안 하고, 청록 번짐은 버튼이 바닥에서 떠 있다고 말합니다. */
+  --clay-hero:
+    inset 0 6px 10px rgba(255,255,255,.58),
+    inset 0 -10px 16px rgba(11,86,76,.34),
+    inset 0 -1px 0 rgba(11,86,76,.22),
+    0 6px 12px rgba(13,119,105,.26),
+    0 22px 38px -8px rgba(13,119,105,.34),
+    0 44px 64px -24px rgba(0,0,0,.44);
+  --clay-hero-lift:
+    inset 0 6px 10px rgba(255,255,255,.64),
+    inset 0 -10px 16px rgba(11,86,76,.32),
+    inset 0 -1px 0 rgba(11,86,76,.22),
+    0 10px 16px rgba(13,119,105,.28),
+    0 32px 50px -8px rgba(13,119,105,.38),
+    0 58px 80px -26px rgba(0,0,0,.48);
+  /* 누르면 빛과 그늘이 뒤집힙니다 — 위가 어두워지고 아래가 밝아지면서
+     물건이 바닥까지 내려앉습니다. */
+  --clay-hero-press:
+    inset 0 8px 14px rgba(11,86,76,.40),
+    inset 0 -4px 8px rgba(255,255,255,.34),
+    0 2px 6px rgba(13,119,105,.22);
+  /* 헤더 알약. 크림 위에 앉으므로 그림자는 다시 중성입니다. */
+  --clay-sm:
+    inset 0 2px 4px rgba(255,255,255,.60),
+    inset 0 -3px 6px rgba(11,86,76,.16),
+    0 5px 12px rgba(23,32,30,.14);
+  --clay-sm-lift:
+    inset 0 2px 4px rgba(255,255,255,.68),
+    inset 0 -3px 6px rgba(11,86,76,.16),
+    0 10px 20px rgba(23,32,30,.18);
+  --clay-press:
+    inset 0 4px 9px rgba(11,86,76,.24),
+    inset 0 -2px 5px rgba(255,255,255,.52),
+    0 2px 5px rgba(23,32,30,.12);
+
   --ease:cubic-bezier(.32,.72,0,1);
   --font-sans:"Wanted Sans Variable","Wanted Sans","Segoe UI",system-ui,sans-serif;
   --head-h:76px;
@@ -106,10 +151,11 @@ p{text-wrap:pretty}
 .header.hide{transform:translateY(-100%);transition:transform .4s var(--ease)}
 .header .brand{
   font-weight:800;font-size:1.15rem;letter-spacing:-.01em;
-  display:flex;align-items:center;gap:10px;
+  /* 심벌을 뺀 뒤 글자 높이(22px)만 남아 표적이 24px 아래로 내려갔습니다.
+     보이는 크기는 그대로 두고 누를 수 있는 넓이만 넓힙니다. */
+  display:inline-flex;align-items:center;
+  padding:6px 10px;margin-left:-10px;border-radius:10px;
 }
-/* 심볼은 190:112 입니다. 정사각으로 두면 눌립니다. */
-.header .brand img{width:44px;height:26px}
 .header nav{display:flex;gap:4px}
 .header nav a{
   padding:9px 16px;border-radius:999px;font-size:.92rem;font-weight:600;color:var(--ink);
@@ -120,15 +166,21 @@ p{text-wrap:pretty}
 .pill-cta{
   display:inline-flex;align-items:center;
   /* 주색은 여기서 소리를 냅니다. 페이지 전체에서 상시 보이는 유일한
-     버튼이라, 헤더가 크림이든 먹이든 이 알약 하나가 브랜드 색을 붙듭니다.
-     테두리는 남깁니다 — 먹 구역에서 청록이 배경으로 녹지 않게. */
+     버튼이라, 이 알약 하나가 브랜드 색을 붙듭니다.
+
+     테두리(1.5px 먹)를 뺐습니다 — 점토에는 그은 선이 없습니다. 배경에서
+     녹지 않게 잡아 주던 일은 이제 아래 그늘이 합니다. */
   background:var(--teal);color:var(--ink);
-  border:1.5px solid var(--ink);border-radius:999px;
-  padding:10px 20px;font-weight:700;font-size:.92rem;
-  transition:background .3s var(--ease),color .3s var(--ease),transform .3s var(--ease);
+  border:0;border-radius:999px;
+  padding:11px 21px;font-weight:700;font-size:.92rem;
+  box-shadow:var(--clay-sm);
+  transition:background .3s var(--ease),color .3s var(--ease),
+             transform .18s var(--ease),box-shadow .18s var(--ease);
 }
-.pill-cta:hover{background:var(--ink);color:var(--cream)}
-.pill-cta:active{transform:scale(.96)}
+.pill-cta:hover{background:var(--teal);box-shadow:var(--clay-sm-lift);transform:translateY(-2px)}
+/* 누르는 순간 안으로 들어갑니다. scale 로 줄이기만 하면 멀어진 것이고,
+   그림자가 뒤집혀야 눌린 것입니다. */
+.pill-cta:active{box-shadow:var(--clay-press);transform:translateY(0)}
 /* 롤링 라벨(토스) — 라벨 두 벌이 마스크 안에서 위로 말려 올라갑니다 */
 .roll{display:inline-block;overflow:hidden;height:1.25em;vertical-align:bottom}
 .roll i{
@@ -191,11 +243,13 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   color:var(--deep);margin-bottom:20px;
 }
 .hero-typo .eyebrow{color:var(--teal)}
-.hero-typo h1{
+/* h1 은 히어로가 가져갔습니다. 여기는 구역 제목이라 h2 이고, 크기는
+   그대로입니다 — 태그는 문서 구조를 말하고 크기는 화면 위계를 말합니다. */
+.hero-typo h1,.hero-typo h2{
   font-size:clamp(3rem,5vw,4.6rem);line-height:1.14;font-weight:800;letter-spacing:-.02em;
   text-shadow:0 4px 30px rgba(16,19,18,.5);
 }
-.hero-typo h1 .serif{color:var(--teal)}
+.hero-typo h1 .serif,.hero-typo h2 .serif{color:var(--teal)}
 .ht-sub{
   margin:22px 0 0;font-size:1.06rem;line-height:1.6;color:rgba(247,248,248,.88);
   text-shadow:0 2px 16px rgba(16,19,18,.5);
@@ -234,37 +288,43 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
    어둡습니다. 그림자는 형제와 같게 되돌립니다 — 없애 두면 영상이 밝은
    프레임에서 혼자 흐려집니다. */
 .hf-line .hf-brand{color:var(--teal)}
-/* 온보딩의 낙서 버튼을 그대로 가져왔습니다 — 글자는 흔들리지 않고,
-   뒤에 깔린 판(::before)만 wobble 필터로 손그림이 됩니다.
-   그림자도 번짐이 아니라 한 번 더 그은 선입니다. */
+/* 온보딩의 낙서 버튼을 가져왔던 자리입니다. 이제 **점토**입니다 —
+   ::before 판, 2px 먹 테두리, 각진 오프셋 그림자를 전부 걷어냈습니다.
+   우리 캐릭터가 전부 점토로 빚은 물건인데 버튼만 종이를 오려 붙인
+   것이면 한 화면에서 두 재질이 싸웁니다.
+
+   판을 지운 이유는 하나 더 있습니다. 채움이 ::before 에 있으면 그 위에
+   얹은 inset 그림자가 판에 가려서 안 보입니다 — 점토의 절반이 사라집니다. */
 .btn-primary{
-  position:relative;isolation:isolate;
+  position:relative;
   display:inline-flex;align-items:center;gap:12px;
-  background:transparent;color:var(--ink);font-weight:800;font-size:1rem;
+  background:var(--teal);color:var(--ink);font-weight:800;font-size:1rem;
   padding:14px 12px 14px 26px;border-radius:999px;border:0;cursor:pointer;
-  transition:transform 90ms var(--ease),filter 90ms var(--ease);
-  filter:drop-shadow(2px 3px 0 rgba(43,50,48,.22));
-}
-.btn-primary::before{
-  content:"";position:absolute;inset:-1px;z-index:-1;border-radius:inherit;
-  background:var(--teal);border:2px solid var(--ink);
-  filter:url(#wobble);
-  transition:background .16s var(--ease);
+  box-shadow:var(--clay-hero);
+  transition:transform .18s var(--ease),box-shadow .18s var(--ease),
+             background .16s var(--ease);
 }
 /* 호버는 주색을 밝힌 값이 아니라 **주색 그대로**입니다 — 43decb 는
    토큰에 없는 네 번째 청록이었습니다. 밝기 변화는 그림자가 맡습니다. */
-.btn-primary:hover::before{background:var(--teal)}
+.btn-primary:hover{background:var(--teal);box-shadow:var(--clay-hero-lift);transform:translateY(-3px)}
+/* 꼬리 원판은 점토 안에 **박혀** 있습니다. 같이 솟으면 버튼 위에 버튼이
+   하나 더 있는 것으로 보입니다. */
 .btn-primary .tail{
   width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--cream);
   display:grid;place-items:center;font-size:.9rem;
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.34);
   transition:transform .25s var(--ease);
 }
-.btn-primary:hover{transform:translateY(-2px)}
 .btn-primary:hover .tail{transform:translate(2px,-2px)}
-/* 누르는 순간 종이에 붙습니다 — 같이 줄어야 눌린 것입니다 */
+/* 누르는 순간 빛과 그늘이 뒤집히며 바닥까지 내려앉습니다 — 밀려 내려가기만
+   하면 미끄러진 것이고, 그림자가 같이 뒤집혀야 눌린 것입니다. */
+/* 채움은 안 건드립니다. --deep-face 로 어둡게 해 봤는데 그 토큰은
+   **크림 글자를 얹는 면**이라, 먹 글자를 올리면 대비가 4.5 아래로
+   떨어집니다. 눌림은 그림자만으로 충분히 말해집니다. */
 .btn-primary:active{
-  transform:translate(1px,2px) scale(.985);
-  filter:drop-shadow(1px 1px 0 rgba(43,50,48,.22));
+  box-shadow:var(--clay-hero-press);
+  transform:translateY(1px);
+  transition-duration:90ms;
 }
 /* ---------------- 리빌 공통 ---------------- */
 .rv{opacity:0;transform:translateY(64px);filter:blur(12px)}
@@ -486,7 +546,20 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   flex:1;display:grid;place-items:center;pointer-events:none;
 }
 /* 32px 원본의 정수배(×6=192)로 고정 — 비정수 배율은 픽셀을 뭉갭니다 */
-.card .sp img{width:192px;image-rendering:pixelated;pointer-events:none}
+/* 카드는 월드에 실제로 서 있는 그 캐릭터를 보여 줍니다. 픽셀 스프라이트를
+   쓰던 시절의 정수배·pixelated 고정은 여기서 할 일이 없습니다 — 클레이
+   렌더는 어느 크기로 줄여도 안 뭉개지니 카드 높이에 맞춥니다. */
+/* flex 칸이 그림의 본디 크기(512px)만큼 부풀지 않게 min-height 를 풉니다.
+   안 풀면 카드 아래로 발이 삐져나오고 이름을 덮습니다. */
+/* 그림을 칸에 **절대 배치**합니다. flex 칸의 높이는 확정이 아니라서,
+   그냥 두면 object-fit 이 안 듣고 그림이 본디 크기로 퍼져 카드 밖으로
+   삐져나오거나 위아래가 잘립니다. inset:0 이면 폭과 높이가 확정됩니다. */
+.card .sp{min-height:0;position:relative;align-self:stretch}
+/* ↑ align-self — .card 가 align-items:center 라, 절대 자식만 남은 이
+   칸은 내용 폭이 0 으로 접힙니다. 칸을 카드 폭으로 펼쳐야 그림이 삽니다. */
+/* 발을 칸 바닥에 붙입니다 — 종마다 몸 비율이 달라(기린은 길고 개구리는
+   넓습니다) 가운데에 맞추면 짧은 종이 공중에 뜹니다. */
+.card .sp img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none}
 .card .nm{font-size:1.5rem;font-weight:800;letter-spacing:-.01em;pointer-events:none}
 .card .ds{margin-top:6px;color:var(--muted);font-size:.94rem;text-align:center;line-height:1.5;pointer-events:none}
 .card .go{
@@ -673,10 +746,10 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 
 <!-- 헤더 -->
 <header class="header">
-  <a class="brand" href="#top" data-mag>
-    <img src="assets/logo.svg" alt="" width="44" height="26">
-    Deskfit
-  </a>
+  <!-- 심벌은 뺐습니다. 워드마크 하나로 갑니다 — 이름 옆에 그림을 하나 더
+       두면 헤더에서 시선이 두 번 멈추고, 어차피 이 페이지의 주인공은
+       캐릭터입니다. -->
+  <a class="brand" href="#top" data-mag>Deskfit</a>
   <nav aria-label="주요 섹션">
     <a href="#world" data-nav="world">서비스</a>
     <a href="#camera" data-nav="camera">카메라</a>
@@ -703,9 +776,12 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
       <img class="hf-poster" src="assets/still-campus.webp" alt="클레이 디오라마로 만든 캠퍼스 전경 — 네 건물과 광장, 호수">
       <video id="hfVideo" src="assets/video-hero.mp4" muted loop playsinline preload="metadata" aria-hidden="true"></video>
       <div class="hf-wash" aria-hidden="true"></div>
-      <p class="hf-line" id="hfLine" aria-label="자세교정과 공부를 한 번에">
-        <span>자세교정과 공부를</span><span class="hf-brand">한 번에</span>
-      </p>
+      <!-- 이 줄이 페이지의 h1 입니다. p 로 두었더니 문서의 첫 제목이 한참
+           아래 랭킹전 구역의 h1 이었습니다 — 화면에서 가장 큰 글자가 제목이
+           아니고, 제목은 스크롤 한참 뒤에 처음 나오는 꼴이었습니다. -->
+      <h1 class="hf-line" id="hfLine" aria-label="자세교정과 공부를 Deskfit에서">
+        <span>자세교정과 공부를</span><span class="hf-brand">Deskfit에서</span>
+      </h1>
     </figure>
   </div>
 </section>
@@ -792,7 +868,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
     <div class="deck-copy">
       <span class="lbl">내 캐릭터</span>
       <h2 class="rv">내 <span class="serif">캐릭터</span>를 뽑아요.</h2>
-      <p class="rv" style="--d:.08s">여덟 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>
+      <p class="rv" style="--d:.08s">네 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>
         집중만 하면 모두 내 캐릭터가 될 수 있어요.</p>
       <p class="deck-hint rv" style="--d:.14s" aria-hidden="true">← 카드를 넘겨 보세요 →</p>
     </div>
@@ -1042,7 +1118,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   <div class="ht-wash" aria-hidden="true"></div>
   <div class="ht-mid">
     <span class="eyebrow rv">랭킹전</span>
-    <h1 class="rv" style="--d:.07s">오늘 집중 시간이<br><span class="serif">우리 학교 이름으로 쌓여요</span></h1>
+    <h2 class="rv" style="--d:.07s">오늘 집중 시간이<br><span class="serif">우리 학교 이름으로 쌓여요</span></h2>
     <p class="ht-sub rv" style="--d:.1s">세션을 시작하고, 집중만 하면 돼요.</p>
     <div class="hero-actions rv" style="--d:.14s">
       <a class="btn-primary" href="../onboarding/index.html" data-mag aria-label="시작하기"><span class="roll" aria-hidden="true"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span></a>
@@ -1311,8 +1387,26 @@ const ONBOARD = '../onboarding/index.html';
     v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
     /* file:// 에서도 그냥 src 지정으로 로드·시킹이 돼요. blob 은 fetch 가 막혀요. */
     v.src = s.clip;
-    v.addEventListener('loadedmetadata', () => { s.ready = true; });
-    v.addEventListener('seeked', () => s.el.classList.add('has-clip'), { once: true });
+    /* **길이만 알아서는 아직 못 씁니다.** loadedmetadata 는 이름 그대로
+       메타데이터일 뿐이라, 이때 넘겨받으면 스크럽하는 동안 readyState 가
+       1(프레임 없음)로 떨어져 그림이 뚝뚝 멈춥니다 — 스크롤 체인이
+       끊겨 보이던 원인이 이것이었습니다.
+
+       canplaythrough 는 "지금 속도면 끝까지 간다" 는 뜻입니다. 그때까지는
+       스틸이 확대되며 버팁니다. 스틸은 이미 받아 둔 그림이라 그동안
+       화면이 비지 않습니다. */
+    v.addEventListener('loadedmetadata', () => { s.meta = true; });
+    const arm = () => {
+      if (s.ready) return;
+      s.ready = true;
+      s.el.classList.add('has-clip');
+    };
+    v.addEventListener('canplaythrough', arm);
+    /* 안전망 — 어떤 브라우저는 muted·preload 조합에서 canplaythrough 를
+       늦게 줍니다. 넉넉히 받아졌으면 그것으로 갈음합니다. */
+    v.addEventListener('progress', () => {
+      if (v.buffered.length && v.duration && v.buffered.end(v.buffered.length - 1) >= v.duration - .3) arm();
+    });
     v.addEventListener('error', () => { v.remove(); s.video = null; });   /* 영상 없으면 스틸 유지 */
     s.el.appendChild(v); s.video = v;
   }
@@ -1327,7 +1421,11 @@ const ONBOARD = '../onboarding/index.html';
     SEG.forEach((s, i) => { if (y >= s.start) ci = i; });
 
     SEG.forEach((s, i) => {
-      if (y > s.start - 1.6 * vh && y < s.end + 1.6 * vh) loadClip(s);
+      /* **화면 세 개 앞에서** 받기 시작합니다. 1.6 이었을 때는 사람이
+         구간에 닿는 것과 받기 시작하는 것이 거의 같은 순간이라, 늘
+         덜 받아진 영상을 긁게 됐습니다. 클립 하나가 4MB 이므로 세
+         화면이면 받을 시간이 납니다. */
+      if (y > s.start - 3 * vh && y < s.end + 1.6 * vh) loadClip(s);
       const local = clamp((y - s.start) / (s.end - s.start));
       s.target = local;
       let outside = 0;
@@ -1337,6 +1435,7 @@ const ONBOARD = '../onboarding/index.html';
       /* 장면은 **워시(8)·카피(10)·경로(12) 아래**에 있어야 합니다.
          여기서 20~30 을 주면 글자가 영상 뒤로 숨습니다. */
       s.el.style.zIndex = (i === ci) ? '7' : String(1 + Math.round(op * 5));
+      /* 영상이 아직 못 쓸 상태면 스틸이 대신 확대됩니다 */
       if (!s.ready || !s.video) {
         const sc = REDUCE ? 1 : 1.04 + local * .13;
         s.img.style.transform = `scale(${sc.toFixed(3)})`;
@@ -1384,7 +1483,12 @@ const ONBOARD = '../onboarding/index.html';
         try { s.video.currentTime = t; } catch(e){}
       }
     });
-    requestAnimationFrame(raf);
+    /* 첫 두 장면은 기다리지 않고 바로 받습니다. 사람이 히어로를 지나
+     체인에 닿기까지 몇 초가 있고, 그 시간이 곧 첫인상입니다. */
+  loadClip(SEG[0]);
+  if (SEG[1]) loadClip(SEG[1]);
+
+  requestAnimationFrame(raf);
   }
 
   let ticking = false;
@@ -1529,14 +1633,12 @@ const ONBOARD = '../onboarding/index.html';
 /* ---------- 캐릭터 덱 ---------- */
 (() => {
   const CHARS = [
+    /* 넷뿐인 이유 — 이 카드는 월드에서 **실제로 고를 수 있는** 캐릭터를
+       보여 줍니다. 여덟을 늘어놓고 넷만 주면 첫 화면부터 거짓말이 됩니다. */
     { slug:'turtle',   ko:['거북','오래 앉기의 명수. 서두르지 않아요.'],       en:['Turtle','Master of the long sit. Never hurries.'] },
     { slug:'giraffe',  ko:['기린','목을 곧게 펴는 게 특기예요.'],             en:['Giraffe','Keeps that neck long and proud.'] },
     { slug:'penguin',  ko:['펭귄','라운지파. 끊어 가며 오래 가요.'],           en:['Penguin','Lounge regular. Goes far in bursts.'] },
-    { slug:'hamster',  ko:['햄스터','게시판과 상점을 제일 좋아해요.'],         en:['Hamster','Loves the board and the shop.'] },
     { slug:'frog',     ko:['개구리','스트레칭 담당. 회복이 빨라요.'],          en:['Frog','Stretch captain. Recovers fast.'] },
-    { slug:'hedgehog', ko:['고슴도치','조용한 구석 자리를 골라요.'],           en:['Hedgehog','Picks the quiet corner seat.'] },
-    { slug:'alpaca',   ko:['알파카','본관 단골. 느긋하게 다녀요.'],            en:['Alpaca','Main-hall regular. Takes it easy.'] },
-    { slug:'swan',     ko:['백조','호숫가 산책으로 하루를 열어요.'],           en:['Swan','Opens the day by the lake.'] },
   ];
   /* 카드마다 그 친구의 이름이 들어갑니다. 링크 목록만 봐도 구분됩니다. */
   function ro(name) {
@@ -1548,7 +1650,7 @@ const ONBOARD = '../onboarding/index.html';
   const goText = (name) => (LANG === 'ko'
     ? name + ro(name) + ' 시작하기 ↗'
     : 'Start with ' + name + ' ↗');
-  const BANDS = ['#2DD4BF','#F5C84C','#0D7769','#E8A9C0','#8FD98A','#C79A6B','#E8DCC8','#CFF2ED'];
+  const BANDS = ['#2DD4BF','#F5C84C','#0D7769','#8FD98A'];
   const deck = document.getElementById('deck');
   let order = [...CHARS.keys()];
 
@@ -1557,7 +1659,7 @@ const ONBOARD = '../onboarding/index.html';
     card.className = 'card';
     card.innerHTML =
       `<i class="band" style="background:${BANDS[i]}" aria-hidden="true"></i>` +
-      `<div class="sp"><img src="assets/char-${ch.slug}.png" alt="${ch[LANG][0]}"></div>` +
+      `<div class="sp"><img src="assets/char-${ch.slug}-cut.webp" alt="${ch[LANG][0]}"></div>` +
       `<div class="nm">${ch[LANG][0]}</div><div class="ds">${ch[LANG][1]}</div>` +
       `<a class="go" href="${ONBOARD}">${goText(ch[LANG][0])}</a>`;
     deck.appendChild(card);
@@ -1618,7 +1720,7 @@ const ONBOARD = '../onboarding/index.html';
   /* 드래그였다면 카드 링크 클릭 무시 */
   deck.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
 
-  /* 드래그만으로는 키보드·트랙패드 사용자가 8종을 볼 수 없습니다 */
+  /* 드래그만으로는 키보드·트랙패드 사용자가 네 종을 다 볼 수 없습니다 */
   function cycle(dir){
     const front = CHARS[order[0]].el;
     gsap.to(front, { x: dir * innerWidth * .35, rotation: dir * 14, opacity: 0,
@@ -1727,7 +1829,7 @@ const ONBOARD = '../onboarding/index.html';
       ko: '<span class="roll" aria-hidden="true"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
       en: '<span class="roll"><i>Get started<br>Get started</i></span> <span class="tail" aria-hidden="true">↗</span>' }, 1],
     ['#hfLine', {
-      ko: '<span>자세교정과 공부를</span><span class="hf-brand">한 번에</span>',
+      ko: '<span>자세교정과 공부를</span><span class="hf-brand">Deskfit에서</span>',
       en: '<span>Posture and study,</span><span class="hf-brand">at Deskfit</span>' }, 1],
     ['#introEyebrow', { ko: '거북목 자세교정과 함께', en: 'With turtle-neck posture care' }],
     ['#introStatement', {
@@ -1751,8 +1853,8 @@ const ONBOARD = '../onboarding/index.html';
       ko: '내 <span class="serif">캐릭터</span>를 뽑아요.',
       en: 'Draw your <span class="serif">character</span>.' }, 1],
     ['.deck-copy > p', {
-      ko: '여덟 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>집중만 하면 모두 내 캐릭터가 될 수 있어요.',
-      en: 'Eight characters are waiting. Start with one —<br>keep focusing, and they can all be yours.' }, 1],
+      ko: '네 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>집중만 하면 모두 내 캐릭터가 될 수 있어요.',
+      en: 'Four characters are waiting. Start with one —<br>keep focusing, and they can all be yours.' }, 1],
     ['.deck-hint', { ko: '← 카드를 넘겨 보세요 →', en: '← Swipe the cards →' }],
     ['.faq-copy .lbl', { ko: '자주 묻는 질문', en: 'FAQ' }],
     ['.faq-copy h2', { ko: 'FAQ', en: 'FAQ' }],

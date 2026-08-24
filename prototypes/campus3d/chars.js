@@ -35,6 +35,112 @@ const SK = { ink: 0x2E2A2E, white: 0xFFFFFF, blush: 0xF4A2A6, gum: 0xE08A94 };
    생기면 이 한 줄만 true 로 바꿉니다. */
 export const SPRITE_ON = false;
 
+/* ══════════════════════════════════════════════════════════
+   랜딩 렌더에서 변환한 GLB
+
+   손으로 빚던 판은 아래에 그대로 둡니다(GLB 가 못 받아지면 그리로
+   돌아갑니다). 평소에는 여기서 만든 것을 씁니다.
+
+   바꾼 것은 **속**뿐입니다. character() · stride() · idle() · sit() 의
+   생김새는 그대로라, 이걸 부르는 열 몇 군데를 하나도 안 고쳤습니다.
+
+   세 가지가 걸렸고 셋 다 여기서 막았습니다.
+
+     **복제**  스킨드 메시는 clone() 으로 복제하면 뼈가 원본을 가리켜서
+               한 명이 움직이면 전부 같이 움직입니다. SkeletonUtils 의
+               clone 이 뼈까지 새로 만들어 줍니다.
+
+     **시간**  stride/idle 은 dt 가 아니라 **누적 시간**을 받습니다.
+               믹서는 dt 를 원하므로 지난 호출과의 차를 직접 잽니다.
+               탭이 잠들었다 깨면 큰 값이 들어오므로 잘라 냅니다.
+
+     **전환**  걷다 서면 자세가 뚝 끊깁니다. crossFadeTo 로 0.18초 섞습니다.
+   ══════════════════════════════════════════════════════════ */
+const GLB_FILE = { 거북이: 'turtle', 기린: 'giraffe', 펭귄: 'penguin', 개구리: 'frog' };
+const GLB_CACHE = new Map();      // 종 → { scene, clips }
+let GLB_READY = false;
+let _SkeletonUtils = null;
+export function setSkeletonUtils(m) { _SkeletonUtils = m; }
+
+export function loadCharacters(THREE_, GLTFLoader, base = './assets/chars/') {
+  const loader = new GLTFLoader();
+  return Promise.all(Object.entries(GLB_FILE).map(([sp, f]) =>
+    new Promise((res) => {
+      loader.load(base + f + '.glb', (g) => {
+        /* 발끝을 y=0 으로 내리고 키를 1.9 로 맞춥니다 — 생성물마다
+           원점과 크기가 달라서, 안 맞추면 종마다 땅에 박히거나 뜹니다. */
+        const box = new THREE.Box3().setFromObject(g.scene);
+        const h = box.max.y - box.min.y;
+        const k = 1.9 / (h || 1);
+        g.scene.scale.setScalar(k);
+        g.scene.position.y = -box.min.y * k;
+        g.scene.traverse((o) => {
+          if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; }
+        });
+        GLB_CACHE.set(sp, { scene: g.scene, clips: g.animations || [] });
+        res(sp);
+      }, undefined, () => res(null));
+    })))
+    .then((r) => { GLB_READY = GLB_CACHE.size > 0; return r.filter(Boolean); });
+}
+
+function glbChar(parent, species, opt, SkeletonUtils) {
+  const src = GLB_CACHE.get(species);
+  if (!src) return null;
+  const g = new THREE.Group();
+  g.position.set(opt.x || 0, 0, opt.z || 0);
+  g.rotation.y = opt.ry || 0;
+  g.scale.setScalar(opt.scale || 1);
+  parent.add(g);
+
+  /* 뼈까지 새로 만드는 복제 — clone() 만 쓰면 모두가 한 몸이 됩니다 */
+  const body = SkeletonUtils.clone(src.scene);
+  g.add(body);
+
+  const mixer = new THREE.AnimationMixer(body);
+  const act = {};
+  for (const c of src.clips) {
+    const a = mixer.clipAction(c);
+    a.enabled = true;
+    a.setEffectiveWeight(0);
+    act[c.name] = a;
+    if (c.name === 'sit') { a.clampWhenFinished = true; a.setLoop(THREE.LoopOnce, 1); }
+    a.play();
+  }
+  if (act.idle) act.idle.setEffectiveWeight(1);
+
+  /* 걷기·쉬기가 쓰는 빈 뼈대 — 감정표현 등이 parts 를 만져도 안 터집니다 */
+  const dummy = () => { const d = new THREE.Group(); g.add(d); return d; };
+  g.userData.parts = {
+    legs: [dummy(), dummy()], shins: [dummy(), dummy()], arms: [dummy(), dummy()],
+    head: dummy(), torso: dummy(), neck: null, eyes: [], wear: {},
+    glb: { mixer, act, cur: 'idle', last: 0 },
+  };
+  g.userData.base = { armZ: [0, 0] };
+  g.userData.seed = Math.random() * 10;
+  return g;
+}
+
+/* 동작을 바꾸고 믹서를 돌립니다 */
+function glbPlay(g, name, t, speed = 1) {
+  const P = g.userData.parts, G = P && P.glb;
+  if (!G) return false;
+  const a = G.act[name];
+  if (a && G.cur !== name) {
+    const prev = G.act[G.cur];
+    a.reset().setEffectiveWeight(1).play();
+    if (prev) prev.crossFadeTo(a, .18, false);
+    G.cur = name;
+  }
+  if (a) a.timeScale = speed;
+  /* stride/idle 은 누적 시간을 받습니다 — 믹서가 원하는 dt 를 직접 뺍니다.
+     탭이 잠들었다 깨면 몇 초가 한 번에 들어오므로 잘라 냅니다. */
+  const dt = G.last ? Math.min(.1, Math.max(0, t - G.last)) : 0;
+  G.last = t;
+  G.mixer.update(dt);
+  return true;
+}
+
 /* ══ 맨몸 ══
    랜딩 렌더의 캐릭터는 **옷을 입지 않았습니다.** 털/깃/딱지 그대로인
    덩어리 하나이고, 얼굴에는 검은 점 두 개뿐입니다. 볼터치도 없습니다.
@@ -418,9 +524,6 @@ const HEADS = {
 export const SPECIES = {
   거북이:   { skin: 0x8FD4A0, muzzle: 0xD4F0DA, shell: 0x53A468, shellDark: 0x40855A, belly: 0xF2E2B8 },
   기린:     { skin: 0xF6D9A0, snout: 0xFFEBC6, spot: 0xC98E4E },
-  알파카:   { skin: 0xF0E2CC, snout: 0xFFF6E8, wool: 0xFFFBF2 },
-  햄스터:   { skin: 0xE8B87A, snout: 0xFFF0DC, inner: 0xF4A2A6 },
-  고슴도치: { skin: 0xDDBA92, snout: 0xFFF0DC, quill: 0x9A7450, quillDark: 0x7C5B3C },
   개구리:   { skin: 0x7FC96A, belly: 0xE2F2C8 },
   펭귄:     { skin: 0x3E4A5A, belly: 0xFFFFFF, beak: 0xF2933C, beakDark: 0xD9761F },
 };
@@ -776,6 +879,14 @@ function spriteChar(parent, species, opt) {
 
 export function character(parent, species, fit, opt = {}) {
   if (SPRITE_ON) return spriteChar(parent, species, opt);
+  if (GLB_READY && _SkeletonUtils) {
+    const g = glbChar(parent, species, opt, _SkeletonUtils);
+    if (g) return g;                    // 못 받은 종은 아래 손으로 빚는 판으로
+  }
+  if (GLB_READY && _SkeletonUtils) {
+    const g = glbChar(parent, species, opt, _SkeletonUtils);
+    if (g) return g;                    // 못 받은 종은 아래 손으로 빚는 판으로
+  }
   /* 짓는 동안만 성기게. 끝나면 반드시 되돌립니다 — 안 되돌리면 그다음에
      세우는 사람이 이유 없이 성기게 나옵니다. */
   LOD = opt.lod ? 1 : 0;
@@ -1103,6 +1214,12 @@ export function applyTint(g, look) {
     몸은 두 배 빠르기로 튀며, 빠를수록 앞으로 기웁니다. */
 export function stride(g, t, sp) {
   const P = g.userData.parts; if (!P) return;
+  /* 빠르면 뛰기. 걷기를 빠르게 돌리는 게 아니라 **다른 동작**입니다 —
+     상체가 앞으로 기울고 한 걸음마다 몸이 뜹니다. */
+  if (P.glb) { glbPlay(g, sp > .72 ? 'run' : 'walk', t, Math.max(.55, Math.min(1.7, sp * 1.25))); return; }
+  /* 빠르면 뛰기. 걷기를 빠르게 돌리는 게 아니라 **다른 동작**입니다 —
+     상체가 앞으로 기울고 한 걸음마다 몸이 뜹니다. */
+  if (P.glb) { glbPlay(g, sp > .72 ? 'run' : 'walk', t, Math.max(.55, Math.min(1.7, sp * 1.25))); return; }
   /* 판 하나는 다리가 없으니 걷는 대신 **들썩입니다**. 완전히 가만히
      미끄러지면 얼음판 위를 밀려가는 것으로 보입니다. */
   if (P.sprite) {
@@ -1159,6 +1276,10 @@ export function look(g, ax, ay, k = .35) {
 
 export function idle(g, t, seed = 0) {
   { const P = g.userData.parts;
+    if (P && P.glb) { glbPlay(g, 'idle', t, 1); return; } }
+  { const P = g.userData.parts;
+    if (P && P.glb) { glbPlay(g, 'idle', t, 1); return; } }
+  { const P = g.userData.parts;
     if (P && P.sprite) {                       // 숨 쉬듯 아주 조금
       P.board.position.y = P.H / 2 + Math.sin(t * 1.5 + seed) * .015;
       P.board.rotation.z = 0;
@@ -1204,6 +1325,36 @@ export function face(g, state) {
 
 /** 앉기 — 넓적다리를 앞으로, 정강이를 아래로. 의자 높이(.46)에 엉덩이가 옵니다. */
 export function sit(g, on) {
+  { const P = g.userData.parts;
+    if (P && P.glb) {
+      /* 앉기는 **머무는** 동작이라 되감지 않습니다. 일어설 때만 쉬기로. */
+      const G = P.glb, a = G.act.sit;
+      if (on && a) {
+        a.reset().setEffectiveWeight(1).play();
+        const prev = G.act[G.cur]; if (prev && prev !== a) prev.crossFadeTo(a, .22, false);
+        G.cur = 'sit';
+      } else if (!on && G.act.idle) {
+        G.act.idle.reset().setEffectiveWeight(1).play();
+        if (a) a.crossFadeTo(G.act.idle, .22, false);
+        G.cur = 'idle';
+      }
+      return;
+    } }
+  { const P = g.userData.parts;
+    if (P && P.glb) {
+      /* 앉기는 **머무는** 동작이라 되감지 않습니다. 일어설 때만 쉬기로. */
+      const G = P.glb, a = G.act.sit;
+      if (on && a) {
+        a.reset().setEffectiveWeight(1).play();
+        const prev = G.act[G.cur]; if (prev && prev !== a) prev.crossFadeTo(a, .22, false);
+        G.cur = 'sit';
+      } else if (!on && G.act.idle) {
+        G.act.idle.reset().setEffectiveWeight(1).play();
+        if (a) a.crossFadeTo(G.act.idle, .22, false);
+        G.cur = 'idle';
+      }
+      return;
+    } }
   const P = g.userData.parts; if (!P) return;
   P.legs.forEach((l, i) => { l.rotation.x = on ? -1.48 : 0; l.rotation.z = on ? (i ? .06 : -.06) : 0; });
   P.shins.forEach((s) => { s.rotation.x = on ? 1.42 : 0; });

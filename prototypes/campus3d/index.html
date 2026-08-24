@@ -560,7 +560,10 @@
 <script type="module">
 import * as THREE from 'three';
 import { character, SPECIES, OUTFITS, WEAR, WEAR_FREE, normalizeLook, stride, idle, sit, slouch, look, face,
-  RIDES, ride, rideOn, rideOff, TINTS, TINTABLE, applyTint } from './chars.js';
+  RIDES, ride, rideOn, rideOff, TINTS, TINTABLE, applyTint,
+  loadCharacters, setSkeletonUtils } from './chars.js';
+import { GLTFLoader as CharLoader } from './vendor/ext/GLTFLoader.js';
+import * as SkeletonUtils from './vendor/ext/SkeletonUtils.js';
 import { buildCampus, BUILDINGS } from './campus.js';
 import { trimExtremes } from './retint.js';
 import { ROOMS, ROOM_SIZE, ROOM_NAME, decorItem } from './rooms.js';
@@ -580,6 +583,15 @@ import { createSky, weatherKind } from './sky.js';
    켜고 끄며 **실제 월드에서** 비교합니다. 별도 씬을 만들면 조명이
    조금만 달라도 색 판단이 통째로 틀어집니다. */
 import { createColorLab } from './colorlab.js';
+
+/* ── 캐릭터 GLB 를 먼저 받습니다 ──
+   랜딩 렌더에서 변환한 넷입니다. character() 가 아래에서 곧바로
+   불리므로 **여기서 기다려야** 합니다 — 늦게 오면 그 순간 서 있던
+   사람들만 옛 판으로 만들어져 한 화면에 두 종류가 섞입니다.
+   못 받으면 loadCharacters 가 조용히 넘어가고 손으로 빚는 판이 씁니다. */
+setSkeletonUtils(SkeletonUtils);
+const CHAR_OK = await loadCharacters(THREE, CharLoader, './assets/chars/');
+console.info('[캐릭터] GLB', CHAR_OK.length + '종 —', CHAR_OK.join(' '));
 /* 후처리 — 앰비언트 오클루전 하나 때문에 들입니다.
    이 월드는 형상이 전부 코드로 그린 단색 덩어리라, 물체끼리 닿는
    자리가 어디인지 그림자만으로는 안 보입니다. AO 가 그 접점을

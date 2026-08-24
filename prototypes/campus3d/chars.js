@@ -61,10 +61,12 @@ export const BARE = true;
 /* 1.17 은 컸습니다 — 몸이 머리에 매달린 것처럼 보였습니다.
    랜딩 렌더는 앉은 자세라 머리 비중이 더 커 보이는 것이고, 선 자세
    기준으로 재면 1.08 이 그 체감입니다. */
-export const HEAD_Y = 1.30;
+/* 몸통 꼭대기가 TORSO_Y + .78 = 1.05 입니다. 머리 반지름이 .44 이므로
+   중심을 1.20 에 두면 아래쪽 .32 가 몸에 파묻혀 이음매가 사라집니다. */
+export const HEAD_Y = 1.20;
 /* 1.17 → 1.08 → 1.0. 키울수록 랜딩과 **멀어졌습니다** — 저쪽은 머리가
    크긴 해도 과장돼 있지 않고, 몸이 작아서 커 보이는 쪽입니다. */
-export const HEAD_S = 1.0;
+export const HEAD_S = 1.06;
 
 /* ══ 몸 비례 ══
    서 있는 렌더 넷(거북이·기린·펭귄·햄스터)을 재 보면 이렇습니다.
@@ -784,118 +786,90 @@ function buildChar(parent, species, fit, opt) {
   /* 밑단과 옷깃은 언제나 같은 색입니다 — 재질을 둘로 만들 이유가 없습니다 */
   const edge = varsity ? dye('top', M(topC, .55)) : trim;
 
-  /* ── 다리 ── 짧고 굵게. 신발은 앞코가 나와야 신발로 보입니다. */
-  [-.17, .17].forEach((x, li) => {
-    const leg = new THREE.Group();
-    leg.position.set(x, LEG_Y, 0); g.add(leg); parts.legs.push(leg);
-    cyl(leg, .145, .15, .135, 14, bot, 0, -.068, 0);
-    ell(leg, .148, shortsOn ? skin : bot, 0, -.128, 0, 1, .86, 1);     // 무릎
-    if (shortsOn) {                                                     // 반바지단
-      const hem2 = new THREE.Mesh(torG(.145, .026, S(6), S(14, 8)),
-        dye('bottom', M(mix(botC, 0x000000, .18), .6), (c) => mix(c, 0x000000, .18)));
-      hem2.rotation.x = Math.PI / 2; hem2.position.y = -.19; leg.add(hem2);
-    }
-    const shin = new THREE.Group();
-    shin.position.set(0, -.135, 0); leg.add(shin); parts.shins.push(shin);
-    cyl(shin, .138, .145, .135, 14, shortsOn ? skin : bot, 0, -.068, 0);
-    if (L.bottomId === 'trainers') {                                    // 옆줄
-      box(leg, .02, .2, .04, .008, M(0xFFF6E6, .6), (li ? 1 : -1) * .148, -.11, 0);
-      box(shin, .02, .2, .04, .008, M(0xFFF6E6, .6), (li ? 1 : -1) * .142, -.11, 0);
-    }
-    if (L.bottomId === 'jeans') {                                       // 밑단 접기
-      const roll = new THREE.Mesh(torG(.138, .03, S(6), S(14, 8)),
-        dye('bottom', M(mix(botC, 0xFFFFFF, .25), .62), (c) => mix(c, 0xFFFFFF, .25)));
-      roll.rotation.x = Math.PI / 2; roll.position.y = -.2; shin.add(roll);
-    }
-    const sh = new THREE.Group(); sh.position.set(0, -.24, 0); shin.add(sh);
-    if (L.shoesId === 'slippers') {
-      ell(sh, .15, skin, 0, .02, -.02, 1, .8, 1.3);                     // 맨발
-      box(sh, .2, .08, .14, .035, sho, 0, .06, .12);                    // 앞끈
-      box(sh, .27, .045, .4, .02,
-        dye('shoes', M(mix(shoC, 0x000000, .3), .5), (c) => mix(c, 0x000000, .3)), 0, -.08, .05);
-    } else if (L.shoesId === 'dress') {
-      ell(sh, .145, sho, 0, .0, .05, .94, .7, 1.5);
-      ell(sh, .12, sho, 0, .015, -.05, .96, .8, 1);
-      box(sh, .24, .04, .4, .02, M(0x2A2622, .45), 0, -.08, .05);
-    } else {
-      ell(sh, .155, sho, 0, .01, .05, 1, .78, 1.5);                     // 운동화
-      ell(sh, .13, sho, 0, .02, -.05, 1.02, .84, 1);
-      ell(sh, .1, M(0xFFFFFF, .5), 0, .05, .17, 1.1, .7, .8);           // 앞코
-      box(sh, .28, .05, .42, .024, M(0xFFFFFF, .55), 0, -.085, .05);
-    }
-  });
+  /* ══════════════════════════════════════════════════════════
+     몸 — 물방울 하나
 
-  /* ── 몸통 ── 옆선 하나를 통째로 돌린 회전체입니다. */
-  const lathe = (prof, seg = 26) =>
-    latheG(prof.map(([y, r]) => new THREE.Vector2(Math.max(.004, r), y)), S(seg, 12));
+     여기까지 사람 뼈대(허벅지·정강이·발 / 어깨 있는 몸통 / 소매 달린 팔 /
+     목)를 조금씩 줄여 가며 맞추려 했는데, 줄여도 사람이었습니다.
+     레퍼런스에는 그 부품들이 **없습니다.**
+
+       · 다리가 없습니다. 바닥에 작은 발 두 개가 붙어 있을 뿐입니다
+       · 어깨가 없습니다. 몸이 위로 갈수록 좁아져 머리로 이어집니다
+       · 목이 없습니다. 머리가 몸에 그대로 얹혀 파묻힙니다
+       · 팔은 몸 옆구리에 붙은 짧은 뭉치입니다
+
+     그래서 부품을 줄이는 대신 **다시 짭니다.** 옆선 하나를 돌린
+     회전체가 몸 전체이고, 거기에 발 둘 · 팔 둘 · 머리 하나를 얹습니다.
+     bake 와 걷기가 쓰는 parts 이름은 그대로 둡니다 — legs 에 발을,
+     arms 에 뭉치를 넣으면 기존 동작이 그대로 돕니다.
+     ══════════════════════════════════════════════════════════ */
+  const lathe = (prof, seg = 30) =>
+    latheG(prof.map(([y, r]) => new THREE.Vector2(Math.max(.004, r), y)), S(seg, 14));
+
   const torso = new THREE.Group();
   torso.position.y = TORSO_Y; g.add(torso); parts.torso = torso;
-  torso.scale.set(TORSO_W, 1, TORSO_W);
   {
-    const p = new THREE.Mesh(lathe([[-.02, 0], [0, .30], [.06, .345], [.16, .35], [.22, .335]]), bot);
-    p.castShadow = p.receiveShadow = true; p.scale.z = .88; torso.add(p);
-    const c = new THREE.Mesh(lathe([
-      [.14, .0], [.15, .30], [.17, .375], [.26, .385], [.40, .375], [.52, .35],
-      [.62, .315], [.70, .265], [.76, .205], [.80, .16], [.82, .10], [.83, .0],
-    ]), bodyTop);
-    c.castShadow = c.receiveShadow = true; c.scale.z = .9; torso.add(c);
-    const hem = new THREE.Mesh(torG(.372, .034, S(8), S(26, 14)), edge);
-    hem.rotation.x = Math.PI / 2; hem.position.y = .175; hem.scale.z = .9; torso.add(hem);
-    const col = new THREE.Mesh(torG(.17, .036, S(8), S(22, 12)), edge);
-    col.rotation.x = Math.PI / 2; col.position.y = .795; col.scale.z = .9; torso.add(col);
+    /* 옆선 — 바닥에서 살짝 좁고, 배에서 가장 넓고, 위로 갈수록 좁아집니다.
+       위를 완전히 닫지 않는 이유는 머리가 그 위에 파묻히기 때문입니다. */
+    const body = new THREE.Mesh(lathe([
+      [.00, .00], [.02, .22], [.06, .32], [.14, .40], [.24, .445],
+      [.36, .455], [.48, .44], [.58, .40], [.66, .35], [.72, .29], [.76, .22], [.78, .00],
+    ]), skin);
+    body.castShadow = body.receiveShadow = true;
+    body.scale.z = .92;
+    torso.add(body);
 
-    if (L.topId === 'hoodie') {
-      /* 모자 — 목 뒤에 접힌 후드 + 앞주머니 + 끈 두 가닥 */
-      const hood = new THREE.Mesh(sphG(.21, S(16, 10), S(12, 7), 0, Math.PI * 2, 0, Math.PI * .55), top);
-      hood.position.set(0, .78, -.2); hood.rotation.x = -1.25;
-      hood.scale.set(1.15, 1, .9); hood.castShadow = true; torso.add(hood);
-      box(torso, .3, .17, .1, .05,
-        dye('top', M(mix(topC, 0x000000, .12), .62), (c) => mix(c, 0x000000, .12)), 0, .34, .32);
-      [-.05, .05].forEach((dx) => {
-        cyl(torso, .012, .012, .12, 6, M(0xFFF6E6, .5), dx, .68, .345);
-        ell(torso, .02, M(0xFFF6E6, .5), dx, .61, .35);
-      });
-    } else if (L.topId === 'shirt') {
-      /* 옷깃 두 장 + 단추 세 알 */
-      [-1, 1].forEach((t) => {
-        const lap = new THREE.Mesh(conG(.075, .16, 4), M(0xFFFDF6, .55));
-        lap.position.set(t * .09, .74, .17); lap.rotation.set(.5, 0, t * 2.4);
-        lap.scale.set(1, 1, .4); torso.add(lap);
-      });
-      [.62, .48, .34].forEach((y) => ell(torso, .018, M(0xF0E6D2, .4), 0, y, .375 - (0.62 - y) * .06, 1, 1, .5));
-    } else if (varsity) {
-      /* 가슴 완장 — 학교 머리글자 자리 */
-      box(torso, .12, .12, .03, .02, dye('top', M(topC, .5)), .15, .58, .345);
+    /* 배 — 종에 따라 밝은 면이 앞에 있습니다(개구리 · 펭귄 · 거북이) */
+    if (C.belly) {
+      const b = new THREE.Mesh(sphG(.36, S(22, 11), S(16, 8)), M(C.belly, .72));
+      b.position.set(0, .34, .18); b.scale.set(.86, 1.05, .62);
+      b.castShadow = false; b.receiveShadow = true; torso.add(b);
+    }
+    /* 알파카 · 고슴도치 — 몸에도 털이 붙습니다 */
+    if (C.wool) {
+      const pts = [[-.3, .5, .18], [.3, .5, .18], [0, .62, .2], [-.34, .3, .1], [.34, .3, .1],
+                   [0, .2, .3], [-.18, .62, .0], [.18, .62, .0]];
+      pts.forEach(([x, y, z], k) => ell(torso, .17 - (k % 3) * .02, M(C.wool, .92), x, y, z));
+    }
+    if (C.quill) {
+      for (let k = 0; k < 14; k++) {
+        const a = (k / 14) * Math.PI * 2;
+        const r = .40 + (k % 2) * .03, y = .30 + (k % 3) * .13;
+        const q = new THREE.Mesh(sphG(.13, S(12, 7), S(10, 6)),
+                                 M(k % 2 ? C.quillDark : C.quill, .82));
+        q.position.set(Math.sin(a) * r * .9, y, Math.cos(a) * r * -.72 - .08);
+        q.scale.set(.8, .8, 1.5);
+        q.lookAt(q.position.x * 2, y + .1, q.position.z * 2 - .4);
+        q.castShadow = true; torso.add(q);
+      }
     }
   }
 
-  /* ── 팔 ── */
-  const sleeveMat = varsity ? dye('top', M(topC, .6)) : top;
-  [-1, 1].forEach((sgn) => {
-    const arm = new THREE.Group();
-    /* 렌더의 팔은 **몸에 붙은 짧은 뭉치**입니다. 벌어져 있으면 사람이
-       팔을 든 것으로 보입니다. 뿌리를 안으로 당기고 각도를 줄입니다. */
-    arm.position.set(sgn * .285, .90, 0);
-    arm.rotation.z = opt.wave && sgn > 0 ? 2.15 : sgn * .13;
-    arm.rotation.x = -.08;
-    g.add(arm); parts.arms.push(arm);
-    ell(arm, .115, bodyTop, 0, -.03, 0, 1, 1, 1);
-    if (shortSleeve) {
-      cyl(arm, .105, .1, .12, 12, bodyTop, 0, -.1, 0).castShadow = true;
-      const cuff = new THREE.Mesh(torG(.096, .02, S(6), S(16, 8)), trim);
-      cuff.rotation.x = Math.PI / 2; cuff.position.y = -.17; arm.add(cuff);
-      cyl(arm, .095, .085, .13, 12, skin, 0, -.22, 0).castShadow = true;
-    } else {
-      cyl(arm, .105, .088, .3, 12, sleeveMat, 0, -.19, 0).castShadow = true;
-      const cuff = new THREE.Mesh(torG(.086, .026, S(6), S(16, 8)),
-        varsity ? M(vBody, .55) : trim);
-      cuff.rotation.x = Math.PI / 2; arm.add(cuff); cuff.position.y = -.34;
-    }
-    ell(arm, .105, skin, 0, -.30, .012, 1.02, 1.12, .88);
+  /* ── 발 ── 다리가 아니라 발입니다. parts.legs 에 넣어 걷기가 씁니다. */
+  [-.20, .20].forEach((x) => {
+    const leg = new THREE.Group();
+    leg.position.set(x, TORSO_Y + .04, 0); g.add(leg); parts.legs.push(leg);
+    const foot = ell(leg, .155, C.beak ? M(C.beak, .5) : skin, 0, -.03, .05, 1.0, .62, 1.35);
+    foot.castShadow = true;
+    /* 정강이 자리는 비워 둡니다 — 굽힐 관절이 없지만 걷기가 찾습니다 */
+    const shin = new THREE.Group(); leg.add(shin); parts.shins.push(shin);
   });
 
+  /* ── 팔 ── 옆구리에 붙은 짧은 뭉치 */
+  [-1, 1].forEach((sgn) => {
+    const arm = new THREE.Group();
+    arm.position.set(sgn * .40, .50, .02);
+    arm.rotation.z = opt.wave && sgn > 0 ? 2.15 : sgn * .16;
+    g.add(arm); parts.arms.push(arm);
+    const a = ell(arm, .135, skin, 0, -.10, 0, .92, 1.45, .92);
+    a.castShadow = true;
+  });
+  g.userData.base = { armZ: [-.16, .16] };
+
   /* ── 목 · 머리 ── */
-  parts.neck = cyl(g, .152, .19, .15, 14, skin, 0, NECK_Y, -.005);
+  /* 목이 없습니다. 레퍼런스는 머리가 몸 위에 그대로 얹혀 파묻힙니다 —
+     목을 그리면 그 순간 사람이 됩니다. */
+  parts.neck = null;
   const h = new THREE.Group();
   h.position.y = HEAD_Y;
   h.scale.setScalar(HEAD_S);
@@ -969,7 +943,8 @@ function buildChar(parent, species, fit, opt) {
     /* 머리를 1.17 배로 키우자 커진 뒤통수가 딱지 윗동을 덮었습니다.
        딱지를 조금 내리고 뒤로 물립니다 — 종의 서명이 등에 있으려면
        등에서 **보여야** 합니다. */
-    const b = new THREE.Group(); b.position.set(0, .88, -.32); g.add(b);
+    /* 몸이 물방울로 바뀌면서 등이 낮고 좁아졌습니다. 딱지도 따라 내립니다. */
+    const b = new THREE.Group(); b.position.set(0, .62, -.24); b.scale.setScalar(.86); g.add(b);
     carry = b; carryKey = 'shell';
     /* 돔 — 축 방향을 잘못 늘리면 옆으로 누운 부침개가 됩니다.
        회전 뒤 기준으로 세로(z)로 길게, 밖(y→-z)으로는 얕게. */

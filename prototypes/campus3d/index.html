@@ -28,6 +28,15 @@
     --ff:"Wanted Sans Variable","Wanted Sans","Pretendard","Apple SD Gothic Neo",sans-serif;
   }
   *{box-sizing:border-box}
+  /* 윈도우 커서를 화면 전체에서 끕니다.
+
+     전 판은 1인칭 잠금 중에만 우리 커서를 그렸고, 3인칭에서는 OS 의
+     흰 화살표가 그대로 보였습니다. 같은 화면 안에서 커서가 둘로
+     갈리면 그 순간 "브라우저 안의 웹 페이지" 로 돌아옵니다.
+
+     cursor:none 을 * 에 걸어야 합니다 — html,body 에만 걸면 button 이나
+     input 이 자기 cursor 를 다시 켭니다(위쪽 규칙들이 pointer 를 줍니다). */
+  *{cursor:none !important}
   html,body{margin:0;height:100%;overflow:hidden;background:#BFE4F2;color:var(--tx);
     font-family:var(--ff);-webkit-user-select:none;user-select:none;touch-action:none;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
@@ -109,9 +118,19 @@
   #xhair.on{opacity:1}
   /* 게임 안 커서 — 잠금을 유지한 채 창을 조작합니다.
      pointer-events:none 이라야 자기 밑의 버튼을 가리지 않습니다. */
-  #gcur{position:absolute;left:0;top:0;z-index:200;pointer-events:none;opacity:0;
-    filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));transition:opacity .12s}
+  /* 자체 커서 — 잠겨 있든 아니든 늘 이것만 보입니다 */
+  #gcur{position:absolute;left:0;top:0;z-index:400;pointer-events:none;opacity:0;
+    filter:drop-shadow(0 2px 5px rgba(20,30,26,.45));transition:opacity .12s}
   #gcur.on{opacity:1}
+  #gcur svg{position:absolute;left:0;top:0;width:32px;height:32px;transition:transform .1s,opacity .1s}
+  #gcur .ring{opacity:0;transform:translate(-14px,-14px) scale(.7)}
+  #gcur .arrow{opacity:1;transform:translate(-2px,-1px)}
+  /* 누를 수 있는 것 위 — 고리로 바뀝니다 */
+  #gcur.hot .arrow{opacity:0;transform:translate(-2px,-1px) scale(.7)}
+  #gcur.hot .ring{opacity:1;transform:translate(-14px,-14px) scale(1)}
+  /* 누르는 동안 살짝 눌립니다 — 클릭이 먹었는지 눈으로 압니다 */
+  #gcur.press svg{transform:translate(-2px,-1px) scale(.84)}
+  #gcur.press .ring{transform:translate(-14px,-14px) scale(.84)}
   #xhair::before,#xhair::after{content:'';position:absolute;border-radius:50%}
   #xhair::before{inset:0;border:1.5px solid rgba(255,255,255,.5);
     box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
@@ -482,9 +501,26 @@
   </div>
 
   <div id="xhair" aria-hidden="true"></div>
-  <div id="gcur" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24">
-    <path d="M4 2 L4 19 L9 14.6 L12.2 21.4 L15.4 19.9 L12.2 13.4 L18.6 13.1 Z"
-      fill="#fff" stroke="#1B2430" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+  <div id="gcur" class="on" aria-hidden="true">
+    <svg class="arrow" viewBox="0 0 28 28" width="28" height="28">
+      <!-- 클레이 화살표 — 모서리를 둥글려 월드의 재질과 같은 어휘로.
+           흰 화살표에 검은 테는 OS 커서의 모양이라, 그걸 그대로 그리면
+           우리 커서를 만든 뜻이 없습니다. 먹색 몸에 청록 심. -->
+      <path d="M5.5 3.4 L5.5 20.2 Q5.5 21.6 6.7 20.7 L10.4 17.4 L13.2 23.4
+               Q13.7 24.5 14.9 24 L17.1 23 Q18.3 22.5 17.8 21.4 L15.1 15.6
+               L20.1 15.2 Q21.6 15.1 20.6 14 L6.9 2.8 Q5.5 1.8 5.5 3.4 Z"
+        fill="#1E2A26" stroke="#F7FBF9" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M8.2 7.2 L8.2 15.6 L10.6 13.6 L12.6 17.6 L14 17 L12 13
+               L15.4 12.8 Z" fill="#2DD4BF"/>
+    </svg>
+    <svg class="ring" viewBox="0 0 28 28" width="28" height="28">
+      <!-- 누를 수 있는 것 위 — 화살표 대신 고리. 손 모양 대신 고리를
+           쓰는 이유는 조준점과 같은 어휘라 시점 전환에도 안 갈라지기 때문. -->
+      <circle cx="14" cy="14" r="7.5" fill="none" stroke="#F7FBF9" stroke-width="3.2"/>
+      <circle cx="14" cy="14" r="7.5" fill="none" stroke="#1E2A26" stroke-width="1.6"/>
+      <circle cx="14" cy="14" r="2.4" fill="#2DD4BF" stroke="#1E2A26" stroke-width="1"/>
+    </svg>
+  </div>
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
@@ -853,7 +889,9 @@ const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick:
 
 const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
-const P = { x: 5.0, z: 5.0, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+/* 분수를 지름 20 으로 키우면서 (5,5) 가 물속이 됐습니다. 광장 남쪽,
+   본관을 마주 보는 자리로 옮깁니다. */
+const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
 
 /* ── 바닥 높이 따라가기 ──
    전 판은 캐릭터가 늘 y = 0 이었습니다. 그런데 잔디가 .08, 길이 .126,
@@ -1116,7 +1154,7 @@ cv.addEventListener('pointerdown', (e) => {
 cv.addEventListener('pointermove', (e) => {
   if (first && document.pointerLockElement === cv) {
     /* 창이 열려 있으면 같은 움직임이 커서를 움직입니다 */
-    if (CUR.live) { curMove(e.movementX, e.movementY); return; }
+    if (CUR.live) { curMove(e.movementX, e.movementY); curHotCheck(); return; }
     /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**. */
     yaw -= e.movementX * .0024;
     pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
@@ -1263,19 +1301,51 @@ function uiOpen() { return panelOn || dlgOn || mapOn; }
    화면을 눌러야 합니다. 그 왕복을 없애는 것이 이 작업의 목적입니다. */
 function wantLock() { return first && !room; }
 
-const CUR = { x: 0, y: 0, live: false };
+/* CUR.live 는 **마우스가 커서를 움직이는가** 입니다(잠금 중 창이 열린 때).
+   커서 자체는 잠기지 않았을 때도 늘 보입니다 — 그때는 실제 포인터
+   좌표를 그대로 따라갑니다. 화면에 커서가 하나만 있게 하는 것이
+   목적이라, 두 경우가 같은 그림을 씁니다. */
+const CUR = { x: 0, y: 0, live: false, hot: false };
+const curEl = () => $('#gcur');
+function curPaint() {
+  curEl().style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
+}
 function curShow(on) {
   if (on && !CUR.live) { CUR.x = innerWidth / 2; CUR.y = innerHeight * .5; }
   CUR.live = on;
-  const el = $('#gcur');
-  el.classList.toggle('on', on);
-  if (on) el.style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
+  curPaint();
 }
 function curMove(dx, dy) {
   CUR.x = clamp(CUR.x + dx, 2, innerWidth - 2);
   CUR.y = clamp(CUR.y + dy, 2, innerHeight - 2);
-  $('#gcur').style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
+  curPaint();
 }
+/* 누를 수 있는 것 위인지 — 매 움직임마다 검사하면 비싸므로 프레임에
+   한 번만 합니다. elementFromPoint 는 레이아웃을 읽는 호출입니다. */
+let curHotQ = false;
+function curHotCheck() {
+  if (curHotQ) return;
+  curHotQ = true;
+  requestAnimationFrame(() => {
+    curHotQ = false;
+    const el = curEl();
+    el.style.visibility = 'hidden';
+    const t = document.elementFromPoint(CUR.x, CUR.y);
+    el.style.visibility = '';
+    const hot = !!(t && t.closest('button, a, [role="button"], .k, .dockb, input, select'));
+    if (hot !== CUR.hot) { CUR.hot = hot; el.classList.toggle('hot', hot); }
+  });
+}
+/* 잠기지 않았을 때 — 진짜 포인터를 그대로 따릅니다 */
+addEventListener('pointermove', (e) => {
+  if (CUR.live || document.pointerLockElement === cv) return;
+  CUR.x = e.clientX; CUR.y = e.clientY;
+  curPaint(); curHotCheck();
+}, true);
+addEventListener('pointerdown', () => curEl().classList.add('press'), true);
+addEventListener('pointerup', () => curEl().classList.remove('press'), true);
+addEventListener('pointerleave', () => curEl().classList.remove('on'));
+addEventListener('pointerenter', () => curEl().classList.add('on'));
 /* 커서 밑의 것을 실제로 누릅니다 */
 function curClick() {
   const el = $('#gcur');
@@ -1294,12 +1364,18 @@ function syncLock() {
     else if (!want && document.pointerLockElement === cv) document.exitPointerLock?.();
   } catch {}
   const ui = uiOpen();
-  $('#xhair').classList.toggle('on', want && !ui);
+  const aiming = want && !ui;                 // 잠겨 있고 창이 없을 때만 조준
+  $('#xhair').classList.toggle('on', aiming);
+  /* 커서는 조준할 때만 숨깁니다. 그 외에는 3인칭이든 1인칭이든
+     늘 우리 커서가 보입니다 — 윈도우 커서가 나올 자리가 없습니다. */
+  curEl().classList.toggle('on', !aiming);
   curShow(want && ui);
 }
 document.addEventListener('pointerlockchange', () => {
   const on = document.pointerLockElement === cv;
-  $('#xhair').classList.toggle('on', on && !uiOpen());
+  const aiming = on && !uiOpen();
+  $('#xhair').classList.toggle('on', aiming);
+  curEl().classList.toggle('on', !aiming);
   curShow(on && uiOpen());
 });
 
@@ -3348,7 +3424,10 @@ setInterval(pullWeather, 1800000);
 /* 로드가 끝나면: ① 지도 사진 한 장 ② 방 여섯을 미리 지어 둡니다.
    문에 닿고서야 지으면 그 순간 화면이 몇 백 ms 얼었습니다 —
    "들어갈 때 몇 초 깨진다" 의 정체가 이것입니다. */
-setTimeout(shootMap, 900);
+setTimeout(shootMap, 900);
+/* 커서를 처음부터 켭니다 — syncLock 은 시점·창이 바뀔 때만 도는데,
+   그전까지 3인칭에서 우리 커서가 없어 윈도우 커서가 나왔습니다. */
+syncLock();
 ['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k, i) =>
   setTimeout(() => { try { buildRoom(k); } catch {} }, 2400 + i * 650));
 if (SAVE.shadow === false) setShadows(false);
@@ -3356,6 +3435,8 @@ window.__ready = true;
 window.__P = P;
 window.__aim = (x, z) => aimSun(x, z);
 /* 시연에서 밤을 보여 주려면 __hour(21). 되돌리려면 __hour(null). */
+/* 개발용 — 실내로 바로 들어갑니다 */
+window.__enter = (k) => { try { buildRoom(k); } catch (e) { console.warn(e); } };
 window.__hour = (h) => { SKY.setHour(h); setClockHour(h); skySeen = -1; SAVE.hour = h; UI.save(); };
 /* 카메라 고정 — __W.lock(...) · 풀려면 __W.lock(null) */
 window.__W.lock = (...a) => { window.__camLock = a[0] === null ? null : a; };

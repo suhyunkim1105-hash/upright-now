@@ -151,22 +151,12 @@ function boulevards(g, solid) {
     slab(g, w, len, roadM, x, .108, z, ang);
   };
 
-  /* 정문 대로 — 가장 길고 넓습니다 */
-  lane(GATE_A, OUTER.core - 6, OUTER.gate, 9);
-  /* 나머지 세 방향 — 십자로. 실제 캠퍼스의 격자를 흉내 냅니다 */
-  lane(GATE_A + Math.PI / 2, OUTER.core - 4, OUTER.wall - 14, 6);
-  lane(GATE_A + Math.PI,     OUTER.core - 4, OUTER.wall - 14, 6);
-  lane(GATE_A - Math.PI / 2, OUTER.core - 4, OUTER.wall - 14, 6);
-
-  /* 둘레 순환로 — 대로 넷을 잇습니다. 얇은 판을 각도로 쪼개 깝니다 */
-  const RR = 92, SEG = 64;
-  for (let i = 0; i < SEG; i++) {
-    const a = (i / SEG) * TAU;
-    const x = Math.cos(a) * RR, z = Math.sin(a) * RR;
-    const arc = (TAU / SEG) * RR * 1.08;
-    /* 순환로 조각은 길이가 **접선** 방향입니다 */
-    slab(g, 5, arc, roadM, x, .106, z, a + Math.PI / 2);
-  }
+  /* **정문 대로 하나만** 남깁니다.
+     십자로와 순환로를 걷어냈습니다 — 길이 격자로 깔리면 "길을 따라
+     다녀라" 가 되고, 잔디는 못 밟는 곳이 됩니다. 대학 잔디밭은 밟으라고
+     있습니다. 남은 대로 하나는 정문에서 광장까지의 축이라, 길이 아니라
+     **캠퍼스의 척추**로 읽힙니다. */
+  lane(GATE_A, OUTER.core - 6, OUTER.gate, 11);
 }
 
 /* ---- 사각 잔디밭(quad) ----
@@ -201,7 +191,7 @@ function quads(g, solid, pushTree) {
                                      .95 + rnd() * .35, 0);
     /* 네 변을 다 두르면 울타리가 됩니다. **긴 두 변에만** 세웁니다 —
        마당이 열려 있어야 가로질러 걸을 수 있고, 그게 대학 잔디밭입니다. */
-    const nx = Math.max(3, Math.round(q.w / 9));
+    const nx = Math.max(2, Math.round(q.w / 16));
     for (let i = 0; i <= nx; i++) {
       const lx = -q.w / 2 + (q.w / nx) * i;
       put(lx, -q.d / 2 - 2.4);
@@ -447,17 +437,14 @@ export function buildGrounds(parent, solid, inCore, avoid) {
      길·대로·마당 위는 비웁니다. 안쪽(r<40)은 campus.js 가 이미 채웠습니다. */
   const onLane = (x, z) => {
     const r = Math.hypot(x, z), a = Math.atan2(z, x);
-    for (let k = 0; k < 4; k++) {
-      const la = GATE_A + k * Math.PI / 2;
-      const d = Math.abs(((a - la + Math.PI * 3) % TAU) - Math.PI);
-      if (d * r < (k === 0 ? 7.5 : 5.5)) return true;
-    }
-    return Math.abs(r - 92) < 4.5;                 // 순환로
+    const d = Math.abs(((a - GATE_A + Math.PI * 3) % TAU) - Math.PI);
+    return d * r < 9;
   };
-  /* 420 → 210. 캠퍼스는 숲이 아닙니다 — 나무가 빽빽하면 건물 사이가
-     산길로 보입니다. 길가와 잔디 가장자리에만 남깁니다. */
+  /* 420 → 210 → 58. 건물이 훤히 보여야 캠퍼스입니다.
+     남은 나무는 대로 가로수와 마당 가장자리뿐이고, 잔디 한가운데는
+     비웁니다 — 비어 있어야 가로질러 걷습니다. */
   let tries = 0;
-  while (trees.length < 210 && tries < 6000) {
+  while (trees.length < 58 && tries < 6000) {
     tries++;
     const a = rnd() * TAU;
     const r = OUTER.core + 3 + rnd() * (OUTER.wall - OUTER.core - 6);
@@ -465,7 +452,7 @@ export function buildGrounds(parent, solid, inCore, avoid) {
     if (inCore && inCore(x, z)) continue;
     if (onLane(x, z)) continue;
     /* 건물과 그 앞마당은 비웁니다 — 건물 앞에 나무가 서면 정면이 가립니다 */
-    if (avoid && avoid(x, z, 26)) continue;
+    if (avoid && avoid(x, z, 34)) continue;
     /* 마당 안에는 안 심습니다 — 마당은 비어 있어야 마당입니다 */
     let inQuad = false;
     for (const q of [[40, .5, 26, 18], [40, 1.5, 26, 18],
@@ -480,7 +467,7 @@ export function buildGrounds(parent, solid, inCore, avoid) {
     /* 너무 붙으면 덤불처럼 뭉칩니다 */
     let tooClose = false;
     for (let i = trees.length - 1; i >= 0 && i > trees.length - 40; i--) {
-      if (Math.hypot(trees[i].x - x, trees[i].z - z) < 5.2) { tooClose = true; break; }
+      if (Math.hypot(trees[i].x - x, trees[i].z - z) < 16) { tooClose = true; break; }
     }
     if (tooClose) continue;
     pushTree(x, z, .9 + rnd() * .8);
@@ -492,7 +479,7 @@ export function buildGrounds(parent, solid, inCore, avoid) {
     const co = Math.cos(la), si = Math.sin(la);
     const off = k === 0 ? 6.2 : 4.4;
     const end = k === 0 ? OUTER.gate - 6 : OUTER.wall - 18;
-    for (let r = OUTER.core + 6; r < end; r += 13) {
+    for (let r = OUTER.core + 6; r < end; r += 24) {
       for (const s of [-1, 1]) {
         const x = co * r - si * off * s, z = si * r + co * off * s;
         lamps.push({ x, z, s: 1, ry: -la });

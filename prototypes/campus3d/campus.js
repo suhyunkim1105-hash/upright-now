@@ -31,19 +31,18 @@ const AXIS = Math.atan2(20.5, 20.5);
 /* 건물 여섯 — 정문 축 기준 상대각(도)과 반지름으로 놓습니다.
    deg 0 이 정문 쪽, 180 이 그 반대(본관 자리)입니다. */
 const PLACE = [
-  { key: 'mainHall', zone: 'mainhall', name: '본관',        sub: '강의실 · 대중음악',
-    deg: 180, r: 60,  s: 1.90, w: 9.6,  d: 6.2, front: 2.5 },
-  { key: 'library',  zone: 'library',  name: '도서관',      sub: '백색소음 · 오래 앉는 자리',
-    deg: 125, r: 52,  s: 1.90, w: 10.0, d: 6.4, front: 2.4 },
-  { key: 'union',    zone: 'union',    name: '학생회관',    sub: '볼일 보는 곳',
-    deg: 235, r: 52,  s: 1.60, w: 9.0,  d: 5.6, front: 1.9 },
-  { key: 'arcade',   zone: 'arcade',   name: '미니게임관',  sub: '3분만 놀고 가는 곳',
-    deg: 60,  r: 74,  s: 1.60, w: 8.4,  d: 5.6, front: 1.9 },
-  { key: 'shop',     zone: 'clubshop', name: '동아리 상점', sub: '옷 · 가구 · 알',
-    deg: 300, r: 74,  s: 1.60, w: 8.0,  d: 5.2, front: 1.8 },
-  /* 기숙사는 가장 바깥입니다 — 실제 대학도 기숙사가 강의동 뒤에 있습니다 */
-  { key: 'dorm',     zone: 'dorm',     name: '기숙사',      sub: '내 방 · 1인실',
-    deg: 180, r: 104, s: 1.60, w: 8.2,  d: 5.4, front: 1.9 },
+  { key: 'mainHall', zone: 'mainhall', name: '본관', sub: '강의실 · 대중음악',
+    deg: 180, r: 54, s: 1.9, w: 9.6, d: 6.2, front: 2.5 },
+  { key: 'library', zone: 'library', name: '도서관', sub: '백색소음 · 오래 앉는 자리',
+    deg: 135, r: 54, s: 1.9, w: 10, d: 6.4, front: 2.4 },
+  { key: 'union', zone: 'union', name: '학생회관', sub: '볼일 보는 곳',
+    deg: 225, r: 54, s: 1.6, w: 9, d: 5.6, front: 1.9 },
+  { key: 'arcade', zone: 'arcade', name: '미니게임관', sub: '3분만 놀고 가는 곳',
+    deg: 75, r: 90, s: 1.6, w: 8.4, d: 5.6, front: 1.9 },
+  { key: 'shop', zone: 'clubshop', name: '동아리 상점', sub: '옷 · 가구 · 알',
+    deg: 285, r: 90, s: 1.6, w: 8, d: 5.2, front: 1.8 },
+  { key: 'dorm', zone: 'dorm', name: '기숙사', sub: '내 방 · 1인실',
+    deg: 158, r: 124, s: 1.6, w: 8.2, d: 5.4, front: 1.9 },
 ];
 
 export const BUILDINGS = PLACE.map((p) => {
@@ -861,11 +860,9 @@ export function buildCampus(scene) {
   const ctx = { solid, swans, lotus, fish, flutter };
 
   ground(g);
-  /* 안쪽 고리 — 광장 둘레 산책로 */
-  ringPath(g, 30, 4.2);
-  /* 바깥 고리 — 건물 여섯을 잇습니다. 실제 캠퍼스의 순환도로 자리고,
-     이게 없으면 건물끼리 가려면 매번 광장을 거쳐야 합니다. */
-  ringPath(g, 63, 5.0);
+  /* 순환로 둘을 걷어냈습니다. 고리는 "이 선을 따라 도세요" 라고
+     말하는데, 우리가 원하는 건 그 반대입니다 — 잔디가 넓게 열려 있고
+     어디로든 질러갑니다. 길은 정문 대로 하나만 남깁니다. */
   plaza(g);
 
   /* --- 건물 여섯 --- */
@@ -894,7 +891,8 @@ export function buildCampus(scene) {
     const dd = (b.d / 2 + b.front) * b.s;
     portals.push({ x: b.x + Math.sin(b.ry) * dd, z: b.z + Math.cos(b.ry) * dd,
                    r: 2.6, zone: b.zone, name: b.name, sub: b.sub });
-    pathTo(g, b.x, b.z, b.key === 'library' || b.key === 'mainHall' ? 6.2 : 5.0);
+    /* 건물마다 길을 뻗지 않습니다 — 앞마당 돌바닥(pad)이 이미 "여기가
+       입구" 를 말하고, 그 사이는 그냥 잔디입니다. 어디로든 걸어갑니다. */
   });
 
   /* --- 광장 한가운데 --- */
@@ -902,17 +900,19 @@ export function buildCampus(scene) {
   solid(0, 0, 10.6, 10.6, 0, true);
 
   /* 광장 둘레 — 벤치 여덟 · 가로등 여덟 · 화단 여덟 */
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+  /* 여덟에서 넷으로. 광장은 비어 있어야 광장입니다 — 물건이 둘러서면
+     분수대가 아니라 물건이 주인공이 됩니다. */
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
     const bx = Math.cos(a) * 9.2, bz = Math.sin(a) * 9.2;
     benchOut(g, bx, bz, -a + Math.PI / 2);
     solid(bx, bz, 3.4, 1.2, -a + Math.PI / 2);
     /* 길이 45° 마다 뻗어 나가므로 가로등은 그 사이(22.5°)에 세웁니다.
        전 판은 길 한복판에 서서 카메라를 가로막았습니다. */
-    const la = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    const la = (i / 4) * Math.PI * 2 + Math.PI / 4;
     lampPost(g, Math.cos(la) * 13.0, Math.sin(la) * 13.0);
     solid(Math.cos(la) * 13.0, Math.sin(la) * 13.0, .9, .9);
-    const fa = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    const fa = (i / 4) * Math.PI * 2 + Math.PI / 4;
     flowerBed(g, Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 1.8);
     solid(Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 4.0, 4.0);
   }
@@ -1011,7 +1011,8 @@ export function buildCampus(scene) {
   const TP = { trunk: PAL.trunk, leaf: PAL.leaf, lod: 11, seg: 13 };
   const spots = [];
   const far = (x, z, m) => spots.every((p) => Math.hypot(p[0] - x, p[1] - z) > m);
-  for (let i = 0; i < 460 && spots.length < 86; i++) {
+  /* 86 → 18. 나무는 건물을 가리려고 있는 게 아닙니다 */
+  for (let i = 0; i < 460 && spots.length < 18; i++) {
     const a = rnd() * Math.PI * 2, r = 17 + rnd() * (CORE - 19);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     /* 건물 · 길 · 광장 위에는 안 심습니다 */
@@ -1036,9 +1037,11 @@ export function buildCampus(scene) {
   });
   /* 바깥 테두리 숲 — 섬의 끝.
      한 줄로 고르게 심었더니 **울타리**로 보였습니다. 두 겹으로 어긋나게. */
+  /* 테두리 숲 150 → 26. 안쪽 반지름 40 을 두르던 띠인데, 이제 그
+     바깥이 캠퍼스라 숲이 캠퍼스를 둘로 잘랐습니다. */
   const GATE_A = Math.atan2(20.5, 20.5);
-  for (let i = 0; i < 150; i++) {
-    const a = (i / 150) * Math.PI * 2 + (rnd() - .5) * .05;
+  for (let i = 0; i < 26; i++) {
+    const a = (i / 26) * Math.PI * 2 + (rnd() - .5) * .05;
     /* 정문 부채꼴은 비웁니다 — 문 바로 뒤에 숲이 서 있으면 문이 아니라 벽입니다 */
     if (Math.abs(((a - GATE_A + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < .34) continue;
     const r = CORE - 2.0 - rnd() * 5.0;
@@ -1053,7 +1056,8 @@ export function buildCampus(scene) {
     if (i % 3 === 0) bush(g, TP, Math.cos(a) * (r - 3.4), Math.sin(a) * (r - 3.4), .6 + rnd() * .6);
   }
   /* 덤불 흩뿌리기 */
-  for (let i = 0; i < 90; i++) {
+  /* 덤불 90 → 16 */
+  for (let i = 0; i < 16; i++) {
     const a = rnd() * Math.PI * 2, r = 18 + rnd() * (CORE - 21);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 11)) continue;

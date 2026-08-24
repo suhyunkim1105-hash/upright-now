@@ -39,24 +39,48 @@ import { M } from './parts.js';
 /* 화강암 캠퍼스의 색. 경희대 국제캠퍼스가 화강암과 밝은 석재를 씁니다 —
    우리 파스텔 월드에 그대로 넣으면 탁하므로 한 단계 밝게 당겼습니다. */
 export const STONE = {
-  wall:      0xF0E6D2,   // 화강암 밝은 면
-  wallWarm:  0xE6D8BE,   // 한 단계 어두운 벽 — 층을 나눌 때
+  wall:      0xF0E6D2,
+  wallWarm:  0xE6D8BE,
   base:      0xD5C7AC,   // 기단
-  trim:      0xFBF5E9,   // 코니스 · 창틀 — 벽보다 밝아야 선이 보입니다
+  trim:      0xFBF5E9,   // 코니스 · 창틀 — 몸통보다 밝아야 선이 보입니다
   column:    0xF7EFE0,
-  roofSlate: 0x5A6B7A,   // 슬레이트 지붕
-  roofCopper: 0x6FBFA8,  // 산화 구리 — 돔과 첨탑
-  roofTile:  0x9C5F4E,   // 기와빛 지붕
+  roofSlate: 0x5A6B7A,
+  roofCopper: 0x6FBFA8,
+  roofTile:  0x9C5F4E,
   glass:     0x8FC4DE,
   glassWarm: 0xFFE9A8,
   door:      0x8E6238,
   gold:      0xE0B44E,
 };
 
+/* 몸통 색 — 랜딩 에셋 네 채에서 그대로 뽑았습니다.
+   한 채마다 [몸통, 한 단 어두운 몸통, 지붕] 입니다. 테두리는 늘 크림이라
+   여기 없습니다 — 그게 이 캠퍼스를 한 세트로 묶는 것이니까요. */
+export const BODY = [
+  [0xB0685A, 0x9A5749, 0x8E4A3E],   // 벽돌
+  [0xC79465, 0xB07E52, 0xA9704A],   // 목재
+  [0xBFC7C2, 0xA6B0AA, 0x3E7274],   // 회백 + 청록 지붕
+  [0xB2D19E, 0x9CBF88, 0x7FA96C],   // 연두
+  [0xC9BBA4, 0xB3A48C, 0x7C8A93],   // 밝은 석재 + 슬레이트
+  [0xA8BCD0, 0x91A6BB, 0x5C6E80],   // 청회색
+];
+
 const TAU = Math.PI * 2;
 
 /* 재질은 한 벌만 만들어 돌려 씁니다 — 건물마다 새로 만들면 머티리얼이
    수백 개가 되고 bake 가 묶을 수 있는 덩이도 그만큼 잘게 쪼개집니다. */
+/* 몸통 색별 재질 캐시. 건물마다 새로 만들면 머티리얼이 수백 개가 되고,
+   bake 가 묶을 수 있는 덩이도 그만큼 잘게 쪼개집니다. */
+const BODYMAT = new Map();
+export function bodyMats(i) {
+  const k = i % BODY.length;
+  if (BODYMAT.has(k)) return BODYMAT.get(k);
+  const [a, b, r] = BODY[k];
+  const v = { wall: M(a, .88), wallWarm: M(b, .88), roof: M(r, .8) };
+  BODYMAT.set(k, v);
+  return v;
+}
+
 let MAT = null;
 function mats() {
   if (MAT) return MAT;
@@ -311,11 +335,16 @@ const KIND = {};
 /* 단과대학 — 캠퍼스에 가장 많은 유형. 긴 몸통에 아치창, 가운데 현관.
    특별할 게 없어야 합니다 — 이게 배경을 만듭니다. */
 KIND.faculty = (g, o) => {
-  const C = mats();
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, slate: o.body.roof } : {});
   const w = o.w, d = o.d, h = o.h;
   box(g, w + 1.2, .7, d + 1.2, C.base, 0, .35, 0);
   box(g, w, h, d, C.wall, 0, h / 2 + .6, 0);
   box(g, w + .5, .3, d + .5, C.trim, 0, h + .6, 0);          // 코니스
+  /* 모서리 기둥 — 랜딩 에셋의 크림 테두리. 네 귀퉁이에 세로로 세우면
+     밋밋한 상자가 건물로 읽힙니다. */
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])
+    box(g, .55, h, .55, C.trim, sx * (w / 2 - .1), h / 2 + .6, sz * (d / 2 - .1));
   hipRoof(g, w + 1.0, d + 1.0, 1.7, C.slate, 0, h + .78, 0, 0);
   windowWall(g, w - 2.4, h - 1.6, Math.max(4, Math.round(w / 3.2)), Math.max(2, Math.round(h / 4)),
     C.glass, C.trim, 0, 1.6, d / 2 + .06, 0);
@@ -330,7 +359,8 @@ KIND.faculty = (g, o) => {
 
 /* 본관 — 열주와 페디먼트, 그리고 시계탑. 정문 축의 머리에 섭니다 */
 KIND.admin = (g, o) => {
-  const C = mats();
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, slate: o.body.roof } : {});
   const w = o.w, d = o.d, h = o.h;
   box(g, w + 1.6, 1.0, d + 1.6, C.base, 0, .5, 0);
   box(g, w, h, d, C.wall, 0, h / 2 + .9, 0);
@@ -349,7 +379,8 @@ KIND.admin = (g, o) => {
 
 /* 도서관 — 긴 열주와 돔. 경희대 중앙도서관의 인상 */
 KIND.library = (g, o) => {
-  const C = mats();
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm } : {});
   const w = o.w, d = o.d, h = o.h;
   box(g, w + 1.6, .9, d + 1.6, C.base, 0, .45, 0);
   box(g, w, h, d, C.wall, 0, h / 2 + .8, 0);
@@ -366,7 +397,7 @@ KIND.library = (g, o) => {
 
 /* 대강당 — 평화의전당의 어휘. 첨탑 둘과 장미창 */
 KIND.hall = (g, o) => {
-  const C = mats();
+  const C = Object.assign({}, mats(), o.body ? { wall: o.body.wall } : {});
   const w = o.w, d = o.d, h = o.h;
   box(g, w + 1.4, .9, d + 1.4, C.base, 0, .45, 0);
   box(g, w, h, d, C.wall, 0, h / 2 + .8, 0);
@@ -398,7 +429,8 @@ KIND.hall = (g, o) => {
 
 /* 체육관 — 넓고 낮고, 큰 아치 개구부 */
 KIND.gym = (g, o) => {
-  const C = mats();
+  const C = Object.assign({}, mats(), o.body
+    ? { wallWarm: o.body.wall, slate: o.body.roof } : {});
   const w = o.w, d = o.d, h = o.h;
   box(g, w + 1.2, .7, d + 1.2, C.base, 0, .35, 0);
   box(g, w, h, d, C.wallWarm, 0, h / 2 + .6, 0);
@@ -418,7 +450,8 @@ KIND.gym = (g, o) => {
 
 /* 기숙사 — 같은 칸이 길게 반복됩니다. 실제 기숙사가 그렇게 생겼습니다 */
 KIND.hall_res = (g, o) => {
-  const C = mats();
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, tile: o.body.roof } : {});
   const w = o.w, d = o.d, h = o.h;
   box(g, w + 1.0, .6, d + 1.0, C.base, 0, .3, 0);
   box(g, w, h, d, C.wall, 0, h / 2 + .5, 0);
@@ -444,35 +477,35 @@ KIND.hall_res = (g, o) => {
    들어갈 수 있는 여섯 채와 같은 방식이라, 축을 옮기면 같이 따라옵니다.
    ══════════════════════════════════════════════════════════ */
 export const FACULTIES = [
-  /* 정문 안쪽 — 백양로 양옆. 들어서자마자 보이는 줄입니다 */
-  { name: '공과대학',       kind: 'faculty', deg: 18,  r: 96, w: 26, d: 12, h: 13 },
-  { name: '전자정보대학',   kind: 'faculty', deg: -18, r: 96, w: 26, d: 12, h: 13 },
-  { name: '응용과학대학',   kind: 'faculty', deg: 33,  r: 82, w: 22, d: 11, h: 12 },
-  { name: '생명과학대학',   kind: 'faculty', deg: -33, r: 82, w: 22, d: 11, h: 12 },
+  /* 각도와 반지름을 손으로 고르지 않았습니다 — 고리 세 개에 슬롯을
+     나누고 배정한 결과입니다. 반지름 r 의 고리에 N 채를 고르게 놓으면
+     이웃 사이가 2·r·sin(π/N) 이라, N 만 맞추면 겹칠 수가 없습니다.
 
-  /* 중간 띠 — 축에서 벗어난 자리 */
-  { name: '외국어대학',     kind: 'faculty', deg: 88,  r: 92, w: 24, d: 11, h: 12 },
-  { name: '국제대학',       kind: 'faculty', deg: 106, r: 88, w: 22, d: 11, h: 11 },
-  { name: '예술디자인대학', kind: 'faculty', deg: -88, r: 92, w: 24, d: 11, h: 12 },
-  { name: '경영대학',       kind: 'faculty', deg: -106, r: 88, w: 22, d: 11, h: 11 },
+       고리 A  r 54   45°마다 — 자주 가는 건물
+       고리 B  r 90   30°마다 — 강의동
+       고리 C  r 124  45°마다 — 기숙사 · 부속
 
-  /* 안쪽 띠 — 광장과 건물 여섯 사이 */
-  { name: '인문대학',       kind: 'faculty', deg: 152, r: 78, w: 22, d: 11, h: 12 },
-  { name: '사회과학대학',   kind: 'faculty', deg: -152, r: 78, w: 22, d: 11, h: 12 },
-
-  /* 큰 것들 — 실루엣을 만드는 건물 */
-  { name: '평화의전당',     kind: 'hall',    deg: 205, r: 86, w: 26, d: 18, h: 15 },
-  { name: '체육관',         kind: 'gym',     deg: -205, r: 86, w: 26, d: 16, h: 10 },
-  { name: '대학원',         kind: 'admin',   deg: 180, r: 84, w: 22, d: 12, h: 14 },
-
-  /* 기숙사 — 가장 바깥. 여러 동이 나란히 섭니다 */
-  { name: '제1기숙사',      kind: 'hall_res', deg: 166, r: 114, w: 24, d: 10, h: 14 },
-  { name: '제2기숙사',      kind: 'hall_res', deg: 180, r: 118, w: 24, d: 10, h: 14 },
-  { name: '제3기숙사',      kind: 'hall_res', deg: 194, r: 114, w: 24, d: 10, h: 14 },
-
-  /* 정문 바로 안 — 수위실 겸 안내 */
-  { name: '학생회관 별관',  kind: 'faculty', deg: 60,  r: 104, w: 18, d: 10, h: 10 },
-  { name: '박물관',         kind: 'library', deg: -60, r: 104, w: 20, d: 12, h: 11 },
+     정문 축 좌우 14°는 비워 둡니다. 배치를 바꾸려면 값을 여기서
+     고치지 말고 scratchpad/p7-rings.mjs 를 고쳐 다시 돌립니다 —
+     campus.js 의 여섯 채와 함께 계산돼야 간격이 맞습니다. */
+  { name: '인문대학', kind: 'faculty', deg: 45, r: 54, w: 22, d: 11, h: 12 },
+  { name: '사회과학대학', kind: 'faculty', deg: 90, r: 54, w: 22, d: 11, h: 12 },
+  { name: '생명과학대학', kind: 'faculty', deg: 270, r: 54, w: 22, d: 11, h: 12 },
+  { name: '경영대학', kind: 'faculty', deg: 315, r: 54, w: 22, d: 11, h: 12 },
+  { name: '공과대학', kind: 'faculty', deg: 15, r: 90, w: 24, d: 11, h: 13 },
+  { name: '전자정보대학', kind: 'faculty', deg: 45, r: 90, w: 24, d: 11, h: 13 },
+  { name: '응용과학대학', kind: 'faculty', deg: 105, r: 90, w: 22, d: 11, h: 12 },
+  { name: '외국어대학', kind: 'faculty', deg: 135, r: 90, w: 24, d: 11, h: 12 },
+  { name: '국제대학', kind: 'faculty', deg: 165, r: 90, w: 22, d: 11, h: 11 },
+  { name: '예술디자인대학', kind: 'faculty', deg: 195, r: 90, w: 22, d: 11, h: 12 },
+  { name: '평화의전당', kind: 'hall', deg: 225, r: 90, w: 26, d: 18, h: 15 },
+  { name: '체육관', kind: 'gym', deg: 255, r: 90, w: 26, d: 16, h: 10 },
+  { name: '대학원', kind: 'admin', deg: 22.5, r: 124, w: 20, d: 12, h: 14 },
+  { name: '간호과학대학', kind: 'faculty', deg: 67.5, r: 124, w: 22, d: 11, h: 11 },
+  { name: '약학대학', kind: 'faculty', deg: 112.5, r: 124, w: 22, d: 11, h: 12 },
+  { name: '박물관', kind: 'library', deg: 202.5, r: 124, w: 20, d: 12, h: 11 },
+  { name: '제1기숙사', kind: 'hall_res', deg: 247.5, r: 124, w: 24, d: 10, h: 14 },
+  { name: '제2기숙사', kind: 'hall_res', deg: 292.5, r: 124, w: 24, d: 10, h: 14 },
 ];
 
 /**
@@ -484,6 +517,7 @@ export const FACULTIES = [
  */
 export function buildFaculties(parent, axis, solid, label) {
   const out = [];
+  let ci = 0;
   for (const f of FACULTIES) {
     const th = axis + f.deg * Math.PI / 180;
     const x = Math.cos(th) * f.r, z = Math.sin(th) * f.r;
@@ -494,7 +528,9 @@ export function buildFaculties(parent, axis, solid, label) {
     g.position.set(x, 0, z);
     g.rotation.y = ry;
     parent.add(g);
-    (KIND[f.kind] || KIND.faculty)(g, f);
+    /* 몸통 색을 한 채씩 돌립니다. 같은 색이 이웃하면 한 건물로 보이므로
+       고리 안에서 순서대로 바뀌게 두었습니다. */
+    (KIND[f.kind] || KIND.faculty)(g, Object.assign({ body: bodyMats(ci++) }, f));
 
     /* 건물 몸통 + 현관 계단까지 막습니다 */
     solid(x, z, f.w + 1.2, f.d + 1.2, ry, true);

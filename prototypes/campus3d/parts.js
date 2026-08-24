@@ -105,9 +105,13 @@ export function door(p, C, x, y, z, w, h) {
 
    높이 차를 없앴으므로 계단이 필요 없습니다 — 문턱만 한 단. */
 export function archPortal(p, C, x, y, z, w, h) {
+  /* y 는 **문 바닥**입니다. 여기서 아래로 조금 더 내려 바닥에 닿게 합니다 —
+     건물 바닥(Y=.12)과 포석 사이의 턱을 받침이 넘어야 뜬 것처럼 안 보입니다. */
   const g = new THREE.Group(); g.position.set(x, y, z); p.add(g);
-  const hw = w / 2 + .42;             // 아치 안쪽 반지름
-  const t = .34;                      // 테두리 두께
+  const hw = w / 2 + .40;             // 아치 안쪽 반지름
+  const t = .32;                      // 테두리 두께
+  const spring = h + .12;             // **문 위에서** 솟습니다
+  const drop = .34;                   // 받침이 바닥 아래로 내려가는 깊이
 
   /* 아치 링 — 바깥 반원에서 안쪽 반원을 뺍니다 */
   const sh = new THREE.Shape();
@@ -116,24 +120,26 @@ export function archPortal(p, C, x, y, z, w, h) {
   sh.absarc(0, 0, hw, Math.PI, 0, true);
   sh.closePath();
   const ring = new THREE.Mesh(
-    new THREE.ExtrudeGeometry(sh, { depth: .42, bevelEnabled: true,
-      bevelSize: .05, bevelThickness: .05, bevelSegments: 2, curveSegments: 14 }),
+    new THREE.ExtrudeGeometry(sh, { depth: .40, bevelEnabled: true,
+      bevelSize: .05, bevelThickness: .05, bevelSegments: 2, curveSegments: 16 }),
     M(C.trim, .62));
-  ring.position.set(0, h * .52, .06);
+  ring.position.set(0, spring, .05);
   ring.castShadow = true; ring.receiveShadow = true;
   g.add(ring);
 
-  /* 필라스터 둘 — 아치를 받칩니다. 없으면 아치가 벽에 떠 있습니다 */
+  /* 필라스터 둘 — **바닥부터 아치까지** 한 줄로 섭니다.
+     전 판은 문 높이의 절반에서 끊겨, 아치가 공중에 뜬 것처럼 보였습니다. */
   [-1, 1].forEach((s) => {
-    box(g, t, h * .52, .44, .05, M(C.trim, .6), s * (hw + t / 2), h * .26, .06);
-    box(g, t + .22, .2, .58, .05, M(C.trim, .5), s * (hw + t / 2), h * .52, .06);
-    box(g, t + .26, .18, .6, .05, M(C.trim, .5), s * (hw + t / 2), .09, .06);
+    const px = s * (hw + t / 2);
+    box(g, t, spring + drop, .42, .05, M(C.trim, .6), px, (spring - drop) / 2, .05);
+    box(g, t + .2, .18, .54, .05, M(C.trim, .5), px, spring, .05);      // 주두
+    box(g, t + .26, .22, .58, .05, M(C.trim, .5), px, -drop + .11, .05); // 주초 — 바닥에 닿는 단
   });
   /* 키스톤 */
-  box(g, .38, .54, .5, .05, M(C.stone, .6), 0, h * .52 + hw + t * .5, .1);
+  box(g, .36, .5, .48, .05, M(C.stone, .6), 0, spring + hw + t * .5, .09);
 
   /* 아치 안쪽 벽 — 문이 조금 들어가 앉게 만듭니다 */
-  box(g, hw * 2, h * .52 + hw, .16, .04, M(C.stoneDark, .8), 0, (h * .52 + hw) / 2, -.02);
+  box(g, hw * 2, spring + hw, .16, .04, M(C.stoneDark, .8), 0, (spring + hw) / 2 - drop / 2, -.03);
   return g;
 }
 
@@ -142,12 +148,13 @@ export function archPortal(p, C, x, y, z, w, h) {
    대학이 아니라 들판에 선 집이 됩니다. */
 export function apron(p, C, x, y, z, w) {
   /* 얇게. 두껍게 깔았더니 **흰 욕조**가 문 앞에 놓인 것처럼 보였습니다 —
-     포석은 바닥이지 물건이 아닙니다. 높이를 6cm 로 낮추고, 색도 밝은
-     흰돌에서 캠퍼스 포석과 같은 따뜻한 값으로 내립니다. */
-  box(p, w + 3.0, .06, 3.8, .04, M(0xE6DCC4, .84), x, .126, z + 1.2);
-  box(p, w + 1.8, .05, 2.6, .03, M(0xD8CCB0, .86), x, .152, z + 1.0);
-  /* 문턱 한 단 — 계단 대신 이것 하나뿐입니다 */
-  box(p, w + .5, .12, .55, .04, M(C.stone, .72), x, .17, z - .05);
+     포석은 바닥이지 물건이 아닙니다. 6cm 로 낮추고 캠퍼스 석재 톤으로.
+
+     아치 받침이 이 위에 앉으므로 **문 앞이 가장 높고** 바깥으로 한 단씩
+     내려갑니다 — 계단이 아니라 물매입니다. */
+  box(p, w + 3.4, .05, 4.2, .04, M(0xE6DCC4, .84), x, .10, z + 1.5);
+  box(p, w + 2.2, .06, 3.0, .03, M(0xDCD0B6, .86), x, .135, z + 1.1);
+  box(p, w + 1.2, .07, 1.9, .03, M(C.stone, .78), x, .165, z + .7);
 }
 /* ---- 기둥 — 주초 · 몸통 · 주두 ---- */
 export function column(p, C, x, y, z, h, r = .2) {

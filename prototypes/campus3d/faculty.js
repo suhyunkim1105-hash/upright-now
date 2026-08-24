@@ -96,6 +96,9 @@ function mats() {
     tile: M(STONE.roofTile, .82),
     glass: M(STONE.glass, .28, { metalness: .1 }),
     door: M(STONE.door, .7),
+    /* 감실 안쪽 — 창 뒤에 대는 어두운 판. 그림자를 흉내내는 것이라
+       무광이어야 합니다. 반짝이면 유리가 둘로 보입니다. */
+    reveal: M(0x3A4048, .98),
     gold: M(STONE.gold, .4, { metalness: .5 }),
   };
   return MAT;
@@ -124,58 +127,134 @@ function cyl(p, rt, rb, h, seg, mat, x, y, z) {
 
    창을 하나씩 Mesh 로 만들면 건물 한 채에 창이 60개씩 붙습니다. 벽면
    하나의 창을 **한 지오메트리로 합쳐** 붙입니다. */
+/* 창이 벽에 **그려진** 것처럼 보이던 이유
+
+   전 판은 유리판 한 장과 그 뒤의 납작한 테두리 판 한 장이었습니다.
+   둘 다 벽면과 같은 평면에 있으니 그림자가 생길 데가 없고, 그러면
+   창이 뚫린 구멍이 아니라 벽에 붙인 스티커가 됩니다.
+
+   실제 벽이 창을 만드는 방법은 넷입니다. 넷 다 **깊이**에 관한 것입니다.
+
+     인방·문설주  창틀이 벽보다 앞으로 나옵니다. 가운데는 뚫려 있어야
+                  하므로 사각 테두리가 아니라 **구멍 뚫린 판**입니다
+     감실         유리가 벽면보다 뒤로 물러나 앉습니다. 그 깊이만큼
+                  위와 옆에 그늘이 집니다 — 이 그늘이 창을 창으로 만듭니다
+     창턱         아래로 한 뼘 더 넓게 튀어나옵니다. 비를 흘리는 것이라
+                  실제 건물에 예외 없이 있고, 없으면 눈이 바로 압니다
+     띠와 벽기둥  층마다 가로띠, 칸마다 세로 기둥. 창이 흩어진 점이
+                  아니라 **격자에 앉은 것**으로 읽히게 합니다
+
+   비용은 그대로 둡니다. 창틀을 구멍 뚫린 압출로 바꾸는 것은 면수만
+   조금 늘 뿐이고, 창턱은 인스턴스 하나를 더 쓰고, 띠와 기둥은 상자라
+   bake 가 삼켜 드로우콜이 안 늘어납니다. */
 function windowWall(p, w, h, cols, rows, mat, frameMat, x, y, z, ry, arched = true) {
   const gw = w / cols, gh = h / rows;
-  const winW = Math.min(gw * .56, 1.5);
-  const winH = Math.min(gh * .62, 2.4);
+  /* 창 대 벽 비율 — .56 이면 창끼리 거의 닿아 커튼월이 됩니다.
+     벽돌 건물의 창은 벽이 절반 이상 남아야 벽으로 읽힙니다. */
+  const winW = Math.min(gw * .42, 1.25);
+  const winH = Math.min(gh * .56, 2.1);
   const g = new THREE.Group();
   g.position.set(x, y, z);
   g.rotation.y = ry;
   p.add(g);
 
-  const shape = new THREE.Shape();
   const hw = winW / 2;
   const bodyH = arched ? winH - hw : winH;
+
+  /* 유리 — 감실 안쪽에 앉습니다 */
+  const shape = new THREE.Shape();
   shape.moveTo(-hw, 0);
   shape.lineTo(-hw, bodyH);
   if (arched) shape.absarc(0, bodyH, hw, Math.PI, 0, true);
   else shape.lineTo(hw, bodyH);
   shape.lineTo(hw, 0);
   shape.closePath();
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: .18, bevelEnabled: false });
-  geo.translate(0, 0, -.09);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: .14, bevelEnabled: false });
+  /* 벽면이 z = 0 입니다. 음수로 밀면 벽 **속**으로 들어가 벽에 가려집니다 —
+     처음에 -.30 으로 두었더니 창이 전부 벽색으로 막혔습니다.
+     깊이감은 유리를 뒤로 넣어서가 아니라, **창틀을 앞으로 내밀어서**
+     만듭니다. 유리 .06~.20, 창틀 .04~.38 이면 그 차이가 감실입니다. */
+  geo.translate(0, 0, .06);
 
+  /* 창틀 — **구멍이 뚫린** 판. 가운데가 비어야 유리가 뒤로 보입니다 */
+  const fw = hw + .17, fb = bodyH + .07;
   const frameShape = new THREE.Shape();
-  const fw = hw + .16, fb = bodyH + .04;
-  frameShape.moveTo(-fw, -.16);
+  frameShape.moveTo(-fw, -.20);
   frameShape.lineTo(-fw, fb);
   if (arched) frameShape.absarc(0, fb, fw, Math.PI, 0, true);
   else frameShape.lineTo(fw, fb);
-  frameShape.lineTo(fw, -.16);
+  frameShape.lineTo(fw, -.20);
   frameShape.closePath();
-  const fgeo = new THREE.ExtrudeGeometry(frameShape, { depth: .1, bevelEnabled: false });
-  fgeo.translate(0, 0, -.05);
+  const hole = new THREE.Path();
+  hole.moveTo(-hw, -.02);
+  hole.lineTo(-hw, bodyH);
+  if (arched) hole.absarc(0, bodyH, hw, Math.PI, 0, true);
+  else hole.lineTo(hw, bodyH);
+  hole.lineTo(hw, -.02);
+  hole.closePath();
+  frameShape.holes.push(hole);
+  const fgeo = new THREE.ExtrudeGeometry(frameShape, { depth: .32, bevelEnabled: false });
+  fgeo.translate(0, 0, .04);
 
+  /* 감실 안쪽 — 유리 뒤 어두운 판. 창이 뚫린 것으로 보이는 몫의 절반입니다 */
+  const backShape = new THREE.Shape();
+  backShape.moveTo(-fw, -.20);
+  backShape.lineTo(-fw, fb + fw * (arched ? 1 : 0));
+  backShape.lineTo(fw, fb + fw * (arched ? 1 : 0));
+  backShape.lineTo(fw, -.20);
+  backShape.closePath();
+  const bgeo = new THREE.ExtrudeGeometry(backShape, { depth: .06, bevelEnabled: false });
+  bgeo.translate(0, 0, .01);
+
+  /* 창턱 */
+  const sgeo = new THREE.BoxGeometry(winW + .66, .15, .46);
+  sgeo.translate(0, -.28, .18);
+
+  const C = mats();
   const n = cols * rows;
   const gi = new THREE.InstancedMesh(geo, mat, n);
   const fi = new THREE.InstancedMesh(fgeo, frameMat, n);
-  gi.userData.noBake = true; fi.userData.noBake = true;
-  gi.castShadow = false; gi.receiveShadow = true;
-  fi.castShadow = false; fi.receiveShadow = true;
+  const bi = new THREE.InstancedMesh(bgeo, C.reveal || C.wallDeep || mat, n);
+  const si = new THREE.InstancedMesh(sgeo, frameMat, n);
+  [gi, fi, bi, si].forEach((m) => {
+    m.userData.noBake = true;
+    m.castShadow = false; m.receiveShadow = true;
+  });
+  si.castShadow = true;                       // 창턱만 그림자를 던집니다 — 그늘 한 줄이 목적
   const mtx = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(1, 1, 1);
+  const v = new THREE.Vector3();
   let k = 0;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const px = -w / 2 + gw * (c + .5);
       const py = gh * r + (gh - winH) * .5;
-      mtx.compose(new THREE.Vector3(px, py, .02), q, sc); gi.setMatrixAt(k, mtx);
-      mtx.compose(new THREE.Vector3(px, py, .0), q, sc); fi.setMatrixAt(k, mtx);
+      mtx.compose(v.set(px, py, 0), q, sc);
+      gi.setMatrixAt(k, mtx); fi.setMatrixAt(k, mtx);
+      bi.setMatrixAt(k, mtx); si.setMatrixAt(k, mtx);
       k++;
     }
   }
-  gi.instanceMatrix.needsUpdate = true;
-  fi.instanceMatrix.needsUpdate = true;
-  g.add(fi, gi);
+  [gi, fi, bi, si].forEach((m) => { m.instanceMatrix.needsUpdate = true; });
+  g.add(bi, gi, fi, si);
+
+  /* ---- 격자 — 층 띠와 벽기둥 ----
+     상자라 bake 가 같은 재질끼리 합칩니다. 드로우콜이 안 늘어납니다. */
+  const trim = frameMat;
+  for (let r = 1; r < rows; r++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, .2, .3), trim);
+    m.position.set(0, gh * r - .1, .12);
+    m.castShadow = false; m.receiveShadow = true;
+    g.add(m);
+  }
+  /* 벽기둥은 칸이 넉넉할 때만 — 창이 촘촘하면 벽이 창살이 됩니다 */
+  if (gw > 2.2) {
+    for (let c = 0; c <= cols; c++) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(.36, h, .26), trim);
+      m.position.set(-w / 2 + gw * c, h / 2, .10);
+      m.castShadow = false; m.receiveShadow = true;
+      g.add(m);
+    }
+  }
   return g;
 }
 
@@ -501,7 +580,13 @@ KIND.hall_res = (g, o) => {
   box(g, w + 1.0, .6, d + 1.0, C.base, 0, .3, 0);
   box(g, w, h, d, C.wall, 0, h / 2 + .5, 0);
   box(g, w + .4, .26, d + .4, C.trim, 0, h + .5, 0);
-  hipRoof(g, w + .8, d + .8, 1.5, C.tile, 0, h + .64, 0, 0);
+  if (h >= 18) {
+    /* 고층 슬래브는 평지붕 — 폭 44 에 높이 1.5 짜리 모임지붕을 얹으니
+       납작하게 눌려 칼날처럼 튀어나왔습니다. 난간 + 옥탑이 맞습니다. */
+    roofTop(g, C, w, d, h + .5);
+  } else {
+    hipRoof(g, w + .8, d + .8, 1.5, C.tile, 0, h + .64, 0, 0);
+  }
   const cols = Math.max(6, Math.round(w / 2.6));
   const rows = Math.max(3, Math.round(h / 3.4));
   windowWall(g, w - 1.8, h - 1.4, cols, rows, C.glass, C.trim, 0, 1.3, d / 2 + .06, 0, false);

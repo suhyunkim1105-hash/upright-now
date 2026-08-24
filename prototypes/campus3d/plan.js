@@ -135,9 +135,8 @@ export const BUILDINGS = [
   { n: '공과대학',     kind: 'wing',      x: -2, z: -106, face: 'S', w: 62, d: 12, h: 14 },
   { n: '전자정보대학', kind: 'slab',      x: -30, z: -87, face: 'E', w: 24, d: 12, h: 13 },
   { n: '응용과학대학', kind: 'tower_lab', x:  26, z: -87, face: 'W', w: 24, d: 12, h: 14 },
-  { n: '생명과학대학', kind: 'tower_lab', x:  58, z: -94, face: 'S', w: 26, d: 12, h: 13 },
-  { n: '약학대학',     kind: 'slab',      x:  96, z: -76, face: 'SW', w: 26, d: 12, h: 12 },
-  { n: '간호과학대학', kind: 'brick',     x:  64, z: -60, face: 'W', w: 24, d: 12, h: 12 },
+  { n: '생명과학대학', kind: 'tower_lab', x:  52, z: -84, face: 'SW', w: 24, d: 12, h: 13 },
+  { n: '간호과학대학', kind: 'brick',     x:  60, z: -58, face: 'W', w: 24, d: 12, h: 12 },
 
   /* ══ 예술 · 생활 지구 — 동쪽 안뜰 43×46, 서쪽으로 엽니다 ══ */
   { n: '예술디자인대학', kind: 'atrium',  x: 104, z: -34, face: 'S', w: 46, d: 12, h: 13 },
@@ -153,9 +152,11 @@ export const BUILDINGS = [
 
   /* ══ 가장자리 — 체육 · 기숙사 · 진입 마당 ══ */
   { n: '체육관',    kind: 'gym', x: -131, z: 70, face: 'E', w: 30, d: 18, h: 11 },
-  { n: '기숙사',    enter: 'dorm', x: 114, z: -60, face: 'SW', s: 1.6, w: 8.2, d: 5.4, front: 1.9 },
-  { n: '제1기숙사', kind: 'hall_res', x: 118, z: -102, face: 'S', w: 26, d: 10, h: 15 },
-  { n: '제2기숙사', kind: 'hall_res', x:  86, z: -104, face: 'S', w: 26, d: 10, h: 15 },
+  /* 기숙사 단지 — 트윈 슬래브가 마당을 사이에 두고 나란히,
+     들어가는 기숙사(공용동)가 마당 입구를 지킵니다 */
+  { n: '제1기숙사', kind: 'hall_res', x: 112, z: -104, face: 'S', w: 44, d: 12, h: 21 },
+  { n: '제2기숙사', kind: 'hall_res', x: 112, z: -74, face: 'S', w: 44, d: 12, h: 21 },
+  { n: '기숙사',    enter: 'dorm', x: 84, z: -89, face: 'E', s: 1.6, w: 8.2, d: 5.4, front: 1.9 },
   { n: '평화의전당', kind: 'hall',  x:  52, z: 96, face: 'W', w: 30, d: 20, h: 16 },
   { n: '입학처',     kind: 'admin', x: -46, z: 100, face: 'E', w: 24, d: 14, h: 11 },
 ];
@@ -184,7 +185,7 @@ export const FIELDS = [
   { t: 'pond',   x: 118, z:  70, w: 40, d: 30, ry: 0 },
   { t: 'amphi',  x:  80, z:  56, w: 26, d: 26, ry: 0 },
   { t: 'lot',    x:  94, z:  98, w: 34, d: 22, ry: 0 },
-  { t: 'lot',    x: 122, z: -80, w: 24, d: 20, ry: 0 },
+  { t: 'lot',    x: 143, z: -50, w: 22, d: 26, ry: 0 },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -204,12 +205,22 @@ export const ROADS = [
   { w: 11, pts: [[0, 120], [56, 120], [112, 118], [146, 104], [150, 50],
                  [150, -20], [148, -72], [138, -114], [70, -120], [-20, -120]] },
 
-  /* ③ 보행로 — 폭 6. 안뜰과 안뜰을 곧게 잇습니다 */
-  { w: 6, pts: [[-44, 32], [-60, 30], [-70, 24]] },
-  { w: 6, pts: [[44, 32], [60, 30], [70, 24]] },
-  { w: 6, pts: [[0, -76], [0, -84], [0, -92]] },
-  { w: 6, pts: [[-84, 36], [-84, 48]] },
-  { w: 6, pts: [[52, 32], [64, 40]] },
+  /* ③ 보행로 — 폭 6. **모든 지구가 걸어서 이어져야** 합니다.
+     전 판은 다섯 가닥이라 기숙사 · 운동장 · 호수가 길 없이 잔디 위에
+     떠 있었습니다. 지구마다 최소 한 가닥씩. */
+  { w: 6, pts: [[-44, 32], [-60, 30], [-70, 24]] },          // 광장 → 인문사회
+  { w: 6, pts: [[44, 32], [60, 30], [70, 24]] },             // 광장 → 예술생활
+  { w: 6, pts: [[0, -76], [0, -84], [0, -92]] },             // 본관 뒤 → 자연공학
+  /* 운동장 진입은 관중석(트랙 북면 x -104~-64 · z 40~45) **동쪽 옆**으로
+     돕니다. 곧장 남진시켰더니 두 가닥이 관중석을 뚫고 트랙 위로
+     올라탔습니다 — 흰 쐐기가 트랙을 가로지르던 정체입니다. */
+  { w: 6, pts: [[-56, 34], [-58, 44], [-60, 50]] },          // 인문사회 → 운동장(동측)
+  { w: 6, pts: [[52, 32], [64, 42], [74, 50]] },             // 학생회관 → 야외극장
+  { w: 6, pts: [[46, -60], [64, -72], [78, -84], [88, -89]] },  // 자연공학 → 기숙사 마당
+  { w: 6, pts: [[96, 34], [104, 48], [106, 58]] },           // 예술 → 호수
+  { w: 6, pts: [[0, 108], [-24, 102], [-42, 98]] },          // 정문 마당 → 입학처
+  { w: 6, pts: [[0, 108], [26, 102], [44, 98]] },            // 정문 마당 → 평화의전당
+
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -296,6 +307,19 @@ function slab(p, w, d, mat, x, y, z, ry = 0) {
 
 /* ---- 바닥 ---- */
 function ground(g) {
+  /* 부지 밖 땅 — 담을 걷었으니 여기서 끊기면 허공이 보입니다.
+     한 단 어둡게 깝니다: 멀리 있는 땅은 대기를 더 통과해 채도가
+     떨어져 보입니다(공기 원근). 부지 잔디보다 아주 조금 낮게. */
+  /* 부지 잔디와 **같은 색**입니다. 한 단 어둡게 깔았더니 부지의 네모가
+     잔디 위에 선으로 드러나 담을 걷어낸 자리에 다시 경계가 생겼습니다.
+     멀어질수록 흐려지는 일은 안개가 이미 합니다 — 색으로 또 하면
+     두 번 합니다. */
+  const out = new THREE.Mesh(new THREE.CircleGeometry(340, 72), M(PAL.lawn, .92));
+  out.rotation.x = -Math.PI / 2;
+  out.position.y = LAYER.lawn - .012;
+  out.castShadow = false; out.receiveShadow = true;
+  g.add(out);
+
   const disc = new THREE.Mesh(
     new THREE.PlaneGeometry(SITE.w, SITE.d), M(PAL.lawn, .9));
   disc.rotation.x = -Math.PI / 2;
@@ -306,8 +330,9 @@ function ground(g) {
   /* 잔디 얼룩 — 넓은 판을 한 색으로 두면 당구대입니다.
      대비는 아주 낮게. 세면 얼룩이 무늬가 됩니다. */
   const a = M(PAL.lawnDark, .9), b = M(PAL.lawnLight, .9);
-  for (let i = 0; i < 120; i++) {
-    const x = (rnd() - .5) * SITE.w, z = (rnd() - .5) * SITE.d;
+  /* 얼룩을 부지 밖까지 뿌립니다 — 경계선 위에 걸쳐야 선이 지워집니다 */
+  for (let i = 0; i < 190; i++) {
+    const x = (rnd() - .5) * SITE.w * 1.7, z = (rnd() - .5) * SITE.d * 1.9;
     const w = 10 + rnd() * 26;
     const m = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 20), rnd() < .5 ? a : b);
     m.rotation.x = -Math.PI / 2;
@@ -347,19 +372,66 @@ function fields(g, solid) {
   const put = (t, f) => {
     const { x, z, w, d, ry } = f;
     if (t === 'track') {
-      /* 트랙 — 바깥 타원 붉은 우레탄, 안쪽 초록 축구장 */
-      const outer = new THREE.Mesh(new THREE.CircleGeometry(.5, 48), M(PAL.track, .94));
+      /* ---- 운동장 ----
+         운동장이 운동장으로 읽히는 것은 셋입니다: 레인 선, 골대,
+         관중석. 전 판은 붉은 타원에 초록 판 하나라 "붉은 도넛" 이었습니다.
+
+         레인은 흰 타원 **링 여섯**으로 긋습니다. RingGeometry 를 눌러
+         타원으로 만들면 곡선 선을 공짜로 얻습니다. */
+      const outer = new THREE.Mesh(new THREE.CircleGeometry(.5, 56), M(PAL.track, .94));
       outer.rotation.x = -Math.PI / 2; outer.scale.set(w, d, 1);
       outer.position.set(x, LAYER.fieldBase, z); outer.receiveShadow = true; outer.castShadow = false;
       g.add(outer);
+      /* 레인 선 — 반지름 .5 링을 낮춰 가며 다섯 */
+      const lineM = new THREE.MeshBasicMaterial({ color: PAL.turfLine, transparent: true, opacity: .5 });
+      for (let i = 1; i <= 5; i++) {
+        const f2 = 1 - i * .035;
+        const ring = new THREE.Mesh(new THREE.RingGeometry(.492, .5, 64), lineM);
+        ring.rotation.x = -Math.PI / 2;
+        ring.scale.set(w * f2, d * f2, 1);
+        ring.position.set(x, LAYER.field + .002 + i * .0004, z);
+        ring.castShadow = false; ring.receiveShadow = false;
+        g.add(ring);
+      }
+      /* 안쪽 축구장 */
       const inner = new THREE.Mesh(new THREE.CircleGeometry(.5, 48), M(PAL.turf, .92));
-      inner.rotation.x = -Math.PI / 2; inner.scale.set(w - 22, d - 18, 1);
+      inner.rotation.x = -Math.PI / 2; inner.scale.set(w - 20, d - 15, 1);
       inner.position.set(x, LAYER.field, z); inner.receiveShadow = true; inner.castShadow = false;
       g.add(inner);
-      slab(g, w - 34, d - 26, M(PAL.turf, .92), x, LAYER.fieldLine, z, ry);
-      /* 흰 선 — 축구장이라는 표시 */
-      slab(g, w - 34, .5, M(PAL.turfLine, .9), x, LAYER.fieldLine, z, ry);
-      for (const sz of [-1, 1]) slab(g, .5, d - 26, M(PAL.turfLine, .9), x + sz * (w - 34) / 2, LAYER.fieldLine, z, ry);
+      /* 축구장 선 — 테두리 · 중앙선 · 센터서클 */
+      const FW = w - 30, FD = d - 20;
+      slab(g, FW, .4, M(PAL.turfLine, .9), x, LAYER.fieldLine, z - FD / 2, ry);
+      slab(g, FW, .4, M(PAL.turfLine, .9), x, LAYER.fieldLine, z + FD / 2, ry);
+      for (const sz of [-1, 1]) slab(g, .4, FD, M(PAL.turfLine, .9), x + sz * FW / 2, LAYER.fieldLine, z, ry);
+      slab(g, .4, FD, M(PAL.turfLine, .9), x, LAYER.fieldLine, z, ry);
+      const cc = new THREE.Mesh(new THREE.RingGeometry(.46, .5, 40), lineM);
+      cc.rotation.x = -Math.PI / 2; cc.scale.set(9, 9, 1);
+      cc.position.set(x, LAYER.fieldLine + .002, z);
+      cc.castShadow = false; g.add(cc);
+      /* 골대 둘 — 흰 기둥과 크로스바 */
+      const postM = M(0xF4F6F2, .5);
+      for (const sx of [-1, 1]) {
+        const gx = x + sx * (FW / 2 - .6);
+        for (const gz of [-3.2, 3.2]) {
+          const p1 = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, 2.2, 8), postM);
+          p1.position.set(gx, LAYER.field + 1.1, z + gz); p1.castShadow = true; g.add(p1);
+        }
+        const bar = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, 6.6, 8), postM);
+        bar.rotation.x = Math.PI / 2;
+        bar.position.set(gx, LAYER.field + 2.2, z); bar.castShadow = true; g.add(bar);
+        solid(gx, z, 1.0, 7.0);
+      }
+      /* 관중석 — 긴 쪽 한 면에 세 단 */
+      const standM = M(PAL.stone, .84), seatM = M(0x7FA0B8, .8);
+      const SL = w * .58;
+      for (let i = 0; i < 3; i++) {
+        const sy = .35 * (i + 1), sd = 1.15;
+        const st = new THREE.Mesh(new THREE.BoxGeometry(SL, .35, sd), i % 2 ? seatM : standM);
+        st.position.set(x, sy - .17 + LAYER.field, z - d / 2 - 2.2 - i * sd);
+        st.castShadow = true; st.receiveShadow = true;
+        g.add(st);
+      }
+      solid(x, z - d / 2 - 3.4, SL, 3.6);
     } else if (t === 'tennis') {
       slab(g, w, d, M(PAL.court, .92), x, LAYER.fieldBase, z, ry);
       for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) {
@@ -396,12 +468,58 @@ function fields(g, solid) {
           slab(g, .28, 9, M(PAL.lotLine, .9), x - w / 2 + (w / n) * i, .118, cz, ry);
       }
     } else if (t === 'pond') {
-      const e = new THREE.Mesh(new THREE.CircleGeometry(.5, 34), M(PAL.sand, .9));
-      e.rotation.x = -Math.PI / 2; e.scale.set(w + 6, d + 6, 1);
-      e.position.set(x, LAYER.fieldBase, z); e.receiveShadow = true; e.castShadow = false; g.add(e);
-      const p2 = new THREE.Mesh(new THREE.CircleGeometry(.5, 34), M(PAL.water, .25));
-      p2.rotation.x = -Math.PI / 2; p2.scale.set(w, d, 1);
-      p2.position.set(x, LAYER.field, z); p2.receiveShadow = false; p2.castShadow = false; g.add(p2);
+      /* ---- 호수 ----
+         호수가 호수로 읽히는 것: 물가의 **띠**(모래 → 얕은 물 → 깊은 물),
+         물 위의 사물(수련 · 바위), 그리고 가장자리가 원이 아닌 것.
+         전 판은 모래 타원 위 물 타원 — 접시에 담긴 물이었습니다.
+
+         가장자리를 우툴두툴하게: 원 정점을 사인으로 흔들어 만듭니다. */
+      const wob = (r, seg, amp, seed) => {
+        const sh = new THREE.Shape();
+        for (let i = 0; i <= seg; i++) {
+          const a = (i / seg) * Math.PI * 2;
+          const rr = r * (1 + Math.sin(a * 3 + seed) * amp + Math.sin(a * 7 + seed * 2) * amp * .5);
+          const px = Math.cos(a) * rr, py = Math.sin(a) * rr * (d / w);
+          if (i === 0) sh.moveTo(px, py); else sh.lineTo(px, py);
+        }
+        sh.closePath();
+        return new THREE.ShapeGeometry(sh, 2);
+      };
+      const mk = (geo, mat, y) => {
+        const m = new THREE.Mesh(geo, mat);
+        m.rotation.x = -Math.PI / 2; m.position.set(x, y, z);
+        m.castShadow = false; m.receiveShadow = true; g.add(m); return m;
+      };
+      mk(wob(w / 2 + 3.4, 44, .05, 1.7), M(PAL.sand, .9), LAYER.fieldBase);          // 모래톱
+      mk(wob(w / 2 + .8, 44, .05, 1.7), M(0x8FD8E8, .35), LAYER.field);               // 얕은 물
+      const deep = mk(wob(w / 2 - 3.2, 40, .06, 1.7), M(PAL.waterDeep, .3), LAYER.field + .012);
+      deep.receiveShadow = false;
+      /* 물결 링 — 천천히 도는 밝은 선 둘. index.html 의 시계가 돌립니다 */
+      const rip = new THREE.MeshBasicMaterial({ color: 0xCFF0F8, transparent: true, opacity: .3 });
+      for (const [rr, ph] of [[.32, 0], [.2, 2.1]]) {
+        const ring = new THREE.Mesh(new THREE.RingGeometry(.96, 1, 40), rip);
+        ring.rotation.x = -Math.PI / 2;
+        ring.scale.set(w * rr, d * rr, 1);
+        ring.position.set(x + ph, LAYER.field + .02, z - ph * .5);
+        ring.castShadow = false; g.add(ring);
+      }
+      /* 바위 — 물가에 셋 */
+      const rockM = M(0xB9B4A6, .9);
+      [[-.42, .38, 1.2], [.46, .3, .9], [.1, -.5, 1.4]].forEach(([fx, fz, s2]) => {
+        const r2 = new THREE.Mesh(new THREE.IcosahedronGeometry(s2, 0), rockM);
+        r2.position.set(x + fx * w / 2, LAYER.field + s2 * .3, z + fz * d / 2);
+        r2.scale.y = .6; r2.rotation.y = fx * 5;
+        r2.castShadow = true; r2.receiveShadow = true; g.add(r2);
+      });
+      /* 수련 잎 — 진초록 원판 몇 */
+      const lil = M(0x3E8C4A, .85);
+      for (let i = 0; i < 7; i++) {
+        const a = i * 2.4, rr2 = .25 + (i % 3) * .11;
+        const leaf = new THREE.Mesh(new THREE.CircleGeometry(.55 + (i % 2) * .25, 12), lil);
+        leaf.rotation.x = -Math.PI / 2;
+        leaf.position.set(x + Math.cos(a) * w * rr2, LAYER.field + .025, z + Math.sin(a) * d * rr2);
+        leaf.castShadow = false; g.add(leaf);
+      }
       solid(x, z, w * .8, d * .8, 0, false);
     } else if (t === 'amphi') {
       /* 야외극장 — 반원 계단 */
@@ -424,6 +542,28 @@ function fields(g, solid) {
 
 /* ---- 숲 ----
    덩어리 안에만 심습니다. 인스턴싱이라 몇백 그루가 드로우콜 넷입니다. */
+/* ---- 부지 밖 숲 ----
+   담이 있던 자리부터 바깥으로 나무를 채웁니다. 걸어서 못 가는 곳이라
+   충돌도 길 검사도 필요 없습니다 — 자리만 고르면 됩니다.
+
+   안쪽은 촘촘하고 바깥으로 갈수록 성기게 둡니다. 균일하게 채우면
+   벽이 되고, 그러면 담을 나무로 바꾼 것에 지나지 않습니다. */
+function outerWoods() {
+  const trees = [];
+  const inSiteBox = (x, z) => Math.abs(x) < SITE.hx + 4 && Math.abs(z) < SITE.hz + 4;
+  for (let i = 0; i < 900; i++) {
+    const a = rnd() * TAU;
+    const r = 150 + Math.pow(rnd(), .65) * 165;        // 안쪽에 몰립니다
+    const x = Math.cos(a) * r * 1.12, z = Math.sin(a) * r * .92;
+    if (inSiteBox(x, z)) continue;
+    if (Math.hypot(x / 1.12, z / .92) > 320) continue;
+    /* 정문 앞은 비웁니다 — 문 밖이 바로 숲이면 문이 벽이 됩니다 */
+    if (Math.abs(x) < 26 && z > SITE.hz) continue;
+    trees.push({ x, z, s: 1.0 + rnd() * 1.1, kind: i % 3, ry: rnd() * TAU });
+  }
+  return trees;
+}
+
 function woods(g, avoid, built) {
   /* 길에서 얼마나 떨어져야 하는지 — 폭 절반에 여유 3.
      띠가 순환로를 물고 있어서, 안 보면 나무가 찻길 한복판에 섭니다. */
@@ -571,7 +711,22 @@ function plantTrees(g, trees, solid) {
 
 /* ---- 경계 — 담과 정문 ----
    네모 부지라 담도 네 변입니다. 정문은 남쪽 가운데. */
+/* 담과 정문 구조물을 세우지 않습니다.
+
+   담은 "여기까지가 캠퍼스" 를 말하려고 세웠는데, 실제로 읽히는 것은
+   **게임 경계선**이었습니다. 어디를 봐도 같은 높이의 띠가 화면을
+   가로지르고, 그 너머에 상자 도시가 서 있으니 세계가 거기서 끝난다는
+   사실만 계속 말합니다.
+
+   대신 숲으로 닫습니다. 나무는 경계를 **부드럽게** 만듭니다 — 시선이
+   나무 사이로 계속 들어가다가 안개에 잠기므로 어디가 끝인지 눈이
+   묻지 않습니다. 못 나가는 것은 그대로입니다(index.html 의 SITE_HX ·
+   SITE_HZ 가 막습니다). 보이지 않을 뿐입니다.
+
+   함수는 남깁니다 — 부르는 곳이 여럿이고, 되살릴 일이 생기면
+   이 한 줄만 지우면 됩니다. */
 function fence(g, solid) {
+  return;
   const wallM = M(0xE8DFC8, .9), capM = M(0xC9BFA4, .86), brickM = M(0xC98A63, .82);
   const SEG = 5.6, GAP = 9;                      // 정문 폭
   const segs = [];
@@ -626,7 +781,16 @@ function fence(g, solid) {
 }
 
 /* ---- 담 밖 — 도시와 산 ---- */
+/* 담 너머 도시를 세우지 않습니다.
+
+   담 밖에 City Kit 건물 예순여덟 채와 실루엣 타워를 세워 두었습니다.
+   지평선을 채우려던 것인데, 대학 캠퍼스 담 너머에 고층 도시가 붙어
+   있으면 캠퍼스가 도심 한 블록으로 축소돼 보입니다. 게다가 안개를
+   .0040 으로 낮춘 뒤로는 그것들이 **또렷하게** 보입니다.
+
+   지평선은 숲과 안개가 맡습니다. */
 function beyond(g) {
+  return;
   const far = M(0xA9BCCC, .96);
 
   /* ---- 가까운 띠 — 진짜 건물 ----
@@ -763,7 +927,7 @@ export function buildSite(parent, solid, avoid) {
      축인지가 나무에 묻혔습니다. 부지 밖 숲(woods)은 남깁니다: 담 너머
      지평선을 채우는 것이라 광장 소품과는 다른 몫입니다. */
   courts(g, solid);
-  const trees = woods(g, avoid, built);
+  const trees = woods(g, avoid, built).concat(outerWoods());
   plantKitTrees(g, trees, solid);
   const allee = axisAllee(g, solid);
   props(g, built, solid, avoid);

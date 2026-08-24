@@ -494,6 +494,7 @@ import { NPCS } from './npcs.js';
 import * as UI from './ui.js';
 import { NPCS as _N, INDOOR } from './npcs.js';
 import { createNet } from './net.js';
+import { maskProfanity } from './chat-filter.js';
 import { EMOTES, EMOTE_BY_KEY, playEmoteSound, playEmotePose, emoteIcon } from './emote.js';
 import { openGame, gameOpen } from './games.js';
 import { createPosture } from './posture-live.js';
@@ -545,8 +546,9 @@ injectScript('../shared/config.js')
       if (typeof b === 'number') { SAVE.coins = b; UI.save(); }
     }).catch(() => {});
   });
-let KORCEN = null;
-injectScript('../shared/korcen.js').then(() => { KORCEN = window.Korcen || null; });
+/* 비속어 사전. 붙는 순간부터 `chat-filter.js` 가 window.Korcen 을 봅니다 —
+   따로 넘겨받지 않으므로 여기서는 붙이기만 합니다. */
+injectScript('../shared/korcen.js');
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const TAU = Math.PI * 2;
 
@@ -824,7 +826,33 @@ const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick:
 
 const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
-const P = { x: 5.0, z: 5.0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+const P = { x: 5.0, z: 5.0, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+
+/* ── 바닥 높이 따라가기 ──
+   전 판은 캐릭터가 늘 y = 0 이었습니다. 그런데 잔디가 .08, 길이 .126,
+   광장 포석이 .38, 건물 기단이 1.5 입니다 — **모든 바닥보다 아래**를
+   걷고 있었고, 계단은 아예 못 올라갔습니다(발이 첫 단을 뚫고 지나감).
+
+   위에서 아래로 광선을 하나 쏴서 발밑 표면을 찾습니다. BVH 를 이미
+   걸어 두었으므로(three-mesh-bvh) 프레임당 두세 발은 공짜에 가깝습니다.
+   firstHitOnly 를 켜야 정렬 비용이 사라집니다.
+
+   턱이 STEP_MAX 보다 높으면 못 올라갑니다 — 안 그러면 벽도 타고
+   오릅니다. 계단 한 단(월드 .5)과 기단 한 단은 넘고, 벽은 못 넘는 값. */
+const STEP_MAX = 1.05;
+const _gdown = new THREE.Vector3(0, -1, 0);
+const _gray = new THREE.Raycaster();
+_gray.firstHitOnly = true;
+_gray.far = 8;
+function groundAt(x, z, from) {
+  _gray.set(new THREE.Vector3(x, from + 2.4, z), _gdown);
+  let best = -1;
+  for (const h of _gray.intersectObject(campusRoot, true)) {
+    if (!h.object.visible || h.object === blob) continue;
+    best = h.point.y; break;
+  }
+  return best < -.5 ? 0 : best;
+}
 
 const blob = new THREE.Mesh(new THREE.CircleGeometry(.62, 20),
   new THREE.MeshBasicMaterial({ color: 0x2A3038, transparent: true, opacity: .18, depthWrite: false }));
@@ -1735,10 +1763,12 @@ chatBox.addEventListener('keydown', (e) => {
   e.stopPropagation();
   if (e.code === 'Escape') { closeChat(); return; }
   if (e.code === 'Enter') {
-    const t = chatBox.value.trim().slice(0, 60);
-    if (!t) { closeChat(); return; }
-    /* 욕설 — 2D 판과 같은 korcen 사전을 씁니다 */
-    try { if (KORCEN?.isProfane?.(t)) { toast('고운 말', '그 말은 보낼 수 없어요'); return; } } catch {}
+    const raw = chatBox.value.trim().slice(0, 60);
+    if (!raw) { closeChat(); return; }
+    /* 욕설 — 걸린 낱말만 가리고 나머지는 보냅니다. 통째로 막으면 대화가
+       끊깁니다. 가려진 문장이 그대로 나가므로 남의 화면에도 가려집니다. */
+    const t = maskProfanity(raw);
+    if (t !== raw) toast('고운 말', '걸린 말은 가려서 보냈어요');
     if (!sayAllowed()) return;
     closeChat();
     pushChat(myNick(), t);
@@ -1784,10 +1814,8 @@ try {
         : m === 'local' ? '혼자 · 이웃은 흉내'
         : '혼자';
     },
-    onSay: (p, t) => {
-      try { if (KORCEN?.isProfane?.(t)) t = '(가려진 말)'; } catch {}
-      pushChat(p.nick || '누군가', t);
-    },
+    /* t 는 net.js 가 들어올 때 이미 가린 말입니다 — 여기서 또 훑지 않습니다 */
+    onSay: (p, t) => pushChat(p.nick || '누군가', t),
     onGone: (id) => dropRemote(id),
     onReset: () => { [...remotes.keys()].forEach(dropRemote); },
     onPeers: () => {
@@ -2524,7 +2552,6 @@ function openWardrobe() {
 function paintPick() { if (panelOn && panelSpot?.panel === 'wardrobe') redrawPanel(); }
 /* 이름 — 안 적으면 종 이름을 씁니다. 전 판은 모두가 '거북이' 였습니다. */
 function myNick() { return (SAVE.nick || '').trim() || curSpecies; }
-function maskSay(t) { try { return KORCEN?.isProfane?.(t) ? '(가려진 말)' : t; } catch { return t; } }
 
 /* ── 아래 한 줄 ── */
 const elDock = $('#dock');
@@ -2771,7 +2798,9 @@ function tick(now) {
     /* 눌러서 걸어가는 중이면 방향은 목표가 정합니다 */
     if (goTo) { wx = Math.sin(P.dirWant); wz = Math.cos(P.dirWant); }
     const nx = P.x + wx * speed * dt, nz = P.z + wz * speed * dt;
-    if (!hit(nx, P.z)) P.x = nx;
+    /* 가로막는 것이 없어도 **턱이 너무 높으면** 못 갑니다 */
+    const tooHigh = (ax, az) => groundAt(ax, az, P.y) - P.y > STEP_MAX;
+    if (!hit(nx, P.z) && !tooHigh(nx, P.z)) P.x = nx;
     if (!hit(P.x, nz)) P.z = nz;
     P.dir = Math.atan2(wx, wz);
     P.sp = Math.min(run, P.sp + dt * 8);
@@ -2804,7 +2833,12 @@ function tick(now) {
   if (SESS.on && mag > .06) endSession();
   if (CSIT.on && mag > .06) standCasual();
   if (!SESS.on) unstick();
-  playerRig.position.set(P.x, 0, P.z);
+  /* 발밑 높이 — 올라갈 때는 빠르게 붙고(계단이 뚝뚝 끊기지 않게),
+     내려올 때는 조금 느리게(모서리에서 뚝 떨어지지 않게). */
+  { const gy = groundAt(P.x, P.z, P.y);
+    const up = gy > P.y;
+    P.y += (gy - P.y) * Math.min(1, dt * (up ? 16 : 9)); }
+  playerRig.position.set(P.x, P.y, P.z);
   playerRig.rotation.y = smoothAngle(playerRig.rotation.y, P.dir, 1 - Math.pow(.00005, dt));
   /* 감정표현이 도는 동안은 그 자세가 이깁니다 */
   let emoting = false;
@@ -2825,7 +2859,7 @@ function tick(now) {
     if (gt) gaze(player, P.x, P.z, playerRig.rotation.y, gt.x, gt.z, gt.y);
     else { player.userData.looking = false; look(player, 0, 0, .1); }
   }
-  blob.position.set(P.x, .22, P.z);
+  blob.position.set(P.x, P.y + .06, P.z);
   blob.scale.setScalar(1 - P.sp * .08);
   /* 탈것은 제 그림자를 들고 다닙니다. 둘 다 깔면 그림자가 두 겹이 됩니다. */
   /* rideId 가 아니라 **실제로 달려 있는지**를 봅니다. 실내에서는 내리므로
@@ -2899,7 +2933,7 @@ function tick(now) {
     if (on) { r.el.textContent = p.nick || '누군가'; r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px'; }
     const saying = p.say && performance.now() - p.sayT < 6000;
     r.say.style.display = on && saying ? 'block' : 'none';
-    if (on && saying) { r.say.textContent = maskSay(p.say); r.say.style.left = sx + 'px'; r.say.style.top = (sy - 26) + 'px'; }
+    if (on && saying) { r.say.textContent = p.say; r.say.style.left = sx + 'px'; r.say.style.top = (sy - 26) + 'px'; }
     const emo = p.emo && performance.now() - p.emoT < 2200;
     r.emoEl.style.display = on && emo ? 'block' : 'none';
     if (on && emo) { r.emoEl.textContent = emoteIcon(p.emo); r.emoEl.style.left = sx + 'px'; r.emoEl.style.top = (sy - 30) + 'px'; }
@@ -2983,7 +3017,7 @@ function tick(now) {
     cam.lookAt(L[3], L[4], L[5]);
     if (L[6]) { cam.fov = L[6]; cam.updateProjectionMatrix(); }
   } else if (first) {
-    cam.position.set(P.x, 1.84 + Math.sin(P.walk * TAU * 2) * .022 * P.sp, P.z);
+    cam.position.set(P.x, P.y + 1.84 + Math.sin(P.walk * TAU * 2) * .022 * P.sp, P.z);
     const f = new THREE.Vector3(Math.sin(yaw), -Math.tan(pitch), Math.cos(yaw));
     cam.lookAt(cam.position.x + f.x * 10, cam.position.y + f.y * 10, cam.position.z + f.z * 10);
   } else {
@@ -3010,8 +3044,8 @@ function tick(now) {
     camD += (want - camD) * Math.min(1, dt * (want < camD ? 14 : 5));
     const d = camD;
     const h = Math.sin(camPitch) * d, r = Math.cos(camPitch) * d;
-    cam.position.lerp(v3.set(P.x + sx * r, 1.2 + h, P.z + sz * r), 1 - Math.pow(.0009, dt));
-    cam.lookAt(P.x, 1.35, P.z);
+    cam.position.lerp(v3.set(P.x + sx * r, P.y + 1.2 + h, P.z + sz * r), 1 - Math.pow(.0009, dt));
+    cam.lookAt(P.x, P.y + 1.35, P.z);
   }
   aimSun(P.x, P.z);
 

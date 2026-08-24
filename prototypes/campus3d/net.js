@@ -22,6 +22,10 @@
      offline     못 붙었고 흉내도 못 냅니다
    ══════════════════════════════════════════════════════════ */
 
+/* 욕설 — 보낼 때와 받을 때 둘 다 여기서 가립니다. 받는 쪽을 빼면
+   남의 브라우저가 보낸 말이 내 화면에 그대로 뜹니다. */
+import { maskProfanity } from './chat-filter.js';
+
 const SEND_HZ = 10, SEND_MS = 1000 / SEND_HZ;
 const INTERP_DELAY = 130;      // 보간 지연은 패킷 간격(100ms)보다 커야 합니다
 const BUF_KEEP = 1400;
@@ -163,7 +167,9 @@ export function createNet(opts) {
     });
     c.on('broadcast', { event: 'say' }, (msg) => {
       const p = msg?.payload; if (!p || p.id === me.id) return;
-      const r = peer(p.id); r.say = String(p.text || '').slice(0, 80); r.sayT = performance.now();
+      /* 들어올 때 한 번 가립니다 — 그리는 쪽(이름표·말풍선·대화 기록)이
+         여럿이라, 그릴 때 가리면 한 군데를 빠뜨리는 순간 뚫립니다. */
+      const r = peer(p.id); r.say = maskProfanity(String(p.text || '').slice(0, 80)); r.sayT = performance.now();
       opts.onSay?.(r, r.say);
     });
     c.on('broadcast', { event: 'emo' }, (msg) => {
@@ -239,7 +245,7 @@ export function createNet(opts) {
     } catch {}
   }
   function say(text) {
-    const t = String(text || '').slice(0, 80);
+    const t = maskProfanity(String(text || '').slice(0, 80));
     if (!t) return;
     if (N.mode === 'online' && ch)
       try { ch.send({ type: 'broadcast', event: 'say', payload: { id: me.id, text: t } }); } catch {}

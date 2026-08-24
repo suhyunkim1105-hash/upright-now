@@ -5,7 +5,7 @@
    (캠퍼스 위에 놓을 때는 땅이 이미 있습니다).
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
-import { M, box, cyl, prism, win, door, steps, column, tree, bush, plate, sign } from './parts.js';
+import { M, box, cyl, prism, win, door, archPortal, apron, column, tree, bush, plate, sign } from './parts.js';
 
 /* ══════════════════════════════════════════════════════════
    기린캠퍼스 건물 여섯 채 — 아이소메트릭 아이콘.
@@ -69,7 +69,8 @@ export function mainHall(g, opt = {}) {
   box(g, .07, .23, .2, .02, M(P.trim, .4), 0, Y + .53 + COL + 1.06, PZ + .84);
   box(g, .18, .07, .2, .02, M(P.trim, .4), .055, Y + .53 + COL + .98, PZ + .84);
   door(g, P, 0, Y + 1.3, D / 2 + .12, 2.1, 2.5);
-  steps(g, P, 0, Y + .78, D / 2 + 1.0, 3.6, 4);
+  archPortal(g, P, 0, Y + 1.3 - (2.5) / 2, D / 2 + .12, 2.1, 2.5);
+  apron(g, P, 0, 0, D / 2 + 1.0, 4.2);
   /* 옥상 — 테 · 바닥 · 물매 · 깃대 */
   const yT = Y + H1 + .34 + H2 + .36;
   box(g, W + .52, .5, D + .52, .12, M(P.roof), 0, yT, 0);
@@ -128,7 +129,8 @@ export function library(g, opt = {}) {
     b.rotation.z = -s * .28;
   });
   door(g, P, 0, Y + 1.35, D / 2 + .12, 2.3, 2.6);
-  steps(g, P, 0, Y + .78, D / 2 + .95, 4.0, 4);
+  archPortal(g, P, 0, Y + 1.35 - (2.6) / 2, D / 2 + .12, 2.3, 2.6);
+  apron(g, P, 0, 0, D / 2 + .95, 4.2);
   /* 돔 */
   const yT = Y + H1 + .36 + H2 + .38;
   box(g, W + .54, .5, D + .54, .12, M(P.roof), 0, yT, 0);
@@ -190,8 +192,9 @@ export function dorm(g, opt = {}) {
     [-.6, 0, .6].forEach((dx) => box(g, .08, .46, .1, .03, M(P.trim, .5), x + dx, yHi - .54, D / 2 + .74));
   });
   door(g, P, 0, Y + 1.2, D / 2 + .12, 1.9, 2.3);
+  archPortal(g, P, 0, Y + 1.2 - (2.3) / 2, D / 2 + .12, 1.9, 2.3);
   box(g, 3.0, .2, 1.5, .07, M(P.roof, .6), 0, Y + 2.6, D / 2 + .7);   // 문 위 차양
-  steps(g, P, 0, Y + .72, D / 2 + 1.1, 3.0, 3);
+  apron(g, P, 0, 0, D / 2 + 1.1, 4.2);
   const yT = Y + H1 + .3 + H2 + .34;
   box(g, W + .48, .5, D + .48, .12, M(P.roof), 0, yT, 0);
   box(g, W - .1, .34, D - .1, .1, M(P.roofDark, .7), 0, yT + .3, 0);
@@ -238,7 +241,8 @@ export function union(g, opt = {}) {
   aw.rotation.x = -.2;
   [-3.6, 3.6].forEach((x) => cyl(g, .07, .07, 1.5, 8, M(P.trim, .5), x, Y + .9, D / 2 + 1.5));
   door(g, P, 0, Y + 1.25, D / 2 + .12, 2.4, 2.4);
-  steps(g, P, 0, Y + .74, D / 2 + 1.05, 3.4, 3);
+  archPortal(g, P, 0, Y + 1.25 - (2.4) / 2, D / 2 + .12, 2.4, 2.4);
+  apron(g, P, 0, 0, D / 2 + 1.05, 4.2);
   /* 게시판 — 학생회관다움 */
   box(g, 1.9, 1.5, .18, .08, M(0x8E6238, .75), -3.5, Y + 1.5, D / 2 + .3);
   box(g, 1.6, 1.2, .2, .05, M(0x4E7C52, .8), -3.5, Y + 1.52, D / 2 + .36);
@@ -273,7 +277,8 @@ export function arcade(g, opt = {}) {
     win(g, P, -W / 2 - .02, Y + H1 * .62, z, -Math.PI / 2, 1.3, 1.3, 'round');
   });
   door(g, P, 0, Y + 1.3, D / 2 + .12, 2.4, 2.5);
-  steps(g, P, 0, Y + .78, D / 2 + 1.05, 3.4, 3);
+  archPortal(g, P, 0, Y + 1.3 - (2.5) / 2, D / 2 + .12, 2.4, 2.5);
+  apron(g, P, 0, 0, D / 2 + 1.05, 4.2);
   /* 전구를 두른 간판 — 밤에 여기만 눈에 띕니다 */
   const sg = sign(g, '미니게임', 0, Y + H1 - .5, D / 2 + .24, 4.2, 1.15, '#4A3478', '#FFE9A8');
   for (let i = 0; i < 9; i++) {
@@ -330,7 +335,8 @@ export function shop(g, opt = {}) {
     win(g, P, -W / 2 - .02, Y + H1 * .55, z, -Math.PI / 2, 1.5, 1.7);
   });
   door(g, P, 0, Y + 1.25, D / 2 + .12, 2.0, 2.4);
-  steps(g, P, 0, Y + .74, D / 2 + 1.0, 3.0, 2);
+  archPortal(g, P, 0, Y + 1.25 - (2.4) / 2, D / 2 + .12, 2.0, 2.4);
+  apron(g, P, 0, 0, D / 2 + 1.0, 4.2);
   /* 줄무늬 차양 — 가게의 표시 */
   [-2.5, 0, 2.5].forEach((x) => {
     const wdt = x === 0 ? 2.6 : 2.4;

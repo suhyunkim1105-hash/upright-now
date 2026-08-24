@@ -120,8 +120,12 @@ export const FIELDS = [
   { t: 'tennis', x: 118, z: -34, w: 40, d: 30, ry: 0 },      // 테니스 넷
   { t: 'ball',   x: -118, z: 96, w: 56, d: 50, ry: 0 },      // 야구장
   { t: 'rugby',  x: -34, z: 106, w: 62, d: 36, ry: 0 },      // 럭비 · 미식축구
-  { t: 'lot',    x:  22, z:  22, w: 40, d: 34, ry: 0 },      // 주차장
-  { t: 'lot',    x:  86, z: 100, w: 44, d: 30, ry: 0 },
+  /* 주차장은 **가장자리**입니다. 반지름 22 에 두었더니 분수 광장
+     바로 옆이 주차장이었습니다 — 그런 대학은 없습니다. 실제로도
+     주차장은 정문 근처나 건물 뒤편, 사람 동선 밖에 있습니다. */
+  { t: 'lot',    x: 132, z:  38, w: 34, d: 46, ry: 0 },      // 동쪽 가장자리
+  { t: 'lot',    x:  86, z: 100, w: 44, d: 30, ry: 0 },      // 정문 들어와 오른쪽
+  { t: 'lot',    x: -118, z: -30, w: 30, d: 40, ry: 0 },     // 서쪽 건물 뒤
   { t: 'pond',   x: -126, z: 34, w: 46, d: 34, ry: 0 },      // 못
   { t: 'amphi',  x: -126, z: -6, w: 30, d: 30, ry: 0 },      // 야외극장
   { t: 'court',  x:  72, z: -46, w: 26, d: 20, ry: 0 },      // 농구 코트
@@ -477,16 +481,22 @@ function beyond(g) {
   const towers = KIT.CITY.tower;
   const spots = new Map();
   const put = (file, s) => { if (!spots.has(file)) spots.set(file, []); spots.get(file).push(s); };
-  for (let i = 0; i < 64; i++) {
-    const a = rnd() * TAU;
-    const d = 34 + rnd() * 78;
-    /* 탑은 멀리, 낮은 건물은 가까이 — 도시가 안쪽으로 낮아집니다 */
-    const tall = d > 56 && rnd() < .45;
+  /* **네모 둘레에서 바깥으로** 밉니다. 타원으로 잡으면 45° 근처에서
+     점이 네모 안으로 들어와 캠퍼스 한복판에 건물이 섭니다. */
+  for (let i = 0; i < 68; i++) {
+    const d = 30 + rnd() * 86;
+    const side = i % 4;
+    let x, z;
+    if (side === 0)      { x = (rnd() - .5) * 2 * (SITE.hx + d); z = -(SITE.hz + d); }
+    else if (side === 1) { x = (rnd() - .5) * 2 * (SITE.hx + d); z =  (SITE.hz + d); }
+    else if (side === 2) { x = -(SITE.hx + d); z = (rnd() - .5) * 2 * (SITE.hz + d); }
+    else                 { x =  (SITE.hx + d); z = (rnd() - .5) * 2 * (SITE.hz + d); }
+    /* 확실히 부지 밖인지 한 번 더 봅니다 — 여기서 새면 캠퍼스가 깨집니다 */
+    if (Math.abs(x) < SITE.hx + 12 && Math.abs(z) < SITE.hz + 12) continue;
+    const tall = d > 60 && rnd() < .5;
     const list = tall ? towers : kinds;
     put(list[(rnd() * list.length) | 0], {
-      x: Math.cos(a) * (SITE.hx + d), z: Math.sin(a) * (SITE.hz + d),
-      ry: Math.round(rnd() * 4) * (Math.PI / 2),
-      tone: (i * 3) % 6,
+      x, z, ry: Math.round(rnd() * 4) * (Math.PI / 2), tone: (i * 3) % 6,
     });
   }
   for (const [file, list] of spots) {
@@ -505,6 +515,7 @@ function beyond(g) {
       const a = rnd() * TAU;
       const d = minD + rnd() * (maxD - minD);
       const x = Math.cos(a) * (SITE.hx + d), z = Math.sin(a) * (SITE.hz + d);
+      if (Math.abs(x) < SITE.hx + 20 && Math.abs(z) < SITE.hz + 20) continue;
       const h = hMin + rnd() * (hMax - hMin);
       eul.set(0, rnd() * TAU, 0); q.setFromEuler(eul);
       sc.set(8 + rnd() * 18, h, 8 + rnd() * 18);
@@ -533,11 +544,27 @@ function beyond(g) {
    실제 캠퍼스에는 이름 없는 작은 건물이 많습니다 — 기계실 · 창고 ·
    경비실 · 매점. 스물넷이 다 강의동이면 오히려 비현실적입니다.
    자리는 큰 건물 사이의 남는 틈이고, avoid 가 겹침을 막습니다. */
+/* 정문 대로(x 0, 폭 11)와 겹치지 않게 x 를 ±10 밖으로 둡니다 —
+   [4, 68] 이 대로 한복판이라 길에 건물이 서 있었습니다. */
 const ANNEX = [
-  [-62, -6], [-30, 24], [12, -18], [58, -8], [86, 40], [-96, 42],
-  [-52, -60], [30, -64], [66, -30], [-24, -8], [104, 62], [-108, 78],
-  [56, 30], [-70, 106], [116, -8], [4, 68],
+  [-62, -6], [-30, 24], [22, -18], [58, -8], [86, 40], [-96, 42],
+  [-52, -60], [30, -64], [66, -30], [-28, -8], [104, 62], [-108, 78],
+  [56, 30], [-70, 106], [116, -8], [26, 74],
 ];
+/* ---- 건물 앞 포석 ----
+   "대학인데 바닥이 초원" 의 나머지 절반입니다. 잔디가 벽까지 오면
+   들판에 선 집이고, 건물 발치에 돌이 깔려야 캠퍼스가 됩니다.
+   길과 별개로, 건물마다 제 발치를 갖습니다. */
+function forecourts(g, buildings) {
+  const stone = M(PAL.stone, .82), kerb = M(PAL.stoneDark, .84);
+  for (const b of buildings) {
+    const ry = ryOf(b.face);
+    const bw = (b.w || 20) * (b.s || 1), bd = (b.d || 11) * (b.s || 1);
+    slab(g, bw + 9, bd + 11, kerb, b.x, .100, b.z, -ry);
+    slab(g, bw + 7, bd + 9, stone, b.x, .104, b.z, -ry);
+  }
+}
+
 function annexes(g, solid, avoid) {
   const files = [].concat(KIT.CITY.small, KIT.CITY.wide);
   const spots = new Map();
@@ -559,6 +586,8 @@ export function buildSite(parent, solid, avoid) {
   parent.add(g);
 
   ground(g);
+  /* 포석을 길보다 **먼저** 깝니다 — 나중에 깔면 길 위를 덮습니다 */
+  forecourts(g, BUILDINGS);
   const built = roads(g);
   fields(g, solid);
   fence(g, solid);

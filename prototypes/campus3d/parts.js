@@ -89,11 +89,65 @@ export function door(p, C, x, y, z, w, h) {
   });
   return g;
 }
-/* ---- 계단 — 아래로 갈수록 넓어집니다 ---- */
-export function steps(p, C, x, y, z, w, n = 3) {
-  for (let i = 0; i < n; i++)
-    box(p, w + i * .5, .26, .5 + i * .12, .05, M(i % 2 ? C.stoneDark : C.stone, .7),
-        x, y - i * .24, z + i * .38);
+/* ---- 현관 — 계단이 아니라 아치 ----
+   전 판은 문 앞에 계단 서너 단을 깔았습니다. 그런데 그 계단은
+   **바닥보다 아래로** 내려가서 잔디에 반쯤 묻혔고, 문과도 떨어져
+   회색 판때기가 따로 놓인 것처럼 보였습니다.
+
+   대학 건물의 현관은 계단이 아니라 **아치**가 만듭니다. 문을 감싸는
+   반원 테두리 하나면 같은 벽이 현관이 됩니다 — 그리고 아치는 우리
+   월드의 다른 아치창과 같은 어휘라 재질이 안 갈라집니다.
+
+     아치 링   문 위를 감싸는 반원. 벽보다 앞으로 나옵니다
+     필라스터  아치를 받치는 납작한 기둥 둘
+     키스톤    아치 꼭대기의 쐐기돌
+     포석      문 앞 바닥. 잔디가 벽까지 오는 것을 막습니다
+
+   높이 차를 없앴으므로 계단이 필요 없습니다 — 문턱만 한 단. */
+export function archPortal(p, C, x, y, z, w, h) {
+  const g = new THREE.Group(); g.position.set(x, y, z); p.add(g);
+  const hw = w / 2 + .42;             // 아치 안쪽 반지름
+  const t = .34;                      // 테두리 두께
+
+  /* 아치 링 — 바깥 반원에서 안쪽 반원을 뺍니다 */
+  const sh = new THREE.Shape();
+  sh.absarc(0, 0, hw + t, 0, Math.PI, false);
+  sh.lineTo(-hw, 0);
+  sh.absarc(0, 0, hw, Math.PI, 0, true);
+  sh.closePath();
+  const ring = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(sh, { depth: .42, bevelEnabled: true,
+      bevelSize: .05, bevelThickness: .05, bevelSegments: 2, curveSegments: 14 }),
+    M(C.trim, .62));
+  ring.position.set(0, h * .52, .06);
+  ring.castShadow = true; ring.receiveShadow = true;
+  g.add(ring);
+
+  /* 필라스터 둘 — 아치를 받칩니다. 없으면 아치가 벽에 떠 있습니다 */
+  [-1, 1].forEach((s) => {
+    box(g, t, h * .52, .44, .05, M(C.trim, .6), s * (hw + t / 2), h * .26, .06);
+    box(g, t + .22, .2, .58, .05, M(C.trim, .5), s * (hw + t / 2), h * .52, .06);
+    box(g, t + .26, .18, .6, .05, M(C.trim, .5), s * (hw + t / 2), .09, .06);
+  });
+  /* 키스톤 */
+  box(g, .38, .54, .5, .05, M(C.stone, .6), 0, h * .52 + hw + t * .5, .1);
+
+  /* 아치 안쪽 벽 — 문이 조금 들어가 앉게 만듭니다 */
+  box(g, hw * 2, h * .52 + hw, .16, .04, M(C.stoneDark, .8), 0, (h * .52 + hw) / 2, -.02);
+  return g;
+}
+
+/* ---- 문 앞 포석 ----
+   계단을 대신합니다. 문턱 한 단과 바닥 판만 — 잔디가 벽까지 오면
+   대학이 아니라 들판에 선 집이 됩니다. */
+export function apron(p, C, x, y, z, w) {
+  /* 얇게. 두껍게 깔았더니 **흰 욕조**가 문 앞에 놓인 것처럼 보였습니다 —
+     포석은 바닥이지 물건이 아닙니다. 높이를 6cm 로 낮추고, 색도 밝은
+     흰돌에서 캠퍼스 포석과 같은 따뜻한 값으로 내립니다. */
+  box(p, w + 3.0, .06, 3.8, .04, M(0xE6DCC4, .84), x, .126, z + 1.2);
+  box(p, w + 1.8, .05, 2.6, .03, M(0xD8CCB0, .86), x, .152, z + 1.0);
+  /* 문턱 한 단 — 계단 대신 이것 하나뿐입니다 */
+  box(p, w + .5, .12, .55, .04, M(C.stone, .72), x, .17, z - .05);
 }
 /* ---- 기둥 — 주초 · 몸통 · 주두 ---- */
 export function column(p, C, x, y, z, h, r = .2) {

@@ -503,6 +503,19 @@ import { createSky, weatherKind } from './sky.js';
    어둡게 만들어 **따로 놓인 상자들을 한 공간으로** 묶어 줍니다. */
 import { EffectComposer, RenderPass } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
+/* 계단식 그림자 맵. 캠퍼스가 반지름 132 가 되면서 그림자 상자 하나로는
+   못 덮습니다 — 사람 주위 22칸만 덮으니 멀리 있는 건물에 그림자가
+   아예 없었습니다. CSM 은 시야를 네 칸으로 쪼개 가까운 곳은 촘촘히,
+   먼 곳은 성기게 덮습니다. */
+import { CSM } from './vendor/ext/CSM.js';
+/* 레이캐스트 가속. 클릭해서 걷기와 카메라 가림 판정이 매 프레임
+   광선을 쏘는데, 물체가 늘수록 선형으로 느려집니다 — 실험판에서
+   광선 400발이 메시 1,403개에 733ms 였습니다. */
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast }
+  from './vendor/ext/three-mesh-bvh.js';
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
 import { createMusic, MUSIC } from './music.js';
 
 const $ = (s) => document.querySelector(s);
@@ -653,17 +666,65 @@ function shadowPolicy(root) {
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
     bb.getSize(sz);
-    if (Math.max(sz.x, sz.y, sz.z) < 1.1) { o.castShadow = false; off++; }
+    if (Math.max(sz.x, sz.y, sz.z) < 3.0) { o.castShadow = false; off++; }
     else keep++;
   });
   return { off, keep };
 }
 campusRoot.updateMatrixWorld(true);
 const SHP = shadowPolicy(campusRoot);
+
+/* ══════ 계단식 그림자 ══════
+   ?csm=0 으로 끄면 예전처럼 해 하나가 사람을 따라다닙니다.
+   느린 기기에서 화질 사다리가 그림자를 끌 때도 여기로 돌아옵니다. */
+const CSM_ON = new URLSearchParams(location.search).get('csm') !== '0';
+let csm = null;
+function csmOn() {
+  if (csm || !CSM_ON) return;
+  try {
+    csm = new CSM({
+      maxFar: 150,          // 이 너머는 어차피 안개에 잠깁니다(밀도 0.0075)
+      cascades: 2,          // 셋으로 재니 14fps 였습니다. 둘이면 먼 그림자는 남고 값은 3분의 2
+      mode: 'practical',
+      parent: scene,
+      shadowMapSize: 1024,
+      /* 해가 서 있는 쪽 — aimSun 이 쓰던 LDIR 과 같은 방향이라야
+         그림자가 갑자기 반대로 눕지 않습니다. */
+      lightDirection: new THREE.Vector3(26, -40, -20).normalize(),
+      camera: cam,
+    });
+    csm.fade = true;        // 칸 경계에서 그림자가 끊기지 않게
+    /* 재질마다 셰이더를 갈아 끼워야 먹습니다. 한 번만 하면 되고,
+       이때 한 번 멈칫합니다 — 굽기 직후라 사용자는 못 느낍니다. */
+    scene.traverse((o) => {
+      if (o.isMesh && o.material && !Array.isArray(o.material)) {
+        try { csm.setupMaterial(o.material); } catch (e) { /* 미지원 재질 */ }
+      }
+    });
+    sun.visible = false;    // 해와 CSM 을 같이 켜면 그림자가 두 겹입니다
+    console.log('CSM 켬 · 칸 3 · maxFar 200');
+  } catch (e) { console.warn('CSM 을 못 켰습니다 — 해 하나로 갑니다', e); csm = null; }
+}
+function csmOff() {
+  if (!csm) return;
+  csm.remove(); csm.dispose(); csm = null;
+  sun.visible = true;
+}
 { const t0 = performance.now(); const r = bake(campusRoot, { tile: 22 });
   campusRoot.add(r.group);
   console.log(`캠퍼스 굽기 ${r.before} → ${r.after} (${(performance.now() - t0) | 0}ms)`);
   console.log(`그림자 정책: 끔 ${SHP.off} · 남김 ${SHP.keep}`); }
+/* 굽기가 재질을 새로 만들기 때문에 **구운 뒤에** 켭니다.
+   먼저 켜면 구운 덩어리에는 CSM 셰이더가 안 붙습니다. */
+csmOn();
+/* BVH — 굽고 나면 지오메트리가 크게 줄어 트리 만드는 값도 같이 줍니다 */
+{ const t0 = performance.now(); let n = 0;
+  campusRoot.traverse((o) => {
+    if (o.isMesh && o.geometry && !o.geometry.boundsTree) {
+      try { o.geometry.computeBoundsTree(); n++; } catch (e) { /* 인덱스 없는 것 */ }
+    }
+  });
+  console.log(`BVH ${n}개 (${(performance.now() - t0) | 0}ms)`); }
 SKY.collect(campusRoot);
 /* 기상청 값을 한 번 받아 창밖과 하늘을 맞춥니다 — 창은 비 오는데 하늘이
    맑으면 그 어긋남이 제일 먼저 눈에 띕니다. 30분마다 다시 봅니다. */
@@ -2434,6 +2495,7 @@ function wardrobeHTML() {
 function setShadows(on) {
   if (renderer.shadowMap.enabled === on) return;
   renderer.shadowMap.enabled = on;
+  if (on) csmOn(); else csmOff();
   shadowsOff = !on;
   scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
   SAVE.shadow = on; UI.save();
@@ -2608,6 +2670,8 @@ window.__W = { renderer, scene, cam, sun, hemi, amb, get composer() { return com
     return { 드로우콜: i.render.calls, 삼각형: i.render.triangles,
       메시: mesh, 인스턴스메시: inst, 인스턴스합: instTotal, 조명: lights,
       머티리얼: mats.size, 지오메트리: i.memory.geometries, 텍스처: i.memory.textures,
+      CSM: csm ? csm.cascades + '칸' : '끔',
+      BVH: (() => { let n = 0; campusRoot.traverse((o) => { if (o.geometry && o.geometry.boundsTree) n++; }); return n; })(),
       fps: fpsNow, 후처리: !!composer, 안개: scene.fog ? scene.fog.density : 0 };
   } };
 
@@ -3052,6 +3116,9 @@ function tick(now) {
       sun.shadow.map?.dispose(); sun.shadow.map = null;
     }
     else if (f < 22 && renderer.shadowMap.enabled) {
+      /* CSM 이 켜져 있으면 그것부터 끕니다 — 안 끄면 그림자 맵을
+         셋씩 그리면서 '껐다' 고 말하게 됩니다. */
+      csmOff();
       renderer.shadowMap.enabled = false;
       scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
       shadowsOff = true;
@@ -3060,6 +3127,8 @@ function tick(now) {
     else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
     frames = 0; acc = 0;
   }
+  /* CSM 은 카메라를 따라 칸을 다시 잡아야 합니다 */
+  if (csm) csm.update();
   if (composer) composer.render(); else renderer.render(scene, cam);
 }
 function hitCam(x, z) {

@@ -2937,6 +2937,10 @@ addEventListener('resize', resize); resize();
    (실제로 이 판을 재려다 막혀서 이 줄이 생겼습니다.) */
 window.__W = { renderer, scene, cam, sun, hemi, amb, get composer() { return composer; },
   get n8ao() { return n8ao; }, THREE,
+  /* 걷는 상태를 밖에서 잴 수 있게 내놓습니다 — 회전이 자연스러운지는
+     눈으로 못 재고 각도를 찍어 봐야 압니다. */
+  get P() { return P; }, get playerRig() { return playerRig; },
+  get yaw() { return yaw; },
   /* 개발용 순간이동 — 넓힌 캠퍼스의 먼 자리를 확인하려면 걸어서는
      한참입니다. 각도(도)와 반지름으로 부릅니다: __W.tp(45, 110) */
   tp(deg, r) {
@@ -3040,12 +3044,17 @@ function tick(now) {
     let wx = -ix * c + iz * s, wz = ix * s + iz * c;
     /* 눌러서 걸어가는 중이면 방향은 목표가 정합니다 */
     if (goTo) { wx = Math.sin(P.dirWant); wz = Math.cos(P.dirWant); }
-    const nx = P.x + wx * speed * dt, nz = P.z + wz * speed * dt;
+    P.dir = Math.atan2(wx, wz);
+    /* 몸이 아직 못 돌아선 각도. 이만큼 벌어져 있으면 속도를 죽입니다 —
+       안 그러면 옆구리를 보인 채 앞으로 미끄러져 갑니다. 크게 꺾을수록
+       한 박자 서서 돌고 나서 나아가는 그림이 됩니다. */
+    const lag = Math.abs(((P.dir - playerRig.rotation.y + Math.PI * 3) % TAU) - Math.PI);
+    const brake = 1 - .55 * Math.min(1, Math.max(0, (lag - .45) / 1.5));
+    const nx = P.x + wx * speed * brake * dt, nz = P.z + wz * speed * brake * dt;
     /* 가로막는 것이 없어도 **턱이 너무 높으면** 못 갑니다 */
     const tooHigh = (ax, az) => groundAt(ax, az, P.y) - P.y > STEP_MAX;
     if (!hit(nx, P.z) && !tooHigh(nx, P.z)) P.x = nx;
     if (!hit(P.x, nz)) P.z = nz;
-    P.dir = Math.atan2(wx, wz);
     P.sp = Math.min(run, P.sp + dt * 8);
     /* 앞으로 걸을 때만 카메라가 뒤로 따라옵니다.
        옆걸음(A·D)에도 따라 돌면 카메라가 돌고 → 그 방향으로 다시 걷게 되어
@@ -3082,7 +3091,19 @@ function tick(now) {
     const up = gy > P.y;
     P.y += (gy - P.y) * Math.min(1, dt * (up ? 16 : 9)); }
   playerRig.position.set(P.x, P.y, P.z);
-  playerRig.rotation.y = smoothAngle(playerRig.rotation.y, P.dir, 1 - Math.pow(.00005, dt));
+  /* 몸은 **각속도 상한**을 두고 돕니다.
+     비율로만 감으면(전에 쓰던 1 - .00005^dt 는 프레임당 15%) 180도 전환이
+     0.3초에 끝나서, 도는 게 아니라 팽이처럼 튕겨 돌아갑니다. 방향을
+     동서남북 네 칸으로 스냅해서가 아니라 **모든 각도에서** 그랬습니다.
+
+     상한을 두면 작은 보정은 그대로 즉각적이고(각도가 작으니 한두 프레임에
+     닿습니다), 크게 꺾을 때만 눈에 보이는 호를 그립니다. 위 brake 와
+     짝입니다 — 도는 동안 속도가 죽으므로 호가 제자리 회전에 가까워집니다. */
+  {
+    const d = ((P.dir - playerRig.rotation.y + Math.PI * 3) % TAU) - Math.PI;
+    const rate = Math.min(TURN_MAX, Math.max(TURN_MIN, Math.abs(d) * 6.5));
+    playerRig.rotation.y += Math.sign(d) * Math.min(Math.abs(d), rate * dt);
+  }
   /* 감정표현이 도는 동안은 그 자세가 이깁니다 */
   let emoting = false;
   /* 앉아 있는 동안은 감정표현 자세를 안 씁니다. 앉은 채로 3을 눌렀더니
@@ -3464,6 +3485,9 @@ function hitCam(x, z) {
   }
   return false;
 }
+/* 몸이 도는 속도(라디안/초). 상한 7 이면 180도 전환에 0.45초 —
+   달려가다 꺾는 것이 보이면서도 조작이 굼뜨지 않은 값입니다. */
+const TURN_MAX = 7.0, TURN_MIN = 3.2;
 function smoothAngle(a, b, t) {
   const d = ((b - a + Math.PI * 3) % TAU) - Math.PI;
   return a + d * t;

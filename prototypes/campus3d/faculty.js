@@ -35,6 +35,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
 import { M } from './parts.js';
+import { BUILDINGS as PLAN_B, ryOf } from './plan.js';
 
 /* 화강암 캠퍼스의 색. 경희대 국제캠퍼스가 화강암과 밝은 석재를 씁니다 —
    우리 파스텔 월드에 그대로 넣으면 탁하므로 한 단계 밝게 당겼습니다. */
@@ -641,37 +642,13 @@ KIND.atrium = (g, o) => {
    좌표는 **정문 축 기준 상대각(도)** 과 반지름입니다. campus.js 의
    들어갈 수 있는 여섯 채와 같은 방식이라, 축을 옮기면 같이 따라옵니다.
    ══════════════════════════════════════════════════════════ */
-export const FACULTIES = [
-  /* 각도와 반지름을 손으로 고르지 않았습니다 — 고리 세 개에 슬롯을
-     나누고 배정한 결과입니다. 반지름 r 의 고리에 N 채를 고르게 놓으면
-     이웃 사이가 2·r·sin(π/N) 이라, N 만 맞추면 겹칠 수가 없습니다.
-
-       고리 A  r 54   45°마다 — 자주 가는 건물
-       고리 B  r 90   30°마다 — 강의동
-       고리 C  r 124  45°마다 — 기숙사 · 부속
-
-     정문 축 좌우 14°는 비워 둡니다. 배치를 바꾸려면 값을 여기서
-     고치지 말고 scratchpad/p7-rings.mjs 를 고쳐 다시 돌립니다 —
-     campus.js 의 여섯 채와 함께 계산돼야 간격이 맞습니다. */
-  { name: '인문대학', kind: 'slab', deg: 45, r: 54, w: 22, d: 11, h: 12 },
-  { name: '사회과학대학', kind: 'brick', deg: 90, r: 54, w: 22, d: 11, h: 12 },
-  { name: '생명과학대학', kind: 'tower_lab', deg: 270, r: 54, w: 22, d: 11, h: 12 },
-  { name: '경영대학', kind: 'atrium', deg: 315, r: 54, w: 22, d: 11, h: 12 },
-  { name: '공과대학', kind: 'wing', deg: 15, r: 90, w: 24, d: 11, h: 13 },
-  { name: '전자정보대학', kind: 'tower_lab', deg: 45, r: 90, w: 24, d: 11, h: 13 },
-  { name: '응용과학대학', kind: 'slab', deg: 105, r: 90, w: 22, d: 11, h: 12 },
-  { name: '외국어대학', kind: 'brick', deg: 135, r: 90, w: 24, d: 11, h: 12 },
-  { name: '국제대학', kind: 'atrium', deg: 165, r: 90, w: 22, d: 11, h: 11 },
-  { name: '예술디자인대학', kind: 'wing', deg: 195, r: 90, w: 22, d: 11, h: 12 },
-  { name: '평화의전당', kind: 'hall', deg: 225, r: 90, w: 26, d: 18, h: 15 },
-  { name: '체육관', kind: 'gym', deg: 255, r: 90, w: 26, d: 16, h: 10 },
-  { name: '대학원', kind: 'admin', deg: 22.5, r: 124, w: 20, d: 12, h: 14 },
-  { name: '간호과학대학', kind: 'slab', deg: 67.5, r: 124, w: 22, d: 11, h: 11 },
-  { name: '약학대학', kind: 'tower_lab', deg: 112.5, r: 124, w: 22, d: 11, h: 12 },
-  { name: '박물관', kind: 'library', deg: 202.5, r: 124, w: 20, d: 12, h: 11 },
-  { name: '제1기숙사', kind: 'hall_res', deg: 247.5, r: 124, w: 24, d: 10, h: 14 },
-  { name: '제2기숙사', kind: 'hall_res', deg: 292.5, r: 124, w: 24, d: 10, h: 14 },
-];
+/* 배치는 plan.js 가 들고 있습니다 — 들어갈 수 있는 여섯 채와 같은
+   표에서 읽어야 서로 겹치지 않습니다. 여기서는 `enter` 가 없는 것,
+   즉 겉모습만 있는 건물만 가져옵니다. */
+export const FACULTIES = PLAN_B.filter((b) => !b.enter).map((b) => ({
+  name: b.n, kind: b.kind, x: b.x, z: b.z, face: b.face,
+  w: b.w, d: b.d, h: b.h,
+}));
 
 /**
  * 단과대학들을 세웁니다.
@@ -684,10 +661,9 @@ export function buildFaculties(parent, axis, solid, label) {
   const out = [];
   let ci = 0;
   for (const f of FACULTIES) {
-    const th = axis + f.deg * Math.PI / 180;
-    const x = Math.cos(th) * f.r, z = Math.sin(th) * f.r;
-    /* 정면이 캠퍼스 안쪽(광장)을 봅니다 */
-    const ry = Math.atan2(-Math.cos(th), -Math.sin(th));
+    /* 좌표를 그대로 씁니다 — 배치도에 적힌 자리가 곧 세계 좌표입니다 */
+    const x = f.x, z = f.z;
+    const ry = ryOf(f.face);
 
     const g = new THREE.Group();
     g.position.set(x, 0, z);

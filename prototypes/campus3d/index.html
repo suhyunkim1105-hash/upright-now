@@ -641,7 +641,10 @@ function aimSun(x, z) {
 /* ══════ 1. 캠퍼스 ══════ */
 const campusRoot = new THREE.Group(); scene.add(campusRoot);
 const CAMPUS = buildCampus(campusRoot);
+/* 부지가 네모라 반지름 하나로는 못 막습니다. 원으로 두면 네 귀퉁이가
+   잘려서 야구장과 숲에 못 들어갑니다. */
 const ISLAND_R = CAMPUS.HALF - 2.6;
+const SITE_HX = CAMPUS.SITE.hx - 3, SITE_HZ = CAMPUS.SITE.hz - 3;
 const waterJets = [];
 campusRoot.traverse((o) => {
   if (o.isMesh && o.material.transparent && o.geometry.type === 'CylinderGeometry'
@@ -939,7 +942,7 @@ function buildRoom(key) {
 const R_OUT = .46, R_IN = .30;
 const RING = []; for (let i = 0; i < 8; i++) RING.push([Math.cos(i / 8 * TAU), Math.sin(i / 8 * TAU)]);
 function hitCampus(x, z) {
-  if (x * x + z * z > ISLAND_R * ISLAND_R) return true;
+  if (Math.abs(x) > SITE_HX || Math.abs(z) > SITE_HZ) return true;
   for (let k = 0; k < CAMPUS.colliders.length; k++) {
     const c = CAMPUS.colliders[k];
     if (c.camOnly) continue;
@@ -1161,7 +1164,8 @@ cv.addEventListener('pointerup', (e) => {
   _ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
   _ray.setFromCamera(_ndc, cam);
   if (!_ray.ray.intersectPlane(_plane, _pt)) return;
-  if (Math.hypot(_pt.x, _pt.z) > (room ? 99 : ISLAND_R)) return;
+  if (room ? Math.hypot(_pt.x, _pt.z) > 99
+           : (Math.abs(_pt.x) > SITE_HX + 6 || Math.abs(_pt.z) > SITE_HZ + 6)) return;
   /* 길이 안 나오면(섬 밖·완전히 막힌 곳) 예전처럼 곧장 갑니다 —
      못 가는 것보다 벽에 붙어 보다 그만두는 쪽이 덜 답답합니다. */
   goPath = findPath(P.x, P.z, _pt.x, _pt.z);

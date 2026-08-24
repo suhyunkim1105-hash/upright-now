@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { M, roundedBox, cyl, prism, tree, bush } from './parts.js';
 import * as BLD from './bld.js';
-import { buildGrounds, OUTER } from './grounds.js';
+import { buildSite, SITE, BUILDINGS as PLAN_B, ryOf, inSite } from './plan.js';
 import { buildFaculties } from './faculty.js';
 
 export const PAL = {
@@ -26,41 +26,30 @@ export const PAL = {
 /* 건물 여섯 — 자리 · 방향 · 크기 · 안으로 들어갈 곳.
    ry 는 정면(+z)이 도는 각도입니다. 정면 방향 = (sin ry, cos ry). */
 /* 정문 축. campus.js 와 grounds.js 가 같은 값을 봐야 축이 안 갈라집니다. */
-const AXIS = Math.atan2(20.5, 20.5);
+/* 배치도는 plan.js 한 곳에 있습니다. 극좌표를 버리고 세계 좌표로
+   옮겼습니다 — 캠퍼스 배치도는 각도와 반지름이 아니라 지도로 읽는
+   것이고, 동심원으로 놓는 한 아무리 채워도 캠퍼스로 안 보입니다. */
+const AXIS = -Math.PI / 2;                 // 정문이 남(+z), 축은 z 방향
 
-/* 건물 여섯 — 정문 축 기준 상대각(도)과 반지름으로 놓습니다.
-   deg 0 이 정문 쪽, 180 이 그 반대(본관 자리)입니다. */
-const PLACE = [
-  { key: 'mainHall', zone: 'mainhall', name: '본관', sub: '강의실 · 대중음악',
-    deg: 180, r: 54, s: 1.9, w: 9.6, d: 6.2, front: 2.5 },
-  { key: 'library', zone: 'library', name: '도서관', sub: '백색소음 · 오래 앉는 자리',
-    deg: 135, r: 54, s: 1.9, w: 10, d: 6.4, front: 2.4 },
-  { key: 'union', zone: 'union', name: '학생회관', sub: '볼일 보는 곳',
-    deg: 225, r: 54, s: 1.6, w: 9, d: 5.6, front: 1.9 },
-  { key: 'arcade', zone: 'arcade', name: '미니게임관', sub: '3분만 놀고 가는 곳',
-    deg: 75, r: 90, s: 1.6, w: 8.4, d: 5.6, front: 1.9 },
-  { key: 'shop', zone: 'clubshop', name: '동아리 상점', sub: '옷 · 가구 · 알',
-    deg: 285, r: 90, s: 1.6, w: 8, d: 5.2, front: 1.8 },
-  { key: 'dorm', zone: 'dorm', name: '기숙사', sub: '내 방 · 1인실',
-    deg: 158, r: 124, s: 1.6, w: 8.2, d: 5.4, front: 1.9 },
-];
-
-export const BUILDINGS = PLACE.map((p) => {
-  const th = AXIS + p.deg * Math.PI / 180;
-  const x = Math.cos(th) * p.r, z = Math.sin(th) * p.r;
-  /* 정면이 광장을 보게 합니다 */
-  const ry = Math.atan2(-Math.cos(th), -Math.sin(th));
-  return { key: p.key, zone: p.zone, name: p.name, sub: p.sub,
-           x, z, ry, s: p.s, w: p.w, d: p.d, front: p.front, deg: p.deg, r: p.r };
-});
+export const BUILDINGS = PLAN_B.filter((b) => b.enter).map((b) => ({
+  key: b.enter,
+  zone: { mainHall: 'mainhall', library: 'library', union: 'union',
+          arcade: 'arcade', shop: 'clubshop', dorm: 'dorm' }[b.enter],
+  name: b.n,
+  sub: { mainHall: '강의실 · 대중음악', library: '백색소음 · 오래 앉는 자리',
+         union: '볼일 보는 곳', arcade: '3분만 놀고 가는 곳',
+         shop: '옷 · 가구 · 알', dorm: '내 방 · 1인실' }[b.enter],
+  x: b.x, z: b.z, ry: ryOf(b.face), s: b.s, w: b.w, d: b.d, front: b.front,
+}));
 
 const PLAZA_R = 12;
 /* 안쪽 반지름 — 광장 · 건물 여섯 · 앞마당 · 대로가 사는 곳입니다.
    "광장에서 문까지 5~9칸" 이 여기서 맞춰졌으므로 **건드리지 않습니다**. */
 const CORE = 40;
-/* 바깥 경계 — 담이 서는 자리. 섬이 아니라 캠퍼스가 되는 값입니다.
-   r 40~132 는 grounds.js 가 채웁니다. */
-const HALF = OUTER.far;
+/* 바깥 경계. **원이 아니라 네모입니다** — 실제 캠퍼스 배치도가 그렇고,
+   원이면 아무리 넓혀도 섬으로 읽힙니다. HALF 는 미니맵 축척용으로만
+   남습니다(부지의 절반 폭). */
+const HALF = SITE.hx;
 
 /* ══════════════════════════════════════════════════════════
    야외 구역 셋 — 운동장 · 호수 · 동아리 거리
@@ -178,7 +167,8 @@ function ground(g) {
      넓히기만 해서는 섬이 큰 섬이 될 뿐입니다 — **물가가 보이는 한**
      눈이 거기서 끝을 찾습니다. 대학은 담으로 끝나고, 담 너머가
      이어집니다. 바깥(r 40~132)은 grounds.js 가 깝니다. */
-  flat(cyl(g, CORE, CORE, 2.2, 72, M(PAL.grassDark, .86), 0, -1.06, 0));
+  /* 바닥은 plan.js 가 네모로 깝니다. 여기서는 광장 둘레만 한 겹
+     밝게 두어 중심이 어디인지 말합니다. */
   flat(cyl(g, CORE - .5, CORE - .5, 2.2, 72, M(PAL.grass, .86), 0, -1.0, 0));
   /* 잔디 얼룩 — 한 색으로 두면 당구대입니다.
 
@@ -1110,8 +1100,6 @@ export function buildCampus(scene) {
          천막 천(axis 'x' — 축이 용마루라 자락이 들립니다)과 깃발
          (axis 'y' — 축이 장대입니다). mesh.rotation[axis] =
          Math.sin(t * 1.7 + phase) * amp 면 충분합니다. */
-  /* 바깥 캠퍼스 — 안쪽이 다 선 뒤에 짓습니다. 안쪽에 이미 있는 것
-     위에 나무를 심지 않도록 inCore 로 물어봅니다. */
   const inCore = (x, z) => Math.hypot(x, z) < CORE + 2;
   /* 건물 자리를 바깥에도 알려 줍니다 — 안 알려 주면 건물 정면에
      나무가 서서 여섯 채가 다 가려집니다. */
@@ -1123,7 +1111,9 @@ export function buildCampus(scene) {
   const avoid = (x, z, m) =>
     BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < m) ||
     FAC.some((f) => Math.hypot(f.x - x, f.z - z) < m + Math.max(f.w, f.d) * .35);
-  const grounds = buildGrounds(g, solid, inCore, avoid);
+  /* 부지 — 바닥 · 굽은 길 · 운동장 · 주차장 · 못 · 숲 · 담 */
+  const grounds = buildSite(g, solid, (x, z, m) => inCore(x, z) || avoid(x, z, m));
 
-  return { group: g, colliders, portals, HALF, CORE, PLAZA_R, swans, lotus, fish, flutter, grounds, faculties: FAC, AXIS };
+  return { group: g, colliders, portals, HALF, CORE, PLAZA_R, SITE,
+           swans, lotus, fish, flutter, grounds, faculties: FAC, AXIS };
 }

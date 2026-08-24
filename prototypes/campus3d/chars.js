@@ -14,7 +14,22 @@ import * as THREE from 'three';
 import { M, roundedBox } from './parts.js';
 import { mergeGeometries } from './vendor/BufferGeometryUtils.js';
 
-const SK = { ink: 0x2E2A2E, white: 0xFFFFFF, blush: 0xF4A2A6, gum: 0xE08A94 };
+const SK = { ink: 0x241F24, white: 0xFFFFFF, blush: 0xF49AA4, gum: 0xE08A94 };
+
+/* ══ 비례 ══
+   랜딩 3D 에셋과 나란히 놓고 맞췄습니다.
+
+   그쪽 캐릭터는 **머리가 전체의 절반**에 가깝고 팔다리가 뭉툭합니다.
+   우리 쪽은 머리가 44% 라 사람에 가까웠고, 그래서 같은 종인데도
+   랜딩의 것이 "우리 캐릭터", 월드의 것이 "사람 인형" 으로 갈렸습니다.
+
+   머리 배율만 올리면 목이 늘어나 보이므로 기준 높이를 같이 내립니다.
+   HEAD_Y 는 걷기 · 쉬기 · 앉기 · 타기가 모두 쓰는 값이라 상수로
+   묶었습니다 — 전에는 여덟 군데에 1.48 이 흩어져 있어서 한 군데만
+   고치면 걸을 때와 앉을 때 머리 높이가 달라졌습니다. */
+export const HEAD_Y = 1.42;
+export const HEAD_S = 1.17;
+const NECK_Y = 1.27;
 
 /* ── 멀리 있는 사람 (character 의 opt.lod) ──
    아래 접기(fold)가 **그리는 횟수**를 줄입니다. 면 수는 그대로입니다.
@@ -96,11 +111,15 @@ function eyes(p, y, z, r, gap, opt = {}) {
     /* 흰자를 크게 두르고 눈꺼풀 선을 얹었더니 **부리부리한 인상** 이
        됐습니다. 이 스타일은 검은 알 하나에 빛 두 점이면 충분합니다. */
     if (opt.white) ell(p, r * 1.1, M(SK.white, .28), dx, y, z - r * .1, 1, 1.04, .6);
-    made.push(ell(p, r, M(SK.ink, .3), dx, y, z, .96, 1.04, .62));
+    /* 거칠기 .3 → .12. 랜딩 에셋의 눈은 **젖은 유리알**이라, 이 반짝임이
+       얼굴에서 유일하게 매끄러운 곳입니다. 나머지가 전부 무광 클레이라
+       여기만 반들거려도 재질이 갈라지지 않습니다 — 오히려 그 대비가
+       눈을 얼굴의 주인공으로 만듭니다. */
+    made.push(ell(p, r * 1.1, M(SK.ink, .12, { metalness: .04 }), dx, y, z, .96, 1.05, .66));
     /* 하이라이트는 **크게 하나** — 개구리 눈이 유일하게 합격한 이유가
        이 큰 빛점이었습니다. 작은 점 두 개는 멀리서 사라집니다. */
-    ell(p, r * .40, M(SK.white, .2), dx - s * r * .3, y + r * .3, z + r * .42, 1, 1, .55);
-    ell(p, r * .15, M(SK.white, .2), dx + s * r * .32, y - r * .34, z + r * .34, 1, 1, .5);
+    ell(p, r * .42, M(SK.white, .12), dx - s * r * .3, y + r * .34, z + r * .46, 1, 1, .55);
+    ell(p, r * .17, M(SK.white, .12), dx + s * r * .34, y - r * .36, z + r * .38, 1, 1, .5);
   });
   /* 눈 덩어리를 기억해 둡니다 — 깜빡임이 이 목록의 y 를 눌러서 만듭니다 */
   p.userData.eyeMeshes = (p.userData.eyeMeshes || []).concat(made);
@@ -108,7 +127,9 @@ function eyes(p, y, z, r, gap, opt = {}) {
 }
 /* 볼터치 — 두 뺨. 이게 있어야 얼굴에 온기가 돕니다 */
 function cheeks(p, x, y, z, r = .1) {
-  [-x, x].forEach((dx) => ell(p, r, M(SK.blush, .78), dx, y, z, 1, .68, .3));
+  /* 랜딩 쪽 볼은 더 큽니다 — 얼굴 반지름의 4분의 1쯤 되는 분홍 타원.
+     작으면 점으로 보이고, 점은 멀리서 사라집니다. */
+  [-x, x].forEach((dx) => ell(p, r * 1.22, M(SK.blush, .82), dx, y, z, 1, .66, .3));
 }
 
 /* 주둥이 — 둥글게 튀어나오고, 코와 입선이 붙습니다 */
@@ -690,10 +711,10 @@ function buildChar(parent, species, fit, opt) {
   });
 
   /* ── 목 · 머리 ── */
-  parts.neck = cyl(g, .14, .175, .16, 14, skin, 0, 1.30, -.005);
+  parts.neck = cyl(g, .152, .19, .15, 14, skin, 0, NECK_Y, -.005);
   const h = new THREE.Group();
-  h.position.y = 1.48;
-  h.scale.setScalar(1.0);
+  h.position.y = HEAD_Y;
+  h.scale.setScalar(HEAD_S);
   g.add(h);
   HEADS[species](h, C);
   h.traverse((o) => { o.castShadow = true; o.receiveShadow = true; });
@@ -761,7 +782,10 @@ function buildChar(parent, species, fit, opt) {
   /* ── 등딱지 — 거북이는 가방 대신 딱지를 멥니다. 종의 서명이
      머리가 아니라 **등**에 있으면 얼굴이 자유로워집니다. */
   if (species === '거북이') {
-    const b = new THREE.Group(); b.position.set(0, .95, -.26); g.add(b);
+    /* 머리를 1.17 배로 키우자 커진 뒤통수가 딱지 윗동을 덮었습니다.
+       딱지를 조금 내리고 뒤로 물립니다 — 종의 서명이 등에 있으려면
+       등에서 **보여야** 합니다. */
+    const b = new THREE.Group(); b.position.set(0, .88, -.32); g.add(b);
     carry = b; carryKey = 'shell';
     /* 돔 — 축 방향을 잘못 늘리면 옆으로 누운 부침개가 됩니다.
        회전 뒤 기준으로 세로(z)로 길게, 밖(y→-z)으로는 얕게. */
@@ -875,13 +899,13 @@ export function stride(g, t, sp) {
   P.torso.rotation.x = k * .11;
   P.torso.rotation.y = s * .12;
   P.torso.rotation.z = 0;
-  P.head.position.y = 1.48 + bob * .8;
+  P.head.position.y = HEAD_Y + bob * .8;
   P.head.position.z = 0;
   P.head.rotation.x = -k * .07;
   if (!g.userData.looking) P.head.rotation.y *= .82;
   P.head.rotation.z = -s * .05;
   blink(P, t * 1.4 + (g.userData.seed || 0), g.userData.seed || 0);
-  if (P.neck) { P.neck.rotation.x = 0; P.neck.position.z = -.005; P.neck.position.y = 1.30; }
+  if (P.neck) { P.neck.rotation.x = 0; P.neck.position.z = -.005; P.neck.position.y = NECK_Y; }
 }
 
 /** 서 있기 — 숨 쉬고, 가끔 두리번거립니다.
@@ -908,7 +932,7 @@ export function idle(g, t, seed = 0) {
   const br = Math.sin(t * 1.5 + seed) * .013;
   P.torso.position.y = .44 + br;
   P.torso.rotation.x = 0; P.torso.rotation.y = 0; P.torso.rotation.z = 0;
-  P.head.position.y = 1.48 + br;
+  P.head.position.y = HEAD_Y + br;
   P.head.position.z = 0;
   P.head.rotation.x = Math.sin(t * .7 + seed) * .03;
   P.head.rotation.z = 0;
@@ -923,7 +947,7 @@ export function idle(g, t, seed = 0) {
   P.arms.forEach((a, i) => { a.rotation.x = -.1 + br * 2; a.rotation.z = b[i]; });
   P.legs.forEach((l) => { l.rotation.x = 0; l.rotation.z = 0; });
   P.shins.forEach((s) => { s.rotation.x = 0; });
-  if (P.neck) { P.neck.rotation.x = 0; P.neck.position.z = -.005; P.neck.position.y = 1.30; }
+  if (P.neck) { P.neck.rotation.x = 0; P.neck.position.z = -.005; P.neck.position.y = NECK_Y; }
 }
 
 /** 표정 — 자세 상태 다섯을 눈으로 말합니다(2D 판의 FACE_EYE 그대로).
@@ -952,7 +976,7 @@ export function sit(g, on) {
     r.rotation.z = on ? (i ? .2 : -.2) : g.userData.base.armZ[i];
   });
   P.torso.position.y = .44; P.torso.rotation.y = 0;
-  P.head.position.y = 1.48; P.head.rotation.y = 0;
+  P.head.position.y = HEAD_Y; P.head.rotation.y = 0;
   g.userData.sitting = on;
 }
 
@@ -965,8 +989,8 @@ export function slouch(g, k) {
   P.torso.position.y = .44 - t * .06;
   P.head.rotation.x = t * .54;
   P.head.position.z = t * .32;
-  P.head.position.y = 1.48 - t * .12;
-  if (P.neck) { P.neck.rotation.x = t * .45; P.neck.position.z = -.005 + t * .13; P.neck.position.y = 1.30 - t * .04; }
+  P.head.position.y = HEAD_Y - t * .12;
+  if (P.neck) { P.neck.rotation.x = t * .45; P.neck.position.z = -.005 + t * .13; P.neck.position.y = NECK_Y - t * .04; }
   P.arms.forEach((r) => { r.position.y = 1.08 - t * .05; });
 }
 

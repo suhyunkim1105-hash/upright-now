@@ -27,6 +27,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
 import { M } from './parts.js';
+import * as KIT from './kit.js';
 
 /* 부지 — 원이 아니라 네모입니다. 가로가 더 긴 것도 실제 캠퍼스의 성질입니다. */
 export const SITE = { w: 320, d: 260, hx: 160, hz: 130 };
@@ -466,7 +467,35 @@ function fence(g, solid) {
 
 /* ---- 담 밖 — 도시와 산 ---- */
 function beyond(g) {
-  const near = M(0x93A8BC, .95), far = M(0xA9BCCC, .96);
+  const far = M(0xA9BCCC, .96);
+
+  /* ---- 가까운 띠 — 진짜 건물 ----
+     담 바로 밖은 상자라는 게 티가 납니다. City Kit 을 씁니다.
+     같은 파일끼리 인스턴스로 묶이므로, 서른 가지를 써도 드로우콜은
+     파일 수 × 재질 수만큼입니다. */
+  const kinds = [].concat(KIT.CITY.low, KIT.CITY.small, KIT.CITY.large, KIT.CITY.wide);
+  const towers = KIT.CITY.tower;
+  const spots = new Map();
+  const put = (file, s) => { if (!spots.has(file)) spots.set(file, []); spots.get(file).push(s); };
+  for (let i = 0; i < 64; i++) {
+    const a = rnd() * TAU;
+    const d = 34 + rnd() * 78;
+    /* 탑은 멀리, 낮은 건물은 가까이 — 도시가 안쪽으로 낮아집니다 */
+    const tall = d > 56 && rnd() < .45;
+    const list = tall ? towers : kinds;
+    put(list[(rnd() * list.length) | 0], {
+      x: Math.cos(a) * (SITE.hx + d), z: Math.sin(a) * (SITE.hz + d),
+      ry: Math.round(rnd() * 4) * (Math.PI / 2),
+      tone: (i * 3) % 6,
+    });
+  }
+  for (const [file, list] of spots) {
+    KIT.place(g, file, list, { height: 14 + rnd() * 18, maxW: 26 }).then((r) => {
+      if (r) r.group.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
+    });
+  }
+
+  /* ---- 먼 띠 — 여기는 상자로 충분합니다. 안개가 다 먹습니다 ---- */
   const mk = (mat, count, minD, maxD, hMin, hMax) => {
     const im = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), mat, count);
     im.userData.noBake = true; im.castShadow = false; im.receiveShadow = false;
@@ -485,8 +514,7 @@ function beyond(g) {
     im.instanceMatrix.needsUpdate = true;
     g.add(im);
   };
-  mk(near, 48, 24, 80, 9, 32);
-  mk(far, 40, 90, 220, 16, 56);
+  mk(far, 40, 96, 220, 16, 56);
   const hillM = M(0x86A98C, .98);
   for (let i = 0; i < 8; i++) {
     const a = rnd() * TAU, d = 260 + rnd() * 140;
@@ -501,6 +529,30 @@ function beyond(g) {
  * 부지 전체를 세웁니다 — 바닥 · 길 · 프로그램 면적 · 숲 · 담 · 담 밖.
  * 건물은 campus.js(들어갈 수 있는 여섯)와 faculty.js(나머지)가 세웁니다.
  */
+/* ---- 부속동 ----
+   실제 캠퍼스에는 이름 없는 작은 건물이 많습니다 — 기계실 · 창고 ·
+   경비실 · 매점. 스물넷이 다 강의동이면 오히려 비현실적입니다.
+   자리는 큰 건물 사이의 남는 틈이고, avoid 가 겹침을 막습니다. */
+const ANNEX = [
+  [-62, -6], [-30, 24], [12, -18], [58, -8], [86, 40], [-96, 42],
+  [-52, -60], [30, -64], [66, -30], [-24, -8], [104, 62], [-108, 78],
+  [56, 30], [-70, 106], [116, -8], [4, 68],
+];
+function annexes(g, solid, avoid) {
+  const files = [].concat(KIT.CITY.small, KIT.CITY.wide);
+  const spots = new Map();
+  let i = 0;
+  for (const [x, z] of ANNEX) {
+    if (avoid && avoid(x, z, 20)) continue;
+    const f = files[i % files.length];
+    if (!spots.has(f)) spots.set(f, []);
+    spots.get(f).push({ x, z, ry: Math.round(rnd() * 4) * (Math.PI / 2), tone: (i * 5) % 6 });
+    solid(x, z, 11, 11, 0, true);
+    i++;
+  }
+  for (const [f, list] of spots) KIT.place(g, f, list, { height: 7.5, maxW: 13 });
+}
+
 export function buildSite(parent, solid, avoid) {
   const g = new THREE.Group();
   g.name = 'site';
@@ -511,11 +563,46 @@ export function buildSite(parent, solid, avoid) {
   fields(g, solid);
   fence(g, solid);
   beyond(g);
+  annexes(g, solid, avoid);
 
   const trees = woods(g, avoid).concat(allee(built, avoid));
   plantTrees(g, trees, solid);
 
-  return { group: g, trees: trees.length, roads: built.length, SITE, GATE };
+  return { group: g, trees: trees.length, roads: built.length, built, SITE, GATE };
+}
+
+/**
+ * 건물 문 앞으로 들어가는 짧은 길.
+ * 가장 가까운 도로 위의 점을 찾아 문까지 곧게 잇습니다 — 길이 덩어리
+ * 사이만 잇고 문 앞까지 안 가면, 어디로 들어가는지가 안 보입니다.
+ */
+export function approaches(g, built, buildings) {
+  const walkM = M(PAL.walk, .88), edgeM = M(PAL.roadEdge, .86);
+  for (const b of buildings) {
+    const ry = ryOf(b.face);
+    /* 문 앞 — 정면 방향으로 건물 절반 + 조금 */
+    const dep = ((b.d || 11) / 2) * (b.s || 1) + 3.4;
+    const dx = b.x + Math.sin(ry) * dep, dz = b.z + Math.cos(ry) * dep;
+    /* 모든 도로를 훑어 가장 가까운 점을 찾습니다 */
+    let best = null, bd = 1e9;
+    for (const r of built) {
+      const n = 40;
+      for (let i = 0; i <= n; i++) {
+        const p = r.curve.getPointAt(i / n);
+        const d2 = (p.x - dx) * (p.x - dx) + (p.z - dz) * (p.z - dz);
+        if (d2 < bd) { bd = d2; best = p; }
+      }
+    }
+    if (!best) continue;
+    const len = Math.sqrt(bd);
+    if (len < 3 || len > 64) continue;        // 붙어 있거나 너무 멀면 안 놓습니다
+    const mx = (best.x + dx) / 2, mz = (best.z + dz) / 2;
+    const dir = Math.atan2(dx - best.x, dz - best.z);
+    slab(g, 5.4, len, edgeM, mx, .103, mz, -dir + Math.PI / 2 - Math.PI / 2);
+    slab(g, 4.2, len, walkM, mx, .107, mz, -dir + Math.PI / 2 - Math.PI / 2);
+    /* 문 앞 마당 — 길 끝이 그냥 잘리면 어색합니다 */
+    slab(g, 8.5, 6.5, walkM, dx, .109, dz, -ry);
+  }
 }
 
 /** 부지 안인가 — 원이 아니라 네모입니다 */

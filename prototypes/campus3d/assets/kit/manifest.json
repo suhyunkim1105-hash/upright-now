@@ -1,284 +1,5 @@
 [
  {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 17,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-wide.glb",
-  "name": "Low Wide",
-  "lic": "CC0",
-  "kb": 17,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-skyscraper.glb",
-  "name": "Skyscraper",
-  "lic": "CC0",
-  "kb": 41,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 16,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 14,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 14,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 12,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 12,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 16,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-wide.glb",
-  "name": "Low Wide",
-  "lic": "CC0",
-  "kb": 12,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-skyscraper.glb",
-  "name": "Skyscraper",
-  "lic": "CC0",
-  "kb": 60,
-  "mats": 6,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-skyscraper.glb",
-  "name": "Skyscraper",
-  "lic": "CC0",
-  "kb": 35,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-sign-hospital.glb",
-  "name": "Sign Hospital",
-  "lic": "CC0",
-  "kb": 9,
-  "mats": 3,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-skyscraper.glb",
-  "name": "Skyscraper",
-  "lic": "CC0",
-  "kb": 59,
-  "mats": 6,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-small-building.glb",
-  "name": "Small Building",
-  "lic": "CC0",
-  "kb": 36,
-  "mats": 4,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 24,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-small-building.glb",
-  "name": "Small Building",
-  "lic": "CC0",
-  "kb": 36,
-  "mats": 4,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-low-building.glb",
-  "name": "Low Building",
-  "lic": "CC0",
-  "kb": 10,
-  "mats": 2,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-small-building.glb",
-  "name": "Small Building",
-  "lic": "CC0",
-  "kb": 28,
-  "mats": 4,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-small-building.glb",
-  "name": "Small Building",
-  "lic": "CC0",
-  "kb": 34,
-  "mats": 4,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-small-building.glb",
-  "name": "Small Building",
-  "lic": "CC0",
-  "kb": 44,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-large-building.glb",
-  "name": "Large Building",
-  "lic": "CC0",
-  "kb": 58,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-skyscraper.glb",
-  "name": "Skyscraper",
-  "lic": "CC0",
-  "kb": 30,
-  "mats": 4,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-large-building.glb",
-  "name": "Large Building",
-  "lic": "CC0",
-  "kb": 79,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-skyscraper.glb",
-  "name": "Skyscraper",
-  "lic": "CC0",
-  "kb": 86,
-  "mats": 6,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-small-building.glb",
-  "name": "Small Building",
-  "lic": "CC0",
-  "kb": 43,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-large-building.glb",
-  "name": "Large Building",
-  "lic": "CC0",
-  "kb": 52,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-large-building.glb",
-  "name": "Large Building",
-  "lic": "CC0",
-  "kb": 94,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-large-building.glb",
-  "name": "Large Building",
-  "lic": "CC0",
-  "kb": 81,
-  "mats": 5,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-large-building.glb",
-  "name": "Large Building",
-  "lic": "CC0",
-  "kb": 114,
-  "mats": 4,
-  "tex": 0
- },
- {
-  "kit": "city",
-  "file": "city-large-building.glb",
-  "name": "Large Building",
-  "lic": "CC0",
-  "kb": 140,
-  "mats": 4,
-  "tex": 0
- },
- {
   "kit": "furniture",
   "file": "furniture-bathroom-mirror.glb",
   "name": "Bathroom Mirror",
@@ -1320,6 +1041,276 @@
   "lic": "CC0",
   "kb": 96,
   "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-wide.glb",
+  "name": "Low Wide",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-2.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 16,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-3.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-4.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-5.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-6.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-7.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 16,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-wide-2.glb",
+  "name": "Low Wide",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-2.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 60,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-3.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 35,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-sign-hospital.glb",
+  "name": "Sign Hospital",
+  "lic": "CC0",
+  "kb": 9,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-4.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 59,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 36,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-8.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-2.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 36,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-9.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 10,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-3.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-4.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 34,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-5.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 44,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 58,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-5.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-2.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 79,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-6.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 86,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-6.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 43,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-3.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 52,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-4.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 94,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-5.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 81,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-6.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 114,
+  "mats": 4,
   "tex": 0
  }
 ]

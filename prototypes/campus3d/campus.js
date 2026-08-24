@@ -9,7 +9,7 @@
 import * as THREE from 'three';
 import { M, roundedBox, cyl, prism, tree, bush } from './parts.js';
 import * as BLD from './bld.js';
-import { buildSite, SITE, BUILDINGS as PLAN_B, ryOf, inSite } from './plan.js';
+import { buildSite, approaches, SITE, BUILDINGS as PLAN_B, ryOf, inSite } from './plan.js';
 import { buildFaculties } from './faculty.js';
 
 export const PAL = {
@@ -1113,6 +1113,9 @@ export function buildCampus(scene) {
     FAC.some((f) => Math.hypot(f.x - x, f.z - z) < m + Math.max(f.w, f.d) * .35);
   /* 부지 — 바닥 · 굽은 길 · 운동장 · 주차장 · 못 · 숲 · 담 */
   const grounds = buildSite(g, solid, (x, z, m) => inCore(x, z) || avoid(x, z, m));
+
+  /* 진입로 — 건물이 다 선 뒤에 깝니다. 문 자리를 알아야 놓을 수 있습니다. */
+  approaches(g, grounds.built, PLAN_B);
 
   return { group: g, colliders, portals, HALF, CORE, PLAZA_R, SITE,
            swans, lotus, fish, flutter, grounds, faculties: FAC, AXIS };

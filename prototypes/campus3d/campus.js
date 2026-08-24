@@ -207,7 +207,9 @@ function ground(g) {
    그래서 광장이 아니라 잔디에 난 원이었습니다.
 
    줄눈도 격자로 바꿉니다. 축과 나란히 달려 축을 거듭 말합니다. */
-const PLAZA = { x: 25, z0: -24, z1: 44 };
+/* 세 채가 커지면서 광장도 커집니다. 도서관 면(x -41)에서 학생회관
+   면(x 41)까지 83칸, 본관 면(z -44)에서 대로가 닿는 z 34 까지 78칸. */
+const PLAZA = { x: 40, z0: -42, z1: 34 };
 
 function plaza(g) {
   const flat = (m) => { m.castShadow = false; return m; };

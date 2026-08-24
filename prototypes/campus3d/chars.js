@@ -67,8 +67,16 @@ export function loadCharacters(THREE_, GLTFLoader, base = './assets/chars/') {
   return Promise.all(Object.entries(GLB_FILE).map(([sp, f]) =>
     new Promise((res) => {
       loader.load(base + f + '.glb', (g) => {
+        /* 생성된 모델은 **+X 를 보고 서 있습니다.** 월드는 +Z 를 앞으로
+           쓰므로(P.dir = atan2(wx, wz), dir 0 이면 앞이 +Z), 그대로 두면
+           북쪽으로 걸을 때 옆구리가 보입니다. 네 방향이 다 어색했던 것이
+           이것입니다 — 방향 계산이 아니라 모델이 90도 돌아 있었습니다.
+           뼈는 자식이라 같이 돌고, 동작은 뼈 기준이라 안 건드려집니다. */
+        g.scene.rotation.y = -Math.PI / 2;
+
         /* 발끝을 y=0 으로 내리고 키를 1.9 로 맞춥니다 — 생성물마다
-           원점과 크기가 달라서, 안 맞추면 종마다 땅에 박히거나 뜹니다. */
+           원점과 크기가 달라서, 안 맞추면 종마다 땅에 박히거나 뜹니다.
+           높이는 Y 회전에 안 변하므로 돌린 뒤에 재도 같습니다. */
         const box = new THREE.Box3().setFromObject(g.scene);
         const h = box.max.y - box.min.y;
         const k = 1.9 / (h || 1);

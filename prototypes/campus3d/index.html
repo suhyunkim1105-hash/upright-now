@@ -151,15 +151,27 @@
     border:6px solid transparent;border-top-color:var(--paper);border-bottom:0}
 
   /* ── 대화 ── */
-  #dlg{position:absolute;left:50%;bottom:92px;transform:translateX(-50%) translateY(8px);
-    width:min(500px,92vw);padding:15px 18px 13px;opacity:0;transition:.16s;pointer-events:none}
+  /* ── 말 거는 창도 찰흙 ──
+     창은 전부 찰흙으로 바꿨는데 사람과 말할 때만 검은 유리로 남아
+     있었습니다. 한 세계 안에서 재질이 둘이면 둘 중 하나는 남의 것으로
+     보입니다. 말풍선 꼬리를 하나 답니다 — 화면 아래에 떠 있는 상자가
+     누구 말인지는 꼬리가 말해 줍니다. */
+  #dlg{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);
+    width:min(500px,92vw);padding:17px 20px 15px;opacity:0;transition:.16s;pointer-events:none;
+    background:var(--clay);border:0;border-radius:24px;
+    box-shadow:0 22px 48px -18px rgba(40,58,84,.46), inset 0 3px 0 rgba(255,255,255,.95),
+      inset 0 -4px 0 rgba(86,110,146,.13);backdrop-filter:none;-webkit-backdrop-filter:none}
+  #dlg::after{content:'';position:absolute;left:50%;bottom:-11px;width:22px;height:22px;
+    transform:translateX(-50%) rotate(45deg);background:var(--clay);border-radius:0 0 7px 0;
+    box-shadow:6px 6px 12px -6px rgba(40,58,84,.4)}
   #dlg.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
-  #dlg .who{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  #dlg .who b{font-size:14px;font-weight:800}
-  #dlg .who span{font-size:10.5px;color:var(--acc);padding:2px 8px;border-radius:99px;
-    background:rgba(53,224,198,.14);font-weight:700}
-  #dlg p{margin:0;font-size:14px;line-height:1.65;color:var(--tx)}
-  #dlg .more{margin-top:10px;font-size:10.5px;color:var(--tx3)}
+  #dlg .who{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  #dlg .who b{font-size:15px;font-weight:800;color:var(--cInk)}
+  #dlg .who span{font-size:10.5px;color:var(--mintD);padding:4px 10px;border-radius:99px;
+    background:var(--mint);font-weight:700;box-shadow:var(--clayIn)}
+  #dlg p{margin:0;font-size:14.5px;line-height:1.68;color:var(--cInk2)}
+  #dlg .more{margin-top:12px;font-size:10.5px;color:var(--cInk3)}
+  #dlg .more kbd{background:var(--clay2);border:0;box-shadow:var(--clayIn);color:var(--cInk2)}
 
   /* ── 종이 창 ── */
   #panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
@@ -607,7 +619,7 @@
   <div id="toast" role="status" aria-live="polite"><b></b><span></span></div>
   <div id="bub"></div>
 
-  <div id="dlg" class="g">
+  <div id="dlg" role="status" aria-live="polite">
     <div class="who"><b></b><span></span></div><p></p>
     <div class="more"><kbd>E</kbd> 다음 · <kbd>Esc</kbd> 그만</div>
   </div>
@@ -1691,17 +1703,31 @@ function schoolView() {
 }
 
 /* 명예의 전당 — 서버 집계를 실제로 부릅니다 */
-let fameRows;
+/* 명예의 전당. 창 쪽에 미달 학교 · 지난 시즌 · 참여자 수 · 학교 색 ·
+   오류 네 가지를 다 채워 놓고, 여기서는 `rows` 하나만 넘기고 있었습니다.
+   그래서 새로 만든 칸이 하나도 안 보였습니다 — 창은 옛 호출도 받아
+   주도록 되어 있어서 터지지도 않고 조용히 절반만 나왔습니다.
+
+   학교 색표(SCHOOLS)는 여기 있으므로 **여기서** 넘깁니다. 저쪽에
+   한 벌 더 두면 학교를 하나 더할 때 한 곳만 고치는 날이 옵니다. */
+let fameState = 'idle', fameData = null;
+const schoolColor = (n) => {
+  const q = SCHOOLS.find((x) => x.name === n);
+  return q ? '#' + q.c.toString(16).padStart(6, '0') : null;
+};
 function fameView() {
-  if (fameRows === undefined && SRV && SRV.configured) {
+  if (!(SRV && SRV.configured)) fameState = 'unconfigured';
+  else if (fameState === 'idle') {
+    fameState = 'loading';
     SRV.schoolRanking().then((r) => {
-      fameRows = (r && r.ok && Array.isArray(r.data)) ? r.data : null;
+      fameState = (r && r.ok) ? 'ok' : ((r && r.reason) || 'server');
+      fameData = (r && r.ok) ? r.data : null;
       redrawPanel();
-    }).catch(() => { fameRows = null; redrawPanel(); });
-    return UI.fame({ rows: undefined, myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt });
+    }).catch(() => { fameState = 'offline'; redrawPanel(); });
   }
-  return UI.fame({ rows: SRV && SRV.configured ? fameRows : null, myschool: SAVE.school,
-    verified: !!SAVE.schoolVerifiedAt });
+  return UI.fame({ state: fameState, data: fameData, schoolColor,
+    myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt,
+    onRetry: (again) => { fameState = 'idle'; again(); } });
 }
 
 /* 학교 공지 — /api/notice 가 학교 RSS 를 받아 옵니다(2D 판과 같은 주소) */
@@ -3539,6 +3565,7 @@ window.__map = () => toggleMap();
 window.__room = () => (room ? room.key : null);
 window.__k = (v) => { SESS.k = SESS.want = v; SESS.demo = false; };
 window.__sit = () => { const s = spotsHere().find((q) => q.seat); if (s) startSession(s); };
+window.__npc0 = () => ({ x: NPC[0].rig.position.x, z: NPC[0].rig.position.z });
 window.__talk = () => { const n = (room ? inNPC : NPC)[0]; if (n) openDlg(n); };
 window.__panel = (t) => { const s = spotsHere().find((q) => q.title === t); if (s) openPanel(s); };
 window.__emo = (k) => doEmote(k);

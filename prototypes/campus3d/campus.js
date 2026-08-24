@@ -644,10 +644,7 @@ function trackField(g, ctx, deg, r, A, B) {
   /* 벤치 넷 — 안쪽 둘 · 바깥 둘.
      안쪽 벤치를 트랙 모서리(로컬 x ±5)에 놓으면 광장 화단(반지름 15.6)
      과 겹칩니다. 화단은 광장 것이라 못 옮기니 벤치를 가운데로 모읍니다. */
-  [[-2.2, B + 1.6, Math.PI], [2.2, B + 1.6, Math.PI],
-   [-5.4, -(B - .8), 0], [5.4, -(B - .8), 0]].forEach(([lx, lz, br]) => {
-    benchOut(p, lx, lz, br); put(lx, lz, 3.4, 1.2);
-  });
+  /* 관중 벤치 넷도 뺐습니다 — 조성 계획을 다시 세운 뒤 놓습니다 */
   return p;
 }
 
@@ -771,9 +768,7 @@ function lakePond(g, ctx, deg, r, WA, WB) {
   /* 벤치 둘 — 못 **양 끝** 잔디. 안쪽 물가는 산책로가 바로 붙어 있어서
      한 뼘도 안 남습니다. 돌 테 위에도 못 놓습니다: 테가 좁아 좌면이 그
      폭을 먹으면 못을 한 바퀴 도는 길이 거기서 끊깁니다. */
-  [[-(RA + 1.2), Math.PI / 2], [RA + 1.2, -Math.PI / 2]].forEach(([lx, br]) => {
-    benchOut(p, lx, 1.1, br); put(lx, 1.1, 1.2, 3.4);
-  });
+  /* 못가 벤치 둘도 뺐습니다 */
   /* 낚시터 — 안쪽 테에서 물 쪽으로 내민 널판. 서서 찌를 보는 자리이므로
      막지 않습니다(위 슬래브에서 이 폭만큼 비워 뒀습니다). */
   const dk = new THREE.Group(); dk.position.set(0, 0, (DECK_Z + RB) / 2); p.add(dk);
@@ -817,20 +812,19 @@ function clubStreet(g, ctx, deg, r) {
   /* 게시판 둘 + 그 앞 벤치 둘 — 붙여서 "판 읽고 앉는 자리" 한 덩어리로
      만듭니다. 따로 세우면 거리 한복판에 벤치 둘이 떠 있습니다. */
   [-5.6, 2.4].forEach((lx) => {
-    boardOut(p, lx, 2.5, Math.PI); put(lx, 2.5, 3.8, 1.0);
-    benchOut(p, lx, 1.3, Math.PI);  put(lx, 1.3, 3.4, 1.2);
+    /* 게시판 · 벤치 뺌 */
   });
   /* 파라솔 탁자 — 거리 끝. 벤치가 등지고 앉는 자리라면 여기는 마주 앉는
      자리입니다. 장터에 있어야 하는 것은 앉는 자리가 아니라 같이 앉는
      자리입니다. 상자 깊이는 탁자까지만 재서 통로를 안 먹게 합니다. */
-  picnicSet(p, 5.6, 1.8, .22); put(5.6, 1.8, 2.8, 2.2);
+  /* 소풍 상 뺌 */
   /* 나무 상자 — 판 옆이 비면 장이 아니라 천막 둘입니다 */
   [[3.2, -2.2, .3], [4.1, -1.9, -.5], [6.4, -2.1, .8]].forEach(([lx, lz, rr]) => {
     box(p, .8, .62, .8, .07, M(PAL.wood, .74), lx, .42, lz).rotation.y = rr;
     box(p, .84, .1, .84, .05, M(PAL.woodDark, .74), lx, .76, lz).rotation.y = rr;
     put(lx, lz, .95, .95);
   });
-  binOut(p, 7.0, 2.3);
+  /* 쓰레기통 뺌 */
   return p;
 }
 
@@ -896,38 +890,11 @@ export function buildCampus(scene) {
   fountain(g, 0, 0);
   solid(0, 0, 10.6, 10.6, 0, true);
 
-  /* 광장 둘레 — 벤치 여덟 · 가로등 여덟 · 화단 여덟 */
-  /* 여덟에서 넷으로. 광장은 비어 있어야 광장입니다 — 물건이 둘러서면
-     분수대가 아니라 물건이 주인공이 됩니다. */
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    const bx = Math.cos(a) * 9.2, bz = Math.sin(a) * 9.2;
-    benchOut(g, bx, bz, -a + Math.PI / 2);
-    solid(bx, bz, 3.4, 1.2, -a + Math.PI / 2);
-    /* 길이 45° 마다 뻗어 나가므로 가로등은 그 사이(22.5°)에 세웁니다.
-       전 판은 길 한복판에 서서 카메라를 가로막았습니다. */
-    const la = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    lampPost(g, Math.cos(la) * 13.0, Math.sin(la) * 13.0);
-    solid(Math.cos(la) * 13.0, Math.sin(la) * 13.0, .9, .9);
-    /* 흙 화단은 둘만. 넷을 두르면 광장이 화단에 갇힙니다 */
-    if (i % 2 === 0) {
-      const fa = (i / 4) * Math.PI * 2 + Math.PI / 4;
-      flowerBed(g, Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 1.8);
-      solid(Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 4.0, 4.0);
-    }
-  }
-  /* 쓰레기통 — 광장 한가운데(반지름 8.4)에 있어서 시작하자마자 **내 몸을 가렸습니다**.
-     길과 길 사이(22.5°)로 밀어내 가장자리에 둡니다. */
-  [22.5, 112.5, 202.5, 292.5].forEach((deg) => {
-    const a = deg * Math.PI / 180;
-    binOut(g, Math.cos(a) * 10.4, Math.sin(a) * 10.4);
-  });
-
-  /* --- 게시판 · 이정표 --- */
-  boardOut(g, -8.6, 13.2, .5);  solid(-8.6, 13.2, 3.8, 1.0, .5, true);
-  boardOut(g, 8.6, 13.2, -.5);  solid(8.6, 13.2, 3.8, 1.0, -.5, true);
-  signpost(g, 5.0, 14.6, 0, [[PAL.blue, .4], [PAL.teal, 2.4], [PAL.gold, 4.2]]);
-  signpost(g, -14.8, -5.2, 0, [[PAL.red, 1.2], [PAL.blue, 3.4]]);
+  /* 광장 소품 없음 — 벤치 · 가로등 · 화단 · 쓰레기통 · 게시판 · 이정표를
+     전부 걷었습니다. 자리를 하나씩 손보는 것으로는 안 되는 단계입니다:
+     이 물건들은 옛 극좌표 배치(반지름 9.2 · 13.0 · 15.6)에 매여 있어서
+     부지가 네모로 바뀐 지금은 **아무 근거 없는 원**을 그리고 있었습니다.
+     조성 계획을 다시 세운 뒤 길과 건물을 기준으로 다시 놓습니다. */
 
   /* --- 정문 · 야외 구역은 plan.js 가 세웁니다 ---
      여기 있던 것을 전부 걷어냈습니다. 부지를 네모로 다시 짜면서
@@ -960,32 +927,12 @@ export function buildCampus(scene) {
      오히려 제자리를 찾은 셈이고, 북 대로(|x|<2.5)는 그대로 비어 있습니다. */
   bikeRack(g, -5.6, -16.4, 0, 4); solid(-5.6, -16.4, 5.0, 1.8);
   bikeRack(g, 9, -20, 0, 4);  solid(9, -20, 5.0, 1.8);
-  benchOut(g, -7, -14, Math.PI); solid(-7, -14, 3.4, 1.2, Math.PI);
-  benchOut(g, 7, -14, Math.PI);  solid(7, -14, 3.4, 1.2, Math.PI);
-  vendOut(g, -7, 17, 0);  solid(-7, 17, 1.6, 1.1);
-  benchOut(g, 8, 17, 0);  solid(8, 17, 3.4, 1.2);
-  binOut(g, -5, 18); binOut(g, 5, -18); binOut(g, 20, 24);
+  /* 벤치 · 자판기 · 쓰레기통을 뺐습니다. 거치대는 포장 위에 서 있어
+     자리가 설명되므로 남깁니다. */
 
   /* --- 도서관 · 본관 앞 --- */
-  [[-1, -16.5], [1, 16.5]].forEach(([sx, px]) => {
-    benchOut(g, px, -6.5, sx > 0 ? -Math.PI / 2 : Math.PI / 2);
-    solid(px, -6.5, 1.2, 3.4);
-    benchOut(g, px, 6.5, sx > 0 ? -Math.PI / 2 : Math.PI / 2);
-    solid(px, 6.5, 1.2, 3.4);
-    flowerBed(g, px + sx * 2.4, 0, 1.6); solid(px + sx * 2.4, 0, 3.6, 3.6);
-    lampPost(g, px - sx * 1.5, -9, 3.6); solid(px - sx * 1.5, -9, .9, .9);
-    lampPost(g, px - sx * 1.5, 9, 3.6);  solid(px - sx * 1.5, 9, .9, .9);
-  });
-
-  /* --- 길가 가로등 --- */
-  /* 벚꽃 8 → 3. 사진 찍는 자리 하나면 충분합니다 */
-  for (let i = 0; i < 3; i++) {
-    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    [21, 30].forEach((r) => {
-      const x = Math.cos(a) * r, z = Math.sin(a) * r;
-      lampPost(g, x, z, 3.8); solid(x, z, .9, .9);
-    });
-  }
+  /* 도서관 · 본관 앞 벤치 · 화단 · 가로등도 뺐습니다. 위와 같은 이유로
+     좌표가 옛 배치에 매여 있었습니다. */
 
   /* --- 나무 --- */
   /* 섬에 나무만 260 그루입니다. 야외는 면수를 낮춘 판을 씁니다 —

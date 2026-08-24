@@ -485,6 +485,7 @@ import * as THREE from 'three';
 import { character, SPECIES, OUTFITS, WEAR, WEAR_FREE, normalizeLook, stride, idle, sit, slouch, look, face,
   RIDES, ride, rideOn, rideOff, TINTS, TINTABLE, applyTint } from './chars.js';
 import { buildCampus, BUILDINGS } from './campus.js';
+import { trimExtremes } from './retint.js';
 import { ROOMS, ROOM_SIZE, ROOM_NAME, decorItem } from './rooms.js';
 import { seatsBegin, seatsTake, setOutside, setClockHour, tickClocks } from './room.js';
 import { bake } from './bake.js';
@@ -559,8 +560,11 @@ const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true,
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.06;
+/* AgX — ACES 는 색을 눈에 띄게 변조하고 채도를 떨어뜨립니다. AgX 는
+   훨씬 중립적이라 Blender 4.0 이 기본값으로 삼았습니다. 대신 전체가
+   어둡게 나오므로 노출을 1.06 에서 1.18 로 올려 밝기를 맞춥니다. */
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.18;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
@@ -679,6 +683,11 @@ function shadowPolicy(root) {
   return { off, keep };
 }
 campusRoot.updateMatrixWorld(true);
+/* 양 끝 자르기 — 굽기 전에 한 번. 재질은 병합돼도 같은 객체를 공유하므로
+   여기서 고치면 병합된 메시도 같이 바뀝니다. */
+const TRIM = trimExtremes(campusRoot);
+console.info('[색] 양끝 자른 재질 ' + TRIM + '개');
+
 const SHP = shadowPolicy(campusRoot);
 
 /* ══════ 계단식 그림자 ══════

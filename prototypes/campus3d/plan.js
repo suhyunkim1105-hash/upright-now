@@ -680,7 +680,10 @@ export function buildSite(parent, solid, avoid) {
   beyond(g);
   annexes(g, solid, avoid);
 
-  const trees = woods(g, avoid).concat(allee(built, avoid));
+  /* 가로수(allee)를 뺐습니다 — 길마다 줄지어 심으니 어느 길이 중심
+     축인지가 나무에 묻혔습니다. 부지 밖 숲(woods)은 남깁니다: 담 너머
+     지평선을 채우는 것이라 광장 소품과는 다른 몫입니다. */
+  const trees = woods(g, avoid);
   plantKitTrees(g, trees, solid);
   props(g, built, solid, avoid);
 
@@ -723,7 +726,11 @@ function props(g, built, solid, avoid) {
      서 있어야 "누가 쓰는 것" 으로 보입니다. */
   const bench = new Map(), lamp = new Map(), bin = new Map();
   let k = 0;
-  for (const r of built) {
+  /* 길이 26 칸마다 벤치 · 가로등 · 쓰레기통을 번갈아 놓던 것을 껐습니다.
+     규칙이 "길을 따라 등간격" 하나뿐이라, 사람이 앉을 이유가 없는
+     곳에도 벤치가 서 있었습니다. 다시 놓을 때는 목적지(문 앞 · 정류장 ·
+     그늘) 를 먼저 정하고 그 옆에 붙입니다. */
+  for (const r of []) {
     const len = r.curve.getLength();
     const n = Math.max(2, Math.round(len / 26));
     for (let i = 1; i < n; i++) {
@@ -757,7 +764,8 @@ function props(g, built, solid, avoid) {
      문 앞에 표지판 하나. 건물이 스물넷인데 이름이 없으면 어디가
      어디인지 지도를 열어야만 압니다. */
   const signs = new Map();
-  BUILDINGS.forEach((b, i) => {
+  /* 건물 이름표(이정표) 스물넷도 뺐습니다 */
+  [].forEach((b, i) => {
     const ry = ryOf(b.face);
     const dep = ((b.d || 11) * (b.s || 1)) / 2 + 6.5;
     const sx = b.x + Math.sin(ry) * dep + Math.cos(ry) * 5.5;

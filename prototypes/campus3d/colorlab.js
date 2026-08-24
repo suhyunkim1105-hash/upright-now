@@ -127,7 +127,6 @@ export function createColorLab(ctx) {
     </style>
     <span class="t">색</span>
     <button data-k="sat">2 · 채도 낮춤</button>
-    <button data-k="ends">3 · 양끝 자름</button>
     <button data-k="tone">4 · 톤매핑</button>
     <span class="m" id="lab-m">ACES Filmic</span>`;
   document.body.appendChild(bar);

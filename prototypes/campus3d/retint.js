@@ -139,6 +139,41 @@ export function retintTexture(tex) {
 }
 
 /** 재질 하나를 우리 톤으로. 텍스처가 있으면 아틀라스를, 없으면 색을 옮깁니다. */
+/* ── 양 끝 자르기 ──────────────────────────────────────────
+   자연에는 순백도 순검정도 없습니다. 흰 벽은 하늘빛을 옅게 머금고,
+   그늘은 주변 색을 머금습니다. 재질 868 개를 재 보니 순백에 가까운 것이
+   64 개, 아주 어두운 것이 76 개였습니다 — 그만큼이 플라스틱처럼
+   보이던 몫입니다.
+
+   실험실(colorlab) 에서 판단이 끝나 상시로 겁니다. 굽기(bake) 전에
+   한 번만 돌면 됩니다 — 재질은 병합돼도 같은 객체를 공유합니다. */
+const WHITE = new THREE.Color(0xF2F0E9);   // 하늘빛 머금은 회백
+const DARK = new THREE.Color(0x1E332E);    // 청록 섞은 그늘
+
+export function trimExtremes(root) {
+  const seen = new Set();
+  let n = 0;
+  root.traverse((o) => {
+    if (!o.material) return;
+    [].concat(o.material).forEach((m) => {
+      if (!m || !m.color || seen.has(m.uuid)) return;
+      seen.add(m.uuid);
+      /* 텍스처가 있으면 건드리지 않습니다. 그 재질의 color 는 **색이 아니라
+         텍스처에 곱하는 배수**라 흰색이 정상값입니다 — 여기서 회백으로
+         낮추면 킷 모델의 그림 전체가 탁해집니다. */
+      if (m.map) return;
+      /* rgb2hsl 은 0~255 를 받습니다(위 정의에서 /255 합니다).
+         Color 의 r/g/b 는 0~1 이라 그대로 넘기면 **모든 재질이 근흑으로
+         읽혀** 세계 전체가 어두운 청록으로 끌려갑니다. 실제로 그렇게 됐고,
+         근흑 재질이 76 에서 263 으로 늘어난 것으로 잡았습니다. */
+      const [, s, l] = rgb2hsl(m.color.r * 255, m.color.g * 255, m.color.b * 255);
+      if (l > .93 && s < .10) { m.color.lerp(WHITE, .85); n++; }
+      else if (l < .14) { m.color.lerp(DARK, .75); n++; }
+    });
+  });
+  return n;
+}
+
 export function retintMaterial(mat) {
   if (!mat || mat.userData.retinted) return mat;
   if (mat.map) {

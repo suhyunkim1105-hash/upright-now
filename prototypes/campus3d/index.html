@@ -107,6 +107,11 @@
   #xhair{position:fixed;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;
     z-index:60;pointer-events:none;opacity:0;transition:opacity .16s}
   #xhair.on{opacity:1}
+  /* 게임 안 커서 — 잠금을 유지한 채 창을 조작합니다.
+     pointer-events:none 이라야 자기 밑의 버튼을 가리지 않습니다. */
+  #gcur{position:absolute;left:0;top:0;z-index:200;pointer-events:none;opacity:0;
+    filter:drop-shadow(0 2px 4px rgba(0,0,0,.4));transition:opacity .12s}
+  #gcur.on{opacity:1}
   #xhair::before,#xhair::after{content:'';position:absolute;border-radius:50%}
   #xhair::before{inset:0;border:1.5px solid rgba(255,255,255,.5);
     box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
@@ -476,7 +481,10 @@
     <div class="r"><kbd>휠</kbd><span>멀리 · 가까이</span></div>
   </div>
 
-  <div id="xhair" aria-hidden="true"></div>
+  <div id="xhair" aria-hidden="true"></div>
+  <div id="gcur" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24">
+    <path d="M4 2 L4 19 L9 14.6 L12.2 21.4 L15.4 19.9 L12.2 13.4 L18.6 13.1 Z"
+      fill="#fff" stroke="#1B2430" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
@@ -1102,11 +1110,13 @@ let camHold = 0;
 let camPitch = .55;
 function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; turned += .55; clampRoomYaw(); }
 cv.addEventListener('pointerdown', (e) => {
-  if (first) { syncLock(); return; }
+  if (first) { if (CUR.live) { curClick(); return; } syncLock(); return; }
   drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener('pointermove', (e) => {
   if (first && document.pointerLockElement === cv) {
+    /* 창이 열려 있으면 같은 움직임이 커서를 움직입니다 */
+    if (CUR.live) { curMove(e.movementX, e.movementY); return; }
     /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**. */
     yaw -= e.movementX * .0024;
     pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
@@ -1246,17 +1256,51 @@ cv.addEventListener('wheel', (e) => { e.preventDefault();
 
    그리고 잠겨 있는 동안에는 화면 가운데에 조준점을 그립니다 — 커서가
    사라진 채로 무엇을 겨누는지 모르면 그것대로 답답합니다. */
-function wantLock() { return first && !panelOn && !dlgOn && !mapOn && !room; }
+/* 창이 열려 있으면 마우스는 시점이 아니라 **커서**를 움직입니다 */
+function uiOpen() { return panelOn || dlgOn || mapOn; }
+/* 잠금은 1인칭이면 늘 켭니다 — 창이 열려도 풀지 않습니다.
+   풀면 그 순간 커서가 화면 한복판에 튀어나오고, 다시 잠그려면
+   화면을 눌러야 합니다. 그 왕복을 없애는 것이 이 작업의 목적입니다. */
+function wantLock() { return first && !room; }
+
+const CUR = { x: 0, y: 0, live: false };
+function curShow(on) {
+  if (on && !CUR.live) { CUR.x = innerWidth / 2; CUR.y = innerHeight * .5; }
+  CUR.live = on;
+  const el = $('#gcur');
+  el.classList.toggle('on', on);
+  if (on) el.style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
+}
+function curMove(dx, dy) {
+  CUR.x = clamp(CUR.x + dx, 2, innerWidth - 2);
+  CUR.y = clamp(CUR.y + dy, 2, innerHeight - 2);
+  $('#gcur').style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
+}
+/* 커서 밑의 것을 실제로 누릅니다 */
+function curClick() {
+  const el = $('#gcur');
+  el.style.visibility = 'hidden';                 // 자기 자신을 집지 않게
+  const t = document.elementFromPoint(CUR.x, CUR.y);
+  el.style.visibility = '';
+  if (!t) return;
+  t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: CUR.x, clientY: CUR.y }));
+  t.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: CUR.x, clientY: CUR.y }));
+  t.click?.();
+}
 function syncLock() {
   const want = wantLock();
   try {
     if (want && document.pointerLockElement !== cv) cv.requestPointerLock?.();
     else if (!want && document.pointerLockElement === cv) document.exitPointerLock?.();
   } catch {}
-  $('#xhair').classList.toggle('on', want);
+  const ui = uiOpen();
+  $('#xhair').classList.toggle('on', want && !ui);
+  curShow(want && ui);
 }
 document.addEventListener('pointerlockchange', () => {
-  $('#xhair').classList.toggle('on', document.pointerLockElement === cv);
+  const on = document.pointerLockElement === cv;
+  $('#xhair').classList.toggle('on', on && !uiOpen());
+  curShow(on && uiOpen());
 });
 
 function toggleView() {
@@ -2352,9 +2396,6 @@ const PLACES = BUILDINGS.map((b) => ({ key: b.zone, name: b.name, b }))
     { key: 'gate', name: '정문', at: { x: 0, z: 118, ry: Math.PI } },
     { key: 'field', name: '운동장', at: { x: -60, z: 50, ry: Math.PI * .8 } },
     { key: 'lake', name: '호수', at: { x: 104, z: 58, ry: Math.PI * .6 } },
-    { key: 'quadW', name: '인문사회 안뜰', at: { x: -78, z: -6, ry: -Math.PI / 2 } },
-    { key: 'quadN', name: '자연공학 안뜰', at: { x: 0, z: -76, ry: 0 } },
-    { key: 'quadE', name: '예술 안뜰', at: { x: 82, z: -6, ry: Math.PI / 2 } },
     { key: 'dormyard', name: '기숙사 마당', at: { x: 92, z: -89, ry: -Math.PI / 2 } },
   ]);
 function goPlace(pl) {
@@ -3196,6 +3237,19 @@ function tick(now) {
       w.mesh.position.z = w.cz + Math.sin(a * .61 + w.phase) * w.rz;
       w.mesh.position.y = w.y0 + Math.sin(T * 1.3 + w.phase) * .03;
       if (w.heading) w.mesh.rotation.y = Math.sin(a) < 0 ? 0 : Math.PI;
+    }
+    /* 물 — 수면이 조금 오르내리고, 물결 고리가 퍼지며 옅어집니다.
+       campus.js 가 자기 시계를 따로 들면 탭이 잠들었다 깰 때 어긋나므로
+       여기 프레임 루프가 돌립니다(백조·천과 같은 규칙). */
+    for (const w of (CAMPUS.water || [])) {
+      if (w.ripple) {
+        const u = ((T * .28 + w.t0) % 1);
+        const r = w.from + (w.to - w.from) * u;
+        w.ripple.scale.set(r, r, 1);
+        w.ripple.material.opacity = .34 * (1 - u) * (1 - u);
+      } else if (w.mesh) {
+        w.mesh.position.y = w.y + Math.sin(T * 1.6 + w.ph) * w.amp;
+      }
     }
     for (const f of (CAMPUS.flutter || []))
       f.mesh.rotation[f.axis] = Math.sin(T * 1.7 + f.phase) * f.amp;

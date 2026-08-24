@@ -265,7 +265,7 @@ function ringPath(g, r = 30, w = 4.0) {
 
 /* ---------- 분수 + 동상 ----------
    교수님 : "가운데 표지판 날리고 동상에 분수 같이 있는 걸로 작게". */
-export function fountain(g, x = 0, z = 0) {
+export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
   const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
   const wat = M(0xCFEFFA, .12, { transparent: true, opacity: .5 });
   const stone = M(PAL.stone, .72), kerb = M(PAL.kerb, .68);
@@ -273,47 +273,80 @@ export function fountain(g, x = 0, z = 0) {
     emissive: 0x2A7C9E, emissiveIntensity: .1 });
 
   /* ── 아래 못 ── 앉을 수 있게 테를 넓고 낮게 */
-  cyl(p, 6.4, 6.7, .42, 56, kerb, 0, .21, 0);                     // 앉는 테
-  cyl(p, 6.0, 6.0, .22, 56, stone, 0, .5, 0);
-  cyl(p, 5.6, 5.6, .3, 56, pool, 0, .58, 0);                      // 물
-  /* 테 안쪽 몰딩 한 줄 — 테가 두 겹이면 돌로 깎은 것으로 보입니다 */
-  { const t = new THREE.Mesh(new THREE.TorusGeometry(6.0, .16, 8, 60), kerb);
-    t.rotation.x = Math.PI / 2; t.position.y = .44; t.castShadow = true; p.add(t); }
+  cyl(p, 9.8, 10.2, .5, 64, kerb, 0, .25, 0);                     // 앉는 테
+  cyl(p, 9.2, 9.2, .26, 64, stone, 0, .58, 0);
+  const surf = cyl(p, 8.8, 8.8, .3, 64, pool, 0, .66, 0);         // 물
+  ctx.water.push({ mesh: surf, y: .66, amp: .035, ph: 0 });
+  { const t = new THREE.Mesh(new THREE.TorusGeometry(9.2, .2, 8, 72), kerb);
+    t.rotation.x = Math.PI / 2; t.position.y = .5; t.castShadow = true; p.add(t); }
 
-  /* ── 대 ── 아래로 갈수록 굵은 세 마디 */
-  cyl(p, 1.5, 2.1, .5, 28, stone, 0, .82, 0);
-  cyl(p, .78, 1.1, 1.5, 24, stone, 0, 1.82, 0);
-  cyl(p, 1.0, .78, .26, 24, kerb, 0, 2.7, 0);
+  /* ── 대 ── */
+  cyl(p, 2.3, 3.2, .7, 36, stone, 0, 1.0, 0);
+  cyl(p, 1.2, 1.7, 2.2, 28, stone, 0, 2.4, 0);
+  cyl(p, 1.6, 1.2, .3, 28, kerb, 0, 3.65, 0);
 
-  /* ── 가운데 접시 ── 넘친 물이 아래로 떨어집니다 */
-  cyl(p, 3.0, 2.4, .3, 40, kerb, 0, 2.98, 0);
-  cyl(p, 2.8, 2.8, .14, 40, pool, 0, 3.14, 0);
-  { const t = new THREE.Mesh(new THREE.TorusGeometry(2.95, .13, 8, 44), kerb);
-    t.rotation.x = Math.PI / 2; t.position.y = 3.12; t.castShadow = true; p.add(t); }
+  /* ── 가운데 접시 ── */
+  cyl(p, 4.6, 3.6, .38, 48, kerb, 0, 3.99, 0);
+  const dish = cyl(p, 4.3, 4.3, .16, 48, pool, 0, 4.2, 0);
+  ctx.water.push({ mesh: dish, y: 4.2, amp: .018, ph: 1.9 });
+  { const t = new THREE.Mesh(new THREE.TorusGeometry(4.55, .17, 8, 52), kerb);
+    t.rotation.x = Math.PI / 2; t.position.y = 4.16; t.castShadow = true; p.add(t); }
 
   /* ── 위 대와 작은 접시 ── */
-  cyl(p, .42, .62, 1.3, 18, stone, 0, 3.8, 0);
-  cyl(p, 1.5, 1.1, .24, 30, kerb, 0, 4.52, 0);
-  cyl(p, 1.35, 1.35, .1, 30, pool, 0, 4.64, 0);
-  /* 꼭대기 — 봉오리. 동상 대신 이것이 축의 끝입니다 */
-  cyl(p, .16, .3, .7, 14, stone, 0, 5.0, 0);
-  { const b = new THREE.Mesh(new THREE.SphereGeometry(.42, 18, 14), kerb);
-    b.position.y = 5.5; b.castShadow = true; p.add(b); }
+  cyl(p, .6, .9, 1.9, 22, stone, 0, 5.15, 0);
+  cyl(p, 2.2, 1.6, .3, 34, kerb, 0, 6.2, 0);
+  cyl(p, 2.0, 2.0, .12, 34, pool, 0, 6.4, 0);
+  cyl(p, .24, .42, .9, 16, stone, 0, 6.9, 0);
 
-  /* ── 물 ── 꼭대기에서 솟고, 접시에서 넘쳐 아래로 */
-  { const jet = new THREE.Mesh(new THREE.CylinderGeometry(.09, .05, 1.5, 10), wat);
-    jet.position.y = 6.3; p.add(jet); }
-  for (let i = 0; i < 10; i++) {                                   // 위 접시 → 가운데
-    const a = (i / 10) * Math.PI * 2;
-    const f = new THREE.Mesh(new THREE.CylinderGeometry(.05, .09, 1.32, 6), wat);
-    f.position.set(Math.cos(a) * 1.42, 3.9, Math.sin(a) * 1.42);
-    p.add(f);
+  /* ══ 물 ══ */
+  const foam = M(0xF2FBFE, .1, { transparent: true, opacity: .62 });
+
+  /* 솟음 — 굵은 중심 기둥 하나와 사선 줄기 여덟 */
+  { const j = new THREE.Mesh(new THREE.CylinderGeometry(.2, .34, 3.6, 12), wat);
+    j.position.y = 9.0; p.add(j);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(.55, 14, 10), foam);
+    cap.position.y = 10.9; cap.scale.y = .7; p.add(cap); }
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    const j = new THREE.Mesh(new THREE.CylinderGeometry(.08, .16, 3.2, 8), wat);
+    j.position.set(Math.cos(a) * 1.0, 8.2, Math.sin(a) * 1.0);
+    j.rotation.z = -Math.cos(a) * .42; j.rotation.x = Math.sin(a) * .42;
+    p.add(j);
   }
-  for (let i = 0; i < 14; i++) {                                   // 가운데 → 못
-    const a = ((i + .5) / 14) * Math.PI * 2;
-    const f = new THREE.Mesh(new THREE.CylinderGeometry(.06, .11, 2.3, 6), wat);
-    f.position.set(Math.cos(a) * 2.92, 1.85, Math.sin(a) * 2.92);
-    p.add(f);
+
+  /* 떨어짐 — 낱 줄기 묶음.
+
+     처음에 얇은 원통 하나로 '물의 커튼' 을 만들었는데, 통짜 반투명
+     면이라 물이 아니라 **유리 항아리**가 됐습니다. 실제 분수의 낙수는
+     테두리에서 갈라져 여러 가닥으로 떨어지고, 그 사이로 뒤가 보입니다.
+     그 틈이 물로 읽히게 하는 몫입니다. */
+  const fall = (r, y, h, n) => {
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const w2 = .07 + (i % 3) * .022;
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(w2, w2 * 1.5, h, 6), wat);
+      c.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
+      p.add(c);
+    }
+  };
+  fall(2.04, 5.6, 1.5, 22);         // 작은 접시 → 가운데
+  fall(4.38, 2.4, 3.2, 34);         // 가운데 → 못
+
+  /* 부서짐 — 물이 닿는 자리마다 흰 거품 고리 */
+  const foamRing = (r, y) => {
+    const t = new THREE.Mesh(new THREE.TorusGeometry(r, .2, 6, 40), foam);
+    t.rotation.x = Math.PI / 2; t.position.y = y; p.add(t);
+  };
+  foamRing(4.42, 4.3); foamRing(2.06, 6.46); foamRing(1.1, .78);
+
+  /* 흔들림 — 못 위로 퍼져 나가는 물결 고리 셋 */
+  const rip = new THREE.MeshBasicMaterial({ color: 0xE8F8FE, transparent: true,
+    opacity: .34, depthWrite: false });
+  for (let i = 0; i < 3; i++) {
+    const r = new THREE.Mesh(new THREE.RingGeometry(.94, 1, 48), rip);
+    r.rotation.x = -Math.PI / 2; r.position.y = .7; r.renderOrder = 3;
+    p.add(r);
+    ctx.water.push({ ripple: r, t0: i / 3, from: 1.4, to: 8.6 });
   }
   for (let i = 0; i < 14; i++) {                                   // 물방울
     const a = rnd() * Math.PI * 2, r = 1.2 + rnd() * 2.6;
@@ -890,8 +923,8 @@ export function buildCampus(scene) {
      index.html 이 합니다(그쪽에 이미 시계와 프레임 루프가 있습니다).
      campus.js 가 자기 시계를 하나 더 들면 탭이 가려졌다 돌아왔을 때
      두 시계가 어긋나고, 그러면 백조가 물 위를 순간이동합니다. */
-  const swans = [], lotus = [], fish = [], flutter = [];
-  const ctx = { solid, swans, lotus, fish, flutter };
+  const swans = [], lotus = [], fish = [], flutter = [], water = [];
+  const ctx = { solid, swans, lotus, fish, flutter, water };
 
   ground(g);
   /* 순환로 둘을 걷어냈습니다. 고리는 "이 선을 따라 도세요" 라고
@@ -930,7 +963,7 @@ export function buildCampus(scene) {
   });
 
   /* --- 광장 한가운데 --- */
-  fountain(g, 0, 0);
+  fountain(g, 0, 0, ctx);
   solid(0, 0, 10.6, 10.6, 0, true);
 
   /* 광장 소품 없음 — 벤치 · 가로등 · 화단 · 쓰레기통 · 게시판 · 이정표를
@@ -1101,6 +1134,6 @@ export function buildCampus(scene) {
   /* 진입로 — 건물이 다 선 뒤에 깝니다. 문 자리를 알아야 놓을 수 있습니다. */
   approaches(g, grounds.built, PLAN_B);
 
-  return { group: g, colliders, portals, HALF, CORE, PLAZA_R, SITE,
+  return { group: g, colliders, portals, water, HALF, CORE, PLAZA_R, SITE,
            swans, lotus, fish, flutter, grounds, faculties: FAC, AXIS };
 }

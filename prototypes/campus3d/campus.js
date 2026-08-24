@@ -269,7 +269,8 @@ export function fountain(g, x = 0, z = 0) {
   statue(p, 0, 3.66, 0).scale.setScalar(1.28);
   /* 물줄기 — 여덟 갈래. 투명한 기둥 여덟이면 물로 읽힙니다 */
   const wat = M(0xCFEFFA, .12, { transparent: true, opacity: .5 });
-  for (let i = 0; i < 8; i++) {
+  /* 벚꽃 8 → 3. 사진 찍는 자리 하나면 충분합니다 */
+  for (let i = 0; i < 3; i++) {
     const a = (i / 8) * Math.PI * 2;
     const j = new THREE.Mesh(new THREE.CylinderGeometry(.07, .13, 1.5, 8), wat);
     j.position.set(Math.cos(a) * 1.5, 2.6, Math.sin(a) * 1.5);
@@ -481,7 +482,8 @@ export function picnicSet(g, x, z, ry) {
   });
   /* 파라솔 */
   cyl(p, .09, .09, 3.0, 10, M(PAL.woodDark, .6), 0, 1.5, 0);
-  for (let i = 0; i < 8; i++) {
+  /* 벚꽃 8 → 3. 사진 찍는 자리 하나면 충분합니다 */
+  for (let i = 0; i < 3; i++) {
     const c = new THREE.Mesh(new THREE.CylinderGeometry(0, 1.9, .9, 4, 1, true),
       M(i % 2 ? PAL.red : 0xFFF6E8, .68));
     c.position.y = 2.9; c.rotation.y = (i / 8) * Math.PI * 2;
@@ -912,9 +914,12 @@ export function buildCampus(scene) {
     const la = (i / 4) * Math.PI * 2 + Math.PI / 4;
     lampPost(g, Math.cos(la) * 13.0, Math.sin(la) * 13.0);
     solid(Math.cos(la) * 13.0, Math.sin(la) * 13.0, .9, .9);
-    const fa = (i / 4) * Math.PI * 2 + Math.PI / 4;
-    flowerBed(g, Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 1.8);
-    solid(Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 4.0, 4.0);
+    /* 흙 화단은 둘만. 넷을 두르면 광장이 화단에 갇힙니다 */
+    if (i % 2 === 0) {
+      const fa = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      flowerBed(g, Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 1.8);
+      solid(Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 4.0, 4.0);
+    }
   }
   /* 쓰레기통 — 광장 한가운데(반지름 8.4)에 있어서 시작하자마자 **내 몸을 가렸습니다**.
      길과 길 사이(22.5°)로 밀어내 가장자리에 둡니다. */
@@ -993,7 +998,8 @@ export function buildCampus(scene) {
   });
 
   /* --- 길가 가로등 --- */
-  for (let i = 0; i < 8; i++) {
+  /* 벚꽃 8 → 3. 사진 찍는 자리 하나면 충분합니다 */
+  for (let i = 0; i < 3; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
     [21, 30].forEach((r) => {
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
@@ -1012,7 +1018,8 @@ export function buildCampus(scene) {
   const spots = [];
   const far = (x, z, m) => spots.every((p) => Math.hypot(p[0] - x, p[1] - z) > m);
   /* 86 → 18. 나무는 건물을 가리려고 있는 게 아닙니다 */
-  for (let i = 0; i < 460 && spots.length < 18; i++) {
+  /* 18 → 5. 안쪽은 광장과 앞마당이라 나무가 설 자리가 아닙니다 */
+  for (let i = 0; i < 460 && spots.length < 5; i++) {
     const a = rnd() * Math.PI * 2, r = 17 + rnd() * (CORE - 19);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     /* 건물 · 길 · 광장 위에는 안 심습니다 */
@@ -1039,8 +1046,10 @@ export function buildCampus(scene) {
      한 줄로 고르게 심었더니 **울타리**로 보였습니다. 두 겹으로 어긋나게. */
   /* 테두리 숲 150 → 26. 안쪽 반지름 40 을 두르던 띠인데, 이제 그
      바깥이 캠퍼스라 숲이 캠퍼스를 둘로 잘랐습니다. */
+  /* 테두리 숲을 아예 없앱니다. 반지름 40 을 두르던 띠인데, 그 바깥이
+     이제 캠퍼스라서 숲이 캠퍼스를 안팎으로 갈랐습니다. */
   const GATE_A = Math.atan2(20.5, 20.5);
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < 0; i++) {
     const a = (i / 26) * Math.PI * 2 + (rnd() - .5) * .05;
     /* 정문 부채꼴은 비웁니다 — 문 바로 뒤에 숲이 서 있으면 문이 아니라 벽입니다 */
     if (Math.abs(((a - GATE_A + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < .34) continue;
@@ -1056,8 +1065,8 @@ export function buildCampus(scene) {
     if (i % 3 === 0) bush(g, TP, Math.cos(a) * (r - 3.4), Math.sin(a) * (r - 3.4), .6 + rnd() * .6);
   }
   /* 덤불 흩뿌리기 */
-  /* 덤불 90 → 16 */
-  for (let i = 0; i < 16; i++) {
+  /* 덤불 90 → 16 → 4 */
+  for (let i = 0; i < 4; i++) {
     const a = rnd() * Math.PI * 2, r = 18 + rnd() * (CORE - 21);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 11)) continue;
@@ -1067,7 +1076,8 @@ export function buildCampus(scene) {
   }
 
   /* 벚꽃 — 길 양옆에만. 캠퍼스에서 사진 찍는 자리입니다 */
-  for (let i = 0; i < 8; i++) {
+  /* 벚꽃 8 → 3. 사진 찍는 자리 하나면 충분합니다 */
+  for (let i = 0; i < 3; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
     [-1, 1].forEach((s2) => {
       const x = Math.cos(a) * 24 + Math.cos(a + Math.PI / 2) * s2 * 4.2;

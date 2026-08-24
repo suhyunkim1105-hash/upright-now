@@ -467,6 +467,171 @@ KIND.hall_res = (g, o) => {
   box(g, 2.0, 2.4, .3, C.door, 0, 1.7, d / 2 + 1.22);
 };
 
+
+/* ---- 판상형 강의동 ----
+   캠퍼스에서 가장 흔한 덩어리. 길고 낮고 평평합니다.
+   창을 낱개로 두지 않고 **가로 띠**로 두는 것이 이 유형의 얼굴입니다 —
+   층이 그어져 보여야 강의동입니다. */
+KIND.slab = (g, o) => {
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, slate: o.body.roof } : {});
+  const w = o.w, d = o.d, h = o.h;
+  box(g, w + 1.0, .6, d + 1.0, C.base, 0, .3, 0);
+  box(g, w, h, d, C.wall, 0, h / 2 + .5, 0);
+  /* 층 띠 — 가로선이 그어지면 층수가 읽히고, 층수가 읽히면 건물이 큽니다 */
+  const floors = Math.max(3, Math.round(h / 3.2));
+  for (let i = 1; i < floors; i++) {
+    box(g, w + .22, .26, d + .22, C.trim, 0, .5 + (h / floors) * i, 0);
+  }
+  /* 평지붕 파라펫 — 지붕이 없는 대신 테두리가 한 단 올라섭니다 */
+  box(g, w + .5, .7, d + .5, C.trim, 0, h + .85, 0);
+  box(g, w - .4, .5, d - .4, C.wallWarm, 0, h + .8, 0);
+  windowWall(g, w - 2.0, h - 1.2, Math.max(6, Math.round(w / 2.4)), floors,
+    C.glass, C.trim, 0, 1.2, d / 2 + .06, 0, false);
+  windowWall(g, w - 2.0, h - 1.2, Math.max(6, Math.round(w / 2.4)), floors,
+    C.glass, C.trim, 0, 1.2, -d / 2 - .06, Math.PI, false);
+  /* 들어간 현관 — 판 한가운데를 파내면 입구가 생깁니다 */
+  box(g, 7.0, 4.2, 1.4, C.wallWarm, 0, 2.6, d / 2 - .2);
+  box(g, 7.6, .4, 2.2, C.trim, 0, 4.9, d / 2 + .3);
+  box(g, 3.0, 3.0, .3, C.door, 0, 2.0, d / 2 + .06);
+  for (const sx of [-1, 1]) cyl(g, .22, .22, 4.2, 8, C.column, sx * 2.9, 2.1, d / 2 + .7);
+};
+
+/* ---- 탑상형 연구동 ----
+   기단 위에 탑. 캠퍼스에서 가장 높은 것이 보통 이 유형이고, 멀리서
+   캠퍼스 위치를 알려 주는 표지가 됩니다. */
+KIND.tower_lab = (g, o) => {
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, slate: o.body.roof } : {});
+  const w = o.w, d = o.d, h = o.h;
+  const pod = Math.max(4.5, h * .34);            // 기단 높이
+  box(g, w + 1.0, .6, d + 1.0, C.base, 0, .3, 0);
+  box(g, w, pod, d, C.wallWarm, 0, pod / 2 + .5, 0);
+  box(g, w + .5, .4, d + .5, C.trim, 0, pod + .7, 0);
+  windowWall(g, w - 2.2, pod - 1.4, Math.max(5, Math.round(w / 2.6)), 2,
+    C.glass, C.trim, 0, 1.2, d / 2 + .06, 0, false);
+  /* 탑 — 기단보다 좁아야 탑입니다 */
+  const tw = w * .48, td = d * .82, th = h * 1.5;
+  box(g, tw, th, td, C.wall, 0, pod + .9 + th / 2, 0);
+  const fl = Math.max(4, Math.round(th / 3.2));
+  for (let i = 1; i < fl; i++) box(g, tw + .18, .2, td + .18, C.trim, 0, pod + .9 + (th / fl) * i, 0);
+  windowWall(g, tw - 1.4, th - 1.6, Math.max(3, Math.round(tw / 2.4)), fl,
+    C.glass, C.trim, 0, pod + 1.6, td / 2 + .06, 0, false);
+  windowWall(g, tw - 1.4, th - 1.6, Math.max(3, Math.round(tw / 2.4)), fl,
+    C.glass, C.trim, 0, pod + 1.6, -td / 2 - .06, Math.PI, false);
+  box(g, tw + .6, .6, td + .6, C.trim, 0, pod + th + 1.1, 0);
+  /* 옥상 기계실 — 연구동의 표식. 이게 있으면 사무동이 아니라 실험동입니다 */
+  box(g, tw * .5, 1.8, td * .55, C.wallWarm, tw * .1, pod + th + 2.3, 0);
+  cyl(g, .22, .22, 2.6, 6, C.trim, -tw * .3, pod + th + 2.7, td * .2);
+  box(g, 3.0, 3.2, .3, C.door, 0, 2.1, d / 2 + .06);
+};
+
+/* ---- ㄱ자 공학관 ----
+   두 날개가 모서리에서 만납니다. 실루엣이 통째로 달라서 멀리서도
+   "저건 다른 건물" 로 읽힙니다 — 유형을 나누는 가장 싼 방법입니다. */
+KIND.wing = (g, o) => {
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, slate: o.body.roof } : {});
+  const w = o.w, d = o.d, h = o.h;
+  const armW = w * .62, armD = d;
+  const wing = (lx, lz, ww, dd, ry) => {
+    const p = new THREE.Group();
+    p.position.set(lx, 0, lz); p.rotation.y = ry;
+    g.add(p);
+    box(p, ww + .8, .6, dd + .8, C.base, 0, .3, 0);
+    box(p, ww, h, dd, C.wall, 0, h / 2 + .5, 0);
+    const fl = Math.max(3, Math.round(h / 3.2));
+    for (let i = 1; i < fl; i++) box(p, ww + .2, .22, dd + .2, C.trim, 0, .5 + (h / fl) * i, 0);
+    box(p, ww + .5, .6, dd + .5, C.trim, 0, h + .8, 0);
+    windowWall(p, ww - 1.8, h - 1.2, Math.max(5, Math.round(ww / 2.5)), fl,
+      C.glass, C.trim, 0, 1.2, dd / 2 + .06, 0, false);
+  };
+  /* 앞 날개 — 정면을 봅니다 */
+  wing(-w * .18, d * .5, armW, armD, 0);
+  /* 옆 날개 — 90° 돌아 안뜰을 만듭니다 */
+  wing(w * .40, -armW * .30, armW * .86, armD, Math.PI / 2);
+  /* 모서리 — 두 날개를 잇는 유리 계단실 */
+  box(g, 5.0, h + 1.6, 5.0, C.glass, -w * .18 + armW * .5 + 1.0, (h + 1.6) / 2 + .5, d * .5 + 1.2);
+  box(g, 5.6, .5, 5.6, C.trim, -w * .18 + armW * .5 + 1.0, h + 2.4, d * .5 + 1.2);
+  box(g, 2.8, 3.0, .3, C.door, -w * .18, 2.0, d * .5 + armD / 2 + .06);
+};
+
+/* ---- 벽돌 박공관 ----
+   랜딩 에셋 첫 건물의 얼굴입니다. 경사 지붕에 지붕창. */
+KIND.brick = (g, o) => {
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, tile: o.body.roof } : {});
+  const w = o.w, d = o.d, h = o.h;
+  box(g, w + 1.0, .8, d + 1.0, C.base, 0, .4, 0);
+  box(g, w, h, d, C.wall, 0, h / 2 + .7, 0);
+  box(g, w + .5, .34, d + .5, C.trim, 0, h + .7, 0);
+  /* 모서리 기둥 — 크림 테두리 */
+  for (const sx of [-1, 1]) for (const sz of [-1, 1])
+    box(g, .6, h, .6, C.trim, sx * (w / 2 - .1), h / 2 + .7, sz * (d / 2 - .1));
+  /* 경사 지붕 */
+  const sh = new THREE.Shape();
+  sh.moveTo(-w / 2 - .7, 0); sh.lineTo(w / 2 + .7, 0); sh.lineTo(0, h * .38); sh.closePath();
+  const rg = new THREE.ExtrudeGeometry(sh, { depth: d + 1.4, bevelEnabled: false });
+  rg.translate(0, 0, -(d + 1.4) / 2);
+  const rm = new THREE.Mesh(rg, C.tile);
+  rm.position.set(0, h + .88, 0); rm.castShadow = true; rm.receiveShadow = true;
+  g.add(rm);
+  /* 지붕창 셋 — 박공 지붕의 표식 */
+  const n = 3;
+  for (let i = 0; i < n; i++) {
+    const px = -w * .3 + (w * .6 / (n - 1)) * i;
+    box(g, 1.7, 1.5, 1.5, C.wall, px, h + 1.7, d * .22);
+    box(g, 1.1, .9, .2, C.glass, px, h + 1.8, d * .22 + .8);
+    const ds = new THREE.Shape();
+    ds.moveTo(-1.05, 0); ds.lineTo(1.05, 0); ds.lineTo(0, .8); ds.closePath();
+    const dg = new THREE.ExtrudeGeometry(ds, { depth: 1.7, bevelEnabled: false });
+    dg.translate(0, 0, -.85);
+    const dm = new THREE.Mesh(dg, C.tile);
+    dm.position.set(px, h + 2.45, d * .22); dm.castShadow = true;
+    g.add(dm);
+  }
+  const fl = Math.max(2, Math.round(h / 3.6));
+  windowWall(g, w - 2.6, h - 1.6, Math.max(4, Math.round(w / 3.0)), fl,
+    C.glass, C.trim, 0, 1.4, d / 2 + .06, 0, false);
+  /* 현관 — 작은 박공 포치 */
+  box(g, 4.6, 3.2, 1.6, C.trim, 0, 2.2, d / 2 + .8);
+  pediment(g, 5.2, 1.3, 1.9, C.wall, C.trim, 0, 3.85, d / 2 + .8, 0);
+  box(g, 2.2, 2.6, .3, C.door, 0, 1.9, d / 2 + 1.66);
+};
+
+/* ---- 유리 아트리움 ----
+   솔리드 두 덩어리 사이에 유리 홀. 요즘 증축된 동의 얼굴이고,
+   캠퍼스에 하나쯤 있으면 시대가 섞여 진짜처럼 보입니다. */
+KIND.atrium = (g, o) => {
+  const C = Object.assign({}, mats(), o.body
+    ? { wall: o.body.wall, wallWarm: o.body.wallWarm, slate: o.body.roof } : {});
+  const w = o.w, d = o.d, h = o.h;
+  const sideW = w * .32;
+  box(g, w + 1.0, .6, d + 1.0, C.base, 0, .3, 0);
+  for (const sx of [-1, 1]) {
+    const px = sx * (w / 2 - sideW / 2);
+    box(g, sideW, h, d, C.wall, px, h / 2 + .5, 0);
+    const fl = Math.max(3, Math.round(h / 3.2));
+    for (let i = 1; i < fl; i++) box(g, sideW + .18, .2, d + .18, C.trim, px, .5 + (h / fl) * i, 0);
+    box(g, sideW + .45, .6, d + .45, C.trim, px, h + .8, 0);
+    windowWall(g, sideW - 1.4, h - 1.2, Math.max(3, Math.round(sideW / 2.4)), fl,
+      C.glass, C.trim, px, 1.2, d / 2 + .06, 0, false);
+  }
+  /* 가운데 유리 홀 — 양옆보다 살짝 높고, 앞으로 나옵니다 */
+  const midW = w - sideW * 2 + .6, midH = h + 2.4;
+  box(g, midW, midH, d * .92, C.glass, 0, midH / 2 + .5, d * .04);
+  /* 유리 홀의 수직 살 — 없으면 파란 상자입니다 */
+  const bays = Math.max(4, Math.round(midW / 2.4));
+  for (let i = 0; i <= bays; i++) {
+    const px = -midW / 2 + (midW / bays) * i;
+    box(g, .26, midH, .26, C.trim, px, midH / 2 + .5, d * .04 + d * .46);
+  }
+  for (let i = 1; i < Math.round(midH / 3.4); i++)
+    box(g, midW + .1, .2, .3, C.trim, 0, .5 + 3.4 * i, d * .04 + d * .46);
+  box(g, midW + .8, .7, d * .96 + .8, C.trim, 0, midH + .85, d * .04);
+  box(g, 3.4, 3.2, .4, C.door, 0, 2.1, d * .04 + d * .46 + .2);
+};
+
 /* ══════════════════════════════════════════════════════════
    배치
 
@@ -488,21 +653,21 @@ export const FACULTIES = [
      정문 축 좌우 14°는 비워 둡니다. 배치를 바꾸려면 값을 여기서
      고치지 말고 scratchpad/p7-rings.mjs 를 고쳐 다시 돌립니다 —
      campus.js 의 여섯 채와 함께 계산돼야 간격이 맞습니다. */
-  { name: '인문대학', kind: 'faculty', deg: 45, r: 54, w: 22, d: 11, h: 12 },
-  { name: '사회과학대학', kind: 'faculty', deg: 90, r: 54, w: 22, d: 11, h: 12 },
-  { name: '생명과학대학', kind: 'faculty', deg: 270, r: 54, w: 22, d: 11, h: 12 },
-  { name: '경영대학', kind: 'faculty', deg: 315, r: 54, w: 22, d: 11, h: 12 },
-  { name: '공과대학', kind: 'faculty', deg: 15, r: 90, w: 24, d: 11, h: 13 },
-  { name: '전자정보대학', kind: 'faculty', deg: 45, r: 90, w: 24, d: 11, h: 13 },
-  { name: '응용과학대학', kind: 'faculty', deg: 105, r: 90, w: 22, d: 11, h: 12 },
-  { name: '외국어대학', kind: 'faculty', deg: 135, r: 90, w: 24, d: 11, h: 12 },
-  { name: '국제대학', kind: 'faculty', deg: 165, r: 90, w: 22, d: 11, h: 11 },
-  { name: '예술디자인대학', kind: 'faculty', deg: 195, r: 90, w: 22, d: 11, h: 12 },
+  { name: '인문대학', kind: 'slab', deg: 45, r: 54, w: 22, d: 11, h: 12 },
+  { name: '사회과학대학', kind: 'brick', deg: 90, r: 54, w: 22, d: 11, h: 12 },
+  { name: '생명과학대학', kind: 'tower_lab', deg: 270, r: 54, w: 22, d: 11, h: 12 },
+  { name: '경영대학', kind: 'atrium', deg: 315, r: 54, w: 22, d: 11, h: 12 },
+  { name: '공과대학', kind: 'wing', deg: 15, r: 90, w: 24, d: 11, h: 13 },
+  { name: '전자정보대학', kind: 'tower_lab', deg: 45, r: 90, w: 24, d: 11, h: 13 },
+  { name: '응용과학대학', kind: 'slab', deg: 105, r: 90, w: 22, d: 11, h: 12 },
+  { name: '외국어대학', kind: 'brick', deg: 135, r: 90, w: 24, d: 11, h: 12 },
+  { name: '국제대학', kind: 'atrium', deg: 165, r: 90, w: 22, d: 11, h: 11 },
+  { name: '예술디자인대학', kind: 'wing', deg: 195, r: 90, w: 22, d: 11, h: 12 },
   { name: '평화의전당', kind: 'hall', deg: 225, r: 90, w: 26, d: 18, h: 15 },
   { name: '체육관', kind: 'gym', deg: 255, r: 90, w: 26, d: 16, h: 10 },
   { name: '대학원', kind: 'admin', deg: 22.5, r: 124, w: 20, d: 12, h: 14 },
-  { name: '간호과학대학', kind: 'faculty', deg: 67.5, r: 124, w: 22, d: 11, h: 11 },
-  { name: '약학대학', kind: 'faculty', deg: 112.5, r: 124, w: 22, d: 11, h: 12 },
+  { name: '간호과학대학', kind: 'slab', deg: 67.5, r: 124, w: 22, d: 11, h: 11 },
+  { name: '약학대학', kind: 'tower_lab', deg: 112.5, r: 124, w: 22, d: 11, h: 12 },
   { name: '박물관', kind: 'library', deg: 202.5, r: 124, w: 20, d: 12, h: 11 },
   { name: '제1기숙사', kind: 'hall_res', deg: 247.5, r: 124, w: 24, d: 10, h: 14 },
   { name: '제2기숙사', kind: 'hall_res', deg: 292.5, r: 124, w: 24, d: 10, h: 14 },

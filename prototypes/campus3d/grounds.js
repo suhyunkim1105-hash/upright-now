@@ -191,12 +191,13 @@ function quads(g, solid, pushTree) {
                                      .95 + rnd() * .35, 0);
     /* 네 변을 다 두르면 울타리가 됩니다. **긴 두 변에만** 세웁니다 —
        마당이 열려 있어야 가로질러 걸을 수 있고, 그게 대학 잔디밭입니다. */
-    const nx = Math.max(2, Math.round(q.w / 16));
-    for (let i = 0; i <= nx; i++) {
-      const lx = -q.w / 2 + (q.w / nx) * i;
-      put(lx, -q.d / 2 - 2.4);
-      put(lx,  q.d / 2 + 2.4);
-    }
+    /* 가장자리 나무를 뺐습니다. 줄 세운 나무가 마당을 상자에 가뒀고,
+       가둬 놓으니 가로질러 걸을 생각이 안 듭니다. 네 귀퉁이에 하나씩만
+       세워 "여기까지가 마당" 만 말합니다. */
+    put(-q.w / 2 - 2.4, -q.d / 2 - 2.4);
+    put( q.w / 2 + 2.4, -q.d / 2 - 2.4);
+    put(-q.w / 2 - 2.4,  q.d / 2 + 2.4);
+    put( q.w / 2 + 2.4,  q.d / 2 + 2.4);
   }
 }
 
@@ -443,8 +444,11 @@ export function buildGrounds(parent, solid, inCore, avoid) {
   /* 420 → 210 → 58. 건물이 훤히 보여야 캠퍼스입니다.
      남은 나무는 대로 가로수와 마당 가장자리뿐이고, 잔디 한가운데는
      비웁니다 — 비어 있어야 가로질러 걷습니다. */
+  /* 58 → 20. 남는 것은 대로 가로수와 마당 가장자리뿐입니다.
+     잔디 한복판에 나무가 서 있으면 건물이 안 보이고, 건물이 안 보이면
+     캠퍼스가 아닙니다. */
   let tries = 0;
-  while (trees.length < 58 && tries < 6000) {
+  while (trees.length < 20 && tries < 6000) {
     tries++;
     const a = rnd() * TAU;
     const r = OUTER.core + 3 + rnd() * (OUTER.wall - OUTER.core - 6);
@@ -467,7 +471,7 @@ export function buildGrounds(parent, solid, inCore, avoid) {
     /* 너무 붙으면 덤불처럼 뭉칩니다 */
     let tooClose = false;
     for (let i = trees.length - 1; i >= 0 && i > trees.length - 40; i--) {
-      if (Math.hypot(trees[i].x - x, trees[i].z - z) < 16) { tooClose = true; break; }
+      if (Math.hypot(trees[i].x - x, trees[i].z - z) < 26) { tooClose = true; break; }
     }
     if (tooClose) continue;
     pushTree(x, z, .9 + rnd() * .8);

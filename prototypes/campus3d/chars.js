@@ -35,6 +35,18 @@ const SK = { ink: 0x2E2A2E, white: 0xFFFFFF, blush: 0xF4A2A6, gum: 0xE08A94 };
    생기면 이 한 줄만 true 로 바꿉니다. */
 export const SPRITE_ON = false;
 
+/* ══ 맨몸 ══
+   랜딩 렌더의 캐릭터는 **옷을 입지 않았습니다.** 털/깃/딱지 그대로인
+   덩어리 하나이고, 얼굴에는 검은 점 두 개뿐입니다. 볼터치도 없습니다.
+
+   여기서 옷을 입히고 눈을 키우고 볼을 찍는 것은 "우리식 해석" 인데,
+   옮겨야 하는 것은 해석이 아니라 그 그림입니다. 셋 다 끕니다.
+
+   옷 자체를 지우지는 않습니다 — 옷장·염색·상점이 전부 이 구조에
+   매달려 있어서, 지우면 그쪽이 통째로 무너집니다. 대신 **살색으로
+   덮고** 모자·안경·가방을 끕니다. 형태는 남되 옷으로 안 보입니다. */
+export const BARE = true;
+
 /* ══ 비례 ══
    랜딩 3D 에셋과 나란히 놓고 맞췄습니다.
 
@@ -50,7 +62,9 @@ export const SPRITE_ON = false;
    랜딩 렌더는 앉은 자세라 머리 비중이 더 커 보이는 것이고, 선 자세
    기준으로 재면 1.08 이 그 체감입니다. */
 export const HEAD_Y = 1.45;
-export const HEAD_S = 1.08;
+/* 1.17 → 1.08 → 1.0. 키울수록 랜딩과 **멀어졌습니다** — 저쪽은 머리가
+   크긴 해도 과장돼 있지 않고, 몸이 작아서 커 보이는 쪽입니다. */
+export const HEAD_S = 1.0;
 const NECK_Y = 1.27;
 
 /* ── 멀리 있는 사람 (character 의 opt.lod) ──
@@ -132,7 +146,7 @@ function eyes(p, y, z, r, gap, opt = {}) {
     const s = i ? 1 : -1;
     /* 흰자를 크게 두르고 눈꺼풀 선을 얹었더니 **부리부리한 인상** 이
        됐습니다. 이 스타일은 검은 알 하나에 빛 두 점이면 충분합니다. */
-    if (opt.white) ell(p, r * 1.1, M(SK.white, .28), dx, y, z - r * .1, 1, 1.04, .6);
+    if (opt.white && !BARE) ell(p, r * 1.1, M(SK.white, .28), dx, y, z - r * .1, 1, 1.04, .6);
     /* 거칠기 .3 → .12. 랜딩 에셋의 눈은 **젖은 유리알**이라, 이 반짝임이
        얼굴에서 유일하게 매끄러운 곳입니다. 나머지가 전부 무광 클레이라
        여기만 반들거려도 재질이 갈라지지 않습니다 — 오히려 그 대비가
@@ -141,11 +155,13 @@ function eyes(p, y, z, r, gap, opt = {}) {
        환경광이 비쳐 **튀어나온 젖은 눈**이 됐습니다 — 랜딩 에셋의 눈은
        크기가 아니라 **빛점 하나**가 만드는 반짝임입니다. 알은 원래
        크기로, 광택은 거칠기만 낮춰서(무광 .3 → 반광 .18) 냅니다. */
-    made.push(ell(p, r, M(SK.ink, .18), dx, y, z, .96, 1.04, .62));
+    /* 랜딩 렌더의 눈은 **검은 점**입니다. 크고 반들거리는 눈알은 다른
+       그림의 문법이라, 배율을 .62 로 되돌리고 반광도 낮춥니다. */
+    made.push(ell(p, r * .62, M(SK.ink, .34), dx, y, z, .98, 1.0, .6));
     /* 하이라이트는 **크게 하나** — 개구리 눈이 유일하게 합격한 이유가
        이 큰 빛점이었습니다. 작은 점 두 개는 멀리서 사라집니다. */
-    ell(p, r * .40, M(SK.white, .16), dx - s * r * .3, y + r * .3, z + r * .42, 1, 1, .55);
-    ell(p, r * .15, M(SK.white, .16), dx + s * r * .32, y - r * .34, z + r * .34, 1, 1, .5);
+    /* 빛점 하나만, 아주 작게. 둘이면 만화 눈이 됩니다. */
+    ell(p, r * .13, M(SK.white, .3), dx - s * r * .17, y + r * .18, z + r * .3, 1, 1, .5);
   });
   /* 눈 덩어리를 기억해 둡니다 — 깜빡임이 이 목록의 y 를 눌러서 만듭니다 */
   p.userData.eyeMeshes = (p.userData.eyeMeshes || []).concat(made);
@@ -153,6 +169,9 @@ function eyes(p, y, z, r, gap, opt = {}) {
 }
 /* 볼터치 — 두 뺨. 이게 있어야 얼굴에 온기가 돕니다 */
 function cheeks(p, x, y, z, r = .1) {
+  /* 랜딩 렌더에는 볼터치가 없습니다. 분홍 점 둘이 얼굴을 캐릭터
+     상품으로 만드는데, 옮기려는 그림은 그쪽이 아닙니다. */
+  if (BARE) return;
   /* 랜딩 쪽 볼은 더 큽니다 — 얼굴 반지름의 4분의 1쯤 되는 분홍 타원.
      작으면 점으로 보이고, 점은 멀리서 사라집니다. */
   /* 1.22 배도 과했습니다 — 큰 볼이 큰 눈과 붙으니 얼굴이 밀집돼
@@ -697,6 +716,12 @@ export function character(parent, species, fit, opt = {}) {
 function buildChar(parent, species, fit, opt) {
   const C = SPECIES[species];
   const L = normalizeLook(fit);
+  if (BARE) {
+    /* 가장 단순한 차림으로 고정합니다 — 후드 주머니, 과잠 소매,
+       트레이닝 옆줄 같은 **덧붙는 조각**이 안 생기는 조합입니다. */
+    L.topId = 'tee'; L.bottomId = 'jeans'; L.shoesId = 'sneakers';
+    L.hatId = 'none'; L.glassesId = 'none'; L.bagId = 'none';
+  }
   const g = new THREE.Group();
   g.position.set(opt.x || 0, 0, opt.z || 0);
   g.rotation.y = opt.ry || 0;
@@ -723,10 +748,12 @@ function buildChar(parent, species, fit, opt) {
   slot('hat', L.hatId, L.hat);
   /* 가방 색은 opt.bag(숫자)이 이깁니다 — NPC 들이 그렇게 부릅니다 */
   slot('bag', L.bagId, (typeof opt.bag === 'number' ? opt.bag : null) ?? L.bagC ?? 0x4A6EA8);
-  const topC = paint('top'), botC = paint('bottom'), shoC = paint('shoes');
+  let topC = paint('top'), botC = paint('bottom'), shoC = paint('shoes');
+  if (BARE) { topC = botC = shoC = C.skin; }
   const top = dye('top', M(topC, .6)), bot = dye('bottom', M(botC, .6)), sho = dye('shoes', M(shoC, .48));
   /* trim 을 따로 준 차림(옛 NPC)은 염색을 안 따릅니다 — 뜻이 있어 준 색입니다 */
-  const trim = L.trim != null ? M(L.trim, .55)
+  const trim = BARE ? M(C.skin, .6)
+    : L.trim != null ? M(L.trim, .55)
     : dye('top', M(mix(topC, 0x000000, .18), .55), (c) => mix(c, 0x000000, .18));
   const parts = { legs: [], shins: [], arms: [], head: null, torso: null, neck: null, wear };
   const shortsOn = L.bottomId === 'shorts';

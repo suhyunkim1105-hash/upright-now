@@ -466,8 +466,15 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 .card .sp{
   flex:1;display:grid;place-items:center;pointer-events:none;
 }
-/* 32px 원본의 정수배(×6=192)로 고정 — 비정수 배율은 픽셀을 뭉갭니다 */
-.card .sp img{width:192px;image-rendering:pixelated;pointer-events:none}
+/* 카드는 월드에 실제로 서 있는 그 캐릭터를 보여 줍니다. 픽셀 스프라이트를
+   쓰던 시절의 정수배·pixelated 고정은 여기서 할 일이 없습니다.
+   그림은 칸에 **절대 배치**합니다 — flex 칸의 높이는 확정이 아니라서
+   그냥 두면 object-fit 이 안 듣고 본디 크기로 퍼집니다. align-self 는
+   .card 가 align-items:center 라 절대 자식만 남은 칸의 폭이 0 으로
+   접히는 것을 막습니다. 발은 칸 바닥에 붙입니다 — 종마다 몸 비율이
+   달라 가운데 정렬이면 짧은 종이 공중에 뜹니다. */
+.card .sp{min-height:0;position:relative;align-self:stretch}
+.card .sp img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;pointer-events:none}
 .card .nm{font-size:1.5rem;font-weight:800;letter-spacing:-.01em;pointer-events:none}
 .card .ds{margin-top:6px;color:var(--muted);font-size:.94rem;text-align:center;line-height:1.5;pointer-events:none}
 .card .go{
@@ -774,7 +781,7 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
     <div class="deck-copy">
       <span class="lbl">내 캐릭터</span>
       <h2 class="rv">내 <span class="serif">캐릭터</span>를 뽑아요.</h2>
-      <p class="rv" style="--d:.08s">여덟 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>
+      <p class="rv" style="--d:.08s">네 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>
         집중만 하면 모두 내 캐릭터가 될 수 있어요.</p>
       <p class="deck-hint rv" style="--d:.14s" aria-hidden="true">← 카드를 넘겨 보세요 →</p>
     </div>
@@ -1510,18 +1517,16 @@ const ONBOARD = '../onboarding/index.html';
 
 /* ---------- 캐릭터 덱 ---------- */
 (() => {
+  /* 넷뿐인 이유 — 이 카드는 월드에서 **실제로 고를 수 있는** 캐릭터를
+     보여 줍니다. 여덟을 늘어놓고 넷만 주면 첫 화면부터 거짓말이 됩니다. */
   const CHARS = [
     { slug:'turtle',   ko:['거북','오래 앉기의 명수. 서두르지 않아요.'],       en:['Turtle','Master of the long sit. Never hurries.'] },
     { slug:'giraffe',  ko:['기린','목을 곧게 펴는 게 특기예요.'],             en:['Giraffe','Keeps that neck long and proud.'] },
     { slug:'penguin',  ko:['펭귄','라운지파. 끊어 가며 오래 가요.'],           en:['Penguin','Lounge regular. Goes far in bursts.'] },
-    { slug:'hamster',  ko:['햄스터','게시판과 상점을 제일 좋아해요.'],         en:['Hamster','Loves the board and the shop.'] },
     { slug:'frog',     ko:['개구리','스트레칭 담당. 회복이 빨라요.'],          en:['Frog','Stretch captain. Recovers fast.'] },
-    { slug:'hedgehog', ko:['고슴도치','조용한 구석 자리를 골라요.'],           en:['Hedgehog','Picks the quiet corner seat.'] },
-    { slug:'alpaca',   ko:['알파카','본관 단골. 느긋하게 다녀요.'],            en:['Alpaca','Main-hall regular. Takes it easy.'] },
-    { slug:'swan',     ko:['백조','호숫가 산책으로 하루를 열어요.'],           en:['Swan','Opens the day by the lake.'] },
   ];
   const GO_TXT = { ko:'이 친구로 시작하기 ↗', en:'Start with this friend ↗' };
-  const BANDS = ['#2DD4BF','#F5C84C','#0D7769','#E8A9C0','#8FD98A','#C79A6B','#E8DCC8','#CFF2ED'];
+  const BANDS = ['#2DD4BF','#F5C84C','#0D7769','#8FD98A'];
   const deck = document.getElementById('deck');
   let order = [...CHARS.keys()];
 
@@ -1530,7 +1535,7 @@ const ONBOARD = '../onboarding/index.html';
     card.className = 'card';
     card.innerHTML =
       `<i class="band" style="background:${BANDS[i]}" aria-hidden="true"></i>` +
-      `<div class="sp"><img src="assets/char-${ch.slug}.png" alt="${ch[LANG][0]}"></div>` +
+      `<div class="sp"><img src="assets/char-${ch.slug}-cut.webp" alt="${ch[LANG][0]}"></div>` +
       `<div class="nm">${ch[LANG][0]}</div><div class="ds">${ch[LANG][1]}</div>` +
       `<a class="go" href="${ONBOARD}">${GO_TXT[LANG]}</a>`;
     deck.appendChild(card);
@@ -1591,7 +1596,7 @@ const ONBOARD = '../onboarding/index.html';
   /* 드래그였다면 카드 링크 클릭 무시 */
   deck.addEventListener('click', e => { if (moved) { e.preventDefault(); e.stopPropagation(); } }, true);
 
-  /* 드래그만으로는 키보드·트랙패드 사용자가 8종을 볼 수 없습니다 */
+  /* 드래그만으로는 키보드·트랙패드 사용자가 네 종을 다 볼 수 없습니다 */
   function cycle(dir){
     const front = CHARS[order[0]].el;
     gsap.to(front, { x: dir * innerWidth * .35, rotation: dir * 14, opacity: 0,
@@ -1725,8 +1730,8 @@ const ONBOARD = '../onboarding/index.html';
       ko: '내 <span class="serif">캐릭터</span>를 뽑아요.',
       en: 'Draw your <span class="serif">character</span>.' }, 1],
     ['.deck-copy > p', {
-      ko: '여덟 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>집중만 하면 모두 내 캐릭터가 될 수 있어요.',
-      en: 'Eight characters are waiting. Start with one —<br>keep focusing, and they can all be yours.' }, 1],
+      ko: '네 캐릭터가 기다리고 있어요. 한 마리로 시작해서<br>집중만 하면 모두 내 캐릭터가 될 수 있어요.',
+      en: 'Four characters are waiting. Start with one —<br>keep focusing, and they can all be yours.' }, 1],
     ['.deck-hint', { ko: '← 카드를 넘겨 보세요 →', en: '← Swipe the cards →' }],
     ['.faq-copy .lbl', { ko: '자주 묻는 질문', en: 'FAQ' }],
     ['.faq-copy h2', { ko: 'FAQ', en: 'FAQ' }],

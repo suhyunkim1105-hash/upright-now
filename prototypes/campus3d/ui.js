@@ -9,7 +9,10 @@
 
 const KEY = 'girin3d.save';
 const DEF = {
-  nick: '', school: '', species: '거북이', fit: 0,
+  /* 기본은 기린입니다. 거북이·펭귄은 변환된 메시의 뒤통수에도 눈이 파여
+     있어(생성기가 앞면을 뒤에 복사했습니다) 돌아서면 얼굴이 둘로 보입니다.
+     그 둘을 다시 뽑으면 되돌립니다. */
+  nick: '', school: '', species: '기린', fit: 0,
   look: null,                 // { topId, top, bottomId, bottom, ... } — 없으면 기본 차림
   owned2: [],                 // 산 옷 id
   ownedSp: [],                // 깨어난 종 (기본 셋은 코드가 채웁니다)

@@ -856,7 +856,11 @@ function josa(word, withT, withoutT) {
 }
 const SPEC = Object.keys(SPECIES);
 const SAVE = UI.SAVE;
-let curSpecies = SPECIES[SAVE.species] ? SAVE.species : '거북이';
+/* 기본은 기린입니다. 거북이·펭귄은 변환된 메시의 **뒤통수에도 눈이 파여**
+   있어서(생성기가 앞면을 뒤에 복사했습니다) 돌아서면 얼굴이 두 개로
+   보입니다. 기린과 개구리는 앞뒤가 제대로 나왔습니다.
+   그 둘을 다시 뽑으면 여기를 되돌립니다. */
+let curSpecies = SPECIES[SAVE.species] ? SAVE.species : '기린';
 /* 옷 기본값 + 소유 목록. 공짜 기본템은 늘 갖고 시작합니다 */
 const DEF_LOOK = { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
   shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'none', hat: 0xE8695A,
@@ -2052,7 +2056,7 @@ function remoteFor(p) {
     const rig = new THREE.Group(); scene.add(rig);
     const fitVal = typeof p.fit === 'object' && p.fit ? p.fit : OUTFITS[(p.fit | 0) % OUTFITS.length];
     /* 남의 캐릭터도 덜 잘게 — 몇 명이 들어올지 모르는 자리입니다 */
-    const g = character(rig, SPECIES[p.species] ? p.species : '거북이', fitVal, { lod: 1 });
+    const g = character(rig, SPECIES[p.species] ? p.species : '기린', fitVal, { lod: 1 });
     const el = document.createElement('div'); el.className = 'tag3'; $('#tags').appendChild(el);
     const say = document.createElement('div'); say.className = 'say3'; say.style.display = 'none'; $('#tags').appendChild(say);
     const emoEl = document.createElement('div'); emoEl.className = 'emo3'; emoEl.style.display = 'none'; $('#tags').appendChild(emoEl);

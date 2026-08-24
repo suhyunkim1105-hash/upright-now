@@ -128,6 +128,13 @@ function box(p, w, h, d, r, mat, x, y, z) {
   p.add(m); return m;
 }
 
+/* 소품 한 벌에 이름표를 답니다.
+   벤치 한 벌은 살 · 다리 · 등받이 열두 조각입니다. 배치를 눈으로 보고
+   고치다가 화단 위에 선 벤치와 길 연석을 물고 있는 거치대를 놓쳤습니다 —
+   조각 단위로는 아무것도 안 보이고, 소품 단위로 상자를 씌워 재야
+   겹친 것 · 뜬 것 · 잠긴 것이 숫자로 나옵니다. 그리는 데는 안 쓰입니다. */
+const prop = (p, kind) => { p.userData.prop = kind; return p; };
+
 /* 바닥에 까는 판 — 타원 하나, 네모 하나.
    섬 잔디 윗면이 y=0.1 이라 그 위부터 씁니다. **겹치는 판은 반드시 높이를
    어긋나게** 받습니다. 같은 높이로 겹치면 카메라가 조금만 움직여도 어느
@@ -196,10 +203,15 @@ function plaza(g) {
   });
 }
 
-/* ---------- 길 ---------- */
+/* ---------- 길 ----------
+   깐 길을 **되돌려 줍니다**. 잔디에 무작위로 뿌리는 나무와 덤불이 길을
+   피하려면 길이 어디 있는지 알아야 하는데, 각도와 폭을 뿌리는 쪽에 다시
+   적어 두면 한쪽만 고쳐집니다. 실제로 덤불 아홉이 대로 한복판에 앉아
+   있었습니다 — 흙길 위에 풀숲 하나가 있으면 심은 것이 아니라 떨어뜨린
+   것으로 보입니다. */
 function pathTo(g, x, z, w = 5.4) {
   const L = Math.hypot(x, z) - PLAZA_R + 1.5;
-  if (L <= 0) return;
+  if (L <= 0) return null;
   const a = Math.atan2(x, z);
   const mid = PLAZA_R - .7 + L / 2;
   const p = new THREE.Group(); p.rotation.y = a; g.add(p);
@@ -212,6 +224,7 @@ function pathTo(g, x, z, w = 5.4) {
                   PLAZA_R - .2 + (i + .5) * (L / n));
     s.castShadow = false;
   }
+  return { a, w, from: PLAZA_R - .7, to: PLAZA_R - .7 + L };
 }
 
 /* ---------- 둘레 산책로 ---------- */
@@ -265,7 +278,7 @@ export function fountain(g, x = 0, z = 0) {
     const a = rnd() * Math.PI * 2, r = rnd() * 3.6;
     cyl(p, .13, .13, .04, 10, M(PAL.gold, .3), Math.cos(a) * r, .92, Math.sin(a) * r);
   }
-  return p;
+  return prop(p, 'fountain');
 }
 
 /* 동상 — 기린이 서고 거북이가 발치에 앉습니다.
@@ -347,7 +360,7 @@ export function lampPost(g, x, z, h = 4.2) {
     cyl(L, .06, .06, .1, 6, M(PAL.gold, .4), 0, -.6, 0);
   });
   cyl(p, .16, .24, .3, 8, M(PAL.gold, .4), 0, h + .62, 0);
-  return p;
+  return prop(p, 'lamp');
 }
 /* ---------- 야외 벤치 ---------- */
 export function benchOut(g, x, z, ry) {
@@ -359,7 +372,7 @@ export function benchOut(g, x, z, ry) {
   });
   [0, 1, 2].forEach((i) => box(p, 3.0, .14, .28, .06, M(PAL.wood, .7), 0, .58, -.28 + i * .3));
   [0, 1, 2].forEach((i) => box(p, 3.0, .26, .13, .05, M(PAL.wood, .7), 0, .82 + i * .3, -.4));
-  return p;
+  return prop(p, 'bench');
 }
 
 /* ---------- 화단 ---------- */
@@ -380,7 +393,7 @@ export function flowerBed(g, x, z, r = 2.0) {
     const y = new THREE.Mesh(new THREE.SphereGeometry(.06, 5, 4), M(PAL.gold, .5));
     y.position.set(fx, .85, fz); p.add(y);
   }
-  return p;
+  return prop(p, 'flowerBed');
 }
 
 /* ---------- 산울타리 ---------- */
@@ -394,7 +407,7 @@ export function hedge(g, x, z, len, ry, h = 1.0) {
     m.position.set(-len / 2 + (i + .5) * (len / n), h * .92, 0);
     m.scale.set(1, .62, .9); m.castShadow = true; p.add(m);
   }
-  return p;
+  return prop(p, 'hedge');
 }
 
 /* ---------- 자전거 거치대 ---------- */
@@ -421,7 +434,7 @@ export function bikeRack(g, x, z, ry, n = 4) {
     box(b, .34, .1, .18, .05, M(0x3A3F4A, .5), -.28, .94, 0);
     box(b, .5, .08, .08, .03, M(0x3A3F4A, .5), .56, 1.06, 0);
   });
-  return p;
+  return prop(p, 'bikeRack');
 }
 
 /* ---------- 캠퍼스 게시판(야외) ---------- */
@@ -437,7 +450,7 @@ export function boardOut(g, x, z, ry) {
   });
   prism(p, 3.9, .5, .5, M(PAL.red, .6), 0, 3.1, 0, .06);
   box(p, 1.9, .38, .18, .08, M(PAL.gold, .5), 0, 3.28, .12);
-  return p;
+  return prop(p, 'board');
 }
 
 /* ---------- 쓰레기통 · 정자 · 야외 탁자 ---------- */
@@ -448,7 +461,7 @@ export function binOut(g, x, z) {
     Math.cos(i / 8 * Math.PI * 2) * .34, .45, Math.sin(i / 8 * Math.PI * 2) * .34);
   cyl(p, .44, .44, .12, 16, M(PAL.metalDark, .5), 0, .96, 0);
   cyl(p, .3, .3, .06, 16, M(0x2A3A48, .5), 0, 1.02, 0);
-  return p;
+  return prop(p, 'bin');
 }
 export function picnicSet(g, x, z, ry) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
@@ -467,7 +480,7 @@ export function picnicSet(g, x, z, ry) {
     c.castShadow = true; p.add(c);
   }
   cyl(p, .12, .12, .3, 8, M(PAL.gold, .4), 0, 3.5, 0);
-  return p;
+  return prop(p, 'picnic');
 }
 /* ---------- 정문 ---------- */
 export function gate(g, x, z, ry) {
@@ -483,7 +496,7 @@ export function gate(g, x, z, ry) {
   box(p, 7.2, .8, .3, .14, M(0x3F6BA8, .5), 0, 5.6, .68);
   [0, 1, 2, 3].forEach((i) => box(p, .8, .4, .12, .06, M(0xFFFFFF, .5), -2.7 + i * 1.8, 5.6, .78));
   prism(p, 11.4, 1.0, 1.7, M(PAL.red, .6), 0, 6.3, 0, .1);
-  return p;
+  return prop(p, 'gate');
 }
 export function busStop(g, x, z, ry) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
@@ -494,7 +507,7 @@ export function busStop(g, x, z, ry) {
   [-1, 1].forEach((s) => box(p, .16, .5, .5, .05, M(PAL.metalDark, .5), s * 1.7, .3, -.7));
   box(p, 1.0, 1.4, .14, .06, M(0xFFF8EA, .5), 1.6, 1.9, -1.0);
   [0,1,2,3].forEach((i) => box(p, .7, .08, .1, .02, M(0x8A9098, .5), 1.6, 2.3 - i * .2, -1.06));
-  return p;
+  return prop(p, 'busStop');
 }
 /* ---------- 작은 이정표 ---------- */
 export function signpost(g, x, z, ry, labels) {
@@ -510,7 +523,7 @@ export function signpost(g, x, z, ry, labels) {
   });
   const c = new THREE.Mesh(new THREE.SphereGeometry(.18, 10, 8), M(PAL.gold, .4));
   c.position.y = 2.62; c.castShadow = true; p.add(c);
-  return p;
+  return prop(p, 'signpost');
 }
 /* ---------- 깃대 ---------- */
 export function flagPole(g, x, z, col = 0x3F6BA8) {
@@ -528,7 +541,7 @@ export function flagPole(g, x, z, col = 0x3F6BA8) {
   m.userData.noBake = true; p.userData.flag = m;
   const k = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), M(PAL.gold, .35));
   k.position.y = 6.24; p.add(k);
-  return p;
+  return prop(p, 'flagPole');
 }
 /* ---------- 야외 자판기 ---------- */
 export function vendOut(g, x, z, ry, col = 0xE8695A) {
@@ -541,7 +554,7 @@ export function vendOut(g, x, z, ry, col = 0xE8695A) {
   box(p, .38, .62, .12, .05, M(0xFFF0C4, .45), .5, 1.8, .5);
   box(p, 1.0, .34, .14, .05, M(0x2A3A48, .4), -.1, .56, .5);
   box(p, 1.56, .2, 1.06, .06, M(0xFFFFFF, .5), 0, 2.66, 0);
-  return p;
+  return prop(p, 'vend');
 }
 /* ---------- 잔디 위 소품 ---------- */
 export function stumpSet(g, x, z) {
@@ -552,7 +565,7 @@ export function stumpSet(g, x, z) {
     cyl(p, .34, .4, .5, 12, M(PAL.trunk, .84), dx, .25, dz);
     cyl(p, .33, .33, .08, 12, M(0xC9A05E, .8), dx, .52, dz);
   });
-  return p;
+  return prop(p, 'stump');
 }
 
 /* ---------- 천막 ----------
@@ -585,7 +598,7 @@ function tentStall(p, x, z, ry, cloth, clothDark) {
     }
   });
   g.userData.cloth = cl;
-  return g;
+  return prop(g, 'tent');
 }
 
 /* ---------- 운동장 ----------
@@ -624,10 +637,14 @@ function trackField(g, ctx, deg, r, A, B) {
     put(lx, 0, 1.2, 1.2);
   });
   /* 벤치 넷 — 안쪽 둘 · 바깥 둘.
-     안쪽 벤치를 트랙 모서리(로컬 x ±5)에 놓으면 광장 화단(반지름 15.6)
-     과 겹칩니다. 화단은 광장 것이라 못 옮기니 벤치를 가운데로 모읍니다. */
-  [[-2.2, B + 1.6, Math.PI], [2.2, B + 1.6, Math.PI],
-   [-5.4, -(B - .8), 0], [5.4, -(B - .8), 0]].forEach(([lx, lz, br]) => {
+     안쪽 벤치를 트랙 모서리(로컬 x ±5)에 놓으면 광장 화단과 겹칩니다.
+     가운데로 모으되 본관 앞마당 돌판 모서리에서도 떨어뜨립니다 —
+     (-2.2, 7.1) 은 벤치 끝이 그 판에 25cm 올라타 있었습니다.
+     바깥 둘은 연석 위에 얹혀 있었습니다(우레탄 타원은 로컬 x 가 커질수록
+     빨리 좁아지므로, 트랙 목 쪽으로 옮기면 연석에서 떨어지면서도 산책로
+     안쪽 잔디에 그대로 남습니다). */
+  [[-1.8, B + 2.0, Math.PI], [1.8, B + 2.0, Math.PI],
+   [-6.5, -(B - 1.3), 0], [6.5, -(B - 1.3), 0]].forEach(([lx, lz, br]) => {
     benchOut(p, lx, lz, br); put(lx, lz, 3.4, 1.2);
   });
   return p;
@@ -791,28 +808,34 @@ function clubStreet(g, ctx, deg, r) {
   }
   /* 천막 둘 — 빨강은 옷, 노랑은 안내(2D 의 tentA · tentC 색 그대로).
      바다 쪽에 세워 산책로에서 오는 쪽을 마주 보게 합니다. */
-  [[-4.6, 0xE8695A, 0xB3392E, 0], [-.4, 0xE0AE3C, 0xA87A20, 2.1]].forEach(([lx, cl, cd, ph]) => {
-    const t = tentStall(p, lx, -2.0, 0, cl, cd);
+  /* 포석은 잔디보다 7cm 높습니다. 그 위에 세우는 것은 다 그만큼 올려
+     주지 않으면 기둥 밑동과 벤치 다리가 포석에 잠깁니다. */
+  const up = (o) => { o.position.y = .07; return o; };
+  [[-5.0, 0xE8695A, 0xB3392E, 0], [-.2, 0xE0AE3C, 0xA87A20, 2.1]].forEach(([lx, cl, cd, ph]) => {
+    const t = up(tentStall(p, lx, -2.0, 0, cl, cd));
     ctx.flutter.push({ mesh: t.userData.cloth, phase: ph, amp: .075, axis: 'x' });
     put(lx, -2.0, 3.4, 1.3);
   });
   /* 게시판 둘 + 그 앞 벤치 둘 — 붙여서 "판 읽고 앉는 자리" 한 덩어리로
      만듭니다. 따로 세우면 거리 한복판에 벤치 둘이 떠 있습니다. */
-  [-5.6, 2.4].forEach((lx) => {
-    boardOut(p, lx, 2.5, Math.PI); put(lx, 2.5, 3.8, 1.0);
-    benchOut(p, lx, 1.3, Math.PI);  put(lx, 1.3, 3.4, 1.2);
+  /* 오른쪽 짝은 2.4 에서 1.4 로 당깁니다 — 파라솔(반지름 1.9)이 게시판
+     판을 뚫고 있었습니다. 천막 간격도 4.2 에서 4.8 로 벌렸습니다. */
+  [-5.6, 1.4].forEach((lx) => {
+    up(boardOut(p, lx, 2.5, Math.PI)); put(lx, 2.5, 3.8, 1.0);
+    up(benchOut(p, lx, 1.3, Math.PI));  put(lx, 1.3, 3.4, 1.2);
   });
   /* 파라솔 탁자 — 거리 끝. 벤치가 등지고 앉는 자리라면 여기는 마주 앉는
      자리입니다. 장터에 있어야 하는 것은 앉는 자리가 아니라 같이 앉는
      자리입니다. 상자 깊이는 탁자까지만 재서 통로를 안 먹게 합니다. */
-  picnicSet(p, 5.6, 1.8, .22); put(5.6, 1.8, 2.8, 2.2);
+  up(picnicSet(p, 5.6, 1.8, .22)); put(5.6, 1.8, 2.8, 2.2);
   /* 나무 상자 — 판 옆이 비면 장이 아니라 천막 둘입니다 */
   [[3.2, -2.2, .3], [4.1, -1.9, -.5], [6.4, -2.1, .8]].forEach(([lx, lz, rr]) => {
-    box(p, .8, .62, .8, .07, M(PAL.wood, .74), lx, .42, lz).rotation.y = rr;
-    box(p, .84, .1, .84, .05, M(PAL.woodDark, .74), lx, .76, lz).rotation.y = rr;
+    box(p, .8, .62, .8, .07, M(PAL.wood, .74), lx, .49, lz).rotation.y = rr;
+    box(p, .84, .1, .84, .05, M(PAL.woodDark, .74), lx, .83, lz).rotation.y = rr;
     put(lx, lz, .95, .95);
   });
-  binOut(p, 7.0, 2.3);
+  /* 쓰레기통은 파라솔 탁자 의자에 붙어 있었습니다. 통로 쪽으로 내놓습니다. */
+  up(binOut(p, 7.0, -.6));
   return p;
 }
 
@@ -837,6 +860,52 @@ export function buildCampus(scene) {
      두 시계가 어긋나고, 그러면 백조가 물 위를 순간이동합니다. */
   const swans = [], lotus = [], fish = [], flutter = [];
   const ctx = { solid, swans, lotus, fish, flutter };
+
+  /* 판 위에 세울 때 들어 올리는 높이.
+     소품은 하나같이 바닥을 y=0 으로 잡고 만듭니다. 섬 잔디 윗면이 0.1 이라
+     잔디에서는 발이 10cm 묻혀 자리를 잡는데, 돌판은 잔디보다 높아서 같은
+     자리에 그냥 놓으면 그 차이만큼 통째로 박힙니다. 광장 벤치 여덟은
+     다리가 다 잠겨 좌면이 바닥에 붙어 있었고(다리 없는 의자로 보입니다),
+     건물 앞마당 벤치도 17cm 잠겨 있었습니다. 깐 판 높이만큼 올립니다. */
+  const LIFT = { plaza: .28, pad: .17, street: .07 };
+  /* 앞마당 돌판 위인가. 가장자리에서 0.7 안쪽까지만 "위" 로 봅니다 —
+     연석에 걸친 채로 올리면 반대쪽이 뜨기 때문에, 걸친 것은 올릴 것이
+     아니라 옮길 것입니다. */
+  const onPad = (x, z) => BUILDINGS.some((b) => {
+    const cx = b.x + Math.sin(b.ry) * (b.front + 1.2) * b.s * .5;
+    const cz = b.z + Math.cos(b.ry) * (b.front + 1.2) * b.s * .5;
+    const co = Math.cos(b.ry), si = Math.sin(b.ry), dx = x - cx, dz = z - cz;
+    return Math.abs(co * dx - si * dz) < (b.w + 4) * b.s / 2 - .7
+        && Math.abs(si * dx + co * dz) < (b.d + b.front + 4.5) * b.s / 2 - .7;
+  });
+  /* 이미 무언가 서 있는 자리인가.
+     나무와 덤불은 무작위로 뿌리는데, 뿌릴 때 보는 것이 건물 · 길 · 구역뿐이라
+     소풍 탁자 한가운데에서 나무가 자라고 파라솔 밑으로 덤불이 밀고 들어와
+     있었습니다. 세운 것은 전부 충돌 상자를 남기므로 그 표를 그대로 봅니다 —
+     소품 목록을 따로 만들면 하나 추가할 때마다 한쪽만 고쳐집니다.
+     n 은 어디까지 볼지입니다 — 나무끼리 · 나무와 덤불은 서로 파고들어야
+     수풀로 보이므로, 심기 시작하기 전까지의 상자만 봅니다.
+     나무에 주는 여유가 2.6 인 것은 수관이 반지름 1.9 까지 퍼지기 때문입니다.
+     밑동만 피하면 파라솔과 지붕 속으로 잎이 들어옵니다(덤불도 같은 이유로
+     제 반지름에 0.6 을 더해 봅니다 — 소풍 파라솔이 상자보다 넓습니다). */
+  const clearOfProps = (x, z, r, n = colliders.length) => !colliders.slice(0, n).some((c) => {
+    const dx = x - c.x, dz = z - c.z;
+    if (dx * dx + dz * dz > 400) return false;
+    const co = Math.cos(c.ry || 0), si = Math.sin(c.ry || 0);
+    return Math.abs(co * dx - si * dz) < c.w / 2 + r
+        && Math.abs(si * dx + co * dz) < c.d / 2 + r;
+  });
+  /* 길 위인가 — 대로 일곱과 둘레 산책로. pathTo 가 깔면서 돌려준 표를 봅니다. */
+  const paths = [];
+  const layPath = (x, z, w) => { const q = pathTo(g, x, z, w); if (q) paths.push(q); };
+  const onPath = (x, z, pad = 0) => {
+    if (Math.abs(Math.hypot(x, z) - 30) < 2.1 + pad) return true;
+    return paths.some((p) => {
+      const t = x * Math.sin(p.a) + z * Math.cos(p.a);
+      return t > p.from - pad && t < p.to + pad
+          && Math.abs(x * Math.cos(p.a) - z * Math.sin(p.a)) < p.w / 2 + pad;
+    });
+  };
 
   ground(g);
   ringPath(g, 30, 4.2);
@@ -868,51 +937,97 @@ export function buildCampus(scene) {
     const dd = (b.d / 2 + b.front) * b.s;
     portals.push({ x: b.x + Math.sin(b.ry) * dd, z: b.z + Math.cos(b.ry) * dd,
                    r: 2.6, zone: b.zone, name: b.name, sub: b.sub });
-    pathTo(g, b.x, b.z, b.key === 'library' || b.key === 'mainHall' ? 6.2 : 5.0);
+    layPath(b.x, b.z, b.key === 'library' || b.key === 'mainHall' ? 6.2 : 5.0);
   });
 
   /* --- 광장 한가운데 --- */
-  fountain(g, 0, 0);
-  solid(0, 0, 10.6, 10.6, 0, true);
+  /* ── 분수 충돌 ──
+     여기에 10.6 x 10.6 **정사각형** 하나가 있었습니다. 분수는 둥근데
+     막는 것은 네모라, 광장 네 귀퉁이가 통째로 막혔습니다. 그 결과
+     ① 분수 앞에 설 수가 없어서 "거북이와 기린 상" 자리가 영영 안 열리고
+     ② 시작 자리(5,5)가 그 네모 **안**이라 들어오자마자 끼어 있었습니다
+        (unstick 이 매번 밀어내 주고 있었을 뿐입니다).
 
-  /* 광장 둘레 — 벤치 여덟 · 가로등 여덟 · 화단 여덟 */
+     여덟 조각으로 둥글게 두릅니다. 실제 물받이 반지름이 4.4 라 4.6 을
+     안쪽 반지름으로 잡으면, 광장(반지름 12)에는 사람 다닐 폭이 7m
+     넘게 남습니다. */
+  fountain(g, 0, 0);
+  {
+    const RF = 4.6, SEG = 8;
+    for (let i = 0; i < SEG; i++) {
+      const a = (i / SEG) * Math.PI * 2;
+      const w = 2 * RF * Math.tan(Math.PI / SEG);
+      /* big 을 안 줍니다 — big 은 **카메라도 막는** 표시입니다. 분수는
+         허리 높이라 카메라가 그 위를 지나가야 합니다. */
+      solid(Math.cos(a) * RF * .78, Math.sin(a) * RF * .78, w, RF * .62, -a, false);
+    }
+  }
+
+  /* 광장 둘레 — 벤치 여덟 · 가로등 여덟 */
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
     const bx = Math.cos(a) * 9.2, bz = Math.sin(a) * 9.2;
-    benchOut(g, bx, bz, -a + Math.PI / 2);
+    benchOut(g, bx, bz, -a + Math.PI / 2).position.y = LIFT.plaza;
     solid(bx, bz, 3.4, 1.2, -a + Math.PI / 2);
     /* 길이 45° 마다 뻗어 나가므로 가로등은 그 사이(22.5°)에 세웁니다.
-       전 판은 길 한복판에 서서 카메라를 가로막았습니다. */
+       전 판은 길 한복판에 서서 카메라를 가로막았습니다.
+       반지름은 13 에서 11.9 로 당겼습니다 — 13 은 돌판(12) 과 연석(12.7)
+       걸침이라 밑동 한쪽이 7cm 짜리 턱에 얹혀 있었고, 그 자리는 화단
+       가장자리이기도 했습니다. 판 안으로 들어오면 둘 다 없어집니다. */
     const la = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    lampPost(g, Math.cos(la) * 13.0, Math.sin(la) * 13.0);
-    solid(Math.cos(la) * 13.0, Math.sin(la) * 13.0, .9, .9);
-    const fa = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    flowerBed(g, Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 1.8);
-    solid(Math.cos(fa) * 15.6, Math.sin(fa) * 15.6, 4.0, 4.0);
+    const lx = Math.cos(la) * 11.9, lz = Math.sin(la) * 11.9;
+    lampPost(g, lx, lz).position.y = LIFT.plaza;
+    solid(lx, lz, .9, .9);
   }
+  /* 화단 여덟 — 전에는 광장에서 15.6 되는 띠에 고르게 돌려 놓았습니다.
+     그 띠는 이미 가로등 · 게시판 · 이정표 · 건물 앞 벤치가 다 쓰고 있어서
+     여덟 중 일곱이 무언가와 겹쳐 있었습니다. 벤치가 흙에 발을 담그고 있고,
+     이정표가 꽃 사이에서 자라고, 가로등이 연석을 밟고 서 있었습니다.
+     재어 보니 그 띠에 지름 4.3m 짜리 여덟이 들어갈 자리가 없습니다.
+     그래서 지름을 줄이고 **건물 앞마당 돌판 위**로 옮깁니다 — 돌판 위
+     화분은 그 자체로 제자리이고, 도서관 · 본관 · 학생회관 · 기숙사 넷의
+     문 양옆에 둘씩 서니 띠에 흩어져 있을 때보다 오히려 누가 가꾸는 곳으로
+     보입니다. */
+  [[14.4, 6.0], [14.4, -6.0], [-14.4, 6.0], [-14.4, -6.0],
+   [4.8, 17.0], [-4.8, 17.0], [4.8, -16.6], [-4.8, -16.6]].forEach(([x, z]) => {
+    flowerBed(g, x, z, 1.2).position.y = LIFT.pad;
+    solid(x, z, 2.9, 2.9);
+  });
   /* 쓰레기통 — 광장 한가운데(반지름 8.4)에 있어서 시작하자마자 **내 몸을 가렸습니다**.
      길과 길 사이(22.5°)로 밀어내 가장자리에 둡니다. */
   [22.5, 112.5, 202.5, 292.5].forEach((deg) => {
     const a = deg * Math.PI / 180;
-    binOut(g, Math.cos(a) * 10.4, Math.sin(a) * 10.4);
+    binOut(g, Math.cos(a) * 10.4, Math.sin(a) * 10.4).position.y = LIFT.plaza;
   });
 
   /* --- 게시판 · 이정표 --- */
   boardOut(g, -8.6, 13.2, .5);  solid(-8.6, 13.2, 3.8, 1.0, .5, true);
   boardOut(g, 8.6, 13.2, -.5);  solid(8.6, 13.2, 3.8, 1.0, -.5, true);
-  signpost(g, 5.0, 14.6, 0, [[PAL.blue, .4], [PAL.teal, 2.4], [PAL.gold, 4.2]]);
-  signpost(g, -14.8, -5.2, 0, [[PAL.red, 1.2], [PAL.blue, 3.4]]);
+  signpost(g, 5.0, 14.6, 0, [[PAL.blue, .4], [PAL.teal, 2.4], [PAL.gold, 4.2]]).position.y = LIFT.pad;
+  /* 서쪽 이정표는 본관 앞마당 화단 **한가운데**에 서 있었습니다 — 기둥이
+     흙을 뚫고 나오고 팔이 꽃 위를 지났습니다. 남쪽은 트랙이 반지름 27 까지
+     차 있어 빈 잔디가 없으므로, 길이 갈라지는 북쪽으로 옮깁니다. */
+  signpost(g, -16.0, 10.0, 0, [[PAL.red, 1.2], [PAL.blue, 3.4]]);
 
   /* --- 정문 · 버스 정류장 : 남동쪽 --- */
   gate(g, 20.5, 20.5, Math.PI / 4);
   solid(20.5 + 3.1, 20.5 - 3.1, 1.9, 1.9, 0, true); solid(20.5 - 3.1, 20.5 + 3.1, 1.9, 1.9, 0, true);
   camOnly(20.5, 20.5, 12.5, 2.6, Math.PI / 4);      // 정문 아치 — 사람은 통과, 카메라는 못
-  busStop(g, 26.5, 15.5, Math.PI * .75);  solid(26.5, 15.5, 4.8, 2.0, Math.PI * .75, true);
-  bikeRack(g, 15.5, 20, -Math.PI / 4, 5); solid(15.5, 20, 6.0, 1.8, -Math.PI / 4);
-  vendOut(g, 24.5, 14.5, -Math.PI * .75, 0xE8695A);  solid(24.5, 14.5, 1.6, 1.1, -Math.PI * .75, true);
-  vendOut(g, 25.9, 15.9, -Math.PI * .75, 0x3F6BA8); solid(25.9, 15.9, 1.6, 1.1, -Math.PI * .75, true);
+  /* 정류장은 둘레 산책로를 **가로질러** 서 있었습니다. 4.2m 폭 길에 4.8m
+     짜리 상자가 놓여 길이 거기서 끊겼고, 기둥은 포석에 23cm 잠겼습니다.
+     길 바깥으로 내놓고 길과 나란히 돌립니다 — 정류장은 원래 길가에 서고,
+     말 거는 자리(26.5,15.5 · 반지름 3.4) 안에 그대로 들어옵니다. */
+  busStop(g, 28.5, 16.7, 1.04);  solid(28.5, 16.7, 4.8, 2.0, 1.04, true);
+  /* 거치대는 대로를 **가로질러** 서 있었습니다. 길과 직각이라 절반이 포장
+     위, 절반이 잔디였고 그 턱만큼 자전거가 바닥에 잠겼습니다. 길과 나란히
+     돌려 길 밖으로 뺍니다 — 자전거는 원래 길가에 나란히 세웁니다. */
+  bikeRack(g, 14.4, 20.2, -Math.PI / 4, 5); solid(14.4, 20.2, 6.0, 1.8, -Math.PI / 4);
+  /* 자판기 둘은 정류장 **안**에 박혀 있었습니다(파란 것은 유리벽을 뚫고
+     의자에 걸쳐 있었습니다). 정류장 옆으로 나란히 내놓습니다. */
+  vendOut(g, 22.7, 13.0, -Math.PI * .75, 0xE8695A);  solid(22.7, 13.0, 1.6, 1.1, -Math.PI * .75, true);
+  vendOut(g, 23.9, 11.8, -Math.PI * .75, 0x3F6BA8); solid(23.9, 11.8, 1.6, 1.1, -Math.PI * .75, true);
   /* 정문에서 광장까지 대각선 길 */
-  pathTo(g, 24, 24, 6.0);
+  layPath(24, 24, 6.0);
 
   /* --- 야외 구역 셋 --- */
   /* 북서 — 운동장. 대로가 안 지나가는 유일한 사분면이라 가장 넓습니다. */
@@ -928,18 +1043,31 @@ export function buildCampus(scene) {
   [[-26, -22, .3], [-20, -28, -.5], [-30, -29, .9]].forEach(([x, z, r]) => {
     picnicSet(g, x, z, r); solid(x, z, 2.8, 2.8, r);
   });
-  stumpSet(g, -24, -17);
+  /* 그루터기 의자는 (-24,-17) 에 있었는데 그 자리는 둘레 산책로 한복판이라
+     길바닥에 통나무가 놓인 꼴이었고, 트랙 바깥 벤치와도 겹쳤습니다.
+     트랙과 산책로 사이는 잔디가 한 뼘밖에 안 남아 옮길 데가 없어서
+     북쪽 잔디마당으로 보냅니다 — 앉는 것이니 사람이 지나는 쪽이 낫습니다. */
+  stumpSet(g, 8.5, 22.5);
   /* 깃대는 트랙이 자기 것으로 둘 세웁니다(trackField). 여기 있던 (-17,-13)
      은 트랙 인필드 한복판이라 뺍니다. 동쪽 짝은 그대로 둡니다. */
-  flagPole(g, 17, -13, 0xE8735C);   solid(17, -13, 1.2, 1.2);
+  flagPole(g, 17.7, -12.3, 0xE8735C).position.y = LIFT.pad;
+  solid(17.7, -12.3, 1.2, 1.2);
   /* 산울타리도 (-24,-13) 짜리는 트랙을 가로질러 뺐습니다. 북쪽 것만 남깁니다. */
   hedge(g, -29.5, -18, 11, Math.PI / 2, 1.1); solid(-29.5, -18, 1.1, 11, 0, true);
 
-  /* --- 남서 잔디마당 — 상점 앞 광장 --- */
-  bikeRack(g, -25, 11, .4, 4); solid(-25, 11, 5.0, 1.8, .4);
-  benchOut(g, -12, 22, .6); solid(-12, 22, 3.4, 1.2, .6);
-  benchOut(g, -8, 26, .9);  solid(-8, 26, 3.4, 1.2, .9);
-  flowerBed(g, -14, 27, 2.4); solid(-14, 27, 5.2, 5.2);
+  /* --- 남서 잔디마당 — 상점 앞 광장 ---
+     거치대 · 벤치 하나 · 화단이 둘레 산책로(반지름 30, 폭 4.2)를 물고
+     있었습니다. 거치대는 길에 반쯤 얹혀 자전거가 포석에 잠겼고 화단은
+     아예 길 한가운데였습니다. 산책로는 섬을 한 바퀴 도는 길이라 여기서
+     끊기면 바로 보입니다. 셋 다 길 안쪽(반지름 26 이내) 잔디로 당기고,
+     나머지 벤치는 상점 앞마당 돌판 모서리에서 떼어 놓습니다. */
+  bikeRack(g, -22.5, 12.5, .4, 4); solid(-22.5, 12.5, 5.0, 1.8, .4);
+  benchOut(g, -10.2, 20.6, .6); solid(-10.2, 20.6, 3.4, 1.2, .6);
+  benchOut(g, -8.6, 23.2, .9);  solid(-8.6, 23.2, 3.4, 1.2, .9);
+  /* 화단 (-14,27) 은 뺐습니다. 산책로 한복판이었는데, 옮길 만한 잔디를
+     재어 보니 상점 앞마당 돌판 · 학생회관 앞마당 돌판 · 산책로 셋이
+     이 사분면을 다 나눠 가져서 지름 4.3m 가 온전히 들어가는 자리가
+     남아 있지 않습니다. 광장 둘레 화단 여덟은 그대로 있습니다. */
   /* (-27,27) 소풍 자리는 호수 물 위였습니다. 못가에는 벤치를 놓았으니
      여기서는 뺍니다 — 어차피 걸어갈 수 있는 반지름(37.4) 밖이었습니다. */
 
@@ -947,31 +1075,55 @@ export function buildCampus(scene) {
   /* 서쪽 거치대는 트랙 동쪽 끝(깃대 자리)을 5칸이나 물고 있었습니다.
      기숙사 앞마당 돌판 안으로 당겨 붙입니다 — 세우는 곳이 포장 위라
      오히려 제자리를 찾은 셈이고, 북 대로(|x|<2.5)는 그대로 비어 있습니다. */
-  bikeRack(g, -5.6, -16.4, 0, 4); solid(-5.6, -16.4, 5.0, 1.8);
-  bikeRack(g, 9, -20, 0, 4);  solid(9, -20, 5.0, 1.8);
-  benchOut(g, -7, -14, Math.PI); solid(-7, -14, 3.4, 1.2, Math.PI);
-  benchOut(g, 7, -14, Math.PI);  solid(7, -14, 3.4, 1.2, Math.PI);
-  vendOut(g, -7, 17, 0);  solid(-7, 17, 1.6, 1.1);
-  benchOut(g, 8, 17, 0);  solid(8, 17, 3.4, 1.2);
-  binOut(g, -5, 18); binOut(g, 5, -18); binOut(g, 20, 24);
+  /* 앞마당 물건은 **돌판 안으로 온전히** 들어가거나 아예 잔디로 나가야
+     합니다. 걸쳐 있으면 판 두께(17cm)만큼 한쪽 발이 잠깁니다 — 벤치 넷과
+     자판기가 전부 판 모서리에 걸려 있었습니다. 서쪽 거치대는 돌판 안으로
+     더 들여 세로로 돌리고(가로로는 기숙사 대로를 물었습니다), 동쪽 거치대는
+     잔디로 내보내 길가 가로등에서 떼어 놓습니다. */
+  bikeRack(g, -5.5, -21, Math.PI / 2, 4).position.y = LIFT.pad;
+  solid(-5.5, -21, 5.0, 1.8, Math.PI / 2);
+  bikeRack(g, 10.4, -21.4, 0, 4);  solid(10.4, -21.4, 5.0, 1.8);
+  benchOut(g, -8.6, -14.6, Math.PI); solid(-8.6, -14.6, 3.4, 1.2, Math.PI);
+  benchOut(g, 8.6, -14.6, Math.PI);  solid(8.6, -14.6, 3.4, 1.2, Math.PI);
+  vendOut(g, -7.8, 17, 0);  solid(-7.8, 17, 1.6, 1.1);
+  benchOut(g, 8.6, 17, 0);  solid(8.6, 17, 3.4, 1.2);
+  binOut(g, -5.6, 19.5).position.y = LIFT.pad;
+  binOut(g, 5.6, -19.5).position.y = LIFT.pad;
+  binOut(g, 21.5, 16.0);
 
   /* --- 도서관 · 본관 앞 --- */
-  [[-1, -16.5], [1, 16.5]].forEach(([sx, px]) => {
-    benchOut(g, px, -6.5, sx > 0 ? -Math.PI / 2 : Math.PI / 2);
-    solid(px, -6.5, 1.2, 3.4);
-    benchOut(g, px, 6.5, sx > 0 ? -Math.PI / 2 : Math.PI / 2);
-    solid(px, 6.5, 1.2, 3.4);
-    flowerBed(g, px + sx * 2.4, 0, 1.6); solid(px + sx * 2.4, 0, 3.6, 3.6);
-    lampPost(g, px - sx * 1.5, -9, 3.6); solid(px - sx * 1.5, -9, .9, .9);
-    lampPost(g, px - sx * 1.5, 9, 3.6);  solid(px - sx * 1.5, 9, .9, .9);
+  /* 여기 있던 화단 둘은 문 앞 대로 **한가운데**(z=0)에 앉아 있었습니다 —
+     길에 심은 화단입니다. 앞마당에는 이제 광장 둘레 화단 둘이 대로 양옆에
+     들어와 있으므로(위 표의 ±14.4, ±6.0) 겹쳐 놓지 않고 뺍니다.
+     벤치는 (±16.5, ±6.5) 에서 (±17.6, ±5.6) 으로 옮깁니다: 앞의 자리는
+     화단과 좌면이 맞닿고 길가 가로등과도 한 뼘이었습니다.
+     가로등은 (±15.0, ±9.0) 에서 문 쪽(±3.9)으로 내립니다 — 본관 쪽
+     (-15,-9) 은 트랙 우레탄 위였고(운동장 안에 가로등이 서 있었습니다),
+     바깥쪽에 두면 길가 등 고리와 1.6 밖에 안 떨어져 등불끼리 파고듭니다. */
+  [[-1, -17.6], [1, 17.6]].forEach(([sx, px]) => {
+    benchOut(g, px, -5.6, sx > 0 ? -Math.PI / 2 : Math.PI / 2).position.y = LIFT.pad;
+    solid(px, -5.6, 1.2, 3.4);
+    benchOut(g, px, 5.6, sx > 0 ? -Math.PI / 2 : Math.PI / 2).position.y = LIFT.pad;
+    solid(px, 5.6, 1.2, 3.4);
+    lampPost(g, px - sx * 1.6, -3.9, 3.6).position.y = LIFT.pad;
+    solid(px - sx * 1.6, -3.9, .9, .9);
+    lampPost(g, px - sx * 1.6, 3.9, 3.6).position.y = LIFT.pad;
+    solid(px - sx * 1.6, 3.9, .9, .9);
   });
 
-  /* --- 길가 가로등 --- */
+  /* --- 길가 가로등 ---
+     바깥 고리가 반지름 30 이었는데 그게 곧 산책로 **한복판**입니다.
+     4.2m 폭 길 가운데 기둥이 여덟 개 서 있었고 충돌 상자까지 붙어 있어서
+     걷다가 비켜 가야 했습니다. 길가 등은 길 옆에 섭니다 — 안쪽 가장자리
+     밖(27.1)으로 내놓습니다. 안 고리도 21 에서 19.7 로 당겨 앞마당 돌판
+     모서리 걸침을 없앱니다 — 21 은 도서관 · 본관 판 가장자리에서 밑동이
+     1cm 삐져나가 그 턱에 얹혀 있었습니다. */
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    [21, 30].forEach((r) => {
+    [19.7, 27.1].forEach((r) => {
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
-      lampPost(g, x, z, 3.8); solid(x, z, .9, .9);
+      lampPost(g, x, z, 3.8).position.y = onPad(x, z) ? LIFT.pad : 0;
+      solid(x, z, .9, .9);
     });
   }
 
@@ -983,9 +1135,13 @@ export function buildCampus(scene) {
      각졌습니다. 나무는 이 섬에서 가장 여러 번 되풀이되는 윤곽이라
      여기서 각이 지면 섬 전체가 각져 보입니다. 9천 면을 포기합니다. */
   const TP = { trunk: PAL.trunk, leaf: PAL.leaf, lod: 11, seg: 13 };
+  const nHard = colliders.length;      // 여기까지가 사람이 세운 것입니다
+  /* 자리를 고르는 눈이 까다로워졌으므로(길 · 소품) 뽑는 횟수를 460 에서
+     620 으로 올립니다. 심는 그루 수 상한(86)은 그대로라 면수는 안 늘고,
+     빼기만 하면 섬이 휑해집니다. */
   const spots = [];
   const far = (x, z, m) => spots.every((p) => Math.hypot(p[0] - x, p[1] - z) > m);
-  for (let i = 0; i < 460 && spots.length < 86; i++) {
+  for (let i = 0; i < 620 && spots.length < 86; i++) {
     const a = rnd() * Math.PI * 2, r = 17 + rnd() * (HALF - 19);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     /* 건물 · 길 · 광장 위에는 안 심습니다 */
@@ -994,25 +1150,35 @@ export function buildCampus(scene) {
     if (Math.abs(Math.hypot(x, z) - 30) < 3.8) continue;          // 산책로 위
     if (inZone(x, z, 1.0)) continue;                              // 운동장 · 호수 · 동아리 거리
     if (Math.hypot(x - 20.5, z - 20.5) < 12) continue;            // 정문 앞
-    if (Math.abs(x - z) < 4.5 && x > 12 && z > 12) continue;      // 정문 길
+    if (onPath(x, z, 1.2)) continue;                              // 대로 일곱 · 산책로
     const ang = Math.atan2(z, x);
     const near = BUILDINGS.some((b) => Math.abs(
       ((Math.atan2(b.z, b.x) - ang + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < .16);
     if (near && Math.hypot(x, z) < 30) continue;
+    if (!clearOfProps(x, z, 2.6, nHard)) continue;                 // 세워 둔 소품 위
     if (!far(x, z, 4.6)) continue;
     spots.push([x, z]);
   }
+  /* 나무는 밑동이 로컬 y=0.125 에서 시작합니다(parts.js). 배율을 곱하면
+     큰 나무는 그 값이 0.22 가 되는데 잔디 윗면은 0.1 이라, 그냥 놓으면
+     지름 40cm 짜리 기둥이 땅에서 12cm 떠 있습니다 — 백 그루가 전부
+     그랬습니다. 배율만큼 내려서 밑동을 잔디 속에 묻습니다. */
+  const root = (s) => .04 - .125 * s;
   spots.forEach(([x, z], i) => {
     const s = .85 + rnd() * .75;
-    tree(g, { ...TP, leaf: i % 4 === 0 ? PAL.leafDeep : PAL.leaf }, x, z, s);
+    tree(g, { ...TP, leaf: i % 4 === 0 ? PAL.leafDeep : PAL.leaf }, x, z, s).position.y = root(s);
     solid(x, z, 1.0 * s, 1.0 * s);
-    if (i % 3 === 0) bush(g, TP, x + 1.6, z + 1.1, .6 + rnd() * .5);
+    /* 나무 옆 덤불도 길을 밟으면 안 됩니다. 크기는 먼저 뽑아 둡니다 —
+       난수를 건너뛰면 그 뒤 자리가 통째로 밀립니다. */
+    const bs = .6 + rnd() * .5;
+    if (i % 3 === 0 && !onPath(x + 1.6, z + 1.1, .8) && clearOfProps(x + 1.6, z + 1.1, bs + .6, nHard))
+      bush(g, TP, x + 1.6, z + 1.1, bs);
   });
   /* 바깥 테두리 숲 — 섬의 끝.
      한 줄로 고르게 심었더니 **울타리**로 보였습니다. 두 겹으로 어긋나게. */
   const GATE_A = Math.atan2(20.5, 20.5);
-  for (let i = 0; i < 150; i++) {
-    const a = (i / 150) * Math.PI * 2 + (rnd() - .5) * .05;
+  for (let i = 0; i < 168; i++) {
+    const a = (i / 168) * Math.PI * 2 + (rnd() - .5) * .05;
     /* 정문 부채꼴은 비웁니다 — 문 바로 뒤에 숲이 서 있으면 문이 아니라 벽입니다 */
     if (Math.abs(((a - GATE_A + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < .34) continue;
     const r = HALF - 2.0 - rnd() * 5.0;
@@ -1022,18 +1188,29 @@ export function buildCampus(scene) {
     /* 바깥 숲은 반지름 33~38 인데 호수와 동아리 거리가 바로 그 띠에
        있습니다. 안 비우면 못 한가운데에서 나무가 자랍니다. */
     if (inZone(tx, tz, 1.4)) continue;
+    if (onPath(tx, tz, 1.0)) continue;
+    if (!clearOfProps(tx, tz, 2.6, nHard)) continue;
     const pink = i % 11 === 0;
-    tree(g, { ...TP, leaf: pink ? 0xF7B8CE : PAL.leafDeep, trunk: PAL.trunk }, tx, tz, 1.0 + rnd() * .8);
-    if (i % 3 === 0) bush(g, TP, Math.cos(a) * (r - 3.4), Math.sin(a) * (r - 3.4), .6 + rnd() * .6);
+    const ts = 1.0 + rnd() * .8;
+    tree(g, { ...TP, leaf: pink ? 0xF7B8CE : PAL.leafDeep, trunk: PAL.trunk }, tx, tz, ts)
+      .position.y = root(ts);
+    const bx = Math.cos(a) * (r - 3.4), bz = Math.sin(a) * (r - 3.4), bs = .6 + rnd() * .6;
+    if (i % 3 === 0 && !onPath(bx, bz, .8) && clearOfProps(bx, bz, bs + .6, nHard)) bush(g, TP, bx, bz, bs);
   }
-  /* 덤불 흩뿌리기 */
-  for (let i = 0; i < 90; i++) {
+  /* 덤불 흩뿌리기 — 길과 소품을 피하게 했더니 아흔 번 뿌려 서른 개만
+     남았습니다(전에는 쉰여덟). 자리 고르는 눈이 까다로워진 만큼 뿌리는
+     횟수를 늘려 잔디 밀도를 전 판만큼 되돌립니다. */
+  for (let i = 0; i < 180; i++) {
     const a = rnd() * Math.PI * 2, r = 18 + rnd() * (HALF - 21);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 11)) continue;
-    if (Math.abs(Math.hypot(x, z) - 30) < 3.2) continue;
     if (inZone(x, z, 1.0)) continue;
-    bush(g, TP, x, z, .55 + rnd() * .6);
+    const bs = .55 + rnd() * .6;
+    /* 대로와 산책로는 비웁니다. 흙길 한복판에 덤불 하나가 앉아 있으면
+       심은 것이 아니라 떨어뜨린 것으로 보입니다 — 아홉 개가 그랬습니다. */
+    if (onPath(x, z, .9)) continue;
+    if (!clearOfProps(x, z, bs + .6, nHard)) continue;
+    bush(g, TP, x, z, bs);
   }
 
   /* 벚꽃 — 길 양옆에만. 캠퍼스에서 사진 찍는 자리입니다 */
@@ -1045,7 +1222,10 @@ export function buildCampus(scene) {
       if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 12.5)) return;
       if (Math.hypot(x - 20.5, z - 20.5) < 11) return;
       if (inZone(x, z, .8)) return;                 // 트랙 인필드에 벚나무가 섰었습니다
-      tree(g, { trunk: 0x9E6A48, leaf: 0xF7B8CE, lod: 11, seg: 13 }, x, z, 1.05);
+      if (onPath(x, z, 1.0)) return;
+      if (!clearOfProps(x, z, 2.0, nHard)) return;
+      tree(g, { trunk: 0x9E6A48, leaf: 0xF7B8CE, lod: 11, seg: 13 }, x, z, 1.05)
+        .position.y = root(1.05);
       solid(x, z, 1.0, 1.0);
     });
   }

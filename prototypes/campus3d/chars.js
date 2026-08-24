@@ -761,20 +761,29 @@ function buildChar(parent, species, fit, opt) {
   /* ── 등딱지 — 거북이는 가방 대신 딱지를 멥니다. 종의 서명이
      머리가 아니라 **등**에 있으면 얼굴이 자유로워집니다. */
   if (species === '거북이') {
-    const b = new THREE.Group(); b.position.set(0, .95, -.26); g.add(b);
+    /* 크기를 줄이고 위로 올렸습니다.
+
+       처음에는 세로 1.5배에 y .95 였는데, 그러면 딱지가 어깨부터
+       **엉덩이 아래까지** 덮습니다. 기본 시점이 뒤에서 내려다보는
+       각도라 화면에 보이는 것이 머리와 딱지뿐이고, 바지와 신발이
+       통째로 가려졌습니다. 등에 멘 딱지여야지 몸을 삼키면 안 됩니다.
+
+       세로 1.5 → 1.02, 가로 1.12 → .92, 자리 .95 → 1.06.
+       이제 딱지 아래로 허리와 다리가 남습니다. */
+    const b = new THREE.Group(); b.position.set(0, 1.06, -.25); g.add(b);
     carry = b; carryKey = 'shell';
     /* 돔 — 축 방향을 잘못 늘리면 옆으로 누운 부침개가 됩니다.
        회전 뒤 기준으로 세로(z)로 길게, 밖(y→-z)으로는 얕게. */
     const dome = new THREE.Mesh(sphG(.33, S(20, 10), S(14, 8), 0, Math.PI * 2, 0, Math.PI / 2), M(C.shell, .7));
-    dome.rotation.x = -Math.PI / 2; dome.scale.set(1.12, .74, 1.5);
+    dome.rotation.x = -Math.PI / 2; dome.scale.set(.92, .70, 1.02);
     dome.castShadow = true; b.add(dome);
     { const rim = new THREE.Mesh(torG(.3, .055, S(10, 6), S(22, 12)), M(C.shellDark, .66));
-      rim.scale.set(1.16, 1.55, 1); b.add(rim); }
+      rim.scale.set(.95, 1.06, 1); b.add(rim); }
     /* 밝은 줄 하나 — 등딱지의 등뼈 */
     { const spine = new THREE.Mesh(torG(.3, .028, S(8), S(14, 8), Math.PI), M(C.shellDark, .6));
       spine.position.z = -.005; spine.rotation.z = Math.PI / 2;
-      spine.rotation.y = Math.PI / 2; spine.scale.set(1.5, .76, 1); b.add(spine); }
-    [-1, 1].forEach((t) => box(b, .07, .42, .05, .025, M(C.shellDark, .6), t * .22, -.02, .22));
+      spine.rotation.y = Math.PI / 2; spine.scale.set(1.02, .72, 1); b.add(spine); }
+    [-1, 1].forEach((t) => box(b, .06, .30, .05, .025, M(C.shellDark, .6), t * .19, -.02, .20));
   }
   /* ── 가방 ── */
   else if (opt.bag !== false && L.bagId !== 'none') {

@@ -797,19 +797,24 @@ export function wearShop(ctx) {
     ['hat', '모자', 'sun'], ['glasses', '안경', 'cam'], ['bag', '가방', 'book']];
   const html = coinbar(ctx.coins, ctx.server)
     + SLOT.map(([slot, nm, ic]) => {
+      /* 글자만 있던 칩을 카드로 바꿉니다. `.th` 는 비워 두고 부르는 쪽이
+         3D 그림을 그려 넣습니다 — 옷은 모양이 값보다 먼저 궁금한 물건이라
+         이름만 적어 두면 뭘 사는지 모르고 삽니다. */
       const items = ctx.wear[slot].filter(([id]) => id !== 'none');
-      return lbl(ic, nm) + '<div class="wr">'
+      return lbl(ic, nm) + '<div class="cg">'
         + items.map(([id, label, price]) => {
           const own = ctx.owned.includes(id) || price === 0;
-          return `<button data-buy="${id}" data-slot="${slot}" ${own ? 'disabled' : ''}
-            class="${own ? 'own' : ''}">${label}${own ? ' ✓' : ' · ' + won(price)}</button>`;
+          return `<button class="cc ${own ? 'on' : ''}" data-buy="${esc(id)}" data-slot="${esc(slot)}" ${own ? 'disabled' : ''}>
+            <span class="th" style="width:100%;height:74px"></span>
+            <b>${esc(label)}</b><small>${own ? '가지고 있어요' : won(price)}</small></button>`;
         }).join('') + '</div>';
     }).join('')
-    + (ctx.rides ? lbl('bus', '탈것') + '<div class="wr">'
+    + (ctx.rides ? lbl('bus', '탈것') + '<div class="cg">'
       + ctx.rides.map(([id, nm, price, mult]) => {
         const own = (ctx.ownedRide || []).includes(id);
-        return `<button data-rbuy="${id}" ${own ? 'disabled' : ''} class="${own ? 'own' : ''}"
-          title="걷는 속도 ×${mult.toFixed(2)}">${nm} ×${mult.toFixed(2)}${own ? ' ✓' : ' · ' + won(price)}</button>`;
+        return `<button class="cc ${own ? 'on' : ''}" data-rbuy="${esc(id)}" ${own ? 'disabled' : ''}>
+          <span class="th" style="width:100%;height:74px"></span>
+          <b>${esc(nm)}</b><small>걷기 ×${mult.toFixed(2)} · ${own ? '가지고 있어요' : won(price)}</small></button>`;
       }).join('') + '</div>' : '')
     + rw('shirt', 'lilac', '산 것은 옷장에서 입어요',
       '어디서든 C. 탈것도 옷장에서 타고, 실내에 들어가면 저절로 내립니다', 'C');
@@ -876,7 +881,7 @@ export function furnShop(ctx) {
     + FURN.map(([id, nm, price, icon]) => {
       const n = ctx.furn[id] || 0;
       return `<button class="cc" data-fbuy="${esc(id)}">
-        <span class="ic${n ? ' lemon' : ''}"><span class="big">${icon || '▫'}</span></span>
+        <span class="th" style="width:100%;height:70px"></span>
         <b>${esc(nm)}</b><small>${won(price)}${n ? ` · 가진 것 ${n}개` : ''}</small></button>`;
     }).join('') + '</div>'
     + rw('map', 'lilac', '산 가구는 기숙사에서 놓아요', '방 꾸미기 게시판에서 자리를 잡습니다');
@@ -1243,8 +1248,8 @@ export function decor(ctx) {
         /* 칸마다 "눌러서 방에 놓기" 를 적어 두었더니 스무 번 같은 문장이
            됩니다. 그 자리에는 칸마다 다른 값 — 아직 안 놓고 남은 개수를
            넣습니다. 셋 다 이미 ctx 에 있는 값이라 지어낸 숫자가 아닙니다. */
-        + owned.map(([id, nm, , icon]) => `<button class="cc" data-place="${esc(id)}">
-            <span class="ic"><span class="big">${icon || '▫'}</span></span>
+        + owned.map(([id, nm]) => `<button class="cc" data-place="${esc(id)}">
+            <span class="th" style="width:100%;height:70px"></span>
             <b>${esc(nm)}</b><small>${(ctx.furn[id] || 0) - (ctx.placedCount[id] || 0)}개 남음</small></button>`).join('') + '</div>'
       : rw('sofa', 'lilac', '놓을 가구가 없어요', '동아리 상점의 가구 가게에서 사 오세요'))
       + (ctx.placed.length

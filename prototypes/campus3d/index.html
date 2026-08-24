@@ -361,14 +361,25 @@
     inset:0;display:grid;place-items:center;font:700 11px var(--ff);color:var(--tx3);
     background:var(--gl2);border-radius:inherit}
   #stack.left{right:auto;left:14px}
+  #menu{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:6px;pointer-events:auto}
+  #menu button{display:flex;flex-direction:column;align-items:center;gap:3px;border:0;
+    background:transparent;border-radius:10px;padding:7px 2px;color:var(--tx2);
+    font:700 9.5px/1 var(--ff);cursor:pointer;transition:.12s}
+  #menu button:hover{background:var(--gl3);color:var(--tx)}
+  #menu .pic{width:19px;height:19px}
+  /* #post button 이 전부 민트로 칠해져 있어서, 이 단추 셋이 다 눌린
+     것처럼 보였습니다. 여기서 되돌립니다 — 눌린 것만 민트여야 합니다. */
   #sbtn{display:flex;gap:6px;margin:10px 0 2px}
+
   #sbtn button{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;
     background:var(--gl3);border:1px solid var(--ln);border-radius:12px;padding:8px 4px;
     color:var(--tx2);font:700 10px/1.1 var(--ff);cursor:pointer;transition:.12s}
   #sbtn button:hover{color:var(--tx);border-color:rgba(255,255,255,.28)}
   #sbtn button[aria-pressed=true]{background:var(--acc);border-color:transparent;color:#08312B}
   #sbtn .pic{width:18px;height:18px}
-  #zoomer{position:absolute;right:14px;bottom:96px;display:flex;flex-direction:column;
+  /* 오른쪽 아래에 뒀더니 접속 칩과 겹쳤습니다. 왼쪽 아래, 아래 한 줄
+     위로 올립니다 — 그쪽은 비어 있습니다. */
+  #zoomer{position:absolute;left:14px;bottom:96px;display:flex;flex-direction:column;
     padding:5px;gap:5px;pointer-events:auto}
   #zoomer button{width:34px;height:32px;border:0;background:var(--gl3);border-radius:9px;
     color:var(--tx);font:800 17px/1 var(--ff);cursor:pointer}
@@ -408,6 +419,10 @@
     transition:width .22s,background .25s}
   #post .hint{margin-top:9px;font-size:10.5px;color:var(--tx2);line-height:1.55}
   #post .hint em{font-style:normal;color:var(--tx3)}
+  /* 세션 단추 셋은 **눌린 것만** 민트여야 합니다. #post button 이 전부
+     민트라 셋 다 켜져 있는 것처럼 보였습니다. 아래 규칙보다 뒤에 둡니다. */
+  #post #sbtn button{margin-top:0;background:var(--gl3);color:var(--tx2);border-radius:12px}
+  #post #sbtn button[aria-pressed=true]{background:var(--acc);color:#08312B}
   #post button{margin-top:10px;border:0;background:var(--acc);color:#08251F;border-radius:99px;
     padding:7px 15px;font:800 11.5px/1 var(--ff);cursor:pointer;pointer-events:auto}
 
@@ -564,8 +579,16 @@
 </svg>
 <div id="tags"></div>
 
-  <!-- 오른쪽 한 기둥 — 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
+  <!-- 오른쪽 한 기둥 — 메뉴 · 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
   <div id="stack">
+    <!-- 늘 떠 있는 메뉴. 마이페이지와 설정이 창 안에만 있어서, 처음
+         들어온 사람은 옷장(C)을 찾기 전까지 갈 자리가 없었습니다. -->
+    <div id="menu" class="g">
+      <button data-m="mypage" title="마이페이지"><svg class="pic"><use href="#pic-user"/></svg><span>마이</span></button>
+      <button data-m="coins" title="코인"><svg class="pic"><use href="#pic-coin"/></svg><span>코인</span></button>
+      <button data-m="wardrobe" title="옷장 (C)"><svg class="pic"><use href="#pic-shirt"/></svg><span>옷장</span></button>
+      <button data-m="guide" title="안내"><svg class="pic"><use href="#pic-book"/></svg><span>안내</span></button>
+    </div>
     <div id="mini" class="g">
       <div class="ghead">지도<span class="sp">M</span></div>
       <div class="wrap"><canvas width="316" height="316"></canvas><span class="n">N</span></div>
@@ -689,6 +712,7 @@ import { openGame, gameOpen } from './games.js';
 import { createPosture } from './posture-live.js';
 import { createSky, weatherKind } from './sky.js';
 import { createMusic, MUSIC } from './music.js';
+import { itemThumb, dressPreview, disposeAll as thumbsOff } from './shopview.js';
 
 const $ = (s) => document.querySelector(s);
 /* 2D 판의 서버 저장·욕설 필터를 **그대로** 끌어옵니다 — 규칙을 두 벌 쓰면 어긋납니다 */
@@ -886,7 +910,20 @@ const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick:
 
 const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
-const P = { x: 5.0, z: 5.0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+/* 시작 자리. (5,5) 는 분수 네모 콜라이더 **안**이었습니다 — 들어오자마자
+   끼어 있었고 unstick 이 매번 밀어내 주고 있었습니다. 광장 남쪽 길 위,
+   분수를 바라보는 자리로 옮깁니다. */
+const P = { x: 0, z: 8.6, dir: Math.PI, sp: 0, walk: 0, moved: 0 };
+
+/* ══ 발바닥 ══
+   캐릭터를 만들면 **발바닥이 y = -0.13** 에 옵니다(신발창이 발 뭉치 안에서
+   -0.11, 발 뭉치가 몸에서 -0.02). 그런데 리그를 y = 0 에 두고 있었습니다.
+   그래서 캠퍼스에서는 신발과 바짓단 13cm 가 바닥에 파묻혀 안 보였습니다.
+   얼굴 창(PiP)에는 바닥이 없어서 멀쩡해 보였고, 그래서 오래 못 봤습니다.
+
+   리그를 통째로 올립니다. 탈것도 같은 리그에 달려 있어 함께 올라가므로
+   페달과 안장이 발에서 어긋나지 않습니다. */
+const SOLE = .13;
 
 const blob = new THREE.Mesh(new THREE.CircleGeometry(.62, 20),
   new THREE.MeshBasicMaterial({ color: 0x2A3038, transparent: true, opacity: .18, depthWrite: false }));
@@ -931,7 +968,7 @@ function gazeTarget() {
 
 /* ══════ 3. 지나다니는 사람 ══════ */
 const NPC = NPCS.map((d, i) => {
-  const rig = new THREE.Group(); scene.add(rig);
+  const rig = new THREE.Group(); rig.position.y = SOLE; scene.add(rig);
   /* 지나다니는 사람은 **덜 잘게** 짓습니다. 실루엣은 그대로이고
      삼각형만 3분의 1로 줄어듭니다. 열둘이 늘 화면에 있어서, 여기가
      캠퍼스 전체 도형 값과 맞먹었습니다. 말을 걸면 창이 열리지
@@ -949,7 +986,7 @@ function buildIndoor(key) {
   inNPC.forEach((n) => n.el.remove());
   inRoot.clear(); inNPC = [];
   (INDOOR[key] || []).forEach((d, i) => {
-    const rig = new THREE.Group(); rig.position.set(d.x, 0, d.z); rig.rotation.y = d.dir;
+    const rig = new THREE.Group(); rig.position.set(d.x, SOLE, d.z); rig.rotation.y = d.dir;
     inRoot.add(rig);
     const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1 });
     const el = document.createElement('div');
@@ -1125,10 +1162,12 @@ cv.addEventListener('pointerdown', (e) => {
 });
 cv.addEventListener('pointermove', (e) => {
   if (first && document.pointerLockElement === cv) {
-    /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**. */
-    yaw -= e.movementX * .0024;
-    pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
-    turned += Math.abs(e.movementX) * .0024; return;
+    /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**.
+       감도를 조금 낮췄습니다 — 0.0024 는 책상에서 손목만 움직여도 한 바퀴가 돌아
+       "어디를 보고 있는지" 를 자꾸 잃었습니다. */
+    yaw -= e.movementX * .0017;
+    pitch = clamp(pitch + e.movementY * .0015, -1.05, 1.05);
+    turned += Math.abs(e.movementX) * .0017; return;
   }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -1254,6 +1293,7 @@ cv.addEventListener('wheel', (e) => { e.preventDefault();
 function toggleView() {
   first = !first;
   player.visible = !first; blob.visible = !first;
+  if (first) toast('1인칭', '마우스로 둘러보고, Esc 로 마우스를 풀어요. Tab 이면 3인칭');
   pitch = first ? 0 : .58;
   $('#foot .md').textContent = first ? '1인칭' : '3인칭';
   dockOn('view', first);
@@ -1448,6 +1488,48 @@ function panelFor(s) {
   }
 }
 let panelSpot = null, redrawPanel = () => {};
+/* ══ 상점의 3D 그림 ══
+   칸마다 `<span class="th">` 을 비워 두면 여기서 채웁니다. 그리는 것은
+   shopview.js 가 맡고(렌더러 하나를 나눠 쓰고 화면에 들어올 때만 그립니다)
+   여기서는 **어느 칸이 무슨 물건인지**만 알려 줍니다. */
+let dress = null;
+function paintThumbs(root) {
+  try {
+    /* 옷은 **옷만** 띄웁니다. 사람이 입고 있는 그림으로 두면 칸마다
+       같은 캐릭터가 스무 번 나와서, 뭘 파는지가 아니라 누가 서 있는지가
+       먼저 보입니다.
+       과잠은 학교 색입니다 — 학교 표는 여기에 있으므로 여기서 넘깁니다. */
+    const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+    root.querySelectorAll('button[data-buy] .th').forEach((el) =>
+      itemThumb(el, 'wear', el.parentElement.dataset.buy, {
+        bare: true, slot: el.parentElement.dataset.slot, look: myLook(),
+        color: el.parentElement.dataset.buy === 'varsity' ? sc?.c : undefined,
+      }));
+    root.querySelectorAll('button[data-rbuy] .th').forEach((el) =>
+      itemThumb(el, 'ride', el.parentElement.dataset.rbuy, { rider: curSpecies }));
+    root.querySelectorAll('button[data-fbuy] .th').forEach((el) =>
+      itemThumb(el, 'furn', el.parentElement.dataset.fbuy));
+    root.querySelectorAll('button[data-place] .th').forEach((el) =>
+      itemThumb(el, 'furn', el.parentElement.dataset.place));
+    root.querySelectorAll('button[data-egg] .th').forEach((el) =>
+      itemThumb(el, 'egg', 'egg'));
+    const box = root.querySelector('#dressbox');
+    if (box) {
+      dress = dressPreview(box, { species: curSpecies, look: myLook(), ride: rideId });
+      /* 마우스를 올리면 그것만 입혀 보고, 떼면 되돌립니다 — 사기 전에
+         보는 것이 이 창의 요점입니다. */
+      root.querySelectorAll('button[data-wid]').forEach((b) => {
+        b.addEventListener('mouseenter', () => { try { dress?.tryOn(b.dataset.wid); } catch (_) {} });
+        b.addEventListener('mouseleave', () => { try { dress?.tryOn(null); } catch (_) {} });
+      });
+      root.querySelectorAll('button[data-tint]').forEach((b) => {
+        b.addEventListener('mouseenter', () => { try {
+          dress?.tryOn(b.dataset.tc ? { tint: { [b.dataset.tint]: +b.dataset.tc } } : null); } catch (_) {} });
+        b.addEventListener('mouseleave', () => { try { dress?.tryOn(null); } catch (_) {} });
+      });
+    } else if (dress) { try { dress.dispose(); } catch (_) {} dress = null; }
+  } catch (e) { /* 그림이 안 그려져도 창은 열려 있어야 합니다 */ }
+}
 /* ══ 초점 가두기 ══
    창이 열려 있는데 Tab 을 누르면 초점이 창 **뒤의 월드**로 빠져나갔습니다.
    키보드나 화면 낭독기를 쓰는 사람에게는 창이 닫힌 것과 같습니다 —
@@ -1486,6 +1568,7 @@ function openPanel(s) {
     elPanel.querySelector('h3').textContent = v.title;
     elPanel.querySelector('.bd').innerHTML = v.html;
     if (v.on) v.on(elPanel, draw);
+    paintThumbs(elPanel);
   };
   redrawPanel = draw; draw();
   elPanel.classList.add('on'); panelOn = true;
@@ -1494,6 +1577,7 @@ function openPanel(s) {
   dockOn('wear', s.panel === 'wardrobe');
 }
 function closePanel() {
+  if (dress) { try { dress.dispose(); } catch (_) {} dress = null; }
   untrapFocus();
   elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {};
   elTut.style.display = '';
@@ -1686,6 +1770,15 @@ const PZ = createPosture({
     if (v && v.details) for (const d of v.details)
       if (d.deviation > 1) SESS.axes[d.key] = (SESS.axes[d.key] || 0) + .066;
   },
+});
+$('#menu').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-m]'); if (!b) return;
+  if (SESS.on || dlgOn) return;
+  const k = b.dataset.m;
+  if (k === 'wardrobe') { if (panelOn && panelSpot?.panel === 'wardrobe') closePanel(); else openWardrobe(); return; }
+  if (panelOn && panelSpot?.panel === k) { closePanel(); return; }
+  const T = { mypage: ['마이페이지', '내 기록'], coins: ['코인', '내 코인'], guide: ['안내', 'Deskfit 안내'] }[k];
+  openPanel({ tag: T[0], title: T[1], panel: k });
 });
 $('#s-quiet').addEventListener('click', () => setQuiet(!QUIET.on));
 $('#s-face').addEventListener('click', () => setFaceOff(!faceOff));
@@ -1916,7 +2009,7 @@ function remoteFor(p) {
   const fitKey = typeof p.fit === 'object' ? JSON.stringify(p.fit) : p.fit;
   if (!r || r.species !== p.species || r.fitKey !== fitKey) {
     if (r) { r.el.remove(); r.say.remove(); r.emoEl.remove(); scene.remove(r.rig); }
-    const rig = new THREE.Group(); scene.add(rig);
+    const rig = new THREE.Group(); rig.position.y = SOLE; scene.add(rig);
     const fitVal = typeof p.fit === 'object' && p.fit ? p.fit : OUTFITS[(p.fit | 0) % OUTFITS.length];
     /* 남의 캐릭터도 덜 잘게 — 몇 명이 들어올지 모르는 자리입니다 */
     const g = character(rig, SPECIES[p.species] ? p.species : '거북이', fitVal, { lod: 1 });
@@ -2646,7 +2739,12 @@ const LOOK_SLOTS = [['top', '상의', 'topId', 'top'], ['bottom', '하의', 'bot
 const LOOK_PAL = [0x2DD4BF, 0xE8695A, 0xF2C14E, 0x9B7BD4, 0xF7F4EC, 0x63C47C, 0x5B84C4, 0x3A4150];
 function wardrobeHTML() {
   const L = myLook();
-  return '<div class="lbl">이름</div>'
+  /* 입어 보는 자리. 옷을 고를 때 궁금한 것은 이름이 아니라 **내가 입으면
+     어떤가** 입니다. 2D 판은 옆에 종이인형을 세워 뒀는데, 3D 는 진짜
+     캐릭터를 그대로 세울 수 있습니다. */
+  return '<div id="dressbox" style="width:100%;height:240px;border-radius:20px;'
+    + 'background:var(--clay2);box-shadow:var(--clayIn);margin-bottom:14px"></div>'
+    + '<div class="lbl">이름</div>'
     + `<input class="nick" maxlength="10" placeholder="${curSpecies}" value="${(SAVE.nick || '').replace(/"/g, '')}">`
     + '<div class="lbl">학교</div><div class="wr">'
     + SCHOOLS.map((q) => `<button data-sc="${q.name}" class="${q.name === SAVE.school ? 'on' : ''}">${q.name.replace('대학교', '대')}</button>`).join('')
@@ -2831,6 +2929,8 @@ addEventListener('resize', resize); resize();
 const elFps = $('#foot .fps');
 let last = performance.now(), acc = 0, frames = 0, T = 0, quality = 1, fpsNow = 0, pipT = 0;
 let fpsT0 = performance.now();
+const fpsHist = [];
+let qHold = 0;
 /* 그림자를 스스로 껐는지. 껐다고 말만 하고 되돌릴 자리가 없으면 그건 거짓말입니다 */
 let shadowsOff = false;
 const v3 = new THREE.Vector3();
@@ -2900,11 +3000,22 @@ function tick(now) {
     let wx = -ix * c + iz * s, wz = ix * s + iz * c;
     /* 눌러서 걸어가는 중이면 방향은 목표가 정합니다 */
     if (goTo) { wx = Math.sin(P.dirWant); wz = Math.cos(P.dirWant); }
-    const nx = P.x + wx * speed * dt, nz = P.z + wz * speed * dt;
-    if (!hit(nx, P.z)) P.x = nx;
-    if (!hit(P.x, nz)) P.z = nz;
+    /* ── 속도에 관성 ──
+       전에는 키를 누른 순간 최고 속도, 뗀 순간 0 이었습니다. 사람이
+       걷는 것이 아니라 스위치가 켜지는 것처럼 보였고, 방향을 바꿀 때
+       발이 미끄러졌습니다. 실제 속도를 따로 들고 목표 속도로 **밀어**
+       줍니다 — 출발이 0.18초, 멈춤이 0.12초쯤 걸립니다.
+       방향도 같이 밀어 줍니다. 대각선으로 꺾을 때 몸이 먼저 돌고
+       발이 따라오면 미끄러진 것으로 보입니다. */
+    P.vel = P.vel || { x: 0, z: 0 };
+    const kA = 1 - Math.pow(.0002, dt);
+    P.vel.x += (wx * speed - P.vel.x) * kA;
+    P.vel.z += (wz * speed - P.vel.z) * kA;
+    const nx = P.x + P.vel.x * dt, nz = P.z + P.vel.z * dt;
+    if (!hit(nx, P.z)) P.x = nx; else P.vel.x *= .2;
+    if (!hit(P.x, nz)) P.z = nz; else P.vel.z *= .2;
     P.dir = Math.atan2(wx, wz);
-    P.sp = Math.min(run, P.sp + dt * 8);
+    P.sp = Math.min(run, P.sp + dt * 6.5);
     /* ── 카메라는 스스로 안 돕니다 ──
        여기에 "앞으로 걸으면 카메라가 뒤따라 돈다" 가 있었습니다. 지웁니다.
 
@@ -2926,7 +3037,17 @@ function tick(now) {
 
        카메라는 사람이 끌거나(마우스) Z·X 로 돌릴 때만 돕니다. */
   } else {
-    P.sp = Math.max(0, P.sp - dt * 10);
+    /* 키를 떼면 한 발짝쯤 미끄러지며 섭니다 — 뚝 멈추면 인형입니다 */
+    P.vel = P.vel || { x: 0, z: 0 };
+    const kD = 1 - Math.pow(.00002, dt);
+    P.vel.x -= P.vel.x * kD; P.vel.z -= P.vel.z * kD;
+    const sp2 = Math.hypot(P.vel.x, P.vel.z);
+    if (sp2 > .05 && !SESS.on && !CSIT.on) {
+      const nx = P.x + P.vel.x * dt, nz = P.z + P.vel.z * dt;
+      if (!hit(nx, P.z)) P.x = nx; else P.vel.x = 0;
+      if (!hit(P.x, nz)) P.z = nz; else P.vel.z = 0;
+    } else { P.vel.x = 0; P.vel.z = 0; }
+    P.sp = Math.max(0, P.sp - dt * 7);
   }
   /* yaw 는 끌면 계속 더해지기만 해서 몇 분이면 수백 라디안이 됩니다.
      각도로는 같지만 큰 수에서 sin·cos 을 하면 정밀도가 깎입니다.
@@ -2951,7 +3072,7 @@ function tick(now) {
   if (SESS.on && mag > .06) endSession();
   if (CSIT.on && mag > .06) standCasual();
   if (!SESS.on) unstick();
-  playerRig.position.set(P.x, 0, P.z);
+  playerRig.position.set(P.x, SOLE, P.z);
   playerRig.rotation.y = smoothAngle(playerRig.rotation.y, P.dir, 1 - Math.pow(.00005, dt));
   /* 감정표현이 도는 동안은 그 자세가 이깁니다 */
   let emoting = false;
@@ -2994,6 +3115,15 @@ function tick(now) {
     }
   }
   if (!room) {
+    /* ── 멀리 있는 사람은 안 그립니다 ──
+       지나다니는 사람 열둘이 한 사람당 서른세 덩이라, 그것만으로 드로우콜
+       사백입니다. 섬 반대편 사람은 화면에서 몇 픽셀인데 값은 앞사람과
+       같습니다. 28m 밖은 몸을 끄고 이름표만 남깁니다 — 이름표는 지도처럼
+       읽는 것이라 끄면 오히려 허전합니다. */
+    for (const n of NPC) {
+      const far = (P.x - n.rig.position.x) ** 2 + (P.z - n.rig.position.z) ** 2 > 784;
+      if (n.rig.visible === far) n.rig.visible = !far;
+    }
     near = null;
     for (const p of CAMPUS.portals)
       if ((P.x - p.x) ** 2 + (P.z - p.z) ** 2 < p.r * p.r) { near = p; break; }
@@ -3037,7 +3167,7 @@ function tick(now) {
   net?.peers.forEach((p) => {
     const s = net.sample(p); if (!s) return;
     const r = remoteFor(p);
-    r.rig.position.set(s.x, 0, s.z);
+    r.rig.position.set(s.x, SOLE, s.z);
     r.rig.rotation.y = smoothAngle(r.rig.rotation.y, s.dir, 1 - Math.pow(.002, dt));
     const step = r.last ? Math.hypot(s.x - r.last.x, s.z - r.last.z) : 0;
     r.last = { x: s.x, z: s.z };
@@ -3134,34 +3264,64 @@ function tick(now) {
 
   /* ── 카메라 ── */
   if (first) {
-    cam.position.set(P.x, 1.84 + Math.sin(P.walk * TAU * 2) * .022 * P.sp, P.z);
+    /* 흔들림을 반으로 줄였습니다. 0.022 는 걸을 때마다 화면이 출렁여서
+       오래 보면 멀미가 납니다. 눈높이도 조금 낮췄습니다(1.84 → 1.70) —
+       이 캐릭터는 키가 작은데 시점만 어른 키였습니다. */
+    cam.position.set(P.x, 1.70 + Math.sin(P.walk * TAU * 2) * .011 * P.sp, P.z);
     const f = new THREE.Vector3(Math.sin(yaw), -Math.tan(pitch), Math.cos(yaw));
     cam.lookAt(cam.position.x + f.x * 10, cam.position.y + f.y * 10, cam.position.z + f.z * 10);
   } else {
-    /* 가림 검사 결과를 **바로 쓰지 않습니다.** 건물 옆을 지나가면
-       검사 결과가 프레임마다 널뛰어서, 걷는 내내 줌이 들쭉날쭉했습니다.
-       목표 거리만 계산해 두고 실제 거리는 감쇠로 따라갑니다 —
-       가려지면 빠르게(벽 속을 보지 않게), 풀리면 천천히. */
-    let want = dist, wantPitch = pitch;
-    const sx = -Math.sin(yaw), sz = -Math.cos(yaw), cp = Math.cos(camPitch);
-    let blocked = 0;
-    for (let t = 1.6; t <= dist; t += .5)
-      if (hitCam(P.x + sx * cp * t, P.z + sz * cp * t)) { blocked = t; break; }
-    if (blocked) {
-      /* 가리면 **먼저 위로 올라갑니다.** 당기기부터 하면 건물 옆을 지날
-         때마다 카메라가 뒤통수에 딱 붙어서 앞이 하나도 안 보입니다 —
-         "움직이기 힘들다" 의 마지막 조각입니다. 올라가도 안 되면 그때 당깁니다. */
-      wantPitch = Math.min(1.16, pitch + .5);
-      want = Math.max(room ? 4.2 : 6.5, blocked - .6);
+    /* ── 카메라는 저 혼자 당기지도 물러나지도 않습니다 ──
+
+       여기에 가림 검사가 있었습니다. 건물이 시야를 막으면 각도를 올리고
+       거리를 당겼다가, 풀리면 도로 물러났습니다. 뜻은 좋았는데 **걷는
+       내내 화면이 들썩였습니다** — 가로수 한 그루, 벤치 하나, 지나가는
+       사람 하나에도 검사가 걸려서 줌이 오르내렸습니다. 배율은 사람이
+       정하는 것이지 세계가 정하는 것이 아닙니다.
+
+       남긴 것은 둘뿐입니다. 카메라가 땅 아래로 내려가지 않게 하는 바닥
+       하나, 그리고 사람이 정한 거리로 부드럽게 따라가는 것. */
+    const sx = -Math.sin(yaw), sz = -Math.cos(yaw);
+    /* ── 벽에서는 당기지 말고 넘어갑니다 ──
+       튕기는 줌은 없앴는데, 그러니 건물 문 앞에서 카메라가 벽 안으로
+       들어갔습니다. 바닥을 두면 이번엔 뒤통수에 딱 붙었습니다. 문 앞은
+       등 뒤가 1.4m 라 **뒤로는 갈 곳이 없습니다** — 위로 가야 합니다.
+
+       예전 것과 다른 점: ① 큰 것(건물)만 봅니다. 나무·벤치·사람에
+       걸려서 걷는 내내 오르내리던 것이 그 펌프질의 원인이었습니다.
+       ② 오르는 속도와 내리는 속도를 **같게** 둡니다. 빠르게 올라가고
+       천천히 내려오면 스치듯 지날 때마다 한 칸씩 남아서 쌓입니다.
+       ③ 각도만 올리고 거리는 사람이 정한 값을 지킵니다. */
+    let wantPitch = pitch;
+    if (!room) {
+      const cp0 = Math.cos(camPitch);
+      for (let t = 2.2; t <= dist; t += .5)
+        if (hitCam(P.x + sx * cp0 * t, P.z + sz * cp0 * t)) { wantPitch = 1.16; break; }
     }
-    camPitch += (wantPitch - camPitch) * Math.min(1, dt * (wantPitch > camPitch ? 7 : 2.6));
-    /* 가리면 빠르게 당기고, 풀리면 **적당히 빠르게** 물러납니다.
-       2.2 는 0.45초짜리라 건물을 스쳐 지나갈 때마다 카메라가 코앞에
-       붙어 있는 시간이 길었습니다. */
-    camD += (want - camD) * Math.min(1, dt * (want < camD ? 14 : 5));
-    const d = camD;
+    camPitch += (wantPitch - camPitch) * Math.min(1, dt * 4);
+    camD += (dist - camD) * Math.min(1, dt * 4);
+    /* ── 벽만 안 뚫습니다 ──
+       튕기는 줌은 위에서 없앴는데, 그러니 이번엔 카메라가 건물 안으로
+       들어가서 기숙사 앞이 화면 가득 주황색이 됐습니다. 그래서 **딱
+       한 가지만** 남깁니다: 사람과 카메라 사이에 건물이 있으면 그
+       앞에서 멈춥니다.
+
+       예전 것과 다른 점 셋. ① 각도는 안 건드립니다. ② 되돌아갈 때
+       천천히 밀어내지 않습니다 — 막힌 만큼만 정확히 자릅니다. 그래서
+       건물 옆을 지날 때 카메라가 벽을 따라 미끄러지지, 앞뒤로
+       펌프질하지 않습니다. ③ 큰 것(건물)만 봅니다. 나무 한 그루,
+       벤치 하나에 줌이 걸리던 것이 그 펌프질의 원인이었습니다. */
+    /* 위로 올라가고도 여전히 막히면(좁은 골목) 그때만 당깁니다 */
+    let d = camD;
+    if (!room) {
+      const cp1 = Math.cos(camPitch);
+      for (let t = 2.2; t <= d; t += .5)
+        if (hitCam(P.x + sx * cp1 * t, P.z + sz * cp1 * t)) { d = Math.max(4.0, t - .5); break; }
+    }
     const h = Math.sin(camPitch) * d, r = Math.cos(camPitch) * d;
-    cam.position.lerp(v3.set(P.x + sx * r, 1.2 + h, P.z + sz * r), 1 - Math.pow(.0009, dt));
+    /* 바닥 — 실내는 천장이 낮아 더 낮게 둡니다 */
+    const cy = Math.max(room ? .75 : .9, 1.2 + h);
+    cam.position.lerp(v3.set(P.x + sx * r, cy, P.z + sz * r), 1 - Math.pow(.0016, dt));
     cam.lookAt(P.x, 1.35, P.z);
   }
   aimSun(P.x, P.z);
@@ -3285,24 +3445,38 @@ function tick(now) {
     const f = Math.round(frames / acc);
     fpsNow = f;
     elFps.textContent = f + ' fps';
-    /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
-       이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
-       느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
-    if (f < 30 && quality > .75) { quality = .75; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
-    /* 끄기 전에 **반으로 줄여** 봅니다. 2048 → 1024 면 그림자 그리는 값이
-       사분의 일이 되는데, 이 그림체에서 가장자리가 부드러워지는 것 말고는
-       티가 잘 안 납니다. 있는 그림자가 없는 그림자보다 낫습니다. */
-    else if (f < 26 && sun.shadow.mapSize.width > 1024) {
-      sun.shadow.mapSize.set(1024, 1024);
-      sun.shadow.map?.dispose(); sun.shadow.map = null;
+    /* ── 화질 사다리 ──
+       예전에는 0.7초짜리 표본 하나로 바로 내렸습니다. 잠깐 튀기만 해도
+       해상도가 뚝 떨어지고 다음 표본에서 도로 올라가서, 걷는 내내
+       화면이 흐려졌다 선명해졌다 했습니다 — "갑자기 화질이 깨진다" 가
+       이것입니다.
+
+       셋을 겁니다. ① 표본을 여섯 번(약 4초) 모아 **내내** 낮을 때만
+       내립니다. ② 내리는 문턱과 올리는 문턱을 벌립니다(28 · 50) —
+       붙여 두면 그 사이에서 오르내립니다. ③ 한 번 건드리면 12초 동안
+       가만둡니다. 무거운 곳을 잠깐 지나는 것과 기기가 못 따라가는
+       것은 다릅니다. */
+    fpsHist.push(f); if (fpsHist.length > 6) fpsHist.shift();
+    const settled = fpsHist.length === 6;
+    const worst = settled ? Math.max(...fpsHist) : 99;
+    const best = settled ? Math.min(...fpsHist) : 0;
+    if (settled && now > qHold) {
+      if (worst < 28 && quality > .75) {
+        quality = .75; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize();
+        qHold = now + 12000; fpsHist.length = 0;
+      } else if (worst < 24 && sun.shadow.mapSize.width > 1024) {
+        sun.shadow.mapSize.set(1024, 1024);
+        sun.shadow.map?.dispose(); sun.shadow.map = null;
+        qHold = now + 12000; fpsHist.length = 0;
+      } else if (worst < 20 && renderer.shadowMap.enabled) {
+        setShadows(false);
+        toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
+        qHold = now + 20000; fpsHist.length = 0;
+      } else if (best > 50 && quality < 1) {
+        quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize();
+        qHold = now + 12000; fpsHist.length = 0;
+      }
     }
-    else if (f < 22 && renderer.shadowMap.enabled) {
-      renderer.shadowMap.enabled = false;
-      scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
-      shadowsOff = true;
-      toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
-    }
-    else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
     frames = 0; acc = 0;
   }
   renderer.render(scene, cam);
@@ -3324,7 +3498,7 @@ function smoothAngle(a, b, t) {
   const d = ((b - a + Math.PI * 3) % TAU) - Math.PI;
   return a + d * t;
 }
-NPC.forEach((n) => n.rig.position.set(n.d.route[n.leg][0], 0, n.d.route[n.leg][1]));
+NPC.forEach((n) => n.rig.position.set(n.d.route[n.leg][0], SOLE, n.d.route[n.leg][1]));
 aimSun(P.x, P.z);
 requestAnimationFrame(tick);
 setTimeout(() => $('#load').classList.add('gone'), 260);
@@ -3375,6 +3549,9 @@ window.__netPeers = () => (net ? [...net.peers.entries()] : []);
 window.__game = (k) => openGame(k, () => {}, { posture: PZ });
 window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.error } : null);
 window.__scene = scene;
+window.__cam2 = () => cam;
+window.__csit = () => CSIT.on;
+window.__coll = () => CAMPUS.colliders;
 window.__renderer = renderer;
 window.__ride = () => rideId;
 window.__seats = () => (room ? room.seats : []);

@@ -234,6 +234,50 @@ function pediment(p, w, h, d, mat, trimMat, x, y, z, ry) {
   return m;
 }
 
+/* ---- 1층 ----
+   실제 건물은 1층이 더 높고 유리가 많습니다 — 로비와 큰 강의실이
+   거기 있으니까요. 층이 다 같으면 창고로 보입니다. */
+function groundFloor(p, C, w, d, h) {
+  box(p, w + .3, h, d + .3, C.wallWarm, 0, h / 2 + .5, 0);
+  /* 통유리 띠 — 기둥 사이를 채웁니다 */
+  const bays = Math.max(4, Math.round(w / 3.4));
+  for (const sz of [1, -1]) {
+    for (let i = 0; i < bays; i++) {
+      const bw = (w - 2.4) / bays;
+      const px = -w / 2 + 1.2 + bw * (i + .5);
+      box(p, bw - .5, h - 1.4, .18, C.glass, px, h / 2 + .5, sz * (d / 2 + .22));
+    }
+    for (let i = 0; i <= bays; i++) {
+      const px = -w / 2 + 1.2 + ((w - 2.4) / bays) * i;
+      box(p, .28, h - .2, .34, C.trim, px, h / 2 + .5, sz * (d / 2 + .26));
+    }
+  }
+  box(p, w + .6, .26, d + .6, C.trim, 0, h + .55, 0);      // 1층 마감 띠
+}
+
+/* ---- 옥상 ----
+   평지붕을 그냥 자르면 상자입니다. 난간과 기계실이 있어야 건물입니다. */
+function roofTop(p, C, w, d, y, sideAt) {
+  /* sideAt 을 주면 그 x 자리에 얹습니다 — 아트리움처럼 덩어리가 둘일 때 */
+  const ox = sideAt === undefined ? 0 : sideAt;
+  box(p, w + .5, .8, d + .5, C.trim, ox, y + .4, 0);        // 난간
+  box(p, w - .3, .55, d - .3, C.wallWarm, ox, y + .35, 0);
+  /* 기계실 — 한쪽으로 치우쳐 놓아야 자연스럽습니다 */
+  box(p, w * .3, 1.9, d * .5, C.wallWarm, ox - w * .2, y + 1.75, 0);
+  box(p, w * .32, .22, d * .52, C.trim, ox - w * .2, y + 2.75, 0);
+  /* 물탱크 · 환기구 */
+  cyl(p, .5, .5, 1.3, 10, C.trim, ox + w * .26, y + 1.45, d * .16);
+  box(p, .8, .7, .8, C.trim, ox + w * .3, y + 1.15, -d * .2);
+}
+
+/* ---- 현관 차양 ----
+   문 위로 나온 판 하나. 그림자가 지면서 정면이 납작함을 벗습니다. */
+function canopy(p, C, w, z, y) {
+  box(p, w, .28, 2.6, C.trim, 0, y, z + 1.1);
+  box(p, w - .8, .16, 2.2, C.wallWarm, 0, y - .18, z + 1.0);
+  for (const sx of [-1, 1]) cyl(p, .12, .12, y - .6, 8, C.trim, sx * (w / 2 - .6), (y - .6) / 2 + .5, z + 2.1);
+}
+
 /* ---- 지붕 ---- */
 function hipRoof(p, w, d, h, mat, x, y, z, ry) {
   const geo = new THREE.CylinderGeometry(.001, Math.SQRT2 / 2, h, 4);
@@ -477,25 +521,24 @@ KIND.slab = (g, o) => {
   const C = Object.assign({}, mats(), o.body
     ? { wall: o.body.wall, wallWarm: o.body.wallWarm, slate: o.body.roof } : {});
   const w = o.w, d = o.d, h = o.h;
+  const gh = 4.4;                                   // 1층 높이 — 위층보다 큽니다
   box(g, w + 1.0, .6, d + 1.0, C.base, 0, .3, 0);
-  box(g, w, h, d, C.wall, 0, h / 2 + .5, 0);
-  /* 층 띠 — 가로선이 그어지면 층수가 읽히고, 층수가 읽히면 건물이 큽니다 */
-  const floors = Math.max(3, Math.round(h / 3.2));
+  groundFloor(g, C, w, d, gh);
+  /* 위층 — 1층 위에 얹습니다 */
+  const uh = h - gh;
+  box(g, w, uh, d, C.wall, 0, gh + .5 + uh / 2, 0);
+  const floors = Math.max(2, Math.round(uh / 3.2));
   for (let i = 1; i < floors; i++) {
-    box(g, w + .22, .26, d + .22, C.trim, 0, .5 + (h / floors) * i, 0);
+    box(g, w + .22, .24, d + .22, C.trim, 0, gh + .5 + (uh / floors) * i, 0);
   }
-  /* 평지붕 파라펫 — 지붕이 없는 대신 테두리가 한 단 올라섭니다 */
-  box(g, w + .5, .7, d + .5, C.trim, 0, h + .85, 0);
-  box(g, w - .4, .5, d - .4, C.wallWarm, 0, h + .8, 0);
-  windowWall(g, w - 2.0, h - 1.2, Math.max(6, Math.round(w / 2.4)), floors,
-    C.glass, C.trim, 0, 1.2, d / 2 + .06, 0, false);
-  windowWall(g, w - 2.0, h - 1.2, Math.max(6, Math.round(w / 2.4)), floors,
-    C.glass, C.trim, 0, 1.2, -d / 2 - .06, Math.PI, false);
-  /* 들어간 현관 — 판 한가운데를 파내면 입구가 생깁니다 */
-  box(g, 7.0, 4.2, 1.4, C.wallWarm, 0, 2.6, d / 2 - .2);
-  box(g, 7.6, .4, 2.2, C.trim, 0, 4.9, d / 2 + .3);
-  box(g, 3.0, 3.0, .3, C.door, 0, 2.0, d / 2 + .06);
-  for (const sx of [-1, 1]) cyl(g, .22, .22, 4.2, 8, C.column, sx * 2.9, 2.1, d / 2 + .7);
+  windowWall(g, w - 2.0, uh - 1.0, Math.max(6, Math.round(w / 2.4)), floors,
+    C.glass, C.trim, 0, gh + 1.0, d / 2 + .06, 0, false);
+  windowWall(g, w - 2.0, uh - 1.0, Math.max(6, Math.round(w / 2.4)), floors,
+    C.glass, C.trim, 0, gh + 1.0, -d / 2 - .06, Math.PI, false);
+  roofTop(g, C, w, d, h + .5);
+  /* 현관 — 문과 차양 */
+  box(g, 3.2, 3.2, .3, C.door, 0, 2.1, d / 2 + .3);
+  canopy(g, C, 7.4, d / 2 + .2, 4.0);
 };
 
 /* ---- 탑상형 연구동 ----
@@ -520,11 +563,12 @@ KIND.tower_lab = (g, o) => {
     C.glass, C.trim, 0, pod + 1.6, td / 2 + .06, 0, false);
   windowWall(g, tw - 1.4, th - 1.6, Math.max(3, Math.round(tw / 2.4)), fl,
     C.glass, C.trim, 0, pod + 1.6, -td / 2 - .06, Math.PI, false);
-  box(g, tw + .6, .6, td + .6, C.trim, 0, pod + th + 1.1, 0);
-  /* 옥상 기계실 — 연구동의 표식. 이게 있으면 사무동이 아니라 실험동입니다 */
-  box(g, tw * .5, 1.8, td * .55, C.wallWarm, tw * .1, pod + th + 2.3, 0);
-  cyl(g, .22, .22, 2.6, 6, C.trim, -tw * .3, pod + th + 2.7, td * .2);
-  box(g, 3.0, 3.2, .3, C.door, 0, 2.1, d / 2 + .06);
+  roofTop(g, C, tw, td, pod + th + .9);
+  /* 굴뚝 — 실험동에는 배기가 있습니다. 이게 사무동과 갈리는 지점입니다 */
+  cyl(g, .3, .34, 3.4, 8, C.trim, -tw * .3, pod + th + 3.1, td * .2);
+  cyl(g, .38, .3, .5, 8, C.wallWarm, -tw * .3, pod + th + 4.9, td * .2);
+  box(g, 3.2, 3.2, .3, C.door, 0, 2.1, d / 2 + .3);
+  canopy(g, C, 7.0, d / 2 + .2, 4.2);
 };
 
 /* ---- ㄱ자 공학관 ----
@@ -630,7 +674,9 @@ KIND.atrium = (g, o) => {
   for (let i = 1; i < Math.round(midH / 3.4); i++)
     box(g, midW + .1, .2, .3, C.trim, 0, .5 + 3.4 * i, d * .04 + d * .46);
   box(g, midW + .8, .7, d * .96 + .8, C.trim, 0, midH + .85, d * .04);
+  for (const sx of [-1, 1]) roofTop(g, C, sideW, d, h + .5, sx * (w / 2 - sideW / 2));
   box(g, 3.4, 3.2, .4, C.door, 0, 2.1, d * .04 + d * .46 + .2);
+  canopy(g, C, 8.0, d * .04 + d * .46, 4.4);
 };
 
 /* ══════════════════════════════════════════════════════════

@@ -28,6 +28,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from './vendor/ext/GLTFLoader.js';
 import { M } from './parts.js';
+import { retintMaterial } from './retint.js';
 
 const BASE = './assets/kit/';
 
@@ -80,7 +81,14 @@ export function load(file) {
         const g = o.geometry.clone();
         g.applyMatrix4(o.matrixWorld);          // 모델 안 계층을 펴 둡니다
         const mats = Array.isArray(o.material) ? o.material : [o.material];
-        parts.push({ geo: g, name: (mats[0] && mats[0].name) || o.name || '' });
+        const m0 = mats[0];
+        /* 텍스처가 있으면 **원본 재질을 살려** 씁니다. 색이 텍스처에
+           있어서 우리 재질로 갈아 끼우면 모델이 통째로 단색이 됩니다.
+           대신 retint 가 그 텍스처의 색을 우리 톤으로 옮깁니다. */
+        const textured = !!(m0 && m0.map);
+        if (textured) retintMaterial(m0);
+        parts.push({ geo: g, name: (m0 && m0.name) || o.name || '',
+                     keep: textured ? m0 : null });
       });
       /* 바닥에 앉히고 원점을 가운데로 옮깁니다 — 모델마다 원점 규칙이
          달라서, 안 맞추면 어떤 건물은 땅에 묻히고 어떤 건물은 뜹니다. */
@@ -133,7 +141,7 @@ export async function place(parent, file, spots, opt = {}) {
   const eul = new THREE.Euler();
   for (const [tone, list] of byTone) {
     for (const part of kit.parts) {
-      const im = new THREE.InstancedMesh(part.geo, skinned(part.name, tone), list.length);
+      const im = new THREE.InstancedMesh(part.geo, part.keep || skinned(part.name, tone), list.length);
       im.userData.noBake = true;
       im.castShadow = true; im.receiveShadow = true;
       list.forEach((s, i) => {
@@ -157,7 +165,7 @@ export async function one(parent, file, x, y, z, ry = 0, height, tone = 0) {
   const g = new THREE.Group();
   g.position.set(x, y, z); g.rotation.y = ry; g.scale.setScalar(fit);
   for (const part of kit.parts) {
-    const m = new THREE.Mesh(part.geo, skinned(part.name, tone));
+    const m = new THREE.Mesh(part.geo, part.keep || skinned(part.name, tone));
     m.castShadow = true; m.receiveShadow = true;
     g.add(m);
   }
@@ -165,6 +173,29 @@ export async function one(parent, file, x, y, z, ry = 0, height, tone = 0) {
   parent.add(g);
   return g;
 }
+
+/* ---- 자연 · 소품 ----
+   나무는 **전부 갈아 끼웁니다.** 구 세 개짜리 우리 나무와 나란히 세우면
+   한쪽이 미완성으로 보입니다 — 섞는 것이 가장 나쁜 선택입니다. */
+export const NATURE = {
+  broad: ['nat-tree.glb', 'nat-tree-2.glb', 'nat-tree-3.glb', 'nat-tree-4.glb', 'nat-tree-5.glb'],
+  pine:  ['nat-pine.glb', 'nat-pine-2.glb', 'nat-pine-3.glb', 'nat-pine-4.glb', 'nat-pine-5.glb'],
+  /* 굽은나무(twisted)는 뺐습니다 — 가지가 앙상해 죽은 나무로 보이고,
+     죽은 나무가 선 캠퍼스는 관리가 안 된 곳으로 읽힙니다.
+     대신 활엽을 한 갈래 더 늘려 종류 수를 지킵니다. */
+  twist: ['nat-tree-3.glb', 'nat-tree-4.glb', 'nat-tree-5.glb',
+          'park-tree.glb', 'park-tree-large.glb'],
+  bush:  ['nat-bush.glb', 'park-bush.glb', 'park-bush-large.glb'],
+  rock:  ['nat-rock-medium.glb', 'nat-rock-medium-2.glb', 'nat-rock-medium-3.glb'],
+};
+export const PROPS = {
+  bench: ['park-bench.glb', 'bit-bench.glb'],
+  lamp:  ['park-street-lantern.glb', 'bit-streetlight.glb'],
+  bin:   ['park-trashcan.glb'],
+  sign:  ['sign-wooden-sign.glb', 'sign-wooden-sign-2.glb', 'sign-wooden-sign-3.glb',
+          'sign-wooden-sign-4.glb', 'sign-wooden-sign-5.glb'],
+  car:   ['car-car.glb', 'car-car-2.glb', 'car-sports-car.glb', 'car-sports-car-2.glb'],
+};
 
 /* 킷에 있는 건물 파일 이름들. 배치 쪽에서 골라 씁니다. */
 export const CITY = {

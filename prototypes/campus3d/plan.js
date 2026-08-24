@@ -409,7 +409,36 @@ function allee(built, avoid) {
   return trees;
 }
 
-/* ---- 나무를 인스턴스로 ---- */
+/* ---- 나무 ----
+   구 세 개로 만든 우리 나무를 **전부** 킷 나무로 갈아 끼웁니다.
+   섞지 않는 것이 중요합니다 — 정교한 것 옆에 서면 단순한 쪽이
+   미완성으로 보이지, 둘이 사이좋게 보이지 않습니다.
+
+   활엽 · 침엽 · 굽은나무 세 갈래를 섞어 심습니다. 한 종만 쓰면
+   조림지처럼 보이고, 캠퍼스 나무는 종이 섞여 있습니다. */
+function plantKitTrees(g, trees, solid) {
+  const kinds = [KIT.NATURE.broad, KIT.NATURE.pine, KIT.NATURE.twist];
+  const byFile = new Map();
+  trees.forEach((t, i) => {
+    const fam = kinds[t.kind % 3];
+    const f = fam[i % fam.length];
+    if (!byFile.has(f)) byFile.set(f, []);
+    byFile.get(f).push({ x: t.x, z: t.z, ry: t.ry, s: 1, tone: 0 });
+    /* 줄기만 막습니다 — 수관까지 막으면 나무 밑을 못 지나가서 답답합니다 */
+    solid(t.x, t.z, .7 * t.s, .7 * t.s);
+  });
+  for (const [f, list] of byFile) {
+    /* 나무 높이는 종마다 다릅니다. 활엽 8, 침엽 11, 굽은나무 7 —
+       다 같으면 심어 놓은 티가 납니다. */
+    const h = f.includes('pine') ? 10 + rnd() * 3
+            : f.includes('twisted') ? 6.5 + rnd() * 2 : 7.5 + rnd() * 3;
+    KIT.place(g, f, list, { height: h });
+  }
+}
+
+/* ---- 옛 나무 — 지금은 안 씁니다 ----
+   구 세 개를 합쳐 만든 인스턴스 나무입니다. 킷으로 갈아 끼웠지만,
+   킷을 못 읽는 상황(오프라인 등)에서 되돌릴 수 있게 남겨 둡니다. */
 function plantTrees(g, trees, solid) {
   if (!trees.length) return;
   const trunkG = new THREE.CylinderGeometry(.17, .27, 2.6, 6);
@@ -652,9 +681,92 @@ export function buildSite(parent, solid, avoid) {
   annexes(g, solid, avoid);
 
   const trees = woods(g, avoid).concat(allee(built, avoid));
-  plantTrees(g, trees, solid);
+  plantKitTrees(g, trees, solid);
+  props(g, built, solid, avoid);
 
   return { group: g, trees: trees.length, roads: built.length, built, SITE, GATE };
+}
+
+/* ══════════════════════════════════════════════════════════
+   소품 — 자동차 · 벤치 · 가로등 · 쓰레기통 · 이름표
+
+   전부 킷입니다. 우리가 그리던 벤치·가로등보다 낫고, 같은 톤으로
+   재도색되므로 갈라지지 않습니다.
+   ══════════════════════════════════════════════════════════ */
+function props(g, built, solid, avoid) {
+  const push = (map, f, s) => { if (!map.has(f)) map.set(f, []); map.get(f).push(s); };
+
+  /* ---- 자동차 ----
+     주차장 셋이 텅 비어 있었습니다. 칸을 그려 놓고 차가 없으면
+     주차장이 아니라 흰 줄 그은 회색 판입니다. */
+  const cars = new Map();
+  let ci = 0;
+  for (const f of FIELDS) {
+    if (f.t !== 'lot') continue;
+    const rows = Math.floor(f.d / 11);
+    for (let r2 = 0; r2 < rows; r2++) {
+      const cz = f.z - f.d / 2 + 5.5 + r2 * 11;
+      const n = Math.floor(f.w / 3.2);
+      for (let i = 0; i < n; i++) {
+        if (rnd() < .42) continue;                  // 빈 칸이 있어야 주차장입니다
+        const cx = f.x - f.w / 2 + (f.w / n) * (i + .5);
+        push(cars, KIT.PROPS.car[ci++ % KIT.PROPS.car.length],
+             { x: cx, z: cz, ry: rnd() < .5 ? 0 : Math.PI, s: 1, tone: ci % 6 });
+        solid(cx, cz, 2.2, 4.4);
+      }
+    }
+  }
+  for (const [f, list] of cars) KIT.place(g, f, list, { height: 1.9 });
+
+  /* ---- 길가 벤치 · 가로등 · 쓰레기통 ----
+     길을 따라 놓습니다. 잔디에 흩뿌리면 물건이 떠 있고, 길가에
+     서 있어야 "누가 쓰는 것" 으로 보입니다. */
+  const bench = new Map(), lamp = new Map(), bin = new Map();
+  let k = 0;
+  for (const r of built) {
+    const len = r.curve.getLength();
+    const n = Math.max(2, Math.round(len / 26));
+    for (let i = 1; i < n; i++) {
+      const t = i / n;
+      const p = r.curve.getPointAt(t);
+      const tan = r.curve.getTangentAt(t);
+      const nx = -tan.z, nz = tan.x;
+      const off = r.w / 2 + 2.1;
+      const side = i % 2 ? 1 : -1;
+      const x = p.x + nx * off * side, z = p.z + nz * off * side;
+      if (!inSite(x, z) || (avoid && avoid(x, z, 13))) continue;
+      const face = Math.atan2(-nx * side, -nz * side);
+      k++;
+      if (k % 3 === 0) {
+        push(bench, KIT.PROPS.bench[k % KIT.PROPS.bench.length], { x, z, ry: face, s: 1, tone: 0 });
+        solid(x, z, 2.4, 1.1, face);
+      } else if (k % 3 === 1) {
+        push(lamp, KIT.PROPS.lamp[k % KIT.PROPS.lamp.length], { x, z, ry: face, s: 1, tone: 0 });
+        solid(x, z, .7, .7);
+      } else {
+        push(bin, KIT.PROPS.bin[0], { x, z, ry: face, s: 1, tone: 0 });
+        solid(x, z, .8, .8);
+      }
+    }
+  }
+  for (const [f, l] of bench) KIT.place(g, f, l, { height: 1.3 });
+  for (const [f, l] of lamp) KIT.place(g, f, l, { height: 4.8 });
+  for (const [f, l] of bin) KIT.place(g, f, l, { height: 1.1 });
+
+  /* ---- 건물 이름표 ----
+     문 앞에 표지판 하나. 건물이 스물넷인데 이름이 없으면 어디가
+     어디인지 지도를 열어야만 압니다. */
+  const signs = new Map();
+  BUILDINGS.forEach((b, i) => {
+    const ry = ryOf(b.face);
+    const dep = ((b.d || 11) * (b.s || 1)) / 2 + 6.5;
+    const sx = b.x + Math.sin(ry) * dep + Math.cos(ry) * 5.5;
+    const sz = b.z + Math.cos(ry) * dep - Math.sin(ry) * 5.5;
+    push(signs, KIT.PROPS.sign[i % KIT.PROPS.sign.length],
+         { x: sx, z: sz, ry, s: 1, tone: 0 });
+    solid(sx, sz, .8, .8);
+  });
+  for (const [f, l] of signs) KIT.place(g, f, l, { height: 2.6 });
 }
 
 /**

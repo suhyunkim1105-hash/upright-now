@@ -139,6 +139,15 @@ export function createSky(THREE, ctx) {
       scene.background.setHex(s.sky);
       if (weather !== 'clear') scene.background.multiplyScalar(dull * 1.02);
     }
+    /* 안개 색 = 하늘 색. 다르면 지평선에 띠가 생겨 안개가 아니라
+       벽으로 보입니다. 실내에서는 밀도를 거의 0 으로 내립니다 —
+       방은 20칸도 안 되는데 밖과 같은 밀도를 쓰면 벽이 뿌예집니다. */
+    if (scene.fog) {
+      scene.fog.color.copy(scene.background);
+      /* 비·눈은 실제로 시야를 줄입니다 — 날씨가 안개로도 보여야 합니다 */
+      const wx = weather === 'clear' ? 1 : weather === 'cloud' ? 1.35 : 1.9;
+      scene.fog.density = indoor ? .0006 : .0075 * wx;
+    }
     /* 밤에는 **빛의 색까지** 파랗게 기울입니다. 세기만 낮추면 파스텔 재질이
        그대로 밝게 남아서 "어두운 낮" 이 됩니다 — 밤으로 안 읽힙니다. */
     const n = s.night;

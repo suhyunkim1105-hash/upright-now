@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { M, roundedBox, cyl, prism, tree, bush } from './parts.js';
 import * as BLD from './bld.js';
+import { buildGrounds, OUTER } from './grounds.js';
 
 export const PAL = {
   grass: 0x6FC85E, grassDark: 0x57B04A, grassLight: 0x86D46E,
@@ -39,7 +40,12 @@ export const BUILDINGS = [
 ];
 
 const PLAZA_R = 12;
-const HALF = 40;                       // 섬 반지름
+/* 안쪽 반지름 — 광장 · 건물 여섯 · 앞마당 · 대로가 사는 곳입니다.
+   "광장에서 문까지 5~9칸" 이 여기서 맞춰졌으므로 **건드리지 않습니다**. */
+const CORE = 40;
+/* 바깥 경계 — 담이 서는 자리. 섬이 아니라 캠퍼스가 되는 값입니다.
+   r 40~132 는 grounds.js 가 채웁니다. */
+const HALF = OUTER.far;
 
 /* ══════════════════════════════════════════════════════════
    야외 구역 셋 — 운동장 · 호수 · 동아리 거리
@@ -153,12 +159,12 @@ const rnd = () => (_s = (_s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
    둥글면 빈 구석이 안 생기고, 동물의 숲의 첫인상이 바로 섬 모양입니다. */
 function ground(g) {
   const flat = (m) => { m.castShadow = false; return m; };
-  /* 바다 — 아주 얕고 넓은 판 하나 */
-  flat(cyl(g, HALF + 26, HALF + 26, .6, 72, M(0x8FD8EE, .3), 0, -1.5, 0)).receiveShadow = false;
-  flat(cyl(g, HALF + 3.2, HALF + 3.2, .5, 72, M(0xF2E2B8, .82), 0, -.75, 0));   // 모래톱
-  flat(cyl(g, HALF + 1.4, HALF + 1.4, 2.2, 72, M(PAL.soil, .88), 0, -1.1, 0));  // 흙 벼랑
-  flat(cyl(g, HALF, HALF, 2.2, 72, M(PAL.grassDark, .86), 0, -1.06, 0));
-  flat(cyl(g, HALF - .5, HALF - .5, 2.2, 72, M(PAL.grass, .86), 0, -1.0, 0));
+  /* 바다 · 모래톱 · 흙 벼랑을 걷어냈습니다.
+     넓히기만 해서는 섬이 큰 섬이 될 뿐입니다 — **물가가 보이는 한**
+     눈이 거기서 끝을 찾습니다. 대학은 담으로 끝나고, 담 너머가
+     이어집니다. 바깥(r 40~132)은 grounds.js 가 깝니다. */
+  flat(cyl(g, CORE, CORE, 2.2, 72, M(PAL.grassDark, .86), 0, -1.06, 0));
+  flat(cyl(g, CORE - .5, CORE - .5, 2.2, 72, M(PAL.grass, .86), 0, -1.0, 0));
   /* 잔디 얼룩 — 한 색으로 두면 당구대입니다.
 
      **높이를 한 장씩 어긋나게 깝니다.** 전 판은 150장을 전부 y=0.04 에
@@ -166,7 +172,7 @@ function ground(g) {
      두 면의 깊이가 완전히 같으면 어느 쪽을 그릴지 카메라가 조금만 움직여도
      뒤집힙니다 — 걸을 때마다 잔디가 번쩍이던 것이 이것입니다. */
   for (let i = 0; i < 150; i++) {
-    const a = rnd() * Math.PI * 2, r = 6 + rnd() * (HALF - 13);
+    const a = rnd() * Math.PI * 2, r = 6 + rnd() * (CORE - 13);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (Math.hypot(x, z) < PLAZA_R + 2) continue;
     /* 구역 바닥은 구역이 직접 깝니다. 얼룩이 그 밑에 깔리면 판 가장자리
@@ -986,7 +992,7 @@ export function buildCampus(scene) {
   const spots = [];
   const far = (x, z, m) => spots.every((p) => Math.hypot(p[0] - x, p[1] - z) > m);
   for (let i = 0; i < 460 && spots.length < 86; i++) {
-    const a = rnd() * Math.PI * 2, r = 17 + rnd() * (HALF - 19);
+    const a = rnd() * Math.PI * 2, r = 17 + rnd() * (CORE - 19);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     /* 건물 · 길 · 광장 위에는 안 심습니다 */
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 14.5)) continue;
@@ -1015,7 +1021,7 @@ export function buildCampus(scene) {
     const a = (i / 150) * Math.PI * 2 + (rnd() - .5) * .05;
     /* 정문 부채꼴은 비웁니다 — 문 바로 뒤에 숲이 서 있으면 문이 아니라 벽입니다 */
     if (Math.abs(((a - GATE_A + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < .34) continue;
-    const r = HALF - 2.0 - rnd() * 5.0;
+    const r = CORE - 2.0 - rnd() * 5.0;
     const tx = Math.cos(a) * r, tz = Math.sin(a) * r;
     /* 건물 등 뒤도 비웁니다 — 지붕에 수관이 겹치면 벽에 나무가 박힌 것처럼 보입니다 */
     if (BUILDINGS.some((b) => Math.hypot(b.x - tx, b.z - tz) < 11.5)) continue;
@@ -1028,7 +1034,7 @@ export function buildCampus(scene) {
   }
   /* 덤불 흩뿌리기 */
   for (let i = 0; i < 90; i++) {
-    const a = rnd() * Math.PI * 2, r = 18 + rnd() * (HALF - 21);
+    const a = rnd() * Math.PI * 2, r = 18 + rnd() * (CORE - 21);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (BUILDINGS.some((b) => Math.hypot(b.x - x, b.z - z) < 11)) continue;
     if (Math.abs(Math.hypot(x, z) - 30) < 3.2) continue;
@@ -1070,5 +1076,10 @@ export function buildCampus(scene) {
          천막 천(axis 'x' — 축이 용마루라 자락이 들립니다)과 깃발
          (axis 'y' — 축이 장대입니다). mesh.rotation[axis] =
          Math.sin(t * 1.7 + phase) * amp 면 충분합니다. */
-  return { group: g, colliders, portals, HALF, PLAZA_R, swans, lotus, fish, flutter };
+  /* 바깥 캠퍼스 — 안쪽이 다 선 뒤에 짓습니다. 안쪽에 이미 있는 것
+     위에 나무를 심지 않도록 inCore 로 물어봅니다. */
+  const inCore = (x, z) => Math.hypot(x, z) < CORE + 2;
+  const grounds = buildGrounds(g, solid, inCore);
+
+  return { group: g, colliders, portals, HALF, CORE, PLAZA_R, swans, lotus, fish, flutter, grounds };
 }

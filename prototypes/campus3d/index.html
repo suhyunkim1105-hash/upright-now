@@ -473,7 +473,12 @@
 </div>
 <div id="load"><span class="sp"></span><div>기린캠퍼스를 세우는 중<i>건물 여섯 · 실내 여섯 · 나무 이백 그루</i></div></div>
 <script type="importmap">
-{ "imports": { "three": "./vendor/three.module.min.js" } }
+{ "imports": {
+  "three": "./vendor/three.module.min.js",
+  "three/examples/jsm/postprocessing/Pass.js": "./vendor/three-addons/Pass.js",
+  "postprocessing": "./vendor/postprocessing.esm.js",
+  "n8ao": "./vendor/n8ao.esm.js"
+} }
 </script>
 <script type="module">
 import * as THREE from 'three';
@@ -492,6 +497,12 @@ import { EMOTES, EMOTE_BY_KEY, playEmoteSound, playEmotePose, emoteIcon } from '
 import { openGame, gameOpen } from './games.js';
 import { createPosture } from './posture-live.js';
 import { createSky, weatherKind } from './sky.js';
+/* 후처리 — 앰비언트 오클루전 하나 때문에 들입니다.
+   이 월드는 형상이 전부 코드로 그린 단색 덩어리라, 물체끼리 닿는
+   자리가 어디인지 그림자만으로는 안 보입니다. AO 가 그 접점을
+   어둡게 만들어 **따로 놓인 상자들을 한 공간으로** 묶어 줍니다. */
+import { EffectComposer, RenderPass } from 'postprocessing';
+import { N8AOPostPass } from 'n8ao';
 import { createMusic, MUSIC } from './music.js';
 
 const $ = (s) => document.querySelector(s);
@@ -537,14 +548,28 @@ renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xBFE4F2);
+/* 지수 안개. 색은 **하늘색과 같아야** 합니다 — 다르면 지평선에
+   띠가 생겨서 안개가 아니라 벽으로 보입니다. sky.js 가 시각마다
+   배경색을 바꾸므로, 안개 색도 거기서 같이 따라갑니다.
+
+   밀도 0.0075 — 20칸 안에서는 3% 라 발밑은 안 뿌옇고, 담(132)에서
+   62%, 도시 실루엣(~320)은 거의 다 잠깁니다. 끝은 안 보이는데 뭔가
+   있다는 것만 남는 값입니다.
+
+   0.0040 으로 시작했다가 올렸습니다 — 담에서 24% 밖에 안 잠겨서
+   먼 나무가 또렷했고, 또렷하면 거리가 안 생깁니다. */
+scene.fog = new THREE.FogExp2(0xBFE4F2, .0075);
 /* near 를 0.1 에서 0.25 로 올립니다 — 깊이 버퍼의 정밀도는 near 에 반비례합니다.
    0.1 이면 20칸 앞에서 겨우 0.1mm 를 구분하는데, 길과 잔디가 1cm 차이로
    겹쳐 있어서 그 정도로는 앞뒤가 뒤집힙니다. 1인칭 눈높이에서도 0.25 는
    안전합니다(머리보다 가까운 것은 어차피 안 보입니다). */
 const cam = new THREE.PerspectiveCamera(48, 1, .25, 400);
 
-const amb = new THREE.AmbientLight(0xFFFFFF, .70);
-const hemi = new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, .85);
+/* AO 가 접점을 어둡게 만들어 주므로 균일광(amb)을 조금 내리고,
+   대신 위아래 색이 갈리는 하늘빛(hemi)을 올립니다. 균일광이 세면
+   AO 가 만든 그늘이 도로 씻겨 나갑니다. */
+const amb = new THREE.AmbientLight(0xFFFFFF, .52);
+const hemi = new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, 1.08);
 const sun = new THREE.DirectionalLight(0xFFF6E4, 1.95);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -553,7 +578,14 @@ sun.shadow.camera.near = 1; sun.shadow.camera.far = 130;
 sun.shadow.bias = -.0002; sun.shadow.normalBias = .14; sun.shadow.radius = 2;
 const fill = new THREE.DirectionalLight(0xCFE4F5, .45);
 fill.position.set(40, 30, -30);
-scene.add(amb, hemi, sun, sun.target, fill);
+/* 림 라이트 — 해의 **반대편 뒤쪽**에서 옅게 칩니다.
+   캐릭터와 배경이 둘 다 파스텔이라 실루엣이 배경에 녹습니다.
+   뒤에서 한 겹 얹으면 가장자리만 밝아져 사람이 배경에서 떨어져
+   나옵니다 — 애니메이션에서 인물을 세우는 그 방법입니다. */
+const rim = new THREE.DirectionalLight(0xFFE9C9, .40);
+rim.position.set(26, 14, -34);
+rim.castShadow = false;
+scene.add(amb, hemi, sun, sun.target, fill, rim);
 
 /* 그림자 상자는 사람을 따라다닙니다 — 섬 전체를 덮으면 한 칸에 4cm 라 부서집니다.
 
@@ -604,9 +636,34 @@ campusRoot.traverse((o) => {
 });
 /* 하늘 · 불 · 날씨 — 배경색 하나로 고정이던 것을 시각과 날씨에 맡깁니다 */
 const SKY = createSky(THREE, { scene, sun, hemi, amb, campusRoot, roomRoot: null });
+/* ── 그림자 재설계 ──
+   전 판은 castShadow 가 99곳이었습니다. 그림자 지도는 사람 주위
+   22칸만 덮는데(SPAN), 그 안의 모든 잔풀·벤치 널빤지·화분까지
+   그림자를 던지고 있었습니다. 화면에서는 1~2px 얼룩인데 값은
+   똑같이 냅니다.
+
+   **큰 것만 남깁니다.** 가장 긴 변이 1.1칸 아래면 그림자를 끕니다 —
+   그 자리는 이제 AO 가 대신 어둡게 만듭니다. AO 는 화면 공간이라
+   물체 수와 상관없이 값이 일정합니다. */
+function shadowPolicy(root) {
+  const bb = new THREE.Box3(), sz = new THREE.Vector3();
+  let off = 0, keep = 0;
+  root.traverse((o) => {
+    if (!o.isMesh || !o.castShadow) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+    bb.getSize(sz);
+    if (Math.max(sz.x, sz.y, sz.z) < 1.1) { o.castShadow = false; off++; }
+    else keep++;
+  });
+  return { off, keep };
+}
+campusRoot.updateMatrixWorld(true);
+const SHP = shadowPolicy(campusRoot);
 { const t0 = performance.now(); const r = bake(campusRoot, { tile: 22 });
   campusRoot.add(r.group);
-  console.log(`캠퍼스 굽기 ${r.before} → ${r.after} (${(performance.now() - t0) | 0}ms)`); }
+  console.log(`캠퍼스 굽기 ${r.before} → ${r.after} (${(performance.now() - t0) | 0}ms)`);
+  console.log(`그림자 정책: 끔 ${SHP.off} · 남김 ${SHP.keep}`); }
 SKY.collect(campusRoot);
 /* 기상청 값을 한 번 받아 창밖과 하늘을 맞춥니다 — 창은 비 오는데 하늘이
    맑으면 그 어긋남이 제일 먼저 눈에 띕니다. 30분마다 다시 봅니다. */
@@ -2489,11 +2546,70 @@ function drawMini() {
 }
 
 /* ══════ 15. 한 판 ══════ */
+/* ══════ 후처리 ══════
+   ?ao=0 으로 끄고 켜서 눈으로 비교할 수 있게 해 둡니다. 껐을 때는
+   사슬을 아예 안 만듭니다 — 만들어 두고 안 쓰면 화면 크기의 버퍼가
+   그냥 메모리에 남습니다. */
+const AO_ON = new URLSearchParams(location.search).get('ao') !== '0';
+let composer = null, n8ao = null;
+if (AO_ON) {
+  try {
+    composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
+    composer.addPass(new RenderPass(scene, cam));
+    n8ao = new N8AOPostPass(scene, cam, innerWidth, innerHeight);
+    /* 화면 공간 반지름 — 세계 단위가 아니라 화면 비율로 잡습니다.
+       세계 단위로 두면 멀리 있는 건물에서는 AO 가 사라지고 발밑에서만
+       진해집니다. 캠퍼스처럼 깊이가 넓은 화면에서는 화면 기준이 맞습니다. */
+    n8ao.configuration.aoRadius = 5.0;
+    n8ao.configuration.distanceFalloff = 2.0;
+    n8ao.configuration.intensity = 2.6;
+    /* 그늘 색을 순검정이 아니라 **청록을 섞은 어두운 값**으로 둡니다.
+       순검정 그늘은 점토가 아니라 플라스틱이 됩니다 — 로비·마이페이지의
+       클레이 토큰이 쓰는 규칙과 같은 이유입니다. */
+    n8ao.configuration.color = new THREE.Color(0x0D3C34);
+    n8ao.configuration.halfRes = true;      // 절반 해상도로 계산하고 올립니다
+    composer.addPass(n8ao);
+  } catch (e) {
+    console.warn('후처리를 못 켰습니다 — 그냥 그립니다', e);
+    composer = null; n8ao = null;
+  }
+}
+
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
   cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix();
+  if (composer) composer.setSize(innerWidth, innerHeight);
 }
 addEventListener('resize', resize); resize();
+
+/* ══════ 계측 ══════
+   렌더러·씬·카메라를 창에 걸어 둡니다. 개발용이고, 이게 없으면
+   드로우콜·삼각형·머티리얼 수를 밖에서 읽을 방법이 없습니다.
+   (실제로 이 판을 재려다 막혀서 이 줄이 생겼습니다.) */
+window.__W = { renderer, scene, cam, sun, hemi, amb, get composer() { return composer; },
+  get n8ao() { return n8ao; }, THREE,
+  /* 개발용 순간이동 — 넓힌 캠퍼스의 먼 자리를 확인하려면 걸어서는
+     한참입니다. 각도(도)와 반지름으로 부릅니다: __W.tp(45, 110) */
+  tp(deg, r) {
+    const a = deg * Math.PI / 180;
+    P.x = Math.cos(a) * r; P.z = Math.sin(a) * r;
+    return [P.x.toFixed(1), P.z.toFixed(1)];
+  },
+  stat() {
+    const i = renderer.info;
+    let mesh = 0, inst = 0, instTotal = 0, lights = 0;
+    const mats = new Set();
+    scene.traverse((o) => {
+      if (o.isInstancedMesh) { inst++; instTotal += o.count; }
+      else if (o.isMesh) mesh++;
+      if (o.isLight) lights++;
+      if (o.material) [].concat(o.material).forEach((m) => m && mats.add(m.uuid));
+    });
+    return { 드로우콜: i.render.calls, 삼각형: i.render.triangles,
+      메시: mesh, 인스턴스메시: inst, 인스턴스합: instTotal, 조명: lights,
+      머티리얼: mats.size, 지오메트리: i.memory.geometries, 텍스처: i.memory.textures,
+      fps: fpsNow, 후처리: !!composer, 안개: scene.fog ? scene.fog.density : 0 };
+  } };
 
 const elFps = $('#foot .fps');
 let last = performance.now(), acc = 0, frames = 0, T = 0, quality = 1, fpsNow = 0, pipT = 0;
@@ -2921,7 +3037,9 @@ function tick(now) {
   if (acc > .7) {
     const f = Math.round(frames / acc);
     fpsNow = f;
-    elFps.textContent = f + ' fps';
+    /* fps 만 적으면 느릴 때 무엇이 느린지 모릅니다. 드로우콜을 같이
+       적으면 "물체를 더 뿌려도 되는가" 를 걸으면서 판단할 수 있습니다. */
+    elFps.textContent = f + ' fps · ' + renderer.info.render.calls + ' call';
     /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
        이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
        느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
@@ -2942,7 +3060,7 @@ function tick(now) {
     else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
     frames = 0; acc = 0;
   }
-  renderer.render(scene, cam);
+  if (composer) composer.render(); else renderer.render(scene, cam);
 }
 function hitCam(x, z) {
   if (room) return x < -room.size.w / 2 + .5 || z < -room.size.d / 2 + .5;

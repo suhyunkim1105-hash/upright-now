@@ -126,6 +126,9 @@ export function createSky(THREE, ctx) {
     return d.getHours() + d.getMinutes() / 60;
   }
 
+  /* 기준 색 — 처음 한 번만 기억합니다. 매 프레임 읽으면 이미 곱해진
+     값을 또 곱해서 빛이 점점 어두워집니다. */
+  let base = null;
   function apply(indoor) {
     const s = skyAt(nowHour());
     /* 비·눈은 **밖에만** 옵니다. 알갱이는 씬에 바로 달려 있어서
@@ -151,9 +154,19 @@ export function createSky(THREE, ctx) {
     /* 밤에는 **빛의 색까지** 파랗게 기울입니다. 세기만 낮추면 파스텔 재질이
        그대로 밝게 남아서 "어두운 낮" 이 됩니다 — 밤으로 안 읽힙니다. */
     const n = s.night;
-    amb.color.setRGB(1 - n * .46, 1 - n * .36, 1 - n * .04);
-    hemi.color.setRGB(1 - n * .40, 1 - n * .30, 1 - n * .02);
-    if (hemi.groundColor) hemi.groundColor.setRGB(1 - n * .52, 1 - n * .44, 1 - n * .14);
+    if (!base) base = {
+      amb: amb.color.clone(),
+      hemi: hemi.color.clone(),
+      gnd: hemi.groundColor ? hemi.groundColor.clone() : null,
+    };
+    /* 채널마다 다르게 낮춥니다 — 빨강을 가장 많이 깎으면 남는 것이
+       파랑이라 밤빛이 됩니다. 기준 색에 **곱하므로** 낮에는 하늘빛과
+       잔디빛이 그대로 남습니다. */
+    amb.color.setRGB(base.amb.r * (1 - n * .46), base.amb.g * (1 - n * .36), base.amb.b * (1 - n * .04));
+    hemi.color.setRGB(base.hemi.r * (1 - n * .40), base.hemi.g * (1 - n * .30), base.hemi.b * (1 - n * .02));
+    if (hemi.groundColor && base.gnd) {
+      hemi.groundColor.setRGB(base.gnd.r * (1 - n * .52), base.gnd.g * (1 - n * .44), base.gnd.b * (1 - n * .14));
+    }
     sun.color.setHex(s.sun);
     sun.intensity = (indoor ? s.sunI * .7 : s.sunI) * dull;
     amb.intensity = s.amb * (indoor ? 1.28 : 1) * (weather === 'clear' ? 1 : 1.08);

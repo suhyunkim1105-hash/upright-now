@@ -497,6 +497,10 @@ import { EMOTES, EMOTE_BY_KEY, playEmoteSound, playEmotePose, emoteIcon } from '
 import { openGame, gameOpen } from './games.js';
 import { createPosture } from './posture-live.js';
 import { createSky, weatherKind } from './sky.js';
+/* 색 실험실 — ?lab=1 일 때만 붙습니다. 채도 · 양끝 · 톤매핑을
+   켜고 끄며 **실제 월드에서** 비교합니다. 별도 씬을 만들면 조명이
+   조금만 달라도 색 판단이 통째로 틀어집니다. */
+import { createColorLab } from './colorlab.js';
 /* 후처리 — 앰비언트 오클루전 하나 때문에 들입니다.
    이 월드는 형상이 전부 코드로 그린 단색 덩어리라, 물체끼리 닿는
    자리가 어디인지 그림자만으로는 안 보입니다. AO 가 그 접점을
@@ -2678,6 +2682,12 @@ window.__W = { renderer, scene, cam, sun, hemi, amb, get composer() { return com
       BVH: (() => { let n = 0; campusRoot.traverse((o) => { if (o.geometry && o.geometry.boundsTree) n++; }); return n; })(),
       fps: fpsNow, 후처리: !!composer, 안개: scene.fog ? scene.fog.density : 0 };
   } };
+
+let LAB = null;
+if (new URLSearchParams(location.search).get('lab') === '1') {
+  try { LAB = createColorLab({ scene, renderer }); }
+  catch (e) { console.warn('색 실험실을 못 켰습니다', e); }
+}
 
 const elFps = $('#foot .fps');
 let last = performance.now(), acc = 0, frames = 0, T = 0, quality = 1, fpsNow = 0, pipT = 0;

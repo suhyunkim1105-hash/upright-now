@@ -2820,10 +2820,13 @@ pipR.toneMapping = THREE.ACESFilmicToneMapping; pipR.toneMappingExposure = 1.08;
 pipR.outputColorSpace = THREE.SRGBColorSpace;
 const pipCam = new THREE.PerspectiveCamera(32, 316 / 240, .1, 40);
 const pipScene = new THREE.Scene(); pipScene.background = null;
-pipScene.add(new THREE.AmbientLight(0xFFFFFF, .95));
-pipScene.add(new THREE.HemisphereLight(0xE8F4FF, 0xF6E6C4, 1.0));
-{ const k = new THREE.DirectionalLight(0xFFFAF0, 1.5); k.position.set(-3, 5, 6); pipScene.add(k);
-  const f = new THREE.DirectionalLight(0xCFE4F5, .6); f.position.set(4, 2, 3); pipScene.add(f); }
+/* 손으로 빚던 캐릭터에 맞춰 밝혀 둔 값이었습니다. 생성된 모델은 제
+   재질을 들고 오므로 그대로 두면 하얗게 날아가, 광장에 선 나와 여기
+   내가 서로 다른 색이 됩니다. 반쯤으로 줄여 월드 쪽과 맞춥니다. */
+pipScene.add(new THREE.AmbientLight(0xFFFFFF, .42));
+pipScene.add(new THREE.HemisphereLight(0xE8F4FF, 0xF6E6C4, .55));
+{ const k = new THREE.DirectionalLight(0xFFFAF0, .95); k.position.set(-3, 5, 6); pipScene.add(k);
+  const f = new THREE.DirectionalLight(0xCFE4F5, .35); f.position.set(4, 2, 3); pipScene.add(f); }
 const pipRig = new THREE.Group(); pipScene.add(pipRig);
 let pipMe = character(pipRig, curSpecies, myLook(), { bag: false });
 $('#pip .nm').textContent = myNick();

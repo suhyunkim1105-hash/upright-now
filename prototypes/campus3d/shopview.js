@@ -1085,7 +1085,9 @@ function rebuildPreview(p) {
   const look = previewLook(p);
   const sp = previewSpecies(p);
   const rid = previewRide(p);
-  p.body = character(p.rig, sp, look, {});
+  /* 옷 미리보기는 원본 GLB의 한 장짜리 재질이 아니라 실제로 옷 조각을
+     따로 가진 절차형 판본을 씁니다. 그래야 선택한 옷이 몸 위에 보입니다. */
+  p.body = character(p.rig, sp, look, { procedural: true });
   claim(p.body);
   if (rid) { p.rideG = ride(p.rig, rid, {}); if (p.rideG) claim(p.rideG); }
   p.shape = look;

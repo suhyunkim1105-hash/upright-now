@@ -27,7 +27,9 @@ test('2D 월드의 미니게임은 모두 3D 공간에서 열 수 있다', () =>
     animalRunner: 'run',
     animalMatch3: 'match3',
   }
-  const retired = new Set(['eggMerge'])
+  /* 사용자가 삭제를 확정한 게임. 2D 목록에는 기록으로 남아 있어도
+     3D 공간에 다시 생기면 안 됩니다. */
+  const retired = new Set(['eggMerge', 'giraffeNeck'])
 
   assert.ok(oldKeys.length >= 8, '2D 미니게임 목록을 충분히 읽지 못했습니다')
   for (const oldKey of oldKeys) {
@@ -47,7 +49,7 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
     postureRun: ['game', 'postureRun'], trackRace: ['game', 'trackRace'],
     pondFish: ['game', 'pondFish'], bookSort: ['game', 'bookSort'],
     animalRunner: ['game', 'run'],
-    giraffeNeck: ['game', 'giraffeNeck'], animalMatch3: ['game', 'match3'],
+    animalMatch3: ['game', 'match3'],
     aboutLibrary: ['room', 'library'], aboutMainhall: ['room', 'mainhall'],
     aboutUnion: ['room', 'union'], arcade: ['room', 'arcade'],
     guide: ['panel', 'guide'], privacy: ['panel', 'privacy'], retro: ['panel', 'retro'],
@@ -55,7 +57,7 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
     settings: ['panel', 'mypage'],
   }
 
-  assert.deepEqual(oldKeys.filter((key) => key !== 'eggMerge' && !parity[key]), [],
+  assert.deepEqual(oldKeys.filter((key) => !['eggMerge', 'giraffeNeck'].includes(key) && !parity[key]), [],
     '대응표에 없는 2D 패널이 생겼습니다')
   for (const [oldKey, [kind, key]] of Object.entries(parity)) {
     const source = kind === 'game' ? games + spots : kind === 'panel' ? world3d + spots : world3d
@@ -78,7 +80,7 @@ test('분수 옆 게시판 하나에서 학교별 공지·공모전 탭까지 �
 })
 
 test('동아리 상점은 카테고리와 3D 상품 그림을 함께 쓴다', () => {
-  assert.match(world3d, /import \{ itemThumb \} from '\.\/shopview\.js'/,
+  assert.match(world3d, /import \{ itemThumb, dressPreview \} from '\.\/shopview\.js'/,
     '기존 3D 상품 미리보기 연결이 빠졌습니다')
   assert.match(world3d, /paintThumbs\(elPanel\)/, '패널을 그린 뒤 상품 그림을 채우지 않습니다')
   assert.match(world3d, /bare:\s*true/, '옷 상품을 캐릭터가 입은 모습이 아니라 옷만 그리는 설정이 없습니다')
@@ -161,5 +163,5 @@ test('시작 뒤 무거운 작업과 과한 좌우 보행 흔들림을 남기지
   assert.doesNotMatch(world3d, /setTimeout\(shootMap,\s*900\)/, '플레이 중 큰 지도 렌더가 남아 있습니다')
   assert.doesNotMatch(world3d, /2400 \+ i \* 650/, '플레이 중 실내 순차 빌드가 남아 있습니다')
   assert.match(chars3d, /root\\\.position\$\/i/, 'GLB 루트 수평 흔들림 보정이 없습니다')
-  assert.match(chars3d, /P\.torso\.rotation\.y = s \* \.045/, '몸통 좌우 흔들림 값이 다시 커졌습니다')
+  assert.match(chars3d, /P\.torso\.rotation\.y = s \* \.022/, '몸통 좌우 흔들림 값이 다시 커졌습니다')
 })

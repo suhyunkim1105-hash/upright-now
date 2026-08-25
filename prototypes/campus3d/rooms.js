@@ -65,6 +65,7 @@ export const ROOMS = {
     /* ══ ① 도서관 ══ 40×28 — 열람실.
        세로 통로 하나 · 가로 통로 둘 · 창가 통로 둘. 탁자는 그 사이에만. */
     R.doormat(g, 0, 16.2);
+    R.exitSign(g, 0, 16.72, 0x2C8C7E);
     R.shell(g, 48, 34, 7.0, { floorA: 0xC9945C, floorB: 0xB8814A, wall: 0xF2E8D4 });
     [-19, -14, -9, 9, 14, 19].forEach((x) => R.window3(g, x, 3.6, 34, 2.3, 3.0));
 
@@ -104,9 +105,9 @@ export const ROOMS = {
     /* ── 1인 캐럴 ── 창가 두 줄. 오래 앉는 자리입니다. */
     [-13.0, -9.6, -6.2, -2.8, 2.8, 6.2, 9.6, 13.0].forEach((z) => {
       R.carrel(g, -20.4, z, -Math.PI / 2);
-      R.chair(g, -19.4, z, Math.PI / 2, IN.woodLight);
+      R.chair(g, -19.4, z, -Math.PI / 2, IN.woodLight);
       R.carrel(g, 20.4, z, Math.PI / 2);
-      R.chair(g, 19.4, z, -Math.PI / 2, IN.woodLight);
+      R.chair(g, 19.4, z, Math.PI / 2, IN.woodLight);
     });
 
     /* ── 앞쪽 ── 대출대와 쉬는 자리 */
@@ -143,6 +144,7 @@ export const ROOMS = {
      34×24 로 넓혀 다섯 줄 × 두 칸 — 여든 자리. 줄 사이는 그대로 넉넉히. */
   mainhall(g) {
     R.doormat(g, 0, 13.2);
+    R.exitSign(g, 0, 13.72, 0x3F6BA8);
 
     R.shell(g, 40, 28, 5.8, { floorA: 0xE8E2D2, floorB: 0xD6CFBC, wall: 0xE6EAF2, under: 0x8A9098 });
     R.blackboard(g, -4.0, 2.7, -13.7, 13.0, 3.1);
@@ -192,6 +194,7 @@ export const ROOMS = {
   /* ══ ③ 기숙사 ══ 14×11. 내 방. 좁아도 침대·책상·옷장 사이는 다녀야 합니다. */
   dorm(g, decor) {
     R.doormat(g, 0, 4.75, 0xC98E4E);
+    R.exitSign(g, 0, 5.27, 0xC98E4E);
     /* 내가 놓은 가구 — 상점에서 사서 방 꾸미기로 놓은 것들 */
     (decor || []).forEach((d) => decorItem(g, d));
 
@@ -236,6 +239,7 @@ export const ROOMS = {
   /* ══ ④ 학생회관 ══ 22×15. 창구 · 식당 · 라운지가 한 층에. */
   union(g) {
     R.doormat(g, 0, 6.5, 0x43A05C);
+    R.exitSign(g, 0, 7.02, 0x43A05C);
 
     R.shell(g, 22, 15, 4.6, { floorA: 0xE8E2D2, floorB: 0xD8D2C0, wall: 0xEFF6EE, under: 0x8A9098 });
     R.window3(g, -7.0, 2.7, 15, 2.2, 2.1);
@@ -308,23 +312,24 @@ export const ROOMS = {
   /* ══ ⑤ 미니게임관 ══ 20×14. 오락기는 벽으로, 가운데는 비웁니다. */
   arcade(g) {
     R.doormat(g, 0, 6.2, 0x6E5A9E);
+    R.exitSign(g, 0, 6.72, 0x9B7BD4);
 
     R.shell(g, 20, 14, 4.6, { floorA: 0x5E4E7C, floorB: 0x4E4068, wall: 0x2E2646, under: 0x3A3050 });
-    const cols = [0xE8695A, 0x2DD4BF, 0xE0AE3C, 0x9B7BD4, 0xFF7FA8, 0x63C47C];
-    /* 오락기 여섯 — 뒤벽 */
-    [-8.4, -6.3, -4.2, 4.2, 6.3, 8.4].forEach((x, i) => {
+    const cols = [0xE8695A, 0x2DD4BF, 0x9B7BD4, 0x63C47C];
+    /* 게임 넷은 뒤벽 한 줄에 같은 간격으로 정렬합니다. 각 기계 앞 원형
+       발판 색이 기능 구역과 같아 어느 기계를 누르는지 바로 보입니다. */
+    [-8.0, -3.6, 3.6, 8.0].forEach((x, i) => {
       R.cabinet(g, x, -6.4, 0, cols[i]);
       R.neon(g, '', x, 3.1, -6.92, 0, cols[i], 1.8);
       cyl(g, .34, .3, .12, 14, M(0x2DD4BF, .6), x, .62, -5.0);
       [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
         cyl(g, .04, .05, .56, 8, M(IN.metal, .45), x + sx * .2, .3, -5.0 + sz * .2));
     });
-    /* 인형뽑기 · 경품 — 왼벽 */
-    R.claw(g, -8.6, -2.6, .35, 0xFF7FA8);
-    R.claw(g, -8.6, -0.4, .12, 0x2DD4BF);
-    R.prizeShelf(g, -9.2, 4.2, Math.PI / 2);
+    /* 인형 대신 희귀 알·티켓·선물 상자가 보이는 이벤트 기계 한 대. */
+    R.claw(g, -8.3, 1.2, .20, 0xFFD16B);
+    R.prizeShelf(g, -9.2, 3.8, Math.PI / 2);
     /* 에어하키 · 인생네컷 — 오른쪽 */
-    R.airHockey(g, 6.6, -2.0, .08);
+    R.airHockey(g, 6.8, 1.0, .08);
     R.photoBooth(g, 7.4, 4.6, .7, 0xFF7FA8);
     /* 리듬 발판 — 앞 왼쪽 */
     R.dancePad(g, -6.4, 4.6, .12);
@@ -335,7 +340,7 @@ export const ROOMS = {
     R.neon(g, '', -9.6, 3.2, 0.4, Math.PI / 2, 0x2DD4BF, 3.0);
     R.bin(g, 2.9, 6.4, 0x3A3050);
     [-6.0, 0, 6.0].forEach((x) => R.pendant(g, x, -1.0, 3.8, 0xFF7FA8));
-    R.rug(g, 0, -1.0, 3.4, 6.4, 0x3E3358, 0x6E5A9E);
+    R.rug(g, 0, -4.8, 18.0, 3.4, 0x3E3358, 0x6E5A9E);
     R.plant(g, 9.4, 6.2, 1.05); R.plant(g, -9.4, 6.2, 1.0);
 
   },
@@ -343,6 +348,7 @@ export const ROOMS = {
   /* ══ ⑥ 동아리 상점 ══ 20×14. 왼쪽 옷 · 오른쪽 알 · 앞쪽 가구. */
   shop(g) {
     R.doormat(g, 0, 6.2, 0xC4553F);
+    R.exitSign(g, 0, 6.72, 0xE8695A);
 
     R.shell(g, 20, 14, 4.6, { floorA: 0xE0C8AE, floorB: 0xD0B69A, wall: 0xF6E8DC, under: 0x9A7458 });
     R.window3(g, 6.6, 2.7, 14, 2.2, 2.1);
@@ -374,10 +380,12 @@ export const ROOMS = {
     R.sofa(g, -5.0, 4.6, Math.PI, 2.6, 0x9B7BD4);
     R.lowTable(g, -5.0, 3.4, 0, 1.6, .9);
     R.lamp(g, -3.8, .56, 3.4);
-    R.shelf(g, 4.4, 3.4, 0, 2.0, 2.2);
-    R.wardrobe(g, 7.6, 3.6, 0);
-    R.chair(g, 5.9, 4.8, .4, 0xE8935A);
+    R.shelf(g, 1.8, 3.7, 0, 2.0, 2.2);
+    R.sofa(g, -1.8, 4.8, Math.PI, 2.4, 0x7FA8C4);
+    R.chair(g, 1.4, 4.8, .2, 0xE8935A);
+    R.floorLamp(g, 3.2, 4.6);
     R.displayTable(g, -8.4, 3.8, .15, 1.8, 'furn');
+    R.displayTable(g, -4.6, 4.8, -.10, 2.0, 'furn');
 
     R.aFrame(g, 9.2, 5.0, -1.2, 0xE8935A);
     R.banner(g, -9.72, 3.6, -2.0, Math.PI / 2, 3.2, .95, 0xE8935A);
@@ -388,7 +396,7 @@ export const ROOMS = {
     /* 세 구역 바닥색도 팝업 포인트색과 맞춥니다. */
     R.rug(g, -6.8, -2.5, 5.8, 8.0, 0xB05248, 0xF6D5CF);
     R.rug(g,  6.8, -3.8, 5.8, 6.0, 0x4F7E8D, 0xDCECEF);
-    R.rug(g,  0.0,  3.9, 7.0, 3.5, 0x725B9A, 0xE6DDF2);
+    R.rug(g, -3.8,  4.2, 11.0, 4.2, 0x725B9A, 0xE6DDF2);
     R.plant(g, 9.4, 6.2, 1.15); R.plant(g, -9.4, 6.2, 1.0);
 
   },

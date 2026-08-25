@@ -149,7 +149,7 @@ export function createNet(opts) {
 
   function peer(id) {
     let p = peers.get(id);
-    if (!p) peers.set(id, p = { id, nick: '', species: '거북이', fit: 0, buf: [], say: '', sayT: 0, emo: '', emoT: 0 });
+    if (!p) peers.set(id, p = { id, nick: '', school: '', sessionSec: 0, species: '거북이', fit: 0, buf: [], say: '', sayT: 0, emo: '', emoT: 0 });
     return p;
   }
   function join(z) {
@@ -165,6 +165,7 @@ export function createNet(opts) {
     c.on('broadcast', { event: 'm' }, (msg) => {
       const p = msg?.payload; if (!p || p.id === me.id) return;
       const r = peer(p.id);
+      r.sessionSec = Math.max(0, Number(p.sessionSec || 0));
       r.buf.push({ t: performance.now(), x: p.x, z: p.z, dir: p.dir, moving: !!p.moving });
       while (r.buf.length > 2 && performance.now() - r.buf[0].t > BUF_KEEP) r.buf.shift();
     });
@@ -193,6 +194,7 @@ export function createNet(opts) {
            넣는 쪽에서도 막지만, 들어오는 길목에서 한 번 더 막습니다. */
         if (e.nick != null) r.nick = String(e.nick).slice(0, 24);
         r.species = e.species || r.species; r.fit = e.fit ?? r.fit;
+        r.school = String(e.school || '').slice(0, 40);
         if (!r.buf.length && typeof e.x === 'number')
           r.buf.push({ t: performance.now(), x: e.x, z: e.z, dir: e.dir || 0, moving: false });
       });
@@ -236,7 +238,7 @@ export function createNet(opts) {
        거짓말이 되고, 들어간 사람은 없는 사람에게 말을 겁니다. */
     syncBots();
   }
-  function move(x, z, dir, moving) {
+  function move(x, z, dir, moving, sessionSec = 0) {
     pos = { x, z, dir, moving };
     if (N.mode !== 'online' || !ch) return;
     const now = performance.now();
@@ -247,7 +249,8 @@ export function createNet(opts) {
     lastKey = key; lastSend = now;
     try {
       ch.send({ type: 'broadcast', event: 'm', payload: {
-        id: me.id, x: +x.toFixed(2), z: +z.toFixed(2), dir: +dir.toFixed(2), moving } });
+        id: me.id, x: +x.toFixed(2), z: +z.toFixed(2), dir: +dir.toFixed(2), moving,
+        sessionSec: Math.max(0, Math.round(sessionSec || 0)) } });
     } catch {}
   }
   function say(text, channel = 'all', school = '') {

@@ -598,6 +598,24 @@ export function doormat(g, x, z, col = 0x4E8C9E) {
   return p;
 }
 
+/** 출구 표지 — 방마다 색이 다른 문틀과 빛나는 화살표를 둡니다.
+    매트만 있으면 낮은 시점에서는 가구에 가려져 출구를 놓치므로,
+    시선 높이에서도 보이는 표식을 문 옆에 한 번 더 세웁니다. */
+export function exitSign(g, x, z, col = 0x4E8C9E) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
+  const frame = M(IN.ink, .48), glow = M(col, .28, { emissive: col, emissiveIntensity: .48 });
+  box(p, 2.7, .16, .18, .04, frame, 0, 2.75, 0);
+  box(p, .16, 2.7, .18, .04, frame, -1.28, 1.42, 0);
+  box(p, .16, 2.7, .18, .04, frame, 1.28, 1.42, 0);
+  box(p, 1.35, .48, .16, .12, glow, 0, 2.43, -.03);
+  /* 문 방향(+z)을 가리키는 삼각 화살표와 짧은 몸통. */
+  const arrow = new THREE.Mesh(new THREE.CylinderGeometry(.20, .20, .08, 3), glow);
+  arrow.position.set(.34, 2.43, -.13); arrow.rotation.set(Math.PI / 2, Math.PI, 0); p.add(arrow);
+  box(p, .50, .12, .10, .04, glow, -.10, 2.43, -.13);
+  p.traverse((o) => { o.userData.noCollide = true; });
+  return p;
+}
+
 
 /** 잡지꽂이 — 도서관 앞쪽 */
 export function mag(g, x, z, ry) {

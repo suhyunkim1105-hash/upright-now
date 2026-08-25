@@ -121,7 +121,7 @@ export const BUILDINGS = [
      깊이 9칸이고 캐릭터가 한 칸이니, 월드로 옮기면 50 남짓입니다 —
      84 는 그 1.7 배라 광장 한 변이 통째로 벽이 됐습니다.
      본관 2.0(56×19) · 도서관 2.2(33×22) · 학생회관 2.2(31×21). */
-  { n: '본관',     enter: 'mainHall', x: 0, z: -42, face: 'S', s: 2.0, w: 28, d: 9.4, front: 2.2 },
+  { n: '본관',     enter: 'mainHall', x: 0, z: -42, face: 'S', s: 1.85, w: 28, d: 9.4, front: 2.2 },
   { n: '도서관',   enter: 'library',  x: -40, z: -6, face: 'E', s: 2.2, w: 15, d: 10, front: 1.9 },
   { n: '학생회관', enter: 'union',    x:  40, z: -6, face: 'W', s: 2.2, w: 14, d: 9.4, front: 1.9 },
 
@@ -145,8 +145,8 @@ export const BUILDINGS = [
   /* ══ 예술 · 생활 지구 — 동쪽 안뜰 43×46, 서쪽으로 엽니다 ══ */
   { n: '예술디자인대학', kind: 'atrium',  x: 104, z: -34, face: 'S', w: 46, d: 12, h: 13 },
   { n: '박물관',         kind: 'library', x: 130, z:  -4, face: 'W', w: 44, d: 12, h: 12 },
-  { n: '미니게임관',  enter: 'arcade', x:  90, z: 24, face: 'N', s: 2.2, w: 8.4, d: 5.6, front: 1.9 },
-  { n: '동아리 상점', enter: 'shop',   x: 116, z: 24, face: 'N', s: 2.2, w: 8.0, d: 5.2, front: 1.8 },
+  { n: '미니게임관',  enter: 'arcade', x:  88, z: 30, face: 'N', s: 3.0, w: 8.4, d: 5.6, front: 2.2 },
+  { n: '동아리 상점', enter: 'shop',   x: 118, z: 30, face: 'N', s: 3.0, w: 8.0, d: 5.2, front: 2.2 },
 
   /* ══ 대로변 — 광장에서 밀려난 둘이 여기로 ══
      대로가 정문에서 광장까지 96칸입니다. 그 중간을 잡아 주는 것이
@@ -160,7 +160,7 @@ export const BUILDINGS = [
      들어가는 기숙사(공용동)가 마당 입구를 지킵니다 */
   { n: '제1기숙사', kind: 'hall_res', x: 112, z: -104, face: 'S', w: 44, d: 12, h: 21 },
   { n: '제2기숙사', kind: 'hall_res', x: 112, z: -74, face: 'S', w: 44, d: 12, h: 21 },
-  { n: '기숙사',    enter: 'dorm', x: 84, z: -89, face: 'E', s: 1.6, w: 8.2, d: 5.4, front: 1.9 },
+  { n: '기숙사',    enter: 'dorm', x: 36, z: -62, face: 'S', s: 2.7, w: 8.2, d: 5.4, front: 2.2 },
   { n: '평화의전당', kind: 'hall',  x:  52, z: 96, face: 'W', w: 30, d: 20, h: 16 },
   { n: '입학처',     kind: 'admin', x: -46, z: 100, face: 'E', w: 24, d: 14, h: 11 },
 ];

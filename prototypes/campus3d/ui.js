@@ -838,6 +838,28 @@ const won = (n) => (n === 0 ? '무료' : n + '코인');
 const coinbar = (coins, server) =>
   `<div class="coinbar">${rw('coin', 'lemon', '내 코인', server ? '서버가 세는 잔액이에요' : '', coins)}</div>`;
 
+/* 옷 카드 그림은 WebGL에 맡기지 않습니다.
+   일부 노트북에서는 이미 월드 WebGL 컨텍스트를 쓰는 중에 상점용 두 번째
+   컨텍스트가 만들어지지 않아 카드가 빈 회색칸으로 남았습니다. 상품 목록은
+   구매의 핵심이라 GPU 상태와 무관한 SVG로 항상 그립니다. 캐릭터를 입힌
+   미리보기가 아니라 사용자가 요청한 '옷 한 벌만' 보이는 그림입니다. */
+function wearArt(id, slot, label, schoolColor) {
+  let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const pal = ['#E86F61','#3E78B7','#2FAF98','#846AC5','#E6A53A','#59687E','#D66F9A'];
+  const schoolHex = typeof schoolColor === 'number'
+    ? '#' + schoolColor.toString(16).padStart(6, '0') : schoolColor;
+  const c = id === 'varsity' ? (schoolHex || '#3E78B7') : pal[h % pal.length];
+  const dark = '#263548', light = '#F7FBFF';
+  const top = `<path d="M37 22 50 14l13 8 17 7-8 17-10-5v35H38V41l-10 5-8-17z" fill="${c}"/><path d="M44 18q6 10 12 0" fill="none" stroke="${light}" stroke-width="5" stroke-linecap="round"/><path d="M50 29v45" stroke="${dark}" stroke-opacity=".25" stroke-width="3"/>`;
+  const bottom = `<path d="M35 20h30l7 56H54l-4-35-4 35H28z" fill="${c}"/><path d="M35 28h30" stroke="${light}" stroke-opacity=".7" stroke-width="4"/>`;
+  const shoes = `<path d="M18 55q13 0 22-17l12 10-7 19H18zM58 55q13 0 22-17l12 10-7 19H58z" fill="${c}"/><path d="M20 67h27M60 67h27" stroke="${dark}" stroke-width="5" stroke-linecap="round"/>`;
+  const hat = `<path d="M28 53q2-28 22-28t22 28z" fill="${c}"/><path d="M18 55h64q-7 10-32 10T18 55" fill="${dark}"/>`;
+  const glasses = `<g fill="none" stroke="${c}" stroke-width="7"><rect x="17" y="36" width="27" height="22" rx="9"/><rect x="56" y="36" width="27" height="22" rx="9"/><path d="M44 44h12M17 42 8 37M83 42l9-5"/></g>`;
+  const bag = `<path d="M27 35q0-17 23-17t23 17" fill="none" stroke="${dark}" stroke-width="7"/><rect x="20" y="31" width="60" height="47" rx="13" fill="${c}"/><path d="M30 52h40" stroke="${light}" stroke-opacity=".7" stroke-width="4"/>`;
+  const body = ({ top, bottom, shoes, hat, glasses, bag })[slot] || top;
+  return `<svg class="wear-art" viewBox="0 0 100 92" role="img" aria-label="${esc(label)} 상품 미리보기"><ellipse cx="50" cy="82" rx="33" ry="5" fill="#71839A" opacity=".18"/>${body}<path d="M18 13h64" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/></svg>`;
+}
+
 /** 옷 가게 — 사는 곳. 입는 것은 옷장(C)에서 합니다 */
 export function wearShop(ctx) {
   /* 세 번째 칸은 머리글에 달 그림입니다 — 여섯 줄이 글자만 있으면
@@ -861,25 +883,37 @@ export function wearShop(ctx) {
       const items = ctx.wear[slot].filter(([id]) => id !== 'none');
       return items.map(([id, label, price]) => {
           const own = ctx.owned.includes(id) || price === 0;
-          return `<button class="cc ${own ? 'on' : ''}" data-buy="${esc(id)}" data-slot="${esc(slot)}" ${own ? 'disabled' : ''}>
-            <span class="th" style="width:100%;height:88px"></span>
+          return `<button class="cc ${own ? 'on' : ''}" data-buy="${esc(id)}" data-preview="${esc(id)}" data-slot="${esc(slot)}" data-owned="${own ? '1' : '0'}">
+            <span class="th" style="width:100%;height:88px" data-wear-art="${esc(id)}">${wearArt(id, slot, label, ctx.schoolColor)}</span>
             <b>${esc(label)}</b><small>${own ? '가지고 있어요' : won(price)}</small></button>`;
         }).join('');
     })();
+  const gallery = active === 'ride' ? `<div class="cg">${itemHtml}</div>`
+    : `<div class="wear-gallery"><div class="cg">${itemHtml}</div><aside class="wear-preview-card">
+        <div class="wear-preview-stage" aria-label="현재 캐릭터 옷 입어보기"></div>
+        <b>${esc(ctx.preview?.label || nm)} 미리보기</b><small>상품에 마우스를 올리거나 키보드로 초점을 맞춰 입어 보세요.</small>
+      </aside></div>`;
   const html = `<div class="shop-layout"><nav class="shop-tabs" aria-label="옷 가게 카테고리">`
     + cats.map(([k, label]) => `<button type="button" data-shop-cat="${k}" class="${k === active ? 'on' : ''}">${label}</button>`).join('')
-    + `</nav><section class="shop-main">${coinbar(ctx.coins, ctx.server)}${lbl(ic, nm)}<div class="cg">${itemHtml}</div>`
+    + `</nav><section class="shop-main">${coinbar(ctx.coins, ctx.server)}${lbl(ic, nm)}${gallery}`
     + rw('shirt', 'lilac', '산 것은 옷장에서 입어요', '어디서든 C. 탈것도 옷장에서 탑니다', 'C')
     + '</section></div>';
   return {
     tag: '동아리 상점', title: '옷 가게', html, wide: true, shop: true,
     on(root, again) {
-      root.querySelector('.bd').onclick = (e) => {
+      const bd = root.querySelector('.bd');
+      const preview = (e) => {
+        const b = e.target.closest('button[data-preview]');
+        if (b) ctx.onPreview?.(b.dataset.preview, b.dataset.slot, b.querySelector('b')?.textContent || '옷');
+      };
+      bd.onmouseover = preview;
+      bd.onfocusin = preview;
+      bd.onclick = (e) => {
         const cat = e.target.closest('button[data-shop-cat]');
         if (cat) { ctx.onCategory(cat.dataset.shopCat, again); return; }
         const r = e.target.closest('button[data-rbuy]');
         if (r && !r.disabled) { ctx.onBuyRide?.(r.dataset.rbuy, again); return; }
-        const b = e.target.closest('button[data-buy]'); if (!b || b.disabled) return;
+        const b = e.target.closest('button[data-buy]'); if (!b || b.dataset.owned === '1') return;
         ctx.onBuy(b.dataset.buy, b.dataset.slot, again);
       };
     },
@@ -1037,14 +1071,17 @@ export function vending(ctx) {
   };
 }
 
-/** 인형뽑기 — 30코인, 반드시 하나는 나옵니다(꽝 없는 기계) */
+/** 이벤트 선물 뽑기 — 당첨 즉시 보관함에 들어갑니다 */
 export function claw(ctx) {
+  const reveal = ctx.prize
+    ? `<div class="gift-reveal"><span>🎁</span><b>${esc(ctx.prize.title)}</b><small>${esc(ctx.prize.desc)}</small></div>` : '';
   return {
-    tag: '인형뽑기', title: '인형 뽑기', html: coinbar(ctx.coins)
-      + `<div class="cg two">${cc('coin', 'lemon', 30, '한 판 (코인)')}`
-      + `${cb('heart', 'peach', '꽝은 없어요', '곰인형 · 화분 · 책 더미 중 하나는 반드시 나옵니다')}</div>`
-      + '<div class="wr"><button data-claw="1">뽑기 (30코인)</button></div>'
-      + rw('map', 'lilac', '뽑은 것은 기숙사에', '방 꾸미기 게시판에서 놓습니다'),
+    tag: '기간 이벤트', title: '희귀 선물 뽑기', html: coinbar(ctx.coins)
+      + reveal
+      + `<div class="cg two">${cc('ticket', 'lemon', 30, '한 번 (코인)')}`
+      + `${cb('heart', 'peach', '꽝은 없어요', '희귀 알 · 보너스 티켓 · 한정 가구가 바로 들어옵니다')}</div>`
+      + '<div class="wr"><button data-claw="1">선물 상자 열기 (30코인)</button></div>'
+      + rw('user', 'lilac', '당첨 즉시 내 것이 돼요', '알은 옷장에, 가구는 기숙사 방 꾸미기에 표시됩니다'),
     on(root, again) {
       root.querySelector('.bd').onclick = (e) => {
         const b = e.target.closest('button[data-claw]'); if (!b) return;
@@ -1203,7 +1240,7 @@ export function fame(ctx) {
     const cn = r.contributors != null ? r.contributors : r.n;
     if (cn != null) sub2.push(`${num(cn)}명`);
     if (r.school === my) sub2.unshift('우리 학교');
-    return `<div class="fame-frame ${r.school === my ? 'mine' : ''}"><span class="fame-rank">${i + 1}</span>${badge(r.school)}`
+    return `<div class="fame-frame top${Math.min(i + 1, 4)} ${r.school === my ? 'mine' : ''}"><span class="fame-rank">${i < 3 ? ['🥇','🥈','🥉'][i] : i + 1}</span>${badge(r.school)}`
       + `<span class="fame-school">${esc(r.school || r.name || '')}<em>${sub2.join(' · ')}</em></span>`
       + `<strong>${num(Math.round(r.score ?? r.avg ?? 0))}<small>분/인</small></strong></div>`;
   };
@@ -1524,11 +1561,13 @@ export function mypage(ctx) {
       + `<div class="wr">${[0, .25, .45, .7, 1].map((v) =>
           `<button data-do="vol:${v}" class="${Math.abs((ctx.bgmVol ?? .45) - v) < .01 ? 'on' : ''}">${
             v === 0 ? '없음' : Math.round(v * 100) + '%'}</button>`).join('')}</div>`
-      + lbl('music', '곡')
+      + lbl('music', '시설별 집중 ASMR · 음악')
       + `<div class="wr"><button data-do="bgm:auto" class="${ctx.bgmPick === 'auto' ? 'on' : ''}">장소 따라</button>${
           Object.entries(ctx.music || {}).map(([id, m]) =>
             `<button data-do="bgm:${id}" class="${ctx.bgmPick === id ? 'on' : ''}" title="${esc(m.by)}">${esc(m.name)}</button>`).join('')}</div>`
-      + '<div class="note">곡은 전부 CC0 입니다. 만든 사람은 단추에 손을 올리면 나옵니다.</div>'
+      + '<div class="note"><b>Spotify 집중 재생</b><br>아래 플레이어에서 로그인한 Spotify 계정으로 바로 재생할 수 있어요.</div>'
+      + '<iframe title="Spotify 집중 플레이리스트" style="width:100%;height:152px;border:0;border-radius:16px;margin-top:10px" allow="autoplay;clipboard-write;encrypted-media;fullscreen;picture-in-picture" loading="lazy" src="https://open.spotify.com/embed/playlist/37i9dQZF1DWZeKCadgRdKQ?utm_source=generator"></iframe>'
+      + '<div class="note">장소 따라를 고르면 시설에 맞는 곡이 자동으로 바뀝니다. 내장 곡은 전부 CC0이며 만든 사람은 단추에 손을 올리면 나옵니다.</div>'
       + lbl('key', '기록')
       + '<div class="wr"><button data-do="wipe">이 기기 기록 전체 지우기</button></div>'
       + '<div class="note">지우면 되돌릴 수 없습니다 — 되돌릴 열쇠(이메일·비밀번호)를 애초에 안 받습니다. 서버 기록까지 지우려면 <b>ikmc554@mju.ac.kr</b> 로 ID 를 알려 주세요.</div>'

@@ -40,7 +40,7 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#BFE4F2;color:var(--tx);
     font-family:var(--ff);-webkit-user-select:none;user-select:none;touch-action:none;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-  canvas#cv{display:block;width:100%;height:100%}
+  canvas#cv{display:block;width:100%;height:100%;filter:saturate(1.10) contrast(1.035)}
   .hud{position:fixed;inset:0;pointer-events:none;z-index:2}
 
   /* 유리 — 이 화면의 유일한 재질입니다 */
@@ -63,12 +63,12 @@
 
   /* ── 오른쪽 위 · 한 기둥 ── */
   #stack{position:absolute;right:16px;top:16px;width:176px;display:flex;flex-direction:column;gap:10px}
-  #myquick{position:absolute;right:204px;top:16px;width:54px;height:54px;border:0;border-radius:18px;
-    pointer-events:auto;cursor:pointer;background:#EAF0F8;color:#22303F;font:900 14px/1 var(--ff);
-    letter-spacing:.05em;box-shadow:0 8px 20px -8px rgba(40,58,84,.45),inset 0 2px 0 #fff;
+  #myquick{order:-1;width:100%;height:42px;border:1px solid var(--ln);border-radius:15px;
+    pointer-events:auto;cursor:pointer;background:var(--gl2);color:var(--tx);font:900 12px/1 var(--ff);
+    letter-spacing:.08em;box-shadow:var(--sh);backdrop-filter:blur(16px) saturate(150%);
     transition:transform .14s,box-shadow .14s;z-index:5}
   #myquick:hover{transform:translateY(-2px)}
-  #myquick.on{background:#B7EBE1;color:#12867A;box-shadow:inset 0 3px 7px rgba(62,84,118,.22)}
+  #myquick.on{background:var(--acc);color:#08251F;box-shadow:inset 0 3px 7px rgba(4,50,44,.22)}
   .ghead{display:flex;align-items:center;gap:6px;padding:0 2px 7px;font-size:10.5px;
     font-weight:800;color:var(--tx2);letter-spacing:.02em}
   .ghead .sp{margin-left:auto;font-weight:700;color:var(--tx3)}
@@ -194,6 +194,10 @@
   .tag3{position:absolute;transform:translate(-50%,-100%);padding:3px 9px;border-radius:99px;
     background:var(--gl2);border:1px solid var(--ln);font:700 10.5px/1.4 var(--ff);color:var(--tx);
     white-space:nowrap;box-shadow:0 3px 10px rgba(6,10,17,.28);backdrop-filter:blur(8px)}
+  .tag3.peer{border-radius:12px;padding:6px 10px;text-align:center;line-height:1.35;white-space:pre-line}
+  .tag3.peer b{display:block;font-size:11px;color:#fff}
+  .tag3.peer small{display:block;font-size:9px;color:var(--tx2);font-weight:700}
+  .tag3.peer em{display:block;font:800 9px/1.35 var(--ff);color:var(--acc);font-style:normal}
   .say3{position:absolute;transform:translate(-50%,-100%);padding:6px 11px;border-radius:12px;
     background:var(--paper);color:var(--ink);font:600 12px/1.45 var(--ff);
     max-width:180px;white-space:normal;box-shadow:0 6px 18px rgba(6,10,17,.26)}
@@ -355,6 +359,7 @@
   #panel.shop[data-store="wear"]{--store:#F6D5CF;--storeInk:#A6473D}
   #panel.shop[data-store="furn"]{--store:#E6DDF2;--storeInk:#665087}
   #panel.shop[data-store="egg"]{--store:#DCECEF;--storeInk:#376B78}
+  #panel.compact{width:min(420px,92vw)}
   #panel .pclose{position:absolute;right:22px;top:20px;width:44px;height:44px;border:0;
     border-radius:15px;background:var(--clay2);box-shadow:var(--clayUp2);color:var(--cInk2);
     font:500 30px/1 var(--ff);cursor:pointer;z-index:3;transition:transform .12s,box-shadow .12s}
@@ -464,11 +469,26 @@
   .shop-main .cc{min-height:158px}
   .shop-main .cc .th{border-radius:16px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
   .shop-main .cc canvas{display:block;width:100%;height:100%}
-  .fame-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:13px;margin:8px 0 14px;
-    padding:18px;border-radius:22px;background:#303846;box-shadow:inset 0 4px 12px rgba(0,0,0,.28)}
-  .fame-frame{position:relative;min-height:176px;padding:20px 12px 14px;display:flex;flex-direction:column;
-    align-items:center;text-align:center;border:8px solid #1D232D;border-radius:4px;background:#EEF3F8;
-    box-shadow:0 7px 13px rgba(0,0,0,.28),inset 0 0 0 2px #B9A36D;color:var(--cInk)}
+  .shop-main .cc .wear-art{display:block;width:100%;height:100%;filter:drop-shadow(0 5px 5px rgba(58,80,112,.16))}
+  .wear-gallery{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px;align-items:start}
+  .wear-preview-card{position:sticky;top:0;display:flex;flex-direction:column;gap:7px;padding:12px;
+    border-radius:22px;background:var(--clay2);box-shadow:var(--clay);color:var(--cInk)}
+  .wear-preview-stage{height:260px;border-radius:17px;overflow:hidden;background:var(--clay3);box-shadow:var(--clayIn)}
+  .wear-preview-card>b{font-size:14px}.wear-preview-card>small{font-size:10.5px;line-height:1.45;color:var(--cInk3)}
+  .gift-reveal{margin:4px 0 16px;padding:18px;border-radius:22px;background:linear-gradient(145deg,#FFF0B8,#FBD6CE);
+    box-shadow:var(--clayUp);display:grid;place-items:center;text-align:center;animation:giftPop .45s cubic-bezier(.18,.9,.24,1.25)}
+  .gift-reveal span{font-size:48px;filter:drop-shadow(0 7px 5px rgba(70,58,30,.18))}
+  .gift-reveal b{font-size:19px;color:var(--cInk);margin-top:7px}.gift-reveal small{color:var(--cInk2);margin-top:4px}
+  @keyframes giftPop{from{opacity:0;transform:scale(.72) rotate(-3deg)}to{opacity:1;transform:none}}
+  .fame-wall{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin:8px 0 14px;
+    padding:26px;border-radius:26px;background:radial-gradient(circle at 50% 0,#526173 0,#303846 46%,#232A35 100%);
+    box-shadow:inset 0 5px 18px rgba(0,0,0,.34),0 16px 30px -18px rgba(30,42,58,.55)}
+  .fame-frame{position:relative;grid-column:span 2;min-height:174px;padding:22px 12px 14px;display:flex;flex-direction:column;
+    align-items:center;text-align:center;border:7px solid #171D26;border-radius:9px;background:linear-gradient(160deg,#FFFFFF,#E7EEF6);
+    box-shadow:0 9px 16px rgba(0,0,0,.34),inset 0 0 0 2px #C4AD71;color:var(--cInk)}
+  .fame-frame.top1{grid-column:3/span 2;grid-row:1;transform:translateY(-6px);min-height:206px;border-color:#5B4612;box-shadow:0 0 0 3px #E2C25D,0 14px 24px rgba(0,0,0,.4)}
+  .fame-frame.top2{grid-column:1/span 2;grid-row:1;margin-top:24px}
+  .fame-frame.top3{grid-column:5/span 2;grid-row:1;margin-top:24px}
   .fame-frame.mine{outline:4px solid #2DD4BF;outline-offset:2px}
   .fame-rank{position:absolute;left:8px;top:8px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
     background:#F2E7B4;color:#78661C;font:900 12px var(--ff)}
@@ -478,6 +498,7 @@
   .fame-school em{display:block;font:700 9.5px/1.4 var(--ff);color:#79879A;margin-top:5px}
   .fame-frame strong{margin-top:auto;font:900 18px/1 var(--ff)}
   .fame-frame strong small{font-size:9px;margin-left:2px;color:#79879A}
+  @media(max-width:760px){.fame-wall{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}.fame-frame,.fame-frame.top1,.fame-frame.top2,.fame-frame.top3{grid-column:span 1;grid-row:auto;margin-top:0;transform:none}}
   @media(max-width:680px){
     #panel.wide,#panel.shop{width:min(94vw,520px)}
     #panel .pclose{right:14px;top:14px;width:40px;height:40px}
@@ -485,6 +506,7 @@
     .shop-tabs{position:static;display:flex;flex-direction:row;overflow:auto;margin-bottom:13px;padding:2px 2px 7px}
     .shop-tabs button{white-space:nowrap}
     .shop-main .cg{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .wear-gallery{grid-template-columns:1fr}.wear-preview-card{position:static}.wear-preview-stage{height:220px}
     .board-view ul.feed li{align-items:flex-start;flex-wrap:wrap}
   }
   button.tt{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:13px;
@@ -627,15 +649,20 @@
   #game .gover .out{background:rgba(34,42,51,.08);color:var(--ink)}
 
   /* ── 첫 화면 ── */
-  #load{position:fixed;inset:0;display:grid;place-items:center;align-content:center;gap:14px;
-    background:linear-gradient(180deg,#A9DDF2 0%,#CFEDF6 100%);color:#1E3340;
-    font-size:14.5px;font-weight:800;z-index:9;transition:.45s}
+  #load{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(145deg,#DDEBF8,#C9E4F2);color:#253449;
+    font-size:14.5px;font-weight:800;z-index:9;transition:.45s;padding:24px}
   #load.gone{opacity:0;pointer-events:none}
-  #load i{display:block;font-style:normal;font-size:11.5px;color:rgba(30,51,64,.6);
-    margin-top:7px;text-align:center;font-weight:600}
-  #load .sp{width:34px;height:34px;border-radius:50%;border:3px solid rgba(30,51,64,.16);
-    border-top-color:#1E3340;animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  .load-card{width:min(560px,90vw);padding:28px;border-radius:34px;background:#EAF2FC;
+    box-shadow:18px 18px 38px rgba(77,103,132,.22),-14px -14px 32px rgba(255,255,255,.72);text-align:center}
+  .load-brand{display:flex;justify-content:center;align-items:baseline;gap:8px;font:950 29px/1 var(--ff);letter-spacing:-.04em}
+  .load-brand i{font:800 11px/1 var(--ff);letter-spacing:.08em;color:#67809B;background:#D8E6F5;padding:7px 9px;border-radius:99px;box-shadow:inset 2px 2px 5px rgba(74,100,130,.14)}
+  .load-pets{height:154px;display:flex;align-items:flex-end;justify-content:center;gap:2px;margin:14px 0 8px;overflow:hidden}
+  .load-pets img{width:108px;height:142px;object-fit:contain;filter:drop-shadow(0 11px 8px rgba(65,86,112,.18));transform-origin:50% 100%;animation:loadWalk 1.15s ease-in-out infinite alternate}
+  .load-pets img:nth-child(2){animation-delay:-.35s}.load-pets img:nth-child(3){animation-delay:-.7s}.load-pets img:nth-child(4){animation-delay:-1.05s}
+  #load strong{display:block;font-size:16px;margin-top:12px}#load small{display:block;margin-top:6px;color:#718399;font-size:11px}
+  .load-track{height:13px;border-radius:99px;background:#D2E0EF;box-shadow:inset 3px 3px 7px rgba(67,90,118,.18);overflow:hidden;margin-top:18px}
+  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;background:linear-gradient(90deg,#33D5BE,#58AEEA);animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes loadWalk{to{transform:translateY(-10px) rotate(2deg)}}@keyframes loadFill{to{width:96%}}
 
   @media (max-width:860px){
     #help,#foot .fps{display:none}
@@ -687,6 +714,7 @@
 
   <!-- 오른쪽 한 기둥 — 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
   <div id="stack">
+    <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false">MY · 내 기록</button>
     <div id="mini" class="g">
       <div class="ghead">지도<span class="sp">M</span></div>
       <div class="wrap"><canvas width="316" height="316"></canvas><span class="n">N</span></div>
@@ -731,8 +759,6 @@
   </div>
 
   <div id="emo"><div class="hub">감정표현<em>1~8 · G</em></div></div>
-
-  <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false">MY</button>
 
   <div id="chat"><div id="chatlog"></div>
     <div id="chatin"><div id="chatchannels" role="tablist" aria-label="채팅 채널">
@@ -804,7 +830,15 @@
     </div>
   </div></div>
 </div>
-<div id="load"><span class="sp"></span><div>기린캠퍼스를 세우는 중<i>건물 여섯 · 실내 여섯 · 나무 이백 그루</i></div></div>
+<div id="load"><div class="load-card">
+  <div class="load-brand">DESKFIT <i>3D CAMPUS</i></div>
+  <div class="load-pets" aria-hidden="true">
+    <img src="../landing/assets/char-turtle-cut.webp" alt=""><img src="../landing/assets/char-giraffe-cut.webp" alt="">
+    <img src="../landing/assets/char-penguin-cut.webp" alt=""><img src="../landing/assets/char-frog-cut.webp" alt="">
+  </div>
+  <strong>캠퍼스 친구들을 부르는 중</strong><small>캐릭터 · 건물 · 교실을 선명하게 준비하고 있어요</small>
+  <div class="load-track"><span></span></div>
+</div></div>
 <script type="importmap">
 { "imports": {
   "three": "./vendor/three.module.min.js",
@@ -842,7 +876,7 @@ import { createColorLab } from './colorlab.js';
 /* 원래 상점에 있던 3D 상품 그림. 통합 과정에서 import와 호출만 빠져
    shopview.js 1,200줄이 통째로 놀고 있었습니다. 새 렌더러를 만들지 않고
    이 모듈의 한 장짜리 속판을 다시 연결합니다. */
-import { itemThumb } from './shopview.js';
+import { itemThumb, dressPreview } from './shopview.js';
 
 /* ── 캐릭터 GLB 를 먼저 받습니다 ──
    랜딩 렌더에서 변환한 넷입니다. character() 가 아래에서 곧바로
@@ -907,7 +941,11 @@ const cv = $('#cv');
 const SHOT = new URLSearchParams(location.search).has('shot');
 const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true,
   powerPreference: 'high-performance', preserveDrawingBuffer: SHOT });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+/* 본체 해상도는 실제 화면 픽셀 밀도를 유지합니다. 예전 품질 사다리는
+   30fps 아래에서 DPR을 0.75까지 내려 화면을 늘렸고, 한 번 떨어지면
+   52fps를 넘어야 돌아와 계속 흐릿했습니다. */
+const WORLD_DPR = Math.min(devicePixelRatio || 1, 2);
+renderer.setPixelRatio(WORLD_DPR);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 /* AgX — ACES 는 색을 눈에 띄게 변조하고 채도를 떨어뜨립니다. AgX 는
@@ -1103,8 +1141,11 @@ function weatherPayload(j) {
       : [2, 6].includes(p) ? ['🌨', '비 또는 눈']
       : [3, 7].includes(p) ? ['❄️', '눈']
       : sky === 4 ? ['☁️', '흐림'] : sky === 3 ? ['🌥', '구름 많음'] : ['☀️', '맑음'];
+    const source = j.provider || '기상청 단기예보';
+    const extra = Number.isFinite(+j.pop) ? `강수확률 ${+j.pop}%`
+      : Number.isFinite(+j.humidity) ? `습도 ${+j.humidity}%` : '';
     return { icon: kind[0], label: kind[1], temp: j.tempC, sky: kind[1],
-      desc: Number.isFinite(+j.pop) ? `강수확률 ${+j.pop}% · 기상청 단기예보` : '기상청 단기예보' };
+      desc: extra ? `${extra} · ${source}` : source };
   }
   return { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' };
 }
@@ -1459,6 +1500,9 @@ addEventListener('keyup', (e) => { key[e.code] = false; });
 addEventListener('blur', () => { for (const k in key) key[k] = false; });
 
 let yaw = -Math.PI * .75, pitch = .55, dist = 11.5, camD = 11.5, drag = null;
+/* 1인칭은 입력 목표와 실제 눈을 분리합니다. 마우스의 한 프레임 튐을 그대로
+   카메라에 쓰지 않고 짧게 따라가므로 멀미를 만드는 미세한 떨림이 줄어듭니다. */
+let fpYaw = yaw, fpPitch = 0, fpBob = 0;
 /* 마지막으로 시점을 직접 건드린 시각. 직접 돌린 직후에는 자동 추적을
    쉬게 합니다 — 내가 돌린 걸 카메라가 도로 되돌리면 싸우는 느낌이 납니다. */
 let camHold = 0;
@@ -1726,6 +1770,7 @@ function toggleView() {
   first = !first;
   player.visible = !first; blob.visible = !first;
   pitch = first ? 0 : .58;
+  fpYaw = yaw; fpPitch = pitch; fpBob = 0;
   $('#foot .md').textContent = first ? '1인칭' : '3인칭';
   dockOn('view', first);
   syncLock();
@@ -1819,8 +1864,16 @@ function panelFor(s) {
     case 'wear-shop': return UI.wearShop({
       wear: WEAR, owned: SAVE.owned2, coins: SAVE.coins, server: !!(SRV && SRV.configured),
       rides: RIDE_LIST, ownedRide: SAVE.ownedRide,
+      schoolColor: SCHOOLS.find((q) => q.name === SAVE.school)?.c,
       category: SHOP_CAT.wear,
       onCategory: (k, again) => { SHOP_CAT.wear = k; again(); },
+      preview: WEAR_TRY,
+      onPreview: (id, slot, label) => {
+        const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+        WEAR_TRY = { id, slot, label, color: id === 'varsity' ? sc?.c : undefined };
+        wearPreviewHandle?.tryOn(WEAR_TRY)?.focus(slot);
+        const t = elPanel.querySelector('.wear-preview-card>b'); if (t) t.textContent = label + ' 미리보기';
+      },
       onBuy: (id, slot, again) => buyWear(id, slot, again),
       onBuyRide: (id, again) => {
         if (SAVE.ownedRide.includes(id)) return;
@@ -1859,14 +1912,26 @@ function panelFor(s) {
       },
     });
     case 'claw': return UI.claw({
-      coins: SAVE.coins,
+      coins: SAVE.coins, prize: SAVE.lastPrize,
       onPlay: (again) => {
         if (!payCoins(30)) return;
-        const pool = ['bear', 'plant', 'books2'];
-        const got = pool[Math.floor(Math.random() * pool.length)];
-        SAVE.furn[got] = (SAVE.furn[got] || 0) + 1; UI.save();
-        const nm = UI.FURN.find(([q]) => q === got)[1];
-        toast(nm + ' 뽑았다!', '기숙사에 놓을 수 있어요'); again();
+        const locked = SPEC.filter((n) => !SAVE.ownedSp.includes(n));
+        const roll = Math.random();
+        if (roll < .26 && locked.length) {
+          const got = locked[Math.floor(Math.random() * locked.length)];
+          SAVE.ownedSp.push(got);
+          SAVE.lastPrize = { title: got + ' 희귀 알', desc: '부화 완료 · 옷장(C)에서 바로 선택할 수 있어요' };
+        } else if (roll < .58) {
+          SAVE.coins += 70;
+          SAVE.lastPrize = { title: '집중 티켓 +70코인', desc: '코인 잔액에 바로 들어왔어요' };
+        } else {
+          const pool = ['fur-floorlamp','fur-fishtank','fur-plant2','books2'];
+          const got = pool[Math.floor(Math.random() * pool.length)];
+          SAVE.furn[got] = (SAVE.furn[got] || 0) + 1;
+          const nm = UI.FURN.find(([q]) => q === got)?.[1] || '한정 가구';
+          SAVE.lastPrize = { title: nm, desc: '기숙사 방 꾸미기에 바로 들어왔어요' };
+        }
+        UI.save(); playEmoteSound('love'); toast('선물 상자가 열렸어요!', SAVE.lastPrize.title); again();
       },
     });
     case 'fame': return fameView();
@@ -1933,16 +1998,17 @@ let panelSpot = null, redrawPanel = () => {};
 /* 상점의 3D 상품 그림. shopview.js 는 하나의 WebGL 속판을 나눠 쓰고,
    화면에 들어온 카드만 한 번 그립니다. 카테고리를 바꿀 때 떠난 카드의
    손잡이만 접어 월드 렌더러와 웹캠에 불필요한 일을 남기지 않습니다. */
-let thumbHandles = [];
+let thumbHandles = [], wearPreviewHandle = null, WEAR_TRY = null;
 function clearThumbs() {
   thumbHandles.forEach((h) => { try { h.dispose(); } catch (_) {} });
   thumbHandles = [];
+  wearPreviewHandle = null;
 }
 function paintThumbs(root) {
   clearThumbs();
   try {
     const sc = SCHOOLS.find((q) => q.name === SAVE.school);
-    root.querySelectorAll('button[data-buy] .th').forEach((el) => {
+    root.querySelectorAll('button[data-buy] .th:not([data-wear-art])').forEach((el) => {
       const b = el.parentElement;
       thumbHandles.push(itemThumb(el, 'wear', b.dataset.buy, {
         bare: true, slot: b.dataset.slot, look: myLook(),
@@ -1961,6 +2027,14 @@ function paintThumbs(root) {
       const species = el.parentElement.dataset.egg;
       thumbHandles.push(itemThumb(el, 'egg', 'egg', { color: eggColors[species] || 0xF2D08A }));
     });
+    const stage = root.querySelector('.wear-preview-stage');
+    if (stage) {
+      wearPreviewHandle = dressPreview(stage, {
+        species: curSpecies, look: myLook(), try: WEAR_TRY, focus: WEAR_TRY?.slot || null,
+        spin: .38, w: 210, h: 260,
+      });
+      thumbHandles.push(wearPreviewHandle);
+    }
   } catch (_) { /* 3D 그림이 실패해도 이름·가격·구매는 그대로 남습니다 */ }
 }
 function openPanel(s) {
@@ -1974,6 +2048,7 @@ function openPanel(s) {
     elPanel.querySelector('.bd').innerHTML = v.html;
     elPanel.classList.toggle('wide', !!v.wide);
     elPanel.classList.toggle('shop', !!v.shop);
+    elPanel.classList.toggle('compact', !v.wide && ['weather','bus','invite','vending','claw'].includes(s.panel));
     elPanel.dataset.store = s.panel === 'wear-shop' ? 'wear'
       : s.panel === 'furn-shop' ? 'furn' : s.panel === 'egg-shop' ? 'egg' : '';
     if (v.on) v.on(elPanel, draw);
@@ -1989,7 +2064,7 @@ function openPanel(s) {
 function closePanel() {
   clearThumbs();
   delete elPanel.dataset.store;
-  elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
+  elPanel.classList.remove('on', 'compact'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
   const mq = document.querySelector('#myquick');
@@ -2447,7 +2522,7 @@ function remoteFor(p) {
     const fitVal = typeof p.fit === 'object' && p.fit ? p.fit : OUTFITS[(p.fit | 0) % OUTFITS.length];
     /* 남의 캐릭터도 덜 잘게 — 몇 명이 들어올지 모르는 자리입니다 */
     const g = character(rig, SPECIES[p.species] ? p.species : '기린', fitVal, { lod: 1 });
-    const el = document.createElement('div'); el.className = 'tag3'; $('#tags').appendChild(el);
+    const el = document.createElement('div'); el.className = 'tag3 peer'; $('#tags').appendChild(el);
     const say = document.createElement('div'); say.className = 'say3'; say.style.display = 'none'; $('#tags').appendChild(say);
     const emoEl = document.createElement('div'); emoEl.className = 'emo3'; emoEl.style.display = 'none'; $('#tags').appendChild(emoEl);
     remotes.set(p.id, r = { rig, g, el, say, emoEl, species: p.species, fitKey, walk: 0, last: null });
@@ -2667,14 +2742,14 @@ function applySky(indoor) {
 }
 
 /* ══════ 9. 드나들기 ══════ */
-let near = null, spot = null, npcNear = null, spotD = 1e9, npcD = 1e9;
+let near = null, spot = null, npcNear = null, chairNear = null, spotD = 1e9, npcD = 1e9;
 /* 아무 의자에나 앉기 — 방을 지을 때 적어 둔 자리 목록에서 찾습니다.
    도서관·본관·기숙사 의자는 앉는 순간 자세 세션이 시작되고,
    소파·벤치·식당 의자는 그냥 앉아서 쉽니다. */
 const CSIT = { on: false, from: null };
 function nearSeat() {
   if (!room || !room.seats) return null;
-  let best = null, bd = 1.15 * 1.15;
+  let best = null, bd = 1.65 * 1.65;
   for (const q of room.seats) {
     const d2 = (P.x - q.x) ** 2 + (P.z - q.z) ** 2;
     if (d2 < bd) { bd = d2; best = q; }
@@ -2699,7 +2774,6 @@ function interact() {
   if (dlgOn) { openDlg(dlgWho); return; }        // 다음 줄
   if (SESS.on) { endSession(); return; }
   if (CSIT.on) { standCasual(); return; }
-  if (npcNear) { openDlg(npcNear); return; }
   if (spot) {
     if (spot.game) {
       /* 러너 하나만 자세를 조작으로 씁니다. 카메라를 못 켜도 그 게임은
@@ -2730,6 +2804,7 @@ function interact() {
       else sitCasual(q);
       return;
     } }
+  if (npcNear) { openDlg(npcNear); return; }
   if (room) { leaveRoom(); return; }
   if (near) enterRoom(near);
 }
@@ -2944,7 +3019,8 @@ mapCv.addEventListener('click', (e) => {
   const S = 620;
   const px = ((e.clientX - r.left) / r.width) * S;
   const py = ((e.clientY - r.top) / r.height) * S;
-  let best = null, bd = 42 * 42;
+  /* 지도 어디를 눌러도 가장 가까운 시설로 갑니다. */
+  let best = null, bd = Infinity;
   BUILDINGS.forEach((b) => {
     let bx, by;
     if (MAPSHOT.img?.complete) { const [u, v] = mapUV(b.x, b.z); bx = u * S; by = v * S; }
@@ -3080,6 +3156,8 @@ const SCHOOLS = [
   { name: '서강대학교', c: 0x8B0029 }, { name: '명지대학교', c: 0x003A70 },
 ];
 function idbarPaint() {
+  const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+  if (sc && SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
   $('#idbar .nm').textContent = myNick();
   $('#idbar .sc').textContent = SAVE.school || '학교 미설정';
 }
@@ -3320,7 +3398,7 @@ if (AO_ON) {
        순검정 그늘은 점토가 아니라 플라스틱이 됩니다 — 로비·마이페이지의
        클레이 토큰이 쓰는 규칙과 같은 이유입니다. */
     n8ao.configuration.color = new THREE.Color(0x0D3C34);
-    n8ao.configuration.halfRes = true;      // 절반 해상도로 계산하고 올립니다
+    n8ao.configuration.halfRes = false;     // 윤곽을 반해상도로 늘려 생기던 번짐 제거
     composer.addPass(n8ao);
   } catch (e) {
     console.warn('후처리를 못 켰습니다 — 그냥 그립니다', e);
@@ -3558,7 +3636,7 @@ function tick(now) {
   }
 
   /* ── 문 · 자리 · 사람 ── */
-  spot = null; npcNear = null; spotD = 1e9; npcD = 1e9;
+  spot = null; npcNear = null; chairNear = null; spotD = 1e9; npcD = 1e9;
   if (!panelOn) {
     let best = 1e9;
     for (const s of spotsHere()) {
@@ -3586,16 +3664,18 @@ function tick(now) {
     });
     /* 사람이 자리보다 가까우면 **말 걸기가 이깁니다** — 창구 앞의 미르에게
        말을 걸려는데 자리 창이 대신 열리던 것을 고칩니다 */
-    if (spot && npcNear && npcD < spotD) spot = null;
+    if (spot && npcNear) npcNear = null;
     if (near) { elPrompt.innerHTML = `<em>E</em><span>${near.name} 들어가기</span>`; spot = null; npcNear = null; }
     else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
     else if (npcNear) elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
     elPrompt.classList.toggle('on', !!(near || spot || npcNear) && !panelOn && !SESS.on && !dlgOn && !mapOn);
   } else {
     const out = P.z > room.size.d / 2 - 1.3;
+    chairNear = !out && !spot ? nearSeat() : null;
     if (out) { elPrompt.innerHTML = '<em>E</em><span>나가기</span>'; spot = null; }
     else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
-    elPrompt.classList.toggle('on', !!(out || spot) && !panelOn && !SESS.on && !mapOn);
+    else if (chairNear) elPrompt.innerHTML = `<em>E</em><span>${chairNear.kind === 'chair' && (room.key === 'library' || room.key === 'mainhall') ? '앉아서 자세 세션 시작' : '앉기'}</span>`;
+    elPrompt.classList.toggle('on', !!(out || spot || chairNear) && !panelOn && !SESS.on && !mapOn);
     if (out && !SESS.on && P.sp > .2 && P.z > room.size.d / 2 - .55) leaveRoom();
   }
   /* 대화는 상대가 잠깐 감지에서 빠졌다고 닫지 않습니다 — 내가 **걸어서
@@ -3604,7 +3684,7 @@ function tick(now) {
       && Math.hypot(P.x - dlgWho.rig.position.x, P.z - dlgWho.rig.position.z) > 4.5) closeDlg();
 
   /* ── 실시간 · 남들 ── */
-  net?.move(P.x, P.z, P.dir, P.sp > .1);
+  net?.move(P.x, P.z, P.dir, P.sp > .1, SESS.on ? SESS.t : 0);
   if (net) remotes.forEach((r, id) => { if (!net.peers.has(id)) dropRemote(id); });
   net?.peers.forEach((p) => {
     const s = net.sample(p); if (!s) return;
@@ -3632,7 +3712,11 @@ function tick(now) {
     const on = v3.z < 1 && !mapOn;
     const sx = (v3.x * .5 + .5) * innerWidth, sy = (-v3.y * .5 + .5) * innerHeight;
     r.el.style.display = on ? 'block' : 'none';
-    if (on) { r.el.textContent = p.nick || '누군가'; r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px'; }
+    if (on) {
+      const sec = Math.max(0, Math.floor(p.sessionSec || 0));
+      r.el.innerHTML = `<b>${esc3(p.nick || '누군가')}</b><small>${esc3(p.school || '학교 미설정')}</small><em>${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}</em>`;
+      r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px';
+    }
     const saying = p.say && performance.now() - p.sayT < 6000;
     r.say.style.display = on && saying ? 'block' : 'none';
     if (on && saying) { r.say.textContent = p.say; r.say.style.left = sx + 'px'; r.say.style.top = (sy - 26) + 'px'; }
@@ -3648,7 +3732,7 @@ function tick(now) {
     gaze(n.g, n.rig.position.x, n.rig.position.z, n.rig.rotation.y, P.x, P.z, 1.5, 6.0);
     const dd = Math.hypot(P.x - n.rig.position.x, P.z - n.rig.position.z);
     if (dd < 3.0 && dd < npcD) { npcNear = n; npcD = dd; }
-    if (npcNear && npcD < spotD) spot = null;
+    if (spot || chairNear) npcNear = null;
     if (dd < 16 && !mapOn) {
       v3.set(n.rig.position.x, 2.45, n.rig.position.z).project(cam);
       if (v3.z < 1) {
@@ -3663,7 +3747,7 @@ function tick(now) {
      spot 을 지워 두고도, 여기 덮어쓰기가 그 결과를 안 보고 무조건 사람
      문구를 썼습니다 — 계산대 위에 서 있어도 "미르에게 말 걸기" 가 뜨고,
      상점 여섯 자리 중 넷이 그렇게 가려져 있었습니다. */
-  if (room && npcNear && !near && !spot) {
+  if (room && npcNear && !near && !spot && !chairNear) {
     elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
     elPrompt.classList.toggle('on', !panelOn && !SESS.on && !mapOn && !dlgOn);
   }
@@ -3693,11 +3777,23 @@ function tick(now) {
     else if (n.wait > 0) { n.wait -= dt; n.sp = Math.max(0, n.sp - dt * 6); }
     else if (d < .7) { n.leg = (n.leg + 1) % R.length; n.wait = 1.2 + (idx % 4) * .8; }
     else {
-      const v = n.d.speed * dt;
-      n.rig.position.x += (dx / d) * v; n.rig.position.z += (dz / d) * v;
-      n.dir = Math.atan2(dx, dz); n.walk += v / 1.15;
-      n.sp = Math.min(1, n.sp + dt * 5);
+      const v = n.d.speed * dt, base = Math.atan2(dx, dz);
+      /* 정해 둔 경로가 분수·벽·다른 사람을 직선으로 관통하지 않도록
+         앞과 양옆의 짧은 후보를 검사합니다. 길이 막히면 잠깐 양보합니다. */
+      const free = (x, z) => {
+        if (hitCampus(x, z) || Math.hypot(x - P.x, z - P.z) < .82) return false;
+        for (const m of NPC) if (m !== n && Math.hypot(x - m.rig.position.x, z - m.rig.position.z) < .92) return false;
+        return true;
+      };
+      let moved = false;
+      for (const off of [0,.42,-.42,.78,-.78,1.16,-1.16]) {
+        const a = base + off, nx = n.rig.position.x + Math.sin(a) * v, nz = n.rig.position.z + Math.cos(a) * v;
+        if (!free(nx, nz)) continue;
+        n.rig.position.x = nx; n.rig.position.z = nz; n.dir = a; n.walk += v / 1.15; moved = true; break;
+      }
+      n.sp = moved ? Math.min(1, n.sp + dt * 4) : Math.max(0, n.sp - dt * 7);
     }
+    n.rig.position.y = groundAt(n.rig.position.x, n.rig.position.z, n.rig.position.y) + .015;
     n.rig.rotation.y = smoothAngle(n.rig.rotation.y, n.dir, 1 - Math.pow(.002, dt));
     if (n.sp > .04) stride(n.g, n.walk, n.sp); else idle(n.g, T, idx);
     gaze(n.g, n.rig.position.x, n.rig.position.z, n.rig.rotation.y, P.x, P.z, 1.5, n.sp > .04 ? 4.5 : 7);
@@ -3726,8 +3822,12 @@ function tick(now) {
     /* 눈높이 1.84 는 키 1.9 짜리 몸에서 정수리 바로 아래라, 턱을 들면
        천장이 코앞이었습니다. 흔들림도 절반으로 줄입니다 — 화면 전체가
        흔들리는 것은 3인칭에서 캐릭터가 흔들리는 것보다 훨씬 셉니다. */
-    cam.position.set(P.x, P.y + 1.70 + Math.sin(P.walk * TAU * 2) * .011 * P.sp, P.z);
-    const f = new THREE.Vector3(Math.sin(yaw), -Math.tan(pitch), Math.cos(yaw));
+    const follow = 1 - Math.exp(-dt * 18);
+    fpYaw = smoothAngle(fpYaw, yaw, follow); fpPitch += (pitch - fpPitch) * follow;
+    const wantBob = Math.sin(P.walk * TAU * 2) * .006 * Math.min(1, P.sp);
+    fpBob += (wantBob - fpBob) * (1 - Math.exp(-dt * 12));
+    cam.position.set(P.x, P.y + 1.68 + fpBob, P.z);
+    const f = new THREE.Vector3(Math.sin(fpYaw), -Math.tan(fpPitch), Math.cos(fpYaw));
     cam.lookAt(cam.position.x + f.x * 10, cam.position.y + f.y * 10, cam.position.z + f.z * 10);
   } else {
     /* 가림 검사 결과를 **바로 쓰지 않습니다.** 건물 옆을 지나가면
@@ -3893,7 +3993,10 @@ function tick(now) {
     /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
        이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
        느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
-    if (f < 30 && quality > .75) { quality = .75; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
+    if (f < 30 && n8ao && n8ao.configuration.halfRes === false) {
+      /* 프레임이 부족해도 본 화면 픽셀은 보존하고 AO 계산만 줄입니다. */
+      n8ao.configuration.halfRes = true;
+    }
     /* 끄기 전에 **반으로 줄여** 봅니다. 2048 → 1024 면 그림자 그리는 값이
        사분의 일이 되는데, 이 그림체에서 가장자리가 부드러워지는 것 말고는
        티가 잘 안 납니다. 있는 그림자가 없는 그림자보다 낫습니다. */
@@ -3910,7 +4013,7 @@ function tick(now) {
       shadowsOff = true;
       toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
     }
-    else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
+    else if (f > 48 && n8ao && n8ao.configuration.halfRes) n8ao.configuration.halfRes = false;
     frames = 0; acc = 0;
   }
   /* CSM 은 카메라를 따라 칸을 다시 잡아야 합니다 */
@@ -3958,7 +4061,7 @@ syncLock();
 ['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k) => {
   try { buildRoom(k); } catch {}
 });
-setTimeout(() => $('#load').classList.add('gone'), 120);
+setTimeout(() => $('#load').classList.add('gone'), 720);
 if (SAVE.shadow === false) setShadows(false);
 window.__ready = true;
 window.__P = P;

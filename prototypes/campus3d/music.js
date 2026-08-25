@@ -12,16 +12,16 @@
    ══════════════════════════════════════════════════════════ */
 
 export const MUSIC = {
-  calm:   { name: '조용한 오후',  file: 'calm.ogg',   by: 'LightMister' },
-  bright: { name: '볕 드는 마당', file: 'bright.ogg', by: 'SondreDrakensson' },
-  warm:   { name: '저녁 방',      file: 'warm.ogg',   by: 'Erokia' },
-  night:  { name: '늦은 밤',      file: 'night.ogg',  by: 'szegvari' },
-  errand: { name: '볼일 보는 길', file: 'errand.ogg', by: 'Leszek_Szary' },
-  play:   { name: '삼 분만',      file: 'play.ogg',   by: 'michorvath' },
-  shop:   { name: '좌판 앞',      file: 'shop.ogg',   by: 'Rolly-SFX' },
-  noon:   { name: '한낮의 마당',  file: 'noon.ogg',   by: 'pinkinblue' },
-  study:  { name: '창가 자리',    file: 'study.ogg',  by: 'Hakren' },
-  water:  { name: '물가',         file: 'water.ogg',  by: 'SondreDrakensson' },
+  calm:   { name: '도서관 · 조용한 오후',  file: 'calm.ogg',   by: 'LightMister' },
+  bright: { name: '캠퍼스 · 볕 드는 마당', file: 'bright.ogg', by: 'SondreDrakensson' },
+  warm:   { name: '기숙사 · 저녁 방',      file: 'warm.ogg',   by: 'Erokia' },
+  night:  { name: '집중 ASMR · 늦은 밤',   file: 'night.ogg',  by: 'szegvari' },
+  errand: { name: '학생회관 · 볼일 보는 길', file: 'errand.ogg', by: 'Leszek_Szary' },
+  play:   { name: '미니게임관 · 삼 분만',  file: 'play.ogg',   by: 'michorvath' },
+  shop:   { name: '동아리 상점 · 좌판 앞', file: 'shop.ogg',   by: 'Rolly-SFX' },
+  noon:   { name: '집중 ASMR · 한낮',       file: 'noon.ogg',   by: 'pinkinblue' },
+  study:  { name: '집중 ASMR · 창가 자리', file: 'study.ogg',  by: 'Hakren' },
+  water:  { name: '집중 ASMR · 물가',       file: 'water.ogg',  by: 'SondreDrakensson' },
 };
 /* 장소별 기본 곡 — 2D 와 같은 배정입니다.
    본관은 도서관과 같은 곡을 씁니다. 둘 다 "오래 앉는 자리" 하나라,

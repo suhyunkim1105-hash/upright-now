@@ -122,6 +122,9 @@ function glbChar(parent, species, opt, SkeletonUtils) {
 
   /* 뼈까지 새로 만드는 복제 — clone() 만 쓰면 모두가 한 몸이 됩니다 */
   const body = SkeletonUtils.clone(src.scene);
+  /* 애니메이션의 발 압축 구간에서도 발바닥이 바닥 아래로 사라지지 않게
+     아주 얇은 여유를 둡니다. 원본 네 모델은 발 크기가 달라 4cm만 줍니다. */
+  body.position.y += .04;
   g.add(body);
 
   const mixer = new THREE.AnimationMixer(body);
@@ -178,7 +181,10 @@ function glbPlay(g, name, t, speed = 1) {
    옷 자체를 지우지는 않습니다 — 옷장·염색·상점이 전부 이 구조에
    매달려 있어서, 지우면 그쪽이 통째로 무너집니다. 대신 **살색으로
    덮고** 모자·안경·가방을 끕니다. 형태는 남되 옷으로 안 보입니다. */
-export const BARE = true;
+/* 옷 가게와 옷장이 실제 기능이 된 뒤에도 이 값이 true라 모든 월드 캐릭터가
+   강제로 기본 맨몸 차림으로 다시 쓰였습니다. 상품 카드의 옷 전용 렌더는
+   shopview.js가 별도로 몸을 숨기므로, 월드 캐릭터까지 숨길 이유가 없습니다. */
+export const BARE = false;
 
 /* ══ 비례 ══
    랜딩 3D 에셋과 나란히 놓고 맞췄습니다.
@@ -246,7 +252,11 @@ const BODY = {
   기린:     { bh: .60, bw: .34, nk: .42, hy: 1.50, hs: .90, ft: .135, ay: .44, ar: .105 },
   펭귄:     { bh: .84, bw: .46, nk: .00, hy: 1.20, hs: 1.12, ft: .185, ay: .54, ar: .155 },
   거북이:   { bh: .68, bw: .43, nk: .04, hy: 1.14, hs: 1.10, ft: .165, ay: .46, ar: .135 },
+  알파카:   { bh: .76, bw: .45, nk: .10, hy: 1.22, hs: .98, ft: .155, ay: .50, ar: .130 },
+  햄스터:   { bh: .70, bw: .48, nk: .00, hy: 1.12, hs: 1.14, ft: .175, ay: .46, ar: .145 },
+  고슴도치: { bh: .74, bw: .47, nk: .00, hy: 1.16, hs: 1.02, ft: .165, ay: .48, ar: .135 },
   개구리:   { bh: .70, bw: .44, nk: .00, hy: 1.14, hs: 1.10, ft: .175, ay: .46, ar: .140 },
+  백조:     { bh: .80, bw: .43, nk: .12, hy: 1.25, hs: 1.00, ft: .170, ay: .52, ar: .145 },
 };
 const bodyOf = (sp) => BODY[sp] || BODY.거북이;
 
@@ -433,6 +443,46 @@ const HEADS = {
         m.quaternion.setFromRotationMatrix(_look); });
     cheeks(h, .3, -.1, .4);
   },
+  알파카(h, C) {
+    ell(h, .45, M(C.skin), 0, -.02, 0, .96, 1.0, .93);
+    [[0,.44,.02,.21],[-.2,.4,.04,.17],[.2,.4,.04,.17],[-.33,.3,0,.14],[.33,.3,0,.14],
+     [0,.4,-.24,.2],[-.2,.34,-.22,.16],[.2,.34,-.22,.16]]
+      .forEach(([x,y,z,r]) => ell(h, r, M(C.wool, .92), x, y, z));
+    [-.4,.4].forEach((x) => ell(h, .12, M(C.wool, .92), x, -.18, .1, .9, 1, .8));
+    [-.3,.3].forEach((x) => { const e = ell(h, .1, M(C.skin), x, .52, -.04, .5, 1.15, .5); e.rotation.z = -x * .8; });
+    ell(h, .5, M(C.snout, .58), 0, -.16, .28, .4, .32, .38);
+    ell(h, .045, M(SK.ink, .3), 0, -.08, .44, 1.3, .7, .6);
+    smile(h, -.22, .42, .08); eyes(h, .11, .40, .072, .20); cheeks(h, .28, -.1, .38);
+  },
+  햄스터(h, C) {
+    ell(h, .48, M(C.skin), 0, .05, 0, 1.0, .92, .93);
+    ell(h, .42, M(C.skin), 0, -.14, .05, 1.06, .72, .88);
+    [-.24,.24].forEach((x) => ell(h, .17, M(C.snout, .5), x, -.16, .3, 1, .82, .55));
+    ell(h, .05, M(SK.ink, .3), 0, 0, .45, 1.2, .8, .6);
+    box(h, .05, .07, .03, .012, M(SK.white, .25), -.028, -.14, .43);
+    box(h, .05, .07, .03, .012, M(SK.white, .25), .028, -.14, .43);
+    smile(h, -.06, .44, .07); eyes(h, .13, .42, .128, .21);
+    [-.3,.3].forEach((x) => { ell(h, .14, M(C.skin), x, .42, -.04, 1, 1, .5); ell(h, .09, M(C.inner, .6), x, .42, 0, 1, 1, .4); });
+    cheeks(h, .33, -.1, .35);
+  },
+  고슴도치(h, C) {
+    ell(h, .46, M(C.skin), 0, -.01, .05, 1, .96, .96);
+    let qi = 0;
+    for (let ring = 0; ring < 4; ring++) {
+      const phi = .32 + ring * .42, n = [5,7,8,7][ring];
+      for (let k = 0; k < n; k++) {
+        const th = Math.PI * (.30 + (k / (n - 1)) * 1.40), r0 = .46;
+        const x = Math.sin(phi) * Math.cos(th) * r0, y = Math.cos(phi) * r0 - .01;
+        const z = Math.sin(phi) * Math.sin(th) * -r0 * .95 + .04;
+        const q = new THREE.Mesh(sphG(.16 - ring * .008, S(12, 7), S(10, 6)), M(qi++ % 2 ? C.quillDark : C.quill, .8));
+        q.position.set(x, y, z); q.scale.set(.56, 1.2, .62); q.lookAt(x * 3, y * 3 + .9, z * 3 - 1.4); q.castShadow = true; h.add(q);
+      }
+    }
+    ell(h, .5, M(C.snout, .55), 0, -.16, .28, .44, .34, .4);
+    ell(h, .06, M(SK.ink, .3), 0, -.07, .46, 1.1, .85, .7);
+    smile(h, -.24, .42, .08); eyes(h, .13, .40, .082, .175);
+    [-.34,.34].forEach((x) => ell(h, .09, M(C.skin), x, .3, .1, .6, .9, .5)); cheeks(h, .28, -.12, .38);
+  },
   개구리(h, C) {
     ell(h, .52, M(C.skin), 0, -.06, 0, 1.1, .82, .95);
     /* 튀어나온 눈 — **눈동자가 앞을 봐야** 합니다. 전 판은 눈동자가
@@ -464,13 +514,27 @@ const HEADS = {
     smile(h, -.15, .52, .07);
     cheeks(h, .26, -.08, .48);
   },
+  백조(h, C) {
+    ell(h, .44, M(C.skin), 0, .04, 0, .98, 1.04, .95);
+    ell(h, .17, M(C.beak, .5), 0, -.13, .46, .7, .4, .9);
+    ell(h, .14, M(C.beakDark, .5), 0, -.18, .45, .6, .26, .8);
+    ell(h, .045, M(SK.ink, .32), 0, -.05, .49, 1.4, .5, .5); eyes(h, .1, .4, .1, .17);
+    [[0,.5,-.06,.12],[-.12,.47,-.14,.1],[.12,.47,-.14,.1]].forEach(([x,y,z,r]) => {
+      const f = ell(h, r, M(C.skin), x, y, z, .6, 1.3, .6); f.rotation.x = -.6;
+    });
+    cheeks(h, .26, -.08, .38, .08);
+  },
 };
 
 /* 종마다 색. 몸은 전부 같습니다 — 그래서 옷 하나면 여덟이 다 입습니다. */
 export const SPECIES = {
   거북이:   { skin: 0x8FD4A0, muzzle: 0xD4F0DA, shell: 0x53A468, shellDark: 0x40855A, belly: 0xF2E2B8 },
   기린:     { skin: 0xF6D9A0, snout: 0xFFEBC6, spot: 0xC98E4E },
+  알파카:   { skin: 0xF0E2CC, snout: 0xFFF6E8, wool: 0xFFFBF2 },
+  햄스터:   { skin: 0xE8B87A, snout: 0xFFF0DC, inner: 0xF4A2A6 },
+  고슴도치: { skin: 0xDDBA92, snout: 0xFFF0DC, quill: 0x9A7450, quillDark: 0x7C5B3C },
   개구리:   { skin: 0x7FC96A, belly: 0xE2F2C8 },
+  백조:     { skin: 0xFFFFFF, beak: 0xF2933C, beakDark: 0xD9761F },
   펭귄:     { skin: 0x3E4A5A, belly: 0xFFFFFF, beak: 0xF2933C, beakDark: 0xD9761F },
 };
 /* 옷 — 몸이 같으니 색만 바꾸면 여덟 종이 다 입습니다.
@@ -824,11 +888,13 @@ function spriteChar(parent, species, opt) {
 
 export function character(parent, species, fit, opt = {}) {
   if (SPRITE_ON) return spriteChar(parent, species, opt);
-  if (GLB_READY && _SkeletonUtils) {
-    const g = glbChar(parent, species, opt, _SkeletonUtils);
-    if (g) return g;                    // 못 받은 종은 아래 손으로 빚는 판으로
-  }
-  if (GLB_READY && _SkeletonUtils) {
+  /* 원본 네 GLB는 한 장짜리 재질이라 몸과 옷을 따로 칠할 수 없습니다.
+     기본 차림에서는 원본을 그대로 쓰고, 사용자가 다른 옷을 고르면 같은
+     비례의 절차형 3D 판본으로 바꿔 실제 상·하의와 소품이 보이게 합니다. */
+  const V = normalizeLook(fit);
+  const tailored = V.topId !== 'tee' || V.bottomId !== 'jeans' || V.shoesId !== 'sneakers'
+    || V.hatId !== 'none' || V.glassesId !== 'none' || !['backpack','none'].includes(V.bagId);
+  if (!opt.procedural && !tailored && GLB_READY && _SkeletonUtils) {
     const g = glbChar(parent, species, opt, _SkeletonUtils);
     if (g) return g;                    // 못 받은 종은 아래 손으로 빚는 판으로
   }
@@ -884,10 +950,10 @@ function buildChar(parent, species, fit, opt) {
   const shortsOn = L.bottomId === 'shorts';
   const shortSleeve = L.topId === 'tee';
   const varsity = L.topId === 'varsity';
-  const vBody = 0xF4EDE0;                       // 과잠 몸판 — 크림
-  const bodyTop = varsity ? M(vBody, .6) : top;
-  /* 밑단과 옷깃은 언제나 같은 색입니다 — 재질을 둘로 만들 이유가 없습니다 */
-  const edge = varsity ? dye('top', M(topC, .55)) : trim;
+  /* 과잠 몸판은 학교 대표색, 테두리는 크림입니다. 전에는 몸판이 항상
+     크림이고 학교색은 얇은 띠에만 들어가 대표색을 바꿔도 거의 안 보였습니다. */
+  const bodyTop = top;
+  const edge = varsity ? M(0xF4EDE0, .55) : trim;
 
   /* ══════════════════════════════════════════════════════════
      몸 — 물방울 하나
@@ -925,6 +991,27 @@ function buildChar(parent, species, fit, opt) {
     body.scale.z = .92;
     torso.add(body);
 
+    /* 상의와 하의는 종의 몸 위에 아주 얇게 겹치는 별도 껍질입니다.
+       몸 메시 재질을 통째로 옷색으로 바꾸면 얼굴 아래 털까지 사라지고,
+       껍질 없이 재질만 만들어 두면(이전 코드) 저장된 옷이 전혀 안 보입니다. */
+    if (!BARE) {
+      const lower = new THREE.Mesh(lathe([
+        [H * .04, .00], [H * .055, W * .54], [H * .14, W * .92],
+        [H * .30, W * 1.01], [H * .39, W * .94], [H * .40, .00],
+      ]), bot);
+      lower.scale.z = .935; lower.castShadow = true; lower.receiveShadow = true; torso.add(lower);
+      const upper = new THREE.Mesh(lathe([
+        [H * .27, .00], [H * .285, W * .96], [H * .44, W * 1.025],
+        [H * .66, W * .98], [H * .82, W * .77], [H * .90, .00],
+      ]), bodyTop);
+      upper.scale.z = .94; upper.castShadow = true; upper.receiveShadow = true; torso.add(upper);
+      if (varsity) {
+        /* 지퍼와 밑단만 크림으로 남겨 작은 화면에서도 과잠으로 읽힙니다. */
+        box(torso, .055, H * .48, .045, .018, edge, 0, H * .54, W * .93);
+        box(torso, W * 1.36, .055, .045, .018, edge, 0, H * .30, W * .91);
+      }
+    }
+
     /* 배 — 종에 따라 밝은 면이 앞에 있습니다(개구리 · 펭귄 · 거북이) */
     if (C.belly) {
       const b = new THREE.Mesh(sphG(BP.bw * .80, S(22, 11), S(16, 8)), M(C.belly, .72));
@@ -960,7 +1047,8 @@ function buildChar(parent, species, fit, opt) {
     const leg = new THREE.Group();
     leg.position.set(x, TORSO_Y + .04, 0); g.add(leg); parts.legs.push(leg);
     /* 발은 원본에서 전체 높이의 6% 이고 **앞으로 넓게** 퍼집니다 */
-    const foot = ell(leg, BP.ft, C.beak ? M(C.beak, .5) : skin, 0, -.02, .07, 1.15, .55, 1.5);
+    const foot = ell(leg, BP.ft, BARE ? (C.beak ? M(C.beak, .5) : skin) : sho,
+      0, -.02, .07, 1.15, .55, 1.5);
     foot.castShadow = true;
     /* 정강이 자리는 비워 둡니다 — 굽힐 관절이 없지만 걷기가 찾습니다 */
     const shin = new THREE.Group(); leg.add(shin); parts.shins.push(shin);
@@ -974,7 +1062,8 @@ function buildChar(parent, species, fit, opt) {
     g.add(arm); parts.arms.push(arm);
     /* 펭귄은 지느러미라 길고 납작합니다 */
     const fin = species === '펭귄';
-    const a = ell(arm, BP.ar, skin, 0, -.10, 0, .82, fin ? 2.1 : 1.45, fin ? .66 : .92);
+    const a = ell(arm, BP.ar, BARE ? skin : top, 0, -.10, 0,
+      .82, fin ? 2.1 : 1.45, fin ? .66 : .92);
     a.castShadow = true;
   });
   g.userData.base = { armZ: [-.16, .16] };
@@ -1182,17 +1271,19 @@ export function stride(g, t, sp) {
   P.arms[1].rotation.x = s * A * .95;
   P.arms[0].rotation.z = b[0] * (1 - k * .3);
   P.arms[1].rotation.z = b[1] * (1 - k * .3);
-  const bob = Math.abs(c) * .06 * k;
+  /* 머리와 몸이 좌우로 흔들리기보다 무게중심이 위아래로 아주 조금만
+     옮겨지게 합니다. 화면에서 가장 크게 보이던 6cm 바운스를 3.5cm로. */
+  const bob = Math.abs(c) * .035 * k;
   P.torso.position.y = TORSO_Y + bob;
   P.torso.rotation.x = k * .11;
   /* 방향 전환처럼 보이지 않을 만큼만 체중을 옮깁니다. */
-  P.torso.rotation.y = s * .045;
+  P.torso.rotation.y = s * .022;
   P.torso.rotation.z = 0;
   P.head.position.y = HEAD_Y + bob * .8;
   P.head.position.z = 0;
   P.head.rotation.x = -k * .07;
   if (!g.userData.looking) P.head.rotation.y *= .82;
-  P.head.rotation.z = -s * .018;
+  P.head.rotation.z = -s * .009;
   blink(P, t * 1.4 + (g.userData.seed || 0), g.userData.seed || 0);
   if (P.neck) { P.neck.rotation.x = 0; P.neck.position.z = -.005; P.neck.position.y = NECK_Y; }
 }

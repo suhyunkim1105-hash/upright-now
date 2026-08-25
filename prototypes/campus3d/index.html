@@ -279,6 +279,133 @@
     font:700 14px var(--ff);color:var(--ink);background:rgba(34,42,51,.03);outline:none}
   #panel input.nick:focus{border-color:var(--acc2);background:#fff}
 
+  /* ══════════════════════════════════════════════════════
+     클레이 — 창의 재질
+
+     여기 있던 것은 종이였습니다. 흰 바닥에 1.5px 실선 테두리, 표와
+     줄글. 3D 월드 위에 종이 문서가 뜨는 꼴이라 창만 다른 앱 같았습니다.
+
+     찰흙은 **테두리로 모양을 만들지 않습니다.** 밝은 쪽에서 빛이
+     들어오고 반대쪽에 그늘이 지는 것으로 두께가 보입니다. 그래서
+     그림자를 넷으로 씁니다 — 바깥 아래 그늘 · 바깥 위 하이라이트 ·
+     안쪽 위 밝은 선 · 안쪽 아래 어두운 선. 테두리는 뺍니다.
+
+     눌린 것(고른 것)은 색을 채우는 대신 **안으로 들어갑니다**.
+     찰흙을 손가락으로 누른 자국이라, 어느 것이 눌려 있는지가
+     색맹인 사람에게도 보입니다.
+     ══════════════════════════════════════════════════════ */
+  :root{
+    /* 찰흙의 색. 처음에 크림(#FBF6EC)으로 뒀는데 베이지가 너무 셌습니다 —
+       월드 자체가 하늘·잔디·물이라 창만 따뜻한 쪽으로 떨어져 나왔습니다.
+       흰색에 파랑을 아주 조금 섞은 쪽으로 옮깁니다. 그림자도 갈색이 아니라
+       **남색 계열**로 져야 같은 빛 아래 있는 것으로 보입니다. */
+    --clay:#F6F9FD;                       /* 창 바닥 */
+    --clay2:#EAF0F8;                      /* 한 단 낮은 면 */
+    --clay3:#DAE3EF;                      /* 눌린 면 */
+    --clayUp:0 10px 22px -8px rgba(58,80,112,.30), 0 -4px 12px -6px rgba(255,255,255,.95),
+             inset 0 2px 0 rgba(255,255,255,.96), inset 0 -3px 0 rgba(86,110,146,.13);
+    --clayUp2:0 5px 12px -5px rgba(58,80,112,.26), inset 0 1.5px 0 rgba(255,255,255,.95),
+             inset 0 -2px 0 rgba(86,110,146,.12);
+    --clayIn:inset 0 3px 7px rgba(62,84,118,.22), inset 0 -1.5px 0 rgba(255,255,255,.75);
+    /* 글자도 갈색을 뺍니다 */
+    --cInk:#22303F; --cInk2:#3F4E60; --cInk3:#79879A;
+    --mint:#B7EBE1; --mintD:#12867A;
+    --peach:#FBD6CE; --peachD:#B75844;
+    --lilac:#DCD8F6; --lilacD:#6355B0;
+    --lemon:#F2E7B4; --lemonD:#8A7620;
+    --sky:#CCE1F8; --skyD:#2A66A6;
+  }
+  #panel{background:var(--clay);border:0;
+    box-shadow:0 30px 70px -24px rgba(40,58,84,.44), 0 -6px 20px -10px rgba(255,255,255,.9),
+      inset 0 3px 0 rgba(255,255,255,.95), inset 0 -5px 0 rgba(86,110,146,.13);
+    border-radius:30px}
+  #panel .ph{background:transparent;border-bottom:0;padding:22px 26px 6px}
+  #panel .bd{padding:10px 26px 8px}
+  #panel .tag{background:var(--clay3);color:var(--cInk3);box-shadow:var(--clayIn);
+    padding:5px 12px;font-size:10.5px;letter-spacing:.04em}
+  #panel h3{margin:11px 0 0;font-size:22px}
+  #panel .x{padding:12px 26px 20px}
+  #panel p{color:var(--cInk2)}
+  #panel .note{background:var(--clay2);box-shadow:var(--clayIn);border-radius:16px;
+    padding:12px 14px;color:var(--cInk3);margin-top:14px}
+
+  /* 픽토그램 — 스물두 개가 한 벌이라 굵기를 여기서 한 번만 정합니다 */
+  .pic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .pic.lg{width:28px;height:28px;stroke-width:1.6}
+
+  /* 칸 — 줄글 대신 이걸 씁니다 */
+  .cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px;margin:4px 0 6px}
+  .cg.two{grid-template-columns:1fr 1fr}
+  .cc{display:flex;flex-direction:column;gap:7px;padding:14px 13px;border-radius:20px;
+    background:var(--clay2);box-shadow:var(--clayUp2);border:0;cursor:default;
+    font:700 12px/1.35 var(--ff);color:var(--cInk2);text-align:left;transition:transform .12s,box-shadow .12s}
+  button.cc{cursor:pointer}
+  button.cc:hover{transform:translateY(-2px)}
+  button.cc:active,.cc.on{box-shadow:var(--clayIn);background:var(--clay3);transform:none}
+  .cc .ic{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;
+    background:var(--mint);color:var(--mintD);box-shadow:var(--clayUp2)}
+  .cc.on .ic{box-shadow:none}
+  .cc b{font-size:14px;font-weight:800;color:var(--cInk);letter-spacing:-.01em}
+  .cc small{font-size:10.5px;font-weight:700;color:var(--cInk3);line-height:1.45}
+  .cc .big{font:800 22px/1 var(--ff);color:var(--cInk);letter-spacing:-.02em}
+  .ic.peach{background:var(--peach);color:var(--peachD)}
+  .ic.lilac{background:var(--lilac);color:var(--lilacD)}
+  .ic.lemon{background:var(--lemon);color:var(--lemonD)}
+  .ic.sky{background:var(--sky);color:var(--skyD)}
+
+  /* 줄 — 아이콘 + 이름 + 값. 표를 대신합니다 */
+  .rw{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:17px;
+    background:var(--clay2);box-shadow:var(--clayUp2);margin-bottom:7px;
+    font:700 13px var(--ff);color:var(--cInk2);width:100%;border:0;text-align:left}
+  button.rw{cursor:pointer;transition:transform .12s}
+  button.rw:hover{transform:translateY(-1px)}
+  button.rw:active{box-shadow:var(--clayIn)}
+  .rw .ic{width:32px;height:32px;border-radius:11px;display:grid;place-items:center}
+  .rw .ic .pic{width:19px;height:19px}
+  .rw span.t{flex:1;min-width:0}
+  .rw span.t em{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:var(--cInk3);margin-top:2px}
+  .rw span.v{font-weight:800;color:var(--cInk);font-size:13.5px;white-space:nowrap}
+
+  /* 채워지는 막대 */
+  .mtr{height:11px;border-radius:99px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
+  .mtr i{display:block;height:100%;border-radius:99px;background:var(--mintD);
+    box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5)}
+
+  /* 기존 부품도 같은 재질로 */
+  .kv{border-bottom:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:15px;
+    padding:10px 13px;margin-bottom:6px;color:var(--cInk3)}
+  .kv b{color:var(--cInk)}
+  .wr button{border:0;background:var(--clay2);box-shadow:var(--clayUp2);color:var(--cInk2);
+    padding:8px 14px;border-radius:99px}
+  .wr button:hover{color:var(--cInk);transform:translateY(-1px)}
+  .wr button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .wr button:disabled{opacity:.42;box-shadow:none;background:var(--clay3)}
+  .wr button.sw{box-shadow:var(--clayUp2);border:0}
+  .wr button.sw.on{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.55);transform:none}
+  button.buy{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:18px;
+    padding:12px 12px;color:var(--cInk2);gap:8px}
+  button.buy:hover{transform:translateY(-2px)}
+  button.buy.on,button.buy:active{box-shadow:var(--clayIn);background:var(--clay3)}
+  button.buy .sw{border-radius:12px;box-shadow:var(--clayUp2)}
+  .lbl{color:var(--cInk3);margin:18px 0 9px}
+  .lbl::after{background:rgba(86,110,146,.20)}
+  ul.feed li{border-bottom:0;background:var(--clay2);box-shadow:var(--clayUp2);
+    border-radius:15px;padding:10px 13px;margin-bottom:6px;color:var(--cInk2)}
+  ul.feed li b{color:var(--mintD)}
+  #panel input.nick,#panel select,#panel input[type=text]{border:0;background:var(--clay2);
+    box-shadow:var(--clayIn);border-radius:14px;padding:11px 13px;color:var(--cInk);
+    font:700 14px var(--ff);outline:none}
+  #panel input.nick:focus,#panel select:focus{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.4)}
+  button.tt{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:13px;
+    color:var(--cInk3)}
+  button.tt.on{box-shadow:var(--clayIn);color:#fff}
+  table.tt{border-spacing:5px}
+  table.tt th{color:var(--cInk3)}
+  .card-id{border:0;background:linear-gradient(135deg,var(--mint),var(--sky));
+    box-shadow:var(--clayUp);border-radius:22px;padding:16px}
+  .card-id .ph{box-shadow:var(--clayUp2)}
+
   /* ── 지도 ── */
   #map{position:absolute;inset:0;display:none;place-items:center;
     background:rgba(12,17,24,.62);backdrop-filter:blur(5px);pointer-events:auto}
@@ -430,6 +557,34 @@
     #dock button{width:40px;padding:9px 0}
   }
 </style>
+<svg id="picto" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+ <defs>
+  <g id="pic-book"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5A1.5 1.5 0 0 1 20 20.5z"/></g>
+  <g id="pic-seat"><path d="M6 4h12v7H6z"/><path d="M4.5 12.5h15"/><path d="M7 15v4M17 15v4"/></g>
+  <g id="pic-clock"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></g>
+  <g id="pic-bell"><path d="M6.5 17V11a5.5 5.5 0 0 1 11 0v6"/><path d="M4.5 17h15"/><path d="M10 20h4"/></g>
+  <g id="pic-cal"><rect x="4" y="6" width="16" height="14" rx="2.5"/><path d="M4 10.5h16M9 4v4M15 4v4"/></g>
+  <g id="pic-music"><path d="M10 17V6l8-1.6V15"/><circle cx="7.6" cy="17.2" r="2.6"/><circle cx="15.6" cy="15.2" r="2.6"/></g>
+  <g id="pic-board"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M8 9h8M8 12.5h5"/><path d="M9 20l3-3 3 3"/></g>
+  <g id="pic-cup"><path d="M6 4h10v6a5 5 0 0 1-10 0z"/><path d="M16 5.5h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8.5 20h7M11 15v5"/></g>
+  <g id="pic-coin"><circle cx="12" cy="12" r="8"/><path d="M12 8.2v7.6M14.2 10H11a1.6 1.6 0 0 0 0 3.2h2a1.6 1.6 0 0 1 0 3.2H9.8"/></g>
+  <g id="pic-shirt"><path d="M9 4l3 2 3-2 4.5 2.5-1.8 3.6L16 9.4V20H8V9.4l-1.7.7L4.5 6.5z"/></g>
+  <g id="pic-sofa"><path d="M5 12V9a2 2 0 0 1 4 0v3h6V9a2 2 0 0 1 4 0v3"/><rect x="3.5" y="12" width="17" height="5.5" rx="2"/><path d="M6.5 17.5V19M17.5 17.5V19"/></g>
+  <g id="pic-egg"><path d="M12 4c3.3 0 6 4.4 6 8.2A6 6 0 0 1 6 12.2C6 8.4 8.7 4 12 4z"/></g>
+  <g id="pic-cam"><rect x="3.5" y="7" width="12.5" height="10" rx="2.5"/><path d="M16 11.5l4.5-2.8v6.6L16 12.5z"/></g>
+  <g id="pic-leaf"><path d="M19 5C10 5 5 9 5 15a4 4 0 0 0 4 4c6 0 10-5 10-14z"/><path d="M8.5 15.5c2.5-2.5 5-4 8-5"/></g>
+  <g id="pic-run"><circle cx="14.5" cy="5.5" r="2"/><path d="M8 20l3-4.5 3.5-2-1-4 3.5 3 3 .5"/><path d="M11 9L7.5 11l-.5 3"/></g>
+  <g id="pic-fish"><path d="M3.5 12c3-4 6.5-5.5 10-5.5S19.5 9 20.5 12c-1 3-3.5 5.5-7 5.5S6.5 16 3.5 12z"/><circle cx="9" cy="11" r=".9" fill="currentColor" stroke="none"/></g>
+  <g id="pic-ticket"><rect x="3.5" y="7" width="17" height="10" rx="2.5"/><path d="M9.5 7v10" stroke-dasharray="2 2.4"/></g>
+  <g id="pic-bus"><rect x="5" y="4.5" width="14" height="12" rx="2.5"/><path d="M5 11h14M8 20v-1.5M16 20v-1.5"/><circle cx="8.5" cy="14" r=".9" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14" r=".9" fill="currentColor" stroke="none"/></g>
+  <g id="pic-sun"><circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></g>
+  <g id="pic-user"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-5.6 7-5.6s6.2 1.8 7 5.6"/></g>
+  <g id="pic-map"><path d="M9 5L3.5 7v12L9 17l6 2 5.5-2V5L15 7z"/><path d="M9 5v12M15 7v12"/></g>
+  <g id="pic-heart"><path d="M12 19.5C6.5 15.8 4 13.2 4 10.2A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 8 2.2c0 3-2.5 5.6-8 9.3z"/></g>
+  <g id="pic-chart"><path d="M4.5 19h15"/><path d="M7.5 19V12M12 19V6.5M16.5 19v-4.5"/></g>
+  <g id="pic-key"><circle cx="8" cy="12" r="4"/><path d="M12 12h8M17.5 12v3M20 12v2.4"/></g>
+ </defs>
+</svg>
 <canvas id="cv"></canvas>
 <div class="hud">
   <div id="zone" class="g"><i class="dot"></i><div><b>캠퍼스</b><span class="sub">중앙 광장</span></div></div>
@@ -492,6 +647,12 @@
     <div class="sep"></div>
     <button data-do="wear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 3.5 12 6l3-2.5 5 3-2 3.5-1.6-.8V20H7.6V9.2L6 10 4 6.5l5-3Z"/></svg><em>옷장</em></button>
     <button data-do="view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></svg><em>시점</em></button>
+    <!-- 마이페이지와 코인은 수현 판이 상시 노출로 꺼내 둔 것입니다.
+         저쪽은 오른쪽 위 기둥이었는데, 이 껍데기는 아래 독이 유일한
+         상시 줄이라 여기로 옮깁니다 — 붙박이 위치가 아니라 "언제든
+         한 번에 연다" 가 취지입니다. -->
+    <button data-do="mypage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-5.6 7-5.6s6.2 1.8 7 5.6"/></svg><em>마이</em></button>
+    <button data-do="coins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.2v7.6M14.2 10H11a1.6 1.6 0 0 0 0 3.2h2a1.6 1.6 0 0 1 0 3.2H9.8"/></svg><em>코인</em></button>
     <button data-do="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 16.6h.01"/></svg><em>도움</em></button>
   </div>
 
@@ -1155,8 +1316,11 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyM') { e.preventDefault(); toggleMap(); return; }
   /* 시점을 키로도 돌립니다. 끌기만 되면 걷다가 손을 떼고 끌어야 해서
      한 손으로는 방향을 못 바꿉니다 — "움직이기 힘들다" 의 절반입니다. */
-  if (e.code === 'KeyZ' || e.code === 'Comma') { turnCam(-1); return; }
-  if (e.code === 'KeyX' || e.code === 'Period') { turnCam(1); return; }
+  /* e.repeat 을 거릅니다 — 누르고 있으면 운영체제가 초당 서른 번을
+     보내서 초당 16 라디안으로 화면이 팽팽 돌았습니다. 25번 반복이
+     예전엔 13.75 라디안(두 바퀴 반), 지금은 0.55 입니다. */
+  if (e.code === 'KeyZ' || e.code === 'Comma') { if (!e.repeat) turnCam(-1); return; }
+  if (e.code === 'KeyX' || e.code === 'Period') { if (!e.repeat) turnCam(1); return; }
   if (e.code === 'KeyC') { e.preventDefault(); openWardrobe(); return; }
   if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleHelp(); return; }
   if (PLACE.on) {
@@ -1195,7 +1359,7 @@ cv.addEventListener('pointermove', (e) => {
     /* 창이 열려 있으면 같은 움직임이 커서를 움직입니다 */
     if (CUR.live) { curMove(e.movementX, e.movementY); curHotCheck(); return; }
     /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**. */
-    yaw -= e.movementX * .0024;
+    yaw -= e.movementX * .0017;
     pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
     turned += Math.abs(e.movementX) * .0024; return;
   }
@@ -1476,6 +1640,12 @@ function setZone(a, b) {
 /* 자리에 걸린 창을 만듭니다 — ui.js 가 실제로 도는 것을 돌려줍니다 */
 function panelFor(s) {
   switch (s.panel) {
+    /* 아래 넷은 창 쪽에 다 만들어져 있는데 부르는 데가 없었습니다.
+       spots.js 가 panel 이름으로 가리키므로 여기서 이어 줍니다. */
+    case 'today': return UI.today();
+    case 'radio': return UI.radio({ bgm: BGM.on });
+    case 'calendar': return UI.calendar();
+    case 'tour': return UI.tour({ step: 0 });
     case 'timetable': return UI.timetable();
     case 'records': return UI.records();
     case 'card': return UI.studentCard();
@@ -2808,6 +2978,8 @@ elDock.addEventListener('click', (e) => {
   else if (k === 'chat') openChat();
   else if (k === 'wear') { if (panelOn && panelSpot?.panel === 'wardrobe') closePanel(); else openWardrobe(); }
   else if (k === 'view') toggleView();
+  else if (k === 'mypage') openPanel({ tag: '마이', title: '마이페이지', panel: 'mypage' });
+  else if (k === 'coins') openPanel({ tag: '지갑', title: '코인', panel: 'coins' });
   else if (k === 'help') toggleHelp();
 });
 let helpOn = false;
@@ -3055,17 +3227,25 @@ function tick(now) {
     const tooHigh = (ax, az) => groundAt(ax, az, P.y) - P.y > STEP_MAX;
     if (!hit(nx, P.z) && !tooHigh(nx, P.z)) P.x = nx;
     if (!hit(P.x, nz)) P.z = nz;
-    P.sp = Math.min(run, P.sp + dt * 8);
-    /* 앞으로 걸을 때만 카메라가 뒤로 따라옵니다.
-       옆걸음(A·D)에도 따라 돌면 카메라가 돌고 → 그 방향으로 다시 걷게 되어
-       제자리에서 빙글빙글 돕니다. 그래서 **앞 입력이 셀 때만** 돕니다. */
-    if (!first && iz > .55 && Math.abs(ix) < .55 && performance.now() > camHold) {
-      yaw = smoothAngle(yaw, P.dir, 1 - Math.pow(.28, dt));
-      if (room) clampRoomYaw();
-    }
+    /* 출발 0.18초 · 멈춤 0.12초. 예전 값(8·10)은 두 프레임이면 최고
+       속도라 스위치가 켜지듯 튀어나가고 뚝 섰습니다. */
+    P.sp = Math.min(run, P.sp + dt / .18);
+    /* 카메라가 걷는 방향을 따라 돌던 줄이 여기 있었습니다. 지웠습니다.
+       없어도 되는 이유 — 걷는 방향을 **카메라 기준**으로 풀기 때문에
+       (wx = -ix·cos yaw + iz·sin yaw) W 만 누르면 P.dir 이 yaw 와 정확히
+       같습니다. 따라 돌 각도 자체가 없습니다.
+       있으면 안 되는 이유 — 옆 성분이 조금이라도 섞이면 카메라가 그
+       각도를 쫓아 돌고, 돌아간 카메라 기준으로 다시 걸으니 각도가 그대로
+       남습니다. 멈추지 않고 계속 돕니다. 자판은 옆 성분이 0 아니면 45도라
+       가려져 있었지만, 눌러서 걸어갈 때는 길이 방향을 정하므로 각도가 커서
+       화면이 통째로 휙휙 돌아갔습니다.
+       카메라는 이제 사람이 끌거나 Z·X 를 누를 때만 돕니다. */
   } else {
-    P.sp = Math.max(0, P.sp - dt * 10);
+    P.sp = Math.max(0, P.sp - dt / .12);
   }
+  /* yaw 를 매 프레임 한 바퀴 안으로 접습니다. 끌면 더해지기만 해서 몇 분이면
+     수백 라디안이 되는데, 큰 수에서 sin·cos 을 하면 정밀도가 깎입니다. */
+  yaw = ((yaw + Math.PI) % TAU + TAU) % TAU - Math.PI;
   const step = Math.hypot(P.x - px, P.z - pz);
   /* 1.5초 동안 거의 못 나아가면 자동 걷기를 접습니다 */
   if (goTo) {
@@ -3221,7 +3401,11 @@ function tick(now) {
       } else n.el.style.display = 'none';
     } else n.el.style.display = 'none';
   });
-  if (room && npcNear && !near) {
+  /* 자리보다 가까울 때만 사람이 이깁니다. 위에서 npcD < spotD 비교로
+     spot 을 지워 두고도, 여기 덮어쓰기가 그 결과를 안 보고 무조건 사람
+     문구를 썼습니다 — 계산대 위에 서 있어도 "미르에게 말 걸기" 가 뜨고,
+     상점 여섯 자리 중 넷이 그렇게 가려져 있었습니다. */
+  if (room && npcNear && !near && !spot) {
     elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
     elPrompt.classList.toggle('on', !panelOn && !SESS.on && !mapOn && !dlgOn);
   }
@@ -3281,7 +3465,10 @@ function tick(now) {
     cam.lookAt(L[3], L[4], L[5]);
     if (L[6]) { cam.fov = L[6]; cam.updateProjectionMatrix(); }
   } else if (first) {
-    cam.position.set(P.x, P.y + 1.84 + Math.sin(P.walk * TAU * 2) * .022 * P.sp, P.z);
+    /* 눈높이 1.84 는 키 1.9 짜리 몸에서 정수리 바로 아래라, 턱을 들면
+       천장이 코앞이었습니다. 흔들림도 절반으로 줄입니다 — 화면 전체가
+       흔들리는 것은 3인칭에서 캐릭터가 흔들리는 것보다 훨씬 셉니다. */
+    cam.position.set(P.x, P.y + 1.70 + Math.sin(P.walk * TAU * 2) * .011 * P.sp, P.z);
     const f = new THREE.Vector3(Math.sin(yaw), -Math.tan(pitch), Math.cos(yaw));
     cam.lookAt(cam.position.x + f.x * 10, cam.position.y + f.y * 10, cam.position.z + f.z * 10);
   } else {

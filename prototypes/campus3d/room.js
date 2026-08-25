@@ -32,6 +32,42 @@ export function P(c, r = .55) {
   return m;
 }
 
+/* 형상도 같은 이유로 나눠 씁니다.
+   의자 마흔 개를 놓으면서 똑같은 크기의 상자를 마흔 벌 새로 깎고
+   있었습니다. 굽고 나면 그리는 값은 같지만, 깎는 일은 방을 세우는
+   그 순간에 몰려서 — ExtrudeGeometry 가 방 하나에 천 번 넘게 돕니다 —
+   문 앞에서 화면이 한 번 멎습니다. 웹캠 자세 추정과 같은 탭이라
+   그 한 번이 그대로 렉으로 보입니다.
+
+   크기가 같으면 한 벌이면 됩니다. 놓는 자리는 메시마다 행렬이 따로
+   있으므로 겉보기는 하나도 안 달라집니다. 여러 벌 서는 가구
+   — 의자 · 서가 · 캐럴 · 책상 · 사물함 — 에서만 씁니다. */
+const GEOS = new Map();
+function geoBox(w, h, d, r) {
+  const k = 'b' + w + '|' + h + '|' + d + '|' + r;
+  let q = GEOS.get(k);
+  if (!q) GEOS.set(k, q = roundedBox(w, h, d, r));
+  return q;
+}
+function geoCyl(rt, rb, h, seg) {
+  const k = 'c' + rt + '|' + rb + '|' + h + '|' + seg;
+  let q = GEOS.get(k);
+  if (!q) GEOS.set(k, q = new THREE.CylinderGeometry(rt, rb, h, seg));
+  return q;
+}
+/** box() · cyl() 와 같은 자리에 같은 것을 놓되 형상만 공유합니다.
+    (bx 로 줄이면 서가 안에서 책 자리를 세는 bx 를 가립니다 — 한 번 가렸습니다.) */
+function sbox(p, w, h, d, r, mat, x, y, z) {
+  const m = new THREE.Mesh(geoBox(w, h, d, r), mat);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+  p.add(m); return m;
+}
+function scyl(p, rt, rb, h, seg, mat, x, y, z) {
+  const m = new THREE.Mesh(geoCyl(rt, rb, h, seg), mat);
+  m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+  p.add(m); return m;
+}
+
 /** 방 껍데기 — 바닥 무늬 · 벽 둘 · 걸레받이 · 몰딩 */
 export function shell(g, w, d, h, opt = {}) {
   const fa = opt.floorA || IN.floorA, fb = opt.floorB || IN.floorB;
@@ -137,17 +173,17 @@ export function window3(g, x, y, d, w = 1.9, h = 1.9) {
 /** 책장 — 칸마다 책등을 세웁니다. 책이 없으면 그냥 상자입니다. */
 export function shelf(g, x, z, ry, w = 2.0, h = 2.4) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, w, h, .48, .05, M(IN.woodDark, .78), 0, h / 2, 0);
-  box(p, w - .16, h - .16, .4, .04, M(IN.wood, .74), 0, h / 2, .06);
+  sbox(p, w, h, .48, .05, M(IN.woodDark, .78), 0, h / 2, 0);
+  sbox(p, w - .16, h - .16, .4, .04, M(IN.wood, .74), 0, h / 2, .06);
   const rows = 4;
   for (let r = 0; r < rows; r++) {
     const sy = .34 + r * ((h - .5) / rows);
-    box(p, w - .2, .07, .42, .02, M(IN.woodDark, .7), 0, sy, .08);
+    sbox(p, w - .2, .07, .42, .02, M(IN.woodDark, .7), 0, sy, .08);
     let bx = -w / 2 + .18;
     while (bx < w / 2 - .22) {
       const bw = .09 + ((bx * 37 + r * 13) % 5) * .02;
       const bh = .3 + ((bx * 53 + r * 7) % 4) * .05;
-      box(p, bw, bh, .3, .02, M(BOOKS[Math.abs(Math.round(bx * 17 + r * 3)) % BOOKS.length], .68),
+      sbox(p, bw, bh, .3, .02, M(BOOKS[Math.abs(Math.round(bx * 17 + r * 3)) % BOOKS.length], .68),
           bx + bw / 2, sy + .04 + bh / 2, .12);
       bx += bw + .015;
     }
@@ -157,10 +193,10 @@ export function shelf(g, x, z, ry, w = 2.0, h = 2.4) {
 /** 책상 — 상판 · 앞막이 · 다리 넷 */
 export function desk(g, x, z, ry, w = 2.2, d = 1.0, h = .78) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, w, .12, d, .04, M(IN.wood, .7), 0, h, 0);
-  box(p, w - .1, .2, d - .1, .03, M(IN.woodDark, .75), 0, h - .14, 0);
+  sbox(p, w, .12, d, .04, M(IN.wood, .7), 0, h, 0);
+  sbox(p, w - .1, .2, d - .1, .03, M(IN.woodDark, .75), 0, h - .14, 0);
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
-    cyl(p, .05, .06, h - .1, 8, M(IN.metal, .5), sx * (w / 2 - .16), (h - .1) / 2, sz * (d / 2 - .16)));
+    scyl(p, .05, .06, h - .1, 8, M(IN.metal, .5), sx * (w / 2 - .16), (h - .1) / 2, sz * (d / 2 - .16)));
   return p;
 }
 /** 의자 — 다리 넷 · 앉는 면 · 등받이 살 */
@@ -182,19 +218,19 @@ export function chair(g, x, z, ry, col = IN.wood) {
   regSeat(x, z, ry, 'chair');
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
-    cyl(p, .042, .05, .44, 8, M(IN.metal, .5), sx * .19, .22, sz * .19));
-  box(p, .52, .1, .52, .05, M(col, .68), 0, .48, 0);
-  box(p, .5, .5, .09, .05, M(col, .68), 0, .76, -.22);
-  box(p, .42, .1, .12, .04, M(IN.metalDark, .5), 0, .62, -.24);
+    scyl(p, .042, .05, .44, 8, M(IN.metal, .5), sx * .19, .22, sz * .19));
+  sbox(p, .52, .1, .52, .05, M(col, .68), 0, .48, 0);
+  sbox(p, .5, .5, .09, .05, M(col, .68), 0, .76, -.22);
+  sbox(p, .42, .1, .12, .04, M(IN.metalDark, .5), 0, .62, -.24);
   return p;
 }
 /** 긴 열람 탁자 — 가운데 칸막이가 서면 도서관 자리가 됩니다 */
 export function readTable(g, x, z, ry, w = 5.0) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, w, .14, 1.9, .05, M(IN.wood, .7), 0, .8, 0);
-  box(p, w - .1, .22, 1.8, .03, M(IN.woodDark, .75), 0, .64, 0);
-  [-1, 1].forEach((s) => box(p, .22, .8, 1.6, .05, M(IN.woodDark, .74), s * (w / 2 - .3), .4, 0));
-  box(p, w - .5, .6, .1, .04, M(0x4E7C52, .8), 0, 1.15, 0);        // 칸막이
+  sbox(p, w, .14, 1.9, .05, M(IN.wood, .7), 0, .8, 0);
+  sbox(p, w - .1, .22, 1.8, .03, M(IN.woodDark, .75), 0, .64, 0);
+  [-1, 1].forEach((s) => sbox(p, .22, .8, 1.6, .05, M(IN.woodDark, .74), s * (w / 2 - .3), .4, 0));
+  sbox(p, w - .5, .6, .1, .04, M(0x4E7C52, .8), 0, 1.15, 0);        // 칸막이
   return p;
 }
 /** 침대 — 틀 · 매트리스 · 이불 · 베개 */
@@ -501,13 +537,13 @@ export function poster(g, x, y, z, ry, w = .9, h = 1.2, col = 0x5B84C4, frame) {
 /** 사물함 — 뒤벽을 채웁니다 */
 export function lockers(g, x, z, ry, n = 4, col = 0x7FA8C4) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, n * .62 + .1, 1.9, .52, .05, M(IN.metalDark, .6), 0, .95, 0);
+  sbox(p, n * .62 + .1, 1.9, .52, .05, M(IN.metalDark, .6), 0, .95, 0);
   for (let i = 0; i < n; i++) {
     const dx = -n * .31 + .31 + i * .62;
     [0, 1].forEach((r) => {
-      box(p, .54, .86, .48, .04, M(col, .55), dx, .5 + r * .9, .04);
-      box(p, .3, .05, .5, .02, M(0x2A3A48, .4), dx, .82 + r * .9, .06);   // 통풍구
-      cyl(p, .04, .04, .12, 8, M(IN.metal, .35), dx + .18, .5 + r * .9, .28).rotation.x = Math.PI / 2;
+      sbox(p, .54, .86, .48, .04, M(col, .55), dx, .5 + r * .9, .04);
+      sbox(p, .3, .05, .5, .02, M(0x2A3A48, .4), dx, .82 + r * .9, .06);   // 통풍구
+      scyl(p, .04, .04, .12, 8, M(IN.metal, .35), dx + .18, .5 + r * .9, .28).rotation.x = Math.PI / 2;
     });
   }
   return p;
@@ -645,23 +681,37 @@ export function globe(g, x, y, z) {
 /** 열람 칸막이 자리(캐럴) — 도서관의 1인석 */
 export function carrel(g, x, z, ry) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, 1.2, .12, 1.0, .04, M(IN.wood, .7), 0, .78, 0);
-  box(p, 1.2, .74, .09, .04, M(IN.woodDark, .74), 0, 1.1, -.46);
-  [-1, 1].forEach((s) => box(p, .09, .58, 1.0, .04, M(IN.woodDark, .74), s * .56, 1.02, 0));
+  sbox(p, 1.2, .12, 1.0, .04, M(IN.wood, .7), 0, .78, 0);
+  sbox(p, 1.2, .74, .09, .04, M(IN.woodDark, .74), 0, 1.1, -.46);
+  [-1, 1].forEach((s) => sbox(p, .09, .58, 1.0, .04, M(IN.woodDark, .74), s * .56, 1.02, 0));
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
-    cyl(p, .045, .055, .72, 8, M(IN.metal, .5), sx * .5, .36, sz * .4));
-  box(p, .4, .06, .2, .02, M(IN.gold, .5), .3, 1.42, -.42);     // 작은 등
+    scyl(p, .045, .055, .72, 8, M(IN.metal, .5), sx * .5, .36, sz * .4));
+  sbox(p, .4, .06, .2, .02, M(IN.gold, .5), .3, 1.42, -.42);     // 작은 등
+  return p;
+}
+/** 검색 단말 — 도서관. 서가가 열 줄이 되면 "그 책이 어디 있는지" 를
+    물어볼 데가 있어야 합니다. 대출대까지 걸어가는 것 말고요. */
+export function kiosk(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  sbox(p, .74, .07, .5, .02, P(IN.metalDark, .5), 0, .035, 0);
+  sbox(p, .5, 1.0, .34, .05, P(IN.woodDark, .72), 0, .53, 0);
+  sbox(p, .66, .1, .46, .04, P(IN.woodLight, .6), 0, 1.06, 0);
+  /* 화면은 뒤로 눕힙니다. 똑바로 세우면 3/4 부감에서 테두리만 보입니다. */
+  sbox(p, .58, .46, .07, .03, P(0x3A3F4A, .5), 0, 1.32, .02).rotation.x = -.3;
+  sbox(p, .5, .38, .04, .02,
+      M(0x6EC6E0, .25, { emissive: 0x4EA8C8, emissiveIntensity: .55 }), 0, 1.33, .06).rotation.x = -.3;
+  scyl(p, .04, .04, .18, 10, P(IN.metal, .4), .22, 1.09, .16);        // 바코드 읽는 것
   return p;
 }
 /** 겹쳐 놓은 의자 */
 export function stackChairs(g, x, z, ry, n = 5, col = 0x9BB4D6) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   for (let i = 0; i < n; i++) {
-    box(p, .46, .08, .46, .04, M(col, .68), 0, .5 + i * .13, i * .04);
-    box(p, .44, .42, .07, .04, M(col, .68), 0, .74 + i * .13, -.2 + i * .04);
+    sbox(p, .46, .08, .46, .04, M(col, .68), 0, .5 + i * .13, i * .04);
+    sbox(p, .44, .42, .07, .04, M(col, .68), 0, .74 + i * .13, -.2 + i * .04);
   }
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
-    cyl(p, .035, .045, .48, 8, M(IN.metal, .45), sx * .17, .24, sz * .17));
+    scyl(p, .035, .045, .48, 8, M(IN.metal, .45), sx * .17, .24, sz * .17));
   return p;
 }
 /** 거울 */
@@ -866,6 +916,23 @@ export function podium(g, x, z, ry) {
   mic.position.set(.28, 1.5, .04); p.add(mic);
   return p;
 }
+/** 강단 스피커 — 본관. spots.js 는 이 자리를 부르는데 실물이 없어서,
+    빈 바닥 위에 말풍선만 떠 있었습니다. 이 방이 왜 음악이 나오는
+    방인지가 그 자리에서 안 보였습니다.
+    기둥이 얇아서 키가 2 미터여도 뒤가 다 보입니다. */
+export function speaker(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  scyl(p, .3, .36, .07, 14, P(IN.metalDark, .5), 0, .035, 0);
+  scyl(p, .05, .05, 1.0, 8, P(IN.metal, .45), 0, .53, 0);
+  sbox(p, .54, 1.05, .44, .05, P(0x3A3F4A, .6), 0, 1.5, 0);
+  /* 우퍼 · 트위터 — 통 하나만 세워 두면 스피커가 아니라 검은 상자입니다 */
+  scyl(p, .2, .2, .07, 18, P(0x2A2036, .5), 0, 1.26, .21).rotation.x = Math.PI / 2;
+  scyl(p, .08, .08, .05, 14, P(IN.metal, .4), 0, 1.26, .25).rotation.x = Math.PI / 2;
+  scyl(p, .11, .11, .07, 14, P(0x2A2036, .5), 0, 1.78, .21).rotation.x = Math.PI / 2;
+  sbox(p, .38, .05, .12, .02, P(IN.metalDark, .5), 0, 1.94, .18);
+  scyl(p, .015, .015, .5, 6, P(0x2A2036, .5), .2, .3, -.2);          // 늘어진 줄
+  return p;
+}
 /** 배식대 — 학생회관 식당 */
 export function trayCounter(g, x, z, ry, w = 4.0) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
@@ -1052,12 +1119,12 @@ export function displayTable(g, x, z, ry, w = 2.0, kind = 'cloth') {
 export function bench(g, x, z, ry, w = 3.0, col = IN.wood) {
   [-w / 4, w / 4].forEach((off) => regSeatLocal(x, z, ry, off, 0, 'bench'));
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, w, .2, 1.0, .08, M(col, .7), 0, .58, 0);
-  box(p, w, .74, .16, .06, M(col, .7), 0, .98, -.42);
-  box(p, w - .3, .1, .12, .04, M(col, .6), 0, 1.24, -.44);
+  sbox(p, w, .2, 1.0, .08, M(col, .7), 0, .58, 0);
+  sbox(p, w, .74, .16, .06, M(col, .7), 0, .98, -.42);
+  sbox(p, w - .3, .1, .12, .04, M(col, .6), 0, 1.24, -.44);
   [-1, 1].forEach((s) => {
-    box(p, .18, .58, .9, .05, M(IN.woodDark, .74), s * (w / 2 - .2), .3, 0);
-    box(p, .3, .12, 1.06, .05, M(IN.woodDark, .74), s * (w / 2 - .2), .06, 0);
+    sbox(p, .18, .58, .9, .05, M(IN.woodDark, .74), s * (w / 2 - .2), .3, 0);
+    sbox(p, .3, .12, 1.06, .05, M(IN.woodDark, .74), s * (w / 2 - .2), .06, 0);
   });
   return p;
 }

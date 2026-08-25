@@ -8,6 +8,8 @@ const spots = readFileSync('prototypes/campus3d/spots.js', 'utf8')
 const world3d = readFileSync('prototypes/campus3d/index.html', 'utf8')
 const campus3d = readFileSync('prototypes/campus3d/campus.js', 'utf8')
 const ui3d = readFileSync('prototypes/campus3d/ui.js', 'utf8')
+const rooms3d = readFileSync('prototypes/campus3d/rooms.js', 'utf8')
+const chars3d = readFileSync('prototypes/campus3d/chars.js', 'utf8')
 
 const between = (source, start, end) => {
   const a = source.indexOf(start)
@@ -24,9 +26,11 @@ test('2D 월드의 미니게임은 모두 3D 공간에서 열 수 있다', () =>
     animalRunner: 'run',
     animalMatch3: 'match3',
   }
+  const retired = new Set(['eggMerge'])
 
   assert.ok(oldKeys.length >= 8, '2D 미니게임 목록을 충분히 읽지 못했습니다')
   for (const oldKey of oldKeys) {
+    if (retired.has(oldKey)) continue
     const key = aliases[oldKey] || oldKey
     assert.match(games, new RegExp(`\\b${key}:\\s*\\{`), `${oldKey}의 3D 게임 정의가 없습니다`)
     assert.match(spots, new RegExp(`game:\\s*'${key}'`), `${oldKey}를 여는 3D 장소가 없습니다`)
@@ -41,7 +45,7 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
     campusBoard: ['panel', 'notice-school'], animalFind: ['game', 'memory'],
     postureRun: ['game', 'postureRun'], trackRace: ['game', 'trackRace'],
     pondFish: ['game', 'pondFish'], bookSort: ['game', 'bookSort'],
-    animalRunner: ['game', 'run'], eggMerge: ['game', 'eggMerge'],
+    animalRunner: ['game', 'run'],
     giraffeNeck: ['game', 'giraffeNeck'], animalMatch3: ['game', 'match3'],
     aboutLibrary: ['room', 'library'], aboutMainhall: ['room', 'mainhall'],
     aboutUnion: ['room', 'union'], arcade: ['room', 'arcade'],
@@ -50,7 +54,8 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
     settings: ['panel', 'mypage'],
   }
 
-  assert.deepEqual(oldKeys.filter((key) => !parity[key]), [], '대응표에 없는 2D 패널이 생겼습니다')
+  assert.deepEqual(oldKeys.filter((key) => key !== 'eggMerge' && !parity[key]), [],
+    '대응표에 없는 2D 패널이 생겼습니다')
   for (const [oldKey, [kind, key]] of Object.entries(parity)) {
     const source = kind === 'game' ? games + spots : kind === 'panel' ? world3d + spots : world3d
     const needle = kind === 'game' ? new RegExp(`(?:\\b${key}:\\s*\\{|game:\\s*'${key}')`)
@@ -80,4 +85,16 @@ test('동아리 상점은 카테고리와 3D 상품 그림을 함께 쓴다', ()
   for (const label of ['앉기', '바닥', '수납', '살림', '취미', '초록·불'])
     assert.match(ui3d, new RegExp(`['"]${label}['"]`), `가구 가게 ${label} 카테고리가 없습니다`)
   assert.match(ui3d, /data-egg="\$\{esc\(species\)\}"/, '종별 알 상품 카드가 없습니다')
+  assert.match(rooms3d, /const eggDisplay = \[/, '알 여덟 개의 실제 진열이 없습니다')
+  assert.equal((between(rooms3d, 'const eggDisplay = [', '];').match(/0x[0-9A-F]{6}/g) || []).length, 8,
+    '알 진열 수가 여덟 개가 아닙니다')
+  assert.doesNotMatch(games + spots, /eggMerge|거북이 알 합치기/,
+    '삭제한 알 합치기 게임이 정의나 상호작용 위치에 남아 있습니다')
+})
+
+test('시작 뒤 무거운 작업과 과한 좌우 보행 흔들림을 남기지 않는다', () => {
+  assert.doesNotMatch(world3d, /setTimeout\(shootMap,\s*900\)/, '플레이 중 큰 지도 렌더가 남아 있습니다')
+  assert.doesNotMatch(world3d, /2400 \+ i \* 650/, '플레이 중 실내 순차 빌드가 남아 있습니다')
+  assert.match(chars3d, /root\\\.position\$\/i/, 'GLB 루트 수평 흔들림 보정이 없습니다')
+  assert.match(chars3d, /P\.torso\.rotation\.y = s \* \.045/, '몸통 좌우 흔들림 값이 다시 커졌습니다')
 })

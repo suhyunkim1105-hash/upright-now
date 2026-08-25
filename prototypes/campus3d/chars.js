@@ -85,7 +85,26 @@ export function loadCharacters(THREE_, GLTFLoader, base = './assets/chars/') {
         g.scene.traverse((o) => {
           if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; }
         });
-        GLB_CACHE.set(sp, { scene: g.scene, clips: g.animations || [] });
+        /* 걷기·달리기 클립의 root 뼈가 좌우 이동과 회전을 이미 들고
+           있습니다. 월드에서도 몸 전체를 이동시키므로 이것까지 더하면
+           한 걸음마다 골반이 좌우로 크게 밀립니다. 다리·팔 동작은 두고
+           root 의 수평 이동과 회전만 첫 프레임에 고정합니다. */
+        const clips = g.animations || [];
+        clips.filter((c) => /^(walk|run)$/i.test(c.name)).forEach((c) => {
+          c.tracks.forEach((tr) => {
+            if (/root\.position$/i.test(tr.name) && tr.values.length >= 3) {
+              const x0 = tr.values[0], z0 = tr.values[2];
+              for (let i = 0; i < tr.values.length; i += 3) {
+                tr.values[i] = x0; tr.values[i + 2] = z0;
+              }
+            } else if (/root\.quaternion$/i.test(tr.name) && tr.values.length >= 4) {
+              const q0 = tr.values.slice(0, 4);
+              for (let i = 0; i < tr.values.length; i += 4)
+                for (let k2 = 0; k2 < 4; k2++) tr.values[i + k2] = q0[k2];
+            }
+          });
+        });
+        GLB_CACHE.set(sp, { scene: g.scene, clips });
         res(sp);
       }, undefined, () => res(null));
     })))
@@ -1142,9 +1161,6 @@ export function stride(g, t, sp) {
   /* 빠르면 뛰기. 걷기를 빠르게 돌리는 게 아니라 **다른 동작**입니다 —
      상체가 앞으로 기울고 한 걸음마다 몸이 뜹니다. */
   if (P.glb) { glbPlay(g, sp > .72 ? 'run' : 'walk', t, Math.max(.55, Math.min(1.7, sp * 1.25))); return; }
-  /* 빠르면 뛰기. 걷기를 빠르게 돌리는 게 아니라 **다른 동작**입니다 —
-     상체가 앞으로 기울고 한 걸음마다 몸이 뜹니다. */
-  if (P.glb) { glbPlay(g, sp > .72 ? 'run' : 'walk', t, Math.max(.55, Math.min(1.7, sp * 1.25))); return; }
   /* 판 하나는 다리가 없으니 걷는 대신 **들썩입니다**. 완전히 가만히
      미끄러지면 얼음판 위를 밀려가는 것으로 보입니다. */
   if (P.sprite) {
@@ -1169,13 +1185,14 @@ export function stride(g, t, sp) {
   const bob = Math.abs(c) * .06 * k;
   P.torso.position.y = TORSO_Y + bob;
   P.torso.rotation.x = k * .11;
-  P.torso.rotation.y = s * .12;
+  /* 방향 전환처럼 보이지 않을 만큼만 체중을 옮깁니다. */
+  P.torso.rotation.y = s * .045;
   P.torso.rotation.z = 0;
   P.head.position.y = HEAD_Y + bob * .8;
   P.head.position.z = 0;
   P.head.rotation.x = -k * .07;
   if (!g.userData.looking) P.head.rotation.y *= .82;
-  P.head.rotation.z = -s * .05;
+  P.head.rotation.z = -s * .018;
   blink(P, t * 1.4 + (g.userData.seed || 0), g.userData.seed || 0);
   if (P.neck) { P.neck.rotation.x = 0; P.neck.position.z = -.005; P.neck.position.y = NECK_Y; }
 }
@@ -1200,8 +1217,6 @@ export function look(g, ax, ay, k = .35) {
 }
 
 export function idle(g, t, seed = 0) {
-  { const P = g.userData.parts;
-    if (P && P.glb) { glbPlay(g, 'idle', t, 1); return; } }
   { const P = g.userData.parts;
     if (P && P.glb) { glbPlay(g, 'idle', t, 1); return; } }
   { const P = g.userData.parts;

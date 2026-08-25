@@ -33,7 +33,6 @@ export const GAMES = {
   match3: { title: '동물 셋 지우기', how: '옆 칸과 바꿔 같은 동물 셋을 만듭니다' },
   run:    { title: '동물 러너', how: '↑ 로 뛰어서 장애물을 넘고 동전을 모읍니다' },
   n2048:  { title: '2048', how: '방향키로 같은 수를 붙여 2048 을 만듭니다' },
-  eggMerge: { title: '거북이 알 합치기', how: '같은 알을 합쳐 왕관 알을 만듭니다' },
   suika:  { title: '동물 합치기', how: '같은 동물을 붙이면 더 큰 동물이 됩니다 — 수박게임 방식' },
   /* 열쇠는 2D 판 이름 그대로입니다(giraffeNeck · trackRace · pondFish · bookSort).
      spots.js 가 어느 판을 보고 적든 같은 이름으로 걸립니다. */
@@ -104,7 +103,7 @@ export function openGame(key, onDone, ctx) {
   if (host) close(0);
   closing = false; lastScore = 0; done = onDone; teardown = null;
   const body = shell(key);
-  ({ memory, match3, run, n2048, eggMerge, suika, giraffeNeck, trackRace, pondFish, bookSort,
+  ({ memory, match3, run, n2048, suika, giraffeNeck, trackRace, pondFish, bookSort,
      postureRun })[key](body, ctx);
   const esc = (e) => { if (e.code === 'Escape') { e.preventDefault(); close(lastScore); } };
   addEventListener('keydown', esc);
@@ -319,113 +318,6 @@ function n2048(body) {
   }
   start();
 }
-
-/* ---------- ④-2 거북이 알 합치기 ----------
-   2D 판의 eggMerge 규칙과 타일 순서를 그대로 씁니다. 일반 2048 과 닮았지만
-   왕관 알(6단계)이 완주 조건이고, 손가락/화면 단추도 지원하므로 별도 게임으로
-   남깁니다. 2D 에서는 PANELS 에만 있고 월드의 자리에 연결되지 않았는데,
-   3D 상점의 알 받침에 연결해 실제로 찾아가서 할 수 있게 합니다. */
-const EGG_TILES = ['', '🥚', '🐢', '🌿', '🦒', '✨', '👑'];
-const EGG_COLORS = ['', '#F5DFB2', '#ACD19B', '#91C8A8', '#F0C566', '#E3B2E8', '#FFE6A3'];
-function eggMerge(body) {
-  body.className = 'gbody';
-  body.innerHTML = `
-    <div role="group" aria-label="거북이 알 합치기" style="width:min(100%,390px);margin:auto">
-      <div class="egg-board" style="display:grid;grid-template-columns:repeat(4,1fr);gap:7px;
-        padding:8px;background:#A78360;border-radius:14px;aspect-ratio:1"></div>
-      <p class="egg-msg" aria-live="polite" style="min-height:20px;text-align:center;font-weight:700;
-        color:var(--ink2);margin:10px 0 6px">알을 합쳐 더 큰 동물로 진화시키세요.</p>
-      <div style="display:grid;grid-template-columns:repeat(3,52px);justify-content:center;gap:7px">
-        <span></span><button type="button" data-dir="up" aria-label="위로 이동">↑</button><span></span>
-        <button type="button" data-dir="left" aria-label="왼쪽으로 이동">←</button>
-        <button type="button" data-dir="down" aria-label="아래로 이동">↓</button>
-        <button type="button" data-dir="right" aria-label="오른쪽으로 이동">→</button>
-      </div>
-    </div>`;
-  const board = body.querySelector('.egg-board');
-  const msg = body.querySelector('.egg-msg');
-  let score = 0, won = false;
-
-  const empty = () => Array(16).fill(0);
-  let tb = empty();
-  const spawn = () => {
-    const slots = tb.map((v, i) => (v ? -1 : i)).filter((i) => i >= 0);
-    if (slots.length) tb[slots[Math.floor(Math.random() * slots.length)]] = Math.random() < .85 ? 1 : 2;
-  };
-  const line = (values) => {
-    const packed = values.filter(Boolean), out = [];
-    for (let i = 0; i < packed.length; i++) {
-      if (packed[i] === packed[i + 1]) {
-        out.push(packed[i] + 1); score += 2 ** (packed[i] + 1); i++;
-      } else out.push(packed[i]);
-    }
-    while (out.length < 4) out.push(0);
-    return out;
-  };
-  const draw = () => {
-    board.innerHTML = tb.map((v) => `<span aria-label="${v ? EGG_TILES[v] + ' ' + v + '단계' : '빈 칸'}"
-      style="display:flex;align-items:center;justify-content:center;border-radius:9px;
-      background:${v ? EGG_COLORS[v] : 'rgba(255,255,255,.24)'};font-size:clamp(24px,7vw,42px)">
-      ${EGG_TILES[v] || ''}</span>`).join('');
-    setScore(score); setTime('목표 👑');
-  };
-  const movable = () => tb.some((v, i) => !v
-    || (i % 4 < 3 && v === tb[i + 1]) || (i < 12 && v === tb[i + 4]));
-  const move = (dir) => {
-    if (won) return;
-    const before = tb.join(',');
-    if (dir === 'left' || dir === 'right') {
-      for (let r = 0; r < 4; r++) {
-        const row = tb.slice(r * 4, r * 4 + 4);
-        const moved = line(dir === 'right' ? row.reverse() : row);
-        tb.splice(r * 4, 4, ...(dir === 'right' ? moved.reverse() : moved));
-      }
-    } else {
-      for (let c = 0; c < 4; c++) {
-        const col = dir === 'down'
-          ? [tb[c + 12], tb[c + 8], tb[c + 4], tb[c]]
-          : [tb[c], tb[c + 4], tb[c + 8], tb[c + 12]];
-        const moved = line(col);
-        if (dir === 'down') moved.reverse();
-        moved.forEach((v, r) => { tb[r * 4 + c] = v; });
-      }
-    }
-    if (before === tb.join(',')) {
-      if (!movable()) { msg.textContent = '더 붙일 자리가 없어요.'; over('판이 가득 찼어요', `${score}점`, start); }
-      return;
-    }
-    spawn(); draw();
-    if (tb.some((v) => v >= 6)) {
-      won = true; msg.textContent = '왕관 알이 탄생했어요!';
-      over('왕관 알 완성!', `${score}점 · 2D 판과 같은 목표를 달성했어요`, start);
-    }
-  };
-  const start = () => {
-    tb = empty(); score = 0; won = false; spawn(); spawn();
-    msg.textContent = '알을 합쳐 더 큰 동물로 진화시키세요.'; draw();
-  };
-  body.addEventListener('click', (e) => {
-    const b = e.target.closest('button[data-dir]'); if (b) move(b.dataset.dir);
-  });
-  keyH = (e) => {
-    if (e.type !== 'keydown') return;
-    const dir = ({ ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right',
-      ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down' })[e.code];
-    if (!dir) return; e.preventDefault(); move(dir);
-  };
-  addEventListener('keydown', keyH);
-  let touch = null;
-  board.addEventListener('pointerdown', (e) => { touch = [e.clientX, e.clientY]; });
-  board.addEventListener('pointerup', (e) => {
-    if (!touch) return;
-    const dx = e.clientX - touch[0], dy = e.clientY - touch[1]; touch = null;
-    if (Math.hypot(dx, dy) < 24) return;
-    move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-  });
-  teardown = () => { touch = null; };
-  start();
-}
-
 
 /* ---------- ⑤ 동물 합치기 — 수박게임 방식 ----------
    물리는 **matter-js**(MIT, npm `matter-js@0.20.0` 그대로 vendor/에)가

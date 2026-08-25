@@ -338,13 +338,19 @@ export const ROOMS = {
     R.counter(g, -6.4, 5.7, 0, 3.0, IN.woodDark);
     R.counterTop(g, -6.4, 1.1, 5.5);
 
-    /* ─ 알 구역(오른쪽) ─ */
-    [[5.4, 0xF2D08A], [6.8, 0x9EDCEB], [8.2, 0xF2A0A0]].forEach(([x, c]) => R.eggStand(g, x, -5.2, c));
-    [[6.1, 0xC4EBA0], [7.5, 0xE8B8E0]].forEach(([x, c]) => R.eggStand(g, x, -3.2, c));
+    /* ─ 알 구역(오른쪽) ─
+       팝업에서 파는 여덟 종과 실제 선반 수도 같습니다. */
+    const eggDisplay = [
+      [5.2, -5.2, 0x78C98A], [6.5, -5.2, 0xE7AD45],
+      [7.8, -5.2, 0x4F6078], [9.0, -5.2, 0xDCA76E],
+      [5.2, -3.1, 0x72D62D], [6.5, -3.1, 0xC99972],
+      [7.8, -3.1, 0xD8C0A6], [9.0, -3.1, 0xDDE4EA],
+    ];
+    eggDisplay.forEach(([x, z, c]) => R.eggStand(g, x, z, c));
     R.wallShelf(g, 9.4, 2.6, -1.2, -Math.PI / 2, 2.0);
     R.counter(g, 6.4, 5.7, 0, 3.0, IN.woodDark);
     R.counterTop(g, 6.4, 1.1, 5.5);
-    R.displayTable(g, 8.6, -0.6, -.2, 1.8, 'egg');
+    /* 알 여덟 개가 상품 진열 자체라 별도 게임 탁자는 두지 않습니다. */
 
     /* ─ 가구 구역(앞쪽) ─ */
     R.sofa(g, -5.0, 4.6, Math.PI, 2.6, 0x9B7BD4);
@@ -361,7 +367,10 @@ export const ROOMS = {
     R.poster(g, 2.0, 3.0, -6.92, 0, 1.1, 1.4, 0x9B7BD4);
     R.bin(g, 3.0, 6.4);
     [-6.0, 0, 6.0].forEach((x) => { R.pendant(g, x, -3.6, 3.7, 0xF2C14E); R.pendant(g, x, 4.4, 3.7, 0xF2C14E); });
-    R.rug(g, 0, -1.0, 3.6, 6.0, 0xB05248, 0xF6E0D2);
+    /* 세 구역 바닥색도 팝업 포인트색과 맞춥니다. */
+    R.rug(g, -6.8, -2.5, 5.8, 8.0, 0xB05248, 0xF6D5CF);
+    R.rug(g,  6.8, -3.8, 5.8, 6.0, 0x4F7E8D, 0xDCECEF);
+    R.rug(g,  0.0,  3.9, 7.0, 3.5, 0x725B9A, 0xE6DDF2);
     R.plant(g, 9.4, 6.2, 1.15); R.plant(g, -9.4, 6.2, 1.0);
 
   },

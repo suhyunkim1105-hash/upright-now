@@ -345,7 +345,10 @@
     border-radius:30px}
   #panel .ph{background:transparent;border-bottom:0;padding:22px 26px 6px}
   #panel.wide{width:min(920px,94vw)}
-  #panel.shop{width:min(1040px,95vw)}
+  #panel.shop{width:min(1040px,95vw);--store:var(--mint);--storeInk:var(--mintD)}
+  #panel.shop[data-store="wear"]{--store:#F6D5CF;--storeInk:#A6473D}
+  #panel.shop[data-store="furn"]{--store:#E6DDF2;--storeInk:#665087}
+  #panel.shop[data-store="egg"]{--store:#DCECEF;--storeInk:#376B78}
   #panel .pclose{position:absolute;right:22px;top:20px;width:44px;height:44px;border:0;
     border-radius:15px;background:var(--clay2);box-shadow:var(--clayUp2);color:var(--cInk2);
     font:500 30px/1 var(--ff);cursor:pointer;z-index:3;transition:transform .12s,box-shadow .12s}
@@ -434,7 +437,9 @@
     box-shadow:var(--clayUp2);padding:12px 14px;color:var(--cInk3);font:800 13px var(--ff);
     cursor:pointer;text-align:left}
   .board-tabs button{text-align:center;font-size:14px}
-  .board-tabs button.on,.shop-tabs button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .board-tabs button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .shop-tabs button.on{background:var(--store);color:var(--storeInk);box-shadow:var(--clayIn)}
+  #panel.shop .tag{background:var(--store);color:var(--storeInk)}
   .board-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:12px 14px;
     border-radius:17px;background:var(--clay2);box-shadow:var(--clayIn)}
   .board-head b{font-size:15px;color:var(--cInk)}
@@ -1930,6 +1935,8 @@ function openPanel(s) {
     elPanel.querySelector('.bd').innerHTML = v.html;
     elPanel.classList.toggle('wide', !!v.wide);
     elPanel.classList.toggle('shop', !!v.shop);
+    elPanel.dataset.store = s.panel === 'wear-shop' ? 'wear'
+      : s.panel === 'furn-shop' ? 'furn' : s.panel === 'egg-shop' ? 'egg' : '';
     if (v.on) v.on(elPanel, draw);
     paintThumbs(elPanel);
   };
@@ -1940,6 +1947,7 @@ function openPanel(s) {
 }
 function closePanel() {
   clearThumbs();
+  delete elPanel.dataset.store;
   elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
@@ -2793,7 +2801,9 @@ function drawBlocks(g, k, big) {
 const MAPSHOT = { img: null, cam: null };
 function shootMap() {
   try {
-    const S = 1100;
+    /* 표시 크기는 620px 입니다. 1100px PNG 는 시작 뒤 한 프레임을 길게
+       멈췄습니다. 768px 이면 지도 글자와 건물 윤곽에 충분합니다. */
+    const S = 768;
     const r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     r2.setSize(S, S, false);
     r2.outputColorSpace = THREE.SRGBColorSpace;
@@ -3877,7 +3887,6 @@ NPC.forEach((n) => n.rig.position.set(n.d.route[n.leg][0], 0, n.d.route[n.leg][1
 aimSun(P.x, P.z);
 requestAnimationFrame(tick);
 if (!SAVE.seenTour) setTimeout(() => { if (!panelOn && !SAVE.seenTour) openTour(0); }, 1400);
-setTimeout(() => $('#load').classList.add('gone'), 260);
 toast('기린캠퍼스', '중앙 광장');
 
 idbarPaint();
@@ -3885,15 +3894,17 @@ checkStreak();
 if (SAVE.hour !== undefined && SAVE.hour !== null) { SKY.setHour(SAVE.hour); setClockHour(SAVE.hour); }
 pullWeather();
 setInterval(pullWeather, 1800000);
-/* 로드가 끝나면: ① 지도 사진 한 장 ② 방 여섯을 미리 지어 둡니다.
-   문에 닿고서야 지으면 그 순간 화면이 몇 백 ms 얼었습니다 —
-   "들어갈 때 몇 초 깨진다" 의 정체가 이것입니다. */
-setTimeout(shootMap, 900);
+/* 지도와 실내 여섯은 로딩막이 내려오기 전에 한 번만 만듭니다.
+   전에는 플레이 시작 뒤 지도와 방을 0.65초 간격으로 구워 첫 7초 동안
+   규칙적으로 멎었습니다. */
+shootMap();
 /* 커서를 처음부터 켭니다 — syncLock 은 시점·창이 바뀔 때만 도는데,
    그전까지 3인칭에서 우리 커서가 없어 윈도우 커서가 나왔습니다. */
 syncLock();
-['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k, i) =>
-  setTimeout(() => { try { buildRoom(k); } catch {} }, 2400 + i * 650));
+['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k) => {
+  try { buildRoom(k); } catch {}
+});
+setTimeout(() => $('#load').classList.add('gone'), 120);
 if (SAVE.shadow === false) setShadows(false);
 window.__ready = true;
 window.__P = P;

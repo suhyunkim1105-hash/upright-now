@@ -180,6 +180,18 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   box-shadow: var(--clay-well);
 }
 
+/* 설정 줄 — 라벨과 값을 양끝으로. 붙여 두면 "인원4명" 으로 읽힙니다. */
+.setline { display: grid; gap: 7px; padding: var(--s-2) 0; }
+.setline .k { display: flex; align-items: baseline; justify-content: space-between; font-weight: 700; font-size: 14px; }
+.setline .k b { font-size: 15px; color: var(--teal-700); font-variant-numeric: tabular-nums; }
+/* 옆 판에 들어가는 작은 판본 — 손잡이와 길을 한 단씩 줄입니다 */
+.range.sm { height: 14px; }
+.range.sm::-webkit-slider-runnable-track { height: 14px; }
+.range.sm::-moz-range-track { height: 14px; }
+.range.sm::-moz-range-progress { height: 14px; }
+.range.sm::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -5px; }
+.range.sm::-moz-range-thumb { width: 24px; height: 24px; }
+
 /* ---------------- 드래그바 ----------------
    홈(파인 것)에 알약(솟은 것)이 굴러다니는 물건입니다. 클레이의 두 방향을
    한 컨트롤에서 같이 쓰는 유일한 자리라, 둘이 서로를 설명합니다 —
@@ -440,22 +452,9 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   <main class="body">
 
     <!-- ============ 1. 방 만들기 (인원 → 시간 → 말하기) ============ -->
-    <section class="view wiz" id="v-wiz" aria-labelledby="wiz-h">
-      <span class="wiz-track" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"
-            aria-label="방 만들기 진행" id="wiz-track"></span>
-
-      <h2 id="wiz-h"></h2>
-      <p class="lede" id="wiz-p"></p>
-      <div class="picks" id="wiz-picks" role="group" aria-labelledby="wiz-h"></div>
-
-      <div class="wiz-acts">
-        <button class="btn ghost" type="button" id="wiz-back">이전</button>
-        <button class="go" type="button" id="wiz-next">다음</button>
-      </div>
-      <!-- 권한을 거절하거나 기기가 없을 때 여기에 한 줄 뜹니다. 아무 말도
-           안 하면 "눌렀는데 안 되네" 로 끝납니다. -->
-      <p class="media-note" id="media-note" role="status" hidden></p>
-    </section>
+    <!-- 방 만들기 마법사가 있던 자리입니다. 넉 장이 전부 한 줄짜리
+         선택이라 대기실 옆 판으로 옮겼습니다 — 코드를 나눠 준 뒤에
+         시간을 바꾸는 것이 마법사에서는 처음부터 다시 걷는 일이었습니다. -->
 
     <!-- ============ 2. 대기실 ============ -->
     <section class="view wait" id="v-wait" aria-labelledby="wait-h" hidden>
@@ -473,8 +472,25 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
         <div class="tiles" id="tiles"></div>
       </div>
 
+      <!-- 방 설정을 **여기서** 합니다.
+           넉 장짜리 마법사를 거쳐야 이 화면에 닿았는데, 넷 다 한 줄짜리
+           선택이라 한 판에 다 들어갑니다. 마법사는 되돌리려면 처음부터
+           다시 걸어야 했고("방 설정 다시"가 그 뜻이었습니다), 코드를
+           나눠 준 뒤에 시간을 바꾸는 흔한 일이 아예 안 됐습니다. -->
       <aside class="side" aria-labelledby="me-h">
-        <h3 id="me-h">들어가기 전에</h3>
+        <h3 id="me-h">방 설정</h3>
+
+        <div class="setline">
+          <span class="k">인원<b id="v-seats">4명</b></span>
+          <input class="range sm" type="range" id="r-seats" min="1" max="10" step="1" value="4"
+                 aria-label="인원">
+        </div>
+
+        <div class="setline">
+          <span class="k">시간<b id="v-min">50분</b></span>
+          <input class="range sm" type="range" id="r-min" min="10" max="120" step="5" value="50"
+                 aria-label="시간">
+        </div>
 
         <div class="setrow">
           <span class="k" id="k-mic">마이크<small>켜고 들어가요</small></span>
@@ -485,17 +501,18 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
         </div>
 
         <div class="setrow">
-          <span class="k" id="k-cam">자세 보기 켜기<small>영상은 이 브라우저 안에서만 봐요</small></span>
+          <span class="k" id="k-cam">카메라<small>끄면 캐릭터가 앉아요</small></span>
           <span class="sw">
             <input type="checkbox" id="s-cam" role="switch" aria-labelledby="k-cam">
             <span class="track"></span><span class="knob"></span>
           </span>
         </div>
 
-        <p class="lede" id="recap" style="margin:var(--s-3) 0 0;font-size:13.5px"></p>
-        <button class="go wide" type="button" id="start" style="margin-top:var(--s-3)">모두 준비되면 시작</button>
-        <button class="btn ghost" type="button" id="back-wiz" style="width:100%;margin-top:8px">방 설정 다시</button>
-        <p class="say" id="say" role="status"></p>
+        <button class="go wide" type="button" id="start" style="margin-top:var(--s-3)">시작</button>
+        <!-- 권한을 거절하거나 기기가 없을 때 한 줄. 아무 말도 안 하면
+           "눌렀는데 안 되네" 로 끝납니다. -->
+      <p class="media-note" id="media-note" role="status" hidden></p>
+      <p class="say" id="say" role="status"></p>
       </aside>
     </section>
 
@@ -615,64 +632,14 @@ write('girin.inviteroom', S);
    떠 있는데 그걸 문장으로 또 읽어 주는 것은 설명이 아니라 소음입니다.
    "나중에 못 바꾼다" 는 남습니다 — 되돌릴 수 없는 것은 미리 말해야
    합니다. 나머지는 뺍니다. */
-const STEPS = [
-  {
-    key: 'seats', h: '몇 명이 앉을까요', p: '나중에 못 바꿔요',
-    range: [1, 10, 1], unit: '명',
-    marks: [[1, '혼자'], [4, '기본'], [10, '최대']],
-  },
-  {
-    key: 'minutes', h: '얼마나 앉을까요',
-    range: [10, 120, 5], unit: '분',
-    marks: [[25, '짧게'], [50, '기본'], [120, '길게']],
-  },
-  {
-    key: 'talk', h: '말하면서 할까요',
-    opts: [[true, '자유롭게'], [false, '집중만']], labels: ['이야기하며', '조용히'],
-  },
-  {
-    key: 'cam', h: '얼굴을 보여 줄까요', p: '끄면 캐릭터가 대신 앉아요',
-    opts: [[true, '서로 보여요'], [false, '캐릭터로']], labels: ['카메라 켜고', '카메라 끄고'],
-  },
-];
+/* 마법사가 묻던 넷(인원·시간·말하기·카메라)은 대기실 옆 판이 대신합니다. */
 let step = 0;
 
-function wizPaint() {
-  const st = STEPS[step];
-  $('wiz-h').textContent = st.h;
-  $('wiz-p').textContent = st.p || '';
-  $('wiz-p').hidden = !st.p;
-  /* 자국 개수를 STEPS 에서 만듭니다 — 마크업에 손으로 적어 두면 단계를
-     더할 때 여기가 뒤처집니다. 실제로 넷이 됐는데 셋이 그려져 있었습니다. */
-  const tr = $('wiz-track');
-  if (tr.children.length !== STEPS.length) {
-    tr.innerHTML = STEPS.map(() => '<i></i>').join('');
-    tr.setAttribute('aria-valuemax', String(STEPS.length));
-  }
-  tr.setAttribute('aria-valuenow', String(step + 1));
-  [...tr.children].forEach((el, i) => el.classList.toggle('on', i <= step));
-  $('wiz-back').hidden = step === 0;
-  $('wiz-next').textContent = step === STEPS.length - 1 ? '방 만들기' : '다음';
+/* 마법사를 안 거칩니다. 넷 다 한 줄짜리 선택이라 대기실 옆 판에 그대로
+   들어갔고, 거기서는 되돌리기도 그냥 다시 끄는 것입니다. */
+addEventListener('DOMContentLoaded', () => { bindWait(); toWait(); });
 
-  /* 범위를 묻는 단계는 드래그바, 나머지는 타일 */
-  if (st.range) { paintRange(st); return; }
 
-  $('wiz-picks').innerHTML = st.opts.map(([v, note], i) => {
-    const label = st.labels ? st.labels[i] : v + (st.unit || '');
-    return '<button class="pick" type="button" data-v="' + esc(String(v)) + '"'
-      + ' aria-pressed="' + String(S[st.key] === v) + '">'
-      + '<b>' + esc(label) + '</b><span>' + esc(note) + '</span></button>';
-  }).join('');
-
-  $('wiz-picks').querySelectorAll('.pick').forEach((b) => {
-    b.addEventListener('click', () => {
-      const raw = b.dataset.v;
-      S[st.key] = raw === 'true' ? true : raw === 'false' ? false : Number(raw);
-      write('girin.inviteroom', S);
-      wizPaint();
-    });
-  });
-}
 
 /* ---------------- 드래그바 ----------------
    `<input type="range">` 를 씁니다. 직접 만들면 키보드(화살표·Home·End),
@@ -681,35 +648,7 @@ function wizPaint() {
 
    값은 바 위에 큰 숫자로 띄웁니다. 손잡이 안에 넣으면 끌 때 손가락에
    가려서, 정작 조절하는 동안 값이 안 보입니다. */
-function paintRange(st) {
-  const [lo, hi, step] = st.range;
-  const cur = Math.min(hi, Math.max(lo, Number(S[st.key]) || lo));
-  const marks = (st.marks || []).map(([v, lab]) =>
-    '<span class="mk" style="--p:' + ((v - lo) / (hi - lo)) + '">' + esc(lab) + '</span>').join('');
-  $('wiz-picks').innerHTML =
-    '<div class="rangewrap">'
-    + '<output class="rangeval" id="rv"><b>' + cur + '</b>' + esc(st.unit || '') + '</output>'
-    + '<input class="range" type="range" id="rin" min="' + lo + '" max="' + hi + '"'
-    + ' step="' + step + '" value="' + cur + '"'
-    + ' aria-label="' + esc(st.h) + '">'
-    + '<div class="marks">' + marks + '</div>'
-    + '</div>';
 
-  const inp = $('rin');
-  const paint = () => {
-    const v = Number(inp.value);
-    /* 채운 만큼 색이 차오릅니다 — 손잡이 위치만으로는 "지금 어디쯤" 이
-       안 읽힙니다. */
-    inp.style.setProperty('--fill', ((v - lo) / (hi - lo) * 100) + '%');
-    $('rv').innerHTML = '<b>' + v + '</b>' + esc(st.unit || '');
-  };
-  inp.addEventListener('input', () => {
-    S[st.key] = Number(inp.value);
-    write('girin.inviteroom', S);
-    paint();
-  });
-  paint();
-}
 
 /* 단계도 화면입니다. 자국을 안 남기면 2단계에서 뒤로가기를 누를 때
    1단계가 아니라 이전 페이지로 갑니다. */
@@ -722,21 +661,8 @@ addEventListener('popstate', () => {
   /* 세션 중에는 뒤로 못 갑니다 — 시계가 도는 중에 화면만 물러나면
      시간이 어디로 갔는지 알 수 없습니다. */
   if (!$('v-sess').hidden || !$('v-done').hidden) { mark(!$('v-done').hidden ? 6 : 5); return; }
-  if (i < STEPS.length) { $('v-wait').hidden = true; $('v-wiz').hidden = false; step = i; wizPaint(); }
-});
-
-$('wiz-next').addEventListener('click', () => {
-  if (step < STEPS.length - 1) { step += 1; mark(step); wizPaint(); return; }
-  /* 조용히를 골랐으면 마이크가 꺼진 채로 시작합니다 — 고른 것과 다르게
-     켜져 있으면 첫 마디가 나가고 나서야 압니다. */
-  if (!S.talk) S.mic = false;
-  write('girin.inviteroom', S);
+  /* 화면이 대기실·세션·끝 셋뿐이라 뒤로가기는 대기실로 돌아갑니다 */
   toWait();
-});
-$('wiz-back').addEventListener('click', () => { if (step > 0) history.back(); });
-$('back-wiz').addEventListener('click', () => {
-  $('v-wait').hidden = true; $('v-wiz').hidden = false;
-  step = 0; wizPaint(); $('wiz-next').focus();
 });
 
 /* ---------------- 참가자 ----------------
@@ -776,13 +702,53 @@ function paintTiles(el) {
    랜딩·월드와 그림이 서로 달랐습니다. */
 const CLAY = { turtle: 'turtle', giraffe: 'giraffe', penguin: 'penguin', frog: 'frog' };
 
+/* ---------------- 대기실 조작 ----------------
+   여기서 바꾼 값은 **바로** 저장되고 화면에 반영됩니다. 코드를 나눠 준
+   뒤에 시간을 바꾸는 것이 가장 흔한 일인데, 마법사 시절에는 그러려면
+   처음부터 다시 걸어야 했습니다. */
+function bindWait() {
+  const num = (id, key, unit, out) => {
+    const el = $(id);
+    el.value = S[key];
+    const paint = () => {
+      const v = Number(el.value);
+      el.style.setProperty('--fill', ((v - el.min) / (el.max - el.min) * 100) + '%');
+      $(out).textContent = v + unit;
+    };
+    el.addEventListener('input', () => {
+      S[key] = Number(el.value);
+      write('girin.inviteroom', S);
+      paint();
+      /* 인원을 줄이면 빈 자리도 줄어야 합니다 */
+      if (key === 'seats') paintTiles($('tiles'));
+    });
+    paint();
+  };
+  num('r-seats', 'seats', '명', 'v-seats');
+  num('r-min', 'minutes', '분', 'v-min');
+
+  const sw = (id, key) => {
+    const el = $(id);
+    el.checked = !!S[key];
+    el.addEventListener('change', () => {
+      S[key] = el.checked;
+      /* 마이크를 켜면 이야기하는 방입니다 — 둘을 따로 물어보면 "조용히"
+         인데 마이크가 켜진 방이 생깁니다. */
+      if (key === 'mic') S.talk = el.checked;
+      write('girin.inviteroom', S);
+      PEOPLE[0].mic = S.mic;
+      paintTiles($('tiles'));
+    });
+  };
+  sw('s-mic', 'mic');
+  sw('s-cam', 'cam');
+}
+
 function toWait() {
   mark(3);
-  $('v-wiz').hidden = true;
   $('v-wait').hidden = false;
   $('code').textContent = S.code;
   $('who').textContent = (ROOM.nickname || '나') + ' 님의 방';
-  $('recap').textContent = S.seats + '명 · ' + S.minutes + '분 · ' + (S.talk ? '이야기하며' : '조용히');
   $('s-mic').checked = S.mic;
   $('s-cam').checked = S.cam;
   PEOPLE[0].mic = S.mic;
@@ -1025,10 +991,11 @@ function finish() {
 $('b-leave').addEventListener('click', finish);
 $('d-card').addEventListener('click', () => { location.href = '../mypage/index.html#sessions'; });
 $('d-again').addEventListener('click', () => {
-  $('v-done').hidden = true; $('v-wiz').hidden = false;
-  step = 0; wizPaint();
+  $('v-done').hidden = true;
+  /* 한 번 더 하면 코드가 새로 나옵니다 — 끝난 방 코드로 누가 들어오면
+     이미 없는 자리에 앉습니다. */
   S.code = makeCode(); write('girin.inviteroom', S);
-  $('wiz-next').focus();
+  toWait();
 });
 $('d-home').addEventListener('click', () => { location.href = '../lobby/index.html'; });
 
@@ -1037,7 +1004,6 @@ $('close').addEventListener('click', () => {
   location.href = '../lobby/index.html';
 });
 
-wizPaint();
 </script>
 
 <!-- 오른쪽 세로 레일. 로비는 제목줄 × 가 맡습니다. -->

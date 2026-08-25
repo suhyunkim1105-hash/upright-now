@@ -1,0 +1,3899 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>기린캠퍼스 3D</title>
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<style>
+  /* ══════════════════════════════════════════════════════════
+     화면 위 껍데기 — 한 벌로 다시 짰습니다.
+
+     전 판이 별로였던 이유는 취향이 아니라 **구조** 였습니다.
+       · 크림색 상자 여섯 개가 네 귀퉁이에 따로 떠 있어 위계가 없었습니다
+       · 종·옷 고르는 줄이 화면 아래에 **항상** 깔려 있었습니다(설정인데)
+       · 조작키 설명이 늘 켜져 있어 화면이 시끄러웠습니다
+       · 미니맵이 초록 동그라미라 지도로 읽히지 않았습니다
+       · 얼굴 창과 이름표가 서로 떨어져 있어 한 덩어리로 안 보였습니다
+     그래서 ─ 어두운 유리 한 겹으로 통일하고, 오른쪽 위에 한 기둥,
+     아래 가운데에 한 줄(독)로 모았습니다. 설정은 전부 창 안으로 넣었습니다.
+     ══════════════════════════════════════════════════════════ */
+  :root{
+    --gl:rgba(19,23,30,.66); --gl2:rgba(26,31,40,.86); --gl3:rgba(255,255,255,.10);
+    --ln:rgba(255,255,255,.14); --ln2:rgba(255,255,255,.07);
+    --tx:#F3F6F9; --tx2:rgba(243,246,249,.60); --tx3:rgba(243,246,249,.38);
+    --acc:#35E0C6; --acc2:#19B9A2; --warn:#F5C451; --bad:#FF7E6E; --ok:#74E294;
+    --paper:#FFFCF5; --ink:#222A33; --ink2:#5C6672; --pl:rgba(34,42,51,.12);
+    --r:15px; --r2:11px;
+    --sh:0 12px 34px rgba(6,10,17,.34), 0 1px 0 rgba(255,255,255,.09) inset;
+    --shp:0 24px 60px rgba(6,10,17,.30), 0 2px 8px rgba(6,10,17,.14);
+    --ff:"Wanted Sans Variable","Wanted Sans","Pretendard","Apple SD Gothic Neo",sans-serif;
+  }
+  *{box-sizing:border-box}
+  /* 윈도우 커서를 화면 전체에서 끕니다.
+
+     전 판은 1인칭 잠금 중에만 우리 커서를 그렸고, 3인칭에서는 OS 의
+     흰 화살표가 그대로 보였습니다. 같은 화면 안에서 커서가 둘로
+     갈리면 그 순간 "브라우저 안의 웹 페이지" 로 돌아옵니다.
+
+     cursor:none 을 * 에 걸어야 합니다 — html,body 에만 걸면 button 이나
+     input 이 자기 cursor 를 다시 켭니다(위쪽 규칙들이 pointer 를 줍니다). */
+  *{cursor:none !important}
+  html,body{margin:0;height:100%;overflow:hidden;background:#BFE4F2;color:var(--tx);
+    font-family:var(--ff);-webkit-user-select:none;user-select:none;touch-action:none;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  canvas#cv{display:block;width:100%;height:100%}
+  .hud{position:fixed;inset:0;pointer-events:none;z-index:2}
+
+  /* 유리 — 이 화면의 유일한 재질입니다 */
+  .g{background:var(--gl);border:1px solid var(--ln);border-radius:var(--r);
+    box-shadow:var(--sh);backdrop-filter:blur(16px) saturate(150%);
+    -webkit-backdrop-filter:blur(16px) saturate(150%)}
+  kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:19px;
+    padding:0 5px;background:rgba(255,255,255,.13);border:1px solid var(--ln);
+    border-bottom-width:2px;border-radius:6px;font:700 10.5px/1 var(--ff);color:var(--tx);
+    vertical-align:1px;letter-spacing:.01em}
+  .hud button{font-family:var(--ff)}
+
+  /* ── 왼쪽 위 · 지금 어디 ── */
+  #zone{position:absolute;left:16px;top:16px;display:flex;align-items:center;gap:10px;
+    padding:9px 15px 9px 12px}
+  #zone .dot{display:block;width:8px;height:8px;border-radius:50%;background:var(--acc);flex:none;
+    box-shadow:0 0 0 4px rgba(53,224,198,.18)}
+  #zone b{font-size:15.5px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+  #zone .sub{display:block;font-size:11px;color:var(--tx2);line-height:1.3;margin-top:1px}
+
+  /* ── 오른쪽 위 · 한 기둥 ── */
+  #stack{position:absolute;right:16px;top:16px;width:176px;display:flex;flex-direction:column;gap:10px}
+  .ghead{display:flex;align-items:center;gap:6px;padding:0 2px 7px;font-size:10.5px;
+    font-weight:800;color:var(--tx2);letter-spacing:.02em}
+  .ghead .sp{margin-left:auto;font-weight:700;color:var(--tx3)}
+  #mini{padding:9px}
+  #mini .wrap{position:relative;border-radius:var(--r2);overflow:hidden;background:#8FD8EE}
+  #mini canvas{display:block;width:100%;height:auto}
+  #mini .n{position:absolute;right:6px;top:5px;font:800 9.5px/1 var(--ff);color:rgba(255,255,255,.9);
+    text-shadow:0 1px 2px rgba(0,0,0,.45)}
+  #pip{padding:9px 9px 8px}
+  #pip .fr{position:relative;border-radius:var(--r2);overflow:hidden;height:120px;
+    background:radial-gradient(120% 100% at 50% 0%,#3B4A5C 0%,#222B37 100%)}
+  #pip canvas{display:block;width:100%;height:100%}
+  /* 카메라가 실제로 켜져 있다는 것을 눈으로 보여 줍니다 — 캐릭터만 있으면
+     "판정하는 척" 으로 보입니다. 작게, 구석에. */
+  #pipcam{position:absolute;right:6px;bottom:6px;width:52px;height:39px;object-fit:cover;
+    border-radius:7px;border:1px solid var(--ln);display:none;transform:scaleX(-1);
+    box-shadow:0 2px 8px rgba(6,10,17,.4);z-index:2}
+  #pip .row{display:flex;align-items:center;gap:6px;margin-top:7px;padding:0 2px}
+  #pip .nm{font-size:11.5px;font-weight:800;letter-spacing:-.01em}
+  #pip .st{margin-left:auto;padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:800;
+    background:rgba(116,226,148,.20);color:var(--ok);transition:.25s}
+  #pip .st.warn{background:rgba(245,196,81,.20);color:var(--warn)}
+  #pip .st.bad{background:rgba(255,126,110,.20);color:var(--bad)}
+  #net{display:flex;align-items:center;gap:6px;padding:7px 12px;font-size:10.5px;font-weight:700;
+    color:var(--tx2)}
+  #net i{width:6px;height:6px;border-radius:50%;background:var(--tx3);display:block;flex:none}
+  #net.on i{background:var(--ok);box-shadow:0 0 0 3px rgba(116,226,148,.20)}
+  #net b{margin-left:auto;font-weight:800;color:var(--tx3)}
+
+  /* ── 아래 가운데 · 독 ── */
+  #dock{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;
+    align-items:center;gap:4px;padding:6px;pointer-events:auto}
+  #dock button{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;
+    width:52px;padding:7px 0 5px;border:0;background:transparent;color:var(--tx2);
+    border-radius:11px;cursor:pointer;transition:.13s}
+  #dock button:hover{background:var(--gl3);color:var(--tx)}
+  #dock button.on{background:var(--acc);color:#08251F}
+  #dock button svg{width:19px;height:19px;display:block}
+  #dock button em{font-style:normal;font-size:9px;font-weight:800;letter-spacing:.01em}
+  #dock .sep{width:1px;height:26px;background:var(--ln2);margin:0 3px}
+  #prompt{position:absolute;left:50%;bottom:92px;transform:translateX(-50%) translateY(6px);
+    display:flex;align-items:center;gap:8px;padding:9px 16px 9px 11px;font-size:13.5px;
+    font-weight:700;opacity:0;transition:.16s cubic-bezier(.2,.9,.3,1);white-space:nowrap}
+  #prompt.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #prompt em{font-style:normal;display:grid;place-items:center;width:22px;height:22px;
+    border-radius:7px;background:var(--acc);color:#08251F;font-weight:800;font-size:11.5px}
+
+  /* ── 오른쪽 아래 · 상태 ── */
+  /* 조준점 — 잠겨 있을 때만. 커서가 사라졌는데 겨누는 데가 안 보이면
+     그것대로 답답합니다. 가운데 점 하나와 얇은 링. */
+  #xhair{position:fixed;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;
+    z-index:60;pointer-events:none;opacity:0;transition:opacity .16s}
+  #xhair.on{opacity:1}
+  /* 게임 안 커서 — 잠금을 유지한 채 창을 조작합니다.
+     pointer-events:none 이라야 자기 밑의 버튼을 가리지 않습니다. */
+  /* 자체 커서 — 잠겨 있든 아니든 늘 이것만 보입니다 */
+  #gcur{position:absolute;left:0;top:0;z-index:400;pointer-events:none;opacity:0;
+    /* 테가 없으니 그림자가 바탕에서 떼어 놓는 몫을 혼자 합니다 */
+    filter:drop-shadow(0 2px 6px rgba(10,40,36,.55)) drop-shadow(0 0 1px rgba(10,40,36,.5));
+    transition:opacity .12s}
+  #gcur.on{opacity:1}
+  #gcur svg{position:absolute;left:0;top:0;width:32px;height:32px;transition:transform .1s,opacity .1s}
+  #gcur .ring{opacity:0;transform:translate(-14px,-14px) scale(.7)}
+  #gcur .arrow{opacity:1;transform:translate(-2px,-1px)}
+  /* 누를 수 있는 것 위 — 고리로 바뀝니다 */
+  #gcur.hot .arrow{opacity:0;transform:translate(-2px,-1px) scale(.7)}
+  #gcur.hot .ring{opacity:1;transform:translate(-14px,-14px) scale(1)}
+  /* 누르는 동안 살짝 눌립니다 — 클릭이 먹었는지 눈으로 압니다 */
+  #gcur.press svg{transform:translate(-2px,-1px) scale(.84)}
+  #gcur.press .ring{transform:translate(-14px,-14px) scale(.84)}
+  /* 시점을 돌리는 동안 — 커서를 숨깁니다.
+
+     돌리는 내내 화살표가 화면을 가로지르면 "무언가를 끌고 있다" 로
+     보이지, "둘러보고 있다" 로 안 보입니다. 게다가 마우스가 화면
+     가장자리에 닿으면 거기서 멈춰 버려 **입력이 끊긴 것처럼 느껴집니다** —
+     실제로는 아래 포인터 잠금이 그 한계를 없앱니다. */
+  #gcur.look{opacity:0}
+  #gcur.look .arrow,#gcur.look .ring{opacity:0}
+  #xhair::before,#xhair::after{content:'';position:absolute;border-radius:50%}
+  #xhair::before{inset:0;border:1.5px solid rgba(255,255,255,.5);
+    box-shadow:0 0 0 1px rgba(0,0,0,.28) inset}
+  #xhair::after{inset:9px;background:#fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
+  /* 조준점 — 마우스가 잠겨 있을 때만. 커서가 사라졌는데 어디를
+     겨누는지 안 보이면 그것대로 답답합니다. */
+  #xhair{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;
+    z-index:60;pointer-events:none;opacity:0;transition:opacity .16s}
+  #xhair.on{opacity:1}
+  #xhair::before,#xhair::after{content:'';position:absolute;border-radius:50%}
+  #xhair::before{inset:0;border:1.5px solid rgba(255,255,255,.52);
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.26)}
+  #xhair::after{inset:9px;background:#fff;box-shadow:0 0 3px rgba(0,0,0,.5)}
+  #foot{position:absolute;right:16px;bottom:18px;display:flex;align-items:center;gap:8px;
+    padding:6px 11px;font-size:10.5px;font-weight:700;color:var(--tx2)}
+  #foot .fps{color:var(--tx3);font-variant-numeric:tabular-nums}
+  #help{position:absolute;right:16px;bottom:56px;width:230px;padding:12px 14px;display:none}
+  #help.on{display:block}
+  #help h4{margin:0 0 8px;font-size:11px;font-weight:800;color:var(--tx2);letter-spacing:.03em}
+  #help .r{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11.5px;color:var(--tx2)}
+  #help .r span{margin-left:auto;color:var(--tx)}
+
+  /* ── 위 가운데 · 나 ── */
+  #idbar{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:flex;
+    align-items:center;gap:9px;padding:7px 14px;font-size:12px}
+  #idbar b{font-weight:800;font-size:12.5px}
+  #idbar i{width:1px;height:12px;background:var(--ln)}
+  #idbar .sc{color:var(--tx2);font-weight:600}
+  #idbar .tm{display:none;font-style:normal;font-family:var(--ff);font-weight:800;
+    color:var(--acc);font-variant-numeric:tabular-nums;padding-left:2px}
+  #idbar .tm.on{display:inline}
+
+  /* ── 알림 ── */
+  #toast{position:absolute;left:50%;top:26%;transform:translateX(-50%) translateY(6px);
+    text-align:center;opacity:0;transition:.4s;pointer-events:none}
+  #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast b{display:inline-block;padding:9px 20px;border-radius:99px;background:var(--gl2);
+    border:1px solid var(--ln);box-shadow:var(--sh);backdrop-filter:blur(14px);
+    font-size:19px;font-weight:800;letter-spacing:-.02em}
+  #toast span{display:block;margin-top:8px;font-size:12px;color:var(--tx);
+    text-shadow:0 1px 6px rgba(6,10,17,.6)}
+
+  /* ── 이름표 · 말풍선 ── */
+  #tags{position:absolute;inset:0;overflow:hidden}
+  .tag3{position:absolute;transform:translate(-50%,-100%);padding:3px 9px;border-radius:99px;
+    background:var(--gl2);border:1px solid var(--ln);font:700 10.5px/1.4 var(--ff);color:var(--tx);
+    white-space:nowrap;box-shadow:0 3px 10px rgba(6,10,17,.28);backdrop-filter:blur(8px)}
+  .say3{position:absolute;transform:translate(-50%,-100%);padding:6px 11px;border-radius:12px;
+    background:var(--paper);color:var(--ink);font:600 12px/1.45 var(--ff);
+    max-width:180px;white-space:normal;box-shadow:0 6px 18px rgba(6,10,17,.26)}
+  .say3::after{content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);
+    border:6px solid transparent;border-top-color:var(--paper);border-bottom:0}
+  .emo3{position:absolute;transform:translate(-50%,-100%);font-size:26px;
+    filter:drop-shadow(0 3px 5px rgba(6,10,17,.4))}
+  #bub{position:absolute;transform:translate(-50%,-100%);padding:7px 13px;border-radius:12px;
+    background:var(--paper);color:var(--ink);font:700 12.5px/1 var(--ff);opacity:0;transition:.2s;
+    white-space:nowrap;box-shadow:0 6px 18px rgba(6,10,17,.26)}
+  #bub.on{opacity:1}
+  #bub::after{content:'';position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);
+    border:6px solid transparent;border-top-color:var(--paper);border-bottom:0}
+
+  /* ── 대화 ── */
+  #dlg{position:absolute;left:50%;bottom:92px;transform:translateX(-50%) translateY(8px);
+    width:min(500px,92vw);padding:15px 18px 13px;opacity:0;transition:.16s;pointer-events:none}
+  #dlg.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #dlg .who{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  #dlg .who b{font-size:14px;font-weight:800}
+  #dlg .who span{font-size:10.5px;color:var(--acc);padding:2px 8px;border-radius:99px;
+    background:rgba(53,224,198,.14);font-weight:700}
+  #dlg p{margin:0;font-size:14px;line-height:1.65;color:var(--tx)}
+  #dlg .more{margin-top:10px;font-size:10.5px;color:var(--tx3)}
+
+  /* ── 대화 ── */
+  /* ── 말 거는 창도 찰흙 ──
+     창은 전부 찰흙으로 바꿨는데 사람과 말할 때만 검은 유리로 남아
+     있었습니다. 한 세계 안에서 재질이 둘이면 둘 중 하나는 남의 것으로
+     보입니다. 말풍선 꼬리를 하나 답니다 — 화면 아래에 떠 있는 상자가
+     누구 말인지는 꼬리가 말해 줍니다. */
+  #dlg{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);
+    width:min(500px,92vw);padding:17px 20px 15px;opacity:0;transition:.16s;pointer-events:none;
+    background:var(--clay);border:0;border-radius:24px;
+    box-shadow:0 22px 48px -18px rgba(40,58,84,.46), inset 0 3px 0 rgba(255,255,255,.95),
+      inset 0 -4px 0 rgba(86,110,146,.13);backdrop-filter:none;-webkit-backdrop-filter:none}
+  #dlg::after{content:'';position:absolute;left:50%;bottom:-11px;width:22px;height:22px;
+    transform:translateX(-50%) rotate(45deg);background:var(--clay);border-radius:0 0 7px 0;
+    box-shadow:6px 6px 12px -6px rgba(40,58,84,.4)}
+  #dlg.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #dlg .who{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  #dlg .who b{font-size:15px;font-weight:800;color:var(--cInk)}
+  #dlg .who span{font-size:10.5px;color:var(--mintD);padding:4px 10px;border-radius:99px;
+    background:var(--mint);font-weight:700;box-shadow:var(--clayIn)}
+  #dlg p{margin:0;font-size:14.5px;line-height:1.68;color:var(--cInk2)}
+  #dlg .more{margin-top:12px;font-size:10.5px;color:var(--cInk3)}
+  #dlg .more kbd{background:var(--clay2);border:0;box-shadow:var(--clayIn);color:var(--cInk2)}
+
+
+  /* ── 종이 창 ── */
+  #panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
+    width:min(470px,92vw);max-height:84vh;overflow:auto;padding:0;opacity:0;
+    pointer-events:none;transition:.18s cubic-bezier(.2,.9,.3,1);background:var(--paper);
+    color:var(--ink);border:0;border-radius:20px;box-shadow:var(--shp)}
+  #panel.on{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
+  #panel .ph{position:sticky;top:0;background:var(--paper);padding:18px 22px 12px;
+    border-bottom:1px solid var(--pl);border-radius:20px 20px 0 0;z-index:1}
+  #panel .tag{display:inline-block;padding:3px 9px;border-radius:99px;background:var(--ink);
+    color:var(--paper);font-size:10px;font-weight:800;letter-spacing:.03em}
+  #panel h3{margin:9px 0 0;font-size:21px;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
+  #panel .bd{padding:16px 22px 6px}
+  #panel .x{padding:10px 22px 18px;font-size:10.5px;color:var(--ink2)}
+  #panel .x kbd{background:rgba(34,42,51,.08);border-color:var(--pl);color:var(--ink2)}
+  #panel p{margin:0 0 6px;font-size:13.5px;line-height:1.65;color:#3A434E}
+  #panel .note{margin-top:12px;font-size:11.5px;color:var(--ink2);line-height:1.6}
+  table.tt{width:100%;border-collapse:separate;border-spacing:3px;font-size:11px}
+  table.tt th{font-weight:800;color:var(--ink2);font-size:11px;padding:2px}
+  table.tt tbody th{text-align:right;padding-right:6px;white-space:nowrap}
+  table.tt tbody th b{display:block;font-size:11px}
+  table.tt tbody th i{font-style:normal;font-size:9.5px;color:var(--ink2)}
+  button.tt{width:100%;min-height:31px;border:1.5px dashed var(--pl);background:transparent;
+    border-radius:9px;font:700 11px/1.2 var(--ff);color:#B9B2A5;cursor:pointer;padding:3px}
+  button.tt.on{border-style:solid;border-color:transparent;color:#fff}
+  .kv{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;
+    border-bottom:1px solid var(--pl);font-size:13px;color:var(--ink2)}
+  .kv b{font-size:15px;font-weight:800;color:var(--ink)}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:64px;margin-top:14px;
+    padding:0 2px;border-bottom:2px solid var(--pl)}
+  .bars .bar{flex:1;display:flex;align-items:flex-end}
+  .bars .bar i{display:block;width:100%;border-radius:4px 4px 0 0}
+  .buys{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  button.buy{display:flex;flex-direction:column;align-items:center;gap:6px;border:1.5px solid var(--pl);
+    background:transparent;border-radius:13px;padding:10px 11px;cursor:pointer;
+    font:700 10.5px/1 var(--ff);color:var(--ink2);transition:.12s}
+  button.buy:hover{border-color:rgba(34,42,51,.3)}
+  button.buy.on{border-color:var(--ink);color:var(--ink);background:rgba(34,42,51,.04)}
+  button.buy .sw{width:32px;height:32px;border-radius:10px;display:block}
+  ul.feed{list-style:none;margin:0;padding:0}
+  ul.feed li{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--pl);
+    font-size:13px;color:var(--ink)}
+  ul.feed li b{color:var(--acc2);font-size:11.5px;min-width:40px;padding-top:1px}
+  .card-id{display:flex;gap:14px;align-items:center;padding:14px;border-radius:14px;
+    background:linear-gradient(135deg,rgba(53,224,198,.14),rgba(91,132,196,.14));
+    border:1.5px solid var(--pl)}
+  .card-id .ph{width:64px;height:64px;border-radius:50%;background:#DCEBF2;flex:none}
+  .card-id .info b{display:block;font-size:17px;font-weight:800}
+  .card-id .info span{display:block;font-size:11.5px;color:var(--ink2)}
+  .flash{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:var(--ink);
+    color:#fff;padding:7px 14px;border-radius:99px;font:700 12px/1 var(--ff)}
+  /* 옷장 */
+  .wr{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+  .wr button{border:1.5px solid var(--pl);background:transparent;color:var(--ink2);
+    border-radius:99px;padding:6px 12px;font:700 12px/1 var(--ff);cursor:pointer;transition:.12s}
+  .wr button:hover{border-color:rgba(34,42,51,.3);color:var(--ink)}
+  .wr button.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+  .wr button.sw{width:34px;height:34px;padding:0;border-radius:11px;border-width:2px}
+  .wr button.sw.on{border-color:var(--ink);transform:scale(1.08)}
+  .lbl{font-size:11.5px;font-weight:800;color:var(--ink2);margin:16px 0 8px;letter-spacing:.02em;
+    display:flex;align-items:center;gap:8px}
+  .lbl::after{content:'';flex:1;height:1px;background:var(--pl)}
+  .lbl:first-child{margin-top:0}
+  #panel input.nick{width:100%;border:1.5px solid var(--pl);border-radius:11px;padding:9px 12px;
+    font:700 14px var(--ff);color:var(--ink);background:rgba(34,42,51,.03);outline:none}
+  #panel input.nick:focus{border-color:var(--acc2);background:#fff}
+
+  /* ══════════════════════════════════════════════════════
+     클레이 — 창의 재질
+
+     여기 있던 것은 종이였습니다. 흰 바닥에 1.5px 실선 테두리, 표와
+     줄글. 3D 월드 위에 종이 문서가 뜨는 꼴이라 창만 다른 앱 같았습니다.
+
+     찰흙은 **테두리로 모양을 만들지 않습니다.** 밝은 쪽에서 빛이
+     들어오고 반대쪽에 그늘이 지는 것으로 두께가 보입니다. 그래서
+     그림자를 넷으로 씁니다 — 바깥 아래 그늘 · 바깥 위 하이라이트 ·
+     안쪽 위 밝은 선 · 안쪽 아래 어두운 선. 테두리는 뺍니다.
+
+     눌린 것(고른 것)은 색을 채우는 대신 **안으로 들어갑니다**.
+     찰흙을 손가락으로 누른 자국이라, 어느 것이 눌려 있는지가
+     색맹인 사람에게도 보입니다.
+     ══════════════════════════════════════════════════════ */
+  :root{
+    /* 찰흙의 색. 처음에 크림(#FBF6EC)으로 뒀는데 베이지가 너무 셌습니다 —
+       월드 자체가 하늘·잔디·물이라 창만 따뜻한 쪽으로 떨어져 나왔습니다.
+       흰색에 파랑을 아주 조금 섞은 쪽으로 옮깁니다. 그림자도 갈색이 아니라
+       **남색 계열**로 져야 같은 빛 아래 있는 것으로 보입니다. */
+    --clay:#F6F9FD;                       /* 창 바닥 */
+    --clay2:#EAF0F8;                      /* 한 단 낮은 면 */
+    --clay3:#DAE3EF;                      /* 눌린 면 */
+    --clayUp:0 10px 22px -8px rgba(58,80,112,.30), 0 -4px 12px -6px rgba(255,255,255,.95),
+             inset 0 2px 0 rgba(255,255,255,.96), inset 0 -3px 0 rgba(86,110,146,.13);
+    --clayUp2:0 5px 12px -5px rgba(58,80,112,.26), inset 0 1.5px 0 rgba(255,255,255,.95),
+             inset 0 -2px 0 rgba(86,110,146,.12);
+    --clayIn:inset 0 3px 7px rgba(62,84,118,.22), inset 0 -1.5px 0 rgba(255,255,255,.75);
+    /* 글자도 갈색을 뺍니다 */
+    --cInk:#22303F; --cInk2:#3F4E60; --cInk3:#79879A;
+    --mint:#B7EBE1; --mintD:#12867A;
+    --peach:#FBD6CE; --peachD:#B75844;
+    --lilac:#DCD8F6; --lilacD:#6355B0;
+    --lemon:#F2E7B4; --lemonD:#8A7620;
+    --sky:#CCE1F8; --skyD:#2A66A6;
+  }
+  #panel{background:var(--clay);border:0;
+    box-shadow:0 30px 70px -24px rgba(40,58,84,.44), 0 -6px 20px -10px rgba(255,255,255,.9),
+      inset 0 3px 0 rgba(255,255,255,.95), inset 0 -5px 0 rgba(86,110,146,.13);
+    border-radius:30px}
+  #panel .ph{background:transparent;border-bottom:0;padding:22px 26px 6px}
+  #panel .bd{padding:10px 26px 8px}
+  #panel .tag{background:var(--clay3);color:var(--cInk3);box-shadow:var(--clayIn);
+    padding:5px 12px;font-size:10.5px;letter-spacing:.04em}
+  #panel h3{margin:11px 0 0;font-size:22px}
+  #panel .x{padding:12px 26px 20px}
+  #panel p{color:var(--cInk2)}
+  #panel .note{background:var(--clay2);box-shadow:var(--clayIn);border-radius:16px;
+    padding:12px 14px;color:var(--cInk3);margin-top:14px}
+
+  /* 픽토그램 — 스물두 개가 한 벌이라 굵기를 여기서 한 번만 정합니다 */
+  .pic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;
+    stroke-linecap:round;stroke-linejoin:round}
+  .pic.lg{width:28px;height:28px;stroke-width:1.6}
+
+  /* 칸 — 줄글 대신 이걸 씁니다 */
+  .cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px;margin:4px 0 6px}
+  .cg.two{grid-template-columns:1fr 1fr}
+  .cc{display:flex;flex-direction:column;gap:7px;padding:14px 13px;border-radius:20px;
+    background:var(--clay2);box-shadow:var(--clayUp2);border:0;cursor:default;
+    font:700 12px/1.35 var(--ff);color:var(--cInk2);text-align:left;transition:transform .12s,box-shadow .12s}
+  button.cc{cursor:pointer}
+  button.cc:hover{transform:translateY(-2px)}
+  button.cc:active,.cc.on{box-shadow:var(--clayIn);background:var(--clay3);transform:none}
+  .cc .ic{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;
+    background:var(--mint);color:var(--mintD);box-shadow:var(--clayUp2)}
+  .cc.on .ic{box-shadow:none}
+  .cc b{font-size:14px;font-weight:800;color:var(--cInk);letter-spacing:-.01em}
+  .cc small{font-size:10.5px;font-weight:700;color:var(--cInk3);line-height:1.45}
+  .cc .big{font:800 22px/1 var(--ff);color:var(--cInk);letter-spacing:-.02em}
+  .ic.peach{background:var(--peach);color:var(--peachD)}
+  .ic.lilac{background:var(--lilac);color:var(--lilacD)}
+  .ic.lemon{background:var(--lemon);color:var(--lemonD)}
+  .ic.sky{background:var(--sky);color:var(--skyD)}
+
+  /* 줄 — 아이콘 + 이름 + 값. 표를 대신합니다 */
+  .rw{display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:17px;
+    background:var(--clay2);box-shadow:var(--clayUp2);margin-bottom:7px;
+    font:700 13px var(--ff);color:var(--cInk2);width:100%;border:0;text-align:left}
+  button.rw{cursor:pointer;transition:transform .12s}
+  button.rw:hover{transform:translateY(-1px)}
+  button.rw:active{box-shadow:var(--clayIn)}
+  .rw .ic{width:32px;height:32px;border-radius:11px;display:grid;place-items:center}
+  .rw .ic .pic{width:19px;height:19px}
+  .rw span.t{flex:1;min-width:0}
+  .rw span.t em{display:block;font-style:normal;font-size:10.5px;font-weight:700;color:var(--cInk3);margin-top:2px}
+  .rw span.v{font-weight:800;color:var(--cInk);font-size:13.5px;white-space:nowrap}
+
+  /* 채워지는 막대 */
+  .mtr{height:11px;border-radius:99px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
+  .mtr i{display:block;height:100%;border-radius:99px;background:var(--mintD);
+    box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5)}
+
+  /* 기존 부품도 같은 재질로 */
+  .kv{border-bottom:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:15px;
+    padding:10px 13px;margin-bottom:6px;color:var(--cInk3)}
+  .kv b{color:var(--cInk)}
+  .wr button{border:0;background:var(--clay2);box-shadow:var(--clayUp2);color:var(--cInk2);
+    padding:8px 14px;border-radius:99px}
+  .wr button:hover{color:var(--cInk);transform:translateY(-1px)}
+  .wr button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .wr button:disabled{opacity:.42;box-shadow:none;background:var(--clay3)}
+  .wr button.sw{box-shadow:var(--clayUp2);border:0}
+  .wr button.sw.on{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.55);transform:none}
+  button.buy{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:18px;
+    padding:12px 12px;color:var(--cInk2);gap:8px}
+  button.buy:hover{transform:translateY(-2px)}
+  button.buy.on,button.buy:active{box-shadow:var(--clayIn);background:var(--clay3)}
+  button.buy .sw{border-radius:12px;box-shadow:var(--clayUp2)}
+  .lbl{color:var(--cInk3);margin:18px 0 9px}
+  .lbl::after{background:rgba(86,110,146,.20)}
+  ul.feed li{border-bottom:0;background:var(--clay2);box-shadow:var(--clayUp2);
+    border-radius:15px;padding:10px 13px;margin-bottom:6px;color:var(--cInk2)}
+  ul.feed li b{color:var(--mintD)}
+  #panel input.nick,#panel select,#panel input[type=text]{border:0;background:var(--clay2);
+    box-shadow:var(--clayIn);border-radius:14px;padding:11px 13px;color:var(--cInk);
+    font:700 14px var(--ff);outline:none}
+  #panel input.nick:focus,#panel select:focus{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.4)}
+  button.tt{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:13px;
+    color:var(--cInk3)}
+  button.tt.on{box-shadow:var(--clayIn);color:#fff}
+  table.tt{border-spacing:5px}
+  table.tt th{color:var(--cInk3)}
+  .card-id{border:0;background:linear-gradient(135deg,var(--mint),var(--sky));
+    box-shadow:var(--clayUp);border-radius:22px;padding:16px}
+  .card-id .ph{box-shadow:var(--clayUp2)}
+
+  /* ── 지도 ── */
+  #map{position:absolute;inset:0;display:none;place-items:center;
+    background:rgba(12,17,24,.62);backdrop-filter:blur(5px);pointer-events:auto}
+  #map.on{display:grid}
+  #map .box{padding:14px;border-radius:22px;background:var(--gl2);border:1px solid var(--ln);
+    box-shadow:var(--shp);backdrop-filter:blur(18px)}
+  #map canvas{display:block;border-radius:16px;width:min(620px,86vmin);height:min(620px,86vmin);
+    cursor:pointer}
+  #map .cap{display:flex;align-items:center;gap:9px;margin:2px 6px 11px}
+  #map .cap b{font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--tx)}
+  #map .cap i{font-style:normal;font-size:11px;color:var(--tx2)}
+  #map .cap span{margin-left:auto;font-size:10.5px;color:var(--tx2)}
+  #map .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:11px 6px 2px;font-size:10.5px;
+    color:var(--tx2)}
+  #map .lg span{display:flex;align-items:center;gap:5px}
+  #map .lg i{width:9px;height:9px;border-radius:3px;display:block}
+
+  /* ── 자세 세션 ── */
+  #post{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);width:min(430px,92vw);
+    padding:14px 16px 13px;display:none}
+  #post.on{display:block}
+  #post .row{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  #post .st{padding:3px 10px;border-radius:99px;font-size:10.5px;font-weight:800;
+    background:rgba(116,226,148,.20);color:var(--ok);transition:.25s}
+  #post .st.warn{background:rgba(245,196,81,.20);color:var(--warn)}
+  #post .st.bad{background:rgba(255,126,110,.20);color:var(--bad)}
+  #post .nm{font-size:12.5px;font-weight:700;flex:1}
+  #post .tm{font-size:11.5px;color:var(--tx2);font-variant-numeric:tabular-nums}
+  #post .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+  #post .bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--ok);
+    transition:width .22s,background .25s}
+  #post .hint{margin-top:9px;font-size:10.5px;color:var(--tx2);line-height:1.55}
+  #post .hint em{font-style:normal;color:var(--tx3)}
+  #post button{margin-top:10px;border:0;background:var(--acc);color:#08251F;border-radius:99px;
+    padding:7px 15px;font:800 11.5px/1 var(--ff);cursor:pointer;pointer-events:auto}
+
+  /* ── 튜토리얼 ── */
+  #tut{position:absolute;left:50%;top:62px;transform:translateX(-50%);width:min(420px,92vw);
+    padding:13px 16px;display:none;pointer-events:auto}
+  #tut.on{display:block}
+  #tut .step{display:flex;align-items:center;gap:10px}
+  #tut .n{width:22px;height:22px;border-radius:8px;background:var(--acc);color:#08251F;
+    font:800 11px/22px var(--ff);text-align:center;flex:none}
+  #tut b{font-size:13.5px;font-weight:800;flex:1;letter-spacing:-.01em}
+  #tut .skip{border:0;background:transparent;color:var(--tx3);font:700 11px/1 var(--ff);
+    cursor:pointer;padding:4px}
+  #tut .skip:hover{color:var(--tx)}
+  #tut p{margin:7px 0 0 32px;font-size:11.5px;color:var(--tx2);line-height:1.55}
+  #tut .dots{display:flex;gap:4px;margin:10px 0 0 32px}
+  #tut .dots i{width:18px;height:3px;border-radius:2px;background:rgba(255,255,255,.16)}
+  #tut .dots i.on{background:var(--acc)}
+
+  /* ── 감정표현 바퀴 ── */
+  #emo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:300px;
+    display:none;pointer-events:auto}
+  #emo.on{display:block;animation:pop .18s cubic-bezier(.2,.9,.3,1)}
+  @keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+  #emo button{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:20px;
+    border:1px solid var(--ln);background:var(--gl2);box-shadow:var(--sh);backdrop-filter:blur(14px);
+    cursor:pointer;font-size:24px;line-height:1;display:grid;place-items:center;transition:.12s}
+  #emo button:hover{transform:scale(1.12);background:var(--acc);border-color:transparent}
+  #emo button i{position:absolute;bottom:-17px;font-style:normal;font-size:10px;font-weight:800;
+    color:var(--tx);text-shadow:0 1px 4px rgba(6,10,17,.7)}
+  #emo .hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;
+    border-radius:50%;background:var(--gl2);border:1px solid var(--ln);backdrop-filter:blur(14px);
+    color:var(--tx);display:grid;place-items:center;font:800 11px/1.4 var(--ff);text-align:center}
+  #emo .hub em{font-style:normal;display:block;font-size:9.5px;color:var(--tx3);font-weight:700}
+
+  /* ── 채팅 ── */
+  #chat{position:absolute;left:16px;bottom:18px;width:min(340px,58vw);pointer-events:none}
+  #chatlog{max-height:150px;overflow:hidden;display:flex;flex-direction:column;
+    justify-content:flex-end;gap:4px}
+  /* 채팅 줄에는 유리(backdrop-filter)를 쓰지 않습니다. 줄마다 합성 레이어가
+     하나씩 생기는데, WebGL 화면 위에서는 아예 안 그려지는 경우가 있었습니다
+     (헤드리스 검사에서 재현). 대신 배경을 조금 더 진하게 깔았습니다. */
+  #chatlog div{display:flex;gap:7px;align-items:baseline;background:rgba(19,23,30,.86);
+    border:1px solid var(--ln2);border-radius:11px;padding:5px 10px;font-size:12px;color:var(--tx);
+    align-self:flex-start;max-width:100%;opacity:1;box-shadow:0 2px 8px rgba(6,10,17,.24)}
+  /* 채팅 줄에는 **등장 효과를 넣지 않습니다.** @keyframes 도 transition 도
+     써 봤는데, 갓 만든 요소에서는 opacity 0 에 멈춘 채 아예 안 보이는
+     경우가 있었습니다(헤드리스 검사에서 재현). 말은 보이는 게 먼저입니다. */
+  #chatlog b{font-weight:800;color:var(--acc);flex:none}
+  #chatlog.sys div b{color:var(--warn)}
+  #chatin{display:none;margin-top:7px;pointer-events:auto}
+  #chatin.on{display:flex;gap:6px}
+  #chatin input{flex:1;border:1px solid var(--ln);border-radius:12px;padding:9px 12px;
+    font:600 13px var(--ff);background:var(--gl2);color:var(--tx);outline:none;
+    backdrop-filter:blur(14px)}
+  #chatin input::placeholder{color:var(--tx3)}
+  #chatin input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(53,224,198,.16)}
+
+  /* ── 미니게임 ── */
+  #game{position:fixed;inset:0;display:grid;place-items:center;z-index:12;
+    background:rgba(12,17,24,.66);backdrop-filter:blur(5px)}
+  #game .gbox{width:min(620px,94vw);padding:18px;position:relative;background:var(--paper);
+    color:var(--ink);border-radius:20px;box-shadow:var(--shp)}
+  #game .ghead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  #game .ghead b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  #game .ghead span{display:block;font-size:11.5px;color:var(--ink2)}
+  #game .gstat{margin-left:auto;text-align:right}
+  #game .gstat em{display:block;font-style:normal;font-size:22px;font-weight:800;
+    font-variant-numeric:tabular-nums;color:var(--ink)}
+  #game .gstat i{font-style:normal;font-size:11px;color:var(--ink2)}
+  #game .gx{border:1.5px solid var(--pl);background:transparent;color:var(--ink2);border-radius:99px;
+    padding:7px 13px;font:700 11.5px/1 var(--ff);cursor:pointer}
+  #game .gx:hover{border-color:rgba(34,42,51,.3);color:var(--ink)}
+  #game .gbody{display:grid;gap:7px;place-items:center}
+  #game .gbody.grid8{grid-template-columns:repeat(4,1fr)}
+  #game .gbody.grid7{grid-template-columns:repeat(7,1fr)}
+  #game button.mc{width:100%;aspect-ratio:1;border:1.5px solid var(--pl);border-radius:13px;
+    background:rgba(34,42,51,.05);font-size:22px;cursor:pointer;display:grid;place-items:center;
+    transition:.12s}
+  #game .grid8 button.mc{font-size:26px}
+  #game button.mc.sel{outline:3px solid var(--ink);transform:scale(.94)}
+  #game button.mc.ok{opacity:.4}
+  #game canvas{border-radius:14px;max-width:100%}
+  #game .gover{position:absolute;inset:0;display:none;place-content:center;text-align:center;gap:9px;
+    background:rgba(255,252,245,.96);border-radius:20px}
+  #game .gover.on{display:grid}
+  #game .gover b{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+  #game .gover span{font-size:14px;color:var(--ink2)}
+  #game .gover button{border:0;border-radius:99px;padding:10px 20px;font:800 13px/1 var(--ff);
+    cursor:pointer;margin:0 4px;background:var(--ink);color:var(--paper)}
+  #game .gover .out{background:rgba(34,42,51,.08);color:var(--ink)}
+
+  /* ── 첫 화면 ── */
+  #load{position:fixed;inset:0;display:grid;place-items:center;align-content:center;gap:14px;
+    background:linear-gradient(180deg,#A9DDF2 0%,#CFEDF6 100%);color:#1E3340;
+    font-size:14.5px;font-weight:800;z-index:9;transition:.45s}
+  #load.gone{opacity:0;pointer-events:none}
+  #load i{display:block;font-style:normal;font-size:11.5px;color:rgba(30,51,64,.6);
+    margin-top:7px;text-align:center;font-weight:600}
+  #load .sp{width:34px;height:34px;border-radius:50%;border:3px solid rgba(30,51,64,.16);
+    border-top-color:#1E3340;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media (max-width:860px){
+    #help,#foot .fps{display:none}
+    #stack{width:130px;right:12px;top:12px;gap:8px}
+    #pip .fr{height:90px}
+    #chat{width:min(260px,50vw);bottom:88px}
+    #dock button{width:46px}
+    #zone{left:12px;top:12px;padding:7px 12px 7px 10px}
+    #zone b{font-size:13.5px}
+  }
+  @media (max-width:560px){
+    #net{display:none}
+    #dock button em{display:none}
+    #dock button{width:40px;padding:9px 0}
+  }
+</style>
+<svg id="picto" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+ <defs>
+  <g id="pic-book"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5zM20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5A1.5 1.5 0 0 1 20 20.5z"/></g>
+  <g id="pic-seat"><path d="M6 4h12v7H6z"/><path d="M4.5 12.5h15"/><path d="M7 15v4M17 15v4"/></g>
+  <g id="pic-clock"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></g>
+  <g id="pic-bell"><path d="M6.5 17V11a5.5 5.5 0 0 1 11 0v6"/><path d="M4.5 17h15"/><path d="M10 20h4"/></g>
+  <g id="pic-cal"><rect x="4" y="6" width="16" height="14" rx="2.5"/><path d="M4 10.5h16M9 4v4M15 4v4"/></g>
+  <g id="pic-music"><path d="M10 17V6l8-1.6V15"/><circle cx="7.6" cy="17.2" r="2.6"/><circle cx="15.6" cy="15.2" r="2.6"/></g>
+  <g id="pic-board"><rect x="4" y="5" width="16" height="12" rx="2"/><path d="M8 9h8M8 12.5h5"/><path d="M9 20l3-3 3 3"/></g>
+  <g id="pic-cup"><path d="M6 4h10v6a5 5 0 0 1-10 0z"/><path d="M16 5.5h2.5a2.5 2.5 0 0 1 0 5H16"/><path d="M8.5 20h7M11 15v5"/></g>
+  <g id="pic-coin"><circle cx="12" cy="12" r="8"/><path d="M12 8.2v7.6M14.2 10H11a1.6 1.6 0 0 0 0 3.2h2a1.6 1.6 0 0 1 0 3.2H9.8"/></g>
+  <g id="pic-shirt"><path d="M9 4l3 2 3-2 4.5 2.5-1.8 3.6L16 9.4V20H8V9.4l-1.7.7L4.5 6.5z"/></g>
+  <g id="pic-sofa"><path d="M5 12V9a2 2 0 0 1 4 0v3h6V9a2 2 0 0 1 4 0v3"/><rect x="3.5" y="12" width="17" height="5.5" rx="2"/><path d="M6.5 17.5V19M17.5 17.5V19"/></g>
+  <g id="pic-egg"><path d="M12 4c3.3 0 6 4.4 6 8.2A6 6 0 0 1 6 12.2C6 8.4 8.7 4 12 4z"/></g>
+  <g id="pic-cam"><rect x="3.5" y="7" width="12.5" height="10" rx="2.5"/><path d="M16 11.5l4.5-2.8v6.6L16 12.5z"/></g>
+  <g id="pic-leaf"><path d="M19 5C10 5 5 9 5 15a4 4 0 0 0 4 4c6 0 10-5 10-14z"/><path d="M8.5 15.5c2.5-2.5 5-4 8-5"/></g>
+  <g id="pic-run"><circle cx="14.5" cy="5.5" r="2"/><path d="M8 20l3-4.5 3.5-2-1-4 3.5 3 3 .5"/><path d="M11 9L7.5 11l-.5 3"/></g>
+  <g id="pic-fish"><path d="M3.5 12c3-4 6.5-5.5 10-5.5S19.5 9 20.5 12c-1 3-3.5 5.5-7 5.5S6.5 16 3.5 12z"/><circle cx="9" cy="11" r=".9" fill="currentColor" stroke="none"/></g>
+  <g id="pic-ticket"><rect x="3.5" y="7" width="17" height="10" rx="2.5"/><path d="M9.5 7v10" stroke-dasharray="2 2.4"/></g>
+  <g id="pic-bus"><rect x="5" y="4.5" width="14" height="12" rx="2.5"/><path d="M5 11h14M8 20v-1.5M16 20v-1.5"/><circle cx="8.5" cy="14" r=".9" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14" r=".9" fill="currentColor" stroke="none"/></g>
+  <g id="pic-sun"><circle cx="12" cy="12" r="4"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/></g>
+  <g id="pic-user"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-5.6 7-5.6s6.2 1.8 7 5.6"/></g>
+  <g id="pic-map"><path d="M9 5L3.5 7v12L9 17l6 2 5.5-2V5L15 7z"/><path d="M9 5v12M15 7v12"/></g>
+  <g id="pic-heart"><path d="M12 19.5C6.5 15.8 4 13.2 4 10.2A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 8 2.2c0 3-2.5 5.6-8 9.3z"/></g>
+  <g id="pic-chart"><path d="M4.5 19h15"/><path d="M7.5 19V12M12 19V6.5M16.5 19v-4.5"/></g>
+  <g id="pic-key"><circle cx="8" cy="12" r="4"/><path d="M12 12h8M17.5 12v3M20 12v2.4"/></g>
+ </defs>
+</svg>
+<canvas id="cv"></canvas>
+<div class="hud">
+  <div id="zone" class="g"><i class="dot"></i><div><b>캠퍼스</b><span class="sub">중앙 광장</span></div></div>
+  <div id="tags"></div>
+
+  <!-- 오른쪽 한 기둥 — 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
+  <div id="stack">
+    <div id="mini" class="g">
+      <div class="ghead">지도<span class="sp">M</span></div>
+      <div class="wrap"><canvas width="316" height="316"></canvas><span class="n">N</span></div>
+    </div>
+    <div id="pip" class="g">
+      <div class="ghead">내 자세</div>
+      <div class="fr"><canvas width="316" height="240"></canvas>
+      <video id="pipcam" autoplay playsinline muted></video></div>
+      <div class="row"><span class="nm">나</span><span class="st">좋음</span></div>
+    </div>
+    <div id="net" class="g"><i></i><span>혼자</span><b></b></div>
+  </div>
+
+  <div id="idbar" class="g"><b class="nm">기린</b><i></i><span class="sc">학교 미설정</span><em class="tm"></em></div>
+  <div id="prompt" class="g"><em>E</em><span>들어가기</span></div>
+  <div id="toast"><b></b><span></span></div>
+  <div id="bub"></div>
+
+  <div id="dlg" class="g">
+    <div class="who"><b></b><span></span></div><p></p>
+    <div class="more"><kbd>E</kbd> 다음 · <kbd>Esc</kbd> 그만</div>
+  </div>
+
+  <div id="panel">
+    <div class="ph"><span class="tag"></span><h3></h3></div>
+    <div class="bd"></div>
+    <div class="x"><kbd>Esc</kbd> 로 닫기</div>
+  </div>
+
+  <div id="tut" class="g">
+    <div class="step"><span class="n">1</span><b></b><button class="skip">건너뛰기</button></div>
+    <p></p><div class="dots"></div>
+  </div>
+
+  <div id="post" class="g">
+    <div class="row"><span class="st">좋음</span><span class="nm">자세 세션</span><span class="tm">0:00</span></div>
+    <div class="bar"><i></i></div>
+    <div class="hint">앉아 있는 동안 자세를 봅니다. 목이 무너지면 캐릭터도 같이 굽습니다.<br>
+      <em class="pz">카메라를 켜는 중</em></div>
+    <button id="stand">일어나기 (E)</button>
+  </div>
+
+  <div id="emo"><div class="hub">감정표현<em>1~8 · G</em></div></div>
+
+  <div id="chat"><div id="chatlog"></div>
+    <div id="chatin"><input maxlength="60" placeholder="말하기 — Enter 로 보내기"></div></div>
+
+  <!-- 아래 한 줄 — 늘 켜져 있던 종·옷 고르는 줄은 옷장 창으로 들어갔습니다 -->
+  <div id="dock" class="g">
+    <button data-do="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Z"/><path d="M9 4v13M15 6.5v13"/></svg><em>지도</em></button>
+    <button data-do="emo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg><em>표현</em></button>
+    <button data-do="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.4-4.3A7.5 7.5 0 1 1 20 12Z"/></svg><em>채팅</em></button>
+    <div class="sep"></div>
+    <button data-do="wear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 3.5 12 6l3-2.5 5 3-2 3.5-1.6-.8V20H7.6V9.2L6 10 4 6.5l5-3Z"/></svg><em>옷장</em></button>
+    <button data-do="view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></svg><em>시점</em></button>
+    <!-- 마이페이지와 코인은 수현 판이 상시 노출로 꺼내 둔 것입니다.
+         저쪽은 오른쪽 위 기둥이었는데, 이 껍데기는 아래 독이 유일한
+         상시 줄이라 여기로 옮깁니다 — 붙박이 위치가 아니라 "언제든
+         한 번에 연다" 가 취지입니다. -->
+    <button data-do="mypage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-5.6 7-5.6s6.2 1.8 7 5.6"/></svg><em>마이</em></button>
+    <button data-do="coins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.2v7.6M14.2 10H11a1.6 1.6 0 0 0 0 3.2h2a1.6 1.6 0 0 1 0 3.2H9.8"/></svg><em>코인</em></button>
+    <button data-do="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 16.6h.01"/></svg><em>도움</em></button>
+  </div>
+
+  <div id="help" class="g">
+    <h4>조작</h4>
+    <div class="r"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>걷기</span></div>
+    <div class="r"><kbd>Shift</kbd><span>뛰기</span></div>
+    <div class="r"><kbd>E</kbd><span>말 걸기 · 들어가기</span></div>
+    <div class="r"><kbd>Tab</kbd><span>1인칭 · 3인칭</span></div>
+    <div class="r"><kbd>M</kbd><span>지도</span></div>
+    <div class="r"><kbd>G</kbd><span>감정표현</span></div>
+    <div class="r"><kbd>C</kbd><span>옷장</span></div>
+    <div class="r"><kbd>Enter</kbd><span>채팅</span></div>
+    <div class="r"><kbd>Z</kbd><kbd>X</kbd><span>시점 좌우로 돌리기</span></div>
+    <div class="r"><kbd>드래그</kbd><span>시점 돌리기</span></div>
+    <div class="r"><kbd>휠</kbd><span>멀리 · 가까이</span></div>
+  </div>
+
+  <div id="xhair" aria-hidden="true"></div>
+  <div id="gcur" class="on" aria-hidden="true">
+    <svg class="arrow" viewBox="0 0 28 28" width="28" height="28">
+      <!-- 우리 색 하나로만 된 둥근 커서.
+
+           흰 테를 뺐습니다. 테는 밝은 바탕에서도 보이게 하려고 두르는
+           것인데, 그것이 곧 OS 커서의 생김새라 아무리 안쪽을 칠해도
+           "윈도우 커서에 색을 입힌 것" 으로 보입니다. 대신 짙은 청록으로
+           한 겹 두르고 그림자를 조금 세게 줍니다 — 같은 색 계열 안에서
+           명암만으로 떠 있게 하는 쪽이 우리 월드의 방식입니다. -->
+      <path d="M6 4.2 Q6 2.2 7.6 3.4 L20.4 14.2 Q21.8 15.4 20 15.6
+               L15.2 16 L17.6 21.4 Q18.1 22.6 16.9 23 L15 23.8
+               Q13.8 24.2 13.3 23 L10.9 17.7 L7.5 20.8 Q6 22 6 20.2 Z"
+        fill="#2DD4BF" stroke="#0E6F63" stroke-width="1.7" stroke-linejoin="round"/>
+      <path d="M8.6 7.4 L8.6 16.4 L11 14.2 L13.4 19.4 L14.6 18.9 L12.4 13.7 L16.6 13.4 Z"
+        fill="#7DEBDD" opacity=".85"/>
+    </svg>
+    <svg class="ring" viewBox="0 0 28 28" width="28" height="28">
+      <!-- 누를 수 있는 것 위 — 둥근 고리. 조준점과 같은 어휘입니다. -->
+      <circle cx="14" cy="14" r="8" fill="#2DD4BF" opacity=".22"/>
+      <circle cx="14" cy="14" r="8" fill="none" stroke="#2DD4BF" stroke-width="2.8"/>
+      <circle cx="14" cy="14" r="8" fill="none" stroke="#0E6F63" stroke-width="1.1"/>
+      <circle cx="14" cy="14" r="2.6" fill="#7DEBDD" stroke="#0E6F63" stroke-width="1"/>
+    </svg>
+  </div>
+  <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
+
+  <div id="map"><div class="box">
+    <div class="cap"><b>기린캠퍼스</b><i></i><span>누르거나 앞의 <b>숫자</b>를 치면 그 앞으로 · <kbd>M</kbd> 닫기</span></div>
+    <canvas width="1240" height="1240"></canvas>
+    <div class="lg">
+      <span><i style="background:#E8483C"></i>나</span>
+      <span><i style="background:#3F6BA8"></i>주요 건물</span>
+      <span><i style="background:#8E9AA8"></i>부속 건물</span>
+      <span><i style="background:rgba(255,255,255,.55)"></i>지나다니는 사람</span>
+    </div>
+  </div></div>
+</div>
+<div id="load"><span class="sp"></span><div>기린캠퍼스를 세우는 중<i>건물 여섯 · 실내 여섯 · 나무 이백 그루</i></div></div>
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three.module.min.js",
+  "three/examples/jsm/postprocessing/Pass.js": "./vendor/three-addons/Pass.js",
+  "postprocessing": "./vendor/postprocessing.esm.js",
+  "n8ao": "./vendor/n8ao.esm.js"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { character, SPECIES, OUTFITS, WEAR, WEAR_FREE, normalizeLook, stride, idle, sit, slouch, look, face,
+  RIDES, ride, rideOn, rideOff, TINTS, TINTABLE, applyTint,
+  loadCharacters, setSkeletonUtils } from './chars.js';
+import { GLTFLoader as CharLoader } from './vendor/ext/GLTFLoader.js';
+import * as SkeletonUtils from './vendor/ext/SkeletonUtils.js';
+import { buildCampus, BUILDINGS } from './campus.js';
+import { trimExtremes } from './retint.js';
+import { ROOMS, ROOM_SIZE, ROOM_NAME, decorItem } from './rooms.js';
+import { seatsBegin, seatsTake, setOutside, setClockHour, tickClocks } from './room.js';
+import { bake } from './bake.js';
+import { SPOTS } from './spots.js';
+import { NPCS } from './npcs.js';
+import * as UI from './ui.js';
+import { NPCS as _N, INDOOR } from './npcs.js';
+import { createNet } from './net.js';
+import { maskProfanity } from './chat-filter.js';
+import { EMOTES, EMOTE_BY_KEY, playEmoteSound, playEmotePose, emoteIcon } from './emote.js';
+import { openGame, gameOpen } from './games.js';
+import { createPosture } from './posture-live.js';
+import { createSky, weatherKind } from './sky.js';
+/* 색 실험실 — ?lab=1 일 때만 붙습니다. 채도 · 양끝 · 톤매핑을
+   켜고 끄며 **실제 월드에서** 비교합니다. 별도 씬을 만들면 조명이
+   조금만 달라도 색 판단이 통째로 틀어집니다. */
+import { createColorLab } from './colorlab.js';
+
+/* ── 캐릭터 GLB 를 먼저 받습니다 ──
+   랜딩 렌더에서 변환한 넷입니다. character() 가 아래에서 곧바로
+   불리므로 **여기서 기다려야** 합니다 — 늦게 오면 그 순간 서 있던
+   사람들만 옛 판으로 만들어져 한 화면에 두 종류가 섞입니다.
+   못 받으면 loadCharacters 가 조용히 넘어가고 손으로 빚는 판이 씁니다. */
+setSkeletonUtils(SkeletonUtils);
+const CHAR_OK = await loadCharacters(THREE, CharLoader, './assets/chars/');
+console.info('[캐릭터] GLB', CHAR_OK.length + '종 —', CHAR_OK.join(' '));
+/* 후처리 — 앰비언트 오클루전 하나 때문에 들입니다.
+   이 월드는 형상이 전부 코드로 그린 단색 덩어리라, 물체끼리 닿는
+   자리가 어디인지 그림자만으로는 안 보입니다. AO 가 그 접점을
+   어둡게 만들어 **따로 놓인 상자들을 한 공간으로** 묶어 줍니다. */
+import { EffectComposer, RenderPass } from 'postprocessing';
+import { N8AOPostPass } from 'n8ao';
+/* 계단식 그림자 맵. 캠퍼스가 반지름 132 가 되면서 그림자 상자 하나로는
+   못 덮습니다 — 사람 주위 22칸만 덮으니 멀리 있는 건물에 그림자가
+   아예 없었습니다. CSM 은 시야를 네 칸으로 쪼개 가까운 곳은 촘촘히,
+   먼 곳은 성기게 덮습니다. */
+import { CSM } from './vendor/ext/CSM.js';
+/* 레이캐스트 가속. 클릭해서 걷기와 카메라 가림 판정이 매 프레임
+   광선을 쏘는데, 물체가 늘수록 선형으로 느려집니다 — 실험판에서
+   광선 400발이 메시 1,403개에 733ms 였습니다. */
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast }
+  from './vendor/ext/three-mesh-bvh.js';
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+import { createMusic, MUSIC } from './music.js';
+
+const $ = (s) => document.querySelector(s);
+/* 2D 판의 서버 저장·욕설 필터를 **그대로** 끌어옵니다 — 규칙을 두 벌 쓰면 어긋납니다 */
+function injectScript(src) {
+  return new Promise((res) => {
+    const t = document.createElement('script');
+    t.src = src; t.onload = () => res(true); t.onerror = () => res(false);
+    document.head.append(t);
+  });
+}
+let SRV = null;                                  // window.WORLD_SAVE
+/* 자세 판정 엔진은 온보딩·메인과 **같은 파일**입니다. 사본을 만들면
+   기준을 잡은 곳과 판정하는 곳의 계산이 조용히 갈라집니다. */
+injectScript('../shared/posture.js');
+injectScript('../shared/school-auth.js');
+injectScript('../shared/config.js')
+  .then(() => injectScript('../openworld/save.js'))
+  .then(() => {
+    SRV = window.WORLD_SAVE || null;
+    if (SRV?.configured) SRV.balance().then((b) => {
+      if (typeof b === 'number') { SAVE.coins = b; UI.save(); }
+    }).catch(() => {});
+  });
+/* 비속어 사전. 붙는 순간부터 `chat-filter.js` 가 window.Korcen 을 봅니다 —
+   따로 넘겨받지 않으므로 여기서는 붙이기만 합니다. */
+injectScript('../shared/korcen.js');
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const TAU = Math.PI * 2;
+
+/* ══════ 0. 판 ══════ */
+const cv = $('#cv');
+/* ?shot=1 이면 캔버스를 안 지웁니다 — 자동 스크린샷이 빈 화면을 찍는 것을
+   막기 위한 시험용 스위치입니다. 평소에는 켜지 않습니다(느려집니다). */
+const SHOT = new URLSearchParams(location.search).has('shot');
+const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true,
+  powerPreference: 'high-performance', preserveDrawingBuffer: SHOT });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+/* AgX — ACES 는 색을 눈에 띄게 변조하고 채도를 떨어뜨립니다. AgX 는
+   훨씬 중립적이라 Blender 4.0 이 기본값으로 삼았습니다. 대신 전체가
+   어둡게 나오므로 노출을 1.06 에서 1.18 로 올려 밝기를 맞춥니다. */
+renderer.toneMapping = THREE.AgXToneMapping;
+renderer.toneMappingExposure = 1.18;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xBFE4F2);
+/* 지수 안개. 색은 **하늘색과 같아야** 합니다 — 다르면 지평선에
+   띠가 생겨서 안개가 아니라 벽으로 보입니다. sky.js 가 시각마다
+   배경색을 바꾸므로, 안개 색도 거기서 같이 따라갑니다.
+
+   밀도 0.0075 — 20칸 안에서는 3% 라 발밑은 안 뿌옇고, 담(132)에서
+   62%, 도시 실루엣(~320)은 거의 다 잠깁니다. 끝은 안 보이는데 뭔가
+   있다는 것만 남는 값입니다.
+
+   0.0040 으로 시작했다가 올렸습니다 — 담에서 24% 밖에 안 잠겨서
+   먼 나무가 또렷했고, 또렷하면 거리가 안 생깁니다. */
+scene.fog = new THREE.FogExp2(0xBFE4F2, .0075);
+/* near 를 0.1 에서 0.25 로 올립니다 — 깊이 버퍼의 정밀도는 near 에 반비례합니다.
+   0.1 이면 20칸 앞에서 겨우 0.1mm 를 구분하는데, 길과 잔디가 1cm 차이로
+   겹쳐 있어서 그 정도로는 앞뒤가 뒤집힙니다. 1인칭 눈높이에서도 0.25 는
+   안전합니다(머리보다 가까운 것은 어차피 안 보입니다). */
+const cam = new THREE.PerspectiveCamera(48, 1, .25, 400);
+
+/* AO 가 접점을 어둡게 만들어 주므로 균일광(amb)을 조금 내리고,
+   대신 위아래 색이 갈리는 하늘빛(hemi)을 올립니다. 균일광이 세면
+   AO 가 만든 그늘이 도로 씻겨 나갑니다. */
+const amb = new THREE.AmbientLight(0xFFFFFF, .52);
+const hemi = new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, 1.08);
+const sun = new THREE.DirectionalLight(0xFFF6E4, 1.95);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 130;
+/* 얕은 각도로 넓게 받는 바닥에는 normalBias 가 bias 보다 훨씬 잘 듣습니다 */
+sun.shadow.bias = -.0002; sun.shadow.normalBias = .14; sun.shadow.radius = 2;
+const fill = new THREE.DirectionalLight(0xCFE4F5, .45);
+fill.position.set(40, 30, -30);
+/* 림 라이트 — 해의 **반대편 뒤쪽**에서 옅게 칩니다.
+   캐릭터와 배경이 둘 다 파스텔이라 실루엣이 배경에 녹습니다.
+   뒤에서 한 겹 얹으면 가장자리만 밝아져 사람이 배경에서 떨어져
+   나옵니다 — 애니메이션에서 인물을 세우는 그 방법입니다. */
+const rim = new THREE.DirectionalLight(0xFFE9C9, .40);
+rim.position.set(26, 14, -34);
+rim.castShadow = false;
+scene.add(amb, hemi, sun, sun.target, fill, rim);
+
+/* 그림자 상자는 사람을 따라다닙니다 — 섬 전체를 덮으면 한 칸에 4cm 라 부서집니다.
+
+   **텍셀 격자에 맞춰 따라다닙니다. 단, 빛 공간에서.**
+   전 판은 세계 좌표 x·z 를 여덟 텍셀 단위로 반올림했습니다. 그런데 해는
+   비스듬히 서 있어서 세계의 x·z 격자와 그림자 지도의 텍셀 격자가 **서로
+   비뚤어져 있습니다.** 그래서 아무리 반올림해도 텍셀에는 안 맞고, 대신
+   0.2칸을 걸을 때마다 그림자 지도 전체가 여덟 텍셀씩 **덜컥 뛰었습니다.**
+   바닥 픽셀의 97%가 한 걸음마다 바뀌었습니다 — 바닥이 깜빡이던 정체입니다.
+
+   고치는 방법은 반올림을 **빛이 보는 축 위에서** 하는 것입니다. 그림자
+   카메라의 가로·세로 축에 각각 투영해 한 텍셀 단위로 맞추고 되돌립니다.
+   이러면 카메라가 움직여도 텍셀 경계가 제자리에 있어 가장자리가 안 떱니다. */
+const SPAN = 22;
+const SHADOW_RES = 2048;
+/* 텍셀 폭은 **지금 그림자 지도 크기에서** 그때그때 뽑습니다. 상수로
+   굳혀 뒀더니, 느릴 때 2048 을 1024 로 줄이는 칸이 생기면서 실제 눈금은
+   두 배가 됐는데 반올림은 옛 눈금으로 하고 있었습니다 — 깜빡임을 없애려고
+   만든 눈금이 그 순간부터 반 칸씩 어긋나서 깜빡임을 도로 만듭니다. */
+const texel = () => (SPAN * 2) / (sun.shadow.mapSize.width || SHADOW_RES);
+const LDIR = new THREE.Vector3(-26, 40, 20).normalize();       // 해가 서 있는 쪽
+const LRIGHT = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), LDIR).normalize();
+const LUP = new THREE.Vector3().crossVectors(LDIR, LRIGHT).normalize();
+const _sv = new THREE.Vector3(), _sw = new THREE.Vector3();
+function aimSun(x, z) {
+  _sv.set(x, 0, z);
+  const TX = texel();
+  const a = Math.round(_sv.dot(LRIGHT) / TX) * TX;
+  const b = Math.round(_sv.dot(LUP) / TX) * TX;
+  const d = _sv.dot(LDIR);
+  _sw.copy(LRIGHT).multiplyScalar(a).addScaledVector(LUP, b).addScaledVector(LDIR, d);
+  sun.target.position.copy(_sw);
+  sun.position.copy(_sw).addScaledVector(LDIR, 62);
+  const c = sun.shadow.camera;
+  c.left = -SPAN; c.right = SPAN; c.top = SPAN; c.bottom = -SPAN;
+  c.near = 1; c.far = 140;
+  c.updateProjectionMatrix();
+}
+
+/* ══════ 1. 캠퍼스 ══════ */
+const campusRoot = new THREE.Group(); scene.add(campusRoot);
+const CAMPUS = buildCampus(campusRoot);
+/* 부지가 네모라 반지름 하나로는 못 막습니다. 원으로 두면 네 귀퉁이가
+   잘려서 야구장과 숲에 못 들어갑니다. */
+const ISLAND_R = CAMPUS.HALF - 2.6;
+const SITE_HX = CAMPUS.SITE.hx - 3, SITE_HZ = CAMPUS.SITE.hz - 3;
+const waterJets = [];
+campusRoot.traverse((o) => {
+  if (o.isMesh && o.material.transparent && o.geometry.type === 'CylinderGeometry'
+      && o.position.y > 2 && o.position.y < 3.2) { o.userData.y0 = o.position.y; waterJets.push(o); }
+});
+/* 하늘 · 불 · 날씨 — 배경색 하나로 고정이던 것을 시각과 날씨에 맡깁니다 */
+const SKY = createSky(THREE, { scene, sun, hemi, amb, campusRoot, roomRoot: null });
+/* ── 그림자 재설계 ──
+   전 판은 castShadow 가 99곳이었습니다. 그림자 지도는 사람 주위
+   22칸만 덮는데(SPAN), 그 안의 모든 잔풀·벤치 널빤지·화분까지
+   그림자를 던지고 있었습니다. 화면에서는 1~2px 얼룩인데 값은
+   똑같이 냅니다.
+
+   **큰 것만 남깁니다.** 가장 긴 변이 1.1칸 아래면 그림자를 끕니다 —
+   그 자리는 이제 AO 가 대신 어둡게 만듭니다. AO 는 화면 공간이라
+   물체 수와 상관없이 값이 일정합니다. */
+function shadowPolicy(root) {
+  const bb = new THREE.Box3(), sz = new THREE.Vector3();
+  let off = 0, keep = 0;
+  root.traverse((o) => {
+    if (!o.isMesh || !o.castShadow) return;
+    if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+    bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
+    bb.getSize(sz);
+    if (Math.max(sz.x, sz.y, sz.z) < 3.0) { o.castShadow = false; off++; }
+    else keep++;
+  });
+  return { off, keep };
+}
+campusRoot.updateMatrixWorld(true);
+/* 양 끝 자르기 — 굽기 전에 한 번. 재질은 병합돼도 같은 객체를 공유하므로
+   여기서 고치면 병합된 메시도 같이 바뀝니다. */
+const TRIM = trimExtremes(campusRoot);
+console.info('[색] 양끝 자른 재질 ' + TRIM + '개');
+
+const SHP = shadowPolicy(campusRoot);
+
+/* ══════ 계단식 그림자 ══════
+   ?csm=0 으로 끄면 예전처럼 해 하나가 사람을 따라다닙니다.
+   느린 기기에서 화질 사다리가 그림자를 끌 때도 여기로 돌아옵니다. */
+const CSM_ON = new URLSearchParams(location.search).get('csm') !== '0';
+let csm = null;
+function csmOn() {
+  if (csm || !CSM_ON) return;
+  try {
+    csm = new CSM({
+      maxFar: 150,          // 이 너머는 어차피 안개에 잠깁니다(밀도 0.0075)
+      cascades: 2,          // 셋으로 재니 14fps 였습니다. 둘이면 먼 그림자는 남고 값은 3분의 2
+      mode: 'practical',
+      parent: scene,
+      shadowMapSize: 1024,
+      /* 해가 서 있는 쪽 — aimSun 이 쓰던 LDIR 과 같은 방향이라야
+         그림자가 갑자기 반대로 눕지 않습니다. */
+      lightDirection: new THREE.Vector3(26, -40, -20).normalize(),
+      camera: cam,
+    });
+    csm.fade = true;        // 칸 경계에서 그림자가 끊기지 않게
+    /* 재질마다 셰이더를 갈아 끼워야 먹습니다. 한 번만 하면 되고,
+       이때 한 번 멈칫합니다 — 굽기 직후라 사용자는 못 느낍니다. */
+    scene.traverse((o) => {
+      if (o.isMesh && o.material && !Array.isArray(o.material)) {
+        try { csm.setupMaterial(o.material); } catch (e) { /* 미지원 재질 */ }
+      }
+    });
+    sun.visible = false;    // 해와 CSM 을 같이 켜면 그림자가 두 겹입니다
+    console.log('CSM 켬 · 칸 3 · maxFar 200');
+  } catch (e) { console.warn('CSM 을 못 켰습니다 — 해 하나로 갑니다', e); csm = null; }
+}
+function csmOff() {
+  if (!csm) return;
+  csm.remove(); csm.dispose(); csm = null;
+  sun.visible = true;
+}
+{ const t0 = performance.now(); const r = bake(campusRoot, { tile: 22 });
+  campusRoot.add(r.group);
+  console.log(`캠퍼스 굽기 ${r.before} → ${r.after} (${(performance.now() - t0) | 0}ms)`);
+  console.log(`그림자 정책: 끔 ${SHP.off} · 남김 ${SHP.keep}`); }
+/* 굽기가 재질을 새로 만들기 때문에 **구운 뒤에** 켭니다.
+   먼저 켜면 구운 덩어리에는 CSM 셰이더가 안 붙습니다. */
+csmOn();
+/* BVH — 굽고 나면 지오메트리가 크게 줄어 트리 만드는 값도 같이 줍니다 */
+{ const t0 = performance.now(); let n = 0;
+  campusRoot.traverse((o) => {
+    if (o.isMesh && o.geometry && !o.geometry.boundsTree) {
+      try { o.geometry.computeBoundsTree(); n++; } catch (e) { /* 인덱스 없는 것 */ }
+    }
+  });
+  console.log(`BVH ${n}개 (${(performance.now() - t0) | 0}ms)`); }
+SKY.collect(campusRoot);
+/* 기상청 값을 한 번 받아 창밖과 하늘을 맞춥니다 — 창은 비 오는데 하늘이
+   맑으면 그 어긋남이 제일 먼저 눈에 띕니다. 30분마다 다시 봅니다. */
+function pullWeather() {
+  fetch('/api/weather').then((r) => (r.ok ? r.json() : null)).then((j) => {
+    wxData = j ? { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' } : null;
+    SKY.setWeather(weatherKind(wxData));
+  }).catch(() => {});
+}
+
+/* 호수에 사는 것들 — 같은 형식이라 한 줄로 묶습니다 */
+const LAKE_LIFE = [...(CAMPUS.swans || []), ...(CAMPUS.lotus || []), ...(CAMPUS.fish || [])];
+
+/* ══════ 2. 나 ══════ */
+/* 조사 — '자전거 을 탔어요' 라고 적혀 있었습니다. 받침이 있으면 을/이/은,
+   없으면 를/가/는 입니다. 한글 음절은 0xAC00 부터 28개씩 한 벌이고 그
+   안에서 받침이 0 이면 없는 것입니다. */
+function josa(word, withT, withoutT) {
+  const c = String(word || '').trim().slice(-1).charCodeAt(0);
+  const has = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0;
+  return word + (has ? withT : withoutT);
+}
+const SPEC = Object.keys(SPECIES);
+const SAVE = UI.SAVE;
+/* 기본은 기린입니다. 거북이·펭귄은 변환된 메시의 **뒤통수에도 눈이 파여**
+   있어서(생성기가 앞면을 뒤에 복사했습니다) 돌아서면 얼굴이 두 개로
+   보입니다. 기린과 개구리는 앞뒤가 제대로 나왔습니다.
+   그 둘을 다시 뽑으면 여기를 되돌립니다. */
+let curSpecies = SPECIES[SAVE.species] ? SAVE.species : '기린';
+/* 옷 기본값 + 소유 목록. 공짜 기본템은 늘 갖고 시작합니다 */
+const DEF_LOOK = { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
+  shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'none', hat: 0xE8695A,
+  glassesId: 'none', bagId: 'backpack', bagC: 0x4A6EA8 };
+SAVE.look = Object.assign({}, DEF_LOOK, SAVE.look || {});
+SAVE.owned2 = Array.from(new Set([...WEAR_FREE, ...(SAVE.owned2 || [])]));
+/* 종 — 처음 셋(내 종·기린·개구리)은 열려 있고 나머지는 알에서 깨어납니다 */
+SAVE.ownedSp = Array.from(new Set([curSpecies, '기린', '개구리', ...(SAVE.ownedSp || [])]));
+const myLook = () => SAVE.look;
+/* 코인 쓰기 — 부족하면 거절. 서버가 붙어 있으면 구매류는 서버가 따로 셉니다 */
+function payCoins(n) {
+  if (SAVE.coins < n) { toast('코인이 모자라요', `${n}코인이 필요해요 — 세션·미니게임으로 모아요`); return false; }
+  SAVE.coins -= n; UI.save(); return true;
+}
+let curFit = (SAVE.fit | 0) % OUTFITS.length;   // NPC 프리셋 색만 씁니다
+
+/* ══ 탈것 ══
+   존이 일곱이 되고 미니게임이 흩어지면서 광장에서 동아리 거리까지
+   걷는 데 스무 걸음이 넘습니다. 지도(M)로 건너뛸 수는 있지만 그건
+   **월드를 건너뛰는 것**이라, 자주 쓰면 걸어 다닐 이유가 사라집니다.
+   걷는 것을 빠르게 만드는 쪽이 맞습니다.
+
+   속도는 곱입니다 — Shift 와 겹칩니다. 그게 맞습니다(자전거로 내리막을
+   가는 것과 같습니다). 다만 곱이 커지면 한 프레임에 벽 두께를 넘어가
+   충돌 검사를 건너뛰므로 표의 천장이 1.8 입니다.
+
+   실내에서는 안 탑니다. 열람실 통로에서 자전거를 타는 그림이 우선
+   말이 안 되고, 방은 좁아서 빨라질 것도 없습니다. */
+/* 값은 2D 판 상점표 그대로입니다 — 두 판에서 같은 물건이 다른 값이면
+   서버 잔액과 안 맞습니다. */
+const RIDE_PRICE = { 'ride-skate': 260, 'ride-kick': 320, 'ride-bike': 480, 'ride-cloud': 900 };
+const RIDE_LIST = Object.keys(RIDES).map((id) => [id, RIDES[id].name, RIDE_PRICE[id], RIDES[id].mult]);
+SAVE.ownedRide = Array.isArray(SAVE.ownedRide) ? SAVE.ownedRide : [];
+let rideId = SAVE.ride && RIDES[SAVE.ride] && SAVE.ownedRide.includes(SAVE.ride) ? SAVE.ride : null;
+let rideG = null;
+function rideMult() { return (rideId && !room && !SESS.on && !CSIT.on) ? RIDES[rideId].mult : 1; }
+function mountRide() {
+  if (rideG) { rideG.parent?.remove(rideG); rideG = null; }
+  if (!rideId || room) { rideOff(player); return; }
+  rideG = ride(playerRig, rideId);
+}
+function setRide(id) {
+  /* 앉은 채로 타면 앉은 자세가 풀리고 소파에 선 채로 남습니다.
+     먼저 일어나게 합니다 — 자전거는 서서 끌고 나가는 것이 맞습니다. */
+  if (CSIT.on) standCasual();
+  const next = (id && RIDES[id] && id !== rideId) ? id : null;
+  rideId = next; SAVE.ride = next; UI.save();
+  mountRide();
+  toast(next ? josa(RIDES[next].name, '을', '를') + ' 탔어요' : '내렸어요',
+    next ? `걷는 속도 ×${RIDES[next].mult.toFixed(2)} — 실내에서는 자동으로 내립니다` : '다시 걸어갑니다');
+}
+
+/* 배경음악 — 2D 판이 쓰던 열 곡 그대로 */
+const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick: SAVE.bgmPick || 'auto' });
+
+
+const playerRig = new THREE.Group(); scene.add(playerRig);
+let player = character(playerRig, curSpecies, myLook(), {});
+/* 분수를 지름 20 으로 키우면서 (5,5) 가 물속이 됐습니다. 광장 남쪽,
+   본관을 마주 보는 자리로 옮깁니다. */
+const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+
+/* ── 바닥 높이 따라가기 ──
+   전 판은 캐릭터가 늘 y = 0 이었습니다. 그런데 잔디가 .08, 길이 .126,
+   광장 포석이 .38, 건물 기단이 1.5 입니다 — **모든 바닥보다 아래**를
+   걷고 있었고, 계단은 아예 못 올라갔습니다(발이 첫 단을 뚫고 지나감).
+
+   위에서 아래로 광선을 하나 쏴서 발밑 표면을 찾습니다. BVH 를 이미
+   걸어 두었으므로(three-mesh-bvh) 프레임당 두세 발은 공짜에 가깝습니다.
+   firstHitOnly 를 켜야 정렬 비용이 사라집니다.
+
+   턱이 STEP_MAX 보다 높으면 못 올라갑니다 — 안 그러면 벽도 타고
+   오릅니다. 계단 한 단(월드 .5)과 기단 한 단은 넘고, 벽은 못 넘는 값.
+
+   실내는 따로 둡니다. 방에는 계단이 없고 깔개(3cm) 정도가 전부인데,
+   바깥 값(1.05)을 그대로 쓰면 책상(0.84)과 의자(0.63)가 전부 "넘을 수
+   있는 턱" 이 됩니다 — 본관을 걷다 갑자기 책상 위로 올라서던 것이
+   이것입니다. */
+const STEP_MAX = 1.05, STEP_MAX_ROOM = .4;
+const stepMax = () => (room ? STEP_MAX_ROOM : STEP_MAX);
+const _gdown = new THREE.Vector3(0, -1, 0);
+const _gray = new THREE.Raycaster();
+_gray.firstHitOnly = true;
+_gray.far = 8;
+function groundAt(x, z, from) {
+  _gray.set(new THREE.Vector3(x, from + 2.4, z), _gdown);
+  let best = -1;
+  /* 방 안에서는 **방을** 쏩니다. 전에는 실내에서도 캠퍼스를 쐈는데,
+     캠퍼스는 안 보일 뿐 지워진 게 아니라서 광장 돌판·건물 지붕이
+     그대로 맞았습니다 — 본관 바닥을 걷는데 발밑 높이가 0.38, 자리에
+     따라 3m 까지 나와서 캐릭터가 보이지 않는 계단을 타고 올라갔습니다.
+     (h.object.visible 검사는 못 거릅니다 — 그건 그 메시 자신의 플래그라,
+     꺼진 것은 조상인 campusRoot 이기 때문입니다.) */
+  for (const h of _gray.intersectObject(room ? roomRoot : campusRoot, true)) {
+    if (!h.object.visible || h.object === blob) continue;
+    best = h.point.y; break;
+  }
+  return best < -.5 ? 0 : best;
+}
+
+const blob = new THREE.Mesh(new THREE.CircleGeometry(.62, 20),
+  new THREE.MeshBasicMaterial({ color: 0x2A3038, transparent: true, opacity: .18, depthWrite: false }));
+blob.rotation.x = -Math.PI / 2; blob.renderOrder = 2; scene.add(blob);
+
+/* ── 시선 ──
+   look()/blink() 는 chars.js 에 있었지만 **아무도 부르지 않았습니다**.
+   그래서 다들 정면만 보고 서 있었습니다. 사람이 사람처럼 보이는 데
+   가장 싸게 먹히는 것이 이 둘입니다 — 가까이 오면 쳐다보고, 눈을 깜빡입니다. */
+function gaze(g, x, z, facing, tx, tz, ty = 1.5, reach = 7, k = .16) {
+  const P = g.userData?.parts; if (!P) return false;
+  const dx = tx - x, dz = tz - z, d = Math.hypot(dx, dz);
+  let a = Math.atan2(dx, dz) - facing;
+  a = ((a + Math.PI * 3) % TAU) - Math.PI;
+  /* 뒤통수 쪽은 안 봅니다 — 다 돌리면 부엉이가 됩니다 */
+  if (d > reach || d < .01 || Math.abs(a) > 1.15) {
+    g.userData.looking = false; look(g, 0, 0, k * .7); return false;
+  }
+  g.userData.looking = true;
+  look(g, a, Math.atan2(1.46 - ty, Math.max(.7, d)), k);
+  return true;
+}
+/* 내가 지금 쳐다볼 만한 것 — 말 거는 상대 > 가까운 사람 > 눈앞의 자리 */
+function gazeTarget() {
+  if (dlgWho) return { x: dlgWho.rig.position.x, z: dlgWho.rig.position.z, y: 1.5 };
+  const list = room ? inNPC : (NPC || []);
+  let best = null, bd = 6.5;
+  for (const n of list) {
+    const d = Math.hypot(P.x - n.rig.position.x, P.z - n.rig.position.z);
+    if (d < bd) { bd = d; best = n; }
+  }
+  if (best) return { x: best.rig.position.x, z: best.rig.position.z, y: 1.5 };
+  if (net) for (const p of net.peers.values()) {
+    const sm = net.sample(p); if (!sm) continue;
+    const d = Math.hypot(P.x - sm.x, P.z - sm.z);
+    if (d < bd) { bd = d; best = sm; }
+  }
+  if (best) return { x: best.x, z: best.z, y: 1.5 };
+  if (spot) return { x: spot.x, z: spot.z, y: 1.0 };
+  return null;
+}
+
+/* ══════ 3. 지나다니는 사람 ══════ */
+const NPC = NPCS.map((d, i) => {
+  const rig = new THREE.Group(); scene.add(rig);
+  /* 지나다니는 사람은 **덜 잘게** 짓습니다. 실루엣은 그대로이고
+     삼각형만 3분의 1로 줄어듭니다. 열둘이 늘 화면에 있어서, 여기가
+     캠퍼스 전체 도형 값과 맞먹었습니다. 말을 걸면 창이 열리지
+     이 몸을 코앞에서 들여다보는 화면이 아닙니다. */
+  const g = character(rig, d.species, OUTFITS[d.fit], { bag: d.bag, lod: 1 });
+  const el = document.createElement('div');
+  el.className = 'tag3'; el.textContent = d.name; $('#tags').appendChild(el);
+  return { d, rig, g, el, leg: i % d.route.length, t: 0, wait: i * .7, walk: 0, sp: 0, dir: 0, line: 0 };
+});
+
+/* ── 실내 NPC — 말 걸 수 있는 사람만 ── */
+const inRoot = new THREE.Group(); scene.add(inRoot);
+let inNPC = [];
+function buildIndoor(key) {
+  inNPC.forEach((n) => n.el.remove());
+  inRoot.clear(); inNPC = [];
+  (INDOOR[key] || []).forEach((d, i) => {
+    const rig = new THREE.Group(); rig.position.set(d.x, 0, d.z); rig.rotation.y = d.dir;
+    inRoot.add(rig);
+    const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1 });
+    const el = document.createElement('div');
+    el.className = 'tag3'; el.textContent = d.name; $('#tags').appendChild(el);
+    inNPC.push({ d, rig, g, el, line: 0, seed: i + 3 });
+  });
+}
+
+/* ══════ 4. 실내 ══════ */
+const roomCache = new Map();
+const roomRoot = new THREE.Group(); roomRoot.visible = false; scene.add(roomRoot);
+let room = null;
+
+/* 저장해 둔 탈것이 있으면 타고 시작합니다.
+   **여기서** 부릅니다. 캐릭터를 만든 자리에서 바로 불렀더니, 자전거를
+   탄 채로 새로고침한 사람은 화면이 영영 안 열렸습니다 — mountRide 가
+   `room` 을 보는데 그 let 이 아직 아래에 있었습니다(TDZ). 탈것이 없으면
+   `!rideId` 에서 끊겨 room 을 안 읽으므로 아무 일도 없었고, **타 본 사람만**
+   못 들어왔습니다. 그런 것은 시연 전날에 발견됩니다. */
+mountRide();
+
+const CELL = .25;
+function noColl(o) { let p = o; while (p) { if (p.userData && p.userData.noCollide) return true; p = p.parent; } return false; }
+function occupancy(g, size) {
+  g.updateMatrixWorld(true);
+  const nx = Math.ceil(size.w / CELL), nz = Math.ceil(size.d / CELL);
+  const cells = new Uint8Array(nx * nz);
+  /* 키 큰 것만 따로 한 장 더 — 앉은 카메라(높이 2.4쯤)가 피해야 하는 것은
+     책장·옷장·벽뿐입니다. 이 장이 없어서 카메라가 서가 **속**에 들어가
+     화면이 통째로 아이보리(가구 속살)였습니다. */
+  const tall = new Uint8Array(nx * nz);
+  const bb = new THREE.Box3();
+  g.traverse((o) => {
+    if (!o.isMesh || noColl(o)) return;
+    bb.setFromObject(o);
+    if (bb.max.y < .34) return;
+    const i0 = Math.max(0, Math.floor((bb.min.x + size.w / 2) / CELL));
+    const i1 = Math.min(nx - 1, Math.floor((bb.max.x + size.w / 2) / CELL));
+    const j0 = Math.max(0, Math.floor((bb.min.z + size.d / 2) / CELL));
+    const j1 = Math.min(nz - 1, Math.floor((bb.max.z + size.d / 2) / CELL));
+    if (bb.max.y >= 2.1)
+      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) tall[j * nx + i] = 1;
+    if (bb.min.y > 1.7) return;                        // 머리 위(등·현수막)
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) cells[j * nx + i] = 1;
+  });
+  return { nx, nz, cells, tall, w: size.w, d: size.d };
+}
+function buildRoom(key) {
+  if (roomCache.has(key)) return roomCache.get(key);
+  const g = new THREE.Group();
+  seatsBegin();
+  ROOMS[key](g, key === 'dorm' ? SAVE.decor : undefined);
+  const seats = seatsTake();
+  const size = ROOM_SIZE[key];
+  const grid = occupancy(g, size);
+  const r = bake(g);
+  g.add(r.group);
+  SKY.collect(g);
+  const rec = { key, group: g, size, grid, seats };
+  roomCache.set(key, rec);
+  return rec;
+}
+
+/* ══════ 5. 못 지나가는 곳 ══════ */
+const R_OUT = .46, R_IN = .30;
+const RING = []; for (let i = 0; i < 8; i++) RING.push([Math.cos(i / 8 * TAU), Math.sin(i / 8 * TAU)]);
+function hitCampus(x, z) {
+  if (Math.abs(x) > SITE_HX || Math.abs(z) > SITE_HZ) return true;
+  for (let k = 0; k < CAMPUS.colliders.length; k++) {
+    const c = CAMPUS.colliders[k];
+    if (c.camOnly) continue;
+    const dx = x - c.x, dz = z - c.z;
+    if (dx * dx + dz * dz > 400) continue;
+    const co = Math.cos(c.ry || 0), si = Math.sin(c.ry || 0);
+    const lx = co * dx - si * dz, lz = si * dx + co * dz;
+    if (Math.abs(lx) < c.w / 2 + R_OUT && Math.abs(lz) < c.d / 2 + R_OUT) return true;
+  }
+  return false;
+}
+const cellAt = (G, x, z) => {
+  const i = Math.floor((x + G.w / 2) / CELL), j = Math.floor((z + G.d / 2) / CELL);
+  return (i < 0 || j < 0 || i >= G.nx || j >= G.nz) ? 1 : G.cells[j * G.nx + i];
+};
+function hitGrid(G, x, z) {
+  if (Math.abs(x) > G.w / 2 - .35 || Math.abs(z) > G.d / 2 - .12) return true;
+  if (cellAt(G, x, z)) return true;
+  for (let k = 0; k < 8; k++) if (cellAt(G, x + RING[k][0] * R_IN, z + RING[k][1] * R_IN)) return true;
+  return false;
+}
+const hit = (x, z) => (room ? hitGrid(room.grid, x, z) : hitCampus(x, z));
+/* 끼었을 때만 밀어냅니다. 매 프레임 무조건 부르면, 경계에 서 있을 때
+   밀려났다 돌아왔다 하며 캐릭터가 떱니다. 두 프레임 이상 끼어 있을 때만
+   움직이고, 밀어내는 거리도 1.5칸으로 제한합니다. */
+let stuckN = 0;
+function unstick() {
+  if (!hit(P.x, P.z)) { stuckN = 0; return; }
+  if (++stuckN < 3) return;
+  stuckN = 0;
+  for (let r = .25; r <= 1.5; r += .25)
+    for (let a = 0; a < 16; a++) {
+      const t = (a / 16) * TAU, nx = P.x + Math.cos(t) * r, nz = P.z + Math.sin(t) * r;
+      if (!hit(nx, nz)) { P.x = nx; P.z = nz; return; }
+    }
+  /* 1.5칸 안에 빈 곳이 없으면 광장으로 보냅니다 — 갇히는 것보다 낫습니다 */
+  for (let r = 1.75; r <= 6; r += .25)
+    for (let a = 0; a < 16; a++) {
+      const t = (a / 16) * TAU, nx = P.x + Math.cos(t) * r, nz = P.z + Math.sin(t) * r;
+      if (!hit(nx, nz)) { P.x = nx; P.z = nz; return; }
+    }
+}
+function freeSpotNear(G, x0, z0) {
+  for (let r = 0; r <= 6; r += .22)
+    for (let a = 0; a < 24; a++) {
+      const t = (a / 24) * TAU;
+      const x = r ? x0 + Math.cos(t) * r : x0, z = r ? z0 + Math.sin(t) * r : z0;
+      if (Math.abs(z) > G.d / 2 - .8) continue;
+      if (!hitGrid(G, x, z)) return { x, z };
+      if (!r) break;
+    }
+  return { x: x0, z: z0 };
+}
+
+/* ══════ 6. 조작 ══════ */
+const key = Object.create(null);
+let first = false, mapOn = false, panelOn = false, dlgOn = false;
+addEventListener('keydown', (e) => {
+  if (chatting) return;
+  if (gameOpen()) return;
+  if (e.code === 'Enter') { e.preventDefault(); if (emoOn) toggleEmo(false); openChat(); return; }
+  if (e.code === 'KeyG') { e.preventDefault(); toggleEmo(); return; }
+  if (mapOn && /^Digit[0-9]$/.test(e.code)) {
+    e.preventDefault();
+    const i = (+e.code.slice(5) + 9) % 10;             // 1..9,0 → 0..9
+    if (PLACES[i]) goPlace(PLACES[i]);
+    return;
+  }
+  if (/^Digit[1-8]$/.test(e.code)) { e.preventDefault(); doEmote(EMOTES[+e.code.slice(5) - 1].k); toggleEmo(false); return; }
+  if (e.code === 'Escape') {
+    if (emoOn) { e.preventDefault(); toggleEmo(false); return; } e.preventDefault(); if (panelOn) closePanel(); else if (dlgOn) closeDlg(); else if (mapOn) toggleMap(); return; }
+  if (panelOn) { if (e.code === 'KeyE' || e.code === 'Enter') { e.preventDefault(); closePanel(); } return; }
+  if (e.code === 'Tab') { e.preventDefault(); toggleView(); return; }
+  if (e.code === 'KeyM') { e.preventDefault(); toggleMap(); return; }
+  /* 시점을 키로도 돌립니다. 끌기만 되면 걷다가 손을 떼고 끌어야 해서
+     한 손으로는 방향을 못 바꿉니다 — "움직이기 힘들다" 의 절반입니다. */
+  /* e.repeat 을 거릅니다 — 누르고 있으면 운영체제가 초당 서른 번을
+     보내서 초당 16 라디안으로 화면이 팽팽 돌았습니다. 25번 반복이
+     예전엔 13.75 라디안(두 바퀴 반), 지금은 0.55 입니다. */
+  if (e.code === 'KeyZ' || e.code === 'Comma') { if (!e.repeat) turnCam(-1); return; }
+  if (e.code === 'KeyX' || e.code === 'Period') { if (!e.repeat) turnCam(1); return; }
+  if (e.code === 'KeyC') { e.preventDefault(); openWardrobe(); return; }
+  if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleHelp(); return; }
+  if (PLACE.on) {
+    if (e.code === 'KeyE' || e.code === 'Space') { e.preventDefault(); stopPlace(true); return; }
+    if (e.code === 'KeyR') { e.preventDefault(); PLACE.ry = (PLACE.ry + Math.PI / 2) % TAU; return; }
+    if (e.code === 'Escape') { e.preventDefault(); stopPlace(false); return; }
+  }
+  if (e.code === 'KeyE' || e.code === 'Space') { e.preventDefault(); interact(); return; }
+  key[e.code] = true;
+});
+addEventListener('keyup', (e) => { key[e.code] = false; });
+addEventListener('blur', () => { for (const k in key) key[k] = false; });
+
+let yaw = -Math.PI * .75, pitch = .55, dist = 11.5, camD = 11.5, drag = null;
+/* 마지막으로 시점을 직접 건드린 시각. 직접 돌린 직후에는 자동 추적을
+   쉬게 합니다 — 내가 돌린 걸 카메라가 도로 되돌리면 싸우는 느낌이 납니다. */
+let camHold = 0;
+/* 사람이 정한 각도(pitch)와 **가림 때문에 잠깐 올라간 각도**를 따로 둡니다 */
+let camPitch = .55;
+function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; turned += .55; clampRoomYaw(); }
+cv.addEventListener('pointerdown', (e) => {
+  if (first) { if (CUR.live) { curClick(); return; } syncLock(); return; }
+  drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
+  /* 누르는 동안 포인터를 잠급니다.
+
+     "시점이 잘 안 돌아간다" 의 정체는 감도가 아니라 **화면 가장자리**
+     였습니다. 마우스가 끝에 닿으면 clientX 가 더 안 늘어나므로 계속
+     밀어도 카메라가 멈춥니다 — 입력을 못 받는 것처럼 느껴집니다.
+     잠그면 movementX 가 끝없이 오므로 한 방향으로 얼마든지 돌립니다.
+     떼면 바로 풉니다. */
+  try { cv.requestPointerLock?.(); } catch {}
+  curEl().classList.add('look');
+});
+cv.addEventListener('pointermove', (e) => {
+  if (first && document.pointerLockElement === cv) {
+    /* 창이 열려 있으면 같은 움직임이 커서를 움직입니다 */
+    if (CUR.live) { curMove(e.movementX, e.movementY); curHotCheck(); return; }
+    /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**. */
+    yaw -= e.movementX * .0017;
+    pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
+    turned += Math.abs(e.movementX) * .0024; return;
+  }
+  /* 3인칭에서 누른 채 잠겨 있으면 movement 를 그대로 씁니다 —
+     화면 끝에 걸리지 않고, 감도도 한 단계 올립니다(.006 → .0075). */
+  if (!first && drag && document.pointerLockElement === cv) {
+    camHold = performance.now() + 1400;
+    yaw -= e.movementX * .0075;
+    pitch = clamp(pitch + e.movementY * .005, .04, 1.35);
+    turned += Math.abs(e.movementX) * .0075;
+    if (room) clampRoomYaw();
+    return;
+  }
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  camHold = performance.now() + 1400;
+  yaw -= dx * (first ? .005 : .0075);
+  pitch = first ? clamp(pitch + dy * .004, -1.15, 1.15) : clamp(pitch + dy * .004, .04, 1.35);
+  if (!first) clampRoomYaw();
+  turned += Math.abs(dx) * .006;
+  drag = { x: e.clientX, y: e.clientY };
+});
+addEventListener('pointerup', () => { drag = null; });
+/* ── 눌러서 걸어가기 ──
+   전에는 **곧장** 갔습니다. 그래서 건물이 사이에 끼면 벽에 붙어 비비다가
+   1.5초 뒤에 스스로 그만뒀습니다 — 도서관 뒤를 누르면 아무 데도 안 갑니다.
+   2D 판에는 A* 가 있었으니 여기도 길을 찾습니다.
+
+   격자는 1.1m 입니다. 사람 반지름이 0.46 이라 이보다 잘게 쪼개면 칸이
+   여덟 배로 늘고, 이보다 굵으면 건물 사이 통로가 통째로 막힌 것으로
+   읽힙니다. 실내는 방이 작아서 0.55m 로 반 나눕니다.
+
+   대각선을 허용하되 **모서리를 자르지 않습니다**(양옆이 다 뚫려 있을
+   때만). 그러지 않으면 건물 모서리를 스치듯 지나가다 벽에 낍니다. */
+const PATH_CAP = 4200;               // 이보다 오래 찾으면 포기하고 곧장 갑니다
+function findPath(sx, sz, tx, tz) {
+  const step = room ? .55 : 1.1;
+  const gx = (v) => Math.round(v / step);
+  const key = (i, j) => i * 4096 + j;
+  const si = gx(sx), sj = gx(sz), ti = gx(tx), tj = gx(tz);
+  if (si === ti && sj === tj) return [{ x: tx, z: tz }];
+  const blocked = (i, j) => hit(i * step, j * step);
+  /* 목표 칸이 막혀 있으면 그 언저리에서 제일 가까운 빈 칸을 씁니다 —
+     건물 벽을 눌렀을 때 "아무 일도 안 일어남" 이 제일 나쁩니다. */
+  let ei = ti, ej = tj;
+  if (blocked(ei, ej)) {
+    /* 세 칸(3.3m)만 둘러봤더니 **건물을 누르면 늘 null** 이었습니다 —
+       도서관이 열두 칸짜리라 한복판을 누르면 그 안에 빈 칸이 없습니다.
+       건물 반쪽이 넉넉히 들어가게 넓힙니다. */
+    let bd = 1e9;
+    for (let dj = -9; dj <= 9; dj++) for (let di = -9; di <= 9; di++) {
+      const i = ti + di, j = tj + dj;
+      if (blocked(i, j)) continue;
+      const d = di * di + dj * dj;
+      if (d < bd) { bd = d; ei = i; ej = j; }
+    }
+    if (bd > 1e8) return null;
+    /* 누른 자리가 벽 속이면 **그 앞**이 목적지입니다. 원래 누른 점을
+       마지막에 붙이면 도착하자마자 벽으로 파고듭니다. */
+    tx = ei * step; tz = ej * step;
+  }
+  const h = (i, j) => Math.hypot(i - ei, j - ej);
+  const open = [{ i: si, j: sj, g: 0, f: h(si, sj) }];
+  const came = new Map(), best = new Map([[key(si, sj), 0]]);
+  let seen = 0;
+  while (open.length) {
+    /* 힙 대신 선형 탐색입니다. 칸이 수천이라 이 쪽이 짧고, 누를 때
+       한 번만 도는 계산입니다 — 매 프레임 도는 것이 아닙니다. */
+    let bi = 0;
+    for (let k = 1; k < open.length; k++) if (open[k].f < open[bi].f) bi = k;
+    const cur = open.splice(bi, 1)[0];
+    if (cur.i === ei && cur.j === ej) {
+      const out = [];
+      let k = key(cur.i, cur.j), ci = cur.i, cj = cur.j;
+      while (came.has(k)) { out.push({ x: ci * step, z: cj * step });
+        const pv = came.get(k); ci = pv >> 12; cj = (pv & 4095) - 2048; k = key(ci, cj); }
+      out.reverse();
+      out.push({ x: tx, z: tz });
+      return simplify(out);
+    }
+    if (++seen > PATH_CAP) return null;
+    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      if (!di && !dj) continue;
+      const i = cur.i + di, j = cur.j + dj;
+      if (blocked(i, j)) continue;
+      if (di && dj && (blocked(cur.i + di, cur.j) || blocked(cur.i, cur.j + dj))) continue;
+      const ng = cur.g + (di && dj ? 1.4142 : 1);
+      const kk = key(i, j);
+      if (best.has(kk) && best.get(kk) <= ng) continue;
+      best.set(kk, ng);
+      came.set(kk, (cur.i << 12) | (cur.j + 2048));
+      open.push({ i, j, g: ng, f: ng + h(i, j) });
+    }
+  }
+  return null;
+}
+/* 격자를 그대로 따라가면 계단처럼 걷습니다. 중간에 있어도 그만인
+   꼭짓점은 빼고, 눈으로 이어지는 것만 남깁니다. */
+function simplify(pts) {
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = out[out.length - 1], b = pts[i + 1];
+    if (!clearLine(a.x, a.z, b.x, b.z)) out.push(pts[i]);
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+function clearLine(x0, z0, x1, z1) {
+  const d = Math.hypot(x1 - x0, z1 - z0), n = Math.ceil(d / .34);
+  for (let k = 1; k < n; k++) if (hit(x0 + (x1 - x0) * k / n, z0 + (z1 - z0) * k / n)) return false;
+  return true;
+}
+const _ray = new THREE.Raycaster(), _ndc = new THREE.Vector2();
+const _plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), _pt = new THREE.Vector3();
+let goTo = null, goStall = 0, goFrom = null, goPath = null, goEnd = null, goRetried = false, goLastD = -1;
+cv.addEventListener('pointerdown', (e) => { goFrom = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+function endLook() {
+  curEl().classList.remove('look');
+  if (!first && document.pointerLockElement === cv) { try { document.exitPointerLock?.(); } catch {} }
+}
+addEventListener('pointerup', endLook, true);
+addEventListener('pointercancel', endLook, true);
+cv.addEventListener('pointerup', (e) => {
+  if (!goFrom || first || panelOn || mapOn || SESS.on) { goFrom = null; return; }
+  const moved = Math.hypot(e.clientX - goFrom.x, e.clientY - goFrom.y);
+  const held = performance.now() - goFrom.t;
+  goFrom = null;
+  if (moved > 6 || held > 420) return;                 // 끌었으면 시점 돌리기입니다
+  _ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  _ray.setFromCamera(_ndc, cam);
+  if (!_ray.ray.intersectPlane(_plane, _pt)) return;
+  if (room ? Math.hypot(_pt.x, _pt.z) > 99
+           : (Math.abs(_pt.x) > SITE_HX + 6 || Math.abs(_pt.z) > SITE_HZ + 6)) return;
+  /* 길이 안 나오면(섬 밖·완전히 막힌 곳) 예전처럼 곧장 갑니다 —
+     못 가는 것보다 벽에 붙어 보다 그만두는 쪽이 덜 답답합니다. */
+  goPath = findPath(P.x, P.z, _pt.x, _pt.z);
+  goTo = goPath ? goPath.shift() : { x: _pt.x, z: _pt.z };
+  goEnd = { x: _pt.x, z: _pt.z };
+  goStall = 0; goLastD = -1; goRetried = false;
+});
+cv.addEventListener('wheel', (e) => { e.preventDefault();
+  dist = clamp(dist + e.deltaY * .015, room ? 4.5 : 5.5, room ? 18 : 34); }, { passive: false });
+/* ── 마우스 잠금은 **상태에서 유도**합니다 ──
+
+   전 판은 시점을 바꿀 때만 잠그고 풀었습니다. 그래서 1인칭에서 패널이
+   열리면 커서가 잠긴 채라, 버튼을 누르려면 ESC 로 풀고 → 누르고 →
+   화면을 다시 눌러 잠그고 → 시점을 되찾는 네 걸음이 필요했습니다.
+
+   잠글 조건은 하나뿐입니다: **1인칭이고, 열린 창이 없을 때.**
+   그 외에는 전부 풀립니다. 창이 닫히면 저절로 다시 잠깁니다.
+
+   그리고 잠겨 있는 동안에는 화면 가운데에 조준점을 그립니다 — 커서가
+   사라진 채로 무엇을 겨누는지 모르면 그것대로 답답합니다. */
+/* 창이 열려 있으면 마우스는 시점이 아니라 **커서**를 움직입니다 */
+function uiOpen() { return panelOn || dlgOn || mapOn; }
+/* 잠금은 1인칭이면 늘 켭니다 — 창이 열려도 풀지 않습니다.
+   풀면 그 순간 커서가 화면 한복판에 튀어나오고, 다시 잠그려면
+   화면을 눌러야 합니다. 그 왕복을 없애는 것이 이 작업의 목적입니다. */
+function wantLock() { return first && !room; }
+
+/* CUR.live 는 **마우스가 커서를 움직이는가** 입니다(잠금 중 창이 열린 때).
+   커서 자체는 잠기지 않았을 때도 늘 보입니다 — 그때는 실제 포인터
+   좌표를 그대로 따라갑니다. 화면에 커서가 하나만 있게 하는 것이
+   목적이라, 두 경우가 같은 그림을 씁니다. */
+const CUR = { x: 0, y: 0, live: false, hot: false };
+const curEl = () => $('#gcur');
+function curPaint() {
+  curEl().style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
+}
+function curShow(on) {
+  if (on && !CUR.live) { CUR.x = innerWidth / 2; CUR.y = innerHeight * .5; }
+  CUR.live = on;
+  curPaint();
+}
+function curMove(dx, dy) {
+  CUR.x = clamp(CUR.x + dx, 2, innerWidth - 2);
+  CUR.y = clamp(CUR.y + dy, 2, innerHeight - 2);
+  curPaint();
+}
+/* 누를 수 있는 것 위인지 — 매 움직임마다 검사하면 비싸므로 프레임에
+   한 번만 합니다. elementFromPoint 는 레이아웃을 읽는 호출입니다. */
+let curHotQ = false;
+function curHotCheck() {
+  if (curHotQ) return;
+  curHotQ = true;
+  requestAnimationFrame(() => {
+    curHotQ = false;
+    const el = curEl();
+    el.style.visibility = 'hidden';
+    const t = document.elementFromPoint(CUR.x, CUR.y);
+    el.style.visibility = '';
+    const hot = !!(t && t.closest('button, a, [role="button"], .k, .dockb, input, select'));
+    if (hot !== CUR.hot) { CUR.hot = hot; el.classList.toggle('hot', hot); }
+  });
+}
+/* 잠기지 않았을 때 — 진짜 포인터를 그대로 따릅니다 */
+addEventListener('pointermove', (e) => {
+  if (CUR.live || document.pointerLockElement === cv) return;
+  CUR.x = e.clientX; CUR.y = e.clientY;
+  curPaint(); curHotCheck();
+}, true);
+addEventListener('pointerdown', () => curEl().classList.add('press'), true);
+addEventListener('pointerup', () => curEl().classList.remove('press'), true);
+addEventListener('pointerleave', () => curEl().classList.remove('on'));
+addEventListener('pointerenter', () => curEl().classList.add('on'));
+/* 커서 밑의 것을 실제로 누릅니다 */
+function curClick() {
+  const el = $('#gcur');
+  el.style.visibility = 'hidden';                 // 자기 자신을 집지 않게
+  const t = document.elementFromPoint(CUR.x, CUR.y);
+  el.style.visibility = '';
+  if (!t) return;
+  t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: CUR.x, clientY: CUR.y }));
+  t.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, clientX: CUR.x, clientY: CUR.y }));
+  t.click?.();
+}
+function syncLock() {
+  const want = wantLock();
+  try {
+    if (want && document.pointerLockElement !== cv) cv.requestPointerLock?.();
+    else if (!want && document.pointerLockElement === cv) document.exitPointerLock?.();
+  } catch {}
+  const ui = uiOpen();
+  const aiming = want && !ui;                 // 잠겨 있고 창이 없을 때만 조준
+  $('#xhair').classList.toggle('on', aiming);
+  /* 커서는 조준할 때만 숨깁니다. 그 외에는 3인칭이든 1인칭이든
+     늘 우리 커서가 보입니다 — 윈도우 커서가 나올 자리가 없습니다. */
+  curEl().classList.toggle('on', !aiming);
+  curShow(want && ui);
+}
+document.addEventListener('pointerlockchange', () => {
+  const on = document.pointerLockElement === cv;
+  const aiming = on && !uiOpen();
+  $('#xhair').classList.toggle('on', aiming);
+  curEl().classList.toggle('on', !aiming);
+  curShow(on && uiOpen());
+});
+
+function toggleView() {
+  first = !first;
+  player.visible = !first; blob.visible = !first;
+  pitch = first ? 0 : .58;
+  $('#foot .md').textContent = first ? '1인칭' : '3인칭';
+  dockOn('view', first);
+  syncLock();
+}
+function clampRoomYaw() {
+  if (!room || first) return;
+  const mid = -Math.PI * .75;
+  let d = ((yaw - mid + Math.PI * 3) % TAU) - Math.PI;
+  yaw = mid + clamp(d, -1.05, 1.05);
+}
+/* 손가락 */
+let stick = null;
+cv.addEventListener('touchstart', (e) => { const t = e.changedTouches[0];
+  if (t.clientX < innerWidth / 2) stick = { id: t.identifier, x: t.clientX, y: t.clientY, dx: 0, dy: 0 }; }, { passive: true });
+cv.addEventListener('touchmove', (e) => { for (const t of e.changedTouches)
+  if (stick && t.identifier === stick.id) {
+    stick.dx = clamp((t.clientX - stick.x) / 54, -1, 1);
+    stick.dy = clamp((t.clientY - stick.y) / 54, -1, 1);
+  } }, { passive: true });
+cv.addEventListener('touchend', (e) => { for (const t of e.changedTouches)
+  if (stick && t.identifier === stick.id) stick = null; }, { passive: true });
+
+/* ══════ 7. 창 · 대화 · 알림 ══════ */
+const elPrompt = $('#prompt'), elZone = $('#zone'), elToast = $('#toast'),
+      elPanel = $('#panel'), elDlg = $('#dlg'), elPost = $('#post'), elBub = $('#bub');
+let toastT = 0;
+function toast(a, b) {
+  elToast.querySelector('b').textContent = a;
+  elToast.querySelector('span').textContent = b || '';
+  elToast.classList.add('on'); toastT = 1.9;
+}
+function setZone(a, b) {
+  elZone.querySelector('b').textContent = a;
+  elZone.querySelector('.sub').textContent = b || '';
+}
+/* 자리에 걸린 창을 만듭니다 — ui.js 가 실제로 도는 것을 돌려줍니다 */
+function panelFor(s) {
+  switch (s.panel) {
+    /* 아래 넷은 창 쪽에 다 만들어져 있는데 부르는 데가 없었습니다.
+       spots.js 가 panel 이름으로 가리키므로 여기서 이어 줍니다. */
+    case 'today': return UI.today();
+    case 'radio': return UI.radio({ bgm: BGM.on });
+    case 'calendar': return UI.calendar();
+    case 'tour': return UI.tour({ step: tourStep,
+      onStep: (i) => { tourStep = i; },
+      onDone: () => { closePanel(); SAVE.seenTour = true; UI.save(); } });
+    case 'timetable': return UI.timetable();
+    case 'records': return UI.records();
+    case 'card': return UI.studentCard();
+    case 'shop': return panelFor({ panel: 'wardrobe' });
+    case 'notice-school': return noticeView();
+    case 'notice-out': return UI.notices('out');
+    case 'retro': return UI.retro({ last: SAVE.sessions[SAVE.sessions.length - 1] });
+    case 'coins': return UI.coinPanel({ coins: SAVE.coins, server: !!(SRV && SRV.configured) });
+    case 'guide': return UI.guide();
+    case 'privacy': return UI.privacy();
+    case 'mypage': return UI.mypage({
+      coins: SAVE.coins, snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
+      baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
+      onDo: (k, again) => {
+        if (k === 'snd') { sndToggle(); again(); }
+        else if (k === 'bgm') { BGM.setOn(!BGM.on); SAVE.bgm = BGM.on; UI.save(); again(); }
+        else if (k.startsWith('bgm:')) {
+          const id = k.slice(4); BGM.setPick(id); SAVE.bgmPick = id; UI.save(); again();
+        }
+        else if (k.startsWith('vol:')) {
+          BGM.setVol(+k.slice(4)); SAVE.bgmVol = BGM.vol; UI.save(); again();
+        }
+        else if (k === 'retro') openPanel({ tag: '회고', title: '세션 회고', panel: 'retro' });
+        else if (k === 'recal') { PZ.clearBaseline(); toast('기준을 지웠어요', '다음에 앉을 때 10초 동안 다시 잡습니다'); again(); }
+        else if (k === 'wipe') {
+          if (!confirm('이 기기의 모든 기록을 지웁니다. 되돌릴 수 없습니다.')) return;
+          try { localStorage.clear(); } catch (_) {}
+          location.reload();
+        }
+      },
+    });
+    case 'wear-shop': return UI.wearShop({
+      wear: WEAR, owned: SAVE.owned2, coins: SAVE.coins, server: !!(SRV && SRV.configured),
+      rides: RIDE_LIST, ownedRide: SAVE.ownedRide,
+      onBuy: (id, slot, again) => buyWear(id, slot, again),
+      onBuyRide: (id, again) => {
+        if (SAVE.ownedRide.includes(id)) return;
+        if (!payCoins(RIDE_PRICE[id])) return;
+        SAVE.ownedRide.push(id); UI.save();
+        toast(josa(RIDES[id].name, '을', '를') + ' 샀어요', '옷장(C)에서 탑니다');
+        again();
+      },
+    });
+    case 'furn-shop': return UI.furnShop({
+      coins: SAVE.coins, furn: SAVE.furn,
+      onBuy: (id, again) => {
+        const item = UI.FURN.find(([q]) => q === id);
+        if (!item || !payCoins(item[2])) return;
+        SAVE.furn[id] = (SAVE.furn[id] || 0) + 1; UI.save();
+        toast(josa(item[1], '을', '를') + ' 샀어요', '기숙사 방 꾸미기에서 놓아요'); again();
+      },
+    });
+    case 'egg-shop': return UI.eggShop({
+      coins: SAVE.coins, egg: SAVE.egg, ownedSp: SAVE.ownedSp, allSp: SPEC,
+      onBuy: (again) => {
+        if (SAVE.egg) { toast('이미 품는 알이 있어요', '깨어난 뒤에 또 사요'); return; }
+        if (!payCoins(40)) return;
+        SAVE.egg = { hatchAt: Date.now() + 180000 }; UI.save();
+        toast('알을 샀어요', '3분 뒤에 깨어나요 — 돌아다녀도 돼요'); again();
+      },
+    });
+    case 'cafeteria': return UI.cafeteria({
+      coins: SAVE.coins,
+      onBuy: (nm, price, again) => {
+        if (!payCoins(price)) return;
+        toast(nm + ' 냠냠', '기운이 났어요'); myEmo = { k: 'yes', t0: performance.now() };
+        again();
+      },
+    });
+    case 'vending': return UI.vending({
+      coins: SAVE.coins,
+      onBuy: (nm, price, again) => {
+        if (!payCoins(price)) return;
+        toast(nm + ' 뽑았어요', '시원하다'); again();
+      },
+    });
+    case 'claw': return UI.claw({
+      coins: SAVE.coins,
+      onPlay: (again) => {
+        if (!payCoins(30)) return;
+        const pool = ['bear', 'plant', 'books2'];
+        const got = pool[Math.floor(Math.random() * pool.length)];
+        SAVE.furn[got] = (SAVE.furn[got] || 0) + 1; UI.save();
+        const nm = UI.FURN.find(([q]) => q === got)[1];
+        toast(nm + ' 뽑았다!', '기숙사에 놓을 수 있어요'); again();
+      },
+    });
+    case 'fame': return fameView();
+    case 'school': return schoolView();
+    case 'weather': return weatherView();
+    case 'bus': return UI.bus();
+    case 'invite': return UI.invitePanel({ nick: myNick(), school: SAVE.school, species: curSpecies });
+    case 'decor': return UI.decor({
+      furn: SAVE.furn,
+      placedCount: SAVE.decor.reduce((m, d) => (m[d.id] = (m[d.id] || 0) + 1, m), {}),
+      placed: SAVE.decor,
+      onPlace: (id) => { closePanel(); startPlace(id); },
+      onClear: (again) => { SAVE.decor = []; UI.save(); rebuildDorm(); again(); },
+    });
+    case 'wardrobe': return {
+      tag: '옷장', title: '오늘은 뭘 입지', html: wardrobeHTML(),
+      on(root, again) {
+        root.querySelector('.bd').onclick = (e) => {
+          const b = e.target.closest('button'); if (!b) return;
+          if (b.dataset.tint) {
+            SAVE.look.tint = SAVE.look.tint || {};
+            const c = b.dataset.tc;
+            if (c) SAVE.look.tint[b.dataset.tint] = +c; else delete SAVE.look.tint[b.dataset.tint];
+            UI.save();
+            /* 통째로 다시 짓지 않고 재질 색만 바꿉니다 — 색을 하나 눌러
+               볼 때마다 캐릭터를 새로 만들면 옷장이 뚝뚝 끊깁니다. */
+            applyTint(player, SAVE.look); applyTint(pipMe, SAVE.look);
+            net?.setLook(curSpecies, myLook(), myNick());
+            again(); return;
+          }
+          if (b.dataset.ride !== undefined) {
+            const id = b.dataset.ride;
+            if (id && !SAVE.ownedRide.includes(id)) return;
+            setRide(id || null); again(); return;
+          }
+          if (b.dataset.sp) { curSpecies = b.dataset.sp; SAVE.species = curSpecies; }
+          else if (b.dataset.wslot) { SAVE.look[b.dataset.wslot] = b.dataset.wid; }
+          else if (b.dataset.cslot) { SAVE.look[b.dataset.cslot] = +b.dataset.c; }
+          else if (b.dataset.snd) { sndToggle(); again(); return; }
+          else if (b.dataset.shadow) { setShadows(!renderer.shadowMap.enabled); again(); return; }
+          else if (b.dataset.sc) {
+            SAVE.school = b.dataset.sc; idbarPaint();
+            /* 과잠 띠를 학교 색으로 */
+            const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+            if (sc && SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
+          }
+          else return;
+          UI.save(); rebuildMe(); net?.setLook(curSpecies, myLook(), myNick()); again();
+        };
+        const nk = root.querySelector('input.nick');
+        if (nk) {
+          nk.onkeydown = (e) => e.stopPropagation();
+          nk.oninput = () => {
+            SAVE.nick = nk.value.trim().slice(0, 10); UI.save(); idbarPaint();
+            net?.setLook(curSpecies, myLook(), myNick());
+          };
+        }
+      },
+    };
+    default: return UI.stub(s.tag, s.title, s.body);
+  }
+}
+let panelSpot = null, redrawPanel = () => {};
+function openPanel(s) {
+  panelSpot = s;
+  const draw = () => {
+    const v = panelFor(s);
+    elPanel.querySelector('.tag').textContent = v.tag;
+    elPanel.querySelector('h3').textContent = v.title;
+    elPanel.querySelector('.bd').innerHTML = v.html;
+    if (v.on) v.on(elPanel, draw);
+  };
+  redrawPanel = draw; draw();
+  elPanel.classList.add('on'); panelOn = true; syncLock();
+  elTut.style.display = 'none';
+  dockOn('wear', s.panel === 'wardrobe');
+}
+function closePanel() {
+  elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
+  elTut.style.display = '';
+  dockOn('wear', false);
+}
+
+let dlgWho = null;
+function openDlg(n) {
+  dlgWho = n;
+  /* 처음 만나는 사람에게는 한 번만 5코인 — 2D 판의 `once:npc_…` 규칙입니다.
+     캠퍼스를 한 바퀴 돌 이유가 되고, 두 번째부터는 안 줍니다. */
+  SAVE.metNpc = SAVE.metNpc || [];
+  if (!SAVE.metNpc.includes(n.d.name)) {
+    SAVE.metNpc.push(n.d.name); UI.save();
+    grantCoins(5, josa(n.d.name, '과', '와') + ' 처음 인사했어요');
+  }
+  /* 말 걸면 **그 자리에 멈춥니다.** 전에는 걷던 사람이 그대로 걸어가 버려서
+     창이 열리자마자 상대가 화면 밖으로 사라졌습니다. */
+  n.paused = true;
+  n.faceMe = true;
+  elDlg.querySelector('b').textContent = n.d.name;
+  elDlg.querySelector('span').textContent = n.d.species;
+  elDlg.querySelector('p').textContent = n.d.lines[n.line % n.d.lines.length];
+  n.line++;
+  elDlg.classList.add('on'); dlgOn = true; syncLock();
+}
+function closeDlg() {
+  if (dlgWho) { dlgWho.paused = false; dlgWho.faceMe = false; dlgWho.wait = .8; }
+  elDlg.classList.remove('on'); dlgOn = false; dlgWho = null; syncLock();
+}
+
+/* 앉은 카메라가 설 자리 고르기 —
+   후보 방향을 돌면서 카메라 경로가 키 큰 가구·벽에 안 걸리는 첫 방향을 씁니다. */
+function seatCamClear(x, z, yw) {
+  const G = room?.grid; if (!G) return true;
+  const sx = -Math.sin(yw), sz = -Math.cos(yw);
+  for (let t = 1.2; t <= 4.8; t += .6) {
+    const cx = x + sx * t, cz = z + sz * t;
+    if (cx < -G.w / 2 + .4 || cz < -G.d / 2 + .4) return false;      // 진짜 벽 둘
+    if (cx > G.w / 2 + 3 || cz > G.d / 2 + 3) continue;              // 열린 쪽 바깥은 자유
+    const i = Math.floor((cx + G.w / 2) / CELL), j = Math.floor((cz + G.d / 2) / CELL);
+    if (i >= 0 && j >= 0 && i < G.nx && j < G.nz && G.tall && G.tall[j * G.nx + i]) return false;
+  }
+  return true;
+}
+function seatYaw(seat) {
+  const d0 = seat.dir;
+  for (const off of [0, -.6, .6, -1.15, 1.15, Math.PI]) {
+    if (seatCamClear(seat.x, seat.z, d0 + off)) return d0 + off;
+  }
+  return d0;
+}
+
+/* 옷 사기 — 서버(world_buy_item)가 붙어 있으면 서버가 값을 정하고 잔액을 깎습니다.
+   varsity 는 서버 표의 varsity_red 로 통일해 보냅니다. */
+function buyWear(id, slot, again) {
+  const item = WEAR[slot].find(([q]) => q === id);
+  if (!item) return;
+  const done = () => {
+    SAVE.owned2.push(id); UI.save();
+    toast(item[1] + ' 샀어요', '옷장(C)에서 갈아입어요'); again();
+  };
+  if (SRV && SRV.configured) {
+    const srvId = id === 'varsity' ? 'varsity_red' : id;
+    SRV.buyItem(srvId).then((r) => {
+      if (r && r.ok) {
+        SRV.balance().then((b) => { if (typeof b === 'number') { SAVE.coins = b; UI.save(); } done(); });
+      } else if (r && r.reason === 'poor') toast('코인이 모자라요', '세션·미니게임으로 모아요');
+      else if (!payCoins(item[2])) ; else done();     // 서버 실패 → 이 기기 코인으로
+    }).catch(() => { if (payCoins(item[2])) done(); });
+  } else if (payCoins(item[2])) done();
+}
+
+/* 학교 인증 — 학교 메일로 여섯 자리를 받습니다(shared/school-auth.js).
+   목록에서 고르기만 하면 아무나 남의 학교 점수를 올릴 수 있어서, 랭킹전이
+   학교 대항인 이상 여기는 인증이 있어야 말이 됩니다. */
+const SA = { state: SAVE.schoolVerifiedAt ? 'done' : 'idle', email: SAVE.schoolMail || '', err: '' };
+function schoolView() {
+  const A = window.SchoolAuth;
+  return UI.schoolAuth({
+    configured: !!(A && A.configured), state: SA.state, email: SA.email, err: SA.err,
+    onDo: (k, v, again) => {
+      SA.err = '';
+      if (k === 'back') { SA.state = 'idle'; again(); return; }
+      if (k === 'reset') { SA.state = 'idle'; SAVE.schoolVerifiedAt = 0; UI.save(); again(); return; }
+      if (k === 'send') {
+        const m = (v.email || '').toLowerCase();
+        if (!/^[^@\s]+@[^@\s]+$/.test(m)) { SA.err = '메일 주소 형식이 아닙니다.'; again(); return; }
+        if (!/\.ac\.kr$|^.*@skku\.edu$/.test(m)) { SA.err = '학교 메일(ac.kr)만 됩니다.'; again(); return; }
+        SA.email = m; SA.state = 'sending'; again();
+        A.sendCode(m).then(() => { SA.state = 'code'; again(); })
+          .catch((e) => { SA.state = 'idle'; SA.err = '보내지 못했습니다 — 잠시 뒤에 다시 해 주세요.'; again(); });
+        return;
+      }
+      if (k === 'verify') {
+        const c = (v.code || '').replace(/\D/g, '');
+        if (c.length !== 6) { SA.err = '여섯 자리를 넣어 주세요.'; again(); return; }
+        A.verifyCode(SA.email, c).then((r) => {
+          if (!r) { SA.err = '번호가 맞지 않습니다.'; again(); return; }
+          const dom = SA.email.split('@')[1] || '';
+          const hit = SCHOOLS.find((q) => DOMAIN_OF[q.name] === dom);
+          SAVE.school = hit ? hit.name : (SAVE.school || dom);
+          SAVE.schoolMail = SA.email; SAVE.schoolVerifiedAt = Date.now();
+          UI.save(); idbarPaint();
+          SA.state = 'done'; again();
+          toast('학교 인증 끝', SAVE.school + ' 로 쌓입니다');
+        }).catch(() => { SA.err = '확인하지 못했습니다.'; again(); });
+      }
+    },
+  });
+}
+
+/* 명예의 전당 — 서버 집계를 실제로 부릅니다 */
+/* 명예의 전당. 창 쪽에 미달 학교 · 지난 시즌 · 참여자 수 · 학교 색 ·
+   오류 네 가지를 다 채워 놓고, 여기서는 `rows` 하나만 넘기고 있었습니다.
+   그래서 새로 만든 칸이 하나도 안 보였습니다 — 창은 옛 호출도 받아
+   주도록 되어 있어서 터지지도 않고 조용히 절반만 나왔습니다.
+
+   학교 색표(SCHOOLS)는 여기 있으므로 **여기서** 넘깁니다. 저쪽에
+   한 벌 더 두면 학교를 하나 더할 때 한 곳만 고치는 날이 옵니다. */
+let fameState = 'idle', fameData = null;
+const schoolColor = (n) => {
+  const q = SCHOOLS.find((x) => x.name === n);
+  return q ? '#' + q.c.toString(16).padStart(6, '0') : null;
+};
+function fameView() {
+  if (!(SRV && SRV.configured)) fameState = 'unconfigured';
+  else if (fameState === 'idle') {
+    fameState = 'loading';
+    SRV.schoolRanking().then((r) => {
+      fameState = (r && r.ok) ? 'ok' : ((r && r.reason) || 'server');
+      fameData = (r && r.ok) ? r.data : null;
+      redrawPanel();
+    }).catch(() => { fameState = 'offline'; redrawPanel(); });
+  }
+  return UI.fame({ state: fameState, data: fameData, schoolColor,
+    myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt,
+    onRetry: (again) => { fameState = 'idle'; again(); } });
+}
+
+/* 학교 공지 — /api/notice 가 학교 RSS 를 받아 옵니다(2D 판과 같은 주소) */
+let ntRows;
+function noticeView() {
+  if (ntRows === undefined) {
+    ntRows = null;
+    fetch('/api/notice?school=mju.ac.kr')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        ntRows = Array.isArray(j) ? j : (j && Array.isArray(j.items) ? j.items : null);
+        redrawPanel();
+      })
+      .catch(() => { ntRows = null; redrawPanel(); });
+    return UI.notices('school', undefined);
+  }
+  return UI.notices('school', ntRows);
+}
+
+/* 창밖 날씨 — /api/weather 는 배포본에서만 있습니다 */
+let wxData;
+function weatherView() {
+  if (wxData === undefined) {
+    fetch('/api/weather').then((r) => (r.ok ? r.json() : null)).then((j) => {
+      wxData = j ? { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' } : null;
+      redrawPanel();
+    }).catch(() => { wxData = null; redrawPanel(); });
+    return UI.weather({ data: undefined });
+  }
+  return UI.weather({ data: wxData });
+}
+
+/* ══════ 8. 자세 세션 ══════ */
+/* ── 세션 시계 ──
+   앉은 시간은 **벽시계**로 셉니다. 예전에는 프레임마다 dt 를 더했는데,
+   dt 에는 0.1초 천장이 있습니다(한 프레임에 벽을 뚫고 지나가지 않게).
+   그래서 10fps 아래로 내려가면 시계가 실제보다 느리게 갔습니다 —
+   재 봤습니다: 16.5초를 앉아 있었는데 3.1초로 셌습니다.
+   느린 노트북을 쓰는 사람이 25분 앉아 있고 8분어치 코인을 받는 셈입니다.
+   걸음은 dt 로, 시간은 시계로. 둘은 원래 다른 것입니다. */
+const SESS = { on: false, k: 0, want: 0, t: 0, judged: 0, next: 0, demo: true,
+  bad: 0, wasBad: false, from: null, title: '', live: '', t0: 0, dw: 0 };
+
+/* ── 웹캠 자세 판정 ──
+   `../shared/posture.js` 에 카메라를 물립니다. 거부하거나 모델을 못 받으면
+   시연용 곡선으로 물러납니다 — 캠퍼스는 그대로 걸어 다닙니다. */
+const pzHint = () => elPost.querySelector('.hint .pz');
+const PZ = createPosture({
+  onStatus: (t) => { const e = pzHint(); if (e) e.textContent = t || ''; },
+  onMode: (m) => {
+    SESS.demo = !(m === 'live' || m === 'calibrating');
+    const e = pzHint(); if (!e) return;
+    if (m === 'denied') e.textContent = '카메라를 안 켜서 시연용 곡선으로 움직입니다';
+    else if (m === 'failed') e.textContent = '판정 모델을 못 받아 시연용 곡선으로 움직입니다';
+    else if (m === 'live') e.textContent = '웹캠이 실제로 자세를 보고 있어요';
+    $('#pipcam').style.display = (m === 'live' || m === 'calibrating') ? 'block' : 'none';
+    if ((m === 'live' || m === 'calibrating') && PZ.video) $('#pipcam').srcObject = PZ.video.srcObject;
+  },
+  onCalib: (p) => {
+    const e = pzHint(); if (e) e.textContent = `기준 잡는 중 ${Math.round(p * 100)}% — 평소처럼 앉아 계세요`;
+  },
+  onState: (st, kk, v) => {
+    SESS.live = st;
+    /* 어느 축이 오래 벗어났는지를 세션 내내 모읍니다 — 회고의 스트레칭
+       처방이 이 숫자에서 나옵니다. 안 모으면 처방이 그냥 덕담이 됩니다. */
+    if (v && v.details) for (const d of v.details)
+      if (d.deviation > 1) SESS.axes[d.key] = (SESS.axes[d.key] || 0) + .066;
+  },
+});
+$('#stand').addEventListener('click', () => endSession());
+function startSession(s) {
+  Object.assign(SESS, { on: true, t: 0, judged: 0, tWarn: 0, tBad: 0, axes: {},
+    k: 0, want: 0, next: 3.2, bad: 0, wasBad: false, t0: performance.now(), dw: 0,
+    live: '', title: s.title, from: { x: P.x, z: P.z, dir: P.dir } });
+  PZ.start();
+  P.x = s.seat.x; P.z = s.seat.z; P.dir = s.seat.dir; P.sp = 0;
+  yaw = seatYaw(s.seat); pitch = .34; dist = 5.0; camD = dist;
+  sit(player, true); sit(pipMe, true);
+  elPost.querySelector('.nm').textContent = s.title;
+  elPost.classList.add('on');
+  $('#dock').style.opacity = '0'; $('#dock').style.pointerEvents = 'none';
+  tutDone('sit');
+}
+function endSession(quiet) {
+  if (SESS.on && SESS.t > 4) {
+    SAVE.sessions.push({ t: Date.now(), sec: SESS.t, judged: SESS.judged,
+      bad: SESS.bad, tWarn: SESS.tWarn, tBad: SESS.tBad, axes: SESS.axes,
+      zone: room ? room.key : 'campus' });
+    if (SAVE.sessions.length > 60) SAVE.sessions.shift();
+    if (SRV?.configured) {
+      /* 코인은 서버가 지급합니다 — 여기서 더하면 두 번 받게 됩니다 */
+      SRV.finishSession({
+        school: SAVE.school || null,
+        seatedMinutes: SESS.t / 60, campusMinutes: SESS.t / 60,
+        recoveries: SESS.bad, chairMinutes: SESS.t / 60,
+        startedAt: Date.now() - SESS.t * 1000, endedAt: Date.now(),
+      }).then(() => SRV.balance()).then((b) => {
+        if (typeof b === 'number') { SAVE.coins = b; UI.save(); return; }
+        throw new Error('잔액을 못 받았습니다');
+      }).catch(() => {
+        /* 서버가 안 붙으면 이 기기 코인으로 줍니다. 안 그러면 오프라인에서
+           앉은 시간이 통째로 사라집니다 — 다음에 붙을 때 서버 잔액이 이깁니다. */
+        SAVE.coins += sessionCoins(SESS.judged || SESS.t, SESS.bad); UI.save();
+      });
+    } else {
+      /* 2D 판의 규칙 그대로 — **판정이 실제로 돈 시간**으로 계산합니다.
+         의자에 앉은 벽시계 시간이 아니라서, 카메라를 가려 두고 코인만
+         쌓는 것이 안 됩니다. 완주 구간 · 회복 · 연속 출석 · 하루 상한. */
+      SAVE.coins += sessionCoins(SESS.judged || SESS.t, SESS.bad);
+    }
+    UI.save();
+  }
+  SESS.on = false; SESS.face = ''; SESS.recoverT = 0;
+  PZ.stop();
+  $('#pipcam').style.display = 'none';
+  sit(player, false); sit(pipMe, false);
+  slouch(player, 0); slouch(pipMe, 0);
+  face(player, 'good'); face(pipMe, 'good');
+  idbarTime(-1);
+  elPost.classList.remove('on'); elBub.classList.remove('on');
+  $('#dock').style.opacity = ''; $('#dock').style.pointerEvents = '';
+  if (quiet) return;
+  dist = 9.5; pitch = .74; yaw = -Math.PI * .75; camD = dist;
+  if (SESS.from) { P.x = SESS.from.x; P.z = SESS.from.z; P.dir = SESS.from.dir; }
+  unstick();
+}
+/* 완주 구간 4단계 · 회복 5코인(다섯 번까지) · 하루 상한 300 */
+const COIN_TIERS = [[50 * 60, 60], [30 * 60, 40], [15 * 60, 30], [5 * 60, 10]];
+const STREAK_STEPS = [[60, 100], [30, 60], [14, 30], [7, 15], [3, 5]];
+const DAILY_CAP = 300;
+function today() { return new Date().toISOString().slice(0, 10); }
+function coinDay() {
+  if (SAVE.coinDay?.date !== today()) SAVE.coinDay = { date: today(), got: 0 };
+  return SAVE.coinDay;
+}
+/** 하루 상한을 지키며 줍니다. 넘치는 만큼은 안 줍니다 */
+function grantCoins(n, why) {
+  const d = coinDay();
+  const give = Math.max(0, Math.min(n, DAILY_CAP - d.got));
+  if (give <= 0) { toast('오늘 몫을 다 받았어요', `하루 ${DAILY_CAP}코인까지예요 — 내일 또 줘요`); return 0; }
+  d.got += give; SAVE.coins += give; UI.save();
+  if (why) toast(`코인 +${give}`, why);
+  return give;
+}
+function sessionCoins(sec, recover) {
+  let n = 0;
+  for (const [need, give] of COIN_TIERS) if (sec >= need) { n = give; break; }
+  n += Math.min(5, recover) * 5;
+  const d = coinDay();
+  const give = Math.max(0, Math.min(n, DAILY_CAP - d.got));
+  d.got += give;
+  return give;
+}
+/** 연속 출석 — 하루 한 번, 끊기면 1일부터 */
+function checkStreak() {
+  const t = today();
+  if (SAVE.attend?.date === t) return;
+  const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const run = SAVE.attend?.date === y ? (SAVE.attend.run || 0) + 1 : 1;
+  SAVE.attend = { date: t, run };
+  UI.save();
+  for (const [need, give] of STREAK_STEPS)
+    if (run === need) { grantCoins(give, `${run}일 연속 출석`); return; }
+  if (run > 1) toast(`${run}일 연속`, '오늘도 왔어요');
+}
+
+window.deskfit3d = {
+  setPosture(k) { SESS.demo = false; SESS.want = clamp(k, 0, 1); },
+  useDemo() { SESS.demo = true; },
+  get session() { return SESS.on; },
+};
+
+/* ══════ 8.5 감정표현 · 채팅 · 실시간 ══════ */
+const elEmo = $('#emo'), elChatLog = $('#chatlog'), elChatIn = $('#chatin'),
+      chatBox = elChatIn.querySelector('input'), elNet = $('#net');
+let emoOn = false, myEmo = null;     // { k, t0 }
+{ /* 바퀴 — 여덟 개를 원으로 */
+  EMOTES.forEach((e, i) => {
+    const a = (i / EMOTES.length) * TAU - Math.PI / 2;
+    const b = document.createElement('button');
+    b.innerHTML = `${e.e}<i>${i + 1} ${e.n}</i>`;
+    b.style.left = (144 + Math.cos(a) * 104) + 'px';
+    b.style.top = (144 + Math.sin(a) * 104) + 'px';
+    b.addEventListener('click', () => { doEmote(e.k); toggleEmo(false); });
+    elEmo.appendChild(b);
+  });
+}
+function toggleEmo(on) {
+  emoOn = on === undefined ? !emoOn : on;
+  elEmo.classList.toggle('on', emoOn); dockOn('emo', emoOn);
+}
+function doEmote(k) {
+  myEmo = { k, t0: performance.now() };
+  playEmoteSound(k);
+  net?.emote(k);
+  showEmoIcon(myEl, k);
+}
+let chatting = false, lastSay = 0;
+/* 도배 — 한 줄 간격(1.2초)만으로는 열 줄을 12초에 쏟습니다.
+   2D 판처럼 **창(10초)에 몇 줄인지**도 같이 봅니다. */
+const sayLog = [];
+function sayAllowed() {
+  const now = performance.now();
+  while (sayLog.length && now - sayLog[0] > 10000) sayLog.shift();
+  if (sayLog.length >= 5) { toast('천천히', '10초에 다섯 줄까지예요'); return false; }
+  if (now - lastSay < 1200) { toast('천천히', '도배는 안 돼요'); return false; }
+  sayLog.push(now); lastSay = now; return true;
+}
+function openChat() {
+  chatting = true; elChatIn.classList.add('on'); chatBox.value = ''; chatBox.focus();
+  dockOn('chat', true);
+}
+function closeChat() {
+  chatting = false; elChatIn.classList.remove('on'); chatBox.blur(); dockOn('chat', false);
+}
+chatBox.addEventListener('keydown', (e) => {
+  e.stopPropagation();
+  if (e.code === 'Escape') { closeChat(); return; }
+  if (e.code === 'Enter') {
+    const raw = chatBox.value.trim().slice(0, 60);
+    if (!raw) { closeChat(); return; }
+    /* 욕설 — 걸린 낱말만 가리고 나머지는 보냅니다. 통째로 막으면 대화가
+       끊깁니다. 가려진 문장이 그대로 나가므로 남의 화면에도 가려집니다. */
+    const t = maskProfanity(raw);
+    if (t !== raw) toast('고운 말', '걸린 말은 가려서 보냈어요');
+    if (!sayAllowed()) return;
+    closeChat();
+    pushChat(myNick(), t);
+    net?.say(t);
+    mySay = { text: t, t0: performance.now() };
+  }
+});
+function pushChat(who, text) {
+  const d = document.createElement('div');
+  /* 이름도 **글로 취급**합니다. 글은 막아 두고 이름만 안 막아 뒀는데,
+     이름은 남이 정하는 값입니다(presence 로 옵니다) — 남이 정하는 값이
+     내 화면에서 태그가 되면 그건 남의 코드가 내 화면에서 도는 것입니다. */
+  d.innerHTML = `<b>${esc3(who)}</b><span>${esc3(text)}</span>`;
+  elChatLog.appendChild(d);
+  while (elChatLog.children.length > 6) elChatLog.firstChild.remove();
+  setTimeout(() => d.remove(), 12000);
+}
+let mySay = null;
+/* 내 머리 위 표시 */
+const myEl = document.createElement('div'); myEl.className = 'say3';
+myEl.style.display = 'none'; $('#tags').appendChild(myEl);
+const myIcon = document.createElement('div'); myIcon.className = 'emo3';
+myIcon.style.display = 'none'; $('#tags').appendChild(myIcon);
+const esc3 = (t) => String(t == null ? '' : t).slice(0, 120)
+  .replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+function showEmoIcon(_, k) { myIcon.textContent = emoteIcon(k); myIcon.dataset.t = performance.now(); }
+
+/* ── 실시간 ── 못 붙어도 월드는 그대로 돕니다 */
+const remotes = new Map();   // id → { rig, g, el, say, emoEl }
+let net = null;
+try {
+  net = createNet({
+    nick: myNick(), species: curSpecies, fit: myLook(),
+    onMode: (m) => {
+      elNet.classList.toggle('on', m === 'online');
+      elNet.querySelector('span').textContent =
+        m === 'online' ? `접속 ${remotes.size + 1}명`
+        : m === 'connecting' ? '연결 중'
+        /* 서버에 못 붙으면 net.js 가 봇 몇을 대신 걸어 줍니다. 캠퍼스가
+           텅 비어 보이지 않게 하는 것이지 **접속이 된 것이 아닙니다** —
+           그러니 화면에도 흉내라고 적습니다. 여기서 '접속' 이라고 쓰면
+           그건 거짓말이 됩니다. */
+        : m === 'local' ? '혼자 · 이웃은 흉내'
+        : '혼자';
+    },
+    /* t 는 net.js 가 들어올 때 이미 가린 말입니다 — 여기서 또 훑지 않습니다 */
+    onSay: (p, t) => pushChat(p.nick || '누군가', t),
+    onGone: (id) => dropRemote(id),
+    onReset: () => { [...remotes.keys()].forEach(dropRemote); },
+    onPeers: () => {
+      if (net && net.mode === 'online')
+        elNet.querySelector('span').textContent = `접속 ${net.peers.size + 1}명`;
+    },
+  });
+} catch (e) { console.warn('실시간 못 붙었습니다', e); }
+function dropRemote(id) {
+  const r = remotes.get(id); if (!r) return;
+  r.el.remove(); r.say.remove(); r.emoEl.remove();
+  scene.remove(r.rig); remotes.delete(id);
+}
+function remoteFor(p) {
+  let r = remotes.get(p.id);
+  /* fit 은 옛 판이 보내는 숫자일 수도, 새 판이 보내는 look 객체일 수도 있습니다 */
+  const fitKey = typeof p.fit === 'object' ? JSON.stringify(p.fit) : p.fit;
+  if (!r || r.species !== p.species || r.fitKey !== fitKey) {
+    if (r) { r.el.remove(); r.say.remove(); r.emoEl.remove(); scene.remove(r.rig); }
+    const rig = new THREE.Group(); scene.add(rig);
+    const fitVal = typeof p.fit === 'object' && p.fit ? p.fit : OUTFITS[(p.fit | 0) % OUTFITS.length];
+    /* 남의 캐릭터도 덜 잘게 — 몇 명이 들어올지 모르는 자리입니다 */
+    const g = character(rig, SPECIES[p.species] ? p.species : '기린', fitVal, { lod: 1 });
+    const el = document.createElement('div'); el.className = 'tag3'; $('#tags').appendChild(el);
+    const say = document.createElement('div'); say.className = 'say3'; say.style.display = 'none'; $('#tags').appendChild(say);
+    const emoEl = document.createElement('div'); emoEl.className = 'emo3'; emoEl.style.display = 'none'; $('#tags').appendChild(emoEl);
+    remotes.set(p.id, r = { rig, g, el, say, emoEl, species: p.species, fitKey, walk: 0, last: null });
+  }
+  return r;
+}
+
+/* ── 알 부화 — 시간이 되면 아직 없는 종이 깨어납니다 ── */
+function tickEgg() {
+  if (!SAVE.egg || Date.now() < SAVE.egg.hatchAt) return;
+  const locked = SPEC.filter((n) => !SAVE.ownedSp.includes(n));
+  SAVE.egg = null;
+  if (!locked.length) { UI.save(); return; }
+  const born = locked[Math.floor(Math.random() * locked.length)];
+  SAVE.ownedSp.push(born); UI.save();
+  toast('알이 깨어났어요!', born + ' — 옷장(C)에서 고를 수 있어요');
+  playEmoteSound('love');
+}
+setInterval(tickEgg, 3000);
+
+/* ── 가구 놓기 — 기숙사 전용. E 놓기 · R 돌리기 · Esc 그만 ── */
+const PLACE = { on: false, id: null, ry: 0, ghost: null };
+function startPlace(id) {
+  if (room?.key !== 'dorm') { toast('기숙사에서만', '방 꾸미기는 내 방에서 해요'); return; }
+  PLACE.on = true; PLACE.id = id; PLACE.ry = 0;
+  PLACE.ghost = new THREE.Group(); scene.add(PLACE.ghost);
+  buildFurnMesh(PLACE.ghost, id);
+  toast('가구 놓기', 'E 놓기 · R 돌리기 · Esc 그만');
+}
+function stopPlace(saveIt) {
+  if (!PLACE.on) return;
+  if (saveIt) {
+    const [gx, gz] = placePos();
+    /* 놓기 전에 **문에서 방 전체에 닿는지** 봅니다. 2D 판의 dormConnected 와
+       같은 검사입니다 — 이게 없으면 문 앞을 가구로 막고 갇힙니다. */
+    if (!wouldStayWalkable(gx, gz)) {
+      toast('거기는 안 돼요', '문에서 방 안쪽으로 못 지나가게 됩니다');
+      /* 미리보기를 씬에서 **빼고** 놓습니다. 참조만 지우면 씬에는 그대로
+         남는데 아무도 그것을 가리키고 있지 않아 영영 못 지웁니다 —
+         거절당할 때마다 캠퍼스에 유령 가구가 한 개씩 늘었습니다. */
+      scene.remove(PLACE.ghost);
+      PLACE.ghost = null; PLACE.on = false; return;
+    }
+    SAVE.decor.push({ id: PLACE.id, x: +gx.toFixed(2), z: +gz.toFixed(2), ry: PLACE.ry });
+    UI.save(); rebuildDorm();
+    if (SRV?.configured) SRV.setDecor(SAVE.decor.map((d, i) => ({ room_id: 'dorm3d', item_id: d.id, x: Math.round(d.x * 10), y: Math.round(d.z * 10) })));
+  }
+  scene.remove(PLACE.ghost); PLACE.ghost = null; PLACE.on = false;
+}
+/* 이 자리에 놓아도 방이 이어져 있는지 — 문 앞에서 물을 채워 봅니다 */
+function wouldStayWalkable(gx, gz) {
+  const G = room?.grid; if (!G) return true;
+  const R = 0.7;                                   // 가구가 먹을 반경(대충)
+  const blocked = (x, z) => hitGrid(G, x, z) || (Math.abs(x - gx) < R && Math.abs(z - gz) < R);
+  const S = CELL * 2, nx = Math.ceil(G.w / S), nz = Math.ceil(G.d / S);
+  const seen = new Uint8Array(nx * nz);
+  const xy = (i, j) => [-G.w / 2 + (i + .5) * S, -G.d / 2 + (j + .5) * S];
+  const si = Math.floor((0 + G.w / 2) / S), sj = Math.floor((G.d / 2 - 1.4 + G.d / 2) / S);
+  const q = [[si, sj]]; seen[sj * nx + si] = 1;
+  let n = 0;
+  while (q.length) {
+    const [i, j] = q.pop(); n++;
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const a = i + di, c = j + dj;
+      if (a < 0 || c < 0 || a >= nx || c >= nz || seen[c * nx + a]) continue;
+      const [x, z] = xy(a, c);
+      if (blocked(x, z)) continue;
+      seen[c * nx + a] = 1; q.push([a, c]);
+    }
+  }
+  /* 지금 걸을 수 있는 칸의 8할에 못 닿으면 방을 가른 것입니다 */
+  let free = 0;
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+    const [x, z] = xy(i, j); if (!hitGrid(G, x, z)) free++;
+  }
+  return free === 0 || n / free > .8;
+}
+function placePos() {
+  const gx = Math.round((P.x + Math.sin(P.dir) * 1.4) * 2) / 2;
+  const gz = Math.round((P.z + Math.cos(P.dir) * 1.4) * 2) / 2;
+  const G = room.grid;
+  return [clamp(gx, -G.w / 2 + .8, G.w / 2 - .8), clamp(gz, -G.d / 2 + .8, G.d / 2 - .8)];
+}
+function buildFurnMesh(g, id) {
+  /* rooms.js 의 decorItem 과 똑같이 그립니다 — 유령과 실물이 달라 보이면 안 됩니다 */
+  decorItem(g, { id, x: 0, z: 0, ry: 0 });
+  return g;
+}
+function rebuildDorm() {
+  roomCache.delete('dorm');
+  if (room?.key === 'dorm') {
+    const rec = buildRoom('dorm');
+    roomRoot.clear(); roomRoot.add(rec.group); room = rec;
+    unstick();
+  }
+}
+
+/* ══════ 8.7 장소 소리 — 2D 판처럼 음원 파일 없이 그 자리에서 만듭니다 ══════ */
+const SND = { on: SAVE.snd !== false, ctx: null, cur: null, gain: null };
+function sndCtx() {
+  if (!SND.ctx) {
+    SND.ctx = _ac = _ac || new (window.AudioContext || window.webkitAudioContext)();
+    SND.gain = SND.ctx.createGain(); SND.gain.gain.value = 0;
+    SND.gain.connect(SND.ctx.destination);
+  }
+  return SND.ctx;
+}
+/* 구역마다 다른 배경 — 도서관은 깎아 낸 잡음, 광장은 밝은 화음,
+   본관·기숙사는 낮은 웅웅, 오락실은 여린 아르페지오, 상점은 오르골 */
+function sndBuild(zone) {
+  const ctx = sndCtx(), out = ctx.createGain(); out.gain.value = 1; out.connect(SND.gain);
+  const nodes = [out];
+  const noise = () => {
+    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; return src;
+  };
+  if (zone === 'library') {
+    const n = noise(), f = ctx.createBiquadFilter(), g2 = ctx.createGain();
+    f.type = 'lowpass'; f.frequency.value = 420; g2.gain.value = .045;
+    n.connect(f).connect(g2).connect(out); n.start(); nodes.push(n);
+  } else if (zone === 'campus') {
+    [523.25, 659.25, 784].forEach((fq, i) => {
+      const o = ctx.createOscillator(), g2 = ctx.createGain(), l = ctx.createOscillator(), lg = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = fq / 2;
+      g2.gain.value = .012;
+      l.frequency.value = .07 + i * .03; lg.gain.value = .008;
+      l.connect(lg).connect(g2.gain);
+      o.connect(g2).connect(out); o.start(); l.start(); nodes.push(o, l);
+    });
+    const n = noise(), f = ctx.createBiquadFilter(), g3 = ctx.createGain();
+    f.type = 'bandpass'; f.frequency.value = 3200; f.Q.value = 8; g3.gain.value = .006;
+    n.connect(f).connect(g3).connect(out); n.start(); nodes.push(n);
+  } else if (zone === 'arcade') {
+    const seq = [523, 659, 784, 988], o = ctx.createOscillator(), g2 = ctx.createGain();
+    o.type = 'triangle'; g2.gain.value = .018;
+    o.connect(g2).connect(out); o.start(); nodes.push(o);
+    let k = 0;
+    const iv = setInterval(() => { try { o.frequency.setValueAtTime(seq[k++ % 4] / 2, ctx.currentTime); } catch {} }, 460);
+    nodes.push({ stop: () => clearInterval(iv) });
+  } else if (zone === 'shop') {
+    const o = ctx.createOscillator(), g2 = ctx.createGain();
+    o.type = 'sine'; g2.gain.value = 0;
+    o.connect(g2).connect(out); o.start(); nodes.push(o);
+    const notes = [784, 880, 988, 1175, 1047];
+    const iv = setInterval(() => {
+      try {
+        o.frequency.setValueAtTime(notes[Math.floor(Math.random() * notes.length)], ctx.currentTime);
+        g2.gain.cancelScheduledValues(ctx.currentTime);
+        g2.gain.setValueAtTime(.03, ctx.currentTime);
+        g2.gain.exponentialRampToValueAtTime(.0005, ctx.currentTime + .9);
+      } catch {}
+    }, 1100);
+    nodes.push({ stop: () => clearInterval(iv) });
+  } else {
+    const o = ctx.createOscillator(), g2 = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = 72; g2.gain.value = .02;
+    o.connect(g2).connect(out); o.start(); nodes.push(o);
+  }
+  return { out, stop: () => nodes.forEach((n) => { try { n.stop(); } catch {} try { n.disconnect?.(); } catch {} }) };
+}
+function sndZone(zone) {
+  if (!SND.on) return;
+  try {
+    const ctx = sndCtx();
+    if (ctx.state === 'suspended') return;         // 첫 입력 전 — sndKick 이 다시 부릅니다
+    if (SND.cur) { const old = SND.cur; SND.cur = null;
+      old.out.gain.linearRampToValueAtTime(0, ctx.currentTime + .7);
+      setTimeout(() => old.stop(), 800); }
+    SND.gain.gain.linearRampToValueAtTime(.9, ctx.currentTime + .8);
+    const nx = sndBuild(zone); nx.out.gain.setValueAtTime(0, ctx.currentTime);
+    nx.out.gain.linearRampToValueAtTime(1, ctx.currentTime + .9);
+    SND.cur = nx;
+  } catch {}
+}
+function sndKick() {
+  if (!SND.on) return;
+  try {
+    const ctx = sndCtx();
+    if (ctx.state === 'suspended') ctx.resume().then(() => sndZone(room ? room.key : 'campus'));
+    else if (!SND.cur) sndZone(room ? room.key : 'campus');
+  } catch {}
+}
+addEventListener('pointerdown', sndKick, { once: false });
+addEventListener('keydown', sndKick);
+function sndToggle() {
+  SND.on = !SND.on; SAVE.snd = SND.on; UI.save();
+  if (!SND.on && SND.cur) { try { SND.cur.stop(); } catch {} SND.cur = null;
+    try { SND.gain.gain.value = 0; } catch {} }
+  else sndKick();
+  toast('소리 ' + (SND.on ? '켬' : '끔'), SND.on ? '장소마다 다른 소리가 납니다' : '');
+}
+document.addEventListener('visibilitychange', () => {
+  try { if (document.hidden) SND.ctx?.suspend(); else if (SND.on) SND.ctx?.resume(); } catch {}
+});
+
+/* ── 하늘 한 번에 ──
+   전에는 `SKY.apply()` 하나였습니다. 그런데 밖이 밤인데 실내 창밖은
+   대낮이라, 기숙사에서 자정에 커튼을 열면 정오였습니다. 창유리와
+   벽시계는 하늘과 **같은 값**을 봐야 하므로 부르는 자리를 하나로 묶습니다.
+   따로 부르면 언젠가 한 쪽만 부르는 곳이 생깁니다. */
+let skySeen = -1;
+function applySky(indoor) {
+  const s = SKY.apply(indoor);
+  /* 창유리는 하늘색이 눈에 띄게 바뀔 때만 다시 칠합니다 — 매 프레임
+     재질을 건드리면 그 자체가 프레임을 먹습니다. */
+  const tag = (Math.round(s.night * 40) * 8) + ({ clear: 0, cloud: 1, rain: 2, snow: 3 }[SKY.weather] || 0);
+  if (tag !== skySeen) {
+    skySeen = tag;
+    try { setOutside({ sky: s.sky, night: s.night, weather: SKY.weather }); } catch (e) {}
+  }
+  return s;
+}
+
+/* ══════ 9. 드나들기 ══════ */
+let near = null, spot = null, npcNear = null, spotD = 1e9, npcD = 1e9;
+/* 아무 의자에나 앉기 — 방을 지을 때 적어 둔 자리 목록에서 찾습니다.
+   도서관·본관·기숙사 의자는 앉는 순간 자세 세션이 시작되고,
+   소파·벤치·식당 의자는 그냥 앉아서 쉽니다. */
+const CSIT = { on: false, from: null };
+function nearSeat() {
+  if (!room || !room.seats) return null;
+  let best = null, bd = 1.15 * 1.15;
+  for (const q of room.seats) {
+    const d2 = (P.x - q.x) ** 2 + (P.z - q.z) ** 2;
+    if (d2 < bd) { bd = d2; best = q; }
+  }
+  return best;
+}
+function sitCasual(q) {
+  CSIT.on = true; CSIT.from = { x: P.x, z: P.z, dir: P.dir };
+  P.x = q.x; P.z = q.z; P.dir = q.dir; P.sp = 0;
+  yaw = seatYaw(q); pitch = .38; dist = 5.6; camD = dist;
+  sit(player, true); sit(pipMe, true);
+}
+function standCasual() {
+  CSIT.on = false;
+  sit(player, false); sit(pipMe, false);
+  if (CSIT.from) { P.x = CSIT.from.x; P.z = CSIT.from.z; P.dir = CSIT.from.dir; }
+  dist = room ? 10.6 : 11.5; pitch = .64; camD = dist;
+  unstick();
+}
+function interact() {
+  if (panelOn) { closePanel(); return; }
+  if (dlgOn) { openDlg(dlgWho); return; }        // 다음 줄
+  if (SESS.on) { endSession(); return; }
+  if (CSIT.on) { standCasual(); return; }
+  if (npcNear) { openDlg(npcNear); return; }
+  if (spot) {
+    if (spot.game) {
+      /* 러너 하나만 자세를 조작으로 씁니다. 카메라를 못 켜도 그 게임은
+         자판으로 그대로 돌아갑니다 — 조작을 카메라 뒤에 잠그지 않습니다. */
+      openGame(spot.game, (score) => {
+        if (score <= 0) return;
+        /* 2D 판 규칙 그대로 — 클리어 10코인, 게임별 하루 한 번 */
+        const today = new Date().toISOString().slice(0, 10);
+        if (SAVE.gameDay?.date !== today) SAVE.gameDay = { date: today, played: {} };
+        if (SAVE.gameDay.played[spot.game]) {
+          toast('오늘 몫은 받았어요', '코인은 게임별 하루 한 번 — 내일 또 줘요');
+        } else {
+          SAVE.gameDay.played[spot.game] = 1;
+          SAVE.coins += 10;
+          toast('코인 +10', spot.title);
+        }
+        UI.save();
+      }, { posture: PZ });
+      return;
+    }
+    if (spot.seat) startSession(spot); else openPanel(spot);
+    return;
+  }
+  { const q = nearSeat();
+    if (q) {
+      if (q.kind === 'chair' && (room.key === 'library' || room.key === 'mainhall' || room.key === 'dorm'))
+        startSession({ title: ROOM_NAME[room.key][0] + ' · 자세 세션', seat: q });
+      else sitCasual(q);
+      return;
+    } }
+  if (room) { leaveRoom(); return; }
+  if (near) enterRoom(near);
+}
+const spotsHere = () => SPOTS[room ? room.key : 'campus'] || [];
+/* 눌러서 걷던 길은 문을 넘을 때 버립니다. 꼭짓점은 **바깥 좌표**인데
+   방에 들어가면 hit() 이 방 격자로 바뀝니다 — 그대로 두면 들어가자마자
+   바깥 어딘가를 향해 저 혼자 걸어 나갑니다. 실제로 학생회관에 들어간
+   지 3초 만에 도로 나왔습니다. */
+function dropWalk() { goTo = null; goPath = null; goEnd = null; goLastD = -1; goRetried = false; }
+function enterRoom(portal) {
+  if (SESS.on) endSession(true);
+  dropWalk();
+  closeDlg();
+  const rec = buildRoom(portal.zone === 'clubshop' ? 'shop' : portal.zone);
+  roomRoot.clear(); roomRoot.add(rec.group);
+  room = rec; roomRoot.visible = true; campusRoot.visible = false;
+  NPC.forEach((n) => { n.rig.visible = false; n.el.style.display = 'none'; });
+  applySky(true);
+  const sp = freeSpotNear(rec.grid, 0, rec.size.d / 2 - 3.4);
+  P.x = sp.x; P.z = sp.z; P.dir = Math.PI; P.sp = 0;
+  yaw = -Math.PI * .75; pitch = .64; dist = 10.6; camD = dist;
+  P.back = portal;
+  buildIndoor(rec.key);
+  mountRide();                        // 실내에서는 내립니다
+  net?.setZone(rec.key);
+  sndZone(rec.key); BGM.setZone(rec.key);
+  const nm = ROOM_NAME[rec.key];
+  setZone(nm[0], nm[1]); toast(nm[0], nm[1]);
+  tutDone('enter');
+}
+function leaveRoom() {
+  if (SESS.on) endSession(true);
+  dropWalk();
+  closeDlg();
+  const p = P.back;
+  roomRoot.visible = false; campusRoot.visible = true;
+  NPC.forEach((n) => { n.rig.visible = true; });
+  room = null;
+  applySky(false);
+  const b = BUILDINGS.find((x) => x.zone === p.zone);
+  P.x = p.x + Math.sin(b.ry) * 2.8; P.z = p.z + Math.cos(b.ry) * 2.8;
+  P.dir = b.ry; yaw = b.ry + Math.PI; pitch = .55; dist = 11.5; camD = dist; P.sp = 0;
+  inNPC.forEach((n) => n.el.remove()); inRoot.clear(); inNPC = [];
+  mountRide();                        // 밖에 나오면 다시 탑니다
+  net?.setZone('campus');
+  setZone('캠퍼스', '중앙 광장'); toast('캠퍼스', p.name + ' 앞');
+  sndZone('campus'); BGM.setZone('campus');
+}
+
+/* ══════ 10. 지도 ══════ */
+/* 전 판의 지도는 초록 원에 네모 몇 개라 **지도로 읽히지 않았습니다**.
+   지도가 지도로 보이려면 셋이 필요합니다 — 바다와 뭍의 경계, 길의 위계,
+   그리고 글자가 배경에 묻히지 않는 이름표. 아래는 그 셋을 지킵니다. */
+const MAPC = {
+  sea: '#7CCFEA', seaDeep: '#5FBEDE', sand: '#F2E3BC', grass: '#7BCE6B', grass2: '#68BE59',
+  path: '#F6E5BE', pathLine: '#E5CF9F', plaza: '#F3E9D2', water: '#5CC3E8',
+  wallBig: '#3F6BA8', wallBigTop: '#5788C4', wall: '#8E9AA8', wallTop: '#A7B2BE',
+  me: '#E8483C', ink: '#1B2430',
+};
+/* 이름표 — 어두운 알약 위에 흰 글씨. 어떤 배경 위에서도 읽힙니다 */
+function mapLabel(g, text, x, y, fs = 12) {
+  g.font = `800 ${fs}px "Wanted Sans Variable",sans-serif`;
+  const w = g.measureText(text).width + fs * 1.1, h = fs * 1.75;
+  g.fillStyle = 'rgba(20,28,38,.82)';
+  g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, h / 2); g.fill();
+  g.fillStyle = '#FFFFFF'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText(text, x, y + .5);
+}
+/* 나 — 점 하나와 시야 부채꼴 */
+function mapMe(g, x, y, dir, r) {
+  g.save(); g.translate(x, y); g.rotate(-dir);
+  const gr = g.createRadialGradient(0, 0, 0, 0, 0, r * 5.5);
+  gr.addColorStop(0, 'rgba(232,72,60,.34)'); gr.addColorStop(1, 'rgba(232,72,60,0)');
+  g.fillStyle = gr; g.beginPath();
+  g.moveTo(0, 0); g.arc(0, 0, r * 5.5, -Math.PI / 2 - .5, -Math.PI / 2 + .5); g.closePath(); g.fill();
+  g.restore();
+  g.fillStyle = MAPC.me; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  g.strokeStyle = '#FFFFFF'; g.lineWidth = r * .45; g.stroke();
+}
+/* 섬과 길 — 미니맵과 큰 지도가 같은 그림을 씁니다(축척만 다릅니다) */
+function drawIsland(g, k, big) {
+  const R = CAMPUS.HALF * k;
+  g.fillStyle = 'rgba(20,28,38,.10)'; g.beginPath(); g.arc(0, 0, R + 5.4 * k, 0, TAU); g.fill();
+  g.fillStyle = MAPC.sand; g.beginPath(); g.arc(0, 0, R + 4.4 * k, 0, TAU); g.fill();
+  const gg = g.createRadialGradient(0, -R * .3, R * .2, 0, 0, R);
+  gg.addColorStop(0, MAPC.grass); gg.addColorStop(1, MAPC.grass2);
+  g.fillStyle = gg; g.beginPath(); g.arc(0, 0, R, 0, TAU); g.fill();
+  /* 길 — 넓은 띠 + 가운데 얇은 선. 위계가 생겨야 길로 보입니다 */
+  g.lineCap = 'round';
+  const ring = () => { g.beginPath(); g.arc(0, 0, 30 * k, 0, TAU); g.stroke(); };
+  const spokes = () => {
+    BUILDINGS.forEach((b) => { g.beginPath(); g.moveTo(0, 0); g.lineTo(b.x * k, b.z * k); g.stroke(); });
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(24 * k, 24 * k); g.stroke();
+  };
+  g.strokeStyle = MAPC.pathLine; g.lineWidth = 4.6 * k; ring(); spokes();
+  g.strokeStyle = MAPC.path; g.lineWidth = 3.6 * k; ring(); spokes();
+  /* 광장과 분수 */
+  g.fillStyle = MAPC.plaza; g.beginPath(); g.arc(0, 0, 12 * k, 0, TAU); g.fill();
+  g.strokeStyle = MAPC.pathLine; g.lineWidth = Math.max(1, .5 * k); g.stroke();
+  g.fillStyle = MAPC.water; g.beginPath(); g.arc(0, 0, 4.4 * k, 0, TAU); g.fill();
+  if (big) { g.fillStyle = 'rgba(255,255,255,.5)'; g.beginPath(); g.arc(0, 0, 1.6 * k, 0, TAU); g.fill(); }
+}
+function drawBlocks(g, k, big) {
+  BUILDINGS.forEach((b) => {
+    const isBig = b.zone === 'library' || b.zone === 'mainhall';
+    const w = b.w * b.s * k, d = b.d * b.s * k;
+    g.save(); g.translate(b.x * k, b.z * k); g.rotate(-b.ry);
+    if (big) { g.fillStyle = 'rgba(20,28,38,.20)';
+      g.beginPath(); g.roundRect(-w / 2 + 2, -d / 2 + 4, w, d, 5); g.fill(); }
+    g.fillStyle = isBig ? MAPC.wallBig : MAPC.wall;
+    g.beginPath(); g.roundRect(-w / 2, -d / 2, w, d, big ? 5 : 2); g.fill();
+    g.fillStyle = isBig ? MAPC.wallBigTop : MAPC.wallTop;
+    g.beginPath(); g.roundRect(-w / 2, -d / 2, w, d * .42, big ? [5, 5, 0, 0] : 2); g.fill();
+    g.restore();
+  });
+}
+
+/* 지도 그림 — 진짜 3D 씬을 비스듬히 한 번 찍어서 지도 바탕으로 씁니다.
+   도형으로 다시 그린 지도는 아무리 다듬어도 안내도였지, 섬이 아니었습니다. */
+const MAPSHOT = { img: null, cam: null };
+function shootMap() {
+  try {
+    const S = 1100;
+    const r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+    r2.setSize(S, S, false);
+    r2.outputColorSpace = THREE.SRGBColorSpace;
+    r2.toneMapping = THREE.ACESFilmicToneMapping; r2.toneMappingExposure = 1.05;
+    /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다. 그리고 카메라가
+       높이 92 에 far 300 이면 먼 구석이 잘립니다 — 캠퍼스를 넓히고도
+       이 값이 그대로라 지도가 옛 섬 크기로 찍히고 있었습니다. */
+    /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다.
+
+       그리고 **정직하게 내려다봅니다.** 비스듬히 두면 높은 건물이 옆으로
+       누워 낮은 것을 덮고, 지도에서 길이 사라집니다. 지도는 어디로
+       가는지 보는 것이지 조감도가 아닙니다. 살짝만 기울입니다.
+
+       far 는 넉넉히 — 400 높이에서 900 이면 바닥까지 여유가 있습니다.
+       전 판은 높이 92 에 far 300 이라, 캠퍼스를 320 으로 넓힌 뒤로는
+       먼 구석이 잘려 옛 섬 크기로 찍히고 있었습니다. */
+    const halfW = CAMPUS.SITE.hx + 14;
+    const mc = new THREE.OrthographicCamera(-halfW, halfW, halfW, -halfW, .5, 1200);
+    mc.position.set(46, 420, 46);
+    mc.lookAt(0, 0, 0);
+    const wasBg = scene.background;
+    /* **안개를 끕니다.** 밀도 .0040 에서 420 칸 위에서 내려다보면
+       exp(-(0.004*420)^2) ≈ 0.06 — 94% 가 안개입니다. 지도가 통째로
+       까맣게 찍히던 정체입니다. 지도는 안개 너머를 보는 그림입니다. */
+    const wasFog = scene.fog;
+    scene.fog = null;
+    scene.background = new THREE.Color(0x8FD8EE);
+    const wasVis = { room: roomRoot.visible, campus: campusRoot.visible, player: playerRig.visible };
+    roomRoot.visible = false; campusRoot.visible = true; playerRig.visible = false;
+    NPC.forEach((n) => (n.rig.visible = false));
+    r2.render(scene, mc);
+    const img = new Image();
+    img.src = r2.domElement.toDataURL('image/png');
+    MAPSHOT.img = img; MAPSHOT.cam = mc;
+    scene.background = wasBg; scene.fog = wasFog;
+    roomRoot.visible = wasVis.room; campusRoot.visible = wasVis.campus; playerRig.visible = wasVis.player;
+    NPC.forEach((n) => (n.rig.visible = !room));
+    r2.dispose();
+  } catch (e) { console.warn('지도 찍기 실패', e); }
+}
+/* 세계 좌표 → 지도 그림 픽셀 (0..1) */
+const _mv = new THREE.Vector3();
+function mapUV(x, z) {
+  if (!MAPSHOT.cam) return [.5, .5];
+  _mv.set(x, 0, z).project(MAPSHOT.cam);
+  return [(_mv.x * .5 + .5), (-_mv.y * .5 + .5)];
+}
+const mapCv = $('#map canvas'), mg = mapCv.getContext('2d');
+function toggleMap() {
+  mapOn = !mapOn;
+  $('#map').classList.toggle('on', mapOn); dockOn('map', mapOn); syncLock();
+  if (mapOn) { drawMap(); tutDone('map'); }
+}
+/* ── 빠른 이동 ──
+   섬이 80칸이라 이게 없으면 건물 하나 보러 20초씩 걷습니다.
+   2D 판에서는 **지도가 열려 있을 때만** 숫자가 자리로 걸렸습니다.
+   지도를 닫은 채로 숫자를 쓰면 감정표현(1~8)과 부딪히고, 무엇보다
+   어디로 가는지 안 보고 누르게 됩니다. 그래서 여기도 같게 둡니다. */
+const PLACES = BUILDINGS.map((b) => ({ key: b.zone, name: b.name, b }))
+  .concat([
+    /* 옛 80칸 섬 좌표였습니다 — 운동장이 (-13,-14), 호수가 (-19,25).
+       지금 운동장은 (-84,66), 호수는 (118,70) 이라 셋 다 엉뚱한 잔디
+       한복판으로 보내고 있었습니다. */
+    { key: 'plaza', name: '중앙 광장', at: { x: 0, z: 12, ry: Math.PI } },
+    { key: 'gate', name: '정문', at: { x: 0, z: 118, ry: Math.PI } },
+    { key: 'field', name: '운동장', at: { x: -60, z: 50, ry: Math.PI * .8 } },
+    { key: 'lake', name: '호수', at: { x: 104, z: 58, ry: Math.PI * .6 } },
+    { key: 'dormyard', name: '기숙사 마당', at: { x: 92, z: -89, ry: -Math.PI / 2 } },
+  ]);
+function goPlace(pl) {
+  if (room) return;
+  if (pl.b) {
+    const po = CAMPUS.portals.find((q) => q.zone === pl.b.zone);
+    P.x = po ? po.x + Math.sin(pl.b.ry) * 3.4 : pl.b.x;
+    P.z = po ? po.z + Math.cos(pl.b.ry) * 3.4 : pl.b.z;
+    P.dir = pl.b.ry + Math.PI;
+  } else { P.x = pl.at.x; P.z = pl.at.z; P.dir = pl.at.ry; }
+  P.sp = 0; goTo = null; goPath = null; goEnd = null;
+  yaw = P.dir; playerRig.rotation.y = P.dir;
+  unstick();
+  if (mapOn) toggleMap();
+  toast(pl.name, pl.b ? '문 앞으로 왔어요' : '여기예요');
+}
+mapCv.addEventListener('click', (e) => {
+  if (!mapOn || room) return;
+  const r = mapCv.getBoundingClientRect();
+  const S = 620;
+  const px = ((e.clientX - r.left) / r.width) * S;
+  const py = ((e.clientY - r.top) / r.height) * S;
+  let best = null, bd = 42 * 42;
+  BUILDINGS.forEach((b) => {
+    let bx, by;
+    if (MAPSHOT.img?.complete) { const [u, v] = mapUV(b.x, b.z); bx = u * S; by = v * S; }
+    else { const k = (S / 2 - 34) / CAMPUS.HALF; bx = S / 2 + b.x * k; by = S / 2 + b.z * k; }
+    const d2 = (px - bx) ** 2 + (py - by) ** 2;
+    if (d2 < bd) { bd = d2; best = b; }
+  });
+  e.stopPropagation();
+  if (!best) { toggleMap(); return; }
+  goPlace({ name: best.name, b: best });
+});
+$('#map').addEventListener('click', () => { if (mapOn) toggleMap(); });
+function drawMap() {
+  const S = 620, C = S / 2;
+  $('#map .cap i').textContent = room ? ROOM_NAME[room.key] : '캠퍼스 전체';
+  mg.setTransform(2, 0, 0, 2, 0, 0);
+  mg.clearRect(0, 0, S, S);
+  mg.textAlign = 'center'; mg.textBaseline = 'middle';
+  if (!room) {
+    const sea = mg.createLinearGradient(0, 0, 0, S);
+    sea.addColorStop(0, MAPC.sea); sea.addColorStop(1, MAPC.seaDeep);
+    mg.fillStyle = sea; mg.fillRect(0, 0, S, S);
+    if (MAPSHOT.img?.complete) {
+      /* 진짜 섬 사진 */
+      mg.drawImage(MAPSHOT.img, 0, 0, S, S);
+      const uv = (x, z) => { const [u, v] = mapUV(x, z); return [u * S, v * S]; };
+      mg.fillStyle = 'rgba(255,255,255,.8)'; mg.strokeStyle = 'rgba(20,28,38,.3)'; mg.lineWidth = 1;
+      NPC.forEach((n) => { const [x2, y2] = uv(n.rig.position.x, n.rig.position.z);
+        mg.beginPath(); mg.arc(x2, y2, 3.4, 0, TAU); mg.fill(); mg.stroke(); });
+      /* 이름 앞에 번호. 지도를 연 채로 이 숫자를 누르면 그리로 갑니다 —
+         적어 두지 않으면 있는 줄을 모릅니다. */
+      const numOf = (k) => { const i = PLACES.findIndex((q) => q.key === k); return i < 0 ? '' : ((i + 1) % 10) + '. '; };
+      BUILDINGS.forEach((b) => { const [x2, y2] = uv(b.x, b.z); mapLabel(mg, numOf(b.zone) + b.name, x2, y2 - 16, 12); });
+      /* 라벨 자리도 옛 80칸 섬 좌표였습니다 — 운동장이 (-13,-14) 라
+         지도 한복판 잔디에 '운동장' 이 적혀 있었습니다. PLACES 를
+         그대로 읽으면 다시 갈라지지 않습니다. */
+      PLACES.filter((q) => q.at).forEach((q) => {
+        const [x2, y2] = uv(q.at.x, q.at.z);
+        mapLabel(mg, numOf(q.key) + q.name, x2, y2, 10.5);
+      });
+      { const [x2, y2] = uv(P.x, P.z); mapMe(mg, x2, y2, P.dir + Math.PI * .25, 7); }
+    } else {
+      mg.save(); mg.translate(C, C);
+      const k = (C - 34) / CAMPUS.HALF;
+      drawIsland(mg, k, true);
+      drawBlocks(mg, k, true);
+      BUILDINGS.forEach((b) => mapLabel(mg, b.name, b.x * k, b.z * k + (b.d * b.s * k) / 2 + 14, 12));
+      mapMe(mg, P.x * k, P.z * k, P.dir, 7);
+      mg.restore();
+    }
+    /* 나침반 */
+    mg.save(); mg.translate(S - 34, 34);
+    mg.fillStyle = 'rgba(20,28,38,.60)'; mg.beginPath(); mg.arc(0, 0, 17, 0, TAU); mg.fill();
+    mg.fillStyle = '#FF7E6E'; mg.beginPath();
+    mg.moveTo(0, -11); mg.lineTo(4.6, 2); mg.lineTo(0, -.6); mg.lineTo(-4.6, 2); mg.closePath(); mg.fill();
+    mg.fillStyle = 'rgba(255,255,255,.85)'; mg.font = '800 8.5px "Wanted Sans Variable",sans-serif';
+    mg.fillText('N', 0, 8.5); mg.restore();
+  } else {
+    /* 실내 — 점유 격자를 그대로 평면도로 씁니다 */
+    const G = room.grid, k = Math.min((S - 96) / G.w, (S - 96) / G.d);
+    mg.fillStyle = '#2A323D'; mg.fillRect(0, 0, S, S);
+    mg.save(); mg.translate(C, C);
+    mg.fillStyle = '#F5EEE0';
+    mg.beginPath(); mg.roundRect(-G.w * k / 2, -G.d * k / 2, G.w * k, G.d * k, 8); mg.fill();
+    /* 가구가 놓인 칸 */
+    mg.fillStyle = '#CFC2A8';
+    for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++)
+      if (G.cells[j * G.nx + i])
+        mg.fillRect(-G.w * k / 2 + i * CELL * k, -G.d * k / 2 + j * CELL * k, CELL * k + .7, CELL * k + .7);
+    mg.strokeStyle = '#1B2430'; mg.lineWidth = 3;
+    mg.beginPath(); mg.roundRect(-G.w * k / 2, -G.d * k / 2, G.w * k, G.d * k, 8); mg.stroke();
+    /* 문 — 아래 벽 가운데를 틔웁니다 */
+    mg.strokeStyle = '#F5EEE0'; mg.lineWidth = 5;
+    mg.beginPath(); mg.moveTo(-1.5 * k, G.d * k / 2); mg.lineTo(1.5 * k, G.d * k / 2); mg.stroke();
+    /* 자리 */
+    spotsHere().forEach((s) => {
+      mg.fillStyle = 'rgba(53,224,198,.28)'; mg.strokeStyle = 'rgba(25,185,162,.85)'; mg.lineWidth = 1.6;
+      mg.beginPath(); mg.arc(s.x * k, s.z * k, Math.max(9, s.r * k), 0, TAU); mg.fill(); mg.stroke();
+    });
+    spotsHere().forEach((s) => mapLabel(mg, s.title, s.x * k, s.z * k - Math.max(9, s.r * k) - 11, 10.5));
+    mapMe(mg, P.x * k, P.z * k, P.dir, 6.5);
+    mapLabel(mg, '문', 0, G.d * k / 2 + 15, 10.5);
+    mg.restore();
+  }
+}
+
+/* ══════ 11. 튜토리얼 ══════ */
+const TUT = [
+  { k: 'move', t: 'WASD 로 걸어 보세요', p: '방향키도 됩니다. Shift 를 누르면 뜁니다.' },
+  { k: 'look', t: '화면을 끌어 시점을 돌려 보세요', p: '휠로 멀리·가까이. Tab 을 누르면 1인칭이 됩니다.' },
+  { k: 'map', t: 'M 을 눌러 지도를 열어 보세요', p: '건물 여섯 채와 지금 내 자리가 보입니다.' },
+  { k: 'enter', t: '건물 문 앞에서 E 를 눌러 들어가 보세요', p: '도서관과 본관이 이 서비스의 본체입니다.' },
+  { k: 'sit', t: '열람석 앞에서 E — 앉으면 세션이 시작됩니다', p: '목이 무너지면 캐릭터도 같이 굽습니다.' },
+];
+let tutStep = SAVE.seenTutorial ? TUT.length : 0;
+/* 처음 안내 — 넉 장짜리 창은 배선만 있고 **여는 곳이 없었습니다.**
+   첫 진입에 한 번 자동으로 열고, 본 사람은 다시 안 봅니다. */
+let tourStep = 0;
+function openTour(i) { tourStep = i | 0; openPanel({ tag: '처음 안내', title: '기린캠퍼스', panel: 'tour' }); }
+let moved0 = 0, turned = 0;
+const elTut = $('#tut');
+elTut.querySelector('.skip').addEventListener('click', () => { tutStep = TUT.length; paintTut(); SAVE.seenTutorial = true; UI.save(); });
+function paintTut() {
+  if (tutStep >= TUT.length) { elTut.classList.remove('on'); return; }
+  const s = TUT[tutStep];
+  elTut.classList.add('on');
+  elTut.querySelector('.n').textContent = tutStep + 1;
+  elTut.querySelector('b').textContent = s.t;
+  elTut.querySelector('p').textContent = s.p;
+  elTut.querySelector('.dots').innerHTML = TUT.map((_, i) => `<i class="${i <= tutStep ? 'on' : ''}"></i>`).join('');
+}
+function tutDone(k) {
+  if (tutStep >= TUT.length || TUT[tutStep].k !== k) return;
+  tutStep++;
+  if (tutStep >= TUT.length) { SAVE.seenTutorial = true; UI.save(); toast('준비 끝', '이제 자유롭게 다니세요'); }
+  paintTut();
+}
+paintTut();
+
+/* 학교 열 곳 — 2D 판과 같은 목록·색입니다. 과잠 띠와 이름줄에 씁니다. */
+/* 학교 메일 도메인 — 인증한 주소에서 학교를 알아냅니다 */
+const DOMAIN_OF = {
+  '서울대학교': 'snu.ac.kr', '연세대학교': 'yonsei.ac.kr', '고려대학교': 'korea.ac.kr',
+  '성균관대학교': 'skku.edu', '한양대학교': 'hanyang.ac.kr', '중앙대학교': 'cau.ac.kr',
+  '경희대학교': 'khu.ac.kr', '이화여자대학교': 'ewha.ac.kr', '서강대학교': 'sogang.ac.kr',
+  '명지대학교': 'mju.ac.kr',
+};
+const SCHOOLS = [
+  { name: '서울대학교', c: 0x00468B }, { name: '연세대학교', c: 0x0F4C81 },
+  { name: '고려대학교', c: 0x862633 }, { name: '성균관대학교', c: 0x00563F },
+  { name: '한양대학교', c: 0x0E4A84 }, { name: '중앙대학교', c: 0x0B4DA2 },
+  { name: '경희대학교', c: 0x8C1D40 }, { name: '이화여자대학교', c: 0x00713C },
+  { name: '서강대학교', c: 0x8B0029 }, { name: '명지대학교', c: 0x003A70 },
+];
+function idbarPaint() {
+  $('#idbar .nm').textContent = myNick();
+  $('#idbar .sc').textContent = SAVE.school || '학교 미설정';
+}
+function idbarTime(t) {
+  const el = $('#idbar .tm');
+  if (t < 0) { el.classList.remove('on'); el.textContent = ''; return; }
+  el.classList.add('on');
+  el.textContent = Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
+}
+/* 무너지는 순간의 낮은 이중 톤 */
+let _ac = null;
+function warnBeep() {
+  try {
+    _ac = _ac || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = _ac.currentTime;
+    [220, 174].forEach((f, i) => {
+      const o = _ac.createOscillator(), g2 = _ac.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g2.gain.setValueAtTime(0, t0 + i * .16);
+      g2.gain.linearRampToValueAtTime(.05, t0 + i * .16 + .03);
+      g2.gain.exponentialRampToValueAtTime(.0001, t0 + i * .16 + .3);
+      o.connect(g2).connect(_ac.destination); o.start(t0 + i * .16); o.stop(t0 + i * .16 + .32);
+    });
+  } catch {}
+}
+
+/* ══════ 12. 옷장 · 아래 한 줄(독) ══════ */
+/* 종·옷 고르는 줄이 화면 아래에 **늘** 깔려 있었습니다. 설정은 창 안으로
+   넣고, 아래에는 자주 쓰는 여섯 개만 남깁니다. */
+const LOOK_SLOTS = [['top', '상의', 'topId', 'top'], ['bottom', '하의', 'bottomId', 'bottom'],
+  ['shoes', '신발', 'shoesId', 'shoes'], ['hat', '모자', 'hatId', 'hat'],
+  ['glasses', '안경', 'glassesId', null], ['bag', '가방', 'bagId', 'bagC']];
+const LOOK_PAL = [0x2DD4BF, 0xE8695A, 0xF2C14E, 0x9B7BD4, 0xF7F4EC, 0x63C47C, 0x5B84C4, 0x3A4150];
+function wardrobeHTML() {
+  const L = myLook();
+  return '<div class="lbl">이름</div>'
+    + `<input class="nick" maxlength="10" placeholder="${curSpecies}" value="${(SAVE.nick || '').replace(/"/g, '')}">`
+    + '<div class="lbl">학교</div><div class="wr">'
+    + SCHOOLS.map((q) => `<button data-sc="${q.name}" class="${q.name === SAVE.school ? 'on' : ''}">${q.name.replace('대학교', '대')}</button>`).join('')
+    + '</div><div class="lbl">종</div><div class="wr sp">'
+    + SPEC.map((n) => {
+      const own = SAVE.ownedSp.includes(n);
+      return `<button data-sp="${n}" class="${n === curSpecies ? 'on' : ''}" ${own ? '' : 'disabled'}
+        title="${own ? n : '알에서 깨어나면 열립니다 — 알 가게(학생회관 미르)'}">${own ? n : '🥚 ' + n}</button>`;
+    }).join('') + '</div>'
+    + LOOK_SLOTS.map(([slot, nm, idKey, cKey]) => {
+      const items = WEAR[slot];
+      let row = `<div class="lbl">${nm}</div><div class="wr">`
+        + items.map(([id, label, price]) => {
+          const own = SAVE.owned2.includes(id) || price === 0 || id === 'none';
+          return `<button data-wslot="${idKey}" data-wid="${id}" ${own ? '' : 'disabled'}
+            class="${L[idKey] === id ? 'on' : ''}"
+            title="${own ? label : label + ' — 옷 가게(동아리 상점)에서 삽니다'}">${own ? label : '🔒 ' + label}</button>`;
+        }).join('');
+      /* ── 색 ──
+         한 옷에 색 고르는 줄이 **두 개** 있으면 안 됩니다. 처음에 그렇게
+         두었더니 팔레트에서 초록을 골라도 염색이 이겨서 아무 일이 안
+         일어났습니다 — 눌리는데 안 바뀌는 단추가 제일 나쁩니다.
+         그래서 하나만 냅니다. 염색되는 옷이면 염색 여덟 색이 그 옷의
+         색이고, 아니면 예전 팔레트가 그대로 그 옷의 색입니다.
+
+         염색이 여덟뿐인 이유는 chars.js 의 TINTS 주석에 있습니다. 과잠은
+         학교 색이고 학사모는 졸업식 규정이며 청바지는 데님이라, 그것들은
+         애초에 고르는 물건이 아닙니다. */
+      if (TINTABLE.includes(L[idKey])) {
+        const now = (L.tint || {})[L[idKey]];
+        row += '<i></i>' + `<button data-tint="${L[idKey]}" data-tc=""
+          class="sw ${now ? '' : 'on'}" title="기본색"
+          style="background:#${(L[cKey] ?? 0xF2F2F2).toString(16).padStart(6, '0')};
+          box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)"></button>`
+          + TINTS.map((t) => `<button data-tint="${L[idKey]}" data-tc="${t.hex}"
+            class="sw ${now === t.hex ? 'on' : ''}" title="${t.name}"
+            style="background:#${t.hex.toString(16).padStart(6, '0')}"></button>`).join('');
+      } else if (cKey && L[idKey] !== 'none') {
+        row += '<i></i>' + LOOK_PAL.map((c) => `<button data-cslot="${cKey}" data-c="${c}"
+          class="sw ${L[cKey] === c ? 'on' : ''}" style="background:#${c.toString(16).padStart(6, '0')}"></button>`).join('');
+      }
+      return row + '</div>';
+    }).join('')
+    + '<div class="lbl">탈것</div><div class="wr">'
+    + `<button data-ride="" class="${rideId ? '' : 'on'}">걷기</button>`
+    + RIDE_LIST.map(([id, nm, price, mult]) => {
+      const own = SAVE.ownedRide.includes(id);
+      return `<button data-ride="${id}" ${own ? '' : 'disabled'} class="${rideId === id ? 'on' : ''}"
+        title="${own ? '걷는 속도 ×' + mult.toFixed(2) : nm + ' — 옷 가게(동아리 상점)에서 삽니다'}"
+        >${own ? nm : '🔒 ' + nm}</button>`;
+    }).join('')
+    + '</div>'
+    + '<div class="lbl">설정</div><div class="wr">'
+    + `<button data-snd="1" class="${SND.on ? 'on' : ''}">장소 소리 ${SND.on ? '켬' : '끔'}</button>`
+    + `<button data-shadow="1" class="${renderer.shadowMap.enabled ? 'on' : ''}"
+        title="느린 기기에서는 저절로 꺼집니다">그림자 ${renderer.shadowMap.enabled ? '켬' : '끔'}</button>`
+    + '</div>';
+}
+/* 그림자를 켜고 끄는 자리 한 곳. 재질을 다시 컴파일해야 해서 잠깐
+   멈추므로, 프레임 안에서 매번 부르면 안 됩니다. */
+function setShadows(on) {
+  if (renderer.shadowMap.enabled === on) return;
+  renderer.shadowMap.enabled = on;
+  if (on) csmOn(); else csmOff();
+  shadowsOff = !on;
+  scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+  SAVE.shadow = on; UI.save();
+}
+function openWardrobe() {
+  if (SESS.on || dlgOn) return;
+  openPanel({ tag: '옷장', title: '오늘은 뭘 입지', panel: 'wardrobe' });
+}
+function paintPick() { if (panelOn && panelSpot?.panel === 'wardrobe') redrawPanel(); }
+/* 이름 — 안 적으면 종 이름을 씁니다. 전 판은 모두가 '거북이' 였습니다. */
+function myNick() { return (SAVE.nick || '').trim() || curSpecies; }
+
+/* ── 아래 한 줄 ── */
+const elDock = $('#dock');
+/* 이 함수는 모듈 평가 중(elDock 이 아직 TDZ 일 때)에도 불릴 수 있으므로
+   문서에서 바로 찾습니다. */
+function dockOn(k, on) {
+  document.querySelector(`#dock [data-do="${k}"]`)?.classList.toggle('on', !!on);
+}
+elDock.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  const k = b.dataset.do;
+  if (k === 'map') toggleMap();
+  else if (k === 'emo') toggleEmo();
+  else if (k === 'chat') openChat();
+  else if (k === 'wear') { if (panelOn && panelSpot?.panel === 'wardrobe') closePanel(); else openWardrobe(); }
+  else if (k === 'view') toggleView();
+  else if (k === 'mypage') openPanel({ tag: '마이', title: '마이페이지', panel: 'mypage' });
+  else if (k === 'coins') openPanel({ tag: '지갑', title: '코인', panel: 'coins' });
+  else if (k === 'help') toggleHelp();
+});
+let helpOn = false;
+function toggleHelp(v) {
+  helpOn = v === undefined ? !helpOn : v;
+  $('#help').classList.toggle('on', helpOn); dockOn('help', helpOn);
+}
+
+/* ══════ 13. 얼굴 창 ══════ */
+const elPip = $('#pip');
+const pipR = new THREE.WebGLRenderer({ canvas: $('#pip canvas'), antialias: true, alpha: true });
+pipR.setPixelRatio(1); pipR.setSize(316, 240, false);
+pipR.toneMapping = THREE.ACESFilmicToneMapping; pipR.toneMappingExposure = 1.08;
+pipR.outputColorSpace = THREE.SRGBColorSpace;
+const pipCam = new THREE.PerspectiveCamera(32, 316 / 240, .1, 40);
+const pipScene = new THREE.Scene(); pipScene.background = null;
+/* 손으로 빚던 캐릭터에 맞춰 밝혀 둔 값이었습니다. 생성된 모델은 제
+   재질을 들고 오므로 그대로 두면 하얗게 날아가, 광장에 선 나와 여기
+   내가 서로 다른 색이 됩니다. 반쯤으로 줄여 월드 쪽과 맞춥니다. */
+pipScene.add(new THREE.AmbientLight(0xFFFFFF, .42));
+pipScene.add(new THREE.HemisphereLight(0xE8F4FF, 0xF6E6C4, .55));
+{ const k = new THREE.DirectionalLight(0xFFFAF0, .95); k.position.set(-3, 5, 6); pipScene.add(k);
+  const f = new THREE.DirectionalLight(0xCFE4F5, .35); f.position.set(4, 2, 3); pipScene.add(f); }
+const pipRig = new THREE.Group(); pipScene.add(pipRig);
+let pipMe = character(pipRig, curSpecies, myLook(), { bag: false });
+$('#pip .nm').textContent = myNick();
+
+function rebuildMe() {
+  const y = playerRig.rotation.y;
+  playerRig.clear(); pipRig.clear();
+  player = character(playerRig, curSpecies, myLook(), {});
+  pipMe = character(pipRig, curSpecies, myLook(), { bag: false });
+  playerRig.rotation.y = y;
+  player.visible = !first;
+  /* playerRig.clear() 가 탈것까지 지웁니다 — 옷을 갈아입었다고 자전거가
+     사라지면 안 되니 여기서 다시 답니다. */
+  rideG = null; mountRide();
+  if (SESS.on || CSIT.on) { sit(player, true); sit(pipMe, true); }
+  $('#pip .nm').textContent = myNick();
+}
+
+/* ══════ 14. 미니맵 ══════ */
+/* 큰 지도와 **같은 그림**을 축척만 줄여 씁니다. 둘이 다르게 생기면
+   지도를 볼 때마다 머릿속에서 다시 맞춰야 합니다. */
+const mm = $('#mini canvas'), mx = mm.getContext('2d');
+const MS = 158, MC = MS / 2, MMS = (MC - 6) / CAMPUS.HALF;
+function drawMini() {
+  mx.setTransform(2, 0, 0, 2, 0, 0);
+  mx.clearRect(0, 0, MS, MS);
+  if (!room) {
+    const sea = mx.createLinearGradient(0, 0, 0, MS);
+    sea.addColorStop(0, MAPC.sea); sea.addColorStop(1, MAPC.seaDeep);
+    mx.fillStyle = sea; mx.fillRect(0, 0, MS, MS);
+    if (MAPSHOT.img?.complete) {
+      mx.drawImage(MAPSHOT.img, 0, 0, MS, MS);
+      mx.fillStyle = 'rgba(255,255,255,.8)';
+      NPC.forEach((n) => { const [u, v] = mapUV(n.rig.position.x, n.rig.position.z);
+        mx.beginPath(); mx.arc(u * MS, v * MS, 1.8, 0, TAU); mx.fill(); });
+      const [u, v] = mapUV(P.x, P.z);
+      mapMe(mx, u * MS, v * MS, P.dir + Math.PI * .25, 3.6);
+    } else {
+      mx.save(); mx.translate(MC, MC);
+      drawIsland(mx, MMS, false);
+      drawBlocks(mx, MMS, false);
+      mapMe(mx, P.x * MMS, P.z * MMS, P.dir, 3.6);
+      mx.restore();
+    }
+  } else {
+    const G = room.grid, k = Math.min((MS - 26) / G.w, (MS - 26) / G.d);
+    mx.fillStyle = '#2A323D'; mx.fillRect(0, 0, MS, MS);
+    mx.save(); mx.translate(MC, MC);
+    mx.fillStyle = '#F5EEE0';
+    mx.beginPath(); mx.roundRect(-G.w * k / 2, -G.d * k / 2, G.w * k, G.d * k, 4); mx.fill();
+    mx.fillStyle = '#CFC2A8';
+    for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++)
+      if (G.cells[j * G.nx + i])
+        mx.fillRect(-G.w * k / 2 + i * CELL * k, -G.d * k / 2 + j * CELL * k, CELL * k + .5, CELL * k + .5);
+    mx.fillStyle = 'rgba(53,224,198,.32)';
+    spotsHere().forEach((s) => { mx.beginPath(); mx.arc(s.x * k, s.z * k, Math.max(3, s.r * k), 0, TAU); mx.fill(); });
+    mx.strokeStyle = '#F5EEE0'; mx.lineWidth = 3;
+    mx.beginPath(); mx.moveTo(-1.2 * k, G.d * k / 2); mx.lineTo(1.2 * k, G.d * k / 2); mx.stroke();
+    mapMe(mx, P.x * k, P.z * k, P.dir, 3.2);
+    mx.restore();
+  }
+}
+
+/* ══════ 15. 한 판 ══════ */
+/* ══════ 후처리 ══════
+   ?ao=0 으로 끄고 켜서 눈으로 비교할 수 있게 해 둡니다. 껐을 때는
+   사슬을 아예 안 만듭니다 — 만들어 두고 안 쓰면 화면 크기의 버퍼가
+   그냥 메모리에 남습니다. */
+const AO_ON = new URLSearchParams(location.search).get('ao') !== '0';
+let composer = null, n8ao = null;
+if (AO_ON) {
+  try {
+    composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
+    composer.addPass(new RenderPass(scene, cam));
+    n8ao = new N8AOPostPass(scene, cam, innerWidth, innerHeight);
+    /* 화면 공간 반지름 — 세계 단위가 아니라 화면 비율로 잡습니다.
+       세계 단위로 두면 멀리 있는 건물에서는 AO 가 사라지고 발밑에서만
+       진해집니다. 캠퍼스처럼 깊이가 넓은 화면에서는 화면 기준이 맞습니다. */
+    n8ao.configuration.aoRadius = 5.0;
+    n8ao.configuration.distanceFalloff = 2.0;
+    n8ao.configuration.intensity = 2.6;
+    /* 그늘 색을 순검정이 아니라 **청록을 섞은 어두운 값**으로 둡니다.
+       순검정 그늘은 점토가 아니라 플라스틱이 됩니다 — 로비·마이페이지의
+       클레이 토큰이 쓰는 규칙과 같은 이유입니다. */
+    n8ao.configuration.color = new THREE.Color(0x0D3C34);
+    n8ao.configuration.halfRes = true;      // 절반 해상도로 계산하고 올립니다
+    composer.addPass(n8ao);
+  } catch (e) {
+    console.warn('후처리를 못 켰습니다 — 그냥 그립니다', e);
+    composer = null; n8ao = null;
+  }
+}
+
+function resize() {
+  renderer.setSize(innerWidth, innerHeight, false);
+  cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix();
+  if (composer) composer.setSize(innerWidth, innerHeight);
+}
+addEventListener('resize', resize); resize();
+
+/* ══════ 계측 ══════
+   렌더러·씬·카메라를 창에 걸어 둡니다. 개발용이고, 이게 없으면
+   드로우콜·삼각형·머티리얼 수를 밖에서 읽을 방법이 없습니다.
+   (실제로 이 판을 재려다 막혀서 이 줄이 생겼습니다.) */
+window.__W = { renderer, scene, cam, sun, hemi, amb, get composer() { return composer; },
+  get n8ao() { return n8ao; }, THREE,
+  /* 걷는 상태를 밖에서 잴 수 있게 내놓습니다 — 회전이 자연스러운지는
+     눈으로 못 재고 각도를 찍어 봐야 압니다. */
+  get P() { return P; }, get playerRig() { return playerRig; },
+  get yaw() { return yaw; }, groundAt,
+  /* 개발용 순간이동 — 넓힌 캠퍼스의 먼 자리를 확인하려면 걸어서는
+     한참입니다. 각도(도)와 반지름으로 부릅니다: __W.tp(45, 110) */
+  tp(deg, r) {
+    const a = deg * Math.PI / 180;
+    P.x = Math.cos(a) * r; P.z = Math.sin(a) * r;
+    return [P.x.toFixed(1), P.z.toFixed(1)];
+  },
+  stat() {
+    const i = renderer.info;
+    let mesh = 0, inst = 0, instTotal = 0, lights = 0;
+    const mats = new Set();
+    scene.traverse((o) => {
+      if (o.isInstancedMesh) { inst++; instTotal += o.count; }
+      else if (o.isMesh) mesh++;
+      if (o.isLight) lights++;
+      if (o.material) [].concat(o.material).forEach((m) => m && mats.add(m.uuid));
+    });
+    return { 드로우콜: i.render.calls, 삼각형: i.render.triangles,
+      메시: mesh, 인스턴스메시: inst, 인스턴스합: instTotal, 조명: lights,
+      머티리얼: mats.size, 지오메트리: i.memory.geometries, 텍스처: i.memory.textures,
+      CSM: csm ? csm.cascades + '칸' : '끔',
+      BVH: (() => { let n = 0; campusRoot.traverse((o) => { if (o.geometry && o.geometry.boundsTree) n++; }); return n; })(),
+      fps: fpsNow, 후처리: !!composer, 안개: scene.fog ? scene.fog.density : 0 };
+  } };
+
+let LAB = null;
+if (new URLSearchParams(location.search).get('lab') === '1') {
+  try { LAB = createColorLab({ scene, renderer }); }
+  catch (e) { console.warn('색 실험실을 못 켰습니다', e); }
+}
+
+const elFps = $('#foot .fps');
+let last = performance.now(), acc = 0, frames = 0, T = 0, quality = 1, fpsNow = 0, pipT = 0;
+let fpsT0 = performance.now();
+/* 그림자를 스스로 껐는지. 껐다고 말만 하고 되돌릴 자리가 없으면 그건 거짓말입니다 */
+let shadowsOff = false;
+const v3 = new THREE.Vector3();
+
+function tick(now) {
+  requestAnimationFrame(tick);
+  /* dt 를 0.05 로 자르면 20fps 아래에서는 **세상이 슬로모션이 됩니다** —
+     한 프레임에 0.05초씩만 흐르니 실제로는 3초를 눌러도 1초만큼만 걷습니다.
+     자세 판정과 3D 가 같은 탭에서 도는 화면이라 20fps 아래로 잘 내려갑니다.
+     "움직이는 게 힘들다" 의 나머지 절반이 이것이었습니다. 0.1 로 올립니다. */
+  const dt = Math.min(.1, (now - last) / 1000); last = now; T += dt;
+  /* 탭이 숨어 있는 동안 fpsT0 를 안 옮기면, 돌아온 첫 프레임에 자리를
+     비운 시간이 통째로 한 칸에 실려 0fps 로 읽힙니다 — 그러면 사다리가
+     해상도를 내리고, 40fps 대에서는 올리는 칸에 안 걸려 그대로 남습니다. */
+  if (document.hidden) { fpsT0 = now; frames = 0; acc = 0; return; }
+
+  /* ── 걷기 ── */
+  let ix = 0, iz = 0;
+  if (!panelOn && !mapOn) {
+    if (key.KeyW || key.ArrowUp) iz += 1;
+    if (key.KeyS || key.ArrowDown) iz -= 1;
+    if (key.KeyA || key.ArrowLeft) ix -= 1;
+    if (key.KeyD || key.ArrowRight) ix += 1;
+    if (stick) { ix += stick.dx; iz -= stick.dy; }
+  }
+  let mag = Math.hypot(ix, iz);
+  const run = (key.ShiftLeft || key.ShiftRight) ? 1.75 : 1;
+  if (mag > .06) { goTo = null; goPath = null; goEnd = null; }   // 키를 잡으면 자동 걷기는 그만둡니다
+  if (goTo && !SESS.on && !CSIT.on) {
+    const dx = goTo.x - P.x, dz = goTo.z - P.z, d = Math.hypot(dx, dz);
+    /* 꼭짓점을 언제 지난 것으로 볼지.
+
+       처음에는 0.5m 로 고정해 뒀는데, 한 프레임에 0.62m 씩 걷습니다
+       (6.2m/s × dt 0.1). 그러면 **0.5m 안으로는 영영 못 들어갑니다** —
+       꼭짓점을 사이에 두고 앞뒤로 넘나들며 제자리를 돕니다. 실제로
+       도서관 뒤를 눌렀더니 반대편으로 흘러갔습니다.
+
+       그래서 한 걸음 폭에 맞춰 늘리고, 그와 별개로 **지나쳤는지**도
+       봅니다(지난 프레임보다 멀어졌으면 지나친 것입니다). 마지막 점은
+       조금 더 엄격하게 봅니다 — 거기서는 정확히 서야 합니다. */
+    const stepLen = (room ? 3.9 : 6.2) * run * rideMult() * dt;
+    const mid = goPath && goPath.length;
+    const near = mid ? Math.max(.5, stepLen * 1.5) : Math.max(.55, stepLen * .9);
+    if (d < near || (mid && goLastD >= 0 && d > goLastD + .02)) {
+      goTo = mid ? goPath.shift() : null;
+      goLastD = -1;
+      if (!goTo) { goPath = null; goEnd = null; }
+    } else goLastD = d;
+    if (!goTo) { /* 다 왔습니다 */ }
+    else {
+      const dx2 = goTo.x - P.x, dz2 = goTo.z - P.z, d2 = Math.hypot(dx2, dz2) || 1;
+      /* 화면 기준 입력으로 되돌립니다 — 아래 계산이 한 벌만 있게 하려고요 */
+      /* 방향은 아래에서 P.dirWant 로 다시 풀립니다. 여기서는 "입력이
+         있다" 만 알리면 됩니다. */
+      ix = 0; iz = 1;
+      P.dirWant = Math.atan2(dx2 / d2, dz2 / d2);
+      mag = 1;
+    }
+  }
+  const speed = (room ? 3.9 : 6.2) * run * rideMult();
+  const px = P.x, pz = P.z;
+  if (mag > .06 && !SESS.on) {
+    ix /= mag; iz /= mag;
+    /* 앞 = (sin yaw, cos yaw), 오른쪽 = 앞×위 = (-cos yaw, sin yaw).
+       전 판은 오른쪽 부호가 반대라 A 와 D 가 뒤바뀌어 있었습니다. */
+    const s = Math.sin(yaw), c = Math.cos(yaw);
+    let wx = -ix * c + iz * s, wz = ix * s + iz * c;
+    /* 눌러서 걸어가는 중이면 방향은 목표가 정합니다 */
+    if (goTo) { wx = Math.sin(P.dirWant); wz = Math.cos(P.dirWant); }
+    P.dir = Math.atan2(wx, wz);
+    /* 몸이 아직 못 돌아선 각도. 이만큼 벌어져 있으면 속도를 죽입니다 —
+       안 그러면 옆구리를 보인 채 앞으로 미끄러져 갑니다. 크게 꺾을수록
+       한 박자 서서 돌고 나서 나아가는 그림이 됩니다. */
+    const lag = Math.abs(((P.dir - playerRig.rotation.y + Math.PI * 3) % TAU) - Math.PI);
+    const brake = 1 - .55 * Math.min(1, Math.max(0, (lag - .45) / 1.5));
+    const nx = P.x + wx * speed * brake * dt, nz = P.z + wz * speed * brake * dt;
+    /* 가로막는 것이 없어도 **턱이 너무 높으면** 못 갑니다 */
+    const tooHigh = (ax, az) => groundAt(ax, az, P.y) - P.y > stepMax();
+    if (!hit(nx, P.z) && !tooHigh(nx, P.z)) P.x = nx;
+    /* z 쪽도 같은 검사를 — 가로만 재고 세로를 안 재서, 세로로 걸으면
+       책상이든 기단이든 타고 올라갔습니다. */
+    if (!hit(P.x, nz) && !tooHigh(P.x, nz)) P.z = nz;
+    /* 출발 0.18초 · 멈춤 0.12초. 예전 값(8·10)은 두 프레임이면 최고
+       속도라 스위치가 켜지듯 튀어나가고 뚝 섰습니다. */
+    P.sp = Math.min(run, P.sp + dt / .18);
+    /* 카메라가 걷는 방향을 따라 돌던 줄이 여기 있었습니다. 지웠습니다.
+       없어도 되는 이유 — 걷는 방향을 **카메라 기준**으로 풀기 때문에
+       (wx = -ix·cos yaw + iz·sin yaw) W 만 누르면 P.dir 이 yaw 와 정확히
+       같습니다. 따라 돌 각도 자체가 없습니다.
+       있으면 안 되는 이유 — 옆 성분이 조금이라도 섞이면 카메라가 그
+       각도를 쫓아 돌고, 돌아간 카메라 기준으로 다시 걸으니 각도가 그대로
+       남습니다. 멈추지 않고 계속 돕니다. 자판은 옆 성분이 0 아니면 45도라
+       가려져 있었지만, 눌러서 걸어갈 때는 길이 방향을 정하므로 각도가 커서
+       화면이 통째로 휙휙 돌아갔습니다.
+       카메라는 이제 사람이 끌거나 Z·X 를 누를 때만 돕니다. */
+  } else {
+    P.sp = Math.max(0, P.sp - dt / .12);
+  }
+  /* yaw 를 매 프레임 한 바퀴 안으로 접습니다. 끌면 더해지기만 해서 몇 분이면
+     수백 라디안이 되는데, 큰 수에서 sin·cos 을 하면 정밀도가 깎입니다. */
+  yaw = ((yaw + Math.PI) % TAU + TAU) % TAU - Math.PI;
+  const step = Math.hypot(P.x - px, P.z - pz);
+  /* 1.5초 동안 거의 못 나아가면 자동 걷기를 접습니다 */
+  if (goTo) {
+    goStall = step < .01 * (dt * 60) ? goStall + dt : 0;
+    /* 0.6초 못 나아가면 **한 번만** 길을 다시 찾습니다. 사람이 앞을
+       막고 서 있는 경우가 대부분이라, 다시 찾으면 대개 돌아갑니다. */
+    if (goStall > .6 && goEnd && !goRetried) {
+      goRetried = true;
+      const np = findPath(P.x, P.z, goEnd.x, goEnd.z);
+      if (np && np.length) { goPath = np; goTo = goPath.shift(); goStall = 0; goLastD = -1; }
+    }
+    if (goStall > 1.6) { goTo = null; goPath = null; goEnd = null; }
+  } else goRetried = false;
+  P.moved += step;
+  P.walk += step / 1.15;                    // 보폭 1.15 — 발이 안 미끄러집니다
+  if (SESS.on || CSIT.on) { ix = 0; iz = 0; }
+  if (SESS.on && mag > .06) endSession();
+  if (CSIT.on && mag > .06) standCasual();
+  if (!SESS.on) unstick();
+  /* 발밑 높이 — 올라갈 때는 빠르게 붙고(계단이 뚝뚝 끊기지 않게),
+     내려올 때는 조금 느리게(모서리에서 뚝 떨어지지 않게). */
+  { const gy = groundAt(P.x, P.z, P.y);
+    const up = gy > P.y;
+    /* 양방향 다 **낙차에 비례**해서 붙입니다.
+
+       고정 속도(위 16/s · 아래 9/s)는 작은 턱에는 맞는데 기단(1.3m)에는
+       느립니다. 내려설 때는 반 박자 공중에 떠 있었고, **올라설 때는 그
+       반 박자 동안 무릎까지 바닥에 파묻혔습니다** — 광장에서 캐릭터가
+       꺼져 보이던 것이 이것입니다. 작은 턱은 예전 속도라 계단은 여전히
+       부드럽고, 큰 턱일수록 빨리 붙습니다. */
+    const gap = Math.abs(gy - P.y);
+    const rate = (up ? 16 : 9) + Math.min(26, gap * 34);
+    P.y += (gy - P.y) * Math.min(1, dt * rate); }
+  playerRig.position.set(P.x, P.y, P.z);
+  /* 몸은 **각속도 상한**을 두고 돕니다.
+     비율로만 감으면(전에 쓰던 1 - .00005^dt 는 프레임당 15%) 180도 전환이
+     0.3초에 끝나서, 도는 게 아니라 팽이처럼 튕겨 돌아갑니다. 방향을
+     동서남북 네 칸으로 스냅해서가 아니라 **모든 각도에서** 그랬습니다.
+
+     상한을 두면 작은 보정은 그대로 즉각적이고(각도가 작으니 한두 프레임에
+     닿습니다), 크게 꺾을 때만 눈에 보이는 호를 그립니다. 위 brake 와
+     짝입니다 — 도는 동안 속도가 죽으므로 호가 제자리 회전에 가까워집니다. */
+  {
+    const d = ((P.dir - playerRig.rotation.y + Math.PI * 3) % TAU) - Math.PI;
+    const rate = Math.min(TURN_MAX, Math.max(TURN_MIN, Math.abs(d) * 6.5));
+    playerRig.rotation.y += Math.sign(d) * Math.min(Math.abs(d), rate * dt);
+  }
+  /* 감정표현이 도는 동안은 그 자세가 이깁니다 */
+  let emoting = false;
+  /* 앉아 있는 동안은 감정표현 자세를 안 씁니다. 앉은 채로 3을 눌렀더니
+     의자를 뚫고 일어선 채로 세션이 끝날 때까지 그대로 있었습니다 —
+     아래 갈래가 SESS.on 이면 다시 앉히지를 않습니다. */
+  if ((SESS.on || CSIT.on) && myEmo) myEmo = null;
+  if (myEmo) {
+    emoting = playEmotePose(player, myEmo.k, (now - myEmo.t0) / 1000);
+    if (!emoting || P.sp > .3) myEmo = null;
+  }
+  if (!SESS.on && !CSIT.on && !emoting) {
+    /* 탈것을 탔으면 걷는 다리를 안 씁니다 — 안장 위에서 걸어가는 그림이
+       2D 판에서 그대로 지적받았던 것입니다. */
+    if (rideId && rideG) rideOn(player, rideG, rideId, T, P.sp);
+    else if (P.sp > .04) stride(player, P.walk, P.sp); else idle(player, T, 0);
+    const gt = gazeTarget();
+    if (gt) gaze(player, P.x, P.z, playerRig.rotation.y, gt.x, gt.z, gt.y);
+    else { player.userData.looking = false; look(player, 0, 0, .1); }
+  }
+  blob.position.set(P.x, P.y + .06, P.z);
+  blob.scale.setScalar(1 - P.sp * .08);
+  /* 탈것은 제 그림자를 들고 다닙니다. 둘 다 깔면 그림자가 두 겹이 됩니다. */
+  /* rideId 가 아니라 **실제로 달려 있는지**를 봅니다. 실내에서는 내리므로
+     rideG 만 null 이 되는데, rideId 로 보면 방 안에서 그림자가 사라집니다. */
+  blob.visible = !first && !rideG;
+  if (tutStep < TUT.length) {
+    if (TUT[tutStep].k === 'move' && P.moved > 7) tutDone('move');
+    if (TUT[tutStep].k === 'look' && turned > 1.6) tutDone('look');
+  }
+
+  /* ── 문 · 자리 · 사람 ── */
+  spot = null; npcNear = null; spotD = 1e9; npcD = 1e9;
+  if (!panelOn) {
+    let best = 1e9;
+    for (const s of spotsHere()) {
+      const d2 = (P.x - s.x) ** 2 + (P.z - s.z) ** 2;
+      if (d2 < s.r * s.r && d2 < best) { best = d2; spot = s; spotD = Math.sqrt(d2); }
+    }
+  }
+  if (!room) {
+    /* ── 멀리 있는 사람은 안 그립니다 ──
+       섬 반대편 사람은 화면에서 몇 픽셀인데 그리는 값은 앞사람과
+       같습니다. 32m 밖은 몸을 끄고 이름표만 남깁니다 — 이름표는
+       지도처럼 읽는 것이라 끄면 오히려 허전합니다. 수현 판은 28m 였는데
+       이 맵이 더 넓어 지평선도 멀어졌으므로 한 칸 늘립니다. */
+    for (const n of NPC) {
+      const far = (P.x - n.rig.position.x) ** 2 + (P.z - n.rig.position.z) ** 2 > 1024;
+      if (n.rig.visible === far) n.rig.visible = !far;
+    }
+    near = null;
+    for (const p of CAMPUS.portals)
+      if ((P.x - p.x) ** 2 + (P.z - p.z) ** 2 < p.r * p.r) { near = p; break; }
+    let bd = 9;
+    NPC.forEach((n) => {
+      const d2 = (P.x - n.rig.position.x) ** 2 + (P.z - n.rig.position.z) ** 2;
+      if (d2 < 6.2 && d2 < bd) { bd = d2; npcNear = n; npcD = Math.sqrt(d2); }
+    });
+    /* 사람이 자리보다 가까우면 **말 걸기가 이깁니다** — 창구 앞의 미르에게
+       말을 걸려는데 자리 창이 대신 열리던 것을 고칩니다 */
+    if (spot && npcNear && npcD < spotD) spot = null;
+    if (near) { elPrompt.innerHTML = `<em>E</em><span>${near.name} 들어가기</span>`; spot = null; npcNear = null; }
+    else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
+    else if (npcNear) elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
+    elPrompt.classList.toggle('on', !!(near || spot || npcNear) && !panelOn && !SESS.on && !dlgOn && !mapOn);
+  } else {
+    const out = P.z > room.size.d / 2 - 1.3;
+    if (out) { elPrompt.innerHTML = '<em>E</em><span>나가기</span>'; spot = null; }
+    else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
+    elPrompt.classList.toggle('on', !!(out || spot) && !panelOn && !SESS.on && !mapOn);
+    if (out && !SESS.on && P.sp > .2 && P.z > room.size.d / 2 - .55) leaveRoom();
+  }
+  /* 대화는 상대가 잠깐 감지에서 빠졌다고 닫지 않습니다 — 내가 **걸어서
+     떠날 때만** 닫습니다. 전에는 상대가 지나가기만 해도 창이 꺼졌습니다. */
+  if (dlgOn && dlgWho?.rig
+      && Math.hypot(P.x - dlgWho.rig.position.x, P.z - dlgWho.rig.position.z) > 4.5) closeDlg();
+
+  /* ── 실시간 · 남들 ── */
+  net?.move(P.x, P.z, P.dir, P.sp > .1);
+  if (net) remotes.forEach((r, id) => { if (!net.peers.has(id)) dropRemote(id); });
+  net?.peers.forEach((p) => {
+    const s = net.sample(p); if (!s) return;
+    const r = remoteFor(p);
+    r.rig.position.set(s.x, 0, s.z);
+    /* 같은 규칙을 접속자·봇에도 — 몸이 꺼져 있으면 다리 계산도 아깝습니다.
+       이름표는 아래에서 그대로 갱신합니다(NPC 와 같은 규칙 — 몸만 끕니다). */
+    const far2 = (P.x - s.x) ** 2 + (P.z - s.z) ** 2 > 1024;
+    if (r.rig.visible === far2) r.rig.visible = !far2;
+    r.rig.rotation.y = smoothAngle(r.rig.rotation.y, s.dir, 1 - Math.pow(.002, dt));
+    const step = r.last ? Math.hypot(s.x - r.last.x, s.z - r.last.z) : 0;
+    r.last = { x: s.x, z: s.z };
+    r.walk += step / 1.15;
+    if (!far2) {
+      let em = false;
+      if (p.emo && performance.now() - p.emoT < (EMOTE_BY_KEY[p.emo]?.dur || 1) * 1000)
+        em = playEmotePose(r.g, p.emo, (performance.now() - p.emoT) / 1000);
+      if (!em) {
+        if (s.moving || step > .002) stride(r.g, r.walk, 1); else idle(r.g, T, 2);
+        gaze(r.g, s.x, s.z, r.rig.rotation.y, P.x, P.z, 1.5, 6.5);
+      }
+    }
+    /* 이름표 · 말풍선 · 감정표현 */
+    v3.set(s.x, 2.5, s.z).project(cam);
+    const on = v3.z < 1 && !mapOn;
+    const sx = (v3.x * .5 + .5) * innerWidth, sy = (-v3.y * .5 + .5) * innerHeight;
+    r.el.style.display = on ? 'block' : 'none';
+    if (on) { r.el.textContent = p.nick || '누군가'; r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px'; }
+    const saying = p.say && performance.now() - p.sayT < 6000;
+    r.say.style.display = on && saying ? 'block' : 'none';
+    if (on && saying) { r.say.textContent = p.say; r.say.style.left = sx + 'px'; r.say.style.top = (sy - 26) + 'px'; }
+    const emo = p.emo && performance.now() - p.emoT < 2200;
+    r.emoEl.style.display = on && emo ? 'block' : 'none';
+    if (on && emo) { r.emoEl.textContent = emoteIcon(p.emo); r.emoEl.style.left = sx + 'px'; r.emoEl.style.top = (sy - 30) + 'px'; }
+  });
+
+  /* ── 실내 사람 ── */
+  inRoot.visible = !!room;
+  if (room) inNPC.forEach((n) => {
+    idle(n.g, T, n.seed);
+    gaze(n.g, n.rig.position.x, n.rig.position.z, n.rig.rotation.y, P.x, P.z, 1.5, 6.0);
+    const dd = Math.hypot(P.x - n.rig.position.x, P.z - n.rig.position.z);
+    if (dd < 3.0 && dd < npcD) { npcNear = n; npcD = dd; }
+    if (npcNear && npcD < spotD) spot = null;
+    if (dd < 16 && !mapOn) {
+      v3.set(n.rig.position.x, 2.45, n.rig.position.z).project(cam);
+      if (v3.z < 1) {
+        n.el.style.display = 'block';
+        n.el.style.left = ((v3.x * .5 + .5) * innerWidth) + 'px';
+        n.el.style.top = Math.max(74, (-v3.y * .5 + .5) * innerHeight) + 'px';
+        n.el.style.opacity = clamp((22 - dd) / 6, 0, 1);
+      } else n.el.style.display = 'none';
+    } else n.el.style.display = 'none';
+  });
+  /* 자리보다 가까울 때만 사람이 이깁니다. 위에서 npcD < spotD 비교로
+     spot 을 지워 두고도, 여기 덮어쓰기가 그 결과를 안 보고 무조건 사람
+     문구를 썼습니다 — 계산대 위에 서 있어도 "미르에게 말 걸기" 가 뜨고,
+     상점 여섯 자리 중 넷이 그렇게 가려져 있었습니다. */
+  if (room && npcNear && !near && !spot) {
+    elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
+    elPrompt.classList.toggle('on', !panelOn && !SESS.on && !mapOn && !dlgOn);
+  }
+
+  /* ── 내 머리 위 ── */
+  {
+    const sayOn = mySay && performance.now() - mySay.t0 < 6000 && !first;
+    const icOn = myIcon.dataset.t && performance.now() - +myIcon.dataset.t < 2200 && !first;
+    if (sayOn || icOn) v3.set(P.x, 2.5, P.z).project(cam);
+    const sx = (v3.x * .5 + .5) * innerWidth, sy = (-v3.y * .5 + .5) * innerHeight;
+    myEl.style.display = sayOn ? 'block' : 'none';
+    if (sayOn) { myEl.textContent = mySay.text; myEl.style.left = sx + 'px'; myEl.style.top = (sy - 26) + 'px'; }
+    myIcon.style.display = icOn ? 'block' : 'none';
+    if (icOn) { myIcon.style.left = sx + 'px'; myIcon.style.top = (sy - 30) + 'px'; }
+  }
+
+  /* ── 지나다니는 사람 ── */
+  if (room) NPC.forEach((n) => { n.el.style.display = 'none'; });
+  if (!room) NPC.forEach((n, idx) => {
+    const R = n.d.route, tgt = R[n.leg];
+    const dx = tgt[0] - n.rig.position.x, dz = tgt[1] - n.rig.position.z;
+    const d = Math.hypot(dx, dz);
+    if (n.paused) {
+      n.sp = Math.max(0, n.sp - dt * 8);
+      if (n.faceMe) n.dir = Math.atan2(P.x - n.rig.position.x, P.z - n.rig.position.z);
+    }
+    else if (n.wait > 0) { n.wait -= dt; n.sp = Math.max(0, n.sp - dt * 6); }
+    else if (d < .7) { n.leg = (n.leg + 1) % R.length; n.wait = 1.2 + (idx % 4) * .8; }
+    else {
+      const v = n.d.speed * dt;
+      n.rig.position.x += (dx / d) * v; n.rig.position.z += (dz / d) * v;
+      n.dir = Math.atan2(dx, dz); n.walk += v / 1.15;
+      n.sp = Math.min(1, n.sp + dt * 5);
+    }
+    n.rig.rotation.y = smoothAngle(n.rig.rotation.y, n.dir, 1 - Math.pow(.002, dt));
+    if (n.sp > .04) stride(n.g, n.walk, n.sp); else idle(n.g, T, idx);
+    gaze(n.g, n.rig.position.x, n.rig.position.z, n.rig.rotation.y, P.x, P.z, 1.5, n.sp > .04 ? 4.5 : 7);
+    /* 이름표 — 가까울 때만 */
+    const dd = Math.hypot(P.x - n.rig.position.x, P.z - n.rig.position.z);
+    if (dd < 22 && !mapOn) {
+      v3.set(n.rig.position.x, 2.45, n.rig.position.z).project(cam);
+      if (v3.z < 1) {
+        n.el.style.display = 'block';
+        n.el.style.left = ((v3.x * .5 + .5) * innerWidth) + 'px';
+        n.el.style.top = ((-v3.y * .5 + .5) * innerHeight) + 'px';
+        n.el.style.opacity = clamp((22 - dd) / 6, 0, 1);
+      } else n.el.style.display = 'none';
+    } else n.el.style.display = 'none';
+  });
+
+  /* ── 카메라 ── */
+  /* 개발용 잠금 — __W.lock(x, y, z, tx, ty, tz) 로 카메라를 세워 둡니다.
+     화면을 찍어 확인할 때 씁니다. 그냥 cam 을 밖에서 잡으면 이 블록이
+     매 프레임 덮어써서 어디를 보는지 알 수 없습니다. */
+  if (window.__camLock) { const L = window.__camLock;
+    cam.position.set(L[0], L[1], L[2]); cam.up.set(0, 1, 0);
+    cam.lookAt(L[3], L[4], L[5]);
+    if (L[6]) { cam.fov = L[6]; cam.updateProjectionMatrix(); }
+  } else if (first) {
+    /* 눈높이 1.84 는 키 1.9 짜리 몸에서 정수리 바로 아래라, 턱을 들면
+       천장이 코앞이었습니다. 흔들림도 절반으로 줄입니다 — 화면 전체가
+       흔들리는 것은 3인칭에서 캐릭터가 흔들리는 것보다 훨씬 셉니다. */
+    cam.position.set(P.x, P.y + 1.70 + Math.sin(P.walk * TAU * 2) * .011 * P.sp, P.z);
+    const f = new THREE.Vector3(Math.sin(yaw), -Math.tan(pitch), Math.cos(yaw));
+    cam.lookAt(cam.position.x + f.x * 10, cam.position.y + f.y * 10, cam.position.z + f.z * 10);
+  } else {
+    /* 가림 검사 결과를 **바로 쓰지 않습니다.** 건물 옆을 지나가면
+       검사 결과가 프레임마다 널뛰어서, 걷는 내내 줌이 들쭉날쭉했습니다.
+       목표 거리만 계산해 두고 실제 거리는 감쇠로 따라갑니다 —
+       가려지면 빠르게(벽 속을 보지 않게), 풀리면 천천히. */
+    let want = dist, wantPitch = pitch;
+    const sx = -Math.sin(yaw), sz = -Math.cos(yaw), cp = Math.cos(camPitch);
+    let blocked = 0;
+    for (let t = 1.6; t <= dist; t += .5)
+      if (hitCam(P.x + sx * cp * t, P.z + sz * cp * t)) { blocked = t; break; }
+    if (blocked) {
+      /* 가리면 **먼저 위로 올라갑니다.** 당기기부터 하면 건물 옆을 지날
+         때마다 카메라가 뒤통수에 딱 붙어서 앞이 하나도 안 보입니다 —
+         "움직이기 힘들다" 의 마지막 조각입니다. 올라가도 안 되면 그때 당깁니다. */
+      wantPitch = Math.min(1.16, pitch + .5);
+      want = Math.max(room ? 4.2 : 6.5, blocked - .6);
+    }
+    camPitch += (wantPitch - camPitch) * Math.min(1, dt * (wantPitch > camPitch ? 7 : 2.6));
+    /* 가리면 빠르게 당기고, 풀리면 **적당히 빠르게** 물러납니다.
+       2.2 는 0.45초짜리라 건물을 스쳐 지나갈 때마다 카메라가 코앞에
+       붙어 있는 시간이 길었습니다. */
+    camD += (want - camD) * Math.min(1, dt * (want < camD ? 14 : 5));
+    const d = camD;
+    const h = Math.sin(camPitch) * d, r = Math.cos(camPitch) * d;
+    cam.position.lerp(v3.set(P.x + sx * r, P.y + 1.2 + h, P.z + sz * r), 1 - Math.pow(.0009, dt));
+    cam.lookAt(P.x, P.y + 1.35, P.z);
+  }
+  aimSun(P.x, P.z);
+
+  /* ── 자세 세션 ── */
+  if (SESS.on) {
+    /* 벽시계 — 화면이 느려도 앉은 시간은 앉은 시간입니다 */
+    const wall = (now - SESS.t0) / 1000;
+    const dw = SESS.dw = Math.max(0, Math.min(1.5, wall - SESS.t));  // 탭이 잠들었다 깨면 한 번에 튀지 않게
+    SESS.t = wall;
+    /* 판정이 실제로 돈 시간만 따로 셉니다 — 코인과 리포트가 이걸 씁니다 */
+    if (SESS.demo || (PZ.mode === 'live' && SESS.live && SESS.live !== 'idle')) SESS.judged += dw;
+    if (PZ.mode === 'live') SESS.want = PZ.k;
+    if (SESS.demo) {
+      SESS.next -= dt;
+      if (SESS.next <= 0) {
+        const drift = Math.min(.62, SESS.t / 90);
+        SESS.want = clamp(drift + (Math.sin(SESS.t * 1.7) * .5 + .5) * .55, 0, 1);
+        SESS.next = 2.4 + (SESS.t % 3);
+      }
+    }
+    SESS.k += (SESS.want - SESS.k) * Math.min(1, dt * 1.8);
+    slouch(player, SESS.k); slouch(pipMe, SESS.k);
+    /* 상태 다섯 — 2D 판의 얼굴 다섯을 그대로 잇습니다.
+       굽었다가 펴는 중이면 1.8초 동안 '회복'(웃는 눈)을 보여 줍니다. */
+    /* 라벨은 판정기의 상태를 그대로 씁니다. 굽은 정도(k)로 다시 문턱을
+       잡으면 엔진이 'bad' 라고 한 순간과 화면이 어긋납니다. */
+    const idle = PZ.mode === 'live' && SESS.live === 'idle';
+    const bad = PZ.mode === 'live' ? SESS.live === 'bad' : SESS.k > .62;
+    const warn = PZ.mode === 'live' ? SESS.live === 'warning' : (!bad && SESS.k > .34);
+    if (bad && !SESS.wasBad) {
+      SESS.bad++;
+      /* 무너지는 순간 한 번만 — 낮은 이중 톤. 계속 울리면 잔소리가 됩니다 */
+      warnBeep();
+    }
+    if (SESS.wasBad && !bad) SESS.recoverT = 1.8;
+    SESS.wasBad = bad;
+    if (SESS.recoverT > 0) SESS.recoverT -= dt;
+    /* 여기도 벽시계입니다 — 리포트의 띠가 SESS.t 와 같은 자로 재야
+       '20분 중 6분 굽음' 이 맞아떨어집니다. */
+    if (bad) SESS.tBad += SESS.dw; else if (warn) SESS.tWarn += SESS.dw;
+    const fs = bad ? 'bad' : (SESS.recoverT > 0 ? 'recover' : warn ? 'warn' : 'good');
+    if (fs !== SESS.face) { SESS.face = fs; face(player, fs); face(pipMe, fs); }
+    const st = elPost.querySelector('.st'), bar = elPost.querySelector('.bar i');
+    const pst = $('#pip .st');
+    st.className = 'st' + (bad ? ' bad' : warn ? ' warn' : '');
+    st.textContent = idle ? '측정 준비' : bad ? '굽음' : SESS.recoverT > 0 ? '회복' : warn ? '주의' : '좋음';
+    pst.className = 'st' + (bad ? ' bad' : warn ? ' warn' : '');
+    pst.textContent = st.textContent;
+    bar.style.width = Math.round((1 - SESS.k) * 100) + '%';
+    bar.style.background = bad ? '#E8695A' : warn ? '#F2C14E' : '#63C47C';
+    elPost.querySelector('.tm').textContent =
+      Math.floor(SESS.t / 60) + ':' + String(Math.floor(SESS.t % 60)).padStart(2, '0');
+    idbarTime(SESS.t);
+    const msg = bad ? '목이 앞으로 나왔어요' : warn ? '조금만 펴 볼까요' : '';
+    if (msg && !first) {
+      v3.set(P.x, 2.5, P.z).project(cam);
+      elBub.style.left = ((v3.x * .5 + .5) * innerWidth) + 'px';
+      elBub.style.top = ((-v3.y * .5 + .5) * innerHeight - 8) + 'px';
+      elBub.textContent = msg; elBub.classList.add('on');
+    } else elBub.classList.remove('on');
+  }
+
+  /* ── 가구 유령 ── */
+  if (PLACE.on && PLACE.ghost) {
+    const [gx, gz] = placePos();
+    PLACE.ghost.position.set(gx, .02, gz);
+    PLACE.ghost.rotation.y = PLACE.ry;
+  }
+
+  /* ── 하늘 · 날씨 ── */
+  applySky(!!room);
+  if (!room) SKY.tick(dt, P.x, P.z);
+
+  /* ── 호수와 천막 ── 백조·연잎·물고기는 상태를 안 들고 시각에서 자리를
+     계산합니다. 그래야 탭이 멈췄다 돌아와도 어긋날 것이 없습니다. */
+  if (!room) {
+    for (const w of LAKE_LIFE) {
+      const a = T * w.sp + w.phase;
+      w.mesh.position.x = w.cx + Math.cos(a) * w.rx;
+      w.mesh.position.z = w.cz + Math.sin(a * .61 + w.phase) * w.rz;
+      w.mesh.position.y = w.y0 + Math.sin(T * 1.3 + w.phase) * .03;
+      if (w.heading) w.mesh.rotation.y = Math.sin(a) < 0 ? 0 : Math.PI;
+    }
+    /* 물 — 수면이 조금 오르내리고, 물결 고리가 퍼지며 옅어집니다.
+       campus.js 가 자기 시계를 따로 들면 탭이 잠들었다 깰 때 어긋나므로
+       여기 프레임 루프가 돌립니다(백조·천과 같은 규칙). */
+    for (const w of (CAMPUS.water || [])) {
+      if (w.ripple) {
+        const u = ((T * .28 + w.t0) % 1);
+        const r = w.from + (w.to - w.from) * u;
+        w.ripple.scale.set(r, r, 1);
+        w.ripple.material.opacity = .34 * (1 - u) * (1 - u);
+      } else if (w.mesh) {
+        w.mesh.position.y = w.y + Math.sin(T * 1.6 + w.ph) * w.amp;
+      }
+    }
+    for (const f of (CAMPUS.flutter || []))
+      f.mesh.rotation[f.axis] = Math.sin(T * 1.7 + f.phase) * f.amp;
+  }
+
+  /* ── 분수 ── */
+  if (!room) waterJets.forEach((j, i) => {
+    j.scale.y = 1 + Math.sin(T * 3.1 + i) * .09;
+    j.position.y = j.userData.y0 + Math.sin(T * 3.1 + i) * .05;
+  });
+
+  if (toastT > 0) { toastT -= dt; if (toastT <= 0) elToast.classList.remove('on'); }
+  drawMini();
+  if (mapOn) drawMap();
+
+  /* ── 오른쪽 미리보기 ──
+     이 작은 창은 **두 번째 씬을 통째로 다시 그립니다.** 큰 화면과 같은
+     빈도로 돌릴 이유가 없습니다 — 손바닥만 한 칸에서 24fps 와 60fps 는
+     구분이 안 되고, 아낀 프레임은 걷는 감각으로 돌아옵니다.
+     화면에 안 보일 때는 아예 안 그립니다. */
+  pipT += dt;
+  if (pipT > .042 && elPip.offsetParent !== null) {
+    pipT = 0;
+    pipMe.rotation.y = Math.sin(T * .5) * .26;
+    if (!SESS.on) { if (P.sp > .04) stride(pipMe, P.walk, P.sp * .7); else idle(pipMe, T, 1); }
+    pipCam.position.set(0, 1.06, 3.95); pipCam.lookAt(0, .93, 0);
+    pipR.render(pipScene, pipCam);
+  }
+
+  /* fps 도 벽시계로 셉니다. dt 를 더해서 나누면 **dt 천장(0.1)이
+     그대로 하한 10fps 가 됩니다** — 실제로 3fps 로 기어도 화면에는
+     10fps 라고 적혔고, 그 아래 칸의 화질 사다리는 영영 안 눌렸습니다.
+     느린 것을 느리다고 말해야 사다리가 일을 합니다. */
+  frames++; acc += (now - fpsT0) / 1000; fpsT0 = now;
+  if (acc > .7) {
+    const f = Math.round(frames / acc);
+    fpsNow = f;
+    /* fps 만 적으면 느릴 때 무엇이 느린지 모릅니다. 드로우콜을 같이
+       적으면 "물체를 더 뿌려도 되는가" 를 걸으면서 판단할 수 있습니다. */
+    elFps.textContent = f + ' fps · ' + renderer.info.render.calls + ' call';
+    /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
+       이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
+       느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
+    if (f < 30 && quality > .75) { quality = .75; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
+    /* 끄기 전에 **반으로 줄여** 봅니다. 2048 → 1024 면 그림자 그리는 값이
+       사분의 일이 되는데, 이 그림체에서 가장자리가 부드러워지는 것 말고는
+       티가 잘 안 납니다. 있는 그림자가 없는 그림자보다 낫습니다. */
+    else if (f < 26 && sun.shadow.mapSize.width > 1024) {
+      sun.shadow.mapSize.set(1024, 1024);
+      sun.shadow.map?.dispose(); sun.shadow.map = null;
+    }
+    else if (f < 22 && renderer.shadowMap.enabled) {
+      /* CSM 이 켜져 있으면 그것부터 끕니다 — 안 끄면 그림자 맵을
+         셋씩 그리면서 '껐다' 고 말하게 됩니다. */
+      csmOff();
+      renderer.shadowMap.enabled = false;
+      scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
+      shadowsOff = true;
+      toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
+    }
+    else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
+    frames = 0; acc = 0;
+  }
+  /* CSM 은 카메라를 따라 칸을 다시 잡아야 합니다 */
+  if (csm) csm.update();
+  if (composer) composer.render(); else renderer.render(scene, cam);
+}
+function hitCam(x, z) {
+  if (room) return x < -room.size.w / 2 + .5 || z < -room.size.d / 2 + .5;
+  for (let k = 0; k < CAMPUS.colliders.length; k++) {
+    const c = CAMPUS.colliders[k];
+    if (!c.big) continue;
+    const dx = x - c.x, dz = z - c.z;
+    if (dx * dx + dz * dz > 900) continue;
+    const co = Math.cos(c.ry || 0), si = Math.sin(c.ry || 0);
+    const lx = co * dx - si * dz, lz = si * dx + co * dz;
+    if (Math.abs(lx) < c.w / 2 + .7 && Math.abs(lz) < c.d / 2 + .7) return true;
+  }
+  return false;
+}
+/* 몸이 도는 속도(라디안/초). 상한 7 이면 180도 전환에 0.45초 —
+   달려가다 꺾는 것이 보이면서도 조작이 굼뜨지 않은 값입니다. */
+const TURN_MAX = 7.0, TURN_MIN = 3.2;
+function smoothAngle(a, b, t) {
+  const d = ((b - a + Math.PI * 3) % TAU) - Math.PI;
+  return a + d * t;
+}
+NPC.forEach((n) => n.rig.position.set(n.d.route[n.leg][0], 0, n.d.route[n.leg][1]));
+aimSun(P.x, P.z);
+requestAnimationFrame(tick);
+if (!SAVE.seenTour) setTimeout(() => { if (!panelOn && !SAVE.seenTour) openTour(0); }, 1400);
+setTimeout(() => $('#load').classList.add('gone'), 260);
+toast('기린캠퍼스', '중앙 광장');
+
+idbarPaint();
+checkStreak();
+if (SAVE.hour !== undefined && SAVE.hour !== null) { SKY.setHour(SAVE.hour); setClockHour(SAVE.hour); }
+pullWeather();
+setInterval(pullWeather, 1800000);
+/* 로드가 끝나면: ① 지도 사진 한 장 ② 방 여섯을 미리 지어 둡니다.
+   문에 닿고서야 지으면 그 순간 화면이 몇 백 ms 얼었습니다 —
+   "들어갈 때 몇 초 깨진다" 의 정체가 이것입니다. */
+setTimeout(shootMap, 900);
+/* 커서를 처음부터 켭니다 — syncLock 은 시점·창이 바뀔 때만 도는데,
+   그전까지 3인칭에서 우리 커서가 없어 윈도우 커서가 나왔습니다. */
+syncLock();
+['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k, i) =>
+  setTimeout(() => { try { buildRoom(k); } catch {} }, 2400 + i * 650));
+if (SAVE.shadow === false) setShadows(false);
+window.__ready = true;
+window.__P = P;
+window.__aim = (x, z) => aimSun(x, z);
+/* 시연에서 밤을 보여 주려면 __hour(21). 되돌리려면 __hour(null). */
+/* 개발용 — 실내로 바로 들어갑니다 */
+/* 실내 보행 감사 — 문에서 물을 채워 봅니다.
+   걸을 수 있는 바닥 비율 · 문에서 닿는 비율 · 말 걸 자리(SPOTS) 도달을
+   한 번에 잽니다. 실내를 키운 뒤 실버그는 대부분 여기서 걸립니다. */
+/* 격자를 글자 그림으로 — 어느 칸이 막혔는지 눈으로 봅니다.
+   . 빈칸  # 가구  o 말 걸 자리  X 막힌 말 걸 자리 */
+window.__gridArt = () => {
+  if (!room) return '실내 아님';
+  const G = room.grid, rows = [];
+  const sp = (SPOTS[room.key] || []);
+  for (let j = 0; j < G.nz; j++) {
+    let line = '';
+    for (let i = 0; i < G.nx; i++) {
+      const x = -G.w / 2 + (i + .5) * CELL, z = -G.d / 2 + (j + .5) * CELL;
+      const blocked = hitGrid(G, x, z);
+      const s2 = sp.find((q) => Math.abs(q.x - x) < CELL && Math.abs(q.z - z) < CELL);
+      line += s2 ? (blocked ? 'X' : 'o') : (blocked ? '#' : '.');
+    }
+    rows.push(line);
+  }
+  return 'x ' + (-G.w / 2).toFixed(1) + ' → ' + (G.w / 2).toFixed(1) + '  칸 ' + CELL + String.fromCharCode(10) + rows.join(String.fromCharCode(10));
+};
+
+window.__walkAudit = () => {
+  if (!room) return null;
+  const G = room.grid;
+  const free = [], id = (i, j) => j * G.nx + i;
+  let nFree = 0;
+  for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++) {
+    const x = -G.w / 2 + (i + .5) * CELL, z = -G.d / 2 + (j + .5) * CELL;
+    free.push(hitGrid(G, x, z) ? 0 : 1);
+    if (free[free.length - 1]) nFree++;
+  }
+  /* 문(= 지금 서 있는 자리)에서 물 채우기 */
+  const seen = new Uint8Array(G.nx * G.nz);
+  const si = Math.floor((P.x + G.w / 2) / CELL), sj = Math.floor((P.z + G.d / 2) / CELL);
+  const q = [[si, sj]]; seen[id(si, sj)] = 1;
+  let reach = 0;
+  while (q.length) {
+    const [i, j] = q.pop();
+    if (!free[id(i, j)]) continue;
+    reach++;
+    for (const [di, dj] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      const ni = i + di, nj = j + dj;
+      if (ni < 0 || nj < 0 || ni >= G.nx || nj >= G.nz || seen[id(ni, nj)]) continue;
+      seen[id(ni, nj)] = 1; q.push([ni, nj]);
+    }
+  }
+  /* 말 걸 자리 도달 */
+  const spots = (SPOTS[room.key] || []).map((sp) => {
+    const i = Math.floor((sp.x + G.w / 2) / CELL), j = Math.floor((sp.z + G.d / 2) / CELL);
+    const ok = i >= 0 && j >= 0 && i < G.nx && j < G.nz && seen[id(i, j)] && free[id(i, j)];
+    return (sp.tag || '?') + (ok ? '○' : '✕');
+  });
+  return { 빈바닥: (nFree / free.length * 100).toFixed(0) + '%',
+           문에서닿음: (nFree ? reach / nFree * 100 : 0).toFixed(0) + '%',
+           자리: spots };
+};
+
+window.__roomInfo = () => ({ root: roomRoot, size: room ? ROOM_SIZE[room.key] : null });
+/* __enter 는 아래 포털 판(3530줄께)이 진짜입니다 — 짓기만 하는 판이 위에 하나 더 있어서, 포털 zone(clubshop)과 방 key(shop)가 갈리는 상점에서 조용히 아무 일도 안 했습니다. */
+window.__hour = (h) => { SKY.setHour(h); setClockHour(h); skySeen = -1; SAVE.hour = h; UI.save(); };
+/* 카메라 고정 — __W.lock(...) · 풀려면 __W.lock(null) */
+window.__W.lock = (...a) => { window.__camLock = a[0] === null ? null : a; };
+window.__wx = (k) => SKY.setWeather(k);
+window.__hit = (x, z) => hitCampus(x, z);
+window.__sess = () => SESS;
+window.__portals = () => CAMPUS.portals;
+window.__spotsCampus = () => SPOTS.campus;
+window.__panelKind = (k, t) => openPanel({ tag: '검사', title: t || k, panel: k, body: ['검사용 문구 한 줄.', '두 줄째.'] });
+window.__panelSize = () => { const e = $('#panel'); const r = e.getBoundingClientRect(); const bd = e.querySelector('.bd'); return { w: Math.round(r.width), h: Math.round(r.height), scrollH: bd.scrollHeight, clientH: bd.clientHeight, overflowX: bd.scrollWidth - bd.clientWidth, empty: bd.textContent.trim().length < 3 }; };
+window.__tp = (x, z, dir) => { P.x = x; P.z = z; if (dir != null) { P.dir = dir; yaw = dir; } };
+window.__enter = (zone) => { const p = CAMPUS.portals.find((q) => q.zone === zone); if (p) enterRoom(p); };
+window.__leave = () => leaveRoom();
+window.__view = () => toggleView();
+window.__map = () => toggleMap();
+window.__room = () => (room ? room.key : null);
+window.__k = (v) => { SESS.k = SESS.want = v; SESS.demo = false; };
+window.__sit = () => { const s = spotsHere().find((q) => q.seat); if (s) startSession(s); };
+window.__talk = () => { const n = (room ? inNPC : NPC)[0]; if (n) openDlg(n); };
+window.__panel = (t) => { const s = spotsHere().find((q) => q.title === t); if (s) openPanel(s); };
+window.__emo = (k) => doEmote(k);
+window.__wheel = () => toggleEmo();
+window.__chat = (t) => { pushChat('나', t); mySay = { text: t, t0: performance.now() }; };
+window.__chatAs = (who, t) => pushChat(who, t);
+window.__netPeers = () => (net ? [...net.peers.entries()] : []);
+window.__game = (k) => openGame(k, () => {}, { posture: PZ });
+window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.error } : null);
+window.__scene = scene;
+window.__renderer = renderer;
+window.__ride = () => rideId;
+window.__setCam = (y, pi, d) => { yaw = y; pitch = camPitch = pi; dist = camD = d; camHold = performance.now() + 9e5; };
+window.__setRide = (id) => setRide(id);
+window.__path = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.length : null; };
+window.__pathPts = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.map((v)=>[+v.x.toFixed(1), +v.z.toFixed(1)]) : null; };
+window.__go = () => ({ p: [+P.x.toFixed(1), +P.z.toFixed(1)], to: goTo && [+goTo.x.toFixed(1), +goTo.z.toFixed(1)],
+  left: goPath ? goPath.length : null, stall: +goStall.toFixed(2), dirWant: +(P.dirWant||0).toFixed(2) });
+window.__walkTo = (tx, tz) => { goPath = findPath(P.x, P.z, tx, tz); goTo = goPath ? goPath.shift() : { x: tx, z: tz }; goEnd = { x: tx, z: tz }; goStall = 0; goRetried = false; goLastD = -1; };
+window.__perf = () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles,
+  geo: renderer.info.memory.geometries, tex: renderer.info.memory.textures, fps: +fpsNow.toFixed(1) });
+window.__cam = () => ({ p: cam.position.toArray().map((v)=>+v.toFixed(1)),
+  yaw:+yaw.toFixed(2), pitch:+pitch.toFixed(2), dist:+dist.toFixed(1),
+  campus: campusRoot.visible, room: !!room, kids: campusRoot.children.length });
+window.__stats = () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles });
+window.__SCENE = scene;
+window.__SAVE = () => SAVE;
+window.__uisave = () => UI.save();
+window.__NPC0 = () => (dlgWho || NPC[0]);
+window.__BOX3 = () => new THREE.Box3();
+</script>

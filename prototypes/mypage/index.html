@@ -339,10 +339,11 @@ input[type="text"]:focus {
 .vstage .vlb { font-size: 13px; font-weight: 700; color: var(--ink-2); }
 /* 번호는 읽는 것이 아니라 대조하는 것입니다. 자간을 벌리고 고정폭
    숫자를 써서 여섯 자리가 눈에 한 번에 들어오게 합니다. */
-/* 여섯 자리에 맞춰 자릅니다. 칸 너비는 들어갈 내용이 정합니다 — 판을
-   가로지르면 입력할 양을 잘못 알려 줍니다. */
+/* 자릿수에 맞춰 자릅니다. 칸 너비는 들어갈 내용이 정합니다 — 판을
+   가로지르면 입력할 양을 잘못 알려 줍니다. 232px 는 여섯 자리에 맞춰
+   잰 값이고, --otp-n 은 JS 가 SchoolAuth.OTP_LEN 으로 채웁니다. */
 .vstage input.otp {
-  width: 232px;
+  width: calc(232px * var(--otp-n, 6) / 6);
   font-variant-numeric: tabular-nums; letter-spacing: .38em;
   font-size: 21px; font-weight: 800; text-align: center; padding-left: .38em;
 }
@@ -973,9 +974,10 @@ input[type="text"]:focus {
           <!-- 2단계: 번호 -->
           <div class="vstage" id="v-code" hidden>
             <p class="msg" id="v-code-msg" role="status"></p>
-            <label class="vlb" for="v-otp">메일로 받은 6자리</label>
-            <input type="text" class="otp" id="v-otp" placeholder="000000"
-                   inputmode="numeric" autocomplete="one-time-code" maxlength="6"
+            <!-- 자릿수는 shared/school-auth.js 가 정합니다. -->
+            <label class="vlb" for="v-otp">메일로 받은 <span id="v-otp-len">8자리</span></label>
+            <input type="text" class="otp" id="v-otp"
+                   inputmode="numeric" autocomplete="one-time-code"
                    aria-describedby="v-code-err">
             <p class="msg bad" id="v-code-err" role="alert" hidden></p>
             <div class="vrow">
@@ -1379,7 +1381,7 @@ function toCode() {
   $('v-otp').value = '';
   $('v-verify').disabled = true;
   vErr('v-code-err', '');
-  $('v-code-msg').textContent = vEmail + ' 로 6자리를 보냈어요.'
+  $('v-code-msg').textContent = vEmail + ' 로 ' + V_LEN + '자리를 보냈어요.'
     + (LIVE_AUTH ? '' : ' (설정이 없어 흉내로 돕니다 — ' + AUTH.reason + ')');
   startResend();
   $('v-otp').focus();
@@ -1411,14 +1413,23 @@ $('v-back').addEventListener('click', () => {
   $('v-email').focus();
 });
 
+/* 자릿수는 shared/school-auth.js 한 곳에서 옵니다. 확인 버튼은 OTP_MIN
+   부터 열어 둡니다 — 설정과 서버가 어긋난 동안에도 서버가 뭐라고 하는지는
+   볼 수 있어야 합니다. */
+const V_LEN = AUTH.OTP_LEN, V_MIN = AUTH.OTP_MIN;
+$('v-otp-len').textContent = V_LEN + '자리';
+$('v-otp').style.setProperty('--otp-n', String(V_LEN));
+$('v-otp').setAttribute('maxlength', String(V_LEN));
+$('v-otp').setAttribute('placeholder', '0'.repeat(V_LEN));
+
 $('v-otp').addEventListener('input', () => {
-  const v = $('v-otp').value.replace(/\D/g, '').slice(0, 6);
+  const v = $('v-otp').value.replace(/\D/g, '').slice(0, V_LEN);
   $('v-otp').value = v;
-  $('v-verify').disabled = v.length !== 6;
+  $('v-verify').disabled = v.length < V_MIN;
   vErr('v-code-err', '');
 });
 $('v-otp').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && $('v-otp').value.length === 6) $('v-verify').click();
+  if (e.key === 'Enter' && $('v-otp').value.length >= V_MIN) $('v-verify').click();
 });
 
 $('v-verify').addEventListener('click', async () => {
@@ -1427,7 +1438,8 @@ $('v-verify').addEventListener('click', async () => {
   if (!LIVE_AUTH) {
     setTimeout(() => {
       busy(btn, false, '인증하기');
-      if ($('v-otp').value === '000000') { vErr('v-code-err', '번호가 맞지 않아요. 메일을 다시 확인해 주세요.'); return; }
+      /* 전부 0 만 실패로 둡니다 — 자릿수가 바뀌어도 실패 화면을 볼 수 있게. */
+      if (/^0+$/.test($('v-otp').value)) { vErr('v-code-err', '번호가 맞지 않아요. 메일을 다시 확인해 주세요.'); return; }
       finishVerified(vEmail);
     }, 700);
     return;
@@ -1644,9 +1656,9 @@ const CC_STATE = {
   expiring: { icon: 'clock', text: '인증이 곧 만료돼요',
               sub: '학교 메일로 한 번 더 인증하면 이어져요' },
   none:     { icon: 'info',  text: '학교 메일 인증 전',
-              sub: '아래 학교 인증에서 6자리를 받으면 카드가 채워져요' },
+              sub: '아래 학교 인증에서 번호를 받으면 카드가 채워져요' },
   checking: { icon: 'wait',  text: '인증 확인 중',
-              sub: '메일로 받은 6자리를 확인하고 있어요' },
+              sub: '메일로 받은 번호를 확인하고 있어요' },
   failed:   { icon: 'alert', text: '인증하지 못했어요',
               sub: '학교 메일 주소를 다시 확인하고 인증해 주세요' },
 };

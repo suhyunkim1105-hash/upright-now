@@ -1,0 +1,52 @@
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#EFF2F5;overflow:hidden}canvas{display:block}</style>
+<canvas id="cv"></canvas>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { M, box, cyl, prism } from './parts.js';
+import { character, OUTFITS } from './chars.js';
+import * as R from './room.js';
+import { ROOMS } from './rooms.js';
+
+/* ══════════════════════════════════════════════════════════
+   실내 여섯. 건물 콘셉트가 **가구 목록**으로 드러나야 합니다 —
+   도서관은 책장과 긴 탁자, 기숙사는 침대와 옷장, 상점은 진열대.
+   ══════════════════════════════════════════════════════════ */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xEFF2F5);
+const IN = R.IN;
+
+const which = new URLSearchParams(location.search).get('r') || 'library';
+const g = new THREE.Group(); scene.add(g);
+ROOMS[which](g);
+
+/* 빛 — 실내는 창에서 들어오는 빛이 하나 있어야 방이 됩니다 */
+scene.add(new THREE.AmbientLight(0xFFFFFF, .74));
+scene.add(new THREE.HemisphereLight(0xE8F4FF, 0xE0CDB0, .8));
+const key = new THREE.DirectionalLight(0xFFF6E4, 1.85);
+key.position.set(-11, 17, 13); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -13; key.shadow.camera.right = 13;
+key.shadow.camera.top = 13; key.shadow.camera.bottom = -13;
+key.shadow.camera.near = 1; key.shadow.camera.far = 56;
+key.shadow.bias = -.0004; key.shadow.radius = 4; key.shadow.normalBias = .02;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xCFE4F5, .62); fill.position.set(12, 8, 4); scene.add(fill);
+const warm = new THREE.PointLight(0xFFD9A0, .55, 30); warm.position.set(0, 3.2, 1); scene.add(warm);
+
+const S = 1600, F = 13.6;
+const cam = new THREE.OrthographicCamera(-F, F, F * .78, -F * .78, .1, 200);
+cam.position.set(20, 17, 20); cam.lookAt(0, 1.1, -.2);
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });
+r.setSize(S, Math.round(S * .78), false); r.setPixelRatio(1);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.06;
+r.outputColorSpace = THREE.SRGBColorSpace;
+const cv = document.getElementById('cv');
+cv.style.width = S + 'px'; cv.style.height = Math.round(S * .78) + 'px';
+r.render(scene, cam);
+window.__ready = true;
+</script>

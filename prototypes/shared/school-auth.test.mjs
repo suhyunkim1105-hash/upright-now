@@ -14,12 +14,13 @@ import { fileURLToPath } from 'node:url';
 const SRC = readFileSync(fileURLToPath(new URL('./school-auth.js', import.meta.url)), 'utf8');
 
 /** 설정된 상태의 모듈 하나. calls 에 나간 요청이 쌓입니다. */
-function load({ url = 'https://demo.supabase.co/', anonKey = 'ANON123', protocol = 'https:' } = {}) {
+function load({ url = 'https://demo.supabase.co/', anonKey = 'ANON123', protocol = 'https:',
+                otpLength } = {}) {
   const calls = [];
   const store = {};
   const box = { reply: { ok: true, status: 200, json: async () => ({}) } };
   const win = {
-    GIRIN_SUPABASE: url || anonKey ? { url, anonKey } : undefined,
+    GIRIN_SUPABASE: url || anonKey ? { url, anonKey, otpLength } : undefined,
     location: { protocol },
     localStorage: {
       getItem: (k) => (k in store ? store[k] : null),
@@ -172,4 +173,33 @@ test('로그아웃은 서버가 죽어도 기기에서 지운다', async () => {
   box.reply = bad(500, { msg: 'down' });
   await A.signOut();
   assert.equal(store['girin.session'], undefined);
+});
+
+test('번호 길이는 설정이 정하고, 확인 버튼은 그보다 짧아도 열린다', () => {
+  /* 화면 셋(온보딩·로비·마이페이지)이 각자 6 을 들고 있다가, 프로젝트의
+     mailer_otp_length 가 8 로 올라가자 셋 다 확인 버튼이 안 열렸습니다.
+     길이를 여기 한 곳에 두는 이유입니다. */
+  assert.equal(load().A.OTP_LEN, 8);                       // 설정이 없으면 8
+  assert.equal(load({ otpLength: 6 }).A.OTP_LEN, 6);
+  assert.equal(load({ otpLength: '8' }).A.OTP_LEN, 8);     // 문자열도 받습니다
+
+  /* 말도 안 되는 값은 범위 안으로 접습니다 — 설정 오타 하나로 칸이
+     0개이거나 200개가 되면 화면이 통째로 깨집니다. */
+  assert.equal(load({ otpLength: 0 }).A.OTP_LEN, 8);       // 0 은 거짓이라 기본값
+  assert.equal(load({ otpLength: 99 }).A.OTP_LEN, 10);
+  assert.equal(load({ otpLength: 2 }).A.OTP_LEN, 4);
+
+  /* 확인 버튼을 여는 하한. 설정과 서버가 어긋난 동안에도 사람이 번호를
+     넣어 볼 수는 있어야 하고, 자릿수 판정은 서버가 합니다. */
+  assert.equal(load({ otpLength: 8 }).A.OTP_MIN, 6);
+  assert.equal(load({ otpLength: 4 }).A.OTP_MIN, 4);       // 하한이 길이를 넘지 않습니다
+});
+
+test('verifyCode 는 자릿수를 안 막는다', async () => {
+  /* 화면이 미리 막으면 프로젝트 설정을 바꿨을 때 서버가 뭐라고 하는지조차
+     못 봅니다. 길이 판정은 /verify 가 합니다. */
+  const { A, calls, box } = load({ otpLength: 8 });
+  box.reply = ok({ access_token: 'AT', refresh_token: 'RT', expires_at: 9e9, user: { id: 'u', email: 'a@mju.ac.kr' } });
+  await A.verifyCode('a@mju.ac.kr', '123456');
+  assert.equal(calls.at(-1).body.token, '123456');
 });

@@ -22,4 +22,20 @@
 window.GIRIN_SUPABASE = {
   url: 'https://obwzfoiplcjzrewdmlyw.supabase.co',
   anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9id3pmb2lwbGNqenJld2RtbHl3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ5MTQ1NDksImV4cCI6MjEwMDQ5MDU0OX0.OX2fSWt6WoP7YZYrcpU3t5t6f4Ss28rFZ2d7w044-GA',
+
+  /* 메일에 찍히는 인증번호의 길이.
+   *
+   * **GoTrue 의 `mailer_otp_length` 와 같은 값이어야 합니다.** 화면이
+   * 여덟 칸을 그려 놓고 서버가 여섯 자리를 보내면, 사용자는 칸을 다 못
+   * 채워서 확인 버튼을 영원히 못 누릅니다. 반대도 마찬가지입니다.
+   *
+   * 프로젝트 쪽 값은 대시보드가 아니라 저장소에서 넣습니다 —
+   *
+   *   SUPABASE_ACCESS_TOKEN=sbp_... SUPABASE_PROJECT_REF=... \
+   *     node scripts/apply-auth-email.mjs --otp-length 8
+   *
+   * 그 스크립트가 메일 본문과 이 길이를 같이 넣고 다시 읽어서 확인합니다.
+   * 길이를 바꾸면 **두 곳을 같이** 고쳐야 합니다.
+   */
+  otpLength: 8,
 };

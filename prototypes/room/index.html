@@ -6,6 +6,7 @@
 <title>Deskfit — 초대 세션</title>
 <link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="../shared/clay.css">
 <style>
 /* ==================================================================
    초대 세션 — 아는 사람끼리 코드로 들어오는 방
@@ -50,27 +51,18 @@
   --r-win: 28px;  --r: 20px;  --r-sm: 12px;  --r-pill: 999px;
 
   /* ---- 클레이 ---- 로비·마이페이지·랭킹전과 같은 값입니다. */
-  --clay:
-    inset 0 3px 6px rgba(255,255,255,.60),
-    inset 0 -5px 9px rgba(13,60,52,.11),
-    0 9px 20px rgba(23,32,30,.13),
-    0 2px 5px rgba(23,32,30,.07);
-  --clay-lift:
-    inset 0 3px 6px rgba(255,255,255,.66),
-    inset 0 -5px 9px rgba(13,60,52,.11),
-    0 15px 30px rgba(23,32,30,.17),
-    0 3px 7px rgba(23,32,30,.08);
-  --clay-press:
-    inset 0 4px 9px rgba(13,60,52,.17),
-    inset 0 -2px 5px rgba(255,255,255,.50),
-    0 2px 5px rgba(23,32,30,.10);
-  --clay-sm:
-    inset 0 2px 4px rgba(255,255,255,.58),
-    inset 0 -3px 6px rgba(13,60,52,.10),
-    0 5px 12px rgba(23,32,30,.11);
-  --clay-well:
-    inset 0 3px 7px rgba(13,60,52,.12),
-    inset 0 -2px 4px rgba(255,255,255,.85);
+
+  /* 이 화면이 들고 있던 클레이 다섯을 공용(shared/clay.css)으로 넘겼습니다.
+     값은 세 화면이 똑같이 복사해 둔 것이었고, 그런데도 **월드와는 달랐습니다** —
+     그늘이 청록 계열이라 같은 빛 아래 있는 것으로 안 보였습니다.
+     옛 이름을 새 값에 이어 두어, 이 이름을 쓰던 자리를 한꺼번에 안 고쳐도
+     됩니다. 남은 이름은 옮기면서 하나씩 지웁니다. */
+  --sh:       var(--clayUp);
+  --sh-lift:  var(--clayUp);
+  --sh-press: var(--clayIn);
+  --sh-sm:    var(--clayUp2);
+  --sh-well:  var(--clayIn);
+
 
   --ease: cubic-bezier(.16, 1, .3, 1);
 }
@@ -96,7 +88,7 @@ button, input { font: inherit; color: inherit; }
   width: min(1140px, 100%);
   background: var(--paper);
   border: 0; border-radius: var(--r-win);
-  box-shadow: var(--clay);
+  box-shadow: var(--sh);
   overflow: hidden;
 }
 .titlebar {
@@ -111,7 +103,7 @@ button, input { font: inherit; color: inherit; }
   position: relative;
   margin-left: auto; width: 30px; height: 30px; display: grid; place-items: center;
   background: var(--paper); border: 0; border-radius: 50%;
-  cursor: pointer; box-shadow: var(--clay-sm);
+  cursor: pointer; box-shadow: var(--sh-sm);
   transition: background .14s var(--ease), transform .14s var(--ease), box-shadow .14s var(--ease);
 }
 .titlebar .x::after {
@@ -119,7 +111,7 @@ button, input { font: inherit; color: inherit; }
   width: 40px; height: 40px; transform: translate(-50%, -50%);
 }
 .titlebar .x:hover { background: var(--teal-50); transform: translateY(-1px); }
-.titlebar .x:active { transform: translateY(1px); box-shadow: var(--clay-press); }
+.titlebar .x:active { transform: translateY(1px); box-shadow: var(--sh-press); }
 
 .body { padding: var(--s-4) var(--s-4) var(--s-5); }
 .view[hidden] { display: none; }
@@ -136,10 +128,10 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
 }
 .wiz-track i {
   width: 34px; height: 5px; border-radius: 3px;
-  background: var(--wash); box-shadow: var(--clay-well);
+  background: var(--wash); box-shadow: var(--sh-well);
   transition: background .2s var(--ease), width .2s var(--ease);
 }
-.wiz-track i.on { width: 52px; background: var(--teal); box-shadow: var(--clay-sm); }
+.wiz-track i.on { width: 52px; background: var(--teal); box-shadow: var(--sh-sm); }
 
 /* 고르는 칸 — 파인 홈 위에 솟은 알약. 마이페이지 탭·랭킹전 기간 탭과
    같은 문법입니다. 고른 것은 색만이 아니라 **두께**로도 말합니다. */
@@ -177,7 +169,7 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   padding: 9px 14px; border-radius: var(--r-sm);
   background: var(--teal-50); color: var(--ink-2);
   font-size: 13px; text-align: center;
-  box-shadow: var(--clay-well);
+  box-shadow: var(--sh-well);
 }
 
 /* 설정 줄 — 라벨과 값을 양끝으로. 붙여 두면 "인원4명" 으로 읽힙니다. */
@@ -220,11 +212,11 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   background:
     linear-gradient(var(--teal), var(--teal)) 0 / var(--fill, 50%) 100% no-repeat,
     var(--wash);
-  box-shadow: var(--clay-well);
+  box-shadow: var(--sh-well);
 }
 .range::-moz-range-track {
   height: 20px; border-radius: var(--r-pill);
-  background: var(--wash); box-shadow: var(--clay-well);
+  background: var(--wash); box-shadow: var(--sh-well);
 }
 .range::-moz-range-progress {
   height: 20px; border-radius: var(--r-pill); background: var(--teal);
@@ -269,17 +261,17 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   border: 0; border-radius: 18px; cursor: pointer;
   background: var(--wash); color: var(--ink-2);
   display: grid; place-items: center; gap: 2px;
-  box-shadow: var(--clay-well);
+  box-shadow: var(--sh-well);
   transition: transform .18s var(--ease), box-shadow .18s var(--ease),
               background .18s var(--ease), color .18s var(--ease);
 }
 .pick b { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .pick span { font-size: 12.5px; font-weight: 600; }
-.pick:hover { transform: translateY(-3px); box-shadow: var(--clay); background: var(--paper); }
-.pick:active { transform: translateY(1px); box-shadow: var(--clay-press); }
+.pick:hover { transform: translateY(-3px); box-shadow: var(--sh); background: var(--paper); }
+.pick:active { transform: translateY(1px); box-shadow: var(--sh-press); }
 .pick[aria-pressed="true"] {
   background: var(--teal); color: var(--ink);
-  box-shadow: var(--clay);
+  box-shadow: var(--sh);
 }
 /* 색을 못 보는 사람도 알 수 있게 체크를 답니다. */
 .pick[aria-pressed="true"] b::after { content: ' ✓'; font-size: 15px; }
@@ -290,11 +282,11 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   padding: 16px 40px; border: 0; border-radius: 16px;
   background: var(--teal); color: var(--ink);
   font-size: 16px; font-weight: 800; letter-spacing: -0.015em; cursor: pointer;
-  box-shadow: var(--clay);
+  box-shadow: var(--sh);
   transition: transform .16s var(--ease), box-shadow .16s var(--ease);
 }
-.go:hover { transform: translateY(-2px); box-shadow: var(--clay-lift); }
-.go:active { transform: translateY(1px); box-shadow: var(--clay-press); }
+.go:hover { transform: translateY(-2px); box-shadow: var(--sh-lift); }
+.go:active { transform: translateY(1px); box-shadow: var(--sh-press); }
 .go.wide { width: 100%; }
 
 .btn {
@@ -302,13 +294,13 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   padding: 11px 20px; min-height: 44px;
   border: 0; border-radius: var(--r-pill);
   background: var(--paper); font-size: 14px; font-weight: 700; cursor: pointer;
-  box-shadow: var(--clay-sm);
+  box-shadow: var(--sh-sm);
   transition: transform .16s var(--ease), box-shadow .16s var(--ease), background .16s var(--ease);
 }
-.btn:hover { background: var(--wash); transform: translateY(-2px); box-shadow: var(--clay-lift); }
-.btn:active { transform: translateY(1px); box-shadow: var(--clay-press); }
+.btn:hover { background: var(--wash); transform: translateY(-2px); box-shadow: var(--sh-lift); }
+.btn:active { transform: translateY(1px); box-shadow: var(--sh-press); }
 .btn.ghost { background: none; box-shadow: none; color: var(--ink-3); }
-.btn.ghost:hover { background: var(--wash); box-shadow: var(--clay-sm); color: var(--ink-2); }
+.btn.ghost:hover { background: var(--wash); box-shadow: var(--sh-sm); color: var(--ink-2); }
 
 /* ================= 대기실 ================= */
 .wait { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: var(--s-4); align-items: start; }
@@ -317,7 +309,7 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
 /* 초대 코드 — 이 화면에서 제일 먼저 할 일이라 제일 크게. */
 .code-box {
   padding: var(--s-3); border-radius: var(--r);
-  background: var(--teal-50); box-shadow: var(--clay-well);
+  background: var(--teal-50); box-shadow: var(--sh-well);
   display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap;
 }
 .code {
@@ -335,13 +327,13 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
 .tile {
   position: relative; padding: var(--s-2) var(--s-2) 12px;
   border-radius: var(--r); background: var(--wash);
-  box-shadow: var(--clay-sm);
+  box-shadow: var(--sh-sm);
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   transition: box-shadow .18s var(--ease);
 }
 /* 말하는 사람은 테두리로 알립니다 — 소리는 안 보이니까. */
-.tile.talking { box-shadow: var(--clay-sm), 0 0 0 3px var(--teal); }
-.tile.empty { justify-content: center; color: var(--ink-3); box-shadow: var(--clay-well); background: none; }
+.tile.talking { box-shadow: var(--sh-sm), 0 0 0 3px var(--teal); }
+.tile.empty { justify-content: center; color: var(--ink-3); box-shadow: var(--sh-well); background: none; }
 .tile img { width: 66px; height: auto; display: block; }
 .tile .nm { font-size: 13.5px; font-weight: 700; }
 .tile .st { font-size: 11.5px; font-weight: 600; color: var(--ink-3); text-align: center; }
@@ -349,12 +341,12 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
 .tile .mic {
   position: absolute; top: 8px; right: 8px;
   width: 24px; height: 24px; display: grid; place-items: center;
-  border-radius: 50%; background: var(--paper); box-shadow: var(--clay-sm);
+  border-radius: 50%; background: var(--paper); box-shadow: var(--sh-sm);
   color: var(--ink-2);
 }
 .tile .mic.off { color: var(--bad-700); }
 
-.side { padding: var(--s-3); border-radius: var(--r); background: var(--paper); box-shadow: var(--clay); }
+.side { padding: var(--s-3); border-radius: var(--r); background: var(--paper); box-shadow: var(--sh); }
 .side h3 { margin: 0 0 var(--s-2); font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
 .setrow {
   display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
@@ -368,12 +360,12 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
 .sw input { position: absolute; inset: -5px 0; width: 100%; height: 40px; margin: 0; opacity: 0; cursor: pointer; }
 .sw .track {
   display: block; width: 100%; height: 100%; border-radius: var(--r-pill);
-  background: var(--wash); box-shadow: var(--clay-well);
+  background: var(--wash); box-shadow: var(--sh-well);
   transition: background .18s var(--ease); pointer-events: none;
 }
 .sw .knob {
   position: absolute; top: 4px; left: 4px; width: 22px; height: 22px;
-  border-radius: 50%; background: var(--paper); box-shadow: var(--clay-sm);
+  border-radius: 50%; background: var(--paper); box-shadow: var(--sh-sm);
   transition: transform .18s var(--ease); pointer-events: none;
 }
 .sw input:checked ~ .track { background: var(--teal); }
@@ -403,11 +395,11 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   width: 62px; height: 62px; border: 0; border-radius: 50%;
   display: grid; place-items: center; cursor: pointer;
   background: var(--paper); color: var(--ink);
-  box-shadow: var(--clay);
+  box-shadow: var(--sh);
   transition: transform .16s var(--ease), box-shadow .16s var(--ease), background .16s var(--ease), color .16s var(--ease);
 }
-.round:hover { transform: translateY(-2px); box-shadow: var(--clay-lift); }
-.round:active { transform: translateY(1px); box-shadow: var(--clay-press); }
+.round:hover { transform: translateY(-2px); box-shadow: var(--sh-lift); }
+.round:active { transform: translateY(1px); box-shadow: var(--sh-press); }
 /* 꺼진 상태는 색만으로 말하지 않습니다 — 아이콘이 사선 그어진 것으로
    바뀌고 아래 이름표도 "마이크 켜기" 로 바뀝니다. */
 .round[aria-pressed="true"] { background: var(--bad-700); color: #fff; }

@@ -448,12 +448,50 @@ input[type="text"]:focus {
 
 .cc-foot {
   grid-column: 1; grid-row: 3;
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 10px;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
 }
+/* 왼쪽 글이 버튼을 밀어내지 않게. 버튼은 줄바꿈이 없고(글자 다섯 자),
+   줄어드는 쪽은 설명입니다. */
+.cc-foot > div { min-width: 0; flex: 1; }
+.cc-foot .cc-verify { flex: none; }
 /* 상태는 색만으로 말하지 않습니다 — 아이콘과 글자를 늘 같이 답니다. */
 .cc-state { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
 .cc-state svg { flex: none; }
 .cc-sub { margin: 3px 0 0; font-size: 11px; font-weight: 500; color: var(--ink-3); }
+/* 카드 안 인증 버튼. 미인증이면 눌러 달라고 하고(청록), 인증했으면
+   조용히 있습니다(선만) — 끝난 일에 대고 다시 하라고 조르지 않습니다. */
+.cc-verify {
+  align-self: flex-end;
+  padding: 7px 14px; border: 0; border-radius: 999px;
+  background: var(--teal); color: #06312B;
+  font-size: 12.5px; font-weight: 800; white-space: nowrap;
+  box-shadow: 0 3px 0 var(--teal-700), 0 6px 14px rgba(16,74,66,.22);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.cc-verify:hover { transform: translateY(-2px); box-shadow: 0 3px 0 var(--teal-700), 0 10px 20px rgba(16,74,66,.26); }
+.cc-verify:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--teal-700); }
+.cc-verify.quiet {
+  background: rgba(255,255,255,.72); color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* 사진 바꾸기 — 캐릭터/사진 위 오른쪽 아래 모서리 */
+.cc-char { position: relative; }
+.cc-char .cc-photo {
+  position: absolute; right: 2px; bottom: 6px;
+  width: 30px; height: 30px; display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: rgba(255,255,255,.94); color: var(--ink-2);
+  box-shadow: 0 2px 6px rgba(16,74,66,.24);
+}
+.cc-char .cc-photo:hover { color: var(--ink); transform: translateY(-1px); }
+/* 사진은 정사각으로 잘라 두었으므로 동그랗게 담습니다 — 캐릭터는
+   배경이 비어 있어 그대로 둡니다. */
+.cc-char img.is-photo {
+  width: 96px; height: 96px; object-fit: cover; border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(16,74,66,.22);
+}
+
 .cc-when {
   margin: 0; flex: none; font-size: 11.5px; font-weight: 600; color: var(--ink-3);
   font-variant-numeric: tabular-nums; white-space: nowrap;
@@ -851,12 +889,26 @@ input[type="text"]:focus {
                     <p class="cc-state" id="cc-state"></p>
                     <p class="cc-sub" id="cc-sub"></p>
                   </div>
-                  <p class="cc-when" id="cc-when"></p>
+                  <!-- 인증을 카드 안으로. 아래 별도 구역에 있을 때는 카드가
+                       "학교 미인증" 이라고 말해 놓고 고칠 곳은 한 화면 밑에
+                       있었습니다. 말한 자리에서 고칠 수 있어야 합니다. -->
+                  <button class="cc-verify" type="button" id="cc-verify"></button>
                 </div>
 
+                <!-- 프로필 사진을 올리면 캐릭터 대신 사진이 앉습니다.
+                     안 올린 사람이 빈 칸을 보는 일은 없습니다 — 캐릭터가
+                     기본이고, 사진은 그 위에 덮습니다. -->
                 <div class="cc-char">
                   <span class="pad" aria-hidden="true"></span>
-                  <img src="assets/char-turtle.png" alt="책을 든 거북이 캐릭터">
+                  <img id="cc-face-img" src="assets/char-turtle.png" alt="내 캐릭터">
+                  <button class="cc-photo" type="button" id="cc-photo" aria-label="프로필 사진 바꾸기">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4z"/>
+                      <circle cx="12" cy="13" r="3.2"/>
+                    </svg>
+                  </button>
+                  <input type="file" id="cc-file" accept="image/*" hidden>
                 </div>
 
                 <div class="cc-skeleton" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -872,19 +924,27 @@ input[type="text"]:focus {
             </div>
           </div>
 
-          <div class="cc-bar">
-            <button class="btn" type="button" id="cc-flip" aria-controls="cc">활동 기록 보기</button>
-            <span class="said" id="said-face" role="status"></span>
-          </div>
-          <p class="cc-note" id="cc-note">카드에 보이는 정보는 아래 공개 설정을 따라요. 학번과 학교 이메일은 전체가 보이지 않아요.</p>
+          <!-- 뒤집기 버튼과 그 아래 두 줄을 뺐습니다. 카드 옆에 회고 카드가
+               생기면서 "활동 기록" 이 두 군데가 됐고, 공개 설정 설명은 그
+               설정 바로 위에 있을 때만 읽힙니다. -->
         </div>
 
-        <div class="today">
-          <h3>오늘의 나</h3>
-          <dl>
+        <!-- 시즌 회고. 학생증과 같은 크기라 둘이 한 쌍으로 읽힙니다 —
+             왼쪽은 내가 누구인지, 오른쪽은 내가 뭘 했는지.
+
+             순서는 사람이 확인하는 차례입니다. 오늘 얼마나 앉았나가 먼저고,
+             그것을 설명하는 두 개(몇 번 · 자세)가 따라옵니다. 그다음이
+             오래 이어 온 것(연속·코인)이고, 시즌은 맨 뒤입니다 — 90일짜리
+             단위라 매일 볼 이유가 가장 적습니다. -->
+        <div class="today season" aria-labelledby="sr-h">
+          <h3 id="sr-h">시즌 회고</h3>
+          <dl class="sr-grid">
             <div><dt>오늘 집중</dt><dd id="td-min">0<small>분</small></dd></div>
             <div><dt>진행한 세션</dt><dd id="td-ses">0<small>회</small></dd></div>
             <div><dt>자세 회복</dt><dd id="td-rec">0<small>회</small></dd></div>
+            <div><dt>연속 출석</dt><dd id="td-streak">1<small>일</small></dd></div>
+            <div><dt>가진 코인</dt><dd id="td-coin">0</dd></div>
+            <div><dt>시즌</dt><dd id="td-season">1<small>일째</small></dd></div>
           </dl>
           <a class="go" href="../lobby/index.html">집중 세션 시작</a>
         </div>
@@ -1259,8 +1319,61 @@ function renderSchool() {
     ? '<b>' + esc(ROOM.school) + '</b>로 인증했어요. 학교를 옮겼거나 주소가 바뀌었으면 다시 인증하면 돼요.'
     : '아직 학교를 인증하지 않았어요. 인증해야 <b>랭킹전</b>과 <b>우리 학교 캠퍼스</b>에 들어갈 수 있어요.';
   $('b-verify').textContent = has ? '학교 다시 인증' : '학교 인증하기';
+  /* 카드 안 버튼. 미인증이면 권하는 말투, 인증했으면 조용한 말투 —
+     같은 자리에 있되 인증한 사람에게 다시 하라고 조르지 않습니다. */
+  const cv = $('cc-verify');
+  cv.textContent = has ? '재인증' : '학교 인증하기';
+  cv.className = 'cc-verify' + (has ? ' quiet' : '');
 }
 renderSchool();
+
+/* 카드 안 버튼은 아래 인증 구역으로 데려다 놓고 그쪽을 엽니다 — 인증
+   흐름을 두 벌 만들면 한쪽만 고쳐지는 날이 옵니다. */
+$('cc-verify').addEventListener('click', () => {
+  $('b-verify').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  $('b-verify').click();
+});
+
+/* ---------------- 프로필 사진 ----------------
+   사진은 **이 기기에만** 남습니다. 어떤 서버로도 안 나가고, localStorage 에
+   작게 줄여 넣습니다 — 원본을 그대로 넣으면 5MB 한도를 한 장으로 넘깁니다.
+   안 올린 사람은 캐릭터가 기본이라 빈 칸을 볼 일이 없습니다. */
+const PHOTO_KEY = 'girin.photo';
+function paintPhoto() {
+  let url = '';
+  try { url = localStorage.getItem(PHOTO_KEY) || ''; } catch (e) {}
+  const img = $('cc-face-img');
+  if (url) { img.src = url; img.alt = '내 프로필 사진'; img.classList.add('is-photo'); }
+  else { img.src = 'assets/char-turtle.png'; img.alt = '내 캐릭터'; img.classList.remove('is-photo'); }
+}
+$('cc-photo').addEventListener('click', () => $('cc-file').click());
+$('cc-file').addEventListener('change', () => {
+  const file = $('cc-file').files && $('cc-file').files[0];
+  if (!file) return;
+  if (file.type.indexOf('image/') !== 0) { say('face', '그림 파일만 올릴 수 있어요'); return; }
+  const fr = new FileReader();
+  fr.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      /* 가운데를 정사각으로 잘라 256px 로 줄입니다. 카드에서 보이는
+         크기가 그 정도라 그 위로는 저장 공간만 먹습니다. */
+      const S2 = 256;
+      const c = document.createElement('canvas');
+      c.width = c.height = S2;
+      const g = c.getContext('2d');
+      const side = Math.min(im.width, im.height);
+      g.drawImage(im, (im.width - side) / 2, (im.height - side) / 2, side, side, 0, 0, S2, S2);
+      try {
+        localStorage.setItem(PHOTO_KEY, c.toDataURL('image/jpeg', 0.86));
+        paintPhoto();
+        say('face', '사진을 바꿨어요');
+      } catch (e) { say('face', '사진이 너무 커서 저장을 못 했어요'); }
+    };
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+});
+paintPhoto();
 
 /* 저장 버튼 하나가 칸 하나를 맡습니다. data-save 값이 곧 ROOM 의 키라
    칸을 늘려도 배선을 다시 안 짭니다. */
@@ -1288,7 +1401,11 @@ document.querySelectorAll('[data-save]').forEach((b) => {
    누릅니다. role="status" 라 스크린리더는 초점을 뺏기지 않고 듣습니다. */
 const timers = {};
 function say(key, msg) {
+  /* 알릴 자리가 없는 화면도 있습니다 — 뒤집기 버튼을 빼면서 그 옆의
+     알림 칸도 같이 사라졌습니다. 자리가 없으면 조용히 넘어갑니다.
+     부르는 쪽마다 있는지 확인하게 하면 스무 곳을 고쳐야 합니다. */
   const el = $('said-' + key);
+  if (!el) return;
   el.textContent = msg;
   el.classList.add('on');
   clearTimeout(timers[key]);
@@ -1656,7 +1773,7 @@ const CC_STATE = {
   expiring: { icon: 'clock', text: '인증이 곧 만료돼요',
               sub: '학교 메일로 한 번 더 인증하면 이어져요' },
   none:     { icon: 'info',  text: '학교 메일 인증 전',
-              sub: '아래 학교 인증에서 번호를 받으면 카드가 채워져요' },
+              sub: '인증하면 카드가 채워져요' },
   checking: { icon: 'wait',  text: '인증 확인 중',
               sub: '메일로 받은 번호를 확인하고 있어요' },
   failed:   { icon: 'alert', text: '인증하지 못했어요',
@@ -1754,10 +1871,8 @@ function ccRender() {
   $('cc-year').textContent = ok && ROOM.entryYear ? ROOM.entryYear + '학번' : '';
   const sid = ok ? maskSid(ROOM.studentNo) : '';
   $('cc-sid').textContent = sid ? '학번 ' + sid : '';
-
-  $('cc-when').textContent = ok && ROOM.schoolVerifiedAt
-    ? ymShort(ROOM.schoolVerifiedAt) + ' 확인'
-    : '';
+  /* 발급일 줄은 뺐습니다 — 그 자리를 인증 버튼이 씁니다. 언제 인증했는지는
+     아래 인증 구역이 문장으로 말해 줍니다. */
 }
 
 /* ---------------- 뒷면 · 활동 ----------------
@@ -1793,7 +1908,6 @@ const FACE_LABEL = { front: '활동 기록 보기', back: '학생 정보 보기'
 function ccFlip(to) {
   const face = to || (CC.dataset.face === 'front' ? 'back' : 'front');
   CC.dataset.face = face;
-  $('cc-flip').textContent = FACE_LABEL[face];
   /* 안 보이는 면은 backface-visibility 로 가려지지만 보조기술은 그것을
      안 봅니다. aria-hidden 을 같이 넘겨야 두 면이 겹쳐 읽히지 않습니다. */
   $('cc-front').setAttribute('aria-hidden', String(face !== 'front'));
@@ -1809,7 +1923,6 @@ CC.addEventListener('click', (e) => {
   if (e.target.closest('a, button')) return;
   ccFlip();
 });
-$('cc-flip').addEventListener('click', () => ccFlip());
 
 /* ---------------- 오늘의 나 ---------------- */
 function ccToday() {
@@ -1818,6 +1931,18 @@ function ccToday() {
   $('td-min').innerHTML = today.reduce((a, x) => a + (x.minutes || 0), 0) + '<small>분</small>';
   $('td-ses').innerHTML = today.length + '<small>회</small>';
   $('td-rec').innerHTML = today.reduce((a, x) => a + (x.recoveries || 0), 0) + '<small>회</small>';
+
+  /* 연속 출석과 코인은 월드가 쌓는 값입니다 — 여기서 따로 세지 않고
+     읽기만 합니다. 메인에서 뺀 그 숫자들이 제 자리로 왔습니다. */
+  let reward = {};
+  try { reward = JSON.parse(localStorage.getItem('girin.reward') || '{}') || {}; } catch (e) {}
+  $('td-streak').innerHTML = (reward.streak || 1) + '<small>일</small>';
+  $('td-coin').textContent = reward.coins || 0;
+
+  /* 시즌 며칠째. 90일 한 바퀴는 랭킹전과 같은 값입니다. */
+  const EPOCH = Date.parse('2026-08-01T00:00:00+09:00');
+  const day = Math.floor((Date.now() - EPOCH) / 86400000);
+  $('td-season').innerHTML = ((day % 90) + 1) + '<small>일째</small>';
 }
 
 /* ---------------- 공개 설정 ---------------- */
@@ -1867,11 +1992,8 @@ if (CC_DEMO) {
   renderSchool();
 }
 
-if (IS_DEMO) {
-  $('cc-note').innerHTML =
-    '<b>뒷면 숫자는 예시예요.</b> 캠퍼스에 앉으면 내 기록으로 바뀌어요. '
-    + '카드에 보이는 정보는 아래 공개 설정을 따르고, 학번과 학교 이메일은 전체가 보이지 않아요.';
-}
+/* 카드 아래 안내 두 줄을 뺐습니다. 공개 설정 설명은 그 설정 바로 위에
+   있을 때만 읽히고, 실제로 아래 "공개 설정" 구역이 같은 말을 합니다. */
 
 /* ==================================================================
    오늘의 집중 장면

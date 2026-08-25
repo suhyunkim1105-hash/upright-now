@@ -147,6 +147,111 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
   margin-top: var(--s-3);
 }
+/* ---- 얼굴과 캐릭터 ----
+   같은 자리에 겹쳐 두고 하나만 보입니다. 자리를 갈아 끼우면 카메라를
+   껐다 켤 때마다 타일이 튀고 옆 사람 자리까지 밀립니다. */
+.tile .cam {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: inherit;
+  opacity: 0; transition: opacity .18s var(--ease);
+  /* 내 얼굴은 거울처럼 뒤집어 보여 줍니다 — 손을 들면 화면에서도 같은
+     쪽 손이 올라가야 어색하지 않습니다. */
+  transform: scaleX(-1);
+}
+.tile.live .cam { opacity: 1; }
+.tile.live .pet { opacity: 0; }
+.tile .pet { transition: opacity .18s var(--ease); }
+/* 얼굴이 켜지면 이름과 마이크 표시가 영상 위로 올라갑니다 — 밝은 화면
+   위에서는 안 읽히므로 아래에 어두운 띠를 깝니다. */
+.tile.live .nm, .tile.live .st { position: relative; z-index: 1; color: #fff; }
+.tile.live .nm { text-shadow: 0 1px 3px rgba(0,0,0,.6); }
+.tile.live .mic { z-index: 1; }
+.tile.live::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 46%;
+  border-radius: inherit;
+  background: linear-gradient(transparent, rgba(10,20,18,.62));
+}
+
+.media-note {
+  margin: var(--s-2) auto 0; max-width: 460px;
+  padding: 9px 14px; border-radius: var(--r-sm);
+  background: var(--teal-50); color: var(--ink-2);
+  font-size: 13px; text-align: center;
+  box-shadow: var(--clay-well);
+}
+
+/* ---------------- 드래그바 ----------------
+   홈(파인 것)에 알약(솟은 것)이 굴러다니는 물건입니다. 클레이의 두 방향을
+   한 컨트롤에서 같이 쓰는 유일한 자리라, 둘이 서로를 설명합니다 —
+   길은 파여 있어서 "여기로 다닌다" 고, 손잡이는 솟아서 "이걸 잡는다" 고.
+
+   -webkit- 과 -moz- 를 둘 다 적습니다. 손잡이 가상요소는 브라우저마다
+   이름이 다르고, **한 규칙에 몰아 쓰면 모르는 선택자 하나 때문에 규칙
+   전체가 버려집니다.** 그래서 따로 씁니다. */
+.rangewrap { width: min(440px, 100%); display: grid; justify-items: center; }
+.rangeval {
+  font-size: 15px; font-weight: 700; color: var(--ink-3);
+  margin-bottom: var(--s-2);
+}
+.rangeval b {
+  font-size: 40px; font-weight: 800; letter-spacing: -.02em;
+  color: var(--ink-toss); font-variant-numeric: tabular-nums;
+  margin-right: 2px;
+}
+.range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 20px; background: none; cursor: grab;
+}
+.range:active { cursor: grabbing; }
+.range::-webkit-slider-runnable-track {
+  height: 20px; border-radius: var(--r-pill);
+  background:
+    linear-gradient(var(--teal), var(--teal)) 0 / var(--fill, 50%) 100% no-repeat,
+    var(--wash);
+  box-shadow: var(--clay-well);
+}
+.range::-moz-range-track {
+  height: 20px; border-radius: var(--r-pill);
+  background: var(--wash); box-shadow: var(--clay-well);
+}
+.range::-moz-range-progress {
+  height: 20px; border-radius: var(--r-pill); background: var(--teal);
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 34px; height: 34px; margin-top: -7px;
+  border-radius: 50%; border: 0;
+  background: var(--paper);
+  box-shadow:
+    inset 0 3px 5px rgba(255,255,255,.9),
+    inset 0 -4px 7px rgba(13,60,52,.16),
+    0 4px 10px rgba(23,32,30,.20);
+  transition: transform .12s var(--ease);
+}
+.range::-moz-range-thumb {
+  width: 34px; height: 34px; border-radius: 50%; border: 0;
+  background: var(--paper);
+  box-shadow:
+    inset 0 3px 5px rgba(255,255,255,.9),
+    inset 0 -4px 7px rgba(13,60,52,.16),
+    0 4px 10px rgba(23,32,30,.20);
+}
+.range:active::-webkit-slider-thumb { transform: scale(1.08); }
+.range:focus-visible { outline: none; }
+.range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px var(--teal-700); }
+.range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px var(--teal-700); }
+
+/* 눈금 — 바만 있으면 어디가 기본인지 몰라 매번 끝까지 끌어 보게 됩니다 */
+.marks { position: relative; width: 100%; height: 16px; margin-top: 4px; }
+.marks .mk {
+  position: absolute; left: calc(var(--p) * 100%); transform: translateX(-50%);
+  font-size: 11px; color: var(--ink-3); white-space: nowrap;
+}
+.rangenote {
+  margin: var(--s-2) 0 0; font-size: 13px; color: var(--ink-2);
+  text-align: center; min-height: 2.6em;
+}
+
 .pick {
   min-width: 118px; min-height: 88px; padding: 14px 20px;
   border: 0; border-radius: 18px; cursor: pointer;
@@ -337,7 +442,7 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
     <!-- ============ 1. 방 만들기 (인원 → 시간 → 말하기) ============ -->
     <section class="view wiz" id="v-wiz" aria-labelledby="wiz-h">
       <span class="wiz-track" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1"
-            aria-label="방 만들기 진행" id="wiz-track"><i class="on"></i><i></i><i></i></span>
+            aria-label="방 만들기 진행" id="wiz-track"></span>
 
       <h2 id="wiz-h"></h2>
       <p class="lede" id="wiz-p"></p>
@@ -347,6 +452,9 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
         <button class="btn ghost" type="button" id="wiz-back">이전</button>
         <button class="go" type="button" id="wiz-next">다음</button>
       </div>
+      <!-- 권한을 거절하거나 기기가 없을 때 여기에 한 줄 뜹니다. 아무 말도
+           안 하면 "눌렀는데 안 되네" 로 끝납니다. -->
+      <p class="media-note" id="media-note" role="status" hidden></p>
     </section>
 
     <!-- ============ 2. 대기실 ============ -->
@@ -408,6 +516,13 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
           <span id="mic-lab">마이크 끄기</span>
         </span>
         <span class="lab">
+          <button class="round" type="button" id="b-cam" aria-pressed="false" aria-label="카메라 켜기">
+            <svg id="cam-ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+          </button>
+          <span id="cam-lab">카메라 켜기</span>
+        </span>
+        <span class="lab">
           <button class="round leave" type="button" id="b-leave" aria-label="세션 끝내기">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -465,8 +580,12 @@ function makeCode() {
   return out;
 }
 
+/* cam 이 상태에는 있는데 **묻는 곳이 없었습니다.** 마이크만 물어보고
+   카메라는 늘 꺼진 채로 시작했습니다 — 얼굴을 보며 같이 앉는 자리를
+   지향한다면 그건 물어야 하는 것입니다.
+   name 은 초대받은 사람이 코드 여섯 자만 보고 들어오던 것을 고칩니다. */
 const S = Object.assign(
-  { code: '', seats: 4, minutes: 50, talk: true, mic: true, cam: false },
+  { code: '', name: '', seats: 4, minutes: 50, talk: true, mic: true, cam: false },
   read('girin.inviteroom', null) || {});
 if (!S.code) S.code = makeCode();
 write('girin.inviteroom', S);
@@ -474,18 +593,36 @@ write('girin.inviteroom', S);
 /* ---------------- 마법사 ----------------
    한 화면에 물음 하나. 라임 시절 다섯 단계에서 "공개/비공개"(여기 들어온
    순간 정해짐)와 "확인"(대기실이 함)을 뺐습니다. */
+/* 인원과 시간은 **드래그바**입니다.
+   셋 중 하나(2·4·6 / 25·50·90)로 묻던 것을 바꿉니다. 고정 셋은 고르기
+   쉽지만 "5명" 이나 "40분" 을 원하는 사람에게는 답이 아예 없습니다.
+   드래그바는 범위를 보여 주면서 그 안 아무 값이나 짚게 해 줍니다.
+
+   눈금은 남깁니다 — 바만 있으면 어디가 기본인지 몰라서 매번 끝까지
+   끌어 보게 됩니다. 1명도 됩니다: 혼자 쓰는 조용한 방이 초대 세션의
+   가장 흔한 첫 사용입니다. */
 const STEPS = [
   {
     key: 'seats', h: '몇 명이 앉을까요', p: '나를 포함한 자리 수예요. 나중에 바꿀 수 없어요.',
-    opts: [[2, '나 포함'], [4, '나 포함'], [6, '나 포함']], unit: '명',
+    range: [1, 10, 1], unit: '명',
+    marks: [[1, '혼자'], [4, '기본'], [10, '최대']],
+    note: (v) => (v === 1 ? '혼자 쓰는 방이에요. 코드를 나눠 주면 나중에 늘릴 수 없어요.'
+      : v + '명이 들어올 수 있어요. 나를 포함한 수예요.'),
   },
   {
     key: 'minutes', h: '얼마나 앉을까요', p: '끝나면 오늘의 집중 장면이 남아요.',
-    opts: [[25, '짧게'], [50, '기본'], [90, '길게']], unit: '분',
+    range: [10, 120, 5], unit: '분',
+    marks: [[25, '짧게'], [50, '기본'], [120, '길게']],
+    note: (v) => (v >= 90 ? v + '분은 깁니다. 중간에 한 번 일어나는 걸 권해요.'
+      : v + '분 동안 앉아요.'),
   },
   {
     key: 'talk', h: '말하면서 할까요', p: '조용히를 고르면 모두의 마이크가 꺼진 채로 시작해요.',
     opts: [[true, '자유롭게'], [false, '집중만']], labels: ['이야기하며', '조용히'],
+  },
+  {
+    key: 'cam', h: '얼굴을 보여 줄까요', p: '끄고 들어가도 돼요 — 그때는 내 캐릭터가 대신 앉아 있어요.',
+    opts: [[true, '서로 보여요'], [false, '캐릭터로']], labels: ['카메라 켜고', '카메라 끄고'],
   },
 ];
 let step = 0;
@@ -494,10 +631,20 @@ function wizPaint() {
   const st = STEPS[step];
   $('wiz-h').textContent = st.h;
   $('wiz-p').textContent = st.p;
-  $('wiz-track').setAttribute('aria-valuenow', String(step + 1));
-  [...$('wiz-track').children].forEach((el, i) => el.classList.toggle('on', i <= step));
+  /* 자국 개수를 STEPS 에서 만듭니다 — 마크업에 손으로 적어 두면 단계를
+     더할 때 여기가 뒤처집니다. 실제로 넷이 됐는데 셋이 그려져 있었습니다. */
+  const tr = $('wiz-track');
+  if (tr.children.length !== STEPS.length) {
+    tr.innerHTML = STEPS.map(() => '<i></i>').join('');
+    tr.setAttribute('aria-valuemax', String(STEPS.length));
+  }
+  tr.setAttribute('aria-valuenow', String(step + 1));
+  [...tr.children].forEach((el, i) => el.classList.toggle('on', i <= step));
   $('wiz-back').hidden = step === 0;
   $('wiz-next').textContent = step === STEPS.length - 1 ? '방 만들기' : '다음';
+
+  /* 범위를 묻는 단계는 드래그바, 나머지는 타일 */
+  if (st.range) { paintRange(st); return; }
 
   $('wiz-picks').innerHTML = st.opts.map(([v, note], i) => {
     const label = st.labels ? st.labels[i] : v + (st.unit || '');
@@ -516,9 +663,48 @@ function wizPaint() {
   });
 }
 
+/* ---------------- 드래그바 ----------------
+   `<input type="range">` 를 씁니다. 직접 만들면 키보드(화살표·Home·End),
+   화면 낭독기, 터치까지 전부 다시 짜야 하는데 그건 브라우저가 이미
+   맞게 해 둔 것들입니다. 손대는 것은 **생김새뿐**입니다.
+
+   값은 바 위에 큰 숫자로 띄웁니다. 손잡이 안에 넣으면 끌 때 손가락에
+   가려서, 정작 조절하는 동안 값이 안 보입니다. */
+function paintRange(st) {
+  const [lo, hi, step] = st.range;
+  const cur = Math.min(hi, Math.max(lo, Number(S[st.key]) || lo));
+  const marks = (st.marks || []).map(([v, lab]) =>
+    '<span class="mk" style="--p:' + ((v - lo) / (hi - lo)) + '">' + esc(lab) + '</span>').join('');
+  $('wiz-picks').innerHTML =
+    '<div class="rangewrap">'
+    + '<output class="rangeval" id="rv"><b>' + cur + '</b>' + esc(st.unit || '') + '</output>'
+    + '<input class="range" type="range" id="rin" min="' + lo + '" max="' + hi + '"'
+    + ' step="' + step + '" value="' + cur + '"'
+    + ' aria-label="' + esc(st.h) + '">'
+    + '<div class="marks">' + marks + '</div>'
+    + '<p class="rangenote" id="rn">' + esc(st.note ? st.note(cur) : '') + '</p>'
+    + '</div>';
+
+  const inp = $('rin');
+  const paint = () => {
+    const v = Number(inp.value);
+    /* 채운 만큼 색이 차오릅니다 — 손잡이 위치만으로는 "지금 어디쯤" 이
+       안 읽힙니다. */
+    inp.style.setProperty('--fill', ((v - lo) / (hi - lo) * 100) + '%');
+    $('rv').innerHTML = '<b>' + v + '</b>' + esc(st.unit || '');
+    if (st.note) $('rn').textContent = st.note(v);
+  };
+  inp.addEventListener('input', () => {
+    S[st.key] = Number(inp.value);
+    write('girin.inviteroom', S);
+    paint();
+  });
+  paint();
+}
+
 /* 단계도 화면입니다. 자국을 안 남기면 2단계에서 뒤로가기를 누를 때
    1단계가 아니라 이전 페이지로 갑니다. */
-const VIEW_HASH = ['#seats', '#minutes', '#talk', '#room', '#focus', '#done'];
+const VIEW_HASH = ['#seats', '#minutes', '#talk', '#cam', '#room', '#focus', '#done'];
 function mark(i) {
   if (location.hash !== VIEW_HASH[i]) history.pushState({ v: i }, '', VIEW_HASH[i]);
 }
@@ -526,8 +712,8 @@ addEventListener('popstate', () => {
   const i = Math.max(0, VIEW_HASH.indexOf(location.hash));
   /* 세션 중에는 뒤로 못 갑니다 — 시계가 도는 중에 화면만 물러나면
      시간이 어디로 갔는지 알 수 없습니다. */
-  if (!$('v-sess').hidden || !$('v-done').hidden) { mark(!$('v-done').hidden ? 5 : 4); return; }
-  if (i <= 2) { $('v-wait').hidden = true; $('v-wiz').hidden = false; step = i; wizPaint(); }
+  if (!$('v-sess').hidden || !$('v-done').hidden) { mark(!$('v-done').hidden ? 6 : 5); return; }
+  if (i < STEPS.length) { $('v-wait').hidden = true; $('v-wiz').hidden = false; step = i; wizPaint(); }
 });
 
 $('wiz-next').addEventListener('click', () => {
@@ -553,13 +739,18 @@ const PEOPLE = [{ me: true, nick: ROOM.nickname || '나', ch: 'turtle', mic: S.m
 const MIC_ON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5v3.9"/></svg>';
 const MIC_OFF = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.6a3 3 0 0 1 6 0V11"/><path d="M5.5 11a6.5 6.5 0 0 0 9.3 5.9"/><path d="M12 17.5v3.9"/><path d="m3.5 3.5 17 17"/></svg>';
 
+/* 카메라가 켜져 있으면 얼굴, 꺼져 있으면 캐릭터.
+   한 자리에 둘을 겹쳐 두고 하나만 보입니다 — 자리를 갈아 끼우면 카메라를
+   껐다 켤 때마다 타일이 튀고, 옆 사람 자리까지 밀립니다. */
 function paintTiles(el) {
   const empties = Math.max(0, S.seats - PEOPLE.length);
-  el.innerHTML = PEOPLE.map((p) => `
-    <div class="tile${p.talking ? ' talking' : ''}">
+  el.innerHTML = PEOPLE.map((p, i) => `
+    <div class="tile${p.talking ? ' talking' : ''}${p.cam ? ' live' : ''}" data-i="${i}">
       <span class="mic${p.mic ? '' : ' off'}" aria-hidden="true">${p.mic ? MIC_ON : MIC_OFF}</span>
-      <img src="../lobby/assets/char-${p.ch}.png" alt="${esc(CHAR[p.ch])} 캐릭터">
-      <span class="nm">${esc(p.nick)}${p.me ? ' (나)' : ''}</span>
+      <video class="cam" ${p.me ? 'muted' : ''} autoplay playsinline></video>
+      <img class="pet" src="../landing/assets/char-${CLAY[p.ch] || 'turtle'}-cut.webp"
+           alt="${esc(CHAR[p.ch])} 캐릭터">
+      <span class="nm">${esc(p.nick)}${p.me && p.nick !== '나' ? ' (나)' : ''}</span>
       <span class="st${p.ready ? ' on' : ''}">${p.ready ? '준비됨' : '준비 중'}</span>
     </div>`).join('')
     + Array.from({ length: empties }, () => `
@@ -567,7 +758,14 @@ function paintTiles(el) {
       <span style="font-size:24px;font-weight:800">+</span>
       <span class="st">코드로 들어오면 여기 떠요</span>
     </div>`).join('');
+  /* 그린 뒤에 흐름을 다시 답니다 — innerHTML 이 <video> 를 새로 만들었으므로
+     앞 화면의 srcObject 는 같이 사라집니다. */
+  attachStream(el);
 }
+
+/* 종 이름을 클레이 렌더 파일 이름으로. 픽셀 스프라이트를 쓰던 자리라
+   랜딩·월드와 그림이 서로 달랐습니다. */
+const CLAY = { turtle: 'turtle', giraffe: 'giraffe', penguin: 'penguin', frog: 'frog' };
 
 function toWait() {
   mark(3);
@@ -623,14 +821,21 @@ let tick = 0, startedAt = 0, left = 0;
 
 const fmt = (sec) => String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
 
-$('start').addEventListener('click', () => {
-  mark(4);
+$('start').addEventListener('click', async () => {
+  mark(5);
   $('v-wait').hidden = true;
   $('v-sess').hidden = false;
   $('title').textContent = '집중 중';
-  PEOPLE[0].mic = S.mic;
+  /* 마법사에서 고른 대로 **실제로 켭니다.** 고를 때는 켜기로 해 놓고
+     들어와서 다시 눌러야 켜지면, 그 물음은 아무것도 안 한 셈입니다.
+     거절당하면 want() 가 스스로 되돌리고 이유를 띄웁니다. */
+  PEOPLE[0].mic = S.mic && (await want('mic', true));
+  PEOPLE[0].cam = S.cam && (await want('cam', true));
+  S.mic = PEOPLE[0].mic; S.cam = PEOPLE[0].cam;
+  write('girin.inviteroom', S);
   paintTiles($('tiles2'));
   paintMic();
+  paintCam();
   $('of').textContent = S.minutes + '분 중 · ' + (S.talk ? '이야기하며' : '조용히');
   left = S.minutes * 60;
   startedAt = Date.now();
@@ -656,9 +861,107 @@ function paintMic() {
     : '<rect x="9" y="2.6" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5v3.9"/>';
 }
 
-$('b-mic').addEventListener('click', () => {
-  PEOPLE[0].mic = !PEOPLE[0].mic;
-  S.mic = PEOPLE[0].mic;
+/* ==================================================================
+   마이크와 카메라 — 실제로 켭니다
+
+   여기 있던 것은 **스위치뿐**이었습니다. 켜고 끄면 아이콘이 바뀌고
+   상태가 저장됐지만 getUserMedia 를 부르는 곳이 하나도 없어서, 마이크를
+   켜도 소리가 안 잡히고 카메라를 켜도 얼굴이 안 나왔습니다.
+
+   지키는 것 셋.
+
+     **끄면 진짜로 끕니다.** track.enabled=false 는 흐름을 살려 둔 채
+     조용히만 만드는 것이라 카메라 불이 그대로 켜져 있습니다. 사람이
+     껐으면 불도 꺼져야 하므로 track.stop() 으로 놓습니다.
+
+     **거절도 상태입니다.** 권한을 거절하거나 기기가 없을 때 아무 일도
+     안 일어나면 "눌렀는데 안 되네" 로 끝납니다. 스위치를 되돌리고 왜
+     안 됐는지 한 줄 띄웁니다.
+
+     **여기서만 씁니다.** 이 흐름은 어떤 서버로도 안 나갑니다. 화면에
+     띄우고 끝이며, 방을 나가면 놓습니다.
+   ================================================================== */
+let media = { stream: null, cam: false, mic: false };
+
+async function want(kind, on) {
+  if (!on) {
+    /* 그 종류의 트랙만 놓습니다 — 흐름을 통째로 버리면 옆 것도 같이 꺼집니다 */
+    if (media.stream) {
+      media.stream.getTracks()
+        .filter((t) => t.kind === (kind === 'cam' ? 'video' : 'audio'))
+        .forEach((t) => { t.stop(); media.stream.removeTrack(t); });
+    }
+    media[kind] = false;
+    return true;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    say('이 브라우저에서는 카메라·마이크를 쓸 수 없어요'); return false;
+  }
+  try {
+    const got = await navigator.mediaDevices.getUserMedia(
+      kind === 'cam' ? { video: { width: 480, height: 360 } } : { audio: true });
+    if (!media.stream) media.stream = new MediaStream();
+    got.getTracks().forEach((t) => media.stream.addTrack(t));
+    media[kind] = true;
+    return true;
+  } catch (e) {
+    /* 거절과 기기 없음은 사람이 할 일이 다릅니다 */
+    const denied = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+    say(denied
+      ? (kind === 'cam' ? '카메라를 막아 두셨어요 — 주소창 자물쇠에서 허용하면 켜져요'
+        : '마이크를 막아 두셨어요 — 주소창 자물쇠에서 허용하면 켜져요')
+      : (kind === 'cam' ? '쓸 수 있는 카메라를 못 찾았어요' : '쓸 수 있는 마이크를 못 찾았어요'));
+    media[kind] = false;
+    return false;
+  }
+}
+
+/* 안내 한 줄. 토스트를 새로 만들지 않고 방에 이미 있는 자리를 씁니다. */
+function say(msg) {
+  const el = $('media-note');
+  if (!el) return;
+  el.textContent = msg;
+  el.hidden = false;
+  clearTimeout(say._t);
+  say._t = setTimeout(() => { el.hidden = true; }, 5200);
+}
+
+/* 내 타일에 흐름을 답니다. 남의 타일은 서버가 붙어야 채워집니다 —
+   지금은 캐릭터가 앉아 있습니다. */
+function attachStream(root) {
+  const mine = root && root.querySelector('.tile[data-i="0"] .cam');
+  if (!mine) return;
+  mine.srcObject = media.cam && media.stream ? media.stream : null;
+}
+
+function paintCam() {
+  const on = !!PEOPLE[0].cam;
+  /* aria-pressed 는 이 화면에서 **꺼져 있음**을 뜻합니다(빨간 상태가 그
+     규칙이라 마이크가 그렇게 쓰고 있습니다). 켜짐으로 넣었더니 카메라가
+     켜져 있을 때 빨갛게 나왔습니다 — 줌에서 빨강은 끈 것입니다. */
+  $('b-cam').setAttribute('aria-pressed', String(!on));
+  $('b-cam').setAttribute('aria-label', on ? '카메라 끄기' : '카메라 켜기');
+  $('cam-lab').textContent = on ? '카메라 끄기' : '카메라 켜기';
+  $('cam-ico').innerHTML = on
+    ? '<path d="M15.6 10.5 21 7.5v9l-5.4-3"/><rect x="3" y="6" width="12.6" height="12" rx="2.4"/>'
+    : '<path d="M15.6 10.5 21 7.5v9l-2.6-1.4"/><path d="M15.6 15.6V16a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h.4"/><path d="m3 3 18 18"/>';
+}
+
+$('b-cam').addEventListener('click', async () => {
+  const on = !PEOPLE[0].cam;
+  if (!(await want('cam', on))) { paintCam(); return; }
+  PEOPLE[0].cam = on;
+  S.cam = on;
+  write('girin.inviteroom', S);
+  paintCam();
+  paintTiles($('tiles2'));
+});
+
+$('b-mic').addEventListener('click', async () => {
+  const on = !PEOPLE[0].mic;
+  if (!(await want('mic', on))) { paintMic(); return; }
+  PEOPLE[0].mic = on;
+  S.mic = on;
   write('girin.inviteroom', S);
   paintMic();
   paintTiles($('tiles2'));
@@ -671,6 +974,10 @@ let lastMinutes = 0;
 
 function finish() {
   clearInterval(tick);
+  /* 흐름을 놓습니다. 안 놓으면 세션이 끝나고 화면이 바뀌어도 카메라
+     불이 켜진 채로 남습니다 — 그건 켜져 있다는 뜻입니다. */
+  if (media.stream) { media.stream.getTracks().forEach((t) => t.stop()); media.stream = null; }
+  media.cam = media.mic = false;
   const done = Math.floor((Date.now() - startedAt) / 1000);
   lastMinutes = Math.max(1, Math.round(done / 60));
   const mates = PEOPLE.length - 1;

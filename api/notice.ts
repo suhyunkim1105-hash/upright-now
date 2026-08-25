@@ -155,7 +155,7 @@ export default async function notice(
   if (!src.rss) {
     return json(response, {
       ok: false, known: true, school, name: src.name, page: src.page,
-      reason: '이 학교는 공지 주소를 아직 안 넣었어요.',
+      reason: '공지 목록 자동 연동을 준비 중이에요.',
     })
   }
 

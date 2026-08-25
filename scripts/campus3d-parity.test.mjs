@@ -6,6 +6,8 @@ const oldWorld = readFileSync('prototypes/openworld/index.html', 'utf8')
 const games = readFileSync('prototypes/campus3d/games.js', 'utf8')
 const spots = readFileSync('prototypes/campus3d/spots.js', 'utf8')
 const world3d = readFileSync('prototypes/campus3d/index.html', 'utf8')
+const campus3d = readFileSync('prototypes/campus3d/campus.js', 'utf8')
+const ui3d = readFileSync('prototypes/campus3d/ui.js', 'utf8')
 
 const between = (source, start, end) => {
   const a = source.indexOf(start)
@@ -56,4 +58,26 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
         : new RegExp(`['\"]${key}['\"]`)
     assert.match(source, needle, `${oldKey}의 3D 대응 기능(${key})이 끊겼습니다`)
   }
+})
+
+test('분수 옆 게시판은 실제 모델·학교별 공지·공모전 탭까지 연결된다', () => {
+  assert.match(campus3d, /boardOut\(g,\s*-8\.6,\s*13\.2/, '학교 게시판 모델이 없습니다')
+  assert.match(campus3d, /boardOut\(g,\s*8\.6,\s*13\.2/, '공모전 게시판 모델이 없습니다')
+  assert.match(world3d, /DOMAIN_OF\[SAVE\.school\]/, '설정한 학교 도메인을 공지 요청에 쓰지 않습니다')
+  assert.doesNotMatch(world3d, /fetch\('\/api\/notice\?school=mju\.ac\.kr'/,
+    '학교 공지가 명지대로 고정돼 있습니다')
+  assert.match(ui3d, /data-board-tab="school"/, '학교 공지 탭이 없습니다')
+  assert.match(ui3d, /data-board-tab="out"/, '대외활동·공모전 탭이 없습니다')
+  assert.match(ui3d, /https:\/\/linkareer\.com\/list\/contest/, '링커리어 참여 링크가 없습니다')
+})
+
+test('동아리 상점은 카테고리와 3D 상품 그림을 함께 쓴다', () => {
+  assert.match(world3d, /import \{ itemThumb \} from '\.\/shopview\.js'/,
+    '기존 3D 상품 미리보기 연결이 빠졌습니다')
+  assert.match(world3d, /paintThumbs\(elPanel\)/, '패널을 그린 뒤 상품 그림을 채우지 않습니다')
+  for (const label of ['상의', '하의', '신발', '모자', '안경', '가방', '탈것'])
+    assert.match(ui3d, new RegExp(`['"]${label}['"]`), `옷 가게 ${label} 카테고리가 없습니다`)
+  for (const label of ['앉기', '바닥', '수납', '살림', '취미', '초록·불'])
+    assert.match(ui3d, new RegExp(`['"]${label}['"]`), `가구 가게 ${label} 카테고리가 없습니다`)
+  assert.match(ui3d, /data-egg="\$\{esc\(species\)\}"/, '종별 알 상품 카드가 없습니다')
 })

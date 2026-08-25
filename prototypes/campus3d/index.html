@@ -344,6 +344,13 @@
       inset 0 3px 0 rgba(255,255,255,.95), inset 0 -5px 0 rgba(86,110,146,.13);
     border-radius:30px}
   #panel .ph{background:transparent;border-bottom:0;padding:22px 26px 6px}
+  #panel.wide{width:min(920px,94vw)}
+  #panel.shop{width:min(1040px,95vw)}
+  #panel .pclose{position:absolute;right:22px;top:20px;width:44px;height:44px;border:0;
+    border-radius:15px;background:var(--clay2);box-shadow:var(--clayUp2);color:var(--cInk2);
+    font:500 30px/1 var(--ff);cursor:pointer;z-index:3;transition:transform .12s,box-shadow .12s}
+  #panel .pclose:hover{transform:translateY(-2px)}
+  #panel .pclose:active{transform:none;box-shadow:var(--clayIn)}
   #panel .bd{padding:10px 26px 8px}
   #panel .tag{background:var(--clay3);color:var(--cInk3);box-shadow:var(--clayIn);
     padding:5px 12px;font-size:10.5px;letter-spacing:.04em}
@@ -421,6 +428,40 @@
     box-shadow:var(--clayIn);border-radius:14px;padding:11px 13px;color:var(--cInk);
     font:700 14px var(--ff);outline:none}
   #panel input.nick:focus,#panel select:focus{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.4)}
+  a.rw{text-decoration:none}
+  .board-tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 14px}
+  .board-tabs button,.shop-tabs button{border:0;border-radius:15px;background:var(--clay2);
+    box-shadow:var(--clayUp2);padding:12px 14px;color:var(--cInk3);font:800 13px var(--ff);
+    cursor:pointer;text-align:left}
+  .board-tabs button{text-align:center;font-size:14px}
+  .board-tabs button.on,.shop-tabs button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .board-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:12px 14px;
+    border-radius:17px;background:var(--clay2);box-shadow:var(--clayIn)}
+  .board-head b{font-size:15px;color:var(--cInk)}
+  .board-head span{font-size:11px;font-weight:700;color:var(--cInk3)}
+  .board-view ul.feed{max-height:54vh;overflow:auto;padding:2px 7px 8px 2px}
+  .board-view ul.feed li{padding:14px 16px;align-items:center}
+  .board-view ul.feed li b{min-width:82px}
+  .board-view ul.feed li span{flex:1;min-width:0;font-weight:750}
+  .board-view ul.feed a{color:var(--cInk);text-decoration:none}
+  .board-view ul.feed a:hover{color:var(--mintD)}
+  .shop-layout{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:start}
+  .shop-tabs{display:flex;flex-direction:column;gap:7px;position:sticky;top:4px}
+  .shop-main{min-width:0}
+  .shop-main .coinbar{margin-bottom:12px}
+  .shop-main .cg{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px}
+  .shop-main .cc{min-height:158px}
+  .shop-main .cc .th{border-radius:16px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
+  .shop-main .cc canvas{display:block;width:100%;height:100%}
+  @media(max-width:680px){
+    #panel.wide,#panel.shop{width:min(94vw,520px)}
+    #panel .pclose{right:14px;top:14px;width:40px;height:40px}
+    .shop-layout{display:block}
+    .shop-tabs{position:static;display:flex;flex-direction:row;overflow:auto;margin-bottom:13px;padding:2px 2px 7px}
+    .shop-tabs button{white-space:nowrap}
+    .shop-main .cg{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .board-view ul.feed li{align-items:flex-start;flex-wrap:wrap}
+  }
   button.tt{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:13px;
     color:var(--cInk3)}
   button.tt.on{box-shadow:var(--clayIn);color:#fff}
@@ -639,8 +680,9 @@
     <div class="more"><kbd>E</kbd> 다음 · <kbd>Esc</kbd> 그만</div>
   </div>
 
-  <div id="panel">
-    <div class="ph"><span class="tag"></span><h3></h3></div>
+  <div id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+    <div class="ph"><span class="tag"></span><h3 id="panel-title"></h3>
+      <button class="pclose" type="button" aria-label="창 닫기">×</button></div>
     <div class="bd"></div>
     <div class="x"><kbd>Esc</kbd> 로 닫기</div>
   </div>
@@ -768,6 +810,10 @@ import { createSky, weatherKind } from './sky.js';
    켜고 끄며 **실제 월드에서** 비교합니다. 별도 씬을 만들면 조명이
    조금만 달라도 색 판단이 통째로 틀어집니다. */
 import { createColorLab } from './colorlab.js';
+/* 원래 상점에 있던 3D 상품 그림. 통합 과정에서 import와 호출만 빠져
+   shopview.js 1,200줄이 통째로 놀고 있었습니다. 새 렌더러를 만들지 않고
+   이 모듈의 한 장짜리 속판을 다시 연결합니다. */
+import { itemThumb } from './shopview.js';
 
 /* ── 캐릭터 GLB 를 먼저 받습니다 ──
    랜딩 렌더에서 변환한 넷입니다. character() 가 아래에서 곧바로
@@ -1673,6 +1719,10 @@ function setZone(a, b) {
   elZone.querySelector('b').textContent = a;
   elZone.querySelector('.sub').textContent = b || '';
 }
+/* 상점에서 고른 카테고리는 다시 그릴 때만 유지하면 됩니다. 저장까지 하면
+   다음 날 들어와도 어제 보던 '신발'부터 열려 오히려 첫 화면이 어색합니다. */
+const SHOP_CAT = { wear: 'top', furn: 'seat' };
+let boardTab = 'school';
 /* 자리에 걸린 창을 만듭니다 — ui.js 가 실제로 도는 것을 돌려줍니다 */
 function panelFor(s) {
   switch (s.panel) {
@@ -1688,8 +1738,8 @@ function panelFor(s) {
     case 'records': return UI.records();
     case 'card': return UI.studentCard();
     case 'shop': return panelFor({ panel: 'wardrobe' });
-    case 'notice-school': return noticeView();
-    case 'notice-out': return UI.notices('out');
+    case 'notice-school':
+    case 'notice-out': return campusBoardView();
     case 'retro': return UI.retro({ last: SAVE.sessions[SAVE.sessions.length - 1] });
     case 'coins': return UI.coinPanel({ coins: SAVE.coins, server: !!(SRV && SRV.configured) });
     case 'guide': return UI.guide();
@@ -1718,6 +1768,8 @@ function panelFor(s) {
     case 'wear-shop': return UI.wearShop({
       wear: WEAR, owned: SAVE.owned2, coins: SAVE.coins, server: !!(SRV && SRV.configured),
       rides: RIDE_LIST, ownedRide: SAVE.ownedRide,
+      category: SHOP_CAT.wear,
+      onCategory: (k, again) => { SHOP_CAT.wear = k; again(); },
       onBuy: (id, slot, again) => buyWear(id, slot, again),
       onBuyRide: (id, again) => {
         if (SAVE.ownedRide.includes(id)) return;
@@ -1728,7 +1780,8 @@ function panelFor(s) {
       },
     });
     case 'furn-shop': return UI.furnShop({
-      coins: SAVE.coins, furn: SAVE.furn,
+      coins: SAVE.coins, furn: SAVE.furn, category: SHOP_CAT.furn,
+      onCategory: (k, again) => { SHOP_CAT.furn = k; again(); },
       onBuy: (id, again) => {
         const item = UI.FURN.find(([q]) => q === id);
         if (!item || !payCoins(item[2])) return;
@@ -1738,11 +1791,12 @@ function panelFor(s) {
     });
     case 'egg-shop': return UI.eggShop({
       coins: SAVE.coins, egg: SAVE.egg, ownedSp: SAVE.ownedSp, allSp: SPEC,
-      onBuy: (again) => {
+      onBuy: (species, again) => {
         if (SAVE.egg) { toast('이미 품는 알이 있어요', '깨어난 뒤에 또 사요'); return; }
+        if (SAVE.ownedSp.includes(species)) return;
         if (!payCoins(40)) return;
-        SAVE.egg = { hatchAt: Date.now() + 180000 }; UI.save();
-        toast('알을 샀어요', '3분 뒤에 깨어나요 — 돌아다녀도 돼요'); again();
+        SAVE.egg = { species, hatchAt: Date.now() + 180000 }; UI.save();
+        toast(species + ' 알을 샀어요', '3분 뒤에 깨어나요 — 돌아다녀도 돼요'); again();
       },
     });
     case 'cafeteria': return UI.cafeteria({
@@ -1832,14 +1886,52 @@ function panelFor(s) {
   }
 }
 let panelSpot = null, redrawPanel = () => {};
+/* 상점의 3D 상품 그림. shopview.js 는 하나의 WebGL 속판을 나눠 쓰고,
+   화면에 들어온 카드만 한 번 그립니다. 카테고리를 바꿀 때 떠난 카드의
+   손잡이만 접어 월드 렌더러와 웹캠에 불필요한 일을 남기지 않습니다. */
+let thumbHandles = [];
+function clearThumbs() {
+  thumbHandles.forEach((h) => { try { h.dispose(); } catch (_) {} });
+  thumbHandles = [];
+}
+function paintThumbs(root) {
+  clearThumbs();
+  try {
+    const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+    root.querySelectorAll('button[data-buy] .th').forEach((el) => {
+      const b = el.parentElement;
+      thumbHandles.push(itemThumb(el, 'wear', b.dataset.buy, {
+        bare: true, slot: b.dataset.slot, look: myLook(),
+        color: b.dataset.buy === 'varsity' ? sc?.c : undefined,
+      }));
+    });
+    root.querySelectorAll('button[data-rbuy] .th').forEach((el) =>
+      thumbHandles.push(itemThumb(el, 'ride', el.parentElement.dataset.rbuy, { rider: curSpecies })));
+    root.querySelectorAll('button[data-fbuy] .th').forEach((el) =>
+      thumbHandles.push(itemThumb(el, 'furn', el.parentElement.dataset.fbuy)));
+    const eggColors = {
+      '거북이': 0x78C98A, '기린': 0xE7AD45, '펭귄': 0x4F6078, '햄스터': 0xDCA76E,
+      '개구리': 0x72D62D, '고슴도치': 0xC99972, '알파카': 0xD8C0A6, '백조': 0xDDE4EA,
+    };
+    root.querySelectorAll('button[data-egg] .th').forEach((el) => {
+      const species = el.parentElement.dataset.egg;
+      thumbHandles.push(itemThumb(el, 'egg', 'egg', { color: eggColors[species] || 0xF2D08A }));
+    });
+  } catch (_) { /* 3D 그림이 실패해도 이름·가격·구매는 그대로 남습니다 */ }
+}
 function openPanel(s) {
   panelSpot = s;
+  if (s.panel === 'notice-school') boardTab = 'school';
+  else if (s.panel === 'notice-out') boardTab = 'out';
   const draw = () => {
     const v = panelFor(s);
     elPanel.querySelector('.tag').textContent = v.tag;
     elPanel.querySelector('h3').textContent = v.title;
     elPanel.querySelector('.bd').innerHTML = v.html;
+    elPanel.classList.toggle('wide', !!v.wide);
+    elPanel.classList.toggle('shop', !!v.shop);
     if (v.on) v.on(elPanel, draw);
+    paintThumbs(elPanel);
   };
   redrawPanel = draw; draw();
   elPanel.classList.add('on'); panelOn = true; syncLock();
@@ -1847,10 +1939,12 @@ function openPanel(s) {
   dockOn('wear', s.panel === 'wardrobe');
 }
 function closePanel() {
+  clearThumbs();
   elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
 }
+elPanel.querySelector('.pclose').addEventListener('click', closePanel);
 
 let dlgWho = null;
 function openDlg(n) {
@@ -1986,21 +2080,36 @@ function fameView() {
     onRetry: (again) => { fameState = 'idle'; again(); } });
 }
 
-/* 학교 공지 — /api/notice 가 학교 RSS 를 받아 옵니다(2D 판과 같은 주소) */
-let ntRows;
-function noticeView() {
-  if (ntRows === undefined) {
-    ntRows = null;
-    fetch('/api/notice?school=mju.ac.kr')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        ntRows = Array.isArray(j) ? j : (j && Array.isArray(j.items) ? j.items : null);
-        redrawPanel();
-      })
-      .catch(() => { ntRows = null; redrawPanel(); });
-    return UI.notices('school', undefined);
-  }
-  return UI.notices('school', ntRows);
+/* 학교 공지 — 설정한 학교의 도메인으로 요청합니다. 전에는 mju.ac.kr 로
+   못박혀 있어서 서울대를 골라도 명지대 공지가 나왔습니다. 학교가 바뀌면
+   캐시 열쇠도 바뀌므로 앞 학교 결과가 한 프레임도 섞이지 않습니다. */
+let ntKey = '', ntState = 'idle', ntData = null;
+function ensureSchoolNotice() {
+  const domain = DOMAIN_OF[SAVE.school] || '';
+  if (!domain) { ntKey = ''; ntState = 'empty'; ntData = null; return; }
+  if (ntKey === domain && ntState !== 'idle') return;
+  ntKey = domain; ntState = 'loading'; ntData = null;
+  fetch('/api/notice?school=' + encodeURIComponent(domain))
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => {
+      if (ntKey !== domain) return;
+      ntData = j; ntState = 'done'; redrawPanel();
+    })
+    .catch(() => {
+      if (ntKey !== domain) return;
+      ntData = { reason: '학교 서버에 닿지 못했어요.' }; ntState = 'done'; redrawPanel();
+    });
+}
+function campusBoardView() {
+  if (boardTab === 'school') ensureSchoolNotice();
+  const rows = boardTab === 'school'
+    ? (ntState === 'loading' ? undefined : (ntData && Array.isArray(ntData.items) ? ntData.items : null))
+    : null;
+  return UI.campusBoard({
+    tab: boardTab, rows,
+    meta: { school: SAVE.school, name: ntData?.name, page: ntData?.page, reason: ntData?.reason },
+    onTab: (k, again) => { boardTab = k; if (k === 'school') ensureSchoolNotice(); again(); },
+  });
 }
 
 /* 창밖 날씨 — /api/weather 는 배포본에서만 있습니다 */
@@ -2291,9 +2400,12 @@ function remoteFor(p) {
 function tickEgg() {
   if (!SAVE.egg || Date.now() < SAVE.egg.hatchAt) return;
   const locked = SPEC.filter((n) => !SAVE.ownedSp.includes(n));
+  const wanted = SAVE.egg.species;
   SAVE.egg = null;
   if (!locked.length) { UI.save(); return; }
-  const born = locked[Math.floor(Math.random() * locked.length)];
+  /* 옛 저장본에는 species 가 없습니다. 그 판본만 기존처럼 무작위이고,
+     새 상점에서 고른 알은 고른 종이 그대로 깨어납니다. */
+  const born = locked.includes(wanted) ? wanted : locked[Math.floor(Math.random() * locked.length)];
   SAVE.ownedSp.push(born); UI.save();
   toast('알이 깨어났어요!', born + ' — 옷장(C)에서 고를 수 있어요');
   playEmoteSound('love');

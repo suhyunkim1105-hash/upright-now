@@ -722,16 +722,16 @@ function flash(root, msg) {
    실제 연동은 api/notice.ts 가 합니다(명지대 RSS 확인 완료).
    여기서는 그 자리와 **크롤링하면 안 되는 이유**를 같이 남깁니다. */
 export const BOARD_LINKS = [
-  ['링커리어', 'https://linkareer.com/list/contest'],
-  ['올콘', 'https://www.all-con.co.kr/'],
-  ['위비티', 'https://www.wevity.com/'],
-  ['캠퍼스픽', 'https://www.campuspick.com/contest'],
+  ['링커리어', '공모전 · 대외활동', 'https://linkareer.com/list/contest'],
+  ['올콘', '공모전 · 대회', 'https://www.all-con.co.kr/'],
+  ['위비티', '공모전 · 서포터즈', 'https://www.wevity.com/'],
+  ['캠퍼스픽', '대학생 공모전', 'https://www.campuspick.com/contest'],
 ];
 /**
  * 학교 공지 — `/api/notice` 가 학교 RSS 를 받아 옵니다(2D 판과 같은 함수).
  * rows 가 undefined 면 "받는 중", null 이면 "못 받았음" 입니다.
  */
-export function notices(kind, rows) {
+export function notices(kind, rows, meta = {}) {
   if (kind !== 'school') {
     /* 왜 목록을 안 가져오는지는 약관과 판례까지 적어 두었었습니다. 그건
        만드는 쪽의 사정이고, 여기 온 사람은 공고를 보러 온 것입니다.
@@ -741,32 +741,55 @@ export function notices(kind, rows) {
        줄마다 같은 설명을 달던 것도 뺍니다 — 네 번 읽을 문장이 아닙니다. */
     return {
       tag: '공고', title: '대외활동 · 공모전',
-      html: BOARD_LINKS.map(([n, u]) =>
-        `<button class="rw" data-open="${esc(u)}">
+      html: '<div class="board-head"><span class="ic sky">' + pic('ticket') + '</span>'
+        + '<div><b>대외활동 · 공모전</b><br><span>참여하려는 분야의 공식 목록을 엽니다.</span></div></div>'
+        + BOARD_LINKS.map(([n, d, u]) =>
+        `<a class="rw" href="${esc(u)}" target="_blank" rel="noopener">
           <span class="ic sky">${pic('ticket')}</span>
-          <span class="t">${esc(n)}</span>
-          <span class="v">열기 ↗</span></button>`).join('')
-        + '<div class="note">마감이 가까운 순서로는 각 사이트에서 봅니다. 목록을 여기로 옮겨 오지 않아요 — 약관이 수집을 금지합니다.</div>',
-      on(root) {
-        root.querySelector('.bd').onclick = (e) => {
-          const b = e.target.closest('button[data-open]'); if (!b) return;
-          window.open(b.dataset.open, '_blank', 'noopener');
-        };
-      },
+          <span class="t">${esc(n)}<em>${esc(d)}</em></span>
+          <span class="v">참여하기 ↗</span></a>`).join('')
+        + '<div class="note">공고 원문과 지원은 각 서비스에서 진행합니다.</div>',
     };
   }
   let body;
-  if (rows === undefined) body = rw('board', 'sky', '학교 공지를 받아 오는 중이에요', '');
+  const school = meta.school || '';
+  if (!school) {
+    body = rw('board', 'peach', '학교를 먼저 설정해 주세요', '옷장(C)의 학교 항목에서 고르면 이 게시판이 바뀝니다');
+  } else if (rows === undefined) body = rw('board', 'sky', '학교 공지를 받아 오는 중이에요', school);
   else if (!rows || !rows.length) {
-    body = rw('board', 'peach', '지금은 공지를 못 받아왔어요', '잠시 뒤에 창을 다시 열어 주세요');
+    body = rw('board', 'peach', '목록을 직접 받아오지 못했어요', meta.reason || '학교 공식 게시판에서 확인할 수 있습니다')
+      + (meta.page ? `<a class="rw" href="${esc(meta.page)}" target="_blank" rel="noopener">
+          <span class="ic sky">${pic('board')}</span><span class="t">${esc(school)} 공식 공지<em>학교가 운영하는 원문 게시판</em></span>
+          <span class="v">열기 ↗</span></a>` : '');
   } else {
-    body = lbl('board', '학교가 여는 공지')
+    body = `<div class="board-head"><span class="ic sky">${pic('board')}</span><div>
+        <b>${esc(meta.name || school)} 공지</b><br><span>학교가 공개한 목록을 그대로 가져옵니다.</span></div></div>`
       + `<ul class="feed">${rows.slice(0, 12).map((r) =>
-      `<li><b>${esc(r.date || '')}</b><span>${r.link
+      `<li><b>${esc(r.date || r.at || '')}</b><span>${r.link
         ? `<a href="${esc(r.link)}" target="_blank" rel="noopener">${esc(r.title)}</a>`
         : esc(r.title)}</span></li>`).join('')}</ul>`;
   }
   return { tag: '공지', title: '학교 공지사항', html: body };
+}
+
+/** 분수 옆 게시판 둘이 함께 여는 한 창. 처음 누른 판에 맞춰 탭만 다릅니다. */
+export function campusBoard(ctx) {
+  const view = notices(ctx.tab === 'school' ? 'school' : 'out', ctx.rows, ctx.meta);
+  return {
+    tag: '공지 · 공고', title: '캠퍼스 게시판', wide: true,
+    html: `<div class="board-tabs" role="tablist" aria-label="게시판 종류">
+      <button type="button" role="tab" data-board-tab="school" class="${ctx.tab === 'school' ? 'on' : ''}"
+        aria-selected="${ctx.tab === 'school'}">학교 공지</button>
+      <button type="button" role="tab" data-board-tab="out" class="${ctx.tab === 'out' ? 'on' : ''}"
+        aria-selected="${ctx.tab === 'out'}">대외활동 · 공모전</button></div>
+      <div class="board-view">${view.html}</div>`,
+    on(root, again) {
+      root.querySelector('.board-tabs').onclick = (e) => {
+        const b = e.target.closest('button[data-board-tab]'); if (!b || b.dataset.boardTab === ctx.tab) return;
+        ctx.onTab(b.dataset.boardTab, again);
+      };
+    },
+  };
 }
 
 /* ---------- 아직 2D 월드에 있는 것 ----------
@@ -790,7 +813,7 @@ const won = (n) => (n === 0 ? '무료' : n + '코인');
    보여야 "살 수 있나" 를 머리로 안 세게 됩니다. 두 번째 인자는 서버가
    세는 잔액인지 여부 — 예전에는 여기에 HTML 조각을 그대로 넘겼습니다. */
 const coinbar = (coins, server) =>
-  rw('coin', 'lemon', '내 코인', server ? '서버가 세는 잔액이에요' : '', coins);
+  `<div class="coinbar">${rw('coin', 'lemon', '내 코인', server ? '서버가 세는 잔액이에요' : '', coins)}</div>`;
 
 /** 옷 가게 — 사는 곳. 입는 것은 옷장(C)에서 합니다 */
 export function wearShop(ctx) {
@@ -798,33 +821,39 @@ export function wearShop(ctx) {
      어느 줄이 신발이었는지 매번 다시 읽게 됩니다. */
   const SLOT = [['top', '상의', 'shirt'], ['bottom', '하의', 'seat'], ['shoes', '신발', 'run'],
     ['hat', '모자', 'sun'], ['glasses', '안경', 'cam'], ['bag', '가방', 'book']];
-  const html = coinbar(ctx.coins, ctx.server)
-    + SLOT.map(([slot, nm, ic]) => {
+  const cats = ctx.rides ? [...SLOT, ['ride', '탈것', 'bus']] : SLOT;
+  const active = cats.some(([k]) => k === ctx.category) ? ctx.category : 'top';
+  const [slot, nm, ic] = cats.find(([k]) => k === active);
+  const itemHtml = active === 'ride'
+    ? (ctx.rides || []).map(([id, label, price, mult]) => {
+        const own = (ctx.ownedRide || []).includes(id);
+        return `<button class="cc ${own ? 'on' : ''}" data-rbuy="${esc(id)}" ${own ? 'disabled' : ''}>
+          <span class="th" style="width:100%;height:88px"></span><b>${esc(label)}</b>
+          <small>걷기 ×${mult.toFixed(2)} · ${own ? '가지고 있어요' : won(price)}</small></button>`;
+      }).join('')
+    : (() => {
       /* 글자만 있던 칩을 카드로 바꿉니다. `.th` 는 비워 두고 부르는 쪽이
          3D 그림을 그려 넣습니다 — 옷은 모양이 값보다 먼저 궁금한 물건이라
          이름만 적어 두면 뭘 사는지 모르고 삽니다. */
       const items = ctx.wear[slot].filter(([id]) => id !== 'none');
-      return lbl(ic, nm) + '<div class="cg">'
-        + items.map(([id, label, price]) => {
+      return items.map(([id, label, price]) => {
           const own = ctx.owned.includes(id) || price === 0;
           return `<button class="cc ${own ? 'on' : ''}" data-buy="${esc(id)}" data-slot="${esc(slot)}" ${own ? 'disabled' : ''}>
-            <span class="th" style="width:100%;height:74px"></span>
+            <span class="th" style="width:100%;height:88px"></span>
             <b>${esc(label)}</b><small>${own ? '가지고 있어요' : won(price)}</small></button>`;
-        }).join('') + '</div>';
-    }).join('')
-    + (ctx.rides ? lbl('bus', '탈것') + '<div class="cg">'
-      + ctx.rides.map(([id, nm, price, mult]) => {
-        const own = (ctx.ownedRide || []).includes(id);
-        return `<button class="cc ${own ? 'on' : ''}" data-rbuy="${esc(id)}" ${own ? 'disabled' : ''}>
-          <span class="th" style="width:100%;height:74px"></span>
-          <b>${esc(nm)}</b><small>걷기 ×${mult.toFixed(2)} · ${own ? '가지고 있어요' : won(price)}</small></button>`;
-      }).join('') + '</div>' : '')
-    + rw('shirt', 'lilac', '산 것은 옷장에서 입어요',
-      '어디서든 C. 탈것도 옷장에서 타고, 실내에 들어가면 저절로 내립니다', 'C');
+        }).join('');
+    })();
+  const html = `<div class="shop-layout"><nav class="shop-tabs" aria-label="옷 가게 카테고리">`
+    + cats.map(([k, label]) => `<button type="button" data-shop-cat="${k}" class="${k === active ? 'on' : ''}">${label}</button>`).join('')
+    + `</nav><section class="shop-main">${coinbar(ctx.coins, ctx.server)}${lbl(ic, nm)}<div class="cg">${itemHtml}</div>`
+    + rw('shirt', 'lilac', '산 것은 옷장에서 입어요', '어디서든 C. 탈것도 옷장에서 탑니다', 'C')
+    + '</section></div>';
   return {
-    tag: '옷 가게', title: '동아리 옷 상점', html,
+    tag: '동아리 상점', title: '옷 가게', html, wide: true, shop: true,
     on(root, again) {
       root.querySelector('.bd').onclick = (e) => {
+        const cat = e.target.closest('button[data-shop-cat]');
+        if (cat) { ctx.onCategory(cat.dataset.shopCat, again); return; }
         const r = e.target.closest('button[data-rbuy]');
         if (r && !r.disabled) { ctx.onBuyRide?.(r.dataset.rbuy, again); return; }
         const b = e.target.closest('button[data-buy]'); if (!b || b.disabled) return;
@@ -874,24 +903,39 @@ export const FURN = [
   ['books2', '책 더미', 20, '📚'], ['guitar2', '기타', 80, '🎸'], ['bear', '곰인형', 60, '🧸'],
   ...FURN_MORE,
 ];
+const FURN_CATS = [
+  ['seat', '앉기', ['fur-cushion', 'fur-beanbag', 'fur-chair']],
+  ['floor', '바닥', ['rug2', 'fur-rug-round']],
+  ['storage', '수납', ['fur-sidetable', 'fur-shelf', 'fur-drawers', 'fur-suitcase']],
+  ['living', '살림', ['fur-laundry', 'fur-fridge', 'fur-fan', 'fur-mirror']],
+  ['hobby', '취미', ['books2', 'guitar2', 'bear', 'fur-tv', 'fur-fishtank', 'fur-dumbbell', 'fur-cattower']],
+  ['green', '초록·불', ['plant', 'fur-plant2', 'lamp2', 'fur-floorlamp']],
+];
 export function furnShop(ctx) {
   /* 가구 그림은 그림문자 그대로 둡니다 — 스물넷이 다 다른 물건이라
      한 벌짜리 픽토그램으로는 서랍장과 냉장고가 같은 그림이 됩니다.
      대신 담는 그릇은 칸(.cc)으로 바꿔, 다른 창과 같은 재질이 됩니다.
      레몬색은 **이미 가진 것** 입니다 — 이 창에서 색은 그 한 가지 뜻입니다. */
-  const html = coinbar(ctx.coins)
-    + lbl('sofa', '가구') + '<div class="cg">'
-    + FURN.map(([id, nm, price, icon]) => {
+  const active = FURN_CATS.some(([k]) => k === ctx.category) ? ctx.category : 'seat';
+  const cat = FURN_CATS.find(([k]) => k === active);
+  const items = cat[2].map((id) => FURN.find(([q]) => q === id)).filter(Boolean);
+  const html = `<div class="shop-layout"><nav class="shop-tabs" aria-label="가구 가게 카테고리">`
+    + FURN_CATS.map(([k, label]) => `<button type="button" data-shop-cat="${k}" class="${k === active ? 'on' : ''}">${label}</button>`).join('')
+    + `</nav><section class="shop-main">${coinbar(ctx.coins)}${lbl('sofa', cat[1])}<div class="cg">`
+    + items.map(([id, nm, price]) => {
       const n = ctx.furn[id] || 0;
       return `<button class="cc" data-fbuy="${esc(id)}">
-        <span class="th" style="width:100%;height:70px"></span>
+        <span class="th" style="width:100%;height:88px"></span>
         <b>${esc(nm)}</b><small>${won(price)}${n ? ` · 가진 것 ${n}개` : ''}</small></button>`;
     }).join('') + '</div>'
-    + rw('map', 'lilac', '산 가구는 기숙사에서 놓아요', '방 꾸미기 게시판에서 자리를 잡습니다');
+    + rw('map', 'lilac', '산 가구는 기숙사에서 놓아요', '방 꾸미기 게시판에서 자리를 잡습니다')
+    + '</section></div>';
   return {
-    tag: '가구 가게', title: '동아리 가구 상점', html,
+    tag: '동아리 상점', title: '가구 가게', html, wide: true, shop: true,
     on(root, again) {
       root.querySelector('.bd').onclick = (e) => {
+        const cat = e.target.closest('button[data-shop-cat]');
+        if (cat) { ctx.onCategory(cat.dataset.shopCat, again); return; }
         const b = e.target.closest('button[data-fbuy]'); if (!b) return;
         ctx.onBuy(b.dataset.fbuy, again);
       };
@@ -903,23 +947,25 @@ export function furnShop(ctx) {
 export function eggShop(ctx) {
   const left = ctx.egg ? Math.max(0, Math.ceil((ctx.egg.hatchAt - Date.now()) / 1000)) : 0;
   const locked = ctx.allSp.filter((n) => !ctx.ownedSp.includes(n));
-  const html = coinbar(ctx.coins)
-    + `<div class="cg two">${cc('egg', 'lilac', 40, '알 한 개 (코인)')}`
-    + `${cc('user', '', locked.length, '아직 없는 종')}</div>`
-    + (locked.length
-      ? rw('key', 'sky', '깨어날 수 있는 종', esc(locked.join(' · ')))
-      : rw('heart', 'lemon', '여덟 종이 모두 깨어났어요', '더 살 알이 없습니다'))
-    + (ctx.egg
-      ? rw('clock', 'peach', '지금 알을 품는 중', '월드를 돌아다녀도 됩니다', `${left}초`)
-      : `<div class="wr"><button data-egg="1" ${locked.length ? '' : 'disabled'}>
-          ${locked.length ? '알 사기 (40코인)' : '여덟 종이 모두 있습니다'}</button></div>`)
-    + rw('shirt', 'lemon', '깨어난 종은 옷장에서 골라요', '어디서든 C 를 누르면 종 목록이 있습니다', 'C');
+  const html = `<div class="shop-layout"><nav class="shop-tabs"><button type="button" class="on">알</button></nav>
+    <section class="shop-main">${coinbar(ctx.coins)}`
+    + (ctx.egg ? rw('clock', 'peach', `${esc(ctx.egg.species || '새 동물')} 알을 품는 중`, '월드를 돌아다녀도 됩니다', `${left}초`) : '')
+    + lbl('egg', '알') + '<div class="cg">'
+    + ctx.allSp.map((species) => {
+      const own = ctx.ownedSp.includes(species), busy = !!ctx.egg;
+      return `<button class="cc ${own ? 'on' : ''}" data-egg="${esc(species)}" ${own || busy ? 'disabled' : ''}>
+        <span class="th" style="width:100%;height:96px"></span><b>${esc(species)} 알</b>
+        <small>${own ? '이미 함께하고 있어요' : busy ? '다른 알을 품는 중' : '40코인'}</small></button>`;
+    }).join('') + '</div>'
+    + (locked.length ? rw('shirt', 'lemon', '깨어난 종은 옷장에서 골라요', '어디서든 C', 'C')
+      : rw('heart', 'lemon', '여덟 종이 모두 깨어났어요', '모든 친구가 함께합니다'))
+    + '</section></div>';
   return {
-    tag: '알 가게', title: '미르의 알 가게', html,
+    tag: '동아리 상점', title: '알 가게', html, wide: true, shop: true,
     on(root, again) {
       root.querySelector('.bd').onclick = (e) => {
         const b = e.target.closest('button[data-egg]'); if (!b || b.disabled) return;
-        ctx.onBuy(again);
+        ctx.onBuy(b.dataset.egg, again);
       };
     },
   };

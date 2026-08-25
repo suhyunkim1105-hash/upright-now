@@ -103,14 +103,14 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 export function createNet(opts) {
   const me = {
     id: 'g3-' + Math.random().toString(36).slice(2, 9),
-    nick: opts.nick || '나', species: opts.species, fit: opts.fit,
+    nick: opts.nick || '나', species: opts.species, fit: opts.fit, school: opts.school || '',
   };
   // id → { id, nick, species, fit, buf[], say, sayT, emo, emoT }  (봇은 bot:true 가 더 붙습니다)
   const peers = new Map();
   const N = {
     mode: 'connecting', me, peers,
     error: null,
-    setZone, move, say, emote, dispose, setLook,
+    setZone, move, say, emote, dispose, setLook, setSchool,
   };
   let client = null, ch = null, zone = 'campus', dead = false;
   let lastSend = 0, lastPresence = 0, lastKey = '';
@@ -170,10 +170,12 @@ export function createNet(opts) {
     });
     c.on('broadcast', { event: 'say' }, (msg) => {
       const p = msg?.payload; if (!p || p.id === me.id) return;
+      const channel = p.channel === 'school' ? 'school' : 'all';
+      if (channel === 'school' && (!me.school || p.school !== me.school)) return;
       /* 들어올 때 한 번 가립니다 — 그리는 쪽(이름표·말풍선·대화 기록)이
          여럿이라, 그릴 때 가리면 한 군데를 빠뜨리는 순간 뚫립니다. */
       const r = peer(p.id); r.say = maskProfanity(String(p.text || '').slice(0, 80)); r.sayT = performance.now();
-      opts.onSay?.(r, r.say);
+      opts.onSay?.(r, r.say, channel);
     });
     c.on('broadcast', { event: 'emo' }, (msg) => {
       const p = msg?.payload; if (!p || p.id === me.id) return;
@@ -214,7 +216,7 @@ export function createNet(opts) {
     if (!ch) return;
     lastPresence = performance.now();
     try {
-      ch.track({ id: me.id, nick: me.nick, species: me.species, fit: me.fit,
+      ch.track({ id: me.id, nick: me.nick, species: me.species, fit: me.fit, school: me.school,
         x: +pos.x.toFixed(2), z: +pos.z.toFixed(2), dir: +pos.dir.toFixed(2) });
     } catch {}
   }
@@ -222,6 +224,7 @@ export function createNet(opts) {
     me.species = species; me.fit = fit; if (nick) me.nick = nick;
     track();
   }
+  function setSchool(school) { me.school = String(school || '').slice(0, 40); track(); }
   function setZone(z) {
     /* `ch` 까지 봅니다. giveUp() 은 채널만 놓고 client 는 남기므로,
        client 만 보면 **이미 포기한 뒤에도** join 이 돌았습니다. join 은
@@ -247,11 +250,14 @@ export function createNet(opts) {
         id: me.id, x: +x.toFixed(2), z: +z.toFixed(2), dir: +dir.toFixed(2), moving } });
     } catch {}
   }
-  function say(text) {
+  function say(text, channel = 'all', school = '') {
     const t = maskProfanity(String(text || '').slice(0, 80));
     if (!t) return;
+    channel = channel === 'school' ? 'school' : 'all';
+    if (channel === 'school' && !school) return;
     if (N.mode === 'online' && ch)
-      try { ch.send({ type: 'broadcast', event: 'say', payload: { id: me.id, text: t } }); } catch {}
+      try { ch.send({ type: 'broadcast', event: 'say', payload: {
+        id: me.id, text: t, channel, school: channel === 'school' ? String(school).slice(0, 40) : '' } }); } catch {}
   }
   function emote(k) {
     if (N.mode === 'online' && ch)

@@ -699,7 +699,7 @@ export function studentCard() {
         <div class="info">
           <b>${esc(SAVE.nick || SAVE.species)}</b>
           <span>기린캠퍼스 · 26학번 · ${esc(SAVE.species)}</span>
-          <span>${esc(SAVE.school || '학교 미인증')}</span>
+          <span>${esc(SAVE.school || '학교 미설정')}</span>
         </div>
       </div>
       <div class="cg two">${cc('clock', '', Math.floor(total / 60) + '분', '누적 앉은 시간')}`
@@ -999,7 +999,7 @@ export function cafeteria(ctx) {
   const d = ctx.data;
   let body;
   if (!ctx.school) {
-    body = rw('board', 'lilac', '학교를 먼저 설정해 주세요', '학생회관 학교 인증 창이나 옷장에서 학교를 고르면 식단이 바뀝니다');
+    body = rw('board', 'lilac', '학교를 먼저 설정해 주세요', '옷장(C)의 학교 항목에서 고르면 식단이 바뀝니다');
   } else if (d === undefined) {
     body = rw('cup', 'lemon', '오늘 식단을 확인하는 중…', `${esc(ctx.school)} 공식 식단 페이지에 묻고 있어요`);
   } else if (d && Array.isArray(d.items) && d.items.length) {
@@ -1184,6 +1184,7 @@ export function fame(ctx) {
     : (pending.find((r) => r.school === my) || {}).contributors ?? null;
   const tint = (name) => schoolTint(c.schoolColor ? (c.schoolColor(name) || FAME_GREY) : FAME_GREY);
   const num = (v) => Number(v || 0).toLocaleString();
+  const mark = (name) => String(name || '학교').replace(/대학교|학교|대/g, '').trim().slice(0, 2) || '교';
   /* 순위 뱃지를 그 학교 색으로 칠합니다. 예전에는 이름 옆에 9px 짜리
      점을 찍었는데, 열 줄이 되면 점이 너무 작아 우리 학교를 못 찾습니다.
      칸 자체를 칠하면 훑기만 해도 걸립니다. 색은 index.html 의 표가
@@ -1193,7 +1194,7 @@ export function fame(ctx) {
      등수는 이름 앞에 글자로 답니다 — 어차피 이름과 같이 읽는 값입니다. */
   const badge = (name) => {
     const b = tint(name);
-    return `<span class="ic" style="background:${b};color:${readableOn(b)}">${pic('map')}</span>`;
+    return `<span class="fame-logo" style="--logo:${b};color:${readableOn(b)}" aria-label="${esc(name)} 로고">${esc(mark(name))}</span>`;
   };
   const row = (r, i) => {
     const sub2 = [];
@@ -1202,9 +1203,9 @@ export function fame(ctx) {
     const cn = r.contributors != null ? r.contributors : r.n;
     if (cn != null) sub2.push(`${num(cn)}명`);
     if (r.school === my) sub2.unshift('우리 학교');
-    return `<div class="rw">${badge(r.school)}`
-      + `<span class="t">${i + 1}위 ${esc(r.school || r.name || '')}<em>${sub2.join(' · ')}</em></span>`
-      + `<span class="v">${num(Math.round(r.score ?? r.avg ?? 0))}분/인</span></div>`;
+    return `<div class="fame-frame ${r.school === my ? 'mine' : ''}"><span class="fame-rank">${i + 1}</span>${badge(r.school)}`
+      + `<span class="fame-school">${esc(r.school || r.name || '')}<em>${sub2.join(' · ')}</em></span>`
+      + `<strong>${num(Math.round(r.score ?? r.avg ?? 0))}<small>분/인</small></strong></div>`;
   };
   /* 하한 미달 학교. 분·회복·점수는 서버가 아예 안 보냅니다 — 참여자가
      한둘인 학교의 "합계" 는 그 사람의 기록 그 자체라서요. */
@@ -1235,7 +1236,7 @@ export function fame(ctx) {
       '도서관이나 본관에 앉아 세션을 한 번 마치면 우리 학교가 이 자리에 처음 올라와요');
   } else {
     body = (ranked.length
-      ? ranked.map(row).join('')
+      ? `<div class="fame-wall">${ranked.map(row).join('')}</div>`
       : rw('chart', 'lilac', `아직 참여자 ${floor}명을 넘긴 학교가 없어요`,
         '넘는 학교가 생기면 여기에 순위가 섭니다'))
       + (pending.length ? lbl('user', '집계 중')
@@ -1263,8 +1264,8 @@ export function fame(ctx) {
     /* 우리 학교 줄은 순위표 **위**에 둡니다. 이 창을 여는 이유가 대개
        "우리 몇 등이지" 하나라, 열 줄을 훑기 전에 답이 나와야 합니다. */
     + rw('user', 'peach', my ? esc(my) : '아직 학교가 없어요',
-      my ? (c.verified ? '메일 인증됨 · 앉은 시간이 여기에 쌓입니다' : '아직 메일 인증 전 — 학생회관 창구에서 인증하세요')
-        : '학생회관 창구에서 인증하면 내 시간이 학교 점수로 쌓입니다',
+      my ? '내 설정 학교 · 앉은 시간이 이 학교 점수로 쌓입니다'
+        : '옷장(C)에서 학교를 고르면 내 시간이 학교 점수로 쌓입니다',
       myRank ? myRank + '위' : myCount != null ? `${myCount}/${floor}명` : '—')
     + (t ? '' : rw('heart', 'lilac', '이번 시즌 참여자', '세션이 한 번이라도 돈 사람',
       `${num((d && d.totals && d.totals.contributors) || 0)}명`))
@@ -1488,6 +1489,7 @@ export function mypage(ctx) {
     tag: '마이페이지', title: '내 기록',
     html: `<div class="wr">
         <button data-tab="me" class="on">내 정보</button>
+        <button data-tab="coin">코인</button>
         <button data-tab="cal">자세 기준</button>
         <button data-tab="set">설정</button></div>
       <div data-pane="me">`
@@ -1502,6 +1504,7 @@ export function mypage(ctx) {
         : rw('seat', 'lilac', '아직 앉은 자리가 없어요', '도서관이나 본관 자리에서 E'))
       + `<div class="wr"><button data-do="retro">세션 회고 열기</button></div>
       </div>
+      <div data-pane="coin" style="display:none">${coinPanel({ coins: ctx.coins, server: ctx.server }).html}</div>
       <div data-pane="cal" style="display:none">`
       + (base
         ? `<div class="cg two">${cc('chart', '', Object.keys(base.features).length, '쓰는 축')}`
@@ -1635,54 +1638,6 @@ export function season() {
   const n = Math.floor(past / len) + 1;
   const inSeason = past % len;
   return { n, day: inSeason + 1, left: len - inSeason, done: Math.round((inSeason / len) * 100) };
-}
-
-/* ---------- 학교 메일 인증 ----------
-   학교를 목록에서 고르기만 하면 아무나 남의 학교 점수를 올릴 수 있습니다.
-   랭킹전이 학교 대항인 이상 여기는 인증이 있어야 말이 됩니다. */
-export function schoolAuth(ctx) {
-  const st = ctx.state;                    // idle · sending · code · done · off
-  const school = SAVE.school || '';
-  const err = ctx.err ? `<div class="note">${esc(ctx.err)}</div>` : '';
-  let body;
-  if (!ctx.configured) {
-    body = rw('key', 'lilac', '이 판본에는 메일 서버가 없어요',
-      '지금은 옷장(C)에서 학교를 목록으로 고를 수 있습니다');
-  } else if (st === 'done') {
-    const at = SAVE.schoolVerifiedAt
-      ? new Date(SAVE.schoolVerifiedAt).toLocaleDateString('ko-KR') + ' 인증됨' : '인증됨';
-    body = rw('key', 'lemon', esc(school || '학교'), at + ' · 앉은 시간이 이 학교 점수로 쌓입니다')
-      + '<div class="wr"><button data-do="reset">다른 학교로 다시 인증</button></div>';
-  } else if (st === 'code') {
-    body = rw('bell', 'lemon', `${esc(ctx.email)} 로 보냈어요`, '메일함을 열고 여섯 자리를 넣어 주세요')
-      + lbl('key', '번호')
-      + '<input class="nick" id="scode" inputmode="numeric" maxlength="6" placeholder="6자리 번호">'
-      + err
-      + `<div class="wr"><button data-do="verify">확인</button>
-        <button data-do="back">주소 다시 넣기</button></div>`;
-  } else {
-    body = rw('user', 'lilac', '학교 메일로 인증해요', 'ac.kr 로 끝나는 주소만 됩니다')
-      + lbl('key', '학교 메일 주소')
-      + `<input class="nick" id="smail" type="email" placeholder="학번@학교.ac.kr" value="${esc(ctx.email || '')}">`
-      + err
-      + `<div class="wr"><button data-do="send" ${st === 'sending' ? 'disabled' : ''}>
-        ${st === 'sending' ? '보내는 중…' : '번호 받기'}</button></div>`
-      + '<div class="note">주소는 학교를 알아내는 데만 씁니다. 메일함을 읽지 않고, 광고도 보내지 않아요.</div>';
-  }
-  return {
-    tag: '창구', title: '학교 인증', html: body,
-    on(root, again) {
-      const bd = root.querySelector('.bd');
-      bd.querySelectorAll('input').forEach((i) => { i.onkeydown = (e) => e.stopPropagation(); });
-      bd.onclick = (e) => {
-        const b = e.target.closest('button[data-do]'); if (!b || b.disabled) return;
-        ctx.onDo(b.dataset.do, {
-          email: bd.querySelector('#smail')?.value?.trim(),
-          code: bd.querySelector('#scode')?.value?.trim(),
-        }, again);
-      };
-    },
-  };
 }
 
 /* ══════════════════════════════════════════════════════════

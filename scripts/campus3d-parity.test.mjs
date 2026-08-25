@@ -51,7 +51,7 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
     aboutLibrary: ['room', 'library'], aboutMainhall: ['room', 'mainhall'],
     aboutUnion: ['room', 'union'], arcade: ['room', 'arcade'],
     guide: ['panel', 'guide'], privacy: ['panel', 'privacy'], retro: ['panel', 'retro'],
-    hall: ['panel', 'fame'], market: ['panel', 'wear-shop'], coins: ['panel', 'coins'],
+    hall: ['panel', 'fame'], market: ['panel', 'wear-shop'], coins: ['panel', 'mypage'],
     settings: ['panel', 'mypage'],
   }
 
@@ -110,6 +110,41 @@ test('기숙사는 안내와 일정 기능을 각각 한 장소의 탭으로 묶
   assert.match(ui3d, /data-schedule-tab="timetable"/, '일정 관리의 시간표 탭이 없습니다')
   assert.match(ui3d, /data-info-tab="guide"/, '안내 표지판의 사용 방법 탭이 없습니다')
   assert.match(ui3d, /data-info-tab="privacy"/, '안내 표지판의 개인정보 탭이 없습니다')
+})
+
+test('학생회관 기능은 실제 공간과 전역 마이페이지에 맞춰 정리된다', () => {
+  const union = between(spots, 'union: [', '\n  ],\n  arcade:')
+  assert.match(union, /tag:\s*'액자 벽'.*panel:\s*'fame'/s, '명예의 전당이 액자 벽에 연결되지 않았습니다')
+  assert.match(union, /tag:\s*'학생증 발급대'.*panel:\s*'card'/s, '학생증이 발급 책상에 연결되지 않았습니다')
+  assert.match(union, /title:\s*'쉬는 자리'[\s\S]*seat:/, '학생회관 쉬는 자리에 앉을 좌표가 없습니다')
+  assert.doesNotMatch(union, /panel:\s*'(mypage|coins|school)'/, '삭제한 학생회관 창구가 남아 있습니다')
+  assert.match(rooms3d, /명예의 전당 — 창구가 아니라 학교 로고 액자/, '명예의 전당 액자 벽 모델이 없습니다')
+  assert.match(rooms3d, /학생식당 — 배식 레일·메뉴보드·식판·대기줄/, '학생식당 공간 디자인이 없습니다')
+  assert.match(world3d, /id="myquick"/, '오른쪽 위 MY 단추가 없습니다')
+  assert.doesNotMatch(world3d + ui3d + spots, /학교 인증|schoolAuth|school-auth|panel:\s*'school'/,
+    '삭제한 학교 인증 기능이 남아 있습니다')
+  assert.match(ui3d, /data-tab="coin"/, '마이페이지 코인 탭이 없습니다')
+  assert.match(ui3d, /coinPanel\(\{ coins: ctx\.coins/, '마이페이지에서 코인 상세를 표시하지 않습니다')
+})
+
+test('게시판은 양면이고 옷 카드는 몸 없는 메시만 렌더링한다', () => {
+  assert.match(campus3d, /양면 게시판[\s\S]*\[-1, 1\]\.forEach\(\(side\) => \{/s,
+    '야외 게시판 양면 디자인이 없습니다')
+  assert.match(readFileSync('prototypes/campus3d/shopview.js', 'utf8'), /function flattenVisible\(root\)/,
+    '옷 조각만 독립 그룹으로 떼는 미리보기 경로가 없습니다')
+  assert.match(readFileSync('prototypes/campus3d/shopview.js', 'utf8'), /return \{ group: flat, box/,
+    '숨긴 캐릭터가 아니라 옷 전용 그룹을 카드에 넘기지 않습니다')
+})
+
+test('채팅은 전체와 같은 학교 채널을 분리한다', () => {
+  const net3d = readFileSync('prototypes/campus3d/net.js', 'utf8')
+  assert.match(world3d, /data-chat-channel="all"/, '전체 채팅 탭이 없습니다')
+  assert.match(world3d, /data-chat-channel="school"/, '학교 채팅 탭이 없습니다')
+  assert.match(world3d, /net\?\.say\(t, chatChannel, SAVE\.school/, '보낼 때 채널과 학교를 넘기지 않습니다')
+  assert.match(net3d, /channel === 'school'.*p\.school !== me\.school/s,
+    '받을 때 다른 학교 메시지를 거르지 않습니다')
+  assert.match(net3d, /payload: \{[\s\S]*channel, school:/,
+    '실시간 채팅 payload에 채널과 학교가 없습니다')
 })
 
 test('날씨와 학교별 실제 식단은 서버 API 응답을 그대로 표시한다', () => {

@@ -979,6 +979,28 @@ export function aFrame(g, x, z, ry, col = 0x2DD4BF) {
   box(p, .9, .07, .34, .03, M(IN.woodDark, .7), 0, .52, 0);       // 가로대
   return p;
 }
+
+/** 출입문용 안내 키오스크 — 책처럼 접힌 A형 판 대신 한눈에 읽히는 양면 표지판. */
+export function infoKiosk(g, x, z, ry, col = 0x2DD4BF) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  cyl(p, .3, .34, .10, 16, M(IN.metalDark, .45), 0, .05, 0);
+  cyl(p, .07, .07, 1.15, 10, M(IN.metal, .4), 0, .62, 0);
+  const frame = M(IN.woodDark, .62), paper = M(0xEAF4FA, .42);
+  box(p, 1.36, 1.48, .18, .08, frame, 0, 1.54, 0);
+  [-1, 1].forEach((side) => {
+    box(p, 1.16, 1.28, .10, .05, paper, 0, 1.54, side * .10);
+    box(p, .94, .28, .11, .05, M(col, .56), 0, 1.96, side * .16);
+    /* 사용법 · 카메라 두 카테고리를 두 장의 카드로 표현합니다. */
+    [-.25, .25].forEach((dy, i) => {
+      box(p, .92, .32, .11, .05, M(i ? 0xCCE1F8 : 0xB7EBE1, .5), 0, 1.54 + dy, side * .16);
+      box(p, .16, .16, .12, .05, M(i ? 0x2A66A6 : 0x12867A, .48),
+        side * -.32, 1.54 + dy, side * .18);
+      box(p, .42, .06, .12, .02, M(IN.ink, .42), side * .12, 1.57 + dy, side * .18);
+      box(p, .3, .05, .12, .02, M(IN.ink, .3), side * .18, 1.48 + dy, side * .18);
+    });
+  });
+  return p;
+}
 /** 벽에 건 줄전구 — 기숙사 */
 export function stringLights(g, x, y, z, w = 4.0, n = 9) {
   const p = new THREE.Group(); p.position.set(x, y, z); g.add(p);

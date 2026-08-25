@@ -260,6 +260,30 @@ function visibleBox(root) {
   return out;
 }
 
+/** 보이는 옷 조각만 독립 그룹으로 떼어 냅니다.
+    숨긴 캐릭터의 마디 아래에 옷을 둔 채 그리면 부모 visible 상태와 접힌
+    행렬의 조합에 따라 카드가 통째로 비는 브라우저가 있었습니다. 월드 행렬을
+    그대로 복사한 메시만 새 그룹에 담으면 결과에는 몸도, 숨은 부모도 없습니다. */
+function flattenVisible(root) {
+  root.updateMatrixWorld(true);
+  const flat = new THREE.Group();
+  const walk = (o) => {
+    if (!o.visible) return;
+    if (o.isMesh && o.geometry && o.material) {
+      const m = new THREE.Mesh(o.geometry, o.material);
+      m.matrixAutoUpdate = false;
+      m.matrix.copy(o.matrixWorld);
+      m.castShadow = false;
+      m.receiveShadow = false;
+      flat.add(m);
+    }
+    o.children.forEach(walk);
+  };
+  walk(root);
+  flat.updateMatrixWorld(true);
+  return flat;
+}
+
 /* 옷 한 장을 볼 때 나머지 칸을 못 박아 둡니다. 골조는 안 보이지만
    **어디에 있는지**는 정해져 있어야 잘라 내는 규칙이 매번 맞습니다.
    신발 칸에 반바지를 입히는 것은 맨정강이가 살색이 되어 살 규칙 하나로
@@ -691,10 +715,11 @@ function buildBare(id, opt) {
   if (X.pose) { try { X.pose(node, P, body); } catch { /* 자세는 덤입니다 */ } }
   /* 자세를 만졌으니 다시 굳히고 상자를 냅니다 */
   g.updateMatrixWorld(true);
-  const box = visibleBox(body);
+  const flat = flattenVisible(body);
+  const box = visibleBox(flat);
   if (box.isEmpty() || !isFinite(box.min.x)) return null;
   if (X.crop) { try { X.crop(box); } catch { /* 자르기도 덤입니다 */ } }
-  return { group: g, box, off: X.off || V.off, pad: X.pad ?? V.pad, ground: V.ground || false };
+  return { group: flat, box, off: X.off || V.off, pad: X.pad ?? V.pad, ground: V.ground || false };
 }
 
 /** 옷 한 장을 마네킹에 입혀 세웁니다. 몸에 걸친 그림이 필요할 때만

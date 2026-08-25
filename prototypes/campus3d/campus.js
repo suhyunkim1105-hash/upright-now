@@ -522,14 +522,21 @@ export function boardOut(g, x, z, ry) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   [-1, 1].forEach((s) => cyl(p, .14, .17, 2.0, 10, M(PAL.woodDark, .74), s * 1.5, 1.0, 0));
   box(p, 3.6, 2.0, .24, .08, M(PAL.woodDark, .76), 0, 2.1, 0);
-  box(p, 3.3, 1.72, .16, .06, M(0x4E7C52, .84), 0, 2.1, .08);
   const cols = [0xFFF8EA, 0xFFE8C0, 0xE8F4FF, 0xFFF0F0];
-  [[-1.0,.42],[.1,.5],[1.05,.4],[-.9,-.44],[.25,-.4],[1.1,-.5]].forEach(([dx, dy], i) => {
-    box(p, .68, .52, .1, .03, M(cols[i % cols.length], .6), dx, 2.1 + dy, .14);
-    [0,1,2].forEach((k) => box(p, .5 - k * .08, .05, .1, .02, M(0x8A9098, .5), dx, 2.24 + dy - k * .12, .17));
+  /* 앞뒤 어느 쪽으로 돌아가도 같은 기능이 읽히는 양면 게시판입니다.
+     뒤에는 검은 나무판만 보여 "막힌 면"처럼 보이던 것을 고칩니다. */
+  [-1, 1].forEach((side) => {
+    box(p, 3.3, 1.72, .16, .06, M(side > 0 ? 0x3E765E : 0x476D82, .84), 0, 2.1, side * .08);
+    [[-1.0,.42],[.1,.5],[1.05,.4],[-.9,-.44],[.25,-.4],[1.1,-.5]].forEach(([dx, dy], i) => {
+      box(p, .68, .52, .1, .03, M(cols[(i + (side < 0 ? 2 : 0)) % cols.length], .6),
+        side * dx, 2.1 + dy, side * .14);
+      [0,1,2].forEach((k) => box(p, .5 - k * .08, .05, .1, .02, M(0x657486, .5),
+        side * dx, 2.24 + dy - k * .12, side * .17));
+    });
   });
   prism(p, 3.9, .5, .5, M(PAL.red, .6), 0, 3.1, 0, .06);
-  box(p, 1.9, .38, .18, .08, M(PAL.gold, .5), 0, 3.28, .12);
+  [-1, 1].forEach((side) => box(p, 2.1, .38, .18, .08,
+    M(side > 0 ? 0xD8EFE9 : 0xDCEAF5, .5), 0, 3.28, side * .12));
   return p;
 }
 

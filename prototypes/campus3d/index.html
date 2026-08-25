@@ -63,6 +63,12 @@
 
   /* ── 오른쪽 위 · 한 기둥 ── */
   #stack{position:absolute;right:16px;top:16px;width:176px;display:flex;flex-direction:column;gap:10px}
+  #myquick{position:absolute;right:204px;top:16px;width:54px;height:54px;border:0;border-radius:18px;
+    pointer-events:auto;cursor:pointer;background:#EAF0F8;color:#22303F;font:900 14px/1 var(--ff);
+    letter-spacing:.05em;box-shadow:0 8px 20px -8px rgba(40,58,84,.45),inset 0 2px 0 #fff;
+    transition:transform .14s,box-shadow .14s;z-index:5}
+  #myquick:hover{transform:translateY(-2px)}
+  #myquick.on{background:#B7EBE1;color:#12867A;box-shadow:inset 0 3px 7px rgba(62,84,118,.22)}
   .ghead{display:flex;align-items:center;gap:6px;padding:0 2px 7px;font-size:10.5px;
     font-weight:800;color:var(--tx2);letter-spacing:.02em}
   .ghead .sp{margin-left:auto;font-weight:700;color:var(--tx3)}
@@ -458,6 +464,20 @@
   .shop-main .cc{min-height:158px}
   .shop-main .cc .th{border-radius:16px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
   .shop-main .cc canvas{display:block;width:100%;height:100%}
+  .fame-wall{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:13px;margin:8px 0 14px;
+    padding:18px;border-radius:22px;background:#303846;box-shadow:inset 0 4px 12px rgba(0,0,0,.28)}
+  .fame-frame{position:relative;min-height:176px;padding:20px 12px 14px;display:flex;flex-direction:column;
+    align-items:center;text-align:center;border:8px solid #1D232D;border-radius:4px;background:#EEF3F8;
+    box-shadow:0 7px 13px rgba(0,0,0,.28),inset 0 0 0 2px #B9A36D;color:var(--cInk)}
+  .fame-frame.mine{outline:4px solid #2DD4BF;outline-offset:2px}
+  .fame-rank{position:absolute;left:8px;top:8px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
+    background:#F2E7B4;color:#78661C;font:900 12px var(--ff)}
+  .fame-logo{width:62px;height:62px;display:grid;place-items:center;border-radius:50%;background:var(--logo);
+    border:5px solid rgba(255,255,255,.75);box-shadow:0 0 0 3px var(--logo);font:900 17px/1 var(--ff)}
+  .fame-school{font:900 13px/1.25 var(--ff);margin-top:13px}
+  .fame-school em{display:block;font:700 9.5px/1.4 var(--ff);color:#79879A;margin-top:5px}
+  .fame-frame strong{margin-top:auto;font:900 18px/1 var(--ff)}
+  .fame-frame strong small{font-size:9px;margin-left:2px;color:#79879A}
   @media(max-width:680px){
     #panel.wide,#panel.shop{width:min(94vw,520px)}
     #panel .pclose{right:14px;top:14px;width:40px;height:40px}
@@ -559,9 +579,14 @@
      경우가 있었습니다(헤드리스 검사에서 재현). 말은 보이는 게 먼저입니다. */
   #chatlog b{font-weight:800;color:var(--acc);flex:none}
   #chatlog.sys div b{color:var(--warn)}
-  #chatin{display:none;margin-top:7px;pointer-events:auto}
+  #chatchannels{display:none;width:100%;gap:6px;pointer-events:auto}
+  #chatin.on #chatchannels{display:flex}
+  #chatchannels button{border:0;border-radius:99px;padding:7px 11px;background:rgba(19,23,30,.88);
+    color:#AAB4C2;font:800 10px/1 var(--ff);cursor:pointer}
+  #chatchannels button.on{background:#B7EBE1;color:#0D7168}
+  #chatin{display:none;margin-top:7px;pointer-events:auto;flex-wrap:wrap}
   #chatin.on{display:flex;gap:6px}
-  #chatin input{flex:1;border:1px solid var(--ln);border-radius:12px;padding:9px 12px;
+  #chatin input{flex:1;min-width:0;border:1px solid var(--ln);border-radius:12px;padding:9px 12px;
     font:600 13px var(--ff);background:var(--gl2);color:var(--tx);outline:none;
     backdrop-filter:blur(14px)}
   #chatin input::placeholder{color:var(--tx3)}
@@ -707,8 +732,13 @@
 
   <div id="emo"><div class="hub">감정표현<em>1~8 · G</em></div></div>
 
+  <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false">MY</button>
+
   <div id="chat"><div id="chatlog"></div>
-    <div id="chatin"><input maxlength="60" placeholder="말하기 — Enter 로 보내기"></div></div>
+    <div id="chatin"><div id="chatchannels" role="tablist" aria-label="채팅 채널">
+      <button type="button" role="tab" data-chat-channel="all" class="on" aria-selected="true">전체</button>
+      <button type="button" role="tab" data-chat-channel="school" aria-selected="false">내 학교</button>
+    </div><input maxlength="60" placeholder="전체 채팅 — Enter 로 보내기"></div></div>
 
   <!-- 아래 한 줄 — 늘 켜져 있던 종·옷 고르는 줄은 옷장 창으로 들어갔습니다 -->
   <div id="dock" class="g">
@@ -718,12 +748,6 @@
     <div class="sep"></div>
     <button data-do="wear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 3.5 12 6l3-2.5 5 3-2 3.5-1.6-.8V20H7.6V9.2L6 10 4 6.5l5-3Z"/></svg><em>옷장</em></button>
     <button data-do="view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></svg><em>시점</em></button>
-    <!-- 마이페이지와 코인은 수현 판이 상시 노출로 꺼내 둔 것입니다.
-         저쪽은 오른쪽 위 기둥이었는데, 이 껍데기는 아래 독이 유일한
-         상시 줄이라 여기로 옮깁니다 — 붙박이 위치가 아니라 "언제든
-         한 번에 연다" 가 취지입니다. -->
-    <button data-do="mypage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-5.6 7-5.6s6.2 1.8 7 5.6"/></svg><em>마이</em></button>
-    <button data-do="coins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.2v7.6M14.2 10H11a1.6 1.6 0 0 0 0 3.2h2a1.6 1.6 0 0 1 0 3.2H9.8"/></svg><em>코인</em></button>
     <button data-do="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 16.6h.01"/></svg><em>도움</em></button>
   </div>
 
@@ -862,7 +886,6 @@ let SRV = null;                                  // window.WORLD_SAVE
 /* 자세 판정 엔진은 온보딩·메인과 **같은 파일**입니다. 사본을 만들면
    기준을 잡은 곳과 판정하는 곳의 계산이 조용히 갈라집니다. */
 injectScript('../shared/posture.js');
-injectScript('../shared/school-auth.js');
 injectScript('../shared/config.js')
   .then(() => injectScript('../openworld/save.js'))
   .then(() => {
@@ -1766,7 +1789,6 @@ function panelFor(s) {
     case 'notice-school':
     case 'notice-out': return campusBoardView();
     case 'retro': return UI.retro({ last: SAVE.sessions[SAVE.sessions.length - 1] });
-    case 'coins': return UI.coinPanel({ coins: SAVE.coins, server: !!(SRV && SRV.configured) });
     case 'guide': return UI.guide();
     case 'privacy': return UI.privacy();
     case 'dorm-info': return UI.dormInfo({
@@ -1774,7 +1796,7 @@ function panelFor(s) {
       onTab: (k, again) => { dormInfoTab = k; again(); },
     });
     case 'mypage': return UI.mypage({
-      coins: SAVE.coins, snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
+      coins: SAVE.coins, server: !!(SRV && SRV.configured), snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
       baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
       onDo: (k, again) => {
         if (k === 'snd') { sndToggle(); again(); }
@@ -1848,7 +1870,6 @@ function panelFor(s) {
       },
     });
     case 'fame': return fameView();
-    case 'school': return schoolView();
     case 'weather': return weatherView();
     case 'bus': return UI.bus();
     case 'invite': return UI.invitePanel({ nick: myNick(), school: SAVE.school, species: curSpecies });
@@ -1887,6 +1908,7 @@ function panelFor(s) {
           else if (b.dataset.shadow) { setShadows(!renderer.shadowMap.enabled); again(); return; }
           else if (b.dataset.sc) {
             SAVE.school = b.dataset.sc; idbarPaint();
+            net?.setSchool(SAVE.school); setChatChannel(chatChannel);
             /* 과잠 띠를 학교 색으로 */
             const sc = SCHOOLS.find((q) => q.name === SAVE.school);
             if (sc && SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
@@ -1961,6 +1983,8 @@ function openPanel(s) {
   elPanel.classList.add('on'); panelOn = true; syncLock();
   elTut.style.display = 'none';
   dockOn('wear', s.panel === 'wardrobe');
+  const mq = document.querySelector('#myquick');
+  if (mq) { mq.classList.toggle('on', s.panel === 'mypage'); mq.setAttribute('aria-pressed', String(s.panel === 'mypage')); }
 }
 function closePanel() {
   clearThumbs();
@@ -1968,6 +1992,8 @@ function closePanel() {
   elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
+  const mq = document.querySelector('#myquick');
+  if (mq) { mq.classList.remove('on'); mq.setAttribute('aria-pressed', 'false'); }
 }
 elPanel.querySelector('.pclose').addEventListener('click', closePanel);
 
@@ -2038,45 +2064,6 @@ function buyWear(id, slot, again) {
   } else if (payCoins(item[2])) done();
 }
 
-/* 학교 인증 — 학교 메일로 여섯 자리를 받습니다(shared/school-auth.js).
-   목록에서 고르기만 하면 아무나 남의 학교 점수를 올릴 수 있어서, 랭킹전이
-   학교 대항인 이상 여기는 인증이 있어야 말이 됩니다. */
-const SA = { state: SAVE.schoolVerifiedAt ? 'done' : 'idle', email: SAVE.schoolMail || '', err: '' };
-function schoolView() {
-  const A = window.SchoolAuth;
-  return UI.schoolAuth({
-    configured: !!(A && A.configured), state: SA.state, email: SA.email, err: SA.err,
-    onDo: (k, v, again) => {
-      SA.err = '';
-      if (k === 'back') { SA.state = 'idle'; again(); return; }
-      if (k === 'reset') { SA.state = 'idle'; SAVE.schoolVerifiedAt = 0; UI.save(); again(); return; }
-      if (k === 'send') {
-        const m = (v.email || '').toLowerCase();
-        if (!/^[^@\s]+@[^@\s]+$/.test(m)) { SA.err = '메일 주소 형식이 아닙니다.'; again(); return; }
-        if (!/\.ac\.kr$|^.*@skku\.edu$/.test(m)) { SA.err = '학교 메일(ac.kr)만 됩니다.'; again(); return; }
-        SA.email = m; SA.state = 'sending'; again();
-        A.sendCode(m).then(() => { SA.state = 'code'; again(); })
-          .catch((e) => { SA.state = 'idle'; SA.err = '보내지 못했습니다 — 잠시 뒤에 다시 해 주세요.'; again(); });
-        return;
-      }
-      if (k === 'verify') {
-        const c = (v.code || '').replace(/\D/g, '');
-        if (c.length !== 6) { SA.err = '여섯 자리를 넣어 주세요.'; again(); return; }
-        A.verifyCode(SA.email, c).then((r) => {
-          if (!r) { SA.err = '번호가 맞지 않습니다.'; again(); return; }
-          const dom = SA.email.split('@')[1] || '';
-          const hit = SCHOOLS.find((q) => DOMAIN_OF[q.name] === dom);
-          SAVE.school = hit ? hit.name : (SAVE.school || dom);
-          SAVE.schoolMail = SA.email; SAVE.schoolVerifiedAt = Date.now();
-          UI.save(); idbarPaint();
-          SA.state = 'done'; again();
-          toast('학교 인증 끝', SAVE.school + ' 로 쌓입니다');
-        }).catch(() => { SA.err = '확인하지 못했습니다.'; again(); });
-      }
-    },
-  });
-}
-
 /* 명예의 전당 — 서버 집계를 실제로 부릅니다 */
 /* 명예의 전당. 창 쪽에 미달 학교 · 지난 시즌 · 참여자 수 · 학교 색 ·
    오류 네 가지를 다 채워 놓고, 여기서는 `rows` 하나만 넘기고 있었습니다.
@@ -2101,7 +2088,7 @@ function fameView() {
     }).catch(() => { fameState = 'offline'; redrawPanel(); });
   }
   return UI.fame({ state: fameState, data: fameData, schoolColor,
-    myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt,
+    myschool: SAVE.school,
     onRetry: (again) => { fameState = 'idle'; again(); } });
 }
 
@@ -2307,6 +2294,8 @@ window.deskfit3d = {
 /* ══════ 8.5 감정표현 · 채팅 · 실시간 ══════ */
 const elEmo = $('#emo'), elChatLog = $('#chatlog'), elChatIn = $('#chatin'),
       chatBox = elChatIn.querySelector('input'), elNet = $('#net');
+let chatChannel = 'all';
+const chatRows = { all: [], school: [] };
 let emoOn = false, myEmo = null;     // { k, t0 }
 { /* 바퀴 — 여덟 개를 원으로 */
   EMOTES.forEach((e, i) => {
@@ -2341,6 +2330,7 @@ function sayAllowed() {
   sayLog.push(now); lastSay = now; return true;
 }
 function openChat() {
+  if (chatChannel === 'school' && !SAVE.school) setChatChannel('all');
   chatting = true; elChatIn.classList.add('on'); chatBox.value = ''; chatBox.focus();
   dockOn('chat', true);
 }
@@ -2359,20 +2349,50 @@ chatBox.addEventListener('keydown', (e) => {
     if (t !== raw) toast('고운 말', '걸린 말은 가려서 보냈어요');
     if (!sayAllowed()) return;
     closeChat();
-    pushChat(myNick(), t);
-    net?.say(t);
+    pushChat(myNick(), t, chatChannel);
+    net?.say(t, chatChannel, SAVE.school || '');
     mySay = { text: t, t0: performance.now() };
   }
 });
-function pushChat(who, text) {
-  const d = document.createElement('div');
+function setChatChannel(channel) {
+  if (channel === 'school' && !SAVE.school) {
+    toast('학교를 먼저 골라 주세요', '옷장(C)의 학교 항목에서 설정할 수 있어요');
+    channel = 'all';
+  }
+  chatChannel = channel === 'school' ? 'school' : 'all';
+  elChatIn.querySelectorAll('[data-chat-channel]').forEach((b) => {
+    const on = b.dataset.chatChannel === chatChannel;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
+    if (b.dataset.chatChannel === 'school') b.textContent = SAVE.school ? SAVE.school : '내 학교';
+  });
+  chatBox.placeholder = chatChannel === 'school' ? `${SAVE.school} 채팅 — Enter 로 보내기` : '전체 채팅 — Enter 로 보내기';
+  renderChat();
+}
+function renderChat() {
+  elChatLog.innerHTML = '';
+  chatRows[chatChannel].slice(-6).forEach(({ who, text }) => {
+    const d = document.createElement('div');
+    d.innerHTML = `<b>${esc3(who)}</b><span>${esc3(text)}</span>`;
+    elChatLog.appendChild(d);
+  });
+}
+elChatIn.querySelector('#chatchannels').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-chat-channel]'); if (!b) return;
+  e.stopPropagation(); setChatChannel(b.dataset.chatChannel); chatBox.focus();
+});
+function pushChat(who, text, channel = 'all') {
+  channel = channel === 'school' ? 'school' : 'all';
   /* 이름도 **글로 취급**합니다. 글은 막아 두고 이름만 안 막아 뒀는데,
      이름은 남이 정하는 값입니다(presence 로 옵니다) — 남이 정하는 값이
      내 화면에서 태그가 되면 그건 남의 코드가 내 화면에서 도는 것입니다. */
-  d.innerHTML = `<b>${esc3(who)}</b><span>${esc3(text)}</span>`;
-  elChatLog.appendChild(d);
-  while (elChatLog.children.length > 6) elChatLog.firstChild.remove();
-  setTimeout(() => d.remove(), 12000);
+  const row = { who: String(who || ''), text: String(text || ''), at: Date.now() };
+  chatRows[channel].push(row);
+  if (chatRows[channel].length > 24) chatRows[channel].shift();
+  if (channel === chatChannel) renderChat();
+  setTimeout(() => {
+    const i = chatRows[channel].indexOf(row); if (i >= 0) chatRows[channel].splice(i, 1);
+    if (channel === chatChannel) renderChat();
+  }, 12000);
 }
 let mySay = null;
 /* 내 머리 위 표시 */
@@ -2389,7 +2409,7 @@ const remotes = new Map();   // id → { rig, g, el, say, emoEl }
 let net = null;
 try {
   net = createNet({
-    nick: myNick(), species: curSpecies, fit: myLook(),
+    nick: myNick(), species: curSpecies, fit: myLook(), school: SAVE.school,
     onMode: (m) => {
       elNet.classList.toggle('on', m === 'online');
       elNet.querySelector('span').textContent =
@@ -2403,7 +2423,7 @@ try {
         : '혼자';
     },
     /* t 는 net.js 가 들어올 때 이미 가린 말입니다 — 여기서 또 훑지 않습니다 */
-    onSay: (p, t) => pushChat(p.nick || '누군가', t),
+    onSay: (p, t, channel) => pushChat(p.nick || '누군가', t, channel),
     onGone: (id) => dropRemote(id),
     onReset: () => { [...remotes.keys()].forEach(dropRemote); },
     onPeers: () => {
@@ -3174,6 +3194,7 @@ function myNick() { return (SAVE.nick || '').trim() || curSpecies; }
 
 /* ── 아래 한 줄 ── */
 const elDock = $('#dock');
+const elMyQuick = $('#myquick');
 /* 이 함수는 모듈 평가 중(elDock 이 아직 TDZ 일 때)에도 불릴 수 있으므로
    문서에서 바로 찾습니다. */
 function dockOn(k, on) {
@@ -3187,9 +3208,11 @@ elDock.addEventListener('click', (e) => {
   else if (k === 'chat') openChat();
   else if (k === 'wear') { if (panelOn && panelSpot?.panel === 'wardrobe') closePanel(); else openWardrobe(); }
   else if (k === 'view') toggleView();
-  else if (k === 'mypage') openPanel({ tag: '마이', title: '마이페이지', panel: 'mypage' });
-  else if (k === 'coins') openPanel({ tag: '지갑', title: '코인', panel: 'coins' });
   else if (k === 'help') toggleHelp();
+});
+elMyQuick.addEventListener('click', () => {
+  if (panelOn && panelSpot?.panel === 'mypage') closePanel();
+  else openPanel({ tag: 'MY', title: '마이페이지', panel: 'mypage' });
 });
 let helpOn = false;
 function toggleHelp(v) {

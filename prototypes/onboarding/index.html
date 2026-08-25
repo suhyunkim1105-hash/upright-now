@@ -2,7 +2,7 @@
 <html lang="ko">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deskfit - 시작하기</title>
+<title>Deskfit</title>
 
 <!-- Wanted Sans — 유니코드 구간별 92 subset 을 이 CSS 가 부릅니다.
      읽는 글자만 내려받으므로 한 벌을 통째로 받는 것보다 가볍습니다. -->
@@ -212,7 +212,12 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  canvas { image-rendering: pixelated; display: block; }
+  /* 예전에는 여기가 `pixelated` 였습니다 - 알이 32×48 픽셀 그림이라
+     확대할 때 계단이 살아야 했고, 점토 렌더가 들어간 칸마다 `auto` 로
+     되돌리고 있었습니다. **알이 점토로 넘어가면서 픽셀 그림이 하나도
+     안 남았습니다.** 기본을 뒤집습니다. 칸마다 붙어 있는 `auto` 들은
+     이제 없어도 같지만, 지우는 것이 이 변경의 일이 아니라 그대로 둡니다. */
+  canvas { image-rendering: auto; display: block; }
   ::selection { background: var(--teal-200); color: var(--ink); }
 
   /* 초점은 어디서나 보여야 합니다 - 키보드만 쓰는 사람이 길을 잃습니다 */
@@ -737,8 +742,7 @@
   .narr { display: flex; align-items: flex-start; gap: var(--sp-xl); }
   .narr canvas {
     /* 2:3 을 지킵니다. 정사각에 넣으면 가로세로 배율이 달라져 종마다
-       다르게 찌그러집니다. 알은 아직 픽셀 그림이라 전역 pixelated 가
-       필요하고, 캐릭터 칸만 여기서 풉니다. */
+       다르게 찌그러집니다. */
     width: 64px; height: 96px; flex: none; image-rendering: auto;
     /* 살짝 튕깁니다. 말할 때 몸이 안 움직이면 인형입니다. */
     animation: narrBob 2.8s ease-in-out infinite;
@@ -1261,7 +1265,7 @@
           <h2 id="s2h">알을 세 번 두드려 주세요</h2>
           <div class="hatchStage">
             <button class="tapEgg" id="tapEgg" type="button" aria-label="알 두드리기">
-              <canvas id="hatchCv" width="32" height="48"></canvas>
+              <canvas id="hatchCv" width="256" height="384"></canvas>
             </button>
             <!-- 원본 32×48 을 **정확히 4배**인 128×192 로 키웁니다. CSS 크기도
                  같은 128×192 라 브라우저가 다시 손댈 확대가 없습니다.
@@ -1587,70 +1591,384 @@
 /* ==================================================================
    Deskfit - 온보딩
 
-   그림은 전부 코드로 그립니다. 알은 오픈월드에서 쓰는 것과 **같은
-   함수**입니다 - 온보딩에서 고른 알과 캠퍼스 상점에 놓인 알이 다르게
-   생기면, 그 순간 두 화면이 다른 제품이 됩니다.
+   그림은 전부 코드로 그립니다. 알도 마찬가지인데, 오픈월드의 픽셀
+   알과는 **갈라졌습니다.** 랜딩·온보딩은 점토, 월드는 픽셀입니다 -
+   캐릭터가 먼저 그 길로 갔고(랜딩의 점토 렌더 vs 월드의 32×48 시트)
+   알만 픽셀로 남으면 깨는 순간 재질이 바뀝니다. 상점 알을 언제
+   옮길지는 월드 쪽 일입니다.
 
    새끼 넷은 여기서 처음 그렸습니다. 아직 걷는 스프라이트가 없어서
    정면 한 컷뿐이고, 월드에 들어가면 지금은 사람 스프라이트가 나옵니다.
    ================================================================== */
 
-const T = 16;
+const ART = {};
 
-/* ---------------- 픽셀 도구 ----------------
-   오픈월드와 같은 원시 함수입니다. 확대는 브라우저가 하고, 여기서는
-   1px 단위로만 찍습니다. */
-function canvasOf(w, h) {
-  const c = document.createElement('canvas');
-  c.width = w * T; c.height = h * T;
-  return c;
-}
-function px(g, x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
+/* ==================== 알 ====================
+   **알만 픽셀이었습니다.** 캐릭터는 이미 점토 렌더로 갔는데(랜딩의
+   `char-<종>-cut.webp`) 알은 32×48 픽셀 그림이라, 깨는 순간 재질이
+   바뀌었습니다. 알을 점토 쪽으로 옮깁니다.
 
-/** 정수 격자에 맞춘 원. arc() 로 그리면 가장자리가 반투명해져 확대할 때
-    흐려집니다. 행마다 폭을 계산해 채웁니다. */
-function disc(g, cx, cy, r, color) {
-  g.fillStyle = color;
-  for (let dy = -r; dy <= r; dy++) {
-    const w = Math.floor(Math.sqrt(Math.max(0, r * r - dy * dy)));
-    g.fillRect(Math.round(cx - w), Math.round(cy + dy), w * 2 + 1, 1);
-  }
-}
-function shadow(g, cx, y, rx, ry) {
-  g.fillStyle = 'rgba(0,0,0,.20)';
-  for (let dy = -ry; dy <= ry; dy++) {
-    const half = Math.floor(rx * Math.sqrt(1 - (dy * dy) / (ry * ry || 1)));
-    g.fillRect(cx - half, y + dy, half * 2 + 1, 1);
-  }
-}
-function rnd(x, y, s = 0) {
+   구워서 이미지로 넣지 않습니다 - **알 색이 가변이기 때문입니다.**
+   색 넷 × 금 네 단계면 열여섯 장이고, 색을 하나 고치면 다시 구워야
+   합니다. 그래서 코드로 그립니다. 에셋이 0장이라 단독본 용량도
+   그대로입니다.
+
+   방식은 **회전면 셰이딩**입니다. 화면의 한 점에서 그 높이의 반폭을
+   알면 표면 법선이 복원되고, 법선이 있으면 빛을 실제로 계산할 수
+   있습니다. 그라디언트를 눈대중으로 얹는 것과 여기서 갈립니다 -
+   무늬도 금도 같은 법선 위에 놓이므로 다 같이 둥글어집니다. */
+
+const hex = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+const smoothstep = (e0, e1, x) => { const t = clamp01((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+
+function hash2(x, y, s) {
   let h = (x * 374761393 + y * 668265263 + s * 2246822519) | 0;
   h = (h ^ (h >>> 13)) * 1274126177;
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
+/** 값 잡음. 격자에서 뽑아 풀어야 점토 결이 블록으로 안 보입니다. */
+function vnoise(x, y, s = 0) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi, s), b = hash2(xi + 1, yi, s), c = hash2(xi, yi + 1, s), d = hash2(xi + 1, yi + 1, s);
+  const t = a + (b - a) * u;
+  return t + ((c + (d - c) * u) - t) * v;
+}
 
-const ART = {};
+/* ---- 옆모습 ----
+     (1-t²)^P  P<0.5 라 양 끝이 정타원보다 뭉툭합니다 - 좁은 쪽도 둥급니다.
+     (1+K·t)   아래를 불려 가장 넓은 자리를 가운데보다 살짝 내립니다.
 
-/* ==================== 알 ====================
-   오픈월드 index.html 의 eggCanvas 를 그대로 옮겼습니다. 받침을 빼고
-   알만 씁니다 - 고르는 화면에서는 받침이 알보다 눈에 띕니다. */
-function eggCanvas(key, shell, shellLit, shellDark, spot) {
-  const c = canvasOf(2, 3), g = c.getContext('2d');
-  shadow(g, 16, 40, 11, 3);
-  /* 아래가 넓은 타원. 위아래 반지름을 다르게 줘야 공이 안 됩니다. */
-  for (let y = -15; y <= 13; y++) {
-    const t = y < 0 ? y / 15 : y / 13;
-    const w = Math.round(Math.sqrt(Math.max(0, 1 - t * t)) * (y < 0 ? 8.5 : 10));
-    if (!w) continue;
-    px(g, 16 - w, 24 + y, w * 2, 1, shellDark);
-    px(g, 16 - w + 1, 24 + y, w * 2 - 2, 1, shell);
+   **한 식이어야 합니다.** 예전 알은 위 반지름 8.5 와 아래 10 짜리
+   반타원 둘을 적도에서 이어 붙인 것이라 거기에 1.5 단위 턱이 있었습니다.
+   32px 픽셀에서는 계단에 묻혀 안 보였는데, 매끄럽게 그리는 순간 알
+   허리에 선반이 생깁니다. */
+const EGG = { cx: 16, cy: 24.2, top: -16.2, bot: 13.8, R: 10.3, K: 0.17, P: 0.44 };
+const EGG_SPAN = EGG.bot - EGG.top;
+const EGG_NORM = (() => {                       /* 가장 넓은 자리가 R 이 되도록 */
+  let m = 0;
+  for (let t = -1; t <= 1; t += 0.002) m = Math.max(m, Math.pow(1 - t * t, EGG.P) * (1 + EGG.K * t));
+  return m;
+})();
+function halfWidth(y) {
+  const t = (y - EGG.top) / EGG_SPAN * 2 - 1;
+  if (t <= -1 || t >= 1) return 0;
+  return Math.pow(1 - t * t, EGG.P) * (1 + EGG.K * t) * EGG.R / EGG_NORM;
+}
+function slopeAt(y) { const h = 0.02; return (halfWidth(y + h) - halfWidth(y - h)) / (2 * h); }
+
+/* 빛은 왼쪽 위 앞, 채움은 오른쪽 아래. 점토 렌더의 조명과 맞춥니다.
+   **정반사는 없습니다.** 점토는 매트합니다 - 흰 점을 찍으면 도자기가
+   됩니다. 예전 알의 `disc(g,11,17,2,'#FFFFFF')` 가 그것이었습니다. */
+const norm3 = (v) => { const n = Math.hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; };
+const KEYLIGHT = norm3([-0.46, -0.63, 0.63]);
+const FILLLIGHT = norm3([0.55, 0.38, 0.74]);
+
+/* 무늬. [세타, 높이, 반지름] - **표면 좌표**입니다. 화면에 원을 얹으면
+   무늬만 빛을 안 받아 스티커가 되는데, 표면에 놓으면 옆으로 갈수록
+   저절로 눌려서 무늬 자체가 알이 둥글다고 말해 줍니다. */
+const EGG_SPOTS = [
+  [-0.62, -10.2, 2.7], [0.80, -3.6, 3.0], [-0.18, 3.0, 3.5],
+  [0.34, 8.4, 2.3], [-1.02, 0.4, 2.0], [1.18, 4.8, 1.8], [0.10, -13.4, 1.4],
+];
+
+/* ---- 금 ----
+   마디마다 [x, y, 반폭]. 반폭이 0 으로 끝나야 금이 잦아듭니다.
+
+   **세 단계는 성격이 다릅니다.** 셋 다 비슷한 지그재그면 두드릴수록
+   선이 늘기만 하고, 무슨 일이 벌어지는지는 안 보입니다. 한 번 두드릴
+   때마다 다른 말을 하게 만듭니다.
+
+     1 무슨 일이 났다  - 위쪽에 짧고 얕은 한 줄. 가지 없음
+     2 퍼진다          - 그 끝에서 아래로 뻗고 좌우로 갈라짐
+     3 곧 열린다       - 허리를 가로지르는 **파단선**과 거기서 흘러내리는
+                        잔금 둘. 위쪽이 뚜껑처럼 떨어져 나갈 자리입니다
+
+   3단계의 가로선은 눈속임이 아닙니다 - 3D 에서 같은 높이의 둘레는 화면에
+   가로 직선으로 맺힙니다. 그래서 알을 반으로 자른 선이 아니라 **둘레를
+   도는 금**으로 읽힙니다. 양 끝 반폭을 0 으로 떨어뜨려 실루엣에 닿기 전에
+   잦아들게 했습니다 - 끝까지 그으면 알이 두 쪽으로 갈린 그림이 됩니다. */
+const EGG_SEAMS = [
+  /* 1 — 안에서 한 번 밀었다 */
+  [
+    [[0.6, -13.6, 0.06], [-0.9, -11.6, 0.30], [0.8, -9.6, 0.34], [-0.4, -7.6, 0.08]],
+  ],
+  /* 2 — 아래로 뻗고 갈라진다.
+     곁가지 둘을 **다른 높이에** 답니다. 한 점에서 같이 뻗으면 별표가
+     되고, 어긋나야 금이 번지는 그림이 됩니다. */
+  [
+    [[-0.4, -7.6, 0.12], [1.6, -5.2, 0.42], [-0.8, -2.4, 0.48], [1.6, 0.6, 0.44], [0.0, 3.8, 0.12]],
+    [[1.6, -5.2, 0.24], [4.0, -5.8, 0.15], [5.4, -4.6, 0.03]],
+    [[-0.8, -2.4, 0.24], [-3.4, -1.6, 0.15], [-4.8, -2.6, 0.03]],
+  ],
+  /* 3 — 허리가 돈다. 곧 뚜껑이 열린다.
+     가로선은 가장 넓은 자리 근처에 둡니다. 위로 올리면 2단계가 몰려 있는
+     자리와 겹쳐 뭉치고, 여기 두면 위쪽이 뚜껑으로 읽힙니다. 잔금 둘은
+     **아래로** 흘립니다 - 2단계까지 손대지 않은 구역입니다. */
+  [
+    /* 가로선이 **가장 굵습니다.** 마지막에 난 금이 제일 가늘면 껍질이
+       버티다 지는 순서가 뒤집힙니다. 양 끝은 0 이 아니라 조금 남겨
+       실제로 보이는 데까지 뻗게 했습니다 - 0 으로 떨어뜨리면 눈에
+       닿기 전에 사라져 선이 짧아 보입니다. */
+    [[-6.9, 2.6, 0.10], [-4.6, 3.9, 0.50], [-1.8, 2.5, 0.62], [1.0, 4.1, 0.60],
+     [3.8, 2.7, 0.56], [6.2, 4.0, 0.36], [7.1, 3.1, 0.08]],
+    [[-4.6, 3.9, 0.26], [-5.4, 6.6, 0.18], [-4.0, 9.0, 0.03]],
+    [[3.8, 2.7, 0.26], [4.8, 5.8, 0.17], [3.6, 8.6, 0.03]],
+  ],
+];
+
+/** 활성 마디를 선분 목록으로 폅니다. 픽셀마다 다시 펴면 낭비입니다.
+    **먼저 난 금은 뒤로 갈수록 벌어집니다** - 선이 늘기만 하면 쌓이는
+    그림이고, 있던 금이 같이 벌어져야 껍질이 버티다 지는 그림이 됩니다. */
+function crackSegments(level) {
+  const segs = [];
+  for (let k = 0; k < Math.min(level, EGG_SEAMS.length); k++) {
+    const grow = 1 + 0.18 * (level - 1 - k);
+    EGG_SEAMS[k].forEach((path) => {
+      for (let i = 0; i < path.length - 1; i++) {
+        const [x0, y0] = path[i], [x1, y1] = path[i + 1];
+        const r0 = path[i][2] * grow, r1 = path[i + 1][2] * grow;
+        const dx = x1 - x0, dy = y1 - y0;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1e-6;
+        segs.push({
+          x0, y0, dx, dy, len2: len * len, r0, r1,
+          tx: dx / len, ty: dy / len,          /* 픽셀 루프 안에서 매번 재지 않도록 */
+          lo: Math.min(y0, y1) - Math.max(r0, r1) - 0.6,
+          hi: Math.max(y0, y1) + Math.max(r0, r1) + 0.6,
+        });
+      }
+    });
   }
-  disc(g, 12, 18, 4, shellLit);
-  disc(g, 11, 17, 2, '#FFFFFF');
-  /* 무늬 - 종마다 다릅니다. 이게 없으면 알 넷이 색만 다른 같은 알입니다. */
-  g.fillStyle = spot;
-  [[15, 13, 4, 3], [10, 22, 5, 4], [19, 19, 4, 5], [14, 30, 6, 3], [21, 28, 3, 3]]
-    .forEach(([x, y, w, h]) => g.fillRect(x, y, w, h));
+  return segs;
+}
+
+/* 1 이 32×48. 8 이면 256×384 이고, 가장 크게 쓰는 자리(124×186)에
+   2배로 넉넉합니다. 알 넷에 21ms 라 첫 화면에서 안 걸립니다. */
+const EGG_SCALE = 8;
+
+/**
+ * 알 한 알을 그립니다.
+ * @param pal   [겉, 밝은면, 그늘, 무늬]
+ * @param crack 0~3. 두드린 횟수
+ */
+function eggClay(pal, crack = 0, scale = EGG_SCALE) {
+  const [cShell, cLit, cDark, cSpot] = pal.map(hex);
+  /* 그늘은 어둡기만 한 게 아니라 **차가워집니다.** 점토 렌더에서
+     그늘이 검정이 아니라 청록으로 가는 것이 이 재질의 핵심입니다 -
+     검정 쪽으로 내리면 점토가 아니라 고무가 됩니다. */
+  const cCool = mix(cDark, [86, 124, 136], 0.34);
+  const cWarm = mix(cLit, [255, 246, 226], 0.30);
+  const cInner = mix(cCool, [40, 46, 50], 0.62);      /* 벌어진 틈의 속 */
+
+  const W = 32 * scale, H = 48 * scale;
+  const out = document.createElement('canvas');
+  out.width = W; out.height = H;
+  const og = out.getContext('2d');
+
+  /* `putImageData` 는 합성이 아니라 **덮어쓰기**입니다. 그림자를 먼저
+     깔면 알을 넣는 순간 통째로 지워집니다. 그래서 알을 먼저 넣고,
+     그림자는 `destination-over` 로 **뒤에** 깝니다 - 캔버스를 하나 더
+     만들어 복사하던 것을 없앴습니다. */
+  const img = og.createImageData(W, H);
+  const d = img.data;
+
+  const SUB = 3;
+  const segs = crack ? crackSegments(crack) : null;
+  const rowSpots = [], rowSegs = [];
+
+  for (let py = 0; py < H; py++) {
+    /* --- 행 단위로 한 번만. 픽셀마다 반폭을 다시 재면 다섯 배 느립니다 --- */
+    const ey = (py + 0.5) / scale - EGG.cy;
+    const w = halfWidth(ey);
+
+    /* 가로 덮임은 **정확히** 구합니다 - 행마다 좌우 끝을 알기 때문입니다.
+       세로만 셋으로 나눠 위아래 꼭지의 계단을 없앱니다.
+
+       배열이 아니라 숫자 여섯 개로 폅니다. 픽셀마다 배열을 훑고 클로저를
+       부르면 그것만으로 몇 배가 됩니다 - 여기는 한 알에 십만 번 도는
+       자리입니다. */
+    let aL = 0, aR = -1, bL = 0, bR = -1, cL = 0, cR = -1, any = false;
+    for (let s = 0; s < SUB; s++) {
+      const sy = (py + (s + 0.5) / SUB) / scale - EGG.cy;
+      const sw = halfWidth(sy);
+      if (sw <= 0) continue;
+      const l = (EGG.cx - sw) * scale, r = (EGG.cx + sw) * scale;
+      if (s === 0) { aL = l; aR = r; } else if (s === 1) { bL = l; bR = r; } else { cL = l; cR = r; }
+      any = true;
+    }
+    if (!any) continue;
+
+    let lo = W, hi = 0;
+    if (aR > aL) { lo = Math.min(lo, aL); hi = Math.max(hi, aR); }
+    if (bR > bL) { lo = Math.min(lo, bL); hi = Math.max(hi, bR); }
+    if (cR > cL) { lo = Math.min(lo, cL); hi = Math.max(hi, cR); }
+    lo = Math.max(0, Math.floor(lo)); hi = Math.min(W, Math.ceil(hi));
+
+    if (w <= 0) {                                    /* 꼭지 한두 줄 */
+      for (let pxi = lo; pxi < hi; pxi++) {
+        const x1 = pxi + 1;
+        let cov = 0;
+        if (aR > aL) cov += clamp01(Math.min(aR, x1) - Math.max(aL, pxi));
+        if (bR > bL) cov += clamp01(Math.min(bR, x1) - Math.max(bL, pxi));
+        if (cR > cL) cov += clamp01(Math.min(cR, x1) - Math.max(cL, pxi));
+        cov /= SUB;
+        if (cov <= 0.002) continue;
+        const o = (py * W + pxi) * 4;
+        d[o] = cCool[0]; d[o + 1] = cCool[1]; d[o + 2] = cCool[2]; d[o + 3] = cov * 255;
+      }
+      continue;
+    }
+
+    const sl = slopeAt(ey);
+    const ao = 1 - smoothstep(3, 13.5, ey) * 0.22;   /* 바닥에서 먹는 그늘 */
+    const invW = 1 / w;
+
+    rowSpots.length = 0;
+    for (const sp of EGG_SPOTS) {
+      if (Math.cos(sp[0]) <= 0.02) continue;         /* 뒤로 돌아간 무늬 */
+      if (Math.abs(ey - sp[1]) < sp[2]) rowSpots.push(sp);
+    }
+    rowSegs.length = 0;
+    if (segs) for (const sg of segs) if (ey >= sg.lo && ey <= sg.hi) rowSegs.push(sg);
+
+    for (let pxi = lo; pxi < hi; pxi++) {
+      const x1 = pxi + 1;
+      let cov = 0;
+      if (aR > aL) cov += clamp01(Math.min(aR, x1) - Math.max(aL, pxi));
+      if (bR > bL) cov += clamp01(Math.min(bR, x1) - Math.max(bL, pxi));
+      if (cR > cL) cov += clamp01(Math.min(cR, x1) - Math.max(cL, pxi));
+      cov /= SUB;
+      if (cov <= 0.002) continue;
+
+      const ex = (pxi + 0.5) / scale - EGG.cx;
+      const u = ex * invW < -1 ? -1 : ex * invW > 1 ? 1 : ex * invW;
+      const nz = Math.sqrt(1 - u * u);
+      let nx = u, ny = -sl, nzz = nz;
+
+      /* ---- 금은 얹지 않고 **팝니다** ----
+         가장 가까운 금까지의 거리로 홈의 기울기를 구해 법선을 꺾습니다.
+         그러면 한쪽 벽이 빛을 향하고 반대쪽이 등지는 일이 저절로
+         일어납니다 - 밝은 선을 어디에 그을지 정할 필요가 없고, 빛이
+         바뀌어도 계속 맞습니다. 선을 나란히 그으면 금이 아니라 지퍼가
+         됩니다. */
+      let grooveDepth = 0;
+      if (rowSegs.length) {
+        let best = 1e9, bestSign = 0, bestTx = 0, bestTy = 0, bestR = 0;
+        for (const sg of rowSegs) {
+          const rx = ex - sg.x0, ry = ey - sg.y0;
+          let t = (rx * sg.dx + ry * sg.dy) / sg.len2;
+          t = t < 0 ? 0 : t > 1 ? 1 : t;
+          const qx = rx - sg.dx * t, qy = ry - sg.dy * t;
+          const dist = Math.sqrt(qx * qx + qy * qy);
+          const r = sg.r0 + (sg.r1 - sg.r0) * t;
+          if (dist - r < best - bestR) {
+            best = dist; bestR = r;
+            bestSign = (sg.dx * ry - sg.dy * rx) >= 0 ? 1 : -1;   /* 금의 어느 쪽 벽인가 */
+            bestTx = sg.tx; bestTy = sg.ty;
+          }
+        }
+        /* 반폭을 잡음으로 흔듭니다 - 굵기가 고르면 그려 넣은 티가 납니다. */
+        const rr = bestR * (0.82 + 0.36 * vnoise(ex * 1.6, ey * 1.6, 11));
+        if (rr > 0.02 && best < rr) {
+          const t = best / rr;                       /* 0 이 홈 바닥 */
+          grooveDepth = 1 - t * t;
+          const wall = 2 * t * (1 - t * t * 0.2) * 2.6 * bestSign;
+          nx += -bestTy * wall;                      /* 금의 진행 방향에 수직으로 꺾습니다 */
+          ny += bestTx * wall;
+        }
+      }
+
+      /* `Math.hypot` 은 안 씁니다. 픽셀마다 세 번씩 부르면 그것만으로
+         알 넷이 128ms 에서 안 내려갑니다 - 오버플로 보호가 필요 없는
+         자리라 sqrt 로 충분합니다. */
+      const nl = Math.sqrt(nx * nx + ny * ny + nzz * nzz) || 1;
+      nx /= nl; ny /= nl; nzz /= nl;
+
+      /* ---- 색은 **스칼라로** 굴립니다 ----
+         `mix()` 는 배열을 새로 만들어 돌려줍니다. 픽셀마다 여섯 번이면
+         알 한 알에 60만 번이고, 그것만으로 22ms 중 대부분을 씁니다.
+         여기서는 r·g·b 를 따로 들고 다닙니다. */
+
+      /* 무늬는 빛 계산 **전에** 바탕에 섞습니다. */
+      let br = cShell[0], bgc = cShell[1], bb = cShell[2];
+      if (rowSpots.length) {
+        const th = Math.asin(u);
+        for (const sp of rowSpots) {
+          const dx = (th - sp[0]) * EGG.R * 0.92, dy = ey - sp[1];
+          const k = (1 - smoothstep(sp[2] * 0.72, sp[2], Math.sqrt(dx * dx + dy * dy))) * 0.62;
+          if (k > 0) {
+            br += (cSpot[0] - br) * k; bgc += (cSpot[1] - bgc) * k; bb += (cSpot[2] - bb) * k;
+          }
+        }
+      }
+      /* 홈 바닥은 껍질이 아니라 **속**입니다. */
+      if (grooveDepth > 0) {
+        const k = smoothstep(0.45, 1, grooveDepth) * 0.85;
+        br += (cInner[0] - br) * k; bgc += (cInner[1] - bgc) * k; bb += (cInner[2] - bb) * k;
+      }
+
+      const lam = nx * KEYLIGHT[0] + ny * KEYLIGHT[1] + nzz * KEYLIGHT[2];
+      /* 램버트를 그대로 쓰면 점토가 플라스틱이 됩니다. 반쯤 감싸서
+         명암 경계를 넓게 풉니다. */
+      const key = smoothstep(-0.58, 1.0, lam);
+      const fill = Math.max(0, nx * FILLLIGHT[0] + ny * FILLLIGHT[1] + nzz * FILLLIGHT[2]) * 0.30;
+
+      /* 겹친 mix 는 접힙니다.
+           key<0.5 : mix(mix(base,cCool,.85), base, t)  =  base + (cCool-base)·.85·(1-t)
+           key≥0.5 : mix(base, mix(base,cWarm,.80), t)  =  base + (cWarm-base)·.80·t     */
+      let cr, cg, cb;
+      if (key < 0.5) {
+        const f = 0.85 * (1 - key / 0.5);
+        cr = br + (cCool[0] - br) * f; cg = bgc + (cCool[1] - bgc) * f; cb = bb + (cCool[2] - bb) * f;
+      } else {
+        const f = 0.80 * ((key - 0.5) / 0.5);
+        cr = br + (cWarm[0] - br) * f; cg = bgc + (cWarm[1] - bgc) * f; cb = bb + (cWarm[2] - bb) * f;
+      }
+      const f2 = fill * 0.42;
+      cr += (cWarm[0] - cr) * f2; cg += (cWarm[1] - cg) * f2; cb += (cWarm[2] - cb) * f2;
+
+      /* 왼쪽 아래 반사광 - 그늘이 납작해지지 않게 아주 약하게 띄웁니다. */
+      const bounce = Math.max(0, -nx * 0.7 + ny * 0.5) * (1 - key) * 0.18;
+      if (bounce > 0) {
+        cr += (cLit[0] - cr) * bounce; cg += (cLit[1] - cg) * bounce; cb += (cLit[2] - cb) * bounce;
+      }
+
+      const edge = 0.88 + 0.12 * nz;
+      const grain = 1 + (vnoise(pxi / (scale * 0.35), py / (scale * 0.35), 7) - 0.5) * 0.030;
+      const k2 = ao * edge * grain * (1 - grooveDepth * 0.34);   /* 홈 안은 빛이 덜 듭니다 */
+
+      cr *= k2; cg *= k2; cb *= k2;
+      const o = (py * W + pxi) * 4;
+      d[o]     = cr < 0 ? 0 : cr > 255 ? 255 : cr;
+      d[o + 1] = cg < 0 ? 0 : cg > 255 ? 255 : cg;
+      d[o + 2] = cb < 0 ? 0 : cb > 255 ? 255 : cb;
+      d[o + 3] = cov * 255;
+    }
+  }
+  og.putImageData(img, 0, 0);
+
+  /* 바닥 그림자. `filter: blur()` 로 하면 반지름이 커질수록 비쌉니다 -
+     알 넷에 114ms 를 썼습니다. 방사형 그라디언트를 눌러 그리면 같은
+     그림이고 훨씬 쌉니다. */
+  og.save();
+  og.globalCompositeOperation = 'destination-over';
+  og.translate((EGG.cx + 1.1) * scale, (EGG.cy + EGG.bot + 1.6) * scale);
+  og.scale(1, 0.26);
+  const gr = og.createRadialGradient(0, 0, 0, 0, 0, 10.4 * scale);
+  gr.addColorStop(0, 'rgba(72, 82, 79, .30)');
+  gr.addColorStop(0.45, 'rgba(72, 82, 79, .17)');
+  gr.addColorStop(1, 'rgba(72, 82, 79, 0)');
+  og.fillStyle = gr;
+  og.beginPath(); og.arc(0, 0, 10.4 * scale, 0, 7); og.fill();
+  og.restore();
+  return out;
+}
+
+/** 그려서 ART 에 담아 둡니다. 한 세션에 알 넷 + 금 셋, 모두 일곱 장입니다. */
+function eggCanvas(key, pal) {
+  const c = eggClay(pal, 0);
   ART[key] = c;
   return c;
 }
@@ -1724,13 +2042,15 @@ const iga = (w) => josa(w, '이가');
 const eulreul = (w) => josa(w, '을를');
 
 /* ==================== 종 ==================== */
-/* shell 은 **캐릭터** 색, eggShell 은 **알** 색입니다. 둘을 갈라 놓은
-   것이 이 화면의 전부입니다 - 알에 캐릭터 색을 입히면 초록 알에 거북이가
-   든 게 뻔히 보이고, 그러면 고르는 것이 아니라 답을 아는 것이 됩니다.
-   깨야 안다는 약속이 첫 화면에서 깨집니다.
+/* **알은 종을 모릅니다.** 알은 번호와 색만 갖고, 누가 나올지는 껍질이
+   깨지는 순간 정해집니다. 예전에는 자리로 짝을 고정해 두었는데 - 1번
+   알은 늘 거북이 - 그러면 "2번이 기린이래" 라는 정보가 사람들 사이에
+   돌고, 그 순간 고르는 게 아니라 답을 아는 것이 됩니다.
 
-   짝은 자리로 고정입니다. 무작위로 돌리면 새로고침해서 다시 뽑게 되고,
-   그때부터 이건 선택이 아니라 뽑기입니다. */
+   무작위의 대가는 **새로고침해서 다시 뽑는 것**입니다. 그래서 한 번만
+   뽑습니다(`hatchSpecies()`) - 뽑은 값은 저장에 박히고 다시 안 뽑으므로,
+   마음에 안 든다고 되돌아가도 같은 친구가 나옵니다. 알을 다시 골라도
+   마찬가지입니다. 다시 뽑으려면 가입을 통째로 버려야 합니다. */
 /* 네 종.
    ------------------------------------------------------------------
    **여덟이었다가 넷으로 줄였습니다.** 기준은 취향이 아니라 **점토 렌더가
@@ -1754,84 +2074,66 @@ const SPECIES = [
   { id: 'penguin',  name: '펭귄',     line: '허리 펴고 서는 건 원래 잘해.' },
   { id: 'frog',     name: '개구리',   line: '한 번에 멀리 가는 대신 자주 멈춰.' },
 ];
-SPECIES.forEach((sp) => { sp.egg = 'egg_' + sp.id; sp.pet = 'pet_' + sp.id; });
+SPECIES.forEach((sp) => { sp.pet = 'pet_' + sp.id; });
 
-/* ---- 알 색 스무 가지 ----
-   **알 색은 종 색이 아니고, 자리에도 고정되지 않습니다.** 색이 종에
-   묶이면 "노란 알은 기린" 이라는 정보가 사람들 사이에 돌고, 그 순간
-   고르는 게 아니라 답을 아는 것이 됩니다. 그래서 스무 가지를 두고
-   **가입할 때마다 종 수만큼 새로 뽑아** 섞어 붙입니다.
-   [겉, 밝은면, 그늘, 무늬] 네 값이 한 벌입니다. */
-const EGG_PALETTES = [
-  ['#F3E3C0', '#FFF7E4', '#D6BE93', '#C4A97C'],   // 모래
-  ['#C3DEF4', '#E9F4FD', '#8FB4D6', '#7BA2C6'],   // 하늘
-  ['#DDCCF1', '#F2EAFB', '#B49CD8', '#A288CA'],   // 라벤더
-  ['#F8D3C2', '#FFEEE6', '#DFA791', '#CD9480'],   // 복숭아
-  ['#C9E7CE', '#E8F7EB', '#96C6A0', '#83B58E'],   // 새싹
-  ['#F6D9E4', '#FFEFF5', '#D9A5BA', '#C892A8'],   // 벚꽃
-  ['#CFE9E6', '#EAF8F6', '#9CC9C4', '#88B7B2'],   // 민트
-  ['#F0E1B8', '#FDF5DE', '#CDB783', '#BAA471'],   // 겨자
-  ['#D8D3EC', '#EFECF9', '#A9A2CE', '#968FBE'],   // 안개보라
-  ['#F5CFC0', '#FFEAE1', '#D29E8B', '#C08B78'],   // 살구
-  ['#C6DCEF', '#E6F1FA', '#93B4D0', '#7FA1BF'],   // 물빛
-  ['#E4E0CE', '#F6F4E8', '#B6B096', '#A39D82'],   // 아마
-  ['#EFD1DE', '#FBEDF3', '#C79FB1', '#B58C9F'],   // 자두
-  ['#D1E8DA', '#EDF8F1', '#9FC8B2', '#8BB69F'],   // 세이지
-  ['#F2DCC6', '#FDF2E7', '#CBAE90', '#B99B7C'],   // 캐러멜
-  ['#CBD9F0', '#E9EFFB', '#98AAD1', '#8497C0'],   // 코발트연
-  ['#EAD9F0', '#F7EEFA', '#BFA2CB', '#AD8FBA'],   // 오키드
-  ['#DCE8C6', '#F0F6E4', '#AEC094', '#9BAE80'],   // 올리브연
-  ['#F7D8D3', '#FFEFEC', '#D3A49D', '#C1918A'],   // 산호
-  ['#CFDDE0', '#EBF3F5', '#9EB6BB', '#8BA3A8'],   // 흐린하늘
-];
-
-/* 뽑은 결과는 저장해 둡니다. 새로고침할 때마다 다시 뽑으면 고른 알의
-   색이 바뀌고, 그러면 "내가 고른 그 알" 이 사라집니다. */
-function pickEggColors() {
-  if (Array.isArray(S.eggColors) && S.eggColors.length === SPECIES.length) return S.eggColors;
-  const idx = EGG_PALETTES.map((_, i) => i);
-  for (let i = idx.length - 1; i > 0; i--) {         // 피셔–예이츠
-    const j = Math.floor(Math.random() * (i + 1));
-    [idx[i], idx[j]] = [idx[j], idx[i]];
+/** 껍질이 깨지는 순간 한 번만 뽑습니다. 이미 뽑았으면 그대로 둡니다 -
+    이 한 줄이 "다시 뽑기" 를 막는 전부입니다. */
+function hatchSpecies() {
+  if (!S.species) {
+    S.species = SPECIES[Math.floor(Math.random() * SPECIES.length)].id;
+    save();
   }
-  S.eggColors = idx.slice(0, SPECIES.length);
-  save();
-  return S.eggColors;
+  return S.species;
 }
 
-/* 금 간 알 - 두드릴수록 자랍니다. 껍질을 새로 그리지 않고 원본 위에
-   덧그려, 금이 껍질과 같은 색 계열로 갈라지게 합니다. */
-function crackedEgg(sp, level) {
-  const base = ART[sp.egg];
-  const c = document.createElement('canvas');
-  c.width = base.width; c.height = base.height;
-  const g = c.getContext('2d');
-  g.drawImage(base, 0, 0);
-  if (!level) return c;
-  /* 금도 **알** 색으로 갈라집니다. 캐릭터 색으로 그으면 금이 갈 때마다
-     안에 누가 있는지가 새어 나갑니다. */
-  /* 이번 가입에 그 종에게 배정된 알 색에서 그늘값을 씁니다. 종에 색을
-     붙박아 두지 않으므로 여기서도 배정표를 봅니다. */
-  const dark = EGG_PALETTES[pickEggColors()[SPECIES.indexOf(sp)]][2];
-  const seams = [
-    [[16, 10], [13, 15], [17, 18], [14, 23]],
-    [[16, 10], [20, 14], [17, 18], [21, 22], [18, 27]],
-    [[9, 20], [13, 22], [11, 26], [15, 28], [12, 33]],
-  ];
-  for (let k = 0; k < Math.min(level, seams.length); k++) {
-    const path = seams[k];
-    g.fillStyle = dark;
-    for (let i = 0; i < path.length - 1; i++) {
-      const [x0, y0] = path[i], [x1, y1] = path[i + 1];
-      const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
-      for (let t = 0; t <= steps; t++) {
-        const x = Math.round(x0 + (x1 - x0) * (t / steps));
-        const y = Math.round(y0 + (y1 - y0) * (t / steps));
-        g.fillRect(x, y, 2, 2);
-      }
-    }
-  }
+/* ---- 알 넷의 색 ----
+   **자리마다 고정입니다.** 예전에는 스무 가지에서 가입할 때마다 넷을
+   뽑아 섞었는데, 그건 색으로 종이 새는 것을 막으려는 장치였습니다.
+   종이 부화 시점에 정해지는 지금은 샐 정보가 아예 없습니다.
+
+   무작위를 둘 겹치면 고른 알에 아무 정체성이 안 남습니다 - 색도 매번
+   바뀌고 속도 매번 바뀌면 "내가 고른 그 알" 이 사라집니다. 놀라움은
+   캐릭터 쪽에만 두고, 색은 **"나는 파란 알을 골랐어"** 가 성립하도록
+   고정합니다. 뽑기의 또 다른 문제도 같이 없어집니다 - 스무 가지에서
+   넷을 뽑으면 하늘·물빛·코발트연·흐린하늘이 한 화면에 걸려 넷이 거의
+   같은 파랑으로 나오는 판이 실제로 나옵니다.
+
+   [겉, 밝은면, 그늘, 무늬] 네 값이 한 벌입니다. */
+const EGG_COLORS = [
+  ['#C3DEF4', '#E9F4FD', '#8FB4D6', '#7BA2C6'],   // 하늘
+  ['#F3E3C0', '#FFF7E4', '#D6BE93', '#C4A97C'],   // 모래
+  ['#F6D9E4', '#FFEFF5', '#D9A5BA', '#C892A8'],   // 벚꽃
+  ['#C9E7CE', '#E8F7EB', '#96C6A0', '#83B58E'],   // 새싹
+];
+const eggKey = (i) => 'egg_' + i;
+
+/* 금 간 알 - 두드릴수록 자랍니다. **알 번호로 찾습니다.** 종을 받던
+   자리인데, 이제 알은 안에 누가 있는지 모릅니다.
+
+   껍질 위에 선을 덧긋지 않고 통째로 다시 그립니다. 금이 표면에 파인
+   홈으로 계산되기 때문입니다 - 다 그린 뒤에는 홈을 팔 수 없습니다.
+
+   그래서 **미리 구워 둡니다.** 한 판에 29ms 인데 두드리는 순간에 그리면
+   그 프레임을 놓칩니다. 고른 직후 한가한 틈에 1·2·3 단계를 만들어 두면
+   두드릴 때는 꺼내 쓰기만 합니다. 한 세션에 많아야 일곱 장입니다. */
+const eggCache = new Map();
+function crackedEgg(eggIndex, level) {
+  if (!level) return ART[eggKey(eggIndex)] || eggClay(EGG_COLORS[eggIndex] || EGG_COLORS[0], 0);
+  const k = eggIndex + ':' + level;
+  let c = eggCache.get(k);
+  if (!c) { c = eggClay(EGG_COLORS[eggIndex] || EGG_COLORS[0], level); eggCache.set(k, c); }
   return c;
+}
+/** 두드리기 전에 금 세 단계를 한가할 때 만들어 둡니다.
+    한가한 틈이 안 오면(창이 가려져 있거나 계속 바쁘면) 기다리다
+    두드리는 순간에 그리게 됩니다. `timeout` 을 걸어 늦어도 그 안에는
+    굽도록 합니다. */
+function warmCracks(i) {
+  if (i == null) return;
+  const idle = window.requestIdleCallback
+    ? (f) => requestIdleCallback(f, { timeout: 400 })
+    : (f) => setTimeout(f, 16);
+  [1, 2, 3].forEach((lv) => idle(() => crackedEgg(i, lv)));
 }
 
 /* ==================== 상태 ====================
@@ -1842,7 +2144,9 @@ const S = Object.assign(
   /* camera: null(아직 안 물음) · 'on'(허용) · 'off'(거절·건너뜀).
      허용 여부만 적습니다. 권한 자체는 브라우저가 들고 있고, 우리가
      기억해 봐야 사용자가 설정에서 바꾸면 거짓말이 됩니다. */
-  { step: 1, species: null, nick: '', email: '', school: '', verified: false, cracks: 0, camera: null },
+  /* egg 는 **고른 알의 번호**, species 는 **깨고 나온 종**입니다.
+     예전에는 알을 고르는 순간 종이 정해졌으므로 둘이 한 값이었습니다. */
+  { step: 1, egg: null, species: null, nick: '', email: '', school: '', verified: false, cracks: 0, camera: null },
   JSON.parse(localStorage.getItem(KEY) || '{}')
 );
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* 무시 */ } };
@@ -1855,12 +2159,21 @@ const spec = () => SPECIES.find((s) => s.id === S.species) || null;
    갇힙니다. 에러도 안 납니다 — 그리는 함수들이 전부 null 을 조용히
    넘기게 되어 있어서요.
 
-   고른 것을 지우고 1장으로 되돌립니다. 뽑아 둔 알 색도 종 수가 달라
-   못 쓰므로 같이 버립니다. */
+   고른 것을 지우고 1장으로 되돌립니다. */
 if (S.species && !spec()) {
-  S.species = null; S.cracks = 0; S.eggColors = null; S.step = 1;
+  S.species = null; S.egg = null; S.cracks = 0; S.step = 1;
   save();
 }
+
+/* 알과 종을 가르기 전에 저장해 둔 사람. `egg` 가 없고 `species` 만
+   있습니다. 그때는 자리와 종이 같은 번호였으므로 그 번호를 알로
+   씁니다 - 고른 알의 색이 그대로 유지됩니다.
+   `eggColors` 는 이제 안 쓰므로 버립니다. */
+if (S.species && S.egg == null) {
+  const i = SPECIES.findIndex((s) => s.id === S.species);
+  S.egg = i < 0 ? 0 : i;
+}
+if ('eggColors' in S) { delete S.eggColors; save(); }
 
 const $ = (id) => document.getElementById(id);
 const STEPS = 7;
@@ -1966,7 +2279,9 @@ function openFlow() {
     S.camera ? 7 :            // 카메라까지 답했으면 마지막
     S.verified ? 6 :          // 인증했으면 카메라
     S.nick ? 4 :              // 이름을 지었으면 여기서 하는 일
-    S.species ? (S.cracks >= 3 ? 3 : 2) : 1,
+    /* 알을 골랐으면 부화, 다 깼으면 그 다음. **알**을 봅니다 - 종은
+       깨야 생기므로, 종으로 재면 고르기만 한 사람이 1장에 갇힙니다. */
+    S.egg != null ? (S.cracks >= 3 ? 3 : 2) : 1,
     true
   );
 }
@@ -1983,13 +2298,10 @@ $('back').addEventListener('click', () => {
 
 /* ==================== 1. 알 고르기 ==================== */
 /* ---- 알 넷 ----
-   **알 색은 종 색이 아닙니다.** 캐릭터 껍데기 색을 그대로 쓰면 초록 알에
-   거북이가 든 게 뻔히 보이고, 그러면 고르는 게 아니라 답을 아는 것이
-   됩니다. 알에게 자기 색을 줍니다.
-
-   짝은 자리로 고정합니다 - 같은 알을 고르면 늘 같은 친구가 나옵니다.
-   무작위로 돌리면 새로고침해서 다시 뽑게 되고, 그때부터 이건 선택이
-   아니라 뽑기입니다.
+   **알은 종을 모릅니다.** 여기서 고르는 것은 알이지 캐릭터가 아니고,
+   누가 나올지는 껍질이 깨질 때 정해집니다. 그래서 이 화면에는 종 이름도,
+   종을 가리키는 색도 없습니다 - 있으면 고르는 게 아니라 답을 아는
+   것이 됩니다.
 
    fx/fy 는 안 골렸을 때 밀려나는 방향입니다. 집 자리에서 바깥쪽으로
    더 나가야 고른 알과 안 겹칩니다. */
@@ -2018,12 +2330,8 @@ function paintEggs() {
   stage.textContent = '';
   stage.classList.remove('picked');
 
-  /* 이번 가입에 쓸 색. 스무 가지에서 뽑아 종 순서대로 붙입니다 —
-     종과 색이 묶이지 않으므로 "무슨 색이면 무슨 캐릭터" 가 성립하지
-     않습니다. 뽑은 결과는 저장돼 새로고침해도 그대로입니다. */
-  const colors = pickEggColors();
-  SPECIES.forEach((sp, i) => {
-    eggCanvas(sp.egg, ...EGG_PALETTES[colors[i]]);
+  EGG_COLORS.forEach((pal, i) => {
+    eggCanvas(eggKey(i), pal);
     const slot = EGG_SLOTS[i];
     const el = document.createElement('div');
     el.className = 'eggSlot';
@@ -2037,14 +2345,18 @@ function paintEggs() {
     /* 종 이름은 없습니다. 이름이 보이면 고르는 게 아니라 검색이 됩니다. */
     btn.setAttribute('aria-label', (i + 1) + '번 알 고르기');
 
+    /* ART 의 캔버스를 그대로 붙이면 노드가 옮겨 다닙니다. 같은 크기로
+       한 장 떠서 넣습니다. */
     const c = document.createElement('canvas');
-    c.width = 32; c.height = 48;
-    c.getContext('2d').drawImage(ART[sp.egg], 0, 0);
+    c.width = ART[eggKey(i)].width; c.height = ART[eggKey(i)].height;
+    c.getContext('2d').drawImage(ART[eggKey(i)], 0, 0);
     btn.appendChild(c);
 
     btn.addEventListener('click', () => {
-      S.species = sp.id; S.cracks = 0; save();
+      /* 종은 여기서 안 정합니다. 알만 고릅니다. */
+      S.egg = i; S.cracks = 0; save();
       pickEgg(i);
+      warmCracks(i);          /* 다음 화면에서 두드릴 판을 미리 굽습니다 */
       /* 고르고 나면 다음 버튼이 할 일입니다. 초점을 옮기면 키보드로
          온 사람이 알 사이를 헤매지 않습니다. */
       setTimeout(() => $('toHatch').focus({ preventScroll: true }), 420);
@@ -2055,7 +2367,7 @@ function paintEggs() {
   });
 
   /* 이어서 하기로 들어온 사람은 고른 알이 이미 가운데 있어야 합니다. */
-  if (S.species) pickEgg(SPECIES.findIndex((s) => s.id === S.species));
+  if (S.egg != null) pickEgg(S.egg);
   else unpickEgg();
 }
 
@@ -2074,7 +2386,10 @@ function unpickEgg() {
   const stage = $('eggStage');
   stage.classList.remove('picked');
   [...stage.querySelectorAll('.eggSlot')].forEach((s) => { s.dataset.on = '0'; });
-  S.species = null; S.cracks = 0; save();
+  /* **`species` 는 안 지웁니다.** 한 번 깨고 나온 친구는 그대로입니다 -
+     여기서 지우면 되돌아와 다시 깨는 것으로 다시 뽑을 수 있게 됩니다.
+     지우는 것은 고른 알과 두드린 횟수뿐입니다. */
+  S.egg = null; S.cracks = 0; save();
   $('toHatch').disabled = true;
   $('rePick').hidden = true;
 }
@@ -2103,19 +2418,19 @@ function resetHatch() {
   $('tapHint').dataset.done = '';
   $('s2h').textContent = '알을 세 번 두드려 주세요';
   drawHatchEgg();
+  warmCracks(S.egg);   /* 바로가기로 뛰어든 사람도 미리 구워 둡니다 */
 }
 function drawHatchEgg() {
-  const sp = spec(); if (!sp) return;
+  if (S.egg == null) return;
   const cv = $('hatchCv'), g = cv.getContext('2d');
   g.clearRect(0, 0, cv.width, cv.height);
-  g.drawImage(crackedEgg(sp, S.cracks), 0, 0);
+  g.drawImage(crackedEgg(S.egg, S.cracks), 0, 0);
 }
 
 /* 조각이 흩어집니다. **알 껍질 색**입니다 — 캐릭터 색을 쓰면 깨지는
    순간 안에 누가 있는지가 색으로 먼저 새어 나갑니다. */
 function burstShards(host) {
-  const sp = spec();
-  const shell = EGG_PALETTES[pickEggColors()[SPECIES.indexOf(sp)]];
+  const shell = EGG_COLORS[S.egg] || EGG_COLORS[0];
   const r = host.getBoundingClientRect();
   const stage = host.closest('.hatchStage');
   const s = stage.getBoundingClientRect();
@@ -2135,7 +2450,7 @@ function burstShards(host) {
 }
 
 $('tapEgg').addEventListener('click', () => {
-  const sp = spec(); if (!sp) return;
+  if (S.egg == null) return;
   S.cracks = Math.min(3, S.cracks + 1); save();
   const btn = $('tapEgg');
   /* 한 번 두드리면 부르는 고리를 끕니다. 알아들은 사람에게 계속
@@ -2149,6 +2464,9 @@ $('tapEgg').addEventListener('click', () => {
     return;
   }
 
+  /* **여기가 종이 정해지는 유일한 자리입니다.** 껍질이 깨지는 순간에
+     뽑고, 뽑은 값은 저장에 박혀 다시 안 뽑힙니다. */
+  const sp = spec() || SPECIES.find((s) => s.id === hatchSpecies());
   drawHatchEgg();
   burstShards(btn);
   /* 껍질이 흩어지는 동안 알을 치우고 새끼를 올립니다. 흰 섬광이 그
@@ -2746,7 +3064,7 @@ $('enter').addEventListener('click', () => {
   /* 메인으로 넘깁니다. 월드로 바로 보내면 두 가지가 무너집니다 — 진행이
      이 기기에만 남는다는 사실을 말할 화면이 없고, 마이페이지·옷장·회고·
      랭킹전이 전부 월드 안 NPC 뒤에 숨습니다. 월드는 메인의 한 입구입니다. */
-  setTimeout(() => { location.href = '../home/index.html'; }, 500);
+  setTimeout(() => { location.href = '../deskfit/index.html'; }, 500);
 });
 
 /* 이어서 하기로 들어온 사람의 화면을 미리 채워 둡니다 */
@@ -2755,7 +3073,8 @@ if (S.verified && spec()) {
   $('doneNick').textContent = S.nick;
   $('doneSchool').textContent = (S.school || '학교') + ' · ' + spec().name;
 }
-if (S.species) { paintWho(); drawHatchEgg(); }
+if (S.egg != null) drawHatchEgg();
+if (S.species) paintWho();
 
 /* ==================== 검토용 바로가기 ====================
    ?step=4          4장으로 바로
@@ -2776,9 +3095,10 @@ if (S.species) { paintWho(); drawHatchEgg(); }
   if (!step) return;
 
   if (q.has('fresh')) {
-    Object.assign(S, { species: null, nick: '', email: '', school: '', verified: false, cracks: 0, camera: null });
+    Object.assign(S, { egg: null, species: null, nick: '', email: '', school: '', verified: false, cracks: 0, camera: null });
   } else {
     /* 뒤쪽 화면을 보려면 앞 단계가 채워져 있어야 합니다. */
+    if (S.egg == null) S.egg = 0;
     S.species = S.species || 'turtle';
     S.nick = S.nick || '복실이';
     S.email = S.email || 'hong@mju.ac.kr';
@@ -2788,7 +3108,8 @@ if (S.species) { paintWho(); drawHatchEgg(); }
   }
   save();
   paintEggs(); resetHatch(); paintDone();
-  if (S.species) { paintWho(); drawHatchEgg(); }
+  if (S.egg != null) drawHatchEgg();
+  if (S.species) paintWho();
   $('landing').style.display = 'none';
   $('flow').classList.add('on');
   show(Math.max(1, Math.min(STEPS, step)));

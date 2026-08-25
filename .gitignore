@@ -37,3 +37,6 @@ _*.mjs
 # 점검 스크립트가 남기는 것. 기준 그림은 커밋하고(회귀를 잡는 근거),
 # 달라졌을 때 새로 찍히는 .new.png 만 뺍니다.
 scripts/__shots__/*.new.png
+
+# 대학 상표 이미지 — 시연용으로 이 기기에만 둡니다
+prototypes/deskfit/assets/logo-*

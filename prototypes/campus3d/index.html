@@ -213,6 +213,30 @@
   #dlg p{margin:0;font-size:14px;line-height:1.65;color:var(--tx)}
   #dlg .more{margin-top:10px;font-size:10.5px;color:var(--tx3)}
 
+  /* ── 대화 ── */
+  /* ── 말 거는 창도 찰흙 ──
+     창은 전부 찰흙으로 바꿨는데 사람과 말할 때만 검은 유리로 남아
+     있었습니다. 한 세계 안에서 재질이 둘이면 둘 중 하나는 남의 것으로
+     보입니다. 말풍선 꼬리를 하나 답니다 — 화면 아래에 떠 있는 상자가
+     누구 말인지는 꼬리가 말해 줍니다. */
+  #dlg{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(8px);
+    width:min(500px,92vw);padding:17px 20px 15px;opacity:0;transition:.16s;pointer-events:none;
+    background:var(--clay);border:0;border-radius:24px;
+    box-shadow:0 22px 48px -18px rgba(40,58,84,.46), inset 0 3px 0 rgba(255,255,255,.95),
+      inset 0 -4px 0 rgba(86,110,146,.13);backdrop-filter:none;-webkit-backdrop-filter:none}
+  #dlg::after{content:'';position:absolute;left:50%;bottom:-11px;width:22px;height:22px;
+    transform:translateX(-50%) rotate(45deg);background:var(--clay);border-radius:0 0 7px 0;
+    box-shadow:6px 6px 12px -6px rgba(40,58,84,.4)}
+  #dlg.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  #dlg .who{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  #dlg .who b{font-size:15px;font-weight:800;color:var(--cInk)}
+  #dlg .who span{font-size:10.5px;color:var(--mintD);padding:4px 10px;border-radius:99px;
+    background:var(--mint);font-weight:700;box-shadow:var(--clayIn)}
+  #dlg p{margin:0;font-size:14.5px;line-height:1.68;color:var(--cInk2)}
+  #dlg .more{margin-top:12px;font-size:10.5px;color:var(--cInk3)}
+  #dlg .more kbd{background:var(--clay2);border:0;box-shadow:var(--clayIn);color:var(--cInk2)}
+
+
   /* ── 종이 창 ── */
   #panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
     width:min(470px,92vw);max-height:84vh;overflow:auto;padding:0;opacity:0;
@@ -1094,8 +1118,14 @@ const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
    firstHitOnly 를 켜야 정렬 비용이 사라집니다.
 
    턱이 STEP_MAX 보다 높으면 못 올라갑니다 — 안 그러면 벽도 타고
-   오릅니다. 계단 한 단(월드 .5)과 기단 한 단은 넘고, 벽은 못 넘는 값. */
-const STEP_MAX = 1.05;
+   오릅니다. 계단 한 단(월드 .5)과 기단 한 단은 넘고, 벽은 못 넘는 값.
+
+   실내는 따로 둡니다. 방에는 계단이 없고 깔개(3cm) 정도가 전부인데,
+   바깥 값(1.05)을 그대로 쓰면 책상(0.84)과 의자(0.63)가 전부 "넘을 수
+   있는 턱" 이 됩니다 — 본관을 걷다 갑자기 책상 위로 올라서던 것이
+   이것입니다. */
+const STEP_MAX = 1.05, STEP_MAX_ROOM = .4;
+const stepMax = () => (room ? STEP_MAX_ROOM : STEP_MAX);
 const _gdown = new THREE.Vector3(0, -1, 0);
 const _gray = new THREE.Raycaster();
 _gray.firstHitOnly = true;
@@ -1103,7 +1133,13 @@ _gray.far = 8;
 function groundAt(x, z, from) {
   _gray.set(new THREE.Vector3(x, from + 2.4, z), _gdown);
   let best = -1;
-  for (const h of _gray.intersectObject(campusRoot, true)) {
+  /* 방 안에서는 **방을** 쏩니다. 전에는 실내에서도 캠퍼스를 쐈는데,
+     캠퍼스는 안 보일 뿐 지워진 게 아니라서 광장 돌판·건물 지붕이
+     그대로 맞았습니다 — 본관 바닥을 걷는데 발밑 높이가 0.38, 자리에
+     따라 3m 까지 나와서 캐릭터가 보이지 않는 계단을 타고 올라갔습니다.
+     (h.object.visible 검사는 못 거릅니다 — 그건 그 메시 자신의 플래그라,
+     꺼진 것은 조상인 campusRoot 이기 때문입니다.) */
+  for (const h of _gray.intersectObject(room ? roomRoot : campusRoot, true)) {
     if (!h.object.visible || h.object === blob) continue;
     best = h.point.y; break;
   }
@@ -1645,7 +1681,9 @@ function panelFor(s) {
     case 'today': return UI.today();
     case 'radio': return UI.radio({ bgm: BGM.on });
     case 'calendar': return UI.calendar();
-    case 'tour': return UI.tour({ step: 0 });
+    case 'tour': return UI.tour({ step: tourStep,
+      onStep: (i) => { tourStep = i; },
+      onDone: () => { closePanel(); SAVE.seenTour = true; UI.save(); } });
     case 'timetable': return UI.timetable();
     case 'records': return UI.records();
     case 'card': return UI.studentCard();
@@ -1921,17 +1959,31 @@ function schoolView() {
 }
 
 /* 명예의 전당 — 서버 집계를 실제로 부릅니다 */
-let fameRows;
+/* 명예의 전당. 창 쪽에 미달 학교 · 지난 시즌 · 참여자 수 · 학교 색 ·
+   오류 네 가지를 다 채워 놓고, 여기서는 `rows` 하나만 넘기고 있었습니다.
+   그래서 새로 만든 칸이 하나도 안 보였습니다 — 창은 옛 호출도 받아
+   주도록 되어 있어서 터지지도 않고 조용히 절반만 나왔습니다.
+
+   학교 색표(SCHOOLS)는 여기 있으므로 **여기서** 넘깁니다. 저쪽에
+   한 벌 더 두면 학교를 하나 더할 때 한 곳만 고치는 날이 옵니다. */
+let fameState = 'idle', fameData = null;
+const schoolColor = (n) => {
+  const q = SCHOOLS.find((x) => x.name === n);
+  return q ? '#' + q.c.toString(16).padStart(6, '0') : null;
+};
 function fameView() {
-  if (fameRows === undefined && SRV && SRV.configured) {
+  if (!(SRV && SRV.configured)) fameState = 'unconfigured';
+  else if (fameState === 'idle') {
+    fameState = 'loading';
     SRV.schoolRanking().then((r) => {
-      fameRows = (r && r.ok && Array.isArray(r.data)) ? r.data : null;
+      fameState = (r && r.ok) ? 'ok' : ((r && r.reason) || 'server');
+      fameData = (r && r.ok) ? r.data : null;
       redrawPanel();
-    }).catch(() => { fameRows = null; redrawPanel(); });
-    return UI.fame({ rows: undefined, myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt });
+    }).catch(() => { fameState = 'offline'; redrawPanel(); });
   }
-  return UI.fame({ rows: SRV && SRV.configured ? fameRows : null, myschool: SAVE.school,
-    verified: !!SAVE.schoolVerifiedAt });
+  return UI.fame({ state: fameState, data: fameData, schoolColor,
+    myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt,
+    onRetry: (again) => { fameState = 'idle'; again(); } });
 }
 
 /* 학교 공지 — /api/notice 가 학교 RSS 를 받아 옵니다(2D 판과 같은 주소) */
@@ -2815,6 +2867,10 @@ const TUT = [
   { k: 'sit', t: '열람석 앞에서 E — 앉으면 세션이 시작됩니다', p: '목이 무너지면 캐릭터도 같이 굽습니다.' },
 ];
 let tutStep = SAVE.seenTutorial ? TUT.length : 0;
+/* 처음 안내 — 넉 장짜리 창은 배선만 있고 **여는 곳이 없었습니다.**
+   첫 진입에 한 번 자동으로 열고, 본 사람은 다시 안 봅니다. */
+let tourStep = 0;
+function openTour(i) { tourStep = i | 0; openPanel({ tag: '처음 안내', title: '기린캠퍼스', panel: 'tour' }); }
 let moved0 = 0, turned = 0;
 const elTut = $('#tut');
 elTut.querySelector('.skip').addEventListener('click', () => { tutStep = TUT.length; paintTut(); SAVE.seenTutorial = true; UI.save(); });
@@ -3112,7 +3168,7 @@ window.__W = { renderer, scene, cam, sun, hemi, amb, get composer() { return com
   /* 걷는 상태를 밖에서 잴 수 있게 내놓습니다 — 회전이 자연스러운지는
      눈으로 못 재고 각도를 찍어 봐야 압니다. */
   get P() { return P; }, get playerRig() { return playerRig; },
-  get yaw() { return yaw; },
+  get yaw() { return yaw; }, groundAt,
   /* 개발용 순간이동 — 넓힌 캠퍼스의 먼 자리를 확인하려면 걸어서는
      한참입니다. 각도(도)와 반지름으로 부릅니다: __W.tp(45, 110) */
   tp(deg, r) {
@@ -3224,9 +3280,11 @@ function tick(now) {
     const brake = 1 - .55 * Math.min(1, Math.max(0, (lag - .45) / 1.5));
     const nx = P.x + wx * speed * brake * dt, nz = P.z + wz * speed * brake * dt;
     /* 가로막는 것이 없어도 **턱이 너무 높으면** 못 갑니다 */
-    const tooHigh = (ax, az) => groundAt(ax, az, P.y) - P.y > STEP_MAX;
+    const tooHigh = (ax, az) => groundAt(ax, az, P.y) - P.y > stepMax();
     if (!hit(nx, P.z) && !tooHigh(nx, P.z)) P.x = nx;
-    if (!hit(P.x, nz)) P.z = nz;
+    /* z 쪽도 같은 검사를 — 가로만 재고 세로를 안 재서, 세로로 걸으면
+       책상이든 기단이든 타고 올라갔습니다. */
+    if (!hit(P.x, nz) && !tooHigh(P.x, nz)) P.z = nz;
     /* 출발 0.18초 · 멈춤 0.12초. 예전 값(8·10)은 두 프레임이면 최고
        속도라 스위치가 켜지듯 튀어나가고 뚝 섰습니다. */
     P.sp = Math.min(run, P.sp + dt / .18);
@@ -3269,7 +3327,16 @@ function tick(now) {
      내려올 때는 조금 느리게(모서리에서 뚝 떨어지지 않게). */
   { const gy = groundAt(P.x, P.z, P.y);
     const up = gy > P.y;
-    P.y += (gy - P.y) * Math.min(1, dt * (up ? 16 : 9)); }
+    /* 양방향 다 **낙차에 비례**해서 붙입니다.
+
+       고정 속도(위 16/s · 아래 9/s)는 작은 턱에는 맞는데 기단(1.3m)에는
+       느립니다. 내려설 때는 반 박자 공중에 떠 있었고, **올라설 때는 그
+       반 박자 동안 무릎까지 바닥에 파묻혔습니다** — 광장에서 캐릭터가
+       꺼져 보이던 것이 이것입니다. 작은 턱은 예전 속도라 계단은 여전히
+       부드럽고, 큰 턱일수록 빨리 붙습니다. */
+    const gap = Math.abs(gy - P.y);
+    const rate = (up ? 16 : 9) + Math.min(26, gap * 34);
+    P.y += (gy - P.y) * Math.min(1, dt * rate); }
   playerRig.position.set(P.x, P.y, P.z);
   /* 몸은 **각속도 상한**을 두고 돕니다.
      비율로만 감으면(전에 쓰던 1 - .00005^dt 는 프레임당 15%) 180도 전환이
@@ -3324,6 +3391,15 @@ function tick(now) {
     }
   }
   if (!room) {
+    /* ── 멀리 있는 사람은 안 그립니다 ──
+       섬 반대편 사람은 화면에서 몇 픽셀인데 그리는 값은 앞사람과
+       같습니다. 32m 밖은 몸을 끄고 이름표만 남깁니다 — 이름표는
+       지도처럼 읽는 것이라 끄면 오히려 허전합니다. 수현 판은 28m 였는데
+       이 맵이 더 넓어 지평선도 멀어졌으므로 한 칸 늘립니다. */
+    for (const n of NPC) {
+      const far = (P.x - n.rig.position.x) ** 2 + (P.z - n.rig.position.z) ** 2 > 1024;
+      if (n.rig.visible === far) n.rig.visible = !far;
+    }
     near = null;
     for (const p of CAMPUS.portals)
       if ((P.x - p.x) ** 2 + (P.z - p.z) ** 2 < p.r * p.r) { near = p; break; }
@@ -3358,16 +3434,22 @@ function tick(now) {
     const s = net.sample(p); if (!s) return;
     const r = remoteFor(p);
     r.rig.position.set(s.x, 0, s.z);
+    /* 같은 규칙을 접속자·봇에도 — 몸이 꺼져 있으면 다리 계산도 아깝습니다.
+       이름표는 아래에서 그대로 갱신합니다(NPC 와 같은 규칙 — 몸만 끕니다). */
+    const far2 = (P.x - s.x) ** 2 + (P.z - s.z) ** 2 > 1024;
+    if (r.rig.visible === far2) r.rig.visible = !far2;
     r.rig.rotation.y = smoothAngle(r.rig.rotation.y, s.dir, 1 - Math.pow(.002, dt));
     const step = r.last ? Math.hypot(s.x - r.last.x, s.z - r.last.z) : 0;
     r.last = { x: s.x, z: s.z };
     r.walk += step / 1.15;
-    let em = false;
-    if (p.emo && performance.now() - p.emoT < (EMOTE_BY_KEY[p.emo]?.dur || 1) * 1000)
-      em = playEmotePose(r.g, p.emo, (performance.now() - p.emoT) / 1000);
-    if (!em) {
-      if (s.moving || step > .002) stride(r.g, r.walk, 1); else idle(r.g, T, 2);
-      gaze(r.g, s.x, s.z, r.rig.rotation.y, P.x, P.z, 1.5, 6.5);
+    if (!far2) {
+      let em = false;
+      if (p.emo && performance.now() - p.emoT < (EMOTE_BY_KEY[p.emo]?.dur || 1) * 1000)
+        em = playEmotePose(r.g, p.emo, (performance.now() - p.emoT) / 1000);
+      if (!em) {
+        if (s.moving || step > .002) stride(r.g, r.walk, 1); else idle(r.g, T, 2);
+        gaze(r.g, s.x, s.z, r.rig.rotation.y, P.x, P.z, 1.5, 6.5);
+      }
     }
     /* 이름표 · 말풍선 · 감정표현 */
     v3.set(s.x, 2.5, s.z).project(cam);
@@ -3682,6 +3764,7 @@ function smoothAngle(a, b, t) {
 NPC.forEach((n) => n.rig.position.set(n.d.route[n.leg][0], 0, n.d.route[n.leg][1]));
 aimSun(P.x, P.z);
 requestAnimationFrame(tick);
+if (!SAVE.seenTour) setTimeout(() => { if (!panelOn && !SAVE.seenTour) openTour(0); }, 1400);
 setTimeout(() => $('#load').classList.add('gone'), 260);
 toast('기린캠퍼스', '중앙 광장');
 

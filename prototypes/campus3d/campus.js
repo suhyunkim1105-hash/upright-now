@@ -883,7 +883,10 @@ function clubStreet(g, ctx, deg, r) {
   [[-4.6, 0xE8695A, 0xB3392E, 0], [-.4, 0xE0AE3C, 0xA87A20, 2.1]].forEach(([lx, cl, cd, ph]) => {
     const t = tentStall(p, lx, -2.0, 0, cl, cd);
     ctx.flutter.push({ mesh: t.userData.cloth, phase: ph, amp: .075, axis: 'x' });
-    put(lx, -2.0, 3.4, 1.3);
+    /* 판매대는 천막 중심에서 z +0.4 로 나와 있는데 상자는 중심에 깔려
+       있어서, 판 앞쪽 절반이 상자 밖이었습니다 — 걸어 들어가면 허리까지
+       판에 파묻혔습니다. 상자를 판 위치에 맞춥니다. */
+    put(lx, -1.6, 3.5, 1.7);
   });
   /* 게시판 둘 + 그 앞 벤치 둘 — 붙여서 "판 읽고 앉는 자리" 한 덩어리로
      만듭니다. 따로 세우면 거리 한복판에 벤치 둘이 떠 있습니다. */

@@ -157,6 +157,17 @@ test('전체 배치도의 25개 건물 본체가 서로 관통하지 않는다',
     assert.equal(overlaps(all[i], all[j]), false, `${all[i].name}과 ${all[j].name} 건물이 겹칩니다`)
 })
 
+test('동아리 상점 정면 매대가 건물이나 서로를 관통하지 않는다', () => {
+  assert.match(buildings, /\[\[-3\.2, \.0\], \[-3\.2, 1\.14\]\]/,
+    '정면 매대 두 상자의 깊이 간격이 다시 겹쳤습니다')
+  const wallFront = 5.2 / 2
+  const firstCentre = wallFront + 1.0
+  const secondCentre = wallFront + 1.0 + 1.14
+  const depth = 1.0
+  assert.ok(firstCentre - depth / 2 > wallFront, '첫 매대가 건물 외벽을 관통합니다')
+  assert.ok(secondCentre - firstCentre > depth, '매대 두 상자가 서로 관통합니다')
+})
+
 test('표현 여덟 개가 각각 별도 캐릭터 모션을 가진다', () => {
   for (const key of ['wave', 'clap', 'yes', 'no', 'jump', 'dance', 'sad', 'love']) {
     assert.match(emote, new RegExp(`\\{ k: '${key}'`), `${key} 표현 정의`)

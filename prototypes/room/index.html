@@ -433,7 +433,7 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
     <span class="sub">PRIVATE ROOM</span>
     <button class="x" type="button" id="close" aria-label="로비로 돌아가기">
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+           stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
   </header>
 
@@ -461,7 +461,7 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
     <section class="view wait" id="v-wait" aria-labelledby="wait-h" hidden>
       <div>
         <h2 id="wait-h">초대 코드를 나눠 주세요</h2>
-        <p class="lede">코드를 아는 사람만 들어와요. 학교 인증은 필요 없어요.</p>
+        <p class="lede">코드를 아는 사람만 들어와요</p>
 
         <div class="code-box">
           <span class="code" id="code" aria-label="초대 코드"></span>
@@ -477,7 +477,7 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
         <h3 id="me-h">들어가기 전에</h3>
 
         <div class="setrow">
-          <span class="k" id="k-mic">마이크 켜기<small>같이 앉는 자리라 기본은 켜짐이에요</small></span>
+          <span class="k" id="k-mic">마이크<small>켜고 들어가요</small></span>
           <span class="sw">
             <input type="checkbox" id="s-mic" role="switch" aria-labelledby="k-mic" checked>
             <span class="track"></span><span class="knob"></span>
@@ -485,7 +485,7 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
         </div>
 
         <div class="setrow">
-          <span class="k" id="k-cam">자세 보기 켜기<small>영상은 어디로도 안 나가요. 이 브라우저 안에서만 봐요</small></span>
+          <span class="k" id="k-cam">자세 보기 켜기<small>영상은 이 브라우저 안에서만 봐요</small></span>
           <span class="sw">
             <input type="checkbox" id="s-cam" role="switch" aria-labelledby="k-cam">
             <span class="track"></span><span class="knob"></span>
@@ -557,6 +557,10 @@ h2 { margin: 0 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.028e
   </main>
 </div>
 
+<!-- 자세 엔진. 지금은 카메라 제약 한 벌을 가져오려고 부릅니다 —
+     공개방과 같은 해상도로 열어야 같은 사람이 방마다 같게 보이고,
+     자세 판정이 붙을 때 기준도 한 벌로 남습니다. -->
+<script src="../shared/posture.js"></script>
 <script>
 /* ==================================================================
    지금은 화면 흐름과 시계만 진짜입니다. 목소리와 참가자 동기화는 월드가
@@ -601,27 +605,33 @@ write('girin.inviteroom', S);
    눈금은 남깁니다 — 바만 있으면 어디가 기본인지 몰라서 매번 끝까지
    끌어 보게 됩니다. 1명도 됩니다: 혼자 쓰는 조용한 방이 초대 세션의
    가장 흔한 첫 사용입니다. */
+/* ---- 문구 ----
+   화면에 나가는 설명을 절반으로 줄였습니다. 열두 문장 270자였는데,
+   그중 절반이 **같은 말을 두 번** 하고 있었습니다 — 제목 아래에
+   "나를 포함한 자리 수예요" 를 적고 드래그바 아래에 다시
+   "4명이 들어올 수 있어요. 나를 포함한 수예요" 를 적는 식입니다.
+
+   남기는 기준 하나: **모르면 막히는 것만.** 값이 화면에 큰 숫자로
+   떠 있는데 그걸 문장으로 또 읽어 주는 것은 설명이 아니라 소음입니다.
+   "나중에 못 바꾼다" 는 남습니다 — 되돌릴 수 없는 것은 미리 말해야
+   합니다. 나머지는 뺍니다. */
 const STEPS = [
   {
-    key: 'seats', h: '몇 명이 앉을까요', p: '나를 포함한 자리 수예요. 나중에 바꿀 수 없어요.',
+    key: 'seats', h: '몇 명이 앉을까요', p: '나중에 못 바꿔요',
     range: [1, 10, 1], unit: '명',
     marks: [[1, '혼자'], [4, '기본'], [10, '최대']],
-    note: (v) => (v === 1 ? '혼자 쓰는 방이에요. 코드를 나눠 주면 나중에 늘릴 수 없어요.'
-      : v + '명이 들어올 수 있어요. 나를 포함한 수예요.'),
   },
   {
-    key: 'minutes', h: '얼마나 앉을까요', p: '끝나면 오늘의 집중 장면이 남아요.',
+    key: 'minutes', h: '얼마나 앉을까요',
     range: [10, 120, 5], unit: '분',
     marks: [[25, '짧게'], [50, '기본'], [120, '길게']],
-    note: (v) => (v >= 90 ? v + '분은 깁니다. 중간에 한 번 일어나는 걸 권해요.'
-      : v + '분 동안 앉아요.'),
   },
   {
-    key: 'talk', h: '말하면서 할까요', p: '조용히를 고르면 모두의 마이크가 꺼진 채로 시작해요.',
+    key: 'talk', h: '말하면서 할까요',
     opts: [[true, '자유롭게'], [false, '집중만']], labels: ['이야기하며', '조용히'],
   },
   {
-    key: 'cam', h: '얼굴을 보여 줄까요', p: '끄고 들어가도 돼요 — 그때는 내 캐릭터가 대신 앉아 있어요.',
+    key: 'cam', h: '얼굴을 보여 줄까요', p: '끄면 캐릭터가 대신 앉아요',
     opts: [[true, '서로 보여요'], [false, '캐릭터로']], labels: ['카메라 켜고', '카메라 끄고'],
   },
 ];
@@ -630,7 +640,8 @@ let step = 0;
 function wizPaint() {
   const st = STEPS[step];
   $('wiz-h').textContent = st.h;
-  $('wiz-p').textContent = st.p;
+  $('wiz-p').textContent = st.p || '';
+  $('wiz-p').hidden = !st.p;
   /* 자국 개수를 STEPS 에서 만듭니다 — 마크업에 손으로 적어 두면 단계를
      더할 때 여기가 뒤처집니다. 실제로 넷이 됐는데 셋이 그려져 있었습니다. */
   const tr = $('wiz-track');
@@ -682,7 +693,6 @@ function paintRange(st) {
     + ' step="' + step + '" value="' + cur + '"'
     + ' aria-label="' + esc(st.h) + '">'
     + '<div class="marks">' + marks + '</div>'
-    + '<p class="rangenote" id="rn">' + esc(st.note ? st.note(cur) : '') + '</p>'
     + '</div>';
 
   const inp = $('rin');
@@ -692,7 +702,6 @@ function paintRange(st) {
        안 읽힙니다. */
     inp.style.setProperty('--fill', ((v - lo) / (hi - lo) * 100) + '%');
     $('rv').innerHTML = '<b>' + v + '</b>' + esc(st.unit || '');
-    if (st.note) $('rn').textContent = st.note(v);
   };
   inp.addEventListener('input', () => {
     S[st.key] = Number(inp.value);
@@ -736,8 +745,8 @@ $('back-wiz').addEventListener('click', () => {
 const CHAR = { turtle: '거북이', penguin: '펭귄', frog: '개구리' };
 const PEOPLE = [{ me: true, nick: ROOM.nickname || '나', ch: 'turtle', mic: S.mic, ready: true }];
 
-const MIC_ON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5v3.9"/></svg>';
-const MIC_OFF = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.6a3 3 0 0 1 6 0V11"/><path d="M5.5 11a6.5 6.5 0 0 0 9.3 5.9"/><path d="M12 17.5v3.9"/><path d="m3.5 3.5 17 17"/></svg>';
+const MIC_ON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5v3.9"/></svg>';
+const MIC_OFF = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5.6a3 3 0 0 1 6 0V11"/><path d="M5.5 11a6.5 6.5 0 0 0 9.3 5.9"/><path d="M12 17.5v3.9"/><path d="m3.5 3.5 17 17"/></svg>';
 
 /* 카메라가 켜져 있으면 얼굴, 꺼져 있으면 캐릭터.
    한 자리에 둘을 겹쳐 두고 하나만 보입니다 — 자리를 갈아 끼우면 카메라를
@@ -756,7 +765,7 @@ function paintTiles(el) {
     + Array.from({ length: empties }, () => `
     <div class="tile empty">
       <span style="font-size:24px;font-weight:800">+</span>
-      <span class="st">코드로 들어오면 여기 떠요</span>
+      <span class="st">빈자리</span>
     </div>`).join('');
   /* 그린 뒤에 흐름을 다시 답니다 — innerHTML 이 <video> 를 새로 만들었으므로
      앞 화면의 srcObject 는 같이 사라집니다. */
@@ -898,8 +907,15 @@ async function want(kind, on) {
     say('이 브라우저에서는 카메라·마이크를 쓸 수 없어요'); return false;
   }
   try {
+    /* 카메라 제약은 **공유 파일에서** 가져옵니다. 여기 480×360 을 따로
+       적어 뒀더니 공개방(640×480)과 해상도가 달라서, 같은 사람이 방마다
+       다른 그림으로 보였습니다. 자세 판정도 같은 그림 위에서 돌아야
+       기준이 한 벌입니다. */
+    const camWant = (window.POSE && window.POSE.CAM_CONSTRAINTS)
+      ? { video: window.POSE.CAM_CONSTRAINTS.video }
+      : { video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } };
     const got = await navigator.mediaDevices.getUserMedia(
-      kind === 'cam' ? { video: { width: 480, height: 360 } } : { audio: true });
+      kind === 'cam' ? camWant : { audio: true });
     if (!media.stream) media.stream = new MediaStream();
     got.getTracks().forEach((t) => media.stream.addTrack(t));
     media[kind] = true;

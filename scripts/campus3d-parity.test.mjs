@@ -10,6 +10,7 @@ const campus3d = readFileSync('prototypes/campus3d/campus.js', 'utf8')
 const ui3d = readFileSync('prototypes/campus3d/ui.js', 'utf8')
 const rooms3d = readFileSync('prototypes/campus3d/rooms.js', 'utf8')
 const chars3d = readFileSync('prototypes/campus3d/chars.js', 'utf8')
+const mealApi = readFileSync('api/meal.ts', 'utf8')
 
 const between = (source, start, end) => {
   const a = source.indexOf(start)
@@ -65,9 +66,9 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
   }
 })
 
-test('분수 옆 게시판은 실제 모델·학교별 공지·공모전 탭까지 연결된다', () => {
+test('분수 옆 게시판 하나에서 학교별 공지·공모전 탭까지 연결된다', () => {
   assert.match(campus3d, /boardOut\(g,\s*-8\.6,\s*13\.2/, '학교 게시판 모델이 없습니다')
-  assert.match(campus3d, /boardOut\(g,\s*8\.6,\s*13\.2/, '공모전 게시판 모델이 없습니다')
+  assert.doesNotMatch(campus3d, /boardOut\(g,\s*8\.6,\s*13\.2/, '중복 게시판 모델이 남아 있습니다')
   assert.match(world3d, /DOMAIN_OF\[SAVE\.school\]/, '설정한 학교 도메인을 공지 요청에 쓰지 않습니다')
   assert.doesNotMatch(world3d, /fetch\('\/api\/notice\?school=mju\.ac\.kr'/,
     '학교 공지가 명지대로 고정돼 있습니다')
@@ -80,6 +81,7 @@ test('동아리 상점은 카테고리와 3D 상품 그림을 함께 쓴다', ()
   assert.match(world3d, /import \{ itemThumb \} from '\.\/shopview\.js'/,
     '기존 3D 상품 미리보기 연결이 빠졌습니다')
   assert.match(world3d, /paintThumbs\(elPanel\)/, '패널을 그린 뒤 상품 그림을 채우지 않습니다')
+  assert.match(world3d, /bare:\s*true/, '옷 상품을 캐릭터가 입은 모습이 아니라 옷만 그리는 설정이 없습니다')
   for (const label of ['상의', '하의', '신발', '모자', '안경', '가방', '탈것'])
     assert.match(ui3d, new RegExp(`['"]${label}['"]`), `옷 가게 ${label} 카테고리가 없습니다`)
   for (const label of ['앉기', '바닥', '수납', '살림', '취미', '초록·불'])
@@ -90,6 +92,34 @@ test('동아리 상점은 카테고리와 3D 상품 그림을 함께 쓴다', ()
     '알 진열 수가 여덟 개가 아닙니다')
   assert.doesNotMatch(games + spots, /eggMerge|거북이 알 합치기/,
     '삭제한 알 합치기 게임이 정의나 상호작용 위치에 남아 있습니다')
+  assert.equal((between(spots, 'shop: [', '\n  ],\n};').match(/panel:\s*'wear-shop'/g) || []).length, 1,
+    '옷 가게 상호작용이 한 구역보다 많습니다')
+  assert.equal((between(spots, 'shop: [', '\n  ],\n};').match(/panel:\s*'egg-shop'/g) || []).length, 1,
+    '알 가게 상호작용이 한 구역보다 많습니다')
+  assert.equal((between(spots, 'shop: [', '\n  ],\n};').match(/panel:\s*'furn-shop'/g) || []).length, 1,
+    '가구 가게 상호작용이 한 구역보다 많습니다')
+})
+
+test('기숙사는 안내와 일정 기능을 각각 한 장소의 탭으로 묶는다', () => {
+  const dorm = between(spots, 'dorm: [', '\n  ],\n  union:')
+  assert.match(dorm, /panel:\s*'schedule'/, '노트북 일정 관리 자리가 없습니다')
+  assert.match(dorm, /panel:\s*'dorm-info'/, '출입문 옆 안내 표지판 자리가 없습니다')
+  assert.doesNotMatch(dorm, /panel:\s*'(calendar|timetable|wardrobe|guide|privacy)'/,
+    '통합 전의 기숙사 개별 자리가 남아 있습니다')
+  assert.match(ui3d, /data-schedule-tab="calendar"/, '일정 관리의 구글 캘린더 탭이 없습니다')
+  assert.match(ui3d, /data-schedule-tab="timetable"/, '일정 관리의 시간표 탭이 없습니다')
+  assert.match(ui3d, /data-info-tab="guide"/, '안내 표지판의 사용 방법 탭이 없습니다')
+  assert.match(ui3d, /data-info-tab="privacy"/, '안내 표지판의 개인정보 탭이 없습니다')
+})
+
+test('날씨와 학교별 실제 식단은 서버 API 응답을 그대로 표시한다', () => {
+  assert.match(world3d, /j\.tempC/, '기상청 API의 현재 기온 필드를 읽지 않습니다')
+  assert.match(world3d, /j\.configured === false \|\| j\.ok === false/, '기상청 키·응답 오류를 구분하지 않습니다')
+  assert.match(world3d, /fetch\('\/api\/meal\?school='/, '설정한 학교의 식단 API를 부르지 않습니다')
+  for (const domain of ['snu.ac.kr', 'yonsei.ac.kr', 'korea.ac.kr', 'skku.edu', 'hanyang.ac.kr',
+    'cau.ac.kr', 'khu.ac.kr', 'ewha.ac.kr', 'sogang.ac.kr', 'mju.ac.kr'])
+    assert.match(mealApi, new RegExp(`'${domain.replace('.', '\\.')}'`), `${domain} 식단 출처가 없습니다`)
+  assert.doesNotMatch(ui3d, /const MENU = \[\['백반'/, '가짜 고정 학식 메뉴가 남아 있습니다')
 })
 
 test('시작 뒤 무거운 작업과 과한 좌우 보행 흔들림을 남기지 않는다', () => {

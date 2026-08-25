@@ -200,7 +200,6 @@ export const ROOMS = {
     R.window3(g, -3.4, 2.5, 11, 2.0, 2.1);
 
     R.bed(g, -4.9, -3.1, 0);
-    R.wardrobe(g, 4.4, -4.9, 0);
     R.desk(g, 4.6, -1.7, 0, 2.8, 1.1, .78);
     R.chair(g, 4.6, -0.6, 0, IN.wood);
     R.laptop(g, 4.6, .87, -1.6, Math.PI);
@@ -210,12 +209,11 @@ export const ROOMS = {
     R.shelf(g, -6.6, 3.4, Math.PI / 2, 1.7, 2.0);
     R.fridge(g, 6.2, 3.6, -.5);
     R.coffee(g, 6.2, 1.28, 3.6);
-    R.rack(g, -5.0, -0.5, Math.PI / 2);
     R.laundry(g, -6.2, 4.6);
     R.guitar(g, -6.3, 1.2, .3);
-    R.mirror(g, -6.72, 2.2, -2.4, Math.PI / 2, .8, 1.7);
-    R.lowTable(g, -3.6, 3.6, .15, 1.5, 1.0);
-    R.books(g, -3.8, .56, 3.6, 2);
+    /* 옷 갈아입기 구역을 걷고, 출입문 옆에 안내 표지판 하나를 둡니다.
+       Deskfit 사용법과 카메라 개인정보는 이 판의 탭 둘에서 함께 봅니다. */
+    R.aFrame(g, -4.7, 3.8, .35, 0x2DD4BF);
     [[-5.0, 3.0, 0xE8935A], [-2.4, 4.6, 0x63C47C]].forEach(([cx, cz, c]) => {
       box(g, 1.0, .24, 1.0, .11, M(c, .82), cx, .22, cz).castShadow = true;
       box(g, .78, .1, .78, .08, M(c, .68), cx, .35, cz);
@@ -326,17 +324,13 @@ export const ROOMS = {
     R.window3(g, 6.6, 2.7, 14, 2.2, 2.1);
     R.window3(g, -4.6, 2.7, 14, 2.0, 2.1);
 
-    /* ─ 옷 구역(왼쪽) ─ */
+    /* ─ 옷 구역(왼쪽 뒤) ─ 구매는 옷걸이 앞 한 곳에서만 엽니다. */
     R.rack(g, -8.4, -4.8, 0);
     R.rack(g, -8.4, -2.4, 0);
     R.rack(g, -5.6, -4.8, 0);
     R.mannequin(g, -5.6, -2.6, .5, 0xE8695A, 0x3E5C82);
     R.shoeShelf(g, -9.3, -0.4, Math.PI / 2);
     R.hatWall(g, -7.0, 2.3, -6.92, 0, 5);
-    R.mirror(g, -9.72, 2.2, 3.4, Math.PI / 2, .9, 1.9);
-    R.curtain(g, -9.0, 1.1, 4.8, .1, 1.4, 2.2, 0x3FB3A2);
-    R.counter(g, -6.4, 5.7, 0, 3.0, IN.woodDark);
-    R.counterTop(g, -6.4, 1.1, 5.5);
 
     /* ─ 알 구역(오른쪽) ─
        팝업에서 파는 여덟 종과 실제 선반 수도 같습니다. */
@@ -348,18 +342,18 @@ export const ROOMS = {
     ];
     eggDisplay.forEach(([x, z, c]) => R.eggStand(g, x, z, c));
     R.wallShelf(g, 9.4, 2.6, -1.2, -Math.PI / 2, 2.0);
-    R.counter(g, 6.4, 5.7, 0, 3.0, IN.woodDark);
-    R.counterTop(g, 6.4, 1.1, 5.5);
-    /* 알 여덟 개가 상품 진열 자체라 별도 게임 탁자는 두지 않습니다. */
+    /* 알 여덟 개가 상품 진열 자체라 계산대와 별도 게임 탁자는 두지 않습니다. */
 
-    /* ─ 가구 구역(앞쪽) ─ */
+    /* ─ 가구 구역(출입문 왼쪽 앞) ─ 옛 옷 계산대·입어 보기 자리입니다. */
+    R.counter(g, -6.4, 5.7, 0, 3.0, IN.woodDark);
+    R.counterTop(g, -6.4, 1.1, 5.5);
     R.sofa(g, -5.0, 4.6, Math.PI, 2.6, 0x9B7BD4);
     R.lowTable(g, -5.0, 3.4, 0, 1.6, .9);
     R.lamp(g, -3.8, .56, 3.4);
     R.shelf(g, 4.4, 3.4, 0, 2.0, 2.2);
     R.wardrobe(g, 7.6, 3.6, 0);
     R.chair(g, 5.9, 4.8, .4, 0xE8935A);
-    R.displayTable(g, -8.4, 3.8, .15, 1.8, 'cloth');
+    R.displayTable(g, -8.4, 3.8, .15, 1.8, 'furn');
 
     R.aFrame(g, 9.2, 5.0, -1.2, 0xE8935A);
     R.banner(g, -9.72, 3.6, -2.0, Math.PI / 2, 3.2, .95, 0xE8935A);

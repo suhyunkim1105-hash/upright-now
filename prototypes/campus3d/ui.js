@@ -636,6 +636,29 @@ export function calendar(ctx) {
   };
 }
 
+/** 기숙사 노트북 — 캘린더와 강의 시간표를 한 창의 탭 둘로 엽니다. */
+export function schedule(ctx) {
+  const tab = ctx.tab === 'timetable' ? 'timetable' : 'calendar';
+  const active = tab === 'calendar' ? calendar() : timetable();
+  return {
+    tag: '노트북', title: '일정 관리', wide: true,
+    html: `<div class="board-tabs schedule-tabs" role="tablist" aria-label="일정 관리 종류">
+      <button type="button" role="tab" data-schedule-tab="calendar" class="${tab === 'calendar' ? 'on' : ''}"
+        aria-selected="${tab === 'calendar'}">내 일정 · 구글 캘린더</button>
+      <button type="button" role="tab" data-schedule-tab="timetable" class="${tab === 'timetable' ? 'on' : ''}"
+        aria-selected="${tab === 'timetable'}">강의 시간표</button></div>
+      <div class="schedule-view">${active.html}</div>`,
+    on(root, again) {
+      active.on?.(root, again);
+      root.querySelector('.schedule-tabs').onclick = (e) => {
+        const b = e.target.closest('button[data-schedule-tab]');
+        if (!b || b.dataset.scheduleTab === tab) return;
+        ctx.onTab(b.dataset.scheduleTab, again);
+      };
+    },
+  };
+}
+
 /* ---------- 오늘의 기록 — 앉은 세션이 실제로 쌓입니다 ---------- */
 export function records() {
   const S = SAVE.sessions.slice(-14).reverse();
@@ -971,23 +994,29 @@ export function eggShop(ctx) {
   };
 }
 
-/** 학식 · 자판기 */
+/** 학교별 실제 학식. 메뉴를 지어내거나 게임 코인으로 사지 않습니다. */
 export function cafeteria(ctx) {
-  const MENU = [['백반', 8, '🍚'], ['라면', 5, '🍜'], ['돈까스', 10, '🍛']];
+  const d = ctx.data;
+  let body;
+  if (!ctx.school) {
+    body = rw('board', 'lilac', '학교를 먼저 설정해 주세요', '학생회관 학교 인증 창이나 옷장에서 학교를 고르면 식단이 바뀝니다');
+  } else if (d === undefined) {
+    body = rw('cup', 'lemon', '오늘 식단을 확인하는 중…', `${esc(ctx.school)} 공식 식단 페이지에 묻고 있어요`);
+  } else if (d && Array.isArray(d.items) && d.items.length) {
+    body = lbl('cup', `${esc(d.name || ctx.school)} · ${esc(d.date || '오늘')}`)
+      + '<div class="meal-list">' + d.items.map((it) => {
+        const menu = Array.isArray(it.menu) ? it.menu.join(' · ') : String(it.menu || '');
+        return rw('cup', it.meal === '저녁' ? 'lilac' : it.meal === '아침' ? 'lemon' : 'peach',
+          esc(it.place || it.meal || '학생식당'), esc(menu), esc(it.meal || ''));
+      }).join('') + '</div>';
+  } else {
+    body = rw('cup', 'lilac', '오늘 식단을 자동으로 받지 못했어요',
+      esc(d?.reason || '학교가 공개 API나 읽을 수 있는 공식 식단표를 제공하지 않습니다'));
+  }
+  if (d?.page) body += `<div class="note"><a href="${esc(d.page)}" target="_blank" rel="noopener">${esc(ctx.school || '학교')} 공식 식단표에서 확인 ↗</a></div>`;
   return {
-    tag: '식당', title: '오늘의 학식', html: coinbar(ctx.coins)
-      + lbl('cup', '오늘 나오는 것')
-      + '<div class="cg">' + MENU.map(([nm, price, e]) =>
-        `<button class="cc" data-menu="${esc(nm)}" data-price="${price}">
-          <span class="ic peach"><span class="big">${e}</span></span>
-          <b>${esc(nm)}</b><small>${price}코인</small></button>`).join('') + '</div>'
-      + rw('seat', 'peach', '자세 세션 중에는 못 먹어요', '한 번 일어났다 드세요'),
-    on(root, again) {
-      root.querySelector('.bd').onclick = (e) => {
-        const b = e.target.closest('button[data-menu]'); if (!b) return;
-        ctx.onBuy(b.dataset.menu, +b.dataset.price, again);
-      };
-    },
+    tag: '학교 식단', title: '오늘의 학식', html: body
+      + '<div class="note">메뉴와 가격은 학교가 공개한 공식 식단표 기준이며, 식자재 사정으로 현장에서 바뀔 수 있어요.</div>',
   };
 }
 export function vending(ctx) {
@@ -1263,6 +1292,7 @@ export function weather(ctx) {
   let body;
   if (W === undefined) body = rw('sun', 'lemon', '창밖을 보는 중…', '');
   else if (W === null) body = rw('sun', 'lilac', '지금은 날씨를 못 받아왔어요', '잠시 뒤에 창을 다시 열어 주세요');
+  else if (W.error) body = rw('sun', 'lilac', '기상청 날씨를 표시하지 못했어요', esc(W.error));
   /* 하늘 그림만은 픽토그램으로 안 바꿉니다 — 비인지 눈인지가 이 창의
      내용 전부인데, 한 벌짜리 아이콘에는 그 갈래가 없습니다. */
   else body = `<div class="cg two">${cc('sun', 'lemon', W.temp != null ? W.temp + '°' : '—', '지금 기온')}`
@@ -1571,6 +1601,28 @@ export function privacy() {
       + rw('cal', 'sky', '시작 · 종료', '', '시각')
       + rw('user', 'sky', '학교', '고른 학교 이름')
       + '<div class="note"><b>직접 확인해 보세요.</b> F12 로 개발자도구를 열고 세션을 돌리면 오가는 요청이 전부 보입니다. 모델을 한 번 받은 뒤 랜선을 뽑아도 자세 판정은 그대로 돕니다.</div>',
+  };
+}
+
+/** 출입문 옆 안내 표지판 — 사용법과 카메라 안내를 한 창에 묶습니다. */
+export function dormInfo(ctx) {
+  const tab = ctx.tab === 'privacy' ? 'privacy' : 'guide';
+  const active = tab === 'privacy' ? privacy() : guide();
+  return {
+    tag: '안내 표지판', title: 'Deskfit 안내', wide: true,
+    html: `<div class="board-tabs dorm-info-tabs" role="tablist" aria-label="Deskfit 안내 종류">
+      <button type="button" role="tab" data-info-tab="guide" class="${tab === 'guide' ? 'on' : ''}"
+        aria-selected="${tab === 'guide'}">사용 방법</button>
+      <button type="button" role="tab" data-info-tab="privacy" class="${tab === 'privacy' ? 'on' : ''}"
+        aria-selected="${tab === 'privacy'}">카메라 · 개인정보</button></div>
+      <div class="dorm-info-view">${active.html}</div>`,
+    on(root, again) {
+      root.querySelector('.dorm-info-tabs').onclick = (e) => {
+        const b = e.target.closest('button[data-info-tab]');
+        if (!b || b.dataset.infoTab === tab) return;
+        ctx.onTab(b.dataset.infoTab, again);
+      };
+    },
   };
 }
 

@@ -1071,9 +1071,23 @@ csmOn();
 SKY.collect(campusRoot);
 /* 기상청 값을 한 번 받아 창밖과 하늘을 맞춥니다 — 창은 비 오는데 하늘이
    맑으면 그 어긋남이 제일 먼저 눈에 띕니다. 30분마다 다시 봅니다. */
+function weatherPayload(j) {
+  if (!j) return null;
+  if (j.configured === false || j.ok === false) return { error: j.reason || '기상청 응답을 받지 못했어요' };
+  if (j.tempC !== undefined || j.pty !== undefined) {
+    const p = +j.pty || 0, sky = +j.sky || 1;
+    const kind = [1, 4, 5].includes(p) ? ['🌧', '비']
+      : [2, 6].includes(p) ? ['🌨', '비 또는 눈']
+      : [3, 7].includes(p) ? ['❄️', '눈']
+      : sky === 4 ? ['☁️', '흐림'] : sky === 3 ? ['🌥', '구름 많음'] : ['☀️', '맑음'];
+    return { icon: kind[0], label: kind[1], temp: j.tempC, sky: kind[1],
+      desc: Number.isFinite(+j.pop) ? `강수확률 ${+j.pop}% · 기상청 단기예보` : '기상청 단기예보' };
+  }
+  return { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' };
+}
 function pullWeather() {
   fetch('/api/weather').then((r) => (r.ok ? r.json() : null)).then((j) => {
-    wxData = j ? { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' } : null;
+    wxData = weatherPayload(j);
     SKY.setWeather(weatherKind(wxData));
   }).catch(() => {});
 }
@@ -1728,6 +1742,8 @@ function setZone(a, b) {
    다음 날 들어와도 어제 보던 '신발'부터 열려 오히려 첫 화면이 어색합니다. */
 const SHOP_CAT = { wear: 'top', furn: 'seat' };
 let boardTab = 'school';
+let scheduleTab = 'calendar';
+let dormInfoTab = 'guide';
 /* 자리에 걸린 창을 만듭니다 — ui.js 가 실제로 도는 것을 돌려줍니다 */
 function panelFor(s) {
   switch (s.panel) {
@@ -1736,6 +1752,10 @@ function panelFor(s) {
     case 'today': return UI.today();
     case 'radio': return UI.radio({ bgm: BGM.on });
     case 'calendar': return UI.calendar();
+    case 'schedule': return UI.schedule({
+      tab: scheduleTab,
+      onTab: (k, again) => { scheduleTab = k; again(); },
+    });
     case 'tour': return UI.tour({ step: tourStep,
       onStep: (i) => { tourStep = i; },
       onDone: () => { closePanel(); SAVE.seenTour = true; UI.save(); } });
@@ -1749,6 +1769,10 @@ function panelFor(s) {
     case 'coins': return UI.coinPanel({ coins: SAVE.coins, server: !!(SRV && SRV.configured) });
     case 'guide': return UI.guide();
     case 'privacy': return UI.privacy();
+    case 'dorm-info': return UI.dormInfo({
+      tab: dormInfoTab,
+      onTab: (k, again) => { dormInfoTab = k; again(); },
+    });
     case 'mypage': return UI.mypage({
       coins: SAVE.coins, snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
       baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
@@ -1804,14 +1828,7 @@ function panelFor(s) {
         toast(species + ' 알을 샀어요', '3분 뒤에 깨어나요 — 돌아다녀도 돼요'); again();
       },
     });
-    case 'cafeteria': return UI.cafeteria({
-      coins: SAVE.coins,
-      onBuy: (nm, price, again) => {
-        if (!payCoins(price)) return;
-        toast(nm + ' 냠냠', '기운이 났어요'); myEmo = { k: 'yes', t0: performance.now() };
-        again();
-      },
-    });
+    case 'cafeteria': return cafeteriaView();
     case 'vending': return UI.vending({
       coins: SAVE.coins,
       onBuy: (nm, price, again) => {
@@ -2125,12 +2142,26 @@ let wxData;
 function weatherView() {
   if (wxData === undefined) {
     fetch('/api/weather').then((r) => (r.ok ? r.json() : null)).then((j) => {
-      wxData = j ? { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' } : null;
+      wxData = weatherPayload(j);
       redrawPanel();
     }).catch(() => { wxData = null; redrawPanel(); });
     return UI.weather({ data: undefined });
   }
   return UI.weather({ data: wxData });
+}
+
+/* 학교별 공식 식단 — 학교가 바뀌면 그 학교 자료만 다시 받습니다. */
+let mealKey = '', mealData, mealState = 'idle';
+function cafeteriaView() {
+  const domain = DOMAIN_OF[SAVE.school] || '';
+  if (domain && (mealKey !== domain || mealState === 'idle')) {
+    mealKey = domain; mealData = undefined; mealState = 'loading';
+    fetch('/api/meal?school=' + encodeURIComponent(domain))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (mealKey === domain) { mealData = j; mealState = 'done'; redrawPanel(); } })
+      .catch(() => { if (mealKey === domain) { mealData = { reason: '학교 식단 서버에 닿지 못했어요.' }; mealState = 'done'; redrawPanel(); } });
+  }
+  return UI.cafeteria({ school: SAVE.school, data: domain && mealState === 'loading' ? undefined : mealData });
 }
 
 /* ══════ 8. 자세 세션 ══════ */

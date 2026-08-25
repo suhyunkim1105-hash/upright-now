@@ -111,7 +111,7 @@ export function loadCharacters(THREE_, GLTFLoader, base = './assets/chars/') {
     .then((r) => { GLB_READY = GLB_CACHE.size > 0; return r.filter(Boolean); });
 }
 
-function glbChar(parent, species, opt, SkeletonUtils) {
+function glbChar(parent, species, fit, opt, SkeletonUtils) {
   const src = GLB_CACHE.get(species);
   if (!src) return null;
   const g = new THREE.Group();
@@ -141,14 +141,88 @@ function glbChar(parent, species, opt, SkeletonUtils) {
 
   /* 걷기·쉬기가 쓰는 빈 뼈대 — 감정표현 등이 parts 를 만져도 안 터집니다 */
   const dummy = () => { const d = new THREE.Group(); g.add(d); return d; };
+  const poseNodes = {};
+  ['root', 'spine', 'head', 'arm.L', 'arm.R', 'leg.L', 'leg.R'].forEach((n) => {
+    const o = body.getObjectByName(n);
+    if (o) poseNodes[n] = { o, q: o.quaternion.clone(), p: o.position.clone() };
+  });
   g.userData.parts = {
     legs: [dummy(), dummy()], shins: [dummy(), dummy()], arms: [dummy(), dummy()],
     head: dummy(), torso: dummy(), neck: null, eyes: [], wear: {},
-    glb: { mixer, act, cur: 'idle', last: 0 },
+    glb: { mixer, act, cur: 'idle', last: 0, body, bodyY: body.position.y, poseNodes },
   };
+  /* 최신 원본 GLB를 유지하면서 그 위에 월드 공용 옷을 입힙니다.
+     예전에는 GLB 경로가 fit을 완전히 무시해서 옷장에서 저장·동기화는
+     됐지만 화면은 계속 맨몸이었습니다. 원본 메시를 바꾸지 않고 별도
+     클레이 레이어를 씌우므로 네 원본 종의 얼굴과 비율도 보존됩니다. */
+  addGlbWear(g, species, fit);
   g.userData.base = { armZ: [0, 0] };
   g.userData.seed = Math.random() * 10;
   return g;
+}
+
+function addGlbWear(g, species, fit) {
+  const L = normalizeLook(fit);
+  const wear = {};
+  const color = (id, fallback) => {
+    const t = L.tint && L.tint[id];
+    return t == null ? fallback : hexNum(t);
+  };
+  const layer = new THREE.Group(); layer.name = 'equipped-clay-outfit'; g.add(layer);
+  const mesh = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => {
+    const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz);
+    m.castShadow = true; m.receiveShadow = true; layer.add(m); return m;
+  };
+  const reg = (slot, id, mats) => (wear[slot] = { id, base: mats[0]?.color?.getHex?.() || 0, mats: mats.map((m) => [m, null]) });
+  const topC = color(L.topId, L.top), botC = color(L.bottomId, L.bottom), shoeC = color(L.shoesId, L.shoes);
+  const topM = M(topC, .62), botM = M(botC, .58), shoeM = M(shoeC, .5);
+  const wide = species === '개구리' || species === '거북이' ? 1.08 : species === '펭귄' ? 1.13 : .94;
+  if (L.topId && L.topId !== 'none') {
+    const torso = mesh(new THREE.SphereGeometry(.5, 22, 14), topM, 0, .67, .015, wide, .68, .68);
+    torso.name = `wear-top-${L.topId}`;
+    /* 티셔츠·과잠·후드가 멀리서도 서로 다르게 읽히는 클레이 디테일. */
+    if (L.topId === 'hoodie') {
+      const hoodM = M(mix(topC, 0x000000, .08), .58);
+      mesh(new THREE.TorusGeometry(.25, .07, 8, 20), hoodM, 0, 1.02, -.24, 1, 1, .7).rotation.x = Math.PI / 2;
+      mesh(new THREE.SphereGeometry(.18, 14, 9), hoodM, 0, .52, .34, 1.25, .65, .25);
+    } else if (L.topId === 'varsity') {
+      const cream = M(0xF7F0E2, .58);
+      mesh(new THREE.BoxGeometry(.055, .52, .035), cream, 0, .72, .36);
+      [-1, 1].forEach((s) => mesh(new THREE.TorusGeometry(.26, .025, 6, 20), cream, 0, .93 + s * .01, .03, 1, .55, 1));
+    } else if (L.topId === 'shirt') {
+      const trim = M(0xF7FBFF, .52);
+      mesh(new THREE.BoxGeometry(.045, .48, .035), trim, 0, .70, .36);
+      [-1, 1].forEach((s) => mesh(new THREE.ConeGeometry(.10, .20, 3), trim, s * .09, .98, .31, 1, 1, .35).rotation.z = s * .48);
+    }
+    reg('top', L.topId, [topM]);
+  }
+  if (L.bottomId && L.bottomId !== 'none') {
+    const shorts = L.bottomId === 'shorts';
+    [-1, 1].forEach((s) => mesh(new THREE.CapsuleGeometry(.12, shorts ? .12 : .28, 5, 10), botM,
+      s * .16, shorts ? .34 : .27, .01, 1.12, 1, 1));
+    reg('bottom', L.bottomId, [botM]);
+  }
+  if (L.shoesId && L.shoesId !== 'none') {
+    [-1, 1].forEach((s) => mesh(new THREE.SphereGeometry(.16, 14, 9), shoeM, s * .17, .09, .10, 1.1, .55, 1.45));
+    reg('shoes', L.shoesId, [shoeM]);
+  }
+  if (L.hatId && L.hatId !== 'none') {
+    const hc = color(L.hatId, L.hat), hm = M(hc, .58);
+    const hy = species === '기린' ? 1.83 : 1.68;
+    if (L.hatId === 'grad_cap') {
+      mesh(new THREE.BoxGeometry(.62, .055, .62), M(0x263548, .5), 0, hy, 0).rotation.y = Math.PI / 4;
+    } else {
+      mesh(new THREE.SphereGeometry(.34, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), hm, 0, hy - .08, 0, 1, .72, 1);
+      if (L.hatId === 'cap') mesh(new THREE.BoxGeometry(.42, .035, .25), hm, 0, hy - .08, .27);
+    }
+    reg('hat', L.hatId, [hm]);
+  }
+  if (L.bagId && L.bagId !== 'none') {
+    const bm = M(color(L.bagId, L.bagC), .58);
+    mesh(new THREE.BoxGeometry(.48, .48, .18), bm, 0, .67, -.34);
+    reg('bag', L.bagId, [bm]);
+  }
+  g.userData.parts.wear = wear;
 }
 
 /* 동작을 바꾸고 믹서를 돌립니다 */
@@ -888,15 +962,17 @@ function spriteChar(parent, species, opt) {
 
 export function character(parent, species, fit, opt = {}) {
   if (SPRITE_ON) return spriteChar(parent, species, opt);
-  /* 원본 네 GLB는 한 장짜리 재질이라 몸과 옷을 따로 칠할 수 없습니다.
-     기본 차림에서는 원본을 그대로 쓰고, 사용자가 다른 옷을 고르면 같은
-     비례의 절차형 3D 판본으로 바꿔 실제 상·하의와 소품이 보이게 합니다. */
-  const V = normalizeLook(fit);
-  const tailored = V.topId !== 'tee' || V.bottomId !== 'jeans' || V.shoesId !== 'sneakers'
-    || V.hatId !== 'none' || V.glassesId !== 'none' || !['backpack','none'].includes(V.bagId);
-  if (!opt.procedural && !tailored && GLB_READY && _SkeletonUtils) {
-    const g = glbChar(parent, species, opt, _SkeletonUtils);
-    if (g) return g;                    // 못 받은 종은 아래 손으로 빚는 판으로
+  /* 최근 업로드한 네 GLB가 이 프로젝트 캐릭터의 원본입니다.
+     이전 판은 옷을 고르는 순간 원본을 버리고 손으로 빚은 옛 판본으로
+     통째로 갈아 끼웠습니다. 그래서 같은 거북이도 옷장 안팎의 얼굴·비율이
+     달라졌습니다. 원본 네 종은 차림이나 미리보기 여부와 관계없이 반드시
+     최신 GLB를 쓰고, 새 네 종만 아래 절차형 판본을 씁니다. */
+  if (!opt.procedural && GLB_FILE[species] && GLB_READY && _SkeletonUtils) {
+    const g = glbChar(parent, species, fit, opt, _SkeletonUtils);
+    if (g) {
+      g.userData.characterSource = 'latest-glb';
+      return g;
+    }
   }
   /* 짓는 동안만 성기게. 끝나면 반드시 되돌립니다 — 안 되돌리면 그다음에
      세우는 사람이 이유 없이 성기게 나옵니다. */
@@ -918,6 +994,7 @@ function buildChar(parent, species, fit, opt) {
   g.rotation.y = opt.ry || 0;
   g.scale.setScalar(opt.scale || 1);
   parent.add(g);
+  g.userData.characterSource = 'reference-matched-procedural';
 
   const skin = M(C.skin);
   /* ── 염색 ──
@@ -1358,7 +1435,9 @@ export function face(g, state) {
 export function sit(g, on) {
   { const P = g.userData.parts;
     if (P && P.glb) {
-      /* 앉기는 **머무는** 동작이라 되감지 않습니다. 일어설 때만 쉬기로. */
+      /* 일부 최신 GLB에는 sit 클립이 없습니다. 그 경우 예전 코드는
+         그대로 return 해서 의자 위에 서 있었습니다. 클립 유무와 관계없이
+         원본 뼈를 기준 자세로 되돌린 뒤 앉은 골반·다리 각도를 보정합니다. */
       const G = P.glb, a = G.act.sit;
       if (on && a) {
         a.reset().setEffectiveWeight(1).play();
@@ -1369,21 +1448,20 @@ export function sit(g, on) {
         if (a) a.crossFadeTo(G.act.idle, .22, false);
         G.cur = 'idle';
       }
-      return;
-    } }
-  { const P = g.userData.parts;
-    if (P && P.glb) {
-      /* 앉기는 **머무는** 동작이라 되감지 않습니다. 일어설 때만 쉬기로. */
-      const G = P.glb, a = G.act.sit;
-      if (on && a) {
-        a.reset().setEffectiveWeight(1).play();
-        const prev = G.act[G.cur]; if (prev && prev !== a) prev.crossFadeTo(a, .22, false);
-        G.cur = 'sit';
-      } else if (!on && G.act.idle) {
-        G.act.idle.reset().setEffectiveWeight(1).play();
-        if (a) a.crossFadeTo(G.act.idle, .22, false);
-        G.cur = 'idle';
+      const pose = G.poseNodes || {};
+      for (const v of Object.values(pose)) { v.o.quaternion.copy(v.q); v.o.position.copy(v.p); }
+      if (on) {
+        const tilt = (n, x, z = 0) => { const v = pose[n]; if (!v) return; v.o.rotateX(x); v.o.rotateZ(z); };
+        tilt('root', -.08); tilt('spine', -.18); tilt('head', .12);
+        tilt('leg.L', -1.18, -.08); tilt('leg.R', -1.18, .08);
+        tilt('arm.L', -.48, -.14); tilt('arm.R', -.48, .14);
+        G.body.position.y = G.bodyY - .31;
+        const outfit = g.getObjectByName('equipped-clay-outfit'); if (outfit) outfit.position.y = -.31;
+      } else {
+        G.body.position.y = G.bodyY;
+        const outfit = g.getObjectByName('equipped-clay-outfit'); if (outfit) outfit.position.y = 0;
       }
+      g.userData.sitting = on;
       return;
     } }
   const P = g.userData.parts; if (!P) return;

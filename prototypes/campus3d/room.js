@@ -136,7 +136,7 @@ export function setOutside(opt) {
   /* 비·눈은 **채도를 먼저 깎고** 밝기를 조금 내립니다. 밝기만 내리면
      파란 하늘이 그냥 어두워져서 흐린 날이 아니라 초저녁으로 보입니다.
      눈은 흐리되 밝습니다 — 쌓인 눈이 빛을 되돌려 주기 때문입니다. */
-  const dull = kind === 'clear' ? 0 : kind === 'cloud' ? .24 : kind === 'snow' ? .3 : .36;
+  const dull = kind === 'clear' ? 0 : kind === 'cloud' ? .16 : kind === 'snow' ? .18 : .22;
   if (dull) _sky.lerp(kind === 'snow' ? PALE : GREY, dull);
   if (kind === 'rain') _sky.multiplyScalar(.9);
   /* 유리 — 밤에는 눌러서 짙은 남색 유리로. 0 까지 내리면 벽에 뚫린
@@ -262,8 +262,8 @@ export function counter(g, x, z, ry, w = 2.6, col = IN.wood) {
   return p;
 }
 /** 게시판 — 종이 몇 장 */
-export function board(g, x, y, z, w = 2.2, h = 1.5) {
-  const p = new THREE.Group(); p.position.set(x, y, z); g.add(p);
+export function board(g, x, y, z, w = 2.2, h = 1.5, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, y, z); p.rotation.y = ry; g.add(p);
   box(p, w, h, .14, .05, M(IN.woodDark, .78), 0, 0, 0);
   box(p, w - .2, h - .2, .1, .03, M(0x4E7C52, .82), 0, 0, .05);
   [[-.5,.3,.5,.4],[.4,.32,.44,.36],[-.42,-.3,.42,.4],[.42,-.28,.5,.34]]
@@ -381,14 +381,24 @@ export function rack(g, x, z, ry) {
 /** 알 받침 — 상점 */
 export function eggStand(g, x, z, col) {
   const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
-  cyl(p, .28, .34, .9, 14, M(IN.woodDark, .75), 0, .45, 0);
-  cyl(p, .34, .3, .12, 14, M(IN.woodLight, .6), 0, .96, 0);
-  const e = new THREE.Mesh(new THREE.SphereGeometry(.3, 20, 16), M(col, .55));
-  e.position.y = 1.28; e.scale.set(1, 1.28, 1);
+  /* 받침도 상품 무대처럼 보이게: 넓은 클레이 베이스 + 둥근 둥지 + 빛 테. */
+  cyl(p, .38, .44, .18, 20, M(0xC9D9E4, .58), 0, .09, 0);
+  cyl(p, .31, .36, .72, 18, M(IN.woodLight, .68), 0, .50, 0);
+  cyl(p, .39, .34, .14, 20, M(0xF7EFE1, .72), 0, .90, 0);
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(.34, .035, 8, 28),
+    M(col, .28, { emissive: col, emissiveIntensity: .22 }));
+  halo.rotation.x = Math.PI / 2; halo.position.y = .98; p.add(halo);
+  const e = new THREE.Mesh(new THREE.SphereGeometry(.34, 28, 22), M(col, .66));
+  e.position.y = 1.34; e.scale.set(.96, 1.30, .96);
   e.castShadow = true; e.receiveShadow = true; p.add(e);
-  [[-.1,1.34,.26],[.12,1.2,.24],[0,1.46,.2]].forEach(([dx,dy,dz]) => {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), M(0xFFFFFF, .5));
-    s.position.set(dx, dy, dz); s.scale.z = .3; p.add(s);
+  /* 앞면의 큰 하이라이트와 점무늬가 종별 색을 입체적으로 읽히게 합니다. */
+  [[-.12,1.44,.30,.075],[.13,1.27,.29,.06],[.06,1.58,.23,.045]].forEach(([dx,dy,dz,r]) => {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 9), M(0xFFFFFF, .54));
+    s.position.set(dx, dy, dz); s.scale.z = .26; p.add(s);
+  });
+  [[-.18,1.20,.24,.045],[.18,1.46,.24,.052],[-.02,1.62,.18,.038]].forEach(([dx,dy,dz,r]) => {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), M(0x526578, .22));
+    s.position.set(dx, dy, dz); s.scale.z = .28; p.add(s);
   });
   return p;
 }
@@ -1215,6 +1225,7 @@ export function roundRug(g, x, z, col = 0x63C47C, inner = 0xF2F8EE, r = 1.1) {
 }
 /** 빈백 — 공을 그냥 놓으면 구슬입니다. 눌러서 앉은 자국을 냅니다 */
 export function beanbag(g, x, z, ry = 0, col = 0x9B7BD4) {
+  regSeatLocal(x, z, ry, 0, .04, 'sofa');
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   const lo = P(col, .86), hi = P(col, .7);
   const b = new THREE.Mesh(new THREE.SphereGeometry(.52, 16, 12), lo);

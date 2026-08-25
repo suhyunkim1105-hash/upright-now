@@ -777,9 +777,9 @@ function buildProp(kind, id, opt) {
        칸의 절반이 나무 기둥입니다. 알과 받침 접시까지만 잘라 봅니다. */
     return {
       group: g,
-      box: new THREE.Box3(new THREE.Vector3(-0.36, 0.86, -0.36),
-        new THREE.Vector3(0.36, 1.70, 0.36)),
-      off: opt.off || OFF_ITEM, pad: 0.1, ground: false,
+      box: new THREE.Box3(new THREE.Vector3(-0.46, 0.0, -0.46),
+        new THREE.Vector3(0.46, 1.78, 0.46)),
+      off: opt.off || new THREE.Vector3(.48, .32, 1), pad: 0.12, ground: 1.15,
     };
   } else return null;
 
@@ -1085,9 +1085,10 @@ function rebuildPreview(p) {
   const look = previewLook(p);
   const sp = previewSpecies(p);
   const rid = previewRide(p);
-  /* 옷 미리보기는 원본 GLB의 한 장짜리 재질이 아니라 실제로 옷 조각을
-     따로 가진 절차형 판본을 씁니다. 그래야 선택한 옷이 몸 위에 보입니다. */
-  p.body = character(p.rig, sp, look, { procedural: true });
+  /* 최신 원본 네 종도 이제 별도 3D 착용 레이어를 가지므로 구형 절차형을
+     강제할 이유가 없습니다. 월드에서 뽑은 바로 그 캐릭터에 상품을 입혀
+     보여 주고, 새 네 종만 자동으로 클레이 절차형 판본을 씁니다. */
+  p.body = character(p.rig, sp, look, {});
   claim(p.body);
   if (rid) { p.rideG = ride(p.rig, rid, {}); if (p.rideG) claim(p.rideG); }
   p.shape = look;

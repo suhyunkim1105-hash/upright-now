@@ -838,11 +838,9 @@ const won = (n) => (n === 0 ? '무료' : n + '코인');
 const coinbar = (coins, server) =>
   `<div class="coinbar">${rw('coin', 'lemon', '내 코인', server ? '서버가 세는 잔액이에요' : '', coins)}</div>`;
 
-/* 옷 카드 그림은 WebGL에 맡기지 않습니다.
-   일부 노트북에서는 이미 월드 WebGL 컨텍스트를 쓰는 중에 상점용 두 번째
-   컨텍스트가 만들어지지 않아 카드가 빈 회색칸으로 남았습니다. 상품 목록은
-   구매의 핵심이라 GPU 상태와 무관한 SVG로 항상 그립니다. 캐릭터를 입힌
-   미리보기가 아니라 사용자가 요청한 '옷 한 벌만' 보이는 그림입니다. */
+/* 옷 카드의 실제 그림은 shopview.js의 공유 WebGL 판이 그립니다.
+   카드마다 컨텍스트를 만들지 않고 판 하나를 나눠 쓰므로 월드와 충돌하지
+   않으며, 각 칸에는 캐릭터 없이 옷 조형만 클레이 3D로 보입니다. */
 function wearArt(id, slot, label, schoolColor) {
   let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const pal = ['#E86F61','#3E78B7','#2FAF98','#846AC5','#E6A53A','#59687E','#D66F9A'];
@@ -884,7 +882,7 @@ export function wearShop(ctx) {
       return items.map(([id, label, price]) => {
           const own = ctx.owned.includes(id) || price === 0;
           return `<button class="cc ${own ? 'on' : ''}" data-buy="${esc(id)}" data-preview="${esc(id)}" data-slot="${esc(slot)}" data-owned="${own ? '1' : '0'}">
-            <span class="th" style="width:100%;height:88px" data-wear-art="${esc(id)}">${wearArt(id, slot, label, ctx.schoolColor)}</span>
+            <span class="th" style="width:100%;height:108px" data-wear-art="${esc(id)}" aria-label="${esc(label)} 3D 상품 미리보기"></span>
             <b>${esc(label)}</b><small>${own ? '가지고 있어요' : won(price)}</small></button>`;
         }).join('');
     })();

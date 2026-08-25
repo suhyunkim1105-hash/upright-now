@@ -17,14 +17,14 @@
      아래 가운데에 한 줄(독)로 모았습니다. 설정은 전부 창 안으로 넣었습니다.
      ══════════════════════════════════════════════════════════ */
   :root{
-    --gl:rgba(19,23,30,.66); --gl2:rgba(26,31,40,.86); --gl3:rgba(255,255,255,.10);
-    --ln:rgba(255,255,255,.14); --ln2:rgba(255,255,255,.07);
-    --tx:#F3F6F9; --tx2:rgba(243,246,249,.60); --tx3:rgba(243,246,249,.38);
-    --acc:#35E0C6; --acc2:#19B9A2; --warn:#F5C451; --bad:#FF7E6E; --ok:#74E294;
-    --paper:#FFFCF5; --ink:#222A33; --ink2:#5C6672; --pl:rgba(34,42,51,.12);
+    --gl:rgba(248,252,255,.88); --gl2:rgba(242,248,253,.96); --gl3:rgba(90,130,170,.09);
+    --ln:rgba(91,126,164,.16); --ln2:rgba(91,126,164,.10);
+    --tx:#26394D; --tx2:#65798E; --tx3:#93A4B5;
+    --acc:#50D9C5; --acc2:#20A997; --warn:#D89D29; --bad:#E76860; --ok:#35A76F;
+    --paper:#F8FBFE; --ink:#223447; --ink2:#607487; --pl:rgba(68,101,134,.13);
     --r:15px; --r2:11px;
-    --sh:0 12px 34px rgba(6,10,17,.34), 0 1px 0 rgba(255,255,255,.09) inset;
-    --shp:0 24px 60px rgba(6,10,17,.30), 0 2px 8px rgba(6,10,17,.14);
+    --sh:0 10px 26px rgba(62,91,122,.14), inset 0 1.5px 0 rgba(255,255,255,.98);
+    --shp:0 24px 58px rgba(56,82,112,.20), inset 0 2px 0 rgba(255,255,255,.98);
     --ff:"Wanted Sans Variable","Wanted Sans","Pretendard","Apple SD Gothic Neo",sans-serif;
   }
   *{box-sizing:border-box}
@@ -40,13 +40,13 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#BFE4F2;color:var(--tx);
     font-family:var(--ff);-webkit-user-select:none;user-select:none;touch-action:none;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-  canvas#cv{display:block;width:100%;height:100%;filter:saturate(1.10) contrast(1.035)}
+  canvas#cv{display:block;width:100%;height:100%;filter:saturate(1.16) brightness(1.055) contrast(1.02)}
   .hud{position:fixed;inset:0;pointer-events:none;z-index:2}
 
   /* 유리 — 이 화면의 유일한 재질입니다 */
-  .g{background:var(--gl);border:1px solid var(--ln);border-radius:var(--r);
-    box-shadow:var(--sh);backdrop-filter:blur(16px) saturate(150%);
-    -webkit-backdrop-filter:blur(16px) saturate(150%)}
+  .g{background:var(--gl);border:1px solid var(--ln);border-radius:18px;
+    box-shadow:var(--sh);backdrop-filter:blur(18px) saturate(125%);
+    -webkit-backdrop-filter:blur(18px) saturate(125%)}
   kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:19px;
     padding:0 5px;background:rgba(255,255,255,.13);border:1px solid var(--ln);
     border-bottom-width:2px;border-radius:6px;font:700 10.5px/1 var(--ff);color:var(--tx);
@@ -63,12 +63,16 @@
 
   /* ── 오른쪽 위 · 한 기둥 ── */
   #stack{position:absolute;right:16px;top:16px;width:176px;display:flex;flex-direction:column;gap:10px}
-  #myquick{order:-1;width:100%;height:42px;border:1px solid var(--ln);border-radius:15px;
-    pointer-events:auto;cursor:pointer;background:var(--gl2);color:var(--tx);font:900 12px/1 var(--ff);
-    letter-spacing:.08em;box-shadow:var(--sh);backdrop-filter:blur(16px) saturate(150%);
-    transition:transform .14s,box-shadow .14s;z-index:5}
-  #myquick:hover{transform:translateY(-2px)}
-  #myquick.on{background:var(--acc);color:#08251F;box-shadow:inset 0 3px 7px rgba(4,50,44,.22)}
+  #myquick{order:-1;width:100%;min-height:48px;border:1px solid rgba(76,112,151,.14);border-radius:18px;
+    padding:7px 10px;pointer-events:auto;cursor:pointer;background:rgba(248,252,255,.96);color:var(--tx);
+    display:grid;grid-template-columns:34px 1fr;grid-template-rows:18px 14px;column-gap:9px;text-align:left;
+    box-shadow:0 9px 24px rgba(56,85,118,.14),inset 0 2px 0 #fff;transition:transform .14s,box-shadow .14s;z-index:5}
+  #myquick .my-mark{grid-row:1/3;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;
+    background:linear-gradient(145deg,#B9EFE6,#8CDBED);color:#156C72;font:950 11px/1 var(--ff);letter-spacing:.02em;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 4px 10px rgba(64,137,150,.18)}
+  #myquick b{font:850 11.5px/18px var(--ff);letter-spacing:-.01em}#myquick small{font:700 9px/13px var(--ff);color:var(--tx3)}
+  #myquick:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(56,85,118,.18),inset 0 2px 0 #fff}
+  #myquick.on{background:#DDF7F2;color:#116F65;box-shadow:inset 0 3px 8px rgba(42,132,120,.13)}
   .ghead{display:flex;align-items:center;gap:6px;padding:0 2px 7px;font-size:10.5px;
     font-weight:800;color:var(--tx2);letter-spacing:.02em}
   .ghead .sp{margin-left:auto;font-weight:700;color:var(--tx3)}
@@ -78,8 +82,8 @@
   #mini .n{position:absolute;right:6px;top:5px;font:800 9.5px/1 var(--ff);color:rgba(255,255,255,.9);
     text-shadow:0 1px 2px rgba(0,0,0,.45)}
   #pip{padding:9px 9px 8px}
-  #pip .fr{position:relative;border-radius:var(--r2);overflow:hidden;height:120px;
-    background:radial-gradient(120% 100% at 50% 0%,#3B4A5C 0%,#222B37 100%)}
+  #pip .fr{position:relative;border-radius:14px;overflow:hidden;height:120px;
+    background:radial-gradient(120% 100% at 50% 0%,#EDF7FC 0%,#DDEAF5 100%)}
   #pip canvas{display:block;width:100%;height:100%}
   /* 카메라가 실제로 켜져 있다는 것을 눈으로 보여 줍니다 — 캐릭터만 있으면
      "판정하는 척" 으로 보입니다. 작게, 구석에. */
@@ -171,7 +175,7 @@
 
   /* ── 위 가운데 · 나 ── */
   #idbar{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:flex;
-    align-items:center;gap:9px;padding:7px 14px;font-size:12px}
+    align-items:center;gap:9px;padding:8px 15px;font-size:12px;background:rgba(250,253,255,.92)}
   #idbar b{font-weight:800;font-size:12.5px}
   #idbar i{width:1px;height:12px;background:var(--ln)}
   #idbar .sc{color:var(--tx2);font-weight:600}
@@ -191,13 +195,15 @@
 
   /* ── 이름표 · 말풍선 ── */
   #tags{position:absolute;inset:0;overflow:hidden}
-  .tag3{position:absolute;transform:translate(-50%,-100%);padding:3px 9px;border-radius:99px;
-    background:var(--gl2);border:1px solid var(--ln);font:700 10.5px/1.4 var(--ff);color:var(--tx);
-    white-space:nowrap;box-shadow:0 3px 10px rgba(6,10,17,.28);backdrop-filter:blur(8px)}
-  .tag3.peer{border-radius:12px;padding:6px 10px;text-align:center;line-height:1.35;white-space:pre-line}
-  .tag3.peer b{display:block;font-size:11px;color:#fff}
-  .tag3.peer small{display:block;font-size:9px;color:var(--tx2);font-weight:700}
-  .tag3.peer em{display:block;font:800 9px/1.35 var(--ff);color:var(--acc);font-style:normal}
+  .tag3{position:absolute;transform:translate(-50%,-100%);padding:4px 10px;border-radius:99px;
+    background:rgba(249,252,255,.92);border:1px solid rgba(81,116,151,.14);font:750 10.5px/1.4 var(--ff);color:var(--tx);
+    white-space:nowrap;box-shadow:0 5px 14px rgba(55,81,110,.13),inset 0 1.5px 0 #fff;backdrop-filter:blur(10px)}
+  .tag3.peer{min-width:116px;border-radius:15px;padding:7px 9px 7px 10px;text-align:left;line-height:1.2;white-space:normal}
+  .tag3.peer .peer-top{display:flex;align-items:center;gap:7px}
+  .tag3.peer b{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:#2C4055}
+  .tag3.peer small{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px;color:#7D91A5;font-weight:700}
+  .tag3.peer em{margin-left:auto;flex:none;padding:3px 6px;border-radius:8px;background:#DDF5F0;
+    font:850 8.5px/1 var(--ff);color:#258478;font-style:normal}
   .say3{position:absolute;transform:translate(-50%,-100%);padding:6px 11px;border-radius:12px;
     background:var(--paper);color:var(--ink);font:600 12px/1.45 var(--ff);
     max-width:180px;white-space:normal;box-shadow:0 6px 18px rgba(6,10,17,.26)}
@@ -481,17 +487,17 @@
   .gift-reveal b{font-size:19px;color:var(--cInk);margin-top:7px}.gift-reveal small{color:var(--cInk2);margin-top:4px}
   @keyframes giftPop{from{opacity:0;transform:scale(.72) rotate(-3deg)}to{opacity:1;transform:none}}
   .fame-wall{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin:8px 0 14px;
-    padding:26px;border-radius:26px;background:radial-gradient(circle at 50% 0,#526173 0,#303846 46%,#232A35 100%);
-    box-shadow:inset 0 5px 18px rgba(0,0,0,.34),0 16px 30px -18px rgba(30,42,58,.55)}
+    padding:26px;border:1px solid rgba(145,176,198,.24);border-radius:28px;background:linear-gradient(145deg,#EAF5FB,#F8FCFF 48%,#E6F2F0);
+    box-shadow:inset 6px 6px 16px rgba(138,166,187,.14),inset -7px -7px 18px rgba(255,255,255,.9),0 18px 34px -24px rgba(57,91,116,.34)}
   .fame-frame{position:relative;grid-column:span 2;min-height:174px;padding:22px 12px 14px;display:flex;flex-direction:column;
-    align-items:center;text-align:center;border:7px solid #171D26;border-radius:9px;background:linear-gradient(160deg,#FFFFFF,#E7EEF6);
-    box-shadow:0 9px 16px rgba(0,0,0,.34),inset 0 0 0 2px #C4AD71;color:var(--cInk)}
-  .fame-frame.top1{grid-column:3/span 2;grid-row:1;transform:translateY(-6px);min-height:206px;border-color:#5B4612;box-shadow:0 0 0 3px #E2C25D,0 14px 24px rgba(0,0,0,.4)}
+    align-items:center;text-align:center;border:1px solid rgba(138,166,187,.22);border-radius:22px;background:linear-gradient(145deg,#FFFFFF,#E9F2F8);
+    box-shadow:8px 9px 18px rgba(110,142,166,.18),-7px -7px 16px rgba(255,255,255,.86),inset 1px 1px 0 rgba(255,255,255,.9);color:var(--cInk)}
+  .fame-frame.top1{grid-column:3/span 2;grid-row:1;transform:translateY(-6px);min-height:206px;border-color:rgba(214,183,83,.55);background:linear-gradient(145deg,#FFFDF5,#F2F6F8);box-shadow:0 0 0 3px rgba(239,211,117,.35),0 15px 28px rgba(95,126,148,.20)}
   .fame-frame.top2{grid-column:1/span 2;grid-row:1;margin-top:24px}
   .fame-frame.top3{grid-column:5/span 2;grid-row:1;margin-top:24px}
   .fame-frame.mine{outline:4px solid #2DD4BF;outline-offset:2px}
   .fame-rank{position:absolute;left:8px;top:8px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
-    background:#F2E7B4;color:#78661C;font:900 12px var(--ff)}
+    background:#F7E9AB;color:#75611A;box-shadow:3px 4px 8px rgba(120,105,56,.16),inset 1px 1px 0 rgba(255,255,255,.8);font:900 12px var(--ff)}
   .fame-logo{width:62px;height:62px;display:grid;place-items:center;border-radius:50%;background:var(--logo);
     border:5px solid rgba(255,255,255,.75);box-shadow:0 0 0 3px var(--logo);font:900 17px/1 var(--ff)}
   .fame-school{font:900 13px/1.25 var(--ff);margin-top:13px}
@@ -520,12 +526,12 @@
 
   /* ── 지도 ── */
   #map{position:absolute;inset:0;display:none;place-items:center;
-    background:rgba(12,17,24,.62);backdrop-filter:blur(5px);pointer-events:auto}
+    background:rgba(75,111,132,.28);backdrop-filter:blur(7px);pointer-events:auto}
   #map.on{display:grid}
-  #map .box{padding:14px;border-radius:22px;background:var(--gl2);border:1px solid var(--ln);
-    box-shadow:var(--shp);backdrop-filter:blur(18px)}
-  #map canvas{display:block;border-radius:16px;width:min(620px,86vmin);height:min(620px,86vmin);
-    cursor:pointer}
+  #map .box{padding:16px;border-radius:28px;background:linear-gradient(145deg,rgba(248,253,255,.97),rgba(224,241,246,.97));border:1px solid rgba(133,174,194,.22);
+    box-shadow:16px 20px 44px rgba(54,91,116,.24),-8px -8px 24px rgba(255,255,255,.72),inset 2px 2px 0 rgba(255,255,255,.86);backdrop-filter:blur(18px)}
+  #map canvas{display:block;border:1px solid rgba(126,170,192,.22);border-radius:20px;width:min(620px,86vmin);height:min(620px,86vmin);
+    box-shadow:inset 4px 5px 12px rgba(87,133,155,.16),0 8px 18px rgba(72,111,133,.14);cursor:pointer}
   #map .cap{display:flex;align-items:center;gap:9px;margin:2px 6px 11px}
   #map .cap b{font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--tx)}
   #map .cap i{font-style:normal;font-size:11px;color:var(--tx2)}
@@ -649,20 +655,33 @@
   #game .gover .out{background:rgba(34,42,51,.08);color:var(--ink)}
 
   /* ── 첫 화면 ── */
-  #load{position:fixed;inset:0;display:grid;place-items:center;background:linear-gradient(145deg,#DDEBF8,#C9E4F2);color:#253449;
+  #load{position:fixed;inset:0;display:grid;place-items:center;background:
+    radial-gradient(circle at 20% 14%,rgba(255,255,255,.98) 0 8%,transparent 34%),
+    radial-gradient(circle at 82% 78%,rgba(191,238,231,.52),transparent 35%),
+    linear-gradient(145deg,#F6FBFF,#E9F6FB 52%,#E6F5F1);color:#2A4055;
     font-size:14.5px;font-weight:800;z-index:9;transition:.45s;padding:24px}
   #load.gone{opacity:0;pointer-events:none}
-  .load-card{width:min(560px,90vw);padding:28px;border-radius:34px;background:#EAF2FC;
-    box-shadow:18px 18px 38px rgba(77,103,132,.22),-14px -14px 32px rgba(255,255,255,.72);text-align:center}
-  .load-brand{display:flex;justify-content:center;align-items:baseline;gap:8px;font:950 29px/1 var(--ff);letter-spacing:-.04em}
-  .load-brand i{font:800 11px/1 var(--ff);letter-spacing:.08em;color:#67809B;background:#D8E6F5;padding:7px 9px;border-radius:99px;box-shadow:inset 2px 2px 5px rgba(74,100,130,.14)}
-  .load-pets{height:154px;display:flex;align-items:flex-end;justify-content:center;gap:2px;margin:14px 0 8px;overflow:hidden}
-  .load-pets img{width:108px;height:142px;object-fit:contain;filter:drop-shadow(0 11px 8px rgba(65,86,112,.18));transform-origin:50% 100%;animation:loadWalk 1.15s ease-in-out infinite alternate}
+  .load-card{width:min(500px,90vw);padding:28px 32px 26px;border:1px solid rgba(105,142,177,.13);border-radius:32px;
+    background:rgba(250,253,255,.88);box-shadow:0 24px 70px rgba(70,104,137,.16),inset 0 2px 0 #fff;text-align:center;backdrop-filter:blur(16px)}
+  .load-brand{display:flex;justify-content:center;align-items:center;gap:9px;font:950 26px/1 var(--ff);letter-spacing:-.04em}
+  .load-brand::before{content:'';width:12px;height:12px;border-radius:5px;background:linear-gradient(145deg,#57DCC7,#7BBFEF);box-shadow:0 4px 10px rgba(66,161,166,.24)}
+  .load-brand i{font:800 9px/1 var(--ff);letter-spacing:.08em;color:#6F879E;background:#E6EFF7;padding:6px 8px;border-radius:99px}
+  .load-pets{height:132px;display:flex;align-items:flex-end;justify-content:center;gap:3px;margin:18px 0 12px;overflow:visible}
+  .load-pets img{width:94px;height:126px;object-fit:contain;filter:drop-shadow(0 9px 7px rgba(65,86,112,.14));transform-origin:50% 100%;animation:loadWalk 1.35s ease-in-out infinite alternate}
   .load-pets img:nth-child(2){animation-delay:-.35s}.load-pets img:nth-child(3){animation-delay:-.7s}.load-pets img:nth-child(4){animation-delay:-1.05s}
-  #load strong{display:block;font-size:16px;margin-top:12px}#load small{display:block;margin-top:6px;color:#718399;font-size:11px}
-  .load-track{height:13px;border-radius:99px;background:#D2E0EF;box-shadow:inset 3px 3px 7px rgba(67,90,118,.18);overflow:hidden;margin-top:18px}
-  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;background:linear-gradient(90deg,#33D5BE,#58AEEA);animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
-  @keyframes loadWalk{to{transform:translateY(-10px) rotate(2deg)}}@keyframes loadFill{to{width:96%}}
+  #load strong{display:block;font-size:15px;margin-top:8px;letter-spacing:-.015em}#load small{display:block;margin-top:6px;color:#8497AA;font-size:10.5px;font-weight:650}
+  .load-track{height:8px;border-radius:99px;background:#DDE8F2;box-shadow:inset 0 2px 5px rgba(67,90,118,.12);overflow:hidden;margin-top:20px}
+  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;background:linear-gradient(90deg,#51D8C4,#79BDEB);animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
+  /* 지도·감정표현·채팅·세션·게임도 상점과 같은 밝은 클레이 표면으로 통일. */
+  #post,#tut,#emo .hub,#game .box,#chatin{background:var(--clay);border:0;box-shadow:var(--clayUp);color:var(--cInk)}
+  #post,#tut,#game .box{border-radius:24px}
+  #emo button{background:var(--clay2);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
+  #chatlog div{background:rgba(249,252,255,.94);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
+  #chatchannels button{background:var(--clay2);color:var(--cInk2);box-shadow:var(--clayUp2)}
+  #chatin input{background:var(--clay3);border:0;box-shadow:var(--clayIn);color:var(--cInk)}
+  #game{background:rgba(92,122,143,.24);backdrop-filter:blur(8px)}
+  #game .gover{background:rgba(247,251,255,.96);box-shadow:var(--clayIn)}
+  @keyframes loadWalk{to{transform:translateY(-6px) rotate(1deg)}}@keyframes loadFill{to{width:96%}}
 
   @media (max-width:860px){
     #help,#foot .fps{display:none}
@@ -714,7 +733,7 @@
 
   <!-- 오른쪽 한 기둥 — 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
   <div id="stack">
-    <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false">MY · 내 기록</button>
+    <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false"><span class="my-mark">MY</span><b>마이페이지</b><small>기록 · 코인 · 설정</small></button>
     <div id="mini" class="g">
       <div class="ghead">지도<span class="sp">M</span></div>
       <div class="wrap"><canvas width="316" height="316"></canvas><span class="n">N</span></div>
@@ -952,7 +971,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
    훨씬 중립적이라 Blender 4.0 이 기본값으로 삼았습니다. 대신 전체가
    어둡게 나오므로 노출을 1.06 에서 1.18 로 올려 밝기를 맞춥니다. */
 renderer.toneMapping = THREE.AgXToneMapping;
-renderer.toneMappingExposure = 1.18;
+renderer.toneMappingExposure = 1.30;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
@@ -977,21 +996,21 @@ const cam = new THREE.PerspectiveCamera(48, 1, .25, 400);
 /* AO 가 접점을 어둡게 만들어 주므로 균일광(amb)을 조금 내리고,
    대신 위아래 색이 갈리는 하늘빛(hemi)을 올립니다. 균일광이 세면
    AO 가 만든 그늘이 도로 씻겨 나갑니다. */
-const amb = new THREE.AmbientLight(0xFFFFFF, .52);
-const hemi = new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, 1.08);
-const sun = new THREE.DirectionalLight(0xFFF6E4, 1.95);
+const amb = new THREE.AmbientLight(0xFFFFFF, .66);
+const hemi = new THREE.HemisphereLight(0xF0F8FF, 0xCBE6D6, 1.20);
+const sun = new THREE.DirectionalLight(0xFFFDF8, 2.08);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 130;
 /* 얕은 각도로 넓게 받는 바닥에는 normalBias 가 bias 보다 훨씬 잘 듣습니다 */
 sun.shadow.bias = -.0002; sun.shadow.normalBias = .14; sun.shadow.radius = 2;
-const fill = new THREE.DirectionalLight(0xCFE4F5, .45);
+const fill = new THREE.DirectionalLight(0xDCEEFF, .58);
 fill.position.set(40, 30, -30);
 /* 림 라이트 — 해의 **반대편 뒤쪽**에서 옅게 칩니다.
    캐릭터와 배경이 둘 다 파스텔이라 실루엣이 배경에 녹습니다.
    뒤에서 한 겹 얹으면 가장자리만 밝아져 사람이 배경에서 떨어져
    나옵니다 — 애니메이션에서 인물을 세우는 그 방법입니다. */
-const rim = new THREE.DirectionalLight(0xFFE9C9, .40);
+const rim = new THREE.DirectionalLight(0xE6F3FF, .48);
 rim.position.set(26, 14, -34);
 rim.castShadow = false;
 scene.add(amb, hemi, sun, sun.target, fill, rim);
@@ -1235,7 +1254,7 @@ const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
 /* 분수를 지름 20 으로 키우면서 (5,5) 가 물속이 됐습니다. 광장 남쪽,
    본관을 마주 보는 자리로 옮깁니다. */
-const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0, rise: 0 };
 
 /* ── 바닥 높이 따라가기 ──
    전 판은 캐릭터가 늘 y = 0 이었습니다. 그런데 잔디가 .08, 길이 .126,
@@ -1338,7 +1357,10 @@ function buildIndoor(key) {
   (INDOOR[key] || []).forEach((d, i) => {
     const rig = new THREE.Group(); rig.position.set(d.x, 0, d.z); rig.rotation.y = d.dir;
     inRoot.add(rig);
-    const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1 });
+    /* 도서관 기린 안내원은 원본 GLB의 둥근 튜브형 몸통이 목을 가려
+       기린으로 읽히지 않았습니다. 같은 클레이 재질의 보정 판본만 이 NPC에
+       쓰고, 플레이어·다른 네 원본 종은 최신 GLB를 그대로 유지합니다. */
+    const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1, procedural: !!d.refined });
     const el = document.createElement('div');
     el.className = 'tag3'; el.textContent = d.name; $('#tags').appendChild(el);
     inNPC.push({ d, rig, g, el, line: 0, seed: i + 3 });
@@ -1528,7 +1550,7 @@ cv.addEventListener('pointermove', (e) => {
     if (CUR.live) { curMove(e.movementX, e.movementY); curHotCheck(); return; }
     /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**. */
     yaw -= e.movementX * .0017;
-    pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
+    pitch = clamp(pitch + e.movementY * .0021, -1.52, 1.52);
     turned += Math.abs(e.movementX) * .0024; return;
   }
   /* 3인칭에서 누른 채 잠겨 있으면 movement 를 그대로 씁니다 —
@@ -1536,7 +1558,7 @@ cv.addEventListener('pointermove', (e) => {
   if (!first && drag && document.pointerLockElement === cv) {
     camHold = performance.now() + 1400;
     yaw -= e.movementX * .0075;
-    pitch = clamp(pitch + e.movementY * .005, .04, 1.35);
+    pitch = clamp(pitch + e.movementY * .005, -1.48, 1.48);
     turned += Math.abs(e.movementX) * .0075;
     if (room) clampRoomYaw();
     return;
@@ -1545,7 +1567,7 @@ cv.addEventListener('pointermove', (e) => {
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   camHold = performance.now() + 1400;
   yaw -= dx * (first ? .005 : .0075);
-  pitch = first ? clamp(pitch + dy * .004, -1.15, 1.15) : clamp(pitch + dy * .004, .04, 1.35);
+  pitch = first ? clamp(pitch + dy * .004, -1.52, 1.52) : clamp(pitch + dy * .004, -1.48, 1.48);
   if (!first) clampRoomYaw();
   turned += Math.abs(dx) * .006;
   drag = { x: e.clientX, y: e.clientY };
@@ -2008,7 +2030,7 @@ function paintThumbs(root) {
   clearThumbs();
   try {
     const sc = SCHOOLS.find((q) => q.name === SAVE.school);
-    root.querySelectorAll('button[data-buy] .th:not([data-wear-art])').forEach((el) => {
+    root.querySelectorAll('button[data-buy] .th').forEach((el) => {
       const b = el.parentElement;
       thumbHandles.push(itemThumb(el, 'wear', b.dataset.buy, {
         bare: true, slot: b.dataset.slot, look: myLook(),
@@ -2072,8 +2094,9 @@ function closePanel() {
 }
 elPanel.querySelector('.pclose').addEventListener('click', closePanel);
 
-let dlgWho = null;
+let dlgWho = null, dlgTimer = 0;
 function openDlg(n) {
+  clearTimeout(dlgTimer);
   dlgWho = n;
   /* 처음 만나는 사람에게는 한 번만 5코인 — 2D 판의 `once:npc_…` 규칙입니다.
      캠퍼스를 한 바퀴 돌 이유가 되고, 두 번째부터는 안 줍니다. */
@@ -2087,12 +2110,17 @@ function openDlg(n) {
   n.paused = true;
   n.faceMe = true;
   elDlg.querySelector('b').textContent = n.d.name;
-  elDlg.querySelector('span').textContent = n.d.species;
-  elDlg.querySelector('p').textContent = n.d.lines[n.line % n.d.lines.length];
+  if (n.line >= n.d.lines.length) n.line = 0;
+  elDlg.querySelector('span').textContent = n.d.role || n.d.species;
+  elDlg.querySelector('p').textContent = n.d.lines[n.line];
   n.line++;
+  const last = n.line >= n.d.lines.length;
+  elDlg.querySelector('.more').textContent = last ? '안내가 끝났어요 · 잠시 후 자동으로 닫혀요' : 'E 다음 이야기';
   elDlg.classList.add('on'); dlgOn = true; syncLock();
+  if (last) dlgTimer = setTimeout(() => { if (dlgWho === n) closeDlg(); }, 2800);
 }
 function closeDlg() {
+  clearTimeout(dlgTimer); dlgTimer = 0;
   if (dlgWho) { dlgWho.paused = false; dlgWho.faceMe = false; dlgWho.wait = .8; }
   elDlg.classList.remove('on'); dlgOn = false; dlgWho = null; syncLock();
 }
@@ -2932,6 +2960,8 @@ function shootMap() {
     const S = 768;
     const r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     r2.setSize(S, S, false);
+    r2.setPixelRatio(1.5);
+    r2.shadowMap.enabled = true; r2.shadowMap.type = THREE.PCFSoftShadowMap;
     r2.outputColorSpace = THREE.SRGBColorSpace;
     r2.toneMapping = THREE.ACESFilmicToneMapping; r2.toneMappingExposure = 1.05;
     /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다. 그리고 카메라가
@@ -2946,9 +2976,10 @@ function shootMap() {
        far 는 넉넉히 — 400 높이에서 900 이면 바닥까지 여유가 있습니다.
        전 판은 높이 92 에 far 300 이라, 캠퍼스를 320 으로 넓힌 뒤로는
        먼 구석이 잘려 옛 섬 크기로 찍히고 있었습니다. */
-    const halfW = CAMPUS.SITE.hx + 14;
+    const halfW = CAMPUS.SITE.hx + 34;
     const mc = new THREE.OrthographicCamera(-halfW, halfW, halfW, -halfW, .5, 1200);
-    mc.position.set(46, 420, 46);
+    /* 완전 수직 평면도보다 건물 높이와 정면이 읽히는 3D 조감 시점. */
+    mc.position.set(150, 360, 175);
     mc.lookAt(0, 0, 0);
     const wasBg = scene.background;
     /* **안개를 끕니다.** 밀도 .0040 에서 420 칸 위에서 내려다보면
@@ -2997,7 +3028,6 @@ const PLACES = BUILDINGS.map((b) => ({ key: b.zone, name: b.name, b }))
     { key: 'gate', name: '정문', at: { x: 0, z: 118, ry: Math.PI } },
     { key: 'field', name: '운동장', at: { x: -60, z: 50, ry: Math.PI * .8 } },
     { key: 'lake', name: '호수', at: { x: 104, z: 58, ry: Math.PI * .6 } },
-    { key: 'dormyard', name: '기숙사 마당', at: { x: 92, z: -89, ry: -Math.PI / 2 } },
   ]);
 function goPlace(pl) {
   if (room) return;
@@ -3393,11 +3423,11 @@ if (AO_ON) {
        진해집니다. 캠퍼스처럼 깊이가 넓은 화면에서는 화면 기준이 맞습니다. */
     n8ao.configuration.aoRadius = 5.0;
     n8ao.configuration.distanceFalloff = 2.0;
-    n8ao.configuration.intensity = 2.6;
+    n8ao.configuration.intensity = 1.55;
     /* 그늘 색을 순검정이 아니라 **청록을 섞은 어두운 값**으로 둡니다.
        순검정 그늘은 점토가 아니라 플라스틱이 됩니다 — 로비·마이페이지의
        클레이 토큰이 쓰는 규칙과 같은 이유입니다. */
-    n8ao.configuration.color = new THREE.Color(0x0D3C34);
+    n8ao.configuration.color = new THREE.Color(0x526F7D);
     n8ao.configuration.halfRes = false;     // 윤곽을 반해상도로 늘려 생기던 번짐 제거
     composer.addPass(n8ao);
   } catch (e) {
@@ -3579,7 +3609,7 @@ function tick(now) {
   if (!SESS.on) unstick();
   /* 발밑 높이 — 올라갈 때는 빠르게 붙고(계단이 뚝뚝 끊기지 않게),
      내려올 때는 조금 느리게(모서리에서 뚝 떨어지지 않게). */
-  { const gy = groundAt(P.x, P.z, P.y);
+  { const gy = groundAt(P.x, P.z, P.y), y0 = P.y;
     const up = gy > P.y;
     /* 양방향 다 **낙차에 비례**해서 붙입니다.
 
@@ -3590,8 +3620,16 @@ function tick(now) {
        부드럽고, 큰 턱일수록 빨리 붙습니다. */
     const gap = Math.abs(gy - P.y);
     const rate = (up ? 16 : 9) + Math.min(26, gap * 34);
-    P.y += (gy - P.y) * Math.min(1, dt * rate); }
+    P.y += (gy - P.y) * Math.min(1, dt * rate);
+    /* 계단에서는 높이만 바뀌면 캐릭터가 수직 엘리베이터처럼 보입니다.
+       실제 상승 속도를 짧게 감쇠해 몸을 진행방향으로 살짝 기울입니다.
+       단차가 끝나면 즉시 곧게 돌아오고, 최대 7도라 멀미나 미끄러짐 없이
+       '딛고 올라간다/내려간다'는 단서만 남습니다. */
+    const vy = dt > 0 ? (P.y - y0) / dt : 0;
+    P.rise += (vy - P.rise) * Math.min(1, dt * 8); }
   playerRig.position.set(P.x, P.y, P.z);
+  const stepLean = clamp(-P.rise * .032, -.12, .10);
+  player.rotation.x += (stepLean - player.rotation.x) * Math.min(1, dt * 9);
   /* 몸은 **각속도 상한**을 두고 돕니다.
      비율로만 감으면(전에 쓰던 1 - .00005^dt 는 프레임당 15%) 180도 전환이
      0.3초에 끝나서, 도는 게 아니라 팽이처럼 튕겨 돌아갑니다. 방향을
@@ -3714,7 +3752,7 @@ function tick(now) {
     r.el.style.display = on ? 'block' : 'none';
     if (on) {
       const sec = Math.max(0, Math.floor(p.sessionSec || 0));
-      r.el.innerHTML = `<b>${esc3(p.nick || '누군가')}</b><small>${esc3(p.school || '학교 미설정')}</small><em>${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}</em>`;
+      r.el.innerHTML = `<span class="peer-top"><b>${esc3(p.nick || '누군가')}</b><em>${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}</em></span><small>${esc3(p.school || '학교 미설정')}</small>`;
       r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px';
     }
     const saying = p.say && performance.now() - p.sayT < 6000;

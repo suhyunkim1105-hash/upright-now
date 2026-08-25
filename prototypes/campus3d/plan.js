@@ -65,12 +65,12 @@ const rnd = () => (_s = (_s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 
 export const PAL = {
   lawn: 0x6FC85E, lawnDark: 0x63BC53, lawnLight: 0x7BD168,
-  road: 0xD9D3C4, roadEdge: 0xF4EEDF, walk: 0xEDE3CC,
+  road: 0xD8E2E4, roadEdge: 0xF6FAFB, walk: 0xE5EEF0,
   track: 0xC9705A, turf: 0x5FB765, turfLine: 0xF2F7F0,
   court: 0x4E9E7A, courtLine: 0xF2F7F0, clay: 0xC08A62,
   water: 0x67C6E8, waterDeep: 0x3FA7CE, sand: 0xE8D8B0,
   lotDark: 0x8E9490, lotLine: 0xF0F0EA,
-  stone: 0xEDE6D4, stoneDark: 0xD4CAB2,
+  stone: 0xEDF3F5, stoneDark: 0xCDDCE0,
   trunk: 0x8E5A33, leaf: 0x53B84E, leafDeep: 0x3C9440, leafWarm: 0x74C25C,
 };
 

@@ -23,7 +23,7 @@ const WEAR = {
   bag: [['backpack', '백팩', 0], ['tote', '에코백', 50], ['none', '없음', 0]],
 }
 
-test('옷 가게의 모든 카테고리 상품이 GPU와 무관한 SVG로 보인다', () => {
+test('옷 가게의 모든 카테고리 상품이 공유 WebGL의 3D 클레이 칸으로 보인다', () => {
   for (const [slot, items] of Object.entries(WEAR)) {
     const out = wearShop({
       wear: WEAR, owned: [], coins: 999, category: slot, schoolColor: 0x862633,
@@ -31,10 +31,12 @@ test('옷 가게의 모든 카테고리 상품이 GPU와 무관한 SVG로 보인
     }).html
     const expected = items.filter(([id]) => id !== 'none').length
     assert.equal((out.match(/data-wear-art=/g) || []).length, expected, `${slot} 카드 수`)
-    assert.equal((out.match(/<svg class="wear-art"/g) || []).length, expected, `${slot} SVG 수`)
     for (const [id] of items.filter(([id]) => id !== 'none'))
       assert.match(out, new RegExp(`data-wear-art="${id}"`), `${slot}/${id} 미리보기`)
   }
+  assert.match(world, /querySelectorAll\('button\[data-buy\] \.th'\)/, '옷 3D 렌더 대상 연결')
+  assert.match(world, /itemThumb\(el, 'wear'/, '공유 WebGL 옷 조형 렌더')
+  assert.match(world, /species: curSpecies/, '뽑아 선택한 캐릭터 입어보기')
 })
 
 test('Git의 원본 네 캐릭터와 복원한 네 캐릭터가 알 상점 여덟 종으로 이어진다', () => {
@@ -73,7 +75,9 @@ test('과잠은 선택 학교 대표색으로 실제 캐릭터에도 렌더된�
     wear: WEAR, owned: [], coins: 999, category: 'top', schoolColor: school,
     rides: [], ownedRide: [], onCategory() {}, onBuy() {},
   }).html
-  assert.match(out, /data-wear-art="varsity"[\s\S]*?#862633/i, '과잠 카드 학교색')
+  assert.match(out, /data-wear-art="varsity"/, '과잠 3D 카드')
+  assert.match(world, /color: b\.dataset\.buy === 'varsity' \? sc\?\.c : undefined/,
+    '과잠 3D 카드에 학교 대표색을 전달하지 않습니다')
   assert.match(chars, /export const BARE = false/, '월드 캐릭터 옷 렌더가 강제로 꺼져 있습니다')
   assert.match(chars, /const bodyTop = top;/, '과잠 몸판이 저장된 대표색 재질을 쓰지 않습니다')
   assert.match(chars, /const upper = new THREE\.Mesh[\s\S]*?bodyTop\)/,
@@ -89,6 +93,14 @@ test('해상도를 프레임 저하 때 0.75로 낮추지 않고 기기 DPR을 �
 })
 
 test('NPC는 기능 구역과 물리적으로 겹치지 않고 기능·좌석이 E 우선이다', () => {
+  for (const [room, list] of Object.entries(SPOTS)) for (let i = 0; i < list.length; i++) {
+    for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], b = list[j]
+      const d = Math.hypot(a.x - b.x, a.z - b.z)
+      assert.ok(d >= a.r + b.r + .14,
+        `${room}/${a.title}과 ${b.title} E 구역이 겹칩니다 (${d.toFixed(2)})`)
+    }
+  }
   for (const [room, npcs] of Object.entries(INDOOR)) {
     for (const npc of npcs) for (const spot of (SPOTS[room] || [])) {
       const d = Math.hypot(npc.x - spot.x, npc.z - spot.z)
@@ -105,6 +117,13 @@ test('삭제한 목 재기와 중앙 세션 구역은 없고 모든 방 출구�
   const library = spots.slice(spots.indexOf('library: ['), spots.indexOf('mainhall: ['))
   assert.doesNotMatch(library, /(?:game|panel):\s*'(?:posture|retro)'|title:\s*'조용한 자리'/)
   assert.equal((rooms.match(/R\.exitSign\(/g) || []).length, 6, '실내 여섯 곳 출구 표지 수')
+})
+
+test('미니게임관에서 2048 기계와 상호작용을 모두 삭제했다', () => {
+  const arcade = spots.slice(spots.indexOf('arcade: ['), spots.indexOf('shop: ['))
+  assert.doesNotMatch(arcade, /2048|n2048/)
+  assert.doesNotMatch(rooms, /\[-8\.0, -3\.6, 3\.6, 8\.0\]/)
+  assert.match(rooms, /\[-6\.4, 0, 6\.4\]\.forEach/)
 })
 
 test('내 캐릭터는 상단 정보줄, 다른 사용자는 머리 위 3줄을 쓴다', () => {
@@ -169,8 +188,17 @@ test('동아리 상점 정면 매대가 건물이나 서로를 관통하지 않�
 })
 
 test('표현 여덟 개가 각각 별도 캐릭터 모션을 가진다', () => {
+  assert.match(chars, /glb:\s*\{[^}]*body[^}]*poseNodes/, '원본 GLB 표현용 뼈대가 저장되지 않았습니다')
+  assert.match(emote, /if \(P\.glb\?\.poseNodes\)/, '원본 GLB 표현 모션 경로가 없습니다')
   for (const key of ['wave', 'clap', 'yes', 'no', 'jump', 'dance', 'sad', 'love']) {
     assert.match(emote, new RegExp(`\\{ k: '${key}'`), `${key} 표현 정의`)
     assert.match(emote, new RegExp(`case '${key}':`), `${key} 캐릭터 모션`)
   }
+})
+
+test('최신 GLB 캐릭터도 실제 옷과 앉은 자세를 적용한다', () => {
+  assert.match(chars, /addGlbWear\(g, species, fit\)/, 'GLB 캐릭터에 착용 레이어가 연결되지 않았습니다')
+  assert.match(chars, /equipped-clay-outfit/, '착용한 옷의 3D 그룹이 없습니다')
+  assert.match(chars, /G\.body\.position\.y = G\.bodyY - \.31/, '앉을 때 몸을 좌판 높이로 내리지 않습니다')
+  assert.match(chars, /tilt\('leg\.L', -1\.18/, '앉을 때 다리를 굽히지 않습니다')
 })

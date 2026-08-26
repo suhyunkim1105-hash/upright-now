@@ -40,3 +40,6 @@ scripts/__shots__/*.new.png
 
 # 대학 상표 이미지 — 시연용으로 이 기기에만 둡니다
 prototypes/deskfit/assets/logo-*
+prototypes/landing/assets/univ/gachon.png
+prototypes/landing/assets/univ/hanyang.png
+prototypes/landing/assets/univ/myongji.png

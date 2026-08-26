@@ -21,7 +21,10 @@
   --ink-deep:#202624;
   --cream:#F7F8F8;
   --teal:#2DD4BF;
-  --deep:#1A7F72;       /* 글자용 — teal 172°/66%, 크림 위 4.57:1 */
+  /* 밝은 바닥의 청록은 **하나**입니다 — DESIGN.md 의 teal-700.
+     한동안 글자용을 #1A7F72 로 따로 두었는데, 먹 바닥의 #2DD4BF 와 나란히
+     보면 다른 색으로 읽혔습니다. 계통이 갈라진 자리라 값을 합쳤습니다. */
+  --deep:#0D7769;       /* 글자용 — 크림 위 5.06:1 */
   --deep-face:#0D7769;  /* 면용 — 위에 크림 글자를 얹는 곳 */
   /* 카드·표처럼 크림 위에 **얹히는** 면은 순백입니다. 크림 위 크림은
      경계가 안 생기고, 순백이면 얹힌 것으로 읽히며 대비도 12.32 → 13.11
@@ -507,6 +510,108 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 .stat-card .num small{font-size:.35em;font-weight:700;margin-left:6px}
 .stat-card .sub{font-size:.96rem;line-height:1.55;color:rgba(247,248,248,.95)}
 
+/* ---------------- 함께 앉기 (비공개 세션) ----------------
+   앞은 어두운 비행, 뒤는 크림 소개입니다. 그 사이라 크림으로 받습니다. */
+.together{background:var(--cream);color:var(--ink);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
+.tg-head{max-width:720px;margin:0 auto;text-align:center}
+.tg-head .eyebrow{color:var(--deep)}
+.tg-head h2{margin-top:14px;font-size:clamp(2rem,3vw,2.75rem);font-weight:800;letter-spacing:-.02em;line-height:1.28}
+.tg-head h2 .serif{color:var(--deep)}
+.tg-head p{margin:18px auto 0;max-width:54ch;font-size:1.04rem;line-height:1.65;color:var(--muted)}
+/* 대기실 화면 한 판. 카드 셋이 같은 폭을 물려받습니다. */
+/* 판 높이를 **그림이 정합니다**. 비율을 따로 적어 두면 그 값과 그림이
+   어긋나는 순간 서비스 화면이 잘립니다 — 모서리만 다듬고 잘라내지 않습니다. */
+.tg-wide{
+  margin:60px auto 0;max-width:1120px;position:relative;border-radius:24px;overflow:hidden;
+  background:var(--ink-deep);
+  box-shadow:0 30px 60px -28px rgba(23,32,30,.4);
+}
+.tg-wide img{display:block;width:100%;height:auto}
+.tg-shot{
+  position:absolute;left:20px;top:18px;z-index:3;
+  padding:8px 14px;border-radius:999px;
+  background:rgba(16,19,18,.66);color:var(--cream);
+  font-size:.74rem;font-weight:800;letter-spacing:.06em;
+}
+/* 메인 화면과 같은 클레이 — 솟은 판, 파스텔 아이콘 칩 */
+.tg-cards{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  max-width:1120px;margin:22px auto 0;
+}
+.tg-card{
+  display:flex;align-items:center;gap:16px;
+  padding:20px 24px;border-radius:22px;background:#F6FAFE;
+  box-shadow:0 16px 30px -16px rgba(25,31,40,.38),
+             inset 0 6px 12px rgba(255,255,255,.96),
+             inset 0 -7px 13px rgba(86,110,146,.18);
+}
+.tg-card > b{font-size:1.06rem;font-weight:800;letter-spacing:-.015em;color:#191F28}
+.tg-card .ic{
+  flex:none;width:56px;height:56px;border-radius:19px;display:grid;place-items:center;
+}
+/* 칩 셋은 **같은 청록**입니다. 색으로 갈라 두면 카드가 서로 다른 기능처럼
+   읽히는데 셋 다 같은 한 화면의 이야기입니다 — 구분은 아이콘이 합니다. */
+.tg-card .ic{background:var(--sky);color:var(--deep);
+  box-shadow:inset 0 4px 8px rgba(255,255,255,.8),inset 0 -5px 9px rgba(13,119,105,.2)}
+
+.tg-list{display:flex;flex-direction:column;gap:12px}
+.tg-note{
+  margin:22px auto 0;max-width:1120px;padding:16px 20px;border-radius:16px;
+  background:rgba(13,119,105,.07);color:var(--deep);
+  font-size:.9rem;line-height:1.6;text-align:center;
+}
+
+/* ---------------- AI 리포트 ----------------
+   먹 바탕 위에 종이 한 장. 제품에서 실제로 뽑히는 문서를 그대로 세웁니다. */
+.report{background:var(--ink-black);color:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px)}
+.rp-head{max-width:720px;margin:0 auto;text-align:center}
+.rp-head .eyebrow{color:var(--teal)}
+.rp-head h2{margin-top:14px;font-size:clamp(2rem,3vw,2.75rem);font-weight:800;letter-spacing:-.02em;line-height:1.28}
+.rp-head h2 .serif{color:var(--teal)}
+.rp-head p{margin:18px auto 0;max-width:54ch;font-size:1.04rem;line-height:1.65;color:rgba(247,248,248,.8)}
+/* 리포트 문서 무대. 문서가 말하고, 어둠이 아래를 가립니다. */
+.rp-stage{
+  position:relative;max-width:640px;margin:60px auto 0;
+  border-radius:20px 20px 0 0;overflow:hidden;
+  /* 문서를 아래에서 잘라 냅니다 — 이어지는 곳이 있다는 뜻이 됩니다 */
+  height:330px;
+  box-shadow:0 40px 90px -30px rgba(0,0,0,.65);
+}
+.rp-stage img{display:block;width:100%;height:auto}
+/* 어둠. 위는 문서가 또렷하고 아래로 갈수록 먹에 잠깁니다 */
+.rp-veil{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg,
+    rgba(16,19,18,0) 0%, rgba(16,19,18,0) 30%,
+    rgba(16,19,18,.72) 58%, #101312 84%);
+}
+.rp-lock{
+  position:absolute;left:50%;bottom:34px;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+  text-align:center;color:var(--cream);
+}
+.rp-lock .pad{
+  width:52px;height:52px;border-radius:18px;display:grid;place-items:center;
+  background:rgba(45,212,191,.16);color:var(--teal);
+  box-shadow:inset 0 0 0 1.5px rgba(45,212,191,.4);
+}
+.rp-lock b{font-size:1.14rem;font-weight:800;letter-spacing:-.01em}
+.rp-lock em{font-style:normal;display:inline-flex;gap:8px}
+.rp-lock em i{
+  font-style:normal;padding:7px 13px;border-radius:999px;
+  background:rgba(247,248,248,.1);color:rgba(247,248,248,.85);font-size:.78rem;font-weight:800;
+}
+.rp-guard{
+  margin:22px auto 0;max-width:1120px;padding:16px 20px;border-radius:16px;
+  background:rgba(247,248,248,.05);color:rgba(247,248,248,.72);
+  font-size:.88rem;line-height:1.65;text-align:center;
+}
+
+@media (max-width:900px){
+  .tg-cards{grid-template-columns:1fr}
+  }
+
+
 /* ---------------- 캐릭터 덱 ---------------- */
 .deck-sec{background:var(--cream);padding:clamp(96px,14vh,160px) clamp(24px,4vw,64px);overflow:hidden}
 .deck-grid{
@@ -798,6 +903,51 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
 </section>
 
 <!-- 4. 인트로 폴드 -->
+<!-- 4.5 함께 앉기 (비공개 세션) -->
+<section class="together" id="together" aria-label="함께 앉기">
+  <div class="tg-head">
+    <span class="eyebrow rv">비공개 세션</span>
+    <h2 class="rv" style="--d:.05s">회의도 <span class="serif">Deskfit에서</span></h2>
+    <p class="rv" style="--d:.1s">자세를 교정하며 회의를 편하게 정리해요</p>
+  </div>
+
+  <!-- .rv 를 바깥에 둡니다 — 판 자체는 스크롤이 직접 끌어야 해서
+       인라인 transform 을 gsap 이 씁니다. 둘을 한 요소에 겹치면 리빌이 죽습니다. -->
+  <div class="rv" style="--d:.12s">
+    <figure class="tg-wide">
+      <!-- 크기를 적어 둡니다 — 판 높이를 그림이 정하는 구조라, 이게 없으면
+           불러오기 전 판이 0 이 되어 자리도 안 잡히고 lazy 도 안 걸립니다. -->
+      <img src="assets/shot-session.webp" width="1800" height="818" loading="lazy"
+           alt="비공개 세션 화면 — 네 명의 자세가 초록·노랑·빨강 테두리로 보이고, 마이크·카메라·녹음을 각자 켜고 꺼요">
+      <span class="tg-shot">실제 서비스 화면</span>
+    </figure>
+  </div>
+
+  <div class="tg-cards">
+    <div class="tg-card rv" style="--d:.18s">
+      <span class="ic" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+      </span>
+      <b>자세는 각자 시간은 함께</b>
+    </div>
+
+    <div class="tg-card rv" style="--d:.24s">
+      <span class="ic" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2.6" width="6" height="11.4" rx="3"/><path d="M5.6 11.4a6.4 6.4 0 0 0 12.8 0M12 17.8V21"/></svg>
+      </span>
+      <b>마이크와 카메라는 선택</b>
+    </div>
+
+    <div class="tg-card rv" style="--d:.3s">
+      <span class="ic" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="3.4" fill="currentColor" stroke="none"/></svg>
+      </span>
+      <b>회의 내용은 Notion에 요약</b>
+    </div>
+  </div>
+
+</section>
+
 <section class="intro" id="about" aria-label="소개">
   <div class="intro-stage">
     <div class="intro-copy">
@@ -862,6 +1012,30 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   </div>
 </section>
 
+
+<!-- 7.5 AI 리포트 -->
+<section class="report" id="report" aria-label="AI 리포트">
+  <div class="rp-head">
+    <span class="eyebrow rv">AI 리포트</span>
+    <h2 class="rv" style="--d:.05s">세션이 끝나면<br><span class="serif">AI 리포트를 볼 수 있어요</span></h2>
+    <p class="rv" style="--d:.1s">집중한 만큼 나도 몰랐던 자세 습관을 분석해줘요</p>
+  </div>
+
+  <div class="rp-stage rv" style="--d:.14s">
+    <img src="assets/shot-report.webp" alt="Deskfit 자세 리포트 — 자주 나온 신호가 잦은 순서로 적혀 있어요" loading="lazy">
+    <div class="rp-veil" aria-hidden="true"></div>
+    <div class="rp-lock">
+      <span class="pad" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </span>
+      <b>세션이 끝나면 볼 수 있어요</b>
+      <em><i>PDF</i><i>HTML</i></em>
+    </div>
+  </div>
+
+  <p class="rp-guard rv" style="--d:.3s">점수도 등급도 매기지 않고, 진단은 하지 않아요.</p>
+</section>
+
 <!-- 9. 캐릭터 덱 -->
 <section class="deck-sec" id="friends" aria-label="캐릭터 고르기">
   <div class="deck-grid">
@@ -883,11 +1057,11 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   <div class="lg-head">
     <span class="eyebrow rv">이번 시즌 랭킹전</span>
     <h2 class="rv" style="--d:.05s">우리 학교가 <span class="serif">제일 오래 집중했어요</span></h2>
-    <p class="rv" style="--d:.1s">이번 시즌, 다섯 캠퍼스가 함께 앉았어요.<br>
+    <p class="rv" style="--d:.1s">이번 시즌 가장 오래 앉은 세 캠퍼스예요.<br>
       제일 오래 앉은 학교의 섬이 가장 밝게 빛나요.</p>
   </div>
   <figure class="lg-stage rv" style="--d:.12s">
-    <img class="lg-poster" src="assets/league-poster.webp" alt="다섯 캠퍼스 섬이 각자의 학교색으로 빛나요 — 가장 밝은 섬이 이번 시즌 1위">
+    <img class="lg-poster" src="assets/league-poster.webp" alt="구름 위에 캠퍼스 섬들이 떠 있어요 — 가장 밝게 빛나는 가운데 섬이 이번 시즌 1위">
     <video id="lgVideo" src="assets/video-league.mp4" muted playsinline preload="metadata" aria-hidden="true"></video>
     <div class="lg-logos" id="lgLogos" aria-hidden="true"></div>
   </figure>
@@ -1243,8 +1417,9 @@ const ONBOARD = '../onboarding/index.html';
 /* ---------- 챕터 레일 (토스) ---------- */
 (() => {
   const CHAPTERS = [
-    ['top', '처음'], ['world', '캠퍼스'], ['about', '소개'], ['promise', '약속'],
-    ['camera', '카메라'], ['friends', '친구들'], ['league', '랭킹전'], ['faq', 'FAQ'], ['start', '시작'],
+    ['top', '처음'], ['world', '캠퍼스'], ['together', '함께 앉기'], ['about', '소개'], ['promise', '약속'],
+    ['camera', '카메라'], ['report', 'AI 리포트'], ['friends', '친구들'], ['league', '랭킹전'],
+    ['faq', 'FAQ'], ['start', '시작'],
   ];
   const rail = document.createElement('nav');
   rail.className = 'rail'; rail.setAttribute('aria-label', '페이지 진행');
@@ -1266,7 +1441,7 @@ const ONBOARD = '../onboarding/index.html';
     els.forEach((sec, i) => { if (sec.offsetTop <= y) on = i; });
     btns.forEach((b, i) => b.classList.toggle('on', i === on));
     /* 어두운 섹션 위에서는 틱을 밝게 뒤집습니다 */
-    const dark = ['world', 'camera', 'start', 'league'].includes(els[on].id);
+    const dark = ['world', 'camera', 'report', 'start', 'league'].includes(els[on].id);
     rail.classList.toggle('dark', dark);
     tick = false;
   }
@@ -1514,6 +1689,41 @@ const ONBOARD = '../onboarding/index.html';
       { x: '16vw', y: '22vh', scale: 1.24, ease: 'none', duration: 1 }, 0);
 })();
 
+/* ---------- 함께 앉기 · AI 리포트 — 스크롤이 카메라를 움직입니다 ----------
+   나머지 구역과 같은 문법입니다. .rv 는 도착만 알리고, 실제 움직임은
+   스크롤이 직접 끕니다 (인트로 폴드·월드 체인과 동일). */
+(() => {
+  if (REDUCE) return;
+
+  /* 세션 화면은 **판째로** 올라와 제자리에 섭니다. 그림을 확대해 판 안에서
+     흘리면 시차는 생기지만 오른쪽 표시줄이 잘립니다 — 서비스 화면은 다
+     보여야 하므로 움직이는 것은 판이지 픽셀이 아닙니다. */
+  const shot = document.querySelector('#together .tg-wide');
+  if (shot) {
+    gsap.fromTo(shot, { y: 72 }, {
+      y: 0, ease: 'none',
+      scrollTrigger: { trigger: shot, start: 'top 94%', end: 'top 42%', scrub: .6 },
+    });
+  }
+
+  /* 두 그림 다 lazy 라 판 높이가 **나중에** 정해집니다. 그때 다시 재지
+     않으면 트리거가 옛 좌표에 남아 스크롤해도 아무 일이 없습니다. */
+  document.querySelectorAll('#together .tg-wide img, #report .rp-stage img').forEach(img => {
+    if (img.complete) return;
+    img.addEventListener('load', () => ScrollTrigger.refresh(), { once: true });
+  });
+
+  /* 리포트 문서는 어둠 속에서 올라와 제자리에 섭니다. 자물쇠는 따라오지
+     않습니다 — 문서만 움직여야 "여기서 끊긴다" 가 읽힙니다. */
+  const doc = document.querySelector('#report .rp-stage img');
+  if (doc) {
+    gsap.fromTo(doc, { y: 96 }, {
+      y: 0, ease: 'none',
+      scrollTrigger: { trigger: '#report .rp-stage', start: 'top 92%', end: 'top 34%', scrub: .6 },
+    });
+  }
+})();
+
 /* ---------- 매니페스토 ---------- */
 /* 챕터 콜라주 진입은 공통 .rv 리빌이 처리합니다 — 타일 계단 순서대로 --d 가 커집니다 */
 
@@ -1532,17 +1742,25 @@ const ONBOARD = '../onboarding/index.html';
 
 /* ---------- 주간 랭킹전 ---------- */
 (() => {
-  /* 가상의 다섯 학교. 좌표(%)는 완성 영상 마지막 프레임에서 잰 섬 위치입니다.
-     로고는 DOM 오버레이 — 생성 모델에 넣으면 반드시 뭉개지고, 여기서는
-     순위가 바뀌어도 코드 한 줄이면 됩니다. */
-  /* 좌표는 video-league.mp4 마지막 프레임(1280×720) 실측 — 섬 정수리 지점입니다.
-     섬 색과 로고 색을 맞췄습니다: 가운데 앞(청록 광륜)이 1위. */
+  /* 메인 화면의 랭킹전과 **같은 세 학교, 같은 시간**입니다. 한동안 여기만
+     가상의 다섯 학교였는데, 랜딩에서 본 이름이 들어가서 없으면 첫 화면부터
+     거짓말이 됩니다.
+
+     영상에는 섬이 다섯입니다. 셋만 표시하는 것은 이 판이 **시즌 상위 셋**
+     이기 때문이고, 나머지 섬은 이름 없이 남습니다 — 학교가 셋뿐이라는 뜻이
+     아니라 순위표가 셋까지라는 뜻입니다.
+
+     좌표(%)는 video-league.mp4 마지막 프레임(1280×720) 실측, 섬 정수리
+     지점입니다. 1위는 가운데 앞 — 그 섬만 청록 광륜이 돕니다. 나머지 둘은
+     좌우 앞섬이라 셋이 삼각으로 벌어집니다.
+
+     color 는 로고 파일이 없을 때만 쓰는 대체 원판입니다. 세 학교 상징색이
+     모두 남색 계열이라 실측값 그대로 쓰면 서로 구분이 안 돼, 색상은 두고
+     명도만 벌렸습니다. */
   const LEAGUE = [
-    { slug:'univ-1', ko:'한빛대',   en:'Hanbit Univ.',    color:'#1F3A6E', hours:'12,480', x:49.2, y:53.5 },
-    { slug:'univ-2', ko:'서령대',   en:'Seoryeong Univ.', color:'#1F6B4A', hours:'11,930', x:34,   y:23.6 },
-    { slug:'univ-3', ko:'아라대',   en:'Ara Univ.',       color:'#1565C0', hours:'11,210', x:66.8, y:22.2 },
-    { slug:'univ-4', ko:'미리내대', en:'Mirinae Univ.',   color:'#233D8F', hours:'10,660', x:16.8, y:39.6 },
-    { slug:'univ-5', ko:'두루대',   en:'Duru Univ.',      color:'#6E1F2E', hours:'9,870',  x:81.3, y:39.6 },
+    { slug:'gachon',  ko:'가천대학교', en:'Gachon Univ.',  color:'#1E6EBE', h:'41', m:'12', x:49.5, y:50.1 },
+    { slug:'hanyang', ko:'한양대학교', en:'Hanyang Univ.', color:'#0E4A84', h:'38', m:'40', x:19.0, y:41.0 },
+    { slug:'myongji', ko:'명지대학교', en:'Myongji Univ.', color:'#002060', h:'29', m:'55', x:82.7, y:43.5 },
   ];
   const stage = document.querySelector('.lg-stage');
   const video = document.getElementById('lgVideo');
@@ -1588,7 +1806,8 @@ const ONBOARD = '../onboarding/index.html';
       li.appendChild(img);
       li.insertAdjacentHTML('beforeend',
         `<span class="school">${s[LANG]}</span>` +
-        `<span class="hours">${s.hours}<small>${LANG === 'en' ? 'hrs' : '시간'}</small></span>`);
+        `<span class="hours">${s.h}<small>${LANG === 'en' ? 'h' : '시간'}</small>` +
+        ` ${s.m}<small>${LANG === 'en' ? 'm' : '분'}</small></span>`);
       list.appendChild(li);
     });
   }
@@ -1823,8 +2042,8 @@ const ONBOARD = '../onboarding/index.html';
       ko: '우리 학교가 <span class="serif">제일 오래 집중했어요</span>',
       en: 'Our school <span class="serif">focused the longest</span>' }, 1],
     ['.lg-head p', {
-      ko: '이번 시즌, 다섯 캠퍼스가 함께 앉았어요.<br>제일 오래 앉은 학교의 섬이 가장 밝게 빛나요.',
-      en: 'Five campuses sat together this season.<br>The island that sat the longest glows the brightest.' }, 1],
+      ko: '이번 시즌 가장 오래 앉은 세 캠퍼스예요.<br>제일 오래 앉은 학교의 섬이 가장 밝게 빛나요.',
+      en: 'The three campuses that sat the longest this season.<br>The island that sat the longest glows the brightest.' }, 1],
     ['.hero-typo .btn-primary', {
       ko: '<span class="roll" aria-hidden="true"><i>시작하기<br>시작하기</i></span> <span class="tail" aria-hidden="true">↗</span>',
       en: '<span class="roll"><i>Get started<br>Get started</i></span> <span class="tail" aria-hidden="true">↗</span>' }, 1],

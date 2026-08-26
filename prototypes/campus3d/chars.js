@@ -149,7 +149,8 @@ function glbChar(parent, species, fit, opt, SkeletonUtils) {
   g.userData.parts = {
     legs: [dummy(), dummy()], shins: [dummy(), dummy()], arms: [dummy(), dummy()],
     head: dummy(), torso: dummy(), neck: null, eyes: [], wear: {},
-    glb: { mixer, act, cur: 'idle', last: 0, body, bodyY: body.position.y, poseNodes },
+    glb: { mixer, act, cur: 'idle', last: 0, body, bodyY: body.position.y,
+      bodyQ: body.quaternion.clone(), poseNodes },
   };
   /* 최신 원본 GLB를 유지하면서 그 위에 월드 공용 옷을 입힙니다.
      예전에는 GLB 경로가 fit을 완전히 무시해서 옷장에서 저장·동기화는
@@ -1503,7 +1504,7 @@ export function face(g, state) {
 }
 
 /** 앉기 — 넓적다리를 앞으로, 정강이를 아래로. 의자 높이(.46)에 엉덩이가 옵니다. */
-export function sit(g, on) {
+export function sit(g, on, drop = 0) {
   { const P = g.userData.parts;
     if (P && P.glb) {
       /* 일부 최신 GLB에는 sit 클립이 없습니다. 그 경우 예전 코드는
@@ -1523,11 +1524,13 @@ export function sit(g, on) {
       for (const v of Object.values(pose)) { v.o.quaternion.copy(v.q); v.o.position.copy(v.p); }
       if (on) {
         const tilt = (n, x, z = 0) => { const v = pose[n]; if (!v) return; v.o.rotateX(x); v.o.rotateZ(z); };
-        tilt('root', -.08); tilt('spine', -.18); tilt('head', .12);
+        /* 원본 GLB 네 종은 뼈의 로컬 축이 서로 달라 root·spine의 X 회전이
+           기린에서는 화면 왼쪽 기울기로 보였습니다. 상체는 기준 자세를
+           그대로 유지하고 골반 높이와 다리만 접어 좌판에 똑바로 앉힙니다. */
         tilt('leg.L', -1.18, -.08); tilt('leg.R', -1.18, .08);
         tilt('arm.L', -.48, -.14); tilt('arm.R', -.48, .14);
-        G.body.position.y = G.bodyY - .31;
-        const outfit = g.getObjectByName('equipped-clay-outfit'); if (outfit) outfit.position.y = -.31;
+        G.body.position.y = G.bodyY - .31 - drop;
+        const outfit = g.getObjectByName('equipped-clay-outfit'); if (outfit) outfit.position.y = -.31 - drop;
       } else {
         G.body.position.y = G.bodyY;
         const outfit = g.getObjectByName('equipped-clay-outfit'); if (outfit) outfit.position.y = 0;
@@ -1542,9 +1545,44 @@ export function sit(g, on) {
     r.rotation.x = on ? -1.0 : -.1;
     r.rotation.z = on ? (i ? .2 : -.2) : g.userData.base.armZ[i];
   });
-  P.torso.position.y = TORSO_Y; P.torso.rotation.y = 0;
-  P.head.position.y = HEAD_Y; P.head.rotation.y = 0;
+  P.torso.position.y = TORSO_Y - (on ? drop : 0); P.torso.rotation.y = 0;
+  P.head.position.y = HEAD_Y - (on ? drop : 0); P.head.rotation.y = 0;
   g.userData.sitting = on;
+}
+
+/** 침대에 눕기 — 최근 원본 GLB는 통째로 눕혀 얼굴·옷 비율을 보존합니다. */
+export function lie(g, on) {
+  const P = g?.userData?.parts; if (!P) return;
+  if (g.userData.sitting) sit(g, false);
+  if (P.glb) {
+    const G = P.glb;
+    for (const v of Object.values(G.poseNodes || {})) {
+      v.o.quaternion.copy(v.q); v.o.position.copy(v.p);
+    }
+    G.body.quaternion.copy(G.bodyQ);
+    G.body.position.y = G.bodyY;
+    if (on) {
+      G.body.rotateX(-Math.PI / 2);
+      G.body.position.y = G.bodyY + .82;
+    }
+    const outfit = g.getObjectByName('equipped-clay-outfit');
+    if (outfit) {
+      outfit.rotation.set(on ? -Math.PI / 2 : 0, 0, 0);
+      outfit.position.set(0, on ? .82 : 0, 0);
+    }
+  } else if (on) {
+    /* 절차형 네 종도 같은 실루엣이 되도록 머리·몸·팔다리를 한 높이에
+       펼칩니다. 원본 네 GLB가 기본이지만 잠금 해제 캐릭터도 깨지지 않습니다. */
+    const y = .84;
+    P.torso.position.set(P.torso.position.x, y, -.42); P.torso.rotation.x = -Math.PI / 2;
+    P.head.position.set(P.head.position.x, y, -1.15); P.head.rotation.x = -Math.PI / 2;
+    P.legs.forEach((v, i) => { v.position.y = y; v.position.z = .22; v.rotation.x = -Math.PI / 2; v.rotation.z = i ? .04 : -.04; });
+    P.shins.forEach((v) => { v.rotation.x = 0; });
+    P.arms.forEach((v, i) => { v.position.y = y; v.rotation.x = -Math.PI / 2; v.rotation.z = i ? .16 : -.16; });
+  } else {
+    idle(g, 0, 0);
+  }
+  g.userData.lying = on;
 }
 
 /** 무너지는 정도 0~1 — 이 서비스가 실제로 보여 주려는 그림입니다.

@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { wearShop } from '../prototypes/campus3d/ui.js'
+import { cafeteria, tour, wearShop } from '../prototypes/campus3d/ui.js'
 import { SPOTS } from '../prototypes/campus3d/spots.js'
 import { INDOOR } from '../prototypes/campus3d/npcs.js'
 
@@ -178,7 +178,12 @@ test('기상청 키는 서버 환경변수이며 APIHub 승인 오류도 정확�
 })
 
 test('지도 전체 클릭 이동·큰 핵심 건물·막히지 않은 본관 문을 유지한다', () => {
-  assert.match(world, /let best = null, bd = Infinity;/, '지도 빈 곳 클릭 이동이 막혀 있습니다')
+  assert.match(world, /function drawClayCampus\(g\)/, '3D 클레이 지도 렌더가 없습니다')
+  assert.match(world, /const w = clayWorld\(px, py\)/, '지도 빈 곳 좌표를 월드 좌표로 바꾸지 않습니다')
+  assert.match(world, /if \(!hitCampus\(x,z\)\) \{ at=\{x,z\}; break; \}/,
+    '지도에서 막힌 곳을 눌렀을 때 가까운 빈 자리를 찾지 않습니다')
+  assert.match(world, /\{ key: 'field', name: '운동장'/)
+  assert.match(world, /\{ key: 'lake', name: '호수'/)
   assert.match(plan, /enter:\s*'arcade'[^\n]*?s:\s*3\.0/)
   assert.match(plan, /enter:\s*'shop'[^\n]*?s:\s*3\.0/)
   assert.match(plan, /enter:\s*'dorm'[^\n]*?s:\s*2\.7/)
@@ -244,4 +249,109 @@ test('최신 GLB 캐릭터도 실제 옷과 앉은 자세를 적용한다', () =
   assert.match(chars, /g\.userData\.outfitAudit/, '플레이어·NPC 착용 상태를 교차 검수할 정보가 없습니다')
   assert.match(chars, /G\.body\.position\.y = G\.bodyY - \.31/, '앉을 때 몸을 좌판 높이로 내리지 않습니다')
   assert.match(chars, /tilt\('leg\.L', -1\.18/, '앉을 때 다리를 굽히지 않습니다')
+})
+
+test('첫 안내는 아이콘·제목·본문을 한 축으로 정렬한다', () => {
+  const out = tour({ step: 0, onStep() {}, onDone() {} }).html
+  assert.match(out, /class="cc tour-card"/)
+  assert.match(out, /class="ic sky tour-icon"/)
+  assert.match(out, /class="tour-title">섬 하나가 캠퍼스예요/)
+  assert.match(out, /class="tour-copy">건물 여섯 채/)
+  assert.match(world, /\.tour-card\{[^}]*align-items:center[^}]*justify-content:center[^}]*text-align:center/)
+  assert.match(world, /\.tour-card \.tour-copy\{[^}]*width:min\(100%,660px\)[^}]*margin:0 auto/)
+})
+
+test('광장 이정표를 없애고 본관 현우를 시설 안내 NPC로 둔다', () => {
+  const campus = spots.slice(spots.indexOf('campus: ['), spots.indexOf('library: ['))
+  assert.doesNotMatch(campus, /이정표/)
+  const hyunwoo = INDOOR.mainhall.find((npc) => npc.name === '현우')
+  assert.equal(hyunwoo?.role, '본관 학과 조교')
+  assert.ok(hyunwoo?.lines.some((line) => line.includes('오늘 강의')))
+  assert.ok(hyunwoo?.lines.some((line) => line.includes('강단 스피커')))
+  assert.ok(hyunwoo?.lines.some((line) => line.includes('자세 세션')))
+})
+
+test('도서관 대출대·반납 수레·은지 안내가 출입문과 서로 겹치지 않는다', () => {
+  const library = rooms.slice(rooms.indexOf('library(g) {'), rooms.indexOf('mainhall(g) {'))
+  assert.match(library, /R\.globe\(g, -10\.2, 1\.08, 14\.2\)/, '지구본이 대출대 상판 안쪽이 아닙니다')
+  assert.match(library, /R\.bookCart\(g, 5\.0, 12\.2, 0\)/)
+  assert.match(library, /R\.bookCart\(g, 6\.6, 12\.2, 0\)/)
+  assert.doesNotMatch(library, /R\.(?:bin|plant|mag|aFrame)\(g/, '도서관의 쓰레기통·화분·겹친 안내물이 남았습니다')
+  assert.doesNotMatch(library, /\[-13\.4, 13\.4\]|\[13\.4, 13\.4\]/,
+    '대출대와 겹치던 맨 앞 열람 책상이 남았습니다')
+  const cart = SPOTS.library.find((s) => s.game === 'bookSort')
+  assert.deepEqual([cart?.x, cart?.z, cart?.r], [5.8, 12.2, 1.8])
+  const eunji = INDOOR.library.find((npc) => npc.name === '은지')
+  assert.equal(eunji?.role, '도서관 사서')
+  assert.deepEqual([eunji?.x, eunji?.z, eunji?.dir], [-8, 15.45, Math.PI])
+  assert.ok(eunji?.lines.some((line) => line.includes('자세 세션')))
+  assert.ok(eunji?.lines.some((line) => line.includes('책 정리 미니게임')))
+  assert.ok(Math.hypot(eunji.x - cart.x, eunji.z - cart.z) >= cart.r + 2.5)
+})
+
+test('앉은 GLB 상체는 기울이지 않고 다리만 접는다', () => {
+  assert.doesNotMatch(chars, /tilt\('(root|spine|head)'/)
+  assert.match(chars, /tilt\('leg\.L', -1\.18, -\.08\)/)
+  assert.match(chars, /tilt\('leg\.R', -1\.18, \.08\)/)
+})
+
+test('학생회관 라운지·식당과 학교 설정 안내를 분리한다', () => {
+  const union = rooms.slice(rooms.indexOf('union(g) {'), rooms.indexOf('arcade(g) {'))
+  assert.doesNotMatch(union, /R\.window3\(g, 9\.6,/, '식당 메뉴판 뒤에 겹친 창이 남았습니다')
+  assert.match(union, /\[\[8\.2, \.8, 0xF2C14E\], \[8\.2, 5\.2, 0xE8935A\]\]/)
+  assert.doesNotMatch(union, /\[-8\.2, (?:1\.0|5\.6),/, '라운지와 겹치던 왼쪽 식탁이 남았습니다')
+  assert.match(readFileSync('prototypes/campus3d/room.js', 'utf8'), /const inward = Math\.atan2\(-Math\.cos\(a\), -Math\.sin\(a\)\);[\s\S]*?c\.rotation\.y = inward/)
+  const empty = cafeteria({ school: '', data: undefined }).html
+  assert.match(empty, /MY의 내 정보에서 학교를 고르면/)
+  assert.doesNotMatch(empty, /옷장\(C\)/)
+})
+
+test('넓어진 E 기능 구역은 서로와 NPC를 교차하지 않는다', () => {
+  const extra = .65
+  for (const [room, list] of Object.entries(SPOTS)) {
+    for (let i = 0; i < list.length; i++) for (let j = i + 1; j < list.length; j++) {
+      const a = list[i], b = list[j]
+      const d = Math.hypot(a.x - b.x, a.z - b.z)
+      assert.ok(d >= a.r + b.r + extra * 2 + .1,
+        `${room}/${a.title}과 ${b.title}의 넓힌 E 구역이 겹칩니다 (${d.toFixed(2)})`)
+    }
+    for (const npc of INDOOR[room] || []) for (const spot of list) {
+      const d = Math.hypot(npc.x - spot.x, npc.z - spot.z)
+      assert.ok(d >= spot.r + extra + 2.5,
+        `${room}/${npc.name}이 넓힌 ${spot.title} 구역을 가로챕니다 (${d.toFixed(2)})`)
+    }
+  }
+  assert.match(world, /const spotReach = \(s\) => \(s\.r \|\| 1\) \+ \.65/)
+  assert.match(world, /function nearSeat\(\)/)
+  assert.match(world, /let best = null, bd = 2\.15 \* 2\.15/)
+})
+
+test('기숙사는 작은 안내·일정 창, 창가 날씨, 빈백 앉기와 침대 눕기를 쓴다', () => {
+  const room = readFileSync('prototypes/campus3d/room.js', 'utf8')
+  const ui = readFileSync('prototypes/campus3d/ui.js', 'utf8')
+  assert.match(ui, /export function schedule[\s\S]*?medium: true/)
+  assert.match(ui, /export function dormInfo[\s\S]*?medium: true/)
+  assert.match(world, /\.dorm-info-view \.cc\{[^}]*align-items:center[^}]*text-align:center/)
+  assert.match(world, /case 'weather': return weatherView\(\)/)
+  assert.match(room, /regSeatLocal\(x, z, ry, 0, 1\.18, 'bed'\)/)
+  assert.match(room, /regSeatLocal\(x, z, ry, 0, \.14, 'beanbag'\)/)
+  assert.match(world, /if \(q\.kind === 'bed'\) \{[\s\S]*?lie\(player, true\)/)
+  assert.match(world, /const drop = q\.kind === 'beanbag' \? \.18 : 0/)
+  assert.deepEqual(INDOOR.dorm, [], '기숙사 하연 NPC가 남았습니다')
+})
+
+test('동아리 상점 가구 구역은 독립 쇼룸이며 출입문과 다른 상점을 침범하지 않는다', () => {
+  const shop = rooms.slice(rooms.indexOf('shop(g) {'))
+  assert.match(shop, /R\.rug\(g, -8\.4, 4\.1, 7\.0, 4\.7/)
+  assert.match(shop, /R\.sofa\(g, -10\.35, 4\.15/)
+  assert.match(shop, /R\.lowTable\(g, -8\.35, 4\.15/)
+  assert.match(shop, /R\.displayTable\(g, -6\.55, 2\.05/)
+  assert.doesNotMatch(shop, /R\.rug\(g, 0, 3\.3, 18\.8/,
+    '가구 구역이 출입문과 다른 상점을 가로지르는 옛 대형 러그입니다')
+  const furniture = SPOTS.shop.find((s) => s.panel === 'furn-shop')
+  const wear = SPOTS.shop.find((s) => s.panel === 'wear-shop')
+  const egg = SPOTS.shop.find((s) => s.panel === 'egg-shop')
+  assert.deepEqual([furniture.x, furniture.z, furniture.r], [-8.2, 3.55, 2.75])
+  for (const other of [wear, egg])
+    assert.ok(Math.hypot(furniture.x - other.x, furniture.z - other.z) >= furniture.r + other.r + 1.3)
 })

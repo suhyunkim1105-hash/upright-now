@@ -207,7 +207,9 @@ export function desk(g, x, z, ry, w = 2.2, d = 1.0, h = .78) {
 let SEATREG = null;
 export function seatsBegin() { SEATREG = []; }
 export function seatsTake() { const r = SEATREG || []; SEATREG = null; return r; }
-function regSeat(x, z, ry, kind) { if (SEATREG) SEATREG.push({ x, z, dir: ry, kind }); }
+function regSeat(x, z, ry, kind, extra) {
+  if (SEATREG) SEATREG.push({ x, z, dir: ry, kind, ...(extra || {}) });
+}
 function regSeatLocal(px, pz, pry, lx, lz, kind) {
   if (!SEATREG) return;
   const c = Math.cos(pry), sn = Math.sin(pry);
@@ -235,6 +237,10 @@ export function readTable(g, x, z, ry, w = 5.0) {
 }
 /** 침대 — 틀 · 매트리스 · 이불 · 베개 */
 export function bed(g, x, z, ry) {
+  /* 침대 발치에서 눕기를 시작합니다. 머리는 로컬 -z(베개 쪽)로 향하고,
+     몸 중심은 매트리스 한가운데에 오도록 별도 자리로 등록합니다. */
+  regSeatLocal(x, z, ry, 0, 1.18, 'bed');
+  if (SEATREG?.length) Object.assign(SEATREG[SEATREG.length - 1], { y: .82 });
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   box(p, 1.9, .34, 3.4, .08, M(IN.woodDark, .78), 0, .2, 0);
   box(p, 1.9, .8, .14, .05, M(IN.wood, .74), 0, .6, -1.7);
@@ -684,9 +690,10 @@ export function cafeSet(g, x, z, col = 0x63C47C) {
   cyl(p, .42, .46, .08, 18, M(IN.metalDark, .45), 0, .06, 0);
   [0, 1, 2, 3].forEach((i) => {
     const a = i * Math.PI / 2 + .4, r = 1.24;
-    regSeat(x + Math.cos(a) * r, z + Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)), 'chair');
+    const inward = Math.atan2(-Math.cos(a), -Math.sin(a));
+    regSeat(x + Math.cos(a) * r, z + Math.sin(a) * r, inward, 'chair');
     const c = new THREE.Group(); c.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
-    c.rotation.y = -a + Math.PI / 2; p.add(c);
+    c.rotation.y = inward; p.add(c);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
       cyl(c, .05, .06, .46, 8, M(IN.metalDark, .45), sx * .21, .23, sz * .21));
     box(c, .58, .12, .58, .06, M(col, .68), 0, .52, 0);
@@ -1247,7 +1254,9 @@ export function roundRug(g, x, z, col = 0x63C47C, inner = 0xF2F8EE, r = 1.1) {
 }
 /** 빈백 — 공을 그냥 놓으면 구슬입니다. 눌러서 앉은 자국을 냅니다 */
 export function beanbag(g, x, z, ry = 0, col = 0x9B7BD4) {
-  regSeatLocal(x, z, ry, 0, .04, 'sofa');
+  /* 빈백은 좌판 중앙보다 등받이 반대쪽으로 살짝 앉아야 몸이 등받이에
+     파묻히지 않습니다. */
+  regSeatLocal(x, z, ry, 0, .14, 'beanbag');
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   const lo = P(col, .86), hi = P(col, .7);
   const b = new THREE.Mesh(new THREE.SphereGeometry(.52, 16, 12), lo);

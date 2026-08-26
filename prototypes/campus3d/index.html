@@ -361,6 +361,7 @@
     border-radius:30px}
   #panel .ph{background:transparent;border-bottom:0;padding:22px 26px 6px}
   #panel.wide{width:min(920px,94vw)}
+  #panel.medium{width:min(640px,92vw)}
   #panel.shop{width:min(1040px,95vw);--store:var(--mint);--storeInk:var(--mintD)}
   #panel.shop[data-store="wear"]{--store:#F6D5CF;--storeInk:#A6473D}
   #panel.shop[data-store="furn"]{--store:#E6DDF2;--storeInk:#665087}
@@ -400,6 +401,16 @@
   .cc b{font-size:14px;font-weight:800;color:var(--cInk);letter-spacing:-.01em}
   .cc small{font-size:10.5px;font-weight:700;color:var(--cInk3);line-height:1.45}
   .cc .big{font:800 22px/1 var(--ff);color:var(--cInk);letter-spacing:-.02em}
+  .tour-card{min-height:286px;align-items:center;justify-content:center;text-align:center;
+    gap:18px;padding:34px 28px 30px}
+  .tour-card .tour-icon{width:72px;height:72px;border-radius:24px;flex:none}
+  .tour-card .tour-icon .pic{width:36px;height:36px}
+  .tour-card .tour-title{margin:2px 0 0;font-size:24px;line-height:1.25;letter-spacing:-.035em}
+  .tour-card .tour-copy{display:block;width:min(100%,660px);margin:0 auto;font-size:14px;
+    line-height:1.68;text-align:center;word-break:keep-all;color:var(--cInk3)}
+  .dorm-info-view .cc{align-items:center;text-align:center;min-height:164px;justify-content:flex-start}
+  .dorm-info-view .cc .ic{margin-inline:auto;flex:none}
+  .dorm-info-view .cc small{text-align:center;word-break:keep-all}
   .ic.peach{background:var(--peach);color:var(--peachD)}
   .ic.lilac{background:var(--lilac);color:var(--lilacD)}
   .ic.lemon{background:var(--lemon);color:var(--lemonD)}
@@ -517,12 +528,15 @@
   .fame-frame strong small{font-size:9px;margin-left:2px;color:#79879A}
   @media(max-width:760px){.fame-wall{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}.fame-frame,.fame-frame.top1,.fame-frame.top2,.fame-frame.top3{grid-column:span 1;grid-row:auto;margin-top:0;transform:none}}
   @media(max-width:680px){
-    #panel.wide,#panel.shop{width:min(94vw,520px)}
+    #panel.wide,#panel.medium,#panel.shop{width:min(94vw,520px)}
     #panel .pclose{right:14px;top:14px;width:40px;height:40px}
     .shop-layout{display:block}
     .shop-tabs{position:static;display:flex;flex-direction:row;overflow:auto;margin-bottom:13px;padding:2px 2px 7px;background:none}
     .shop-tabs button{white-space:nowrap}
     .shop-main .cg{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .tour-card{min-height:250px;gap:15px;padding:28px 18px 24px}
+    .tour-card .tour-title{font-size:21px}
+    .tour-card .tour-copy{font-size:12.5px}
     .wear-gallery{grid-template-columns:1fr}.wear-preview-card{position:static}.wear-preview-stage{height:220px}
     .board-view ul.feed li{align-items:flex-start;flex-wrap:wrap}
   }
@@ -890,7 +904,7 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { character, SPECIES, OUTFITS, WEAR, WEAR_FREE, normalizeLook, stride, idle, sit, slouch, look, face,
+import { character, SPECIES, OUTFITS, WEAR, WEAR_FREE, normalizeLook, stride, idle, sit, lie, slouch, look, face,
   RIDES, ride, rideOn, rideOff, TINTS, TINTABLE, applyTint,
   loadCharacters, setSkeletonUtils } from './chars.js';
 import { GLTFLoader as CharLoader } from './vendor/ext/GLTFLoader.js';
@@ -2095,6 +2109,7 @@ function openPanel(s) {
     elPanel.querySelector('h3').textContent = v.title;
     elPanel.querySelector('.bd').innerHTML = v.html;
     elPanel.classList.toggle('wide', !!v.wide);
+    elPanel.classList.toggle('medium', !!v.medium);
     elPanel.classList.toggle('shop', !!v.shop);
     elPanel.classList.toggle('compact', !v.wide && ['weather','bus','invite','vending','claw'].includes(s.panel));
     elPanel.dataset.store = s.panel === 'wear-shop' ? 'wear'
@@ -2112,7 +2127,7 @@ function openPanel(s) {
 function closePanel() {
   clearThumbs();
   delete elPanel.dataset.store;
-  elPanel.classList.remove('on', 'compact'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
+  elPanel.classList.remove('on', 'compact', 'medium', 'wide', 'shop'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
   const mq = document.querySelector('#myquick');
@@ -2500,7 +2515,7 @@ chatBox.addEventListener('keydown', (e) => {
 });
 function setChatChannel(channel) {
   if (channel === 'school' && !SAVE.school) {
-    toast('학교를 먼저 골라 주세요', '옷장(C)의 학교 항목에서 설정할 수 있어요');
+    toast('학교를 먼저 골라 주세요', 'MY의 내 정보에서 설정할 수 있어요');
     channel = 'all';
   }
   chatChannel = channel === 'school' ? 'school' : 'all';
@@ -2815,10 +2830,10 @@ let near = null, spot = null, npcNear = null, chairNear = null, spotD = 1e9, npc
 /* 아무 의자에나 앉기 — 방을 지을 때 적어 둔 자리 목록에서 찾습니다.
    도서관·본관·기숙사 의자는 앉는 순간 자세 세션이 시작되고,
    소파·벤치·식당 의자는 그냥 앉아서 쉽니다. */
-const CSIT = { on: false, from: null };
+const CSIT = { on: false, from: null, kind: '' };
 function nearSeat() {
   if (!room || !room.seats) return null;
-  let best = null, bd = 1.65 * 1.65;
+  let best = null, bd = 2.15 * 2.15;
   for (const q of room.seats) {
     const d2 = (P.x - q.x) ** 2 + (P.z - q.z) ** 2;
     if (d2 < bd) { bd = d2; best = q; }
@@ -2826,16 +2841,23 @@ function nearSeat() {
   return best;
 }
 function sitCasual(q) {
-  CSIT.on = true; CSIT.from = { x: P.x, z: P.z, dir: P.dir };
+  CSIT.on = true; CSIT.kind = q.kind; CSIT.from = { x: P.x, z: P.z, dir: P.dir };
   P.x = q.x; P.z = q.z; P.dir = q.dir; P.sp = 0;
   yaw = seatYaw(q); pitch = .38; dist = 5.6; camD = dist;
-  sit(player, true); sit(pipMe, true);
+  if (q.kind === 'bed') {
+    lie(player, true); lie(pipMe, true);
+    pitch = .58; dist = 6.4; camD = dist;
+  } else {
+    const drop = q.kind === 'beanbag' ? .18 : 0;
+    sit(player, true, drop); sit(pipMe, true, drop);
+  }
 }
 function standCasual() {
+  if (CSIT.kind === 'bed') { lie(player, false); lie(pipMe, false); }
   CSIT.on = false;
   sit(player, false); sit(pipMe, false);
   if (CSIT.from) { P.x = CSIT.from.x; P.z = CSIT.from.z; P.dir = CSIT.from.dir; }
-  dist = room ? 10.6 : 11.5; pitch = .64; camD = dist;
+  dist = room ? 10.6 : 11.5; pitch = .64; camD = dist; CSIT.kind = '';
   unstick();
 }
 function interact() {
@@ -2878,6 +2900,9 @@ function interact() {
   if (near) enterRoom(near);
 }
 const spotsHere = () => SPOTS[room ? room.key : 'campus'] || [];
+/* E 구역은 에셋의 작은 중심점보다 65cm 넓게 받습니다. 두 구역이 가까워도
+   항상 중심이 더 가까운 하나만 고르므로 NPC나 옆 기능이 가로채지 않습니다. */
+const spotReach = (s) => (s.r || 1) + .65;
 /* 눌러서 걷던 길은 문을 넘을 때 버립니다. 꼭짓점은 **바깥 좌표**인데
    방에 들어가면 hit() 이 방 격자로 바뀝니다 — 그대로 두면 들어가자마자
    바깥 어딘가를 향해 저 혼자 걸어 나갑니다. 실제로 학생회관에 들어간
@@ -3049,6 +3074,93 @@ function mapUV(x, z) {
   _mv.set(x, 0, z).project(MAPSHOT.cam);
   return [(_mv.x * .5 + .5), (-_mv.y * .5 + .5)];
 }
+
+/* M 지도 전용 아이소메트릭 클레이 렌더.
+   실제 월드 스크린샷을 축소하면 큰 본관이 작은 시설을 가리고 조경이
+   글자를 덮었습니다. 지도는 같은 좌표를 단순한 클레이 블록으로 다시
+   그려, 레퍼런스처럼 건물 높이·도로·블록이 한눈에 읽히게 합니다. */
+const CLAYMAP = { S: 620, cx: 310, cy: 306, sx: .82, sy: .48 };
+function clayXY(x, z) {
+  return [CLAYMAP.cx + (x - z) * CLAYMAP.sx, CLAYMAP.cy + (x + z) * CLAYMAP.sy];
+}
+function clayWorld(px, py) {
+  const a = (px - CLAYMAP.cx) / CLAYMAP.sx;
+  const b = (py - CLAYMAP.cy) / CLAYMAP.sy;
+  return { x: (a + b) / 2, z: (b - a) / 2 };
+}
+function mapPoly(g, pts, fill, stroke) {
+  g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath();
+  if (fill) { g.fillStyle = fill; g.fill(); }
+  if (stroke) { g.strokeStyle = stroke; g.stroke(); }
+}
+function clayPrism(g, b) {
+  const w = Math.max(9, b.w * b.s), d = Math.max(7, b.d * b.s);
+  const base = [[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]]
+    .map(([dx,dz]) => clayXY(b.x + dx, b.z + dz));
+  const h = ({ mainhall:42, library:35, union:31, dorm:29, arcade:27, clubshop:27 }[b.zone] || 25);
+  const top = base.map(([x,y]) => [x,y-h]);
+  const pal = {
+    mainhall:['#91B9EA','#6E96C9','#BBD7F5'], library:['#74D2C0','#4BAA9A','#B8EBE2'],
+    union:['#8ED39F','#5DAD73','#C6EFCE'], dorm:['#F3B87B','#D68B4F','#FFD8AC'],
+    arcade:['#A68CDF','#7960BA','#D8CCF1'], clubshop:['#EC9486','#C86B60','#F8C9C2'],
+  }[b.zone] || ['#A8B7C8','#7E90A5','#D4DEE8'];
+  mapPoly(g, [top[1],top[2],base[2],base[1]], pal[1]);
+  mapPoly(g, [top[2],top[3],base[3],base[2]], pal[0]);
+  g.lineWidth = 1.5; mapPoly(g, top, pal[2], 'rgba(255,255,255,.84)');
+  /* 창은 벽에 붙인 작은 클레이 알약입니다. */
+  g.fillStyle = 'rgba(239,249,255,.78)';
+  for (let i=0;i<3;i++) {
+    const x = top[1][0] + (top[2][0]-top[1][0])*(.22+i*.27);
+    const y = top[1][1] + (top[2][1]-top[1][1])*(.22+i*.27) + h*.50;
+    g.beginPath(); g.roundRect(x-4,y-3,8,6,2); g.fill();
+  }
+  /* 지붕 장식/간판이 건물마다 달라 실루엣으로도 구분됩니다. */
+  const [cx,cy] = clayXY(b.x,b.z);
+  g.fillStyle = pal[0]; g.beginPath(); g.roundRect(cx-18,cy-h-10,36,13,6); g.fill();
+  g.fillStyle = '#FFFFFF'; g.font = '900 9px "Wanted Sans Variable",sans-serif';
+  g.textAlign='center'; g.textBaseline='middle'; g.fillText(b.name, cx, cy-h-3.5);
+}
+function clayTree(g, x, z, c = '#65C56B') {
+  const [px,py] = clayXY(x,z);
+  g.fillStyle='rgba(45,73,85,.16)'; g.beginPath(); g.ellipse(px+4,py+5,9,4,0,0,TAU); g.fill();
+  g.fillStyle='#A97652'; g.fillRect(px-1.5,py-9,3,11);
+  g.fillStyle=c; [[0,-14,7],[-5,-10,5],[5,-10,5]].forEach(([dx,dy,r])=>{g.beginPath();g.arc(px+dx,py+dy,r,0,TAU);g.fill();});
+}
+function drawClayCampus(g) {
+  const S=CLAYMAP.S;
+  const bg=g.createLinearGradient(0,0,0,S); bg.addColorStop(0,'#BFEAFF'); bg.addColorStop(1,'#88D4F1');
+  g.fillStyle=bg; g.fillRect(0,0,S,S);
+  const corners=[[-CAMPUS.SITE.hx,-CAMPUS.SITE.hz],[CAMPUS.SITE.hx,-CAMPUS.SITE.hz],[CAMPUS.SITE.hx,CAMPUS.SITE.hz],[-CAMPUS.SITE.hx,CAMPUS.SITE.hz]].map(([x,z])=>clayXY(x,z));
+  const low=corners.map(([x,y])=>[x,y+16]);
+  g.lineWidth=2; mapPoly(g,[corners[1],corners[2],low[2],low[1]],'#9BBCC9');
+  mapPoly(g,[corners[2],corners[3],low[3],low[2]],'#86AAB8');
+  mapPoly(g,corners,'#A7E58E','rgba(255,255,255,.82)');
+
+  /* 회색 도로 위에 밝은 보행로를 겹쳐 레퍼런스의 도시 블록감을 냅니다. */
+  const route=(pts,w,col)=>{g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';g.lineJoin='round';g.beginPath();pts.forEach(([x,z],i)=>{const p=clayXY(x,z);i?g.lineTo(...p):g.moveTo(...p)});g.stroke();};
+  route([[0,124],[0,10],[0,-82]],28,'#D0DCE2'); route([[-135,8],[135,8]],25,'#D0DCE2');
+  route([[-112,70],[120,70],[120,8]],22,'#D0DCE2');
+  route([[0,124],[0,10],[0,-82]],17,'#F8FCFD'); route([[-135,8],[135,8]],15,'#F8FCFD');
+  BUILDINGS.forEach((b)=>route([[0,8],[b.x,b.z]],12,'#F8FCFD'));
+
+  /* 운동장·호수·광장도 이름표가 없어도 모양으로 찾을 수 있습니다. */
+  { const [x,y]=clayXY(-60,50); g.fillStyle='#D9826E'; g.beginPath(); g.ellipse(x,y,34,17,.5,0,TAU); g.fill();
+    g.strokeStyle='#FFF8EF';g.lineWidth=3;g.beginPath();g.ellipse(x,y,25,11,.5,0,TAU);g.stroke(); }
+  { const [x,y]=clayXY(104,58); g.fillStyle='#62C6E9';g.beginPath();g.ellipse(x,y,31,16,.5,0,TAU);g.fill();
+    g.strokeStyle='rgba(255,255,255,.72)';g.lineWidth=3;g.stroke(); }
+  { const [x,y]=clayXY(0,12); g.fillStyle='#F7F0DC';g.beginPath();g.ellipse(x,y,31,17,0,0,TAU);g.fill();
+    g.fillStyle='#6CC9E9';g.beginPath();g.ellipse(x,y-2,13,7,0,0,TAU);g.fill();
+    g.fillStyle='#FFFFFF';g.beginPath();g.ellipse(x,y-7,5,3,0,0,TAU);g.fill(); }
+
+  [[-130,-82],[-105,-62],[-78,-92],[-128,94],[-95,106],[80,-96],[112,-80],[140,-55],[142,96],[72,104],[-130,30],[145,28]]
+    .forEach(([x,z],i)=>clayTree(g,x,z,i%3?'#66C96C':'#89D66F'));
+  [...BUILDINGS].sort((a,b)=>(a.x+a.z)-(b.x+b.z)).forEach((b)=>clayPrism(g,b));
+
+  const numOf=(k)=>{const i=PLACES.findIndex((q)=>q.key===k);return i<0?'':((i+1)%10)+'. ';};
+  BUILDINGS.forEach((b)=>{const [x,y]=clayXY(b.x,b.z);mapLabel(g,numOf(b.zone)+b.name,x,y+18,10.5)});
+  PLACES.filter((q)=>q.at).forEach((q)=>{const [x,y]=clayXY(q.at.x,q.at.z);mapLabel(g,numOf(q.key)+q.name,x,y+18,9.8)});
+  { const [x,y]=clayXY(P.x,P.z); mapMe(g,x,y,P.dir,6.5); }
+}
 const mapCv = $('#map canvas'), mg = mapCv.getContext('2d');
 function toggleMap() {
   mapOn = !mapOn;
@@ -3090,18 +3202,30 @@ mapCv.addEventListener('click', (e) => {
   const S = 620;
   const px = ((e.clientX - r.left) / r.width) * S;
   const py = ((e.clientY - r.top) / r.height) * S;
-  /* 지도 어디를 눌러도 가장 가까운 시설로 갑니다. */
-  let best = null, bd = Infinity;
-  BUILDINGS.forEach((b) => {
-    let bx, by;
-    if (MAPSHOT.img?.complete) { const [u, v] = mapUV(b.x, b.z); bx = u * S; by = v * S; }
-    else { const k = (S / 2 - 34) / CAMPUS.HALF; bx = S / 2 + b.x * k; by = S / 2 + b.z * k; }
-    const d2 = (px - bx) ** 2 + (py - by) ** 2;
-    if (d2 < bd) { bd = d2; best = b; }
+  /* 시설·호수·운동장 라벨 근처는 문/중심 앞으로, 그 밖은 누른 좌표
+     그대로 갑니다. 이제 이름 없는 잔디·길도 가장 가까운 건물로 빨려
+     가지 않습니다. */
+  let best = null, bd = 42 * 42;
+  PLACES.forEach((pl) => {
+    const p = pl.b ? clayXY(pl.b.x, pl.b.z) : clayXY(pl.at.x, pl.at.z);
+    const d2 = (px - p[0]) ** 2 + (py - p[1]) ** 2;
+    if (d2 < bd) { bd = d2; best = pl; }
   });
   e.stopPropagation();
-  if (!best) { toggleMap(); return; }
-  goPlace({ name: best.name, b: best });
+  if (best) { goPlace(best); return; }
+  const w = clayWorld(px, py);
+  w.x = clamp(w.x, -CAMPUS.SITE.hx + 2, CAMPUS.SITE.hx - 2);
+  w.z = clamp(w.z, -CAMPUS.SITE.hz + 2, CAMPUS.SITE.hz - 2);
+  /* 건물 한가운데를 눌러도 주변 빈 길을 찾습니다. */
+  let at = null;
+  for (let rr=0; rr<=18 && !at; rr+=.6) for (let i=0;i<24;i++) {
+    const a=i/24*TAU, x=w.x+Math.cos(a)*rr, z=w.z+Math.sin(a)*rr;
+    if (!hitCampus(x,z)) { at={x,z}; break; }
+    if (!rr) break;
+  }
+  if (!at) at={x:0,z:12};
+  P.x=at.x; P.z=at.z; P.dir=Math.PI; P.sp=0; yaw=P.dir; playerRig.rotation.y=P.dir;
+  goTo=null; goPath=null; goEnd=null; toggleMap(); unstick(); toast('지도 이동', '누른 곳으로 왔어요');
 });
 $('#map').addEventListener('click', () => { if (mapOn) toggleMap(); });
 function drawMap() {
@@ -3114,34 +3238,7 @@ function drawMap() {
     const sea = mg.createLinearGradient(0, 0, 0, S);
     sea.addColorStop(0, MAPC.sea); sea.addColorStop(1, MAPC.seaDeep);
     mg.fillStyle = sea; mg.fillRect(0, 0, S, S);
-    if (MAPSHOT.img?.complete) {
-      /* 진짜 섬 사진 */
-      mg.drawImage(MAPSHOT.img, 0, 0, S, S);
-      const uv = (x, z) => { const [u, v] = mapUV(x, z); return [u * S, v * S]; };
-      mg.fillStyle = 'rgba(255,255,255,.8)'; mg.strokeStyle = 'rgba(20,28,38,.3)'; mg.lineWidth = 1;
-      NPC.forEach((n) => { const [x2, y2] = uv(n.rig.position.x, n.rig.position.z);
-        mg.beginPath(); mg.arc(x2, y2, 3.4, 0, TAU); mg.fill(); mg.stroke(); });
-      /* 이름 앞에 번호. 지도를 연 채로 이 숫자를 누르면 그리로 갑니다 —
-         적어 두지 않으면 있는 줄을 모릅니다. */
-      const numOf = (k) => { const i = PLACES.findIndex((q) => q.key === k); return i < 0 ? '' : ((i + 1) % 10) + '. '; };
-      BUILDINGS.forEach((b) => { const [x2, y2] = uv(b.x, b.z); mapLabel(mg, numOf(b.zone) + b.name, x2, y2 - 16, 12); });
-      /* 라벨 자리도 옛 80칸 섬 좌표였습니다 — 운동장이 (-13,-14) 라
-         지도 한복판 잔디에 '운동장' 이 적혀 있었습니다. PLACES 를
-         그대로 읽으면 다시 갈라지지 않습니다. */
-      PLACES.filter((q) => q.at).forEach((q) => {
-        const [x2, y2] = uv(q.at.x, q.at.z);
-        mapLabel(mg, numOf(q.key) + q.name, x2, y2, 10.5);
-      });
-      { const [x2, y2] = uv(P.x, P.z); mapMe(mg, x2, y2, P.dir + Math.PI * .25, 7); }
-    } else {
-      mg.save(); mg.translate(C, C);
-      const k = (C - 34) / CAMPUS.HALF;
-      drawIsland(mg, k, true);
-      drawBlocks(mg, k, true);
-      BUILDINGS.forEach((b) => mapLabel(mg, b.name, b.x * k, b.z * k + (b.d * b.s * k) / 2 + 14, 12));
-      mapMe(mg, P.x * k, P.z * k, P.dir, 7);
-      mg.restore();
-    }
+    drawClayCampus(mg);
     /* 나침반 */
     mg.save(); mg.translate(S - 34, 34);
     mg.fillStyle = 'rgba(20,28,38,.60)'; mg.beginPath(); mg.arc(0, 0, 17, 0, TAU); mg.fill();
@@ -3396,7 +3493,11 @@ function rebuildMe() {
   /* playerRig.clear() 가 탈것까지 지웁니다 — 옷을 갈아입었다고 자전거가
      사라지면 안 되니 여기서 다시 답니다. */
   rideG = null; mountRide();
-  if (SESS.on || CSIT.on) { sit(player, true); sit(pipMe, true); }
+  if (SESS.on || (CSIT.on && CSIT.kind !== 'bed')) {
+    const drop = CSIT.kind === 'beanbag' ? .18 : 0;
+    sit(player, true, drop); sit(pipMe, true, drop);
+  }
+  if (CSIT.on && CSIT.kind === 'bed') { lie(player, true); lie(pipMe, true); }
   $('#pip .nm').textContent = myNick();
 }
 
@@ -3718,7 +3819,8 @@ function tick(now) {
     let best = 1e9;
     for (const s of spotsHere()) {
       const d2 = (P.x - s.x) ** 2 + (P.z - s.z) ** 2;
-      if (d2 < s.r * s.r && d2 < best) { best = d2; spot = s; spotD = Math.sqrt(d2); }
+      const reach = spotReach(s);
+      if (d2 < reach * reach && d2 < best) { best = d2; spot = s; spotD = Math.sqrt(d2); }
     }
   }
   if (!room) {
@@ -3751,7 +3853,7 @@ function tick(now) {
     chairNear = !out && !spot ? nearSeat() : null;
     if (out) { elPrompt.innerHTML = '<em>E</em><span>나가기</span>'; spot = null; }
     else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
-    else if (chairNear) elPrompt.innerHTML = `<em>E</em><span>${chairNear.kind === 'chair' && (room.key === 'library' || room.key === 'mainhall') ? '앉아서 자세 세션 시작' : '앉기'}</span>`;
+    else if (chairNear) elPrompt.innerHTML = `<em>E</em><span>${chairNear.kind === 'bed' ? '침대에 눕기' : chairNear.kind === 'chair' && (room.key === 'library' || room.key === 'mainhall' || room.key === 'dorm') ? '앉아서 자세 세션 시작' : '앉기'}</span>`;
     elPrompt.classList.toggle('on', !!(out || spot || chairNear) && !panelOn && !SESS.on && !mapOn);
     if (out && !SESS.on && P.sp > .2 && P.z > room.size.d / 2 - .55) leaveRoom();
   }

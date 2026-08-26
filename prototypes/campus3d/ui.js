@@ -641,7 +641,7 @@ export function schedule(ctx) {
   const tab = ctx.tab === 'timetable' ? 'timetable' : 'calendar';
   const active = tab === 'calendar' ? calendar() : timetable();
   return {
-    tag: '노트북', title: '일정 관리', wide: true,
+    tag: '노트북', title: '일정 관리', medium: true,
     html: `<div class="board-tabs schedule-tabs" role="tablist" aria-label="일정 관리 종류">
       <button type="button" role="tab" data-schedule-tab="calendar" class="${tab === 'calendar' ? 'on' : ''}"
         aria-selected="${tab === 'calendar'}">내 일정 · 구글 캘린더</button>
@@ -1032,7 +1032,7 @@ export function cafeteria(ctx) {
   const d = ctx.data;
   let body;
   if (!ctx.school) {
-    body = rw('board', 'lilac', '학교를 먼저 설정해 주세요', '옷장(C)의 학교 항목에서 고르면 식단이 바뀝니다');
+    body = rw('board', 'lilac', '학교를 먼저 설정해 주세요', 'MY의 내 정보에서 학교를 고르면 식단이 바뀝니다');
   } else if (d === undefined) {
     body = rw('cup', 'lemon', '오늘 식단을 확인하는 중…', `${esc(ctx.school)} 공식 식단 페이지에 묻고 있어요`);
   } else if (d && Array.isArray(d.items) && d.items.length) {
@@ -1301,7 +1301,7 @@ export function fame(ctx) {
        "우리 몇 등이지" 하나라, 열 줄을 훑기 전에 답이 나와야 합니다. */
     + rw('user', 'peach', my ? esc(my) : '아직 학교가 없어요',
       my ? '내 설정 학교 · 앉은 시간이 이 학교 점수로 쌓입니다'
-        : '옷장(C)에서 학교를 고르면 내 시간이 학교 점수로 쌓입니다',
+        : 'MY의 내 정보에서 학교를 고르면 내 시간이 학교 점수로 쌓입니다',
       myRank ? myRank + '위' : myCount != null ? `${myCount}/${floor}명` : '—')
     + (t ? '' : rw('heart', 'lilac', '이번 시즌 참여자', '세션이 한 번이라도 돈 사람',
       `${num((d && d.totals && d.totals.contributors) || 0)}명`))
@@ -1657,7 +1657,7 @@ export function dormInfo(ctx) {
   const tab = ctx.tab === 'privacy' ? 'privacy' : 'guide';
   const active = tab === 'privacy' ? privacy() : guide();
   return {
-    tag: '안내 표지판', title: 'Deskfit 안내', wide: true,
+    tag: '안내 표지판', title: 'Deskfit 안내', medium: true,
     html: `<div class="board-tabs dorm-info-tabs" role="tablist" aria-label="Deskfit 안내 종류">
       <button type="button" role="tab" data-info-tab="guide" class="${tab === 'guide' ? 'on' : ''}"
         aria-selected="${tab === 'guide'}">사용 방법</button>
@@ -1828,11 +1828,11 @@ export function tour(ctx) {
   const it = TOUR[i], last = i === TOUR.length - 1;
   const html = `
     <div class="cg" style="grid-template-columns:1fr">
-      <div class="cc" style="align-items:center;text-align:center;padding:26px 18px 22px">
-        <span class="ic ${it.tone}" style="width:66px;height:66px;border-radius:22px">
-          <svg class="pic lg" style="width:34px;height:34px"><use href="#${it.ic}"/></svg></span>
-        <b style="font-size:17px;margin-top:4px">${esc(it.t)}</b>
-        <small style="font-size:12px;line-height:1.6">${esc(it.p)}</small>
+      <div class="cc tour-card">
+        <span class="ic ${it.tone} tour-icon">
+          <svg class="pic lg"><use href="#${it.ic}"/></svg></span>
+        <b class="tour-title">${esc(it.t)}</b>
+        <small class="tour-copy">${esc(it.p)}</small>
       </div>
     </div>
     <div class="wr" style="justify-content:center;margin:14px 0 4px">

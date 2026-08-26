@@ -1055,7 +1055,10 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
    훨씬 중립적이라 Blender 4.0 이 기본값으로 삼았습니다. 대신 전체가
    어둡게 나오므로 노출을 1.06 에서 1.18 로 올려 밝기를 맞춥니다. */
 renderer.toneMapping = THREE.AgXToneMapping;
-renderer.toneMappingExposure = 1.30;
+/* 노출 1.30 은 AgX 가 어둡게 내놓는 것을 되돌리려고 올린 값이었습니다.
+   그런데 해를 ×1.16 으로 올리고 나니 이제는 과합니다 — 포장과 벽이
+   흰색으로 뭉개져 명도 구조가 사라졌습니다. 1.18 로 내립니다. */
+renderer.toneMappingExposure = 1.18;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
@@ -1080,8 +1083,20 @@ const cam = new THREE.PerspectiveCamera(48, 1, .25, 400);
 /* AO 가 접점을 어둡게 만들어 주므로 균일광(amb)을 조금 내리고,
    대신 위아래 색이 갈리는 하늘빛(hemi)을 올립니다. 균일광이 세면
    AO 가 만든 그늘이 도로 씻겨 나갑니다. */
-const amb = new THREE.AmbientLight(0xFFFFFF, .66);
-const hemi = new THREE.HemisphereLight(0xF0F8FF, 0xCBE6D6, 1.20);
+/* ── 주변광의 색 ──
+   반구광의 **아래쪽 색은 바닥에서 튄 빛**입니다. 0xCBE6D6 은 민트색인데
+   우리 바닥에 민트색은 한 뼘도 없습니다 — 따뜻한 모래빛 포장을 깔아
+   놓고 그 위에 민트 바운스를 쏘고 있었으니, 물건의 아랫면이 전부
+   도로 차가워졌습니다. 바닥색과 같은 계열로 바꿉니다.
+
+   위쪽은 하늘빛이라 차가운 게 맞습니다. 위는 차갑고 아래는 따뜻한 —
+   그 온도 차가 형태를 읽게 합니다. 흰빛 하나로 위아래를 다 밝히면
+   아무리 그림자를 넣어도 납작합니다.
+
+   전체 주변광도 순백에서 아주 옅은 크림으로. 순백은 어떤 재질에서도
+   나오지 않는 빛이라, 그늘만 유난히 파랗게 뜹니다. */
+const amb = new THREE.AmbientLight(0xFFF4E4, .58);
+const hemi = new THREE.HemisphereLight(0xD8E8FF, 0xE0CBA6, 1.20);
 const sun = new THREE.DirectionalLight(0xFFFDF8, 2.08);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -1168,7 +1183,13 @@ function shadowPolicy(root) {
     if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
     bb.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld);
     bb.getSize(sz);
-    if (Math.max(sz.x, sz.y, sz.z) < 3.0) { o.castShadow = false; off++; }
+    /* 3.0 은 너무 컸습니다. 벤치(2.4) · 쓰레기통 · 화분 · 가로등 기둥 ·
+       분수 테가 전부 이 아래라, 광장에 놓인 것 중 **그림자를 만드는 게
+       하나도 없었습니다.** AO 가 대신한다고 적어 뒀지만 AO 는 화면 공간
+       접촉 그늘이라 바닥에 드리우는 그림자를 못 만듭니다 — 그래서 모든
+       물건이 바닥에서 살짝 떠 보였고, 그게 "덜 만든 것 같다" 의 큰 몫
+       이었습니다. 1.5 로 내려 사람 크기 물건까지 되돌립니다. */
+    if (Math.max(sz.x, sz.y, sz.z) < 1.5) { o.castShadow = false; off++; }
     else keep++;
   });
   return { off, keep };
@@ -1208,8 +1229,21 @@ function csmOn() {
         try { csm.setupMaterial(o.material); } catch (e) { /* 미지원 재질 */ }
       }
     });
+    /* ── 아크네 ──
+       그림자를 만드는 물건의 문턱을 3.0 에서 1.5 로 내리자 화면 전체가
+       **모래처럼 튀었습니다.** 벤치·화분·가로등처럼 작은 것이 1024짜리
+       칸 그림자 지도에 들어가면서 자기 면에 제 그림자를 찍은 것입니다
+       (?clay=0 으로도 그대로여서 점토 셰이더가 아니라는 걸 갈랐습니다).
+
+       normalBias 는 표본을 **면의 법선 방향으로** 밀어 냅니다. 그래서
+       평평한 면의 아크네에 잘 듣고, bias 처럼 그림자를 통째로 띄우지
+       않습니다. CSM 은 칸마다 빛을 따로 들고 있으므로 전부에 겁니다. */
+    csm.lights.forEach((l) => {
+      l.shadow.normalBias = .42;
+      l.shadow.bias = -.0004;
+    });
     sun.visible = false;    // 해와 CSM 을 같이 켜면 그림자가 두 겹입니다
-    console.log('CSM 켬 · 칸 3 · maxFar 200');
+    console.log(`CSM 켬 · 칸 ${csm.cascades} · maxFar ${csm.maxFar}`);
   } catch (e) { console.warn('CSM 을 못 켰습니다 — 해 하나로 갑니다', e); csm = null; }
 }
 function csmOff() {
@@ -3762,9 +3796,23 @@ if (AO_ON) {
     /* 화면 공간 반지름 — 세계 단위가 아니라 화면 비율로 잡습니다.
        세계 단위로 두면 멀리 있는 건물에서는 AO 가 사라지고 발밑에서만
        진해집니다. 캠퍼스처럼 깊이가 넓은 화면에서는 화면 기준이 맞습니다. */
-    n8ao.configuration.aoRadius = 5.0;
-    n8ao.configuration.distanceFalloff = 2.0;
-    n8ao.configuration.intensity = 1.55;
+    /* ── 반경과 세기 ──
+       5.0 · 1.55 는 바닥이 거의 흰색이던 시절의 값입니다. 포장을 L87 에서
+       L80 으로 내리자 그 AO 가 **화면 전체에 모래를 뿌리는 것**으로
+       드러났습니다 — 흰 바닥에서는 안 보이던 잡음이 중간 톤에서는 그대로
+       보입니다. 게다가 프레임이 30 아래로 떨어지면 화질 사다리가 AO 를
+       반해상도로 내리는데, 반경이 크면 그때 잡음이 네 배가 됩니다.
+
+       ?ao=0 과 비교해서 갈랐습니다(clay=0 · csm=0 · fx=0 은 다 그대로였고
+       ao=0 만 깨끗했습니다). 반경 2.8 · 세기 1.15 — 물건이 바닥에 닿는
+       자리를 어둡게 하는 본래 일은 그대로 하고, 넓은 면은 안 건드립니다. */
+    n8ao.configuration.aoRadius = 2.8;
+    n8ao.configuration.distanceFalloff = 1.4;
+    n8ao.configuration.intensity = 1.15;
+    /* 뭉개기 — 표본이 적을수록 잡음이 남습니다. 이 그림체는 경계가
+       또렷한 면이 많아 조금 더 문질러도 형태가 안 뭉개집니다. */
+    n8ao.configuration.denoiseSamples = 8;
+    n8ao.configuration.denoiseRadius = 12;
     /* 그늘 색을 순검정이 아니라 **청록을 섞은 어두운 값**으로 둡니다.
        순검정 그늘은 점토가 아니라 플라스틱이 됩니다 — 로비·마이페이지의
        클레이 토큰이 쓰는 규칙과 같은 이유입니다. */
@@ -4469,10 +4517,12 @@ function tick(now) {
     /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
        이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
        느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
-    if (f < 30 && n8ao && n8ao.configuration.halfRes === false) {
-      /* 프레임이 부족해도 본 화면 픽셀은 보존하고 AO 계산만 줄입니다. */
-      n8ao.configuration.halfRes = true;
-    }
+    /* 예전에는 여기서 AO 를 **반해상도로** 내렸습니다. 그런데 반해상도
+       AO 는 잡음이 네 배라, 포장을 중간 톤으로 내린 뒤로는 느린 기기에서
+       바닥이 통째로 모래가 됐습니다 — 켜 두는 것이 끄는 것보다 나쁩니다.
+       AO 는 물건이 바닥에 닿는 자리를 어둡게 하는 것이고, 그게 없다고
+       화면이 무너지지는 않습니다. 그냥 끕니다. */
+    if (f < 30 && n8ao && n8ao.enabled) n8ao.enabled = false;
     /* 끄기 전에 **반으로 줄여** 봅니다. 2048 → 1024 면 그림자 그리는 값이
        사분의 일이 되는데, 이 그림체에서 가장자리가 부드러워지는 것 말고는
        티가 잘 안 납니다. 있는 그림자가 없는 그림자보다 낫습니다. */
@@ -4493,7 +4543,7 @@ function tick(now) {
       shadowsOff = true;
       toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
     }
-    else if (f > 48 && n8ao && n8ao.configuration.halfRes) n8ao.configuration.halfRes = false;
+    else if (f > 48 && n8ao && !n8ao.enabled) n8ao.enabled = true;
     frames = 0; acc = 0;
   }
   /* CSM 은 카메라를 따라 칸을 다시 잡아야 합니다 */

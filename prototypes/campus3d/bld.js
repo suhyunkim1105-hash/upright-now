@@ -14,12 +14,26 @@ import { M, box, cyl, prism, win, door, archPortal, apron, column, tree, bush, p
    나란히 놨을 때 한 캠퍼스로 읽혀야 합니다.
    ══════════════════════════════════════════════════════════ */
 
-/* 공통 — 여섯 채가 나눠 쓰는 값. 여기가 캠퍼스의 재질입니다. */
+/* 공통 — 여섯 채가 나눠 쓰는 값. 여기가 캠퍼스의 재질입니다.
+
+   ══ 지붕 여섯의 규칙 ══
+   색상(hue)은 여섯이 다 다릅니다 — 그래야 멀리서 어느 건물인지 알고,
+   지도·이정표의 색과도 짝이 맞습니다. 그건 그대로 둡니다.
+
+   대신 **채도와 명도는 한 밴드**여야 합니다(S 42~52 · L 52~63).
+   전 판은 기숙사 주황이 S86 · 미니게임관 보라가 S39 였습니다. 같은
+   캠퍼스인데 주황만 소리를 지르고 보라는 안 보였어요 — 무지개가
+   지저분해 보이는 것은 색상이 많아서가 아니라 **세기가 제각각**이라
+   그렇습니다. 색상표(minimap·signpost)와 실제 지붕이 같은 색을 쓰므로
+   여기를 고치면 그쪽도 같이 바뀝니다. */
 const BASE = {
-  trim: 0xFFF4DC, frame: 0xFFFFFF, glass: 0x4E8CA8, glassLit: 0x74B5CE,
+  /* 창틀을 순백에서 크림 흰색으로. 순백(0xFFFFFF)은 화면에서 가장
+     큰 명도이고, 크림 벽 위에 놓이면 창틀만 도려낸 것처럼 뜹니다 —
+     실제 건물의 흰 창틀도 햇빛 아래서는 늘 벽보다 아주 조금만 밝습니다. */
+  trim: 0xFFF4DC, frame: 0xFBF6EC, glass: 0x4E8CA8, glassLit: 0x74B5CE,
   door: 0xB5713F, doorDark: 0x8E5730, doorLight: 0xD08F58,
   stone: 0xF4F1EA, stoneDark: 0xD9D4C8, gold: 0xF2B33C,
-  base: 0xF0CE7E, baseDark: 0x6B4A2A, grass: 0x5FC15A, grassDark: 0x46A343,
+  base: 0xF0CE7E, baseDark: 0x6B4A2A, grass: 0x8BC270, grassDark: 0x76B159,
   path: 0xF6C97E, trunk: 0x8E5A33, leaf: 0x53B84E,
 };
 const C = (o) => Object.assign({}, BASE, o);
@@ -225,7 +239,7 @@ export function mainHall(g, opt = {}) {
    아이콘 단위 15 × 10, 배율 3.0 → **월드 45 × 30**.
    ───────────────────────────────────────────── */
 export function library(g, opt = {}) {
-  const P = C({ wall: 0xF3EBDA, wallLight: 0xFDF7EA, roof: 0x3FB3A2, roofDark: 0x2C8C7E });
+  const P = C({ wall: 0xF3EBDA, wallLight: 0xFDF7EA, roof: 0x4ABFAE, roofDark: 0x2C8C7E });
   if (opt.plate !== false) plate(g, P, 20);
 
   const W = 15, D = 10, Y = .4;
@@ -367,7 +381,7 @@ export function library(g, opt = {}) {
    ③ 기숙사 — 사는 집. 발코니 · 굴뚝 · 옥상 데크
    ───────────────────────────────────────────── */
 export function dorm(g, opt = {}) {
-  const P = C({ wall: 0xFFE7C6, wallLight: 0xFFF3E2, roof: 0xF2934F, roofDark: 0xD1762F,
+  const P = C({ wall: 0xFFE7C6, wallLight: 0xFFF3E2, roof: 0xD09062, roofDark: 0xAE6E3E,
                 /* 데크는 나무입니다. 초록이면 위에서 볼 때 잔디가 지붕에
                    올라간 것으로 읽힙니다 — 데크는 밟는 바닥이지 정원이 아닙니다. */
                 deck: 0xC49A6C });
@@ -601,7 +615,7 @@ export function union(g, opt = {}) {
 export function arcade(g, opt = {}) {
   /* 보라 채도를 낮춥니다. 원래 값은 여섯 채 중 혼자 튀어서, 캠퍼스를
      넓게 잡으면 게임관만 다른 그림에서 온 것처럼 보였습니다. */
-  const P = C({ wall: 0xF6F0FA, wallLight: 0xFFFFFF, roof: 0xA391CF, roofDark: 0x8271B0 });
+  const P = C({ wall: 0xF6F0FA, wallLight: 0xFFFFFF, roof: 0x8F79C8, roofDark: 0x7160A4 });
   if (opt.plate !== false) {
     plate(g, P, 14.4);
     [[-5.4, 4.4, .9], [5.4, 4.4, .9], [-5.6, -4.0, 1.05], [5.6, -4.0, 1.05]]
@@ -744,7 +758,7 @@ export function arcade(g, opt = {}) {
 export function shop(g, opt = {}) {
   /* 지붕 빨강을 벽돌 쪽으로 한 단 눕힙니다. 원래 값은 본관 국기와 같은
      채도라 월드에 나란히 놓으면 두 원색이 싸웠습니다. */
-  const P = C({ wall: 0xFFEFE2, wallLight: 0xFFF8F0, roof: 0xCE6A52, roofDark: 0xA8482F });
+  const P = C({ wall: 0xFFEFE2, wallLight: 0xFFF8F0, roof: 0xC96C54, roofDark: 0xA8482F });
   if (opt.plate !== false) {
     plate(g, P, 14.0);
     [[-5.2, 4.2, .9], [5.2, 4.2, .9], [-5.4, -3.8, 1.0], [5.4, -3.8, 1.0]]

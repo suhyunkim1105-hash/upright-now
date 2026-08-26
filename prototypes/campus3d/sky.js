@@ -282,13 +282,14 @@ export function createSky(THREE, ctx) {
        것이 스티커처럼 보입니다. 표는 그대로 두고 여기서 비율만 밉니다 —
        해를 올리고 주변광을 내립니다. 실내는 창 하나로 버티므로 안 건드립니다.
 
-       KEY 1.16 · AMB 0.80 은 눈으로 맞춘 값입니다. 더 밀면 그늘이
-       까맣게 막히고, 덜 밀면 지금과 같습니다. */
-    const KEY = indoor ? 1 : 1.16, AMB = indoor ? 1 : .80;
+       KEY 1.16 · AMB 0.68 · 반구광 0.74 는 눈으로 맞춘 값입니다.
+       한 번 밀고 나서 화면에 어두운 값이 하나도 없다는 것을 재고 나서
+       한 단 더 밀었습니다. 더 밀면 그늘이 까맣게 막힙니다. */
+    const KEY = indoor ? 1 : 1.16, AMB = indoor ? 1 : .68;
     sun.color.setHex(s.sun);
     sun.intensity = (indoor ? s.sunI * .7 : s.sunI * KEY) * dull;
     amb.intensity = s.amb * (indoor ? 1.28 : AMB) * (weather === 'clear' ? 1 : 1.08);
-    hemi.intensity = s.hemi * dull * (indoor ? 1 : .92);
+    hemi.intensity = s.hemi * dull * (indoor ? 1 : .74);
     /* 불 — 밤일수록 창이 밝아집니다. 값이 안 바뀌면 재질을 안 건드립니다 */
     const want = Math.round(s.night * 20) / 20;
     if (want !== lit) {

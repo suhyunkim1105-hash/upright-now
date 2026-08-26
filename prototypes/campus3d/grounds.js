@@ -56,9 +56,9 @@ export const OUTER = {
 const PAL2 = {
   /* campus.js 의 PAL.grass 와 **같은 값이어야 합니다** — 안쪽 잔디와
      바깥 잔디가 맞닿는 자리라, 어긋나면 섬 둘레에 띠가 생깁니다. */
-  lawn:      0x80C46E,
-  lawnDark:  0x6BAF5E,
-  lawnLight: 0x93CE81,
+  lawn:      0x80BC62,
+  lawnDark:  0x6CA64E,
+  lawnLight: 0x91C775,
   walk:      0xF0D49A,
   walkDark:  0xDCB87C,
   road:      0xD9D3C4,

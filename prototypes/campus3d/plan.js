@@ -67,14 +67,18 @@ export const PAL = {
   /* 잔디는 세 파일이 각자 들고 있습니다(plan·campus·grounds). 셋이
      같은 값이어야 합니다 — 부지 잔디·중심 원판·바깥 잔디가 서로
      맞닿아 있어서, 하나만 고치면 경계에 띠가 보입니다. */
-  lawn: 0x80C46E, lawnDark: 0x76B966, lawnLight: 0x8DCD7B,
-  road: 0xD8E2E4, roadEdge: 0xF6FAFB, walk: 0xE5EEF0,
+  lawn: 0x80BC62, lawnDark: 0x75B356, lawnLight: 0x8BC36F,
+  /* campus.js PAL 과 **같은 가족**(38° 따뜻한 중성)이어야 합니다.
+     한쪽만 고치면 광장과 길이 맞닿는 자리에 색 띠가 생깁니다. */
+  road: 0xCFC7BA, roadEdge: 0xE6E1D6, walk: 0xD8D1C5,
   track: 0xC9705A, turf: 0x5FB765, turfLine: 0xF2F7F0,
   court: 0x4E9E7A, courtLine: 0xF2F7F0, clay: 0xC08A62,
-  water: 0x67C6E8, waterDeep: 0x3FA7CE, sand: 0xE8D8B0,
+  water: 0x73B9D3, waterDeep: 0x4F9ABA, sand: 0xE8D8B0,
   lotDark: 0x8E9490, lotLine: 0xF0F0EA,
-  stone: 0xEDF3F5, stoneDark: 0xCDDCE0,
-  trunk: 0x8E5A33, leaf: 0x53B84E, leafDeep: 0x3C9440, leafWarm: 0x74C25C,
+  stone: 0xE0D9CC, stoneDark: 0xC9BFB0,
+  /* 잎을 잔디와 같은 계열(100~108°)로 당깁니다. 115° 에 있으면 잔디만
+     따뜻하고 나무만 차가워서, 심은 것이 한 정원으로 안 보입니다. */
+  trunk: 0x8E5A33, leaf: 0x63B855, leafDeep: 0x4A9440, leafWarm: 0x86C566,
 };
 
 /* ══════════════════════════════════════════════════════════

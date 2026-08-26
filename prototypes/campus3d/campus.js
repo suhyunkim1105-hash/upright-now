@@ -16,12 +16,31 @@ export const PAL = {
   /* 잔디 채도를 한 단 낮췄습니다. 0x6FC85E 는 채도 51% 라 눈높이에서
      형광으로 보였고, 크림·연파랑으로 짠 나머지 팔레트와 혼자 톤이
      달랐습니다. 42% 로 내리면 클레이 재질과 같은 계열로 앉습니다. */
-  grass: 0x80C46E, grassDark: 0x6BAF5E, grassLight: 0x93CE81,
-  /* 광장 돌을 한 단 내렸습니다. 0xEDF3F5 는 AgX 노출 1.30 아래 정오에
-     흰색으로 날아가서, 광장 전체가 종이 한 장으로 보였습니다. */
-  soil: 0x8E6F58, stone: 0xE0E8EB, stoneDark: 0xC2D2D7, kerb: 0xF1F6F8,
-  path: 0xDCE9EA, pathDark: 0xBFD3D7,
-  water: 0x67C6E8, waterDeep: 0x3FA7CE,
+  /* 바닥이 따뜻해졌으니 잔디도 노란 쪽으로 7° 옮깁니다 — 안 옮기면
+     초록만 혼자 찬 계열로 남아 잔디와 포장 경계가 도드라집니다. */
+  grass: 0x80BC62, grassDark: 0x6CA64E, grassLight: 0x91C775,
+  /* ══ 바닥은 **따뜻한 중성**입니다 ══
+     0xE0E8EB 은 색상 196°, 그러니까 파랑입니다. 찬 파랑 바닥 위에
+     지붕 여섯이 색상환을 통째로 돌고 있었습니다(12·25·135·171·217·257°).
+     찬 바닥은 따뜻한 색과 싸우고 찬 색과만 어울리는데, 우리 지붕 중
+     넷이 따뜻한 쪽입니다 — 기숙사 주황이 유난히 튀어 보이던 것도
+     주황이 세서가 아니라 **바닥이 그 반대편**이라서였습니다.
+
+     38° 로 옮깁니다. 따뜻한 중성은 어느 색과도 싸우지 않습니다 —
+     흙·돌·나무가 그 자리에 있고, 그래서 실제 마을이 그렇게 보입니다.
+
+     ══ 그리고 명도를 내립니다 ══
+     한 번 더 재 보니 화면에 **어두운 값이 하나도 없었습니다.**
+     포장 L87 · 벽 L85~95 · 잔디 L60 — 지붕만 빼면 전부 밝은 쪽에
+     몰려 있어서, 눈이 쉴 자리도 건물이 딛고 설 바닥도 없었습니다.
+     "덜 만든 것 같다" 의 정체가 색이 아니라 **명도 구조**였습니다.
+     포장을 L80, 잔디를 L56 으로 내립니다. 여전히 맑은 낮이지만
+     이제 건물이 바닥 위에 **앉아** 있습니다. */
+  soil: 0x8E6F58, stone: 0xD8CFC0, stoneDark: 0xC1B5A4, kerb: 0xE5DED2,
+  path: 0xD3CABB, pathDark: 0xBAAE9C,
+  /* 물이 화면에서 제일 센 색이었습니다(채도 74%). 하늘·잔디·지붕
+     어느 것보다 세면 눈이 물로만 갑니다. 52% 로 내립니다. */
+  water: 0x73B9D3, waterDeep: 0x4F9ABA,
   bronze: 0xC9A05E, bronzeDark: 0xA37E40,
   wood: 0xC08E58, woodDark: 0x8E6238, metal: 0x9BA6B2, metalDark: 0x6E7A88,
   leaf: 0x53B84E, leafDeep: 0x3C9440, trunk: 0x8E5A33,
@@ -254,10 +273,37 @@ function plaza(g) {
   const { x: X, z0, z1 } = PLAZA, cz = (z0 + z1) / 2, D = z1 - z0;
   flat(box(g, X * 2 + 1.8, .34, D + 1.8, .9, M(PAL.kerb, .7), 0, .14, cz));
   flat(box(g, X * 2, .36, D, .7, M(PAL.stone, .74), 0, .2, cz));
+
+  /* ══ 위계 ══
+     색을 맞춰 놓고도 광장이 "만들다 만 것" 으로 보였습니다. 이유는
+     **한 톤짜리 평면 58×61** 이라서였습니다 — 색이 맞아도 위계가 없으면
+     바닥이 아니라 배경지입니다. 실제 광장에는 늘 셋이 있습니다:
+     둘레를 도는 테, 가운데를 도는 고리, 그리고 그 사이를 재는 줄눈.
+
+     ① 둘레 테 — 안쪽으로 3칸 들여 한 줄. 광장의 끝을 눈으로 말합니다 */
+  const bandM = M(PAL.pathDark, .8), band2 = M(PAL.path, .78);
+  [[X * 2 - 6, D - 6], [X * 2 - 6.9, D - 6.9]].forEach(([w, d], i) => {
+    const m = i ? band2 : bandM, y = .37 + i * .006;
+    flat(box(g, w, .09, .5, .04, m, 0, y, cz - d / 2));
+    flat(box(g, w, .09, .5, .04, m, 0, y, cz + d / 2));
+    flat(box(g, .5, .09, d, .04, m, -w / 2, y, cz));
+    flat(box(g, .5, .09, d, .04, m, w / 2, y, cz));
+  });
+  /* ② 분수 둘레 고리 — 물받이(반지름 9.8) 밖으로 두 겹. 가운데가
+     어디인지 바닥이 먼저 말해 주면 분수는 그 위에 놓이기만 하면 됩니다. */
+  [[11.6, PAL.pathDark], [12.5, PAL.path], [15.2, PAL.pathDark]].forEach(([r, c], i) => {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r - (i === 2 ? .34 : .5), r, 64),
+      M(c, .8));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(0, .375 + i * .004, 0);
+    ring.castShadow = false; ring.receiveShadow = true; g.add(ring);
+  });
+  /* ③ 줄눈 — 전보다 굵고 촘촘하게. 가로 여덟 · 세로 여섯.
+     줄눈이 없으면 걸어도 걷는 느낌이 안 납니다(발밑이 안 지나갑니다). */
   for (let i = 1; i < 9; i++)
-    flat(box(g, X * 2 - 3.4, .1, .42, .05, M(PAL.stoneDark, .78), 0, .38, z0 + (D / 9) * i));
-  for (const x of [-17, -8.5, 8.5, 17])
-    flat(box(g, .42, .1, D - 3.4, .05, M(PAL.stoneDark, .78), x, .38, cz));
+    flat(box(g, X * 2 - 3.4, .1, .34, .04, M(PAL.stoneDark, .8), 0, .38, z0 + (D / 9) * i));
+  for (const x of [-23, -17, -8.5, 8.5, 17, 23])
+    flat(box(g, .34, .1, D - 3.4, .04, M(PAL.stoneDark, .8), x, .38, cz));
 }
 
 /* 광장 위인지 — 나무 · 소품이 여기 서면 안 됩니다 */
@@ -320,7 +366,10 @@ export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
   /* 외곽 화단 포인트 — 기존 원 안에서만 배치해 충돌 반경은 그대로입니다. */
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2, rr = 9.55;
-    const base = cyl(p, .52, .62, .25, 16, M(0xD5E3E2, .65), Math.cos(a) * rr, .64, Math.sin(a) * rr);
+    /* 화분은 흙을 담는 것이지 콘크리트 링이 아닙니다. 0xD5E3E2 는 찬
+       회색이라 분수 둘레에 배관 뚜껑 여덟 개를 둘러 놓은 것처럼
+       보였습니다. 테라코타로 바꿉니다. */
+    const base = cyl(p, .52, .62, .25, 16, M(0xCE9A72, .68), Math.cos(a) * rr, .64, Math.sin(a) * rr);
     base.castShadow = true;
     const shrub = new THREE.Mesh(new THREE.SphereGeometry(.46, 14, 9), M(i % 2 ? 0x75C977 : 0x5EB86A, .62));
     shrub.position.set(Math.cos(a) * rr, 1.02, Math.sin(a) * rr); shrub.scale.set(1.15, .72, 1.15);

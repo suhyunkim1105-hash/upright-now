@@ -28,6 +28,25 @@ const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
 const REF = process.env.SUPABASE_PROJECT_REF;
 const DRY = process.argv.includes('--dry-run');
 
+/* 번호 길이. 기본은 8 입니다.
+ *
+ * **화면과 같은 값이어야 합니다** — `prototypes/shared/config.js` 의
+ * `otpLength`. 여기만 8 로 올리면 화면은 여섯 칸을 그려 놓고 메일은
+ * 여덟 자리를 보내고, 사용자는 칸을 다 못 채워 확인 버튼을 못 누릅니다.
+ * 반대로 화면만 올리면 여덟 칸 중 두 칸이 영원히 빕니다.
+ *
+ *   node scripts/apply-auth-email.mjs --otp-length 6
+ */
+const OTP_LENGTH = (() => {
+  const i = process.argv.indexOf('--otp-length');
+  const raw = i >= 0 ? Number(process.argv[i + 1]) : 8;
+  if (!Number.isInteger(raw) || raw < 6 || raw > 10) {
+    console.error('--otp-length 는 6 이상 10 이하의 정수여야 합니다 (GoTrue 제한).');
+    process.exit(1);
+  }
+  return raw;
+})();
+
 if (!TOKEN || !REF) {
   console.error(`
 필요한 환경변수가 없습니다.
@@ -38,6 +57,35 @@ if (!TOKEN || !REF) {
 예:
   SUPABASE_ACCESS_TOKEN=sbp_xxx SUPABASE_PROJECT_REF=abcd node scripts/apply-auth-email.mjs
 `);
+  process.exit(1);
+}
+
+/* 토큰이 헤더에 들어갈 수 있는 글자인지 먼저 봅니다.
+ *
+ * **가려진 값을 붙여 넣는 일이 실제로 있었습니다.** 화면에 `sbp_a702••••e41a`
+ * 로 표시된 것을 그대로 복사하면 가운데 점(U+2022)이 진짜 문자로 들어옵니다.
+ * 그대로 두면 node 가 fetch 안쪽에서 이렇게 던집니다 —
+ *
+ *   TypeError: Cannot convert argument to a ByteString because the character
+ *   at index 15 has a value of 8226 which is greater than 255.
+ *
+ * 스택도 안 나오고 무엇이 잘못됐는지도 안 적혀 있어서, 이 줄 하나가 없으면
+ * 사람이 한참을 헤맵니다. 헤더는 ASCII 만 받으므로 여기서 걸러 냅니다. */
+const badChar = [...TOKEN].find((c) => c.charCodeAt(0) > 126 || c.charCodeAt(0) < 32);
+if (badChar) {
+  console.error(`
+토큰에 쓸 수 없는 글자가 있습니다: ${JSON.stringify(badChar)} (U+${badChar.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')})
+
+화면에 가려져 보이던 값(sbp_a702••••e41a 처럼 점이 섞인 것)을 그대로
+복사하면 이렇게 됩니다. 점은 표시용이지 토큰이 아닙니다.
+
+대시보드 Account -> Access Tokens 에서 **복사 버튼**으로 받으세요.
+발급 창을 닫았으면 다시 볼 수 없으니 새로 발급하고 옛 것은 폐기하세요.
+`);
+  process.exit(1);
+}
+if (!/^sbp_/.test(TOKEN)) {
+  console.error('토큰이 sbp_ 로 시작하지 않습니다. 개인 액세스 토큰이 맞는지 보세요 — anon 키나 service_role 키가 아닙니다.');
   process.exit(1);
 }
 
@@ -97,7 +145,7 @@ const PAYLOAD = {
   /* 본문이 "1시간 안에" 라고 말합니다. 화면과 메일이 다른 시간을 말하면
      사용자는 만료를 자기 잘못으로 읽습니다. */
   mailer_otp_exp: 3600,
-  mailer_otp_length: 6,
+  mailer_otp_length: OTP_LENGTH,
 };
 
 for (const [k, v] of Object.entries(PAYLOAD)) {
@@ -114,7 +162,7 @@ if (DRY) {
     const v = before[k];
     console.log(`  ${k.padEnd(40)} ${typeof v === 'string' && v.length > 60 ? v.slice(0, 57) + '…' : v}`);
   }
-  console.log('\n넣을 값: 제목 2개, 본문 2개, mailer_otp_exp=3600, mailer_otp_length=6');
+  console.log(`\n넣을 값: 제목 2개, 본문 2개, mailer_otp_exp=3600, mailer_otp_length=${OTP_LENGTH}`);
   process.exit(0);
 }
 
@@ -132,7 +180,7 @@ for (const key of ['mailer_templates_confirmation_content', 'mailer_templates_ma
   if (!v.includes('{{ .Token }}')) problems.push(`${key} 에 {{ .Token }} 이 없습니다`);
   if (/<a\s|ConfirmationURL/.test(v)) problems.push(`${key} 에 링크가 남아 있습니다`);
 }
-if (after.mailer_otp_length !== 6) problems.push(`mailer_otp_length 가 ${after.mailer_otp_length} 입니다`);
+if (after.mailer_otp_length !== OTP_LENGTH) problems.push(`mailer_otp_length 가 ${after.mailer_otp_length} 입니다 (넣으려던 값은 ${OTP_LENGTH})`);
 if (after.mailer_otp_exp !== 3600) problems.push(`mailer_otp_exp 가 ${after.mailer_otp_exp} 입니다 (본문은 1시간이라고 말합니다)`);
 
 if (problems.length) {

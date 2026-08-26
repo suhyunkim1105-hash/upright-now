@@ -80,10 +80,15 @@ reach the repo, a commit message, or a chat window.
     SUPABASE_ACCESS_TOKEN=sbp_... SUPABASE_PROJECT_REF=... node scripts/apply-auth-email.mjs --dry-run
     SUPABASE_ACCESS_TOKEN=sbp_... SUPABASE_PROJECT_REF=... node scripts/apply-auth-email.mjs
 
-The script sets both subjects, both bodies, `mailer_otp_length` 6 and
-`mailer_otp_exp` 3600, then reads the config back and fails if `{{ .Token }}` is
-missing or a link survived. A 200 from the API does not prove the value landed,
-which is why it re-reads.
+The script sets both subjects, both bodies, `mailer_otp_length` 8 (override with
+`--otp-length N`, 6–10) and `mailer_otp_exp` 3600, then reads the config back and
+fails if `{{ .Token }}` is missing or a link survived. A 200 from the API does not
+prove the value landed, which is why it re-reads.
+
+The code length lives in two places and they must agree: this script's
+`--otp-length` and `otpLength` in `prototypes/shared/config.js`. If they differ the
+screens fail silently — the mail carries eight digits while the form draws six
+boxes, so the user can never fill it and the verify button never unlocks.
 
 If the script reports that the Management API no longer has those keys, it
 prints the key names the API actually returned. Update the payload to match, or

@@ -196,7 +196,10 @@ for (const [w, h] of SIZES) {
 
   /* ---- 판 호버 ----
      입장 애니메이션의 fill 이 transform 을 붙들면 여기서만 걸립니다. */
-  await page.mouse.move(Math.round(w * 0.45), Math.round(h * 0.72));
+  /* 좌표로 짚지 않고 **판 자체**에 마우스를 올립니다. 화면 비율 0.45 ·
+     0.72 로 짚던 때는, 판 높이를 한 번 바꿀 때마다 검사가 빈 곳을
+     짚으면서 "호버가 죽었다" 고 거짓으로 울었습니다. */
+  await page.locator('#v-start .gate-night').hover();
   await page.waitForTimeout(280);
   const lifted = await page.evaluate(() =>
     getComputedStyle(document.querySelector('#v-start .gate-night')).transform);

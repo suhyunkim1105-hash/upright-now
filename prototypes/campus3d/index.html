@@ -991,8 +991,10 @@ console.info('[캐릭터] GLB', CHAR_OK.length + '종 —', CHAR_OK.join(' '));
    어둡게 만들어 **따로 놓인 상자들을 한 공간으로** 묶어 줍니다. */
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect,
          NoiseEffect, HueSaturationEffect, BrightnessContrastEffect,
-         SMAAEffect, BlendFunction } from 'postprocessing';
+         SMAAEffect, ColorDepthEffect, BlendFunction } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
+/* 점토 셰이더 — 손자국·흔들린 실루엣·얼룩진 색. clay.js 머리말 참고 */
+import { clayAll, unclay, CLAY } from './clay.js';
 /* 계단식 그림자 맵. 캠퍼스가 반지름 132 가 되면서 그림자 상자 하나로는
    못 덮습니다 — 사람 주위 22칸만 덮으니 멀리 있는 건물에 그림자가
    아예 없었습니다. CSM 은 시야를 네 칸으로 쪼개 가까운 곳은 촘촘히,
@@ -1222,6 +1224,29 @@ function csmOff() {
 /* 굽기가 재질을 새로 만들기 때문에 **구운 뒤에** 켭니다.
    먼저 켜면 구운 덩어리에는 CSM 셰이더가 안 붙습니다. */
 csmOn();
+/* ── 점토 ──
+   **CSM 다음**이어야 합니다. CSM 의 setupMaterial 이 onBeforeCompile 을
+   덮어쓰므로, 먼저 붙이면 손자국이 통째로 사라집니다. 우리 쪽은 먼저
+   있던 것을 부르고 나서 얹으므로 이 순서면 둘 다 삽니다. */
+const CLAY_ON = new URLSearchParams(location.search).get('clay') !== '0';
+/* **월드에만 붙입니다. 캐릭터에는 안 붙입니다.**
+
+   처음에 씬을 통째로 훑었더니 크림색 기린 몸이 회색으로 얼룩졌습니다 —
+   점토가 아니라 때가 탄 인형으로 보였어요. 값을 절반으로 낮춰도 그대로
+   였고, 이유는 값이 아니라 대상이었습니다: 캐릭터는 **이미 실제 점토로
+   빚어 렌더한 GLB** 입니다. 그 위에 절차형 결을 얹으면 두 결이 겹쳐
+   싸웁니다. Hylics 도 캐릭터는 찍은 그대로 쓰고 세계에만 손을 댑니다.
+
+   그래서 campusRoot(바깥)과 방(buildRoom)만 붙입니다. playerRig ·
+   inRoot · 접속자 rig 는 그냥 둡니다.
+
+   여기서 부르지 않습니다 — 아래에서 선언되는 것을 참조하면 TDZ 로
+   부팅이 통째로 죽습니다(실제로 그랬습니다). 모듈 끝에서 한 번 부릅니다. */
+function clayCampus() {
+  if (!CLAY_ON) return;
+  const n = clayAll(campusRoot);
+  if (n) console.log(`점토 셰이더 ${n}개 재질`);
+}
 /* BVH — 굽고 나면 지오메트리가 크게 줄어 트리 만드는 값도 같이 줍니다 */
 { const t0 = performance.now(); let n = 0;
   campusRoot.traverse((o) => {
@@ -1519,6 +1544,9 @@ function buildRoom(key) {
   SKY.collect(g);
   /* 1인칭에서만 켜는 나머지 벽·천장(room.js shell 참고). 한 번만 찾아
      둡니다 — 시점을 바꿀 때마다 방 전체를 훑을 이유가 없습니다. */
+  /* 방은 들어갈 때 처음 짓습니다 — 부팅 때의 clayCampus 는 아직 빈
+     roomRoot 를 훑으므로, 여기서 그 방에 한 번 더 붙여야 합니다. */
+  if (CLAY_ON) clayAll(g);
   const rec = { key, group: g, size, grid, seats, near: g.getObjectByName('nearShell') };
   roomCache.set(key, rec);
   return rec;
@@ -3581,6 +3609,9 @@ function setShadows(on) {
   if (renderer.shadowMap.enabled === on) return;
   renderer.shadowMap.enabled = on;
   if (on) csmOn(); else csmOff();
+  /* CSM 이 onBeforeCompile 을 도로 덮어썼습니다 — 점토를 다시 붙입니다.
+     안 하면 그림자를 껐다 켠 뒤로 표면이 매끈해집니다(에러는 안 납니다). */
+  unclay(campusRoot); clayCampus();
   shadowsOff = !on;
   scene.traverse((o) => { if (o.isMesh && o.material) o.material.needsUpdate = true; });
   SAVE.shadow = on; UI.save();
@@ -3783,6 +3814,14 @@ if (AO_ON) {
         new HueSaturationEffect({ saturation: .08 }),
         new BrightnessContrastEffect({ brightness: -.035, contrast: .07 }),
         new VignetteEffect({ offset: .30, darkness: .46 }),
+        /* 색 계단 — Hylics 2 평이 "리소그래프에 두 번 돌린 것 같다" 입니다.
+           실제 리소는 잉크를 몇 겹만 겹치므로 색이 이어지지 않고 층이
+           집니다. 18비트 = 채널당 64단. 눈에 "8비트" 로는 안 보이고,
+           평평한 면(하늘·잔디·벽)에 인쇄된 느낌만 남습니다.
+           **결(noise)보다 먼저** 걸어야 합니다 — 뒤에 걸면 결까지 층이
+           져서 점이 뭉치고, 앞에 걸면 결이 층 경계를 흩어 줍니다.
+           그게 리소의 하프톤이 하는 일입니다. */
+        new ColorDepthEffect({ bits: 18 }),
         noise,
       );
       composer.addPass(fxPass);
@@ -3795,6 +3834,9 @@ if (AO_ON) {
     composer = null; n8ao = null; fxPass = null; bloom = null;
   }
 }
+
+/* 점토는 여기서 붙입니다 — 위의 clayCampus 주석 참고(TDZ) */
+clayCampus();
 
 function resize() {
   renderer.setSize(innerWidth, innerHeight, false);
@@ -4571,6 +4613,15 @@ window.__roomInfo = () => ({ root: roomRoot, size: room ? ROOM_SIZE[room.key] : 
    (`__panel` 은 이미 **내 앞에 있는 지점**을 여는 다른 손잡이입니다) */
 window.__open = (panel, tag = '검토', title = panel) => openPanel({ tag, title, panel });
 /* __enter 는 아래 포털 판(3530줄께)이 진짜입니다 — 짓기만 하는 판이 위에 하나 더 있어서, 포털 zone(clubshop)과 방 key(shop)가 갈리는 상점에서 조용히 아무 일도 안 했습니다. */
+/* 점토 값 눈으로 맞추기 — __clay(bump, scale, mottle, wobble) */
+window.__clay = (b, sc, mo, wo) => {
+  if (b != null) CLAY.uClayBump.value = b;
+  if (sc != null) CLAY.uClayScale.value = sc;
+  if (mo != null) CLAY.uClayMottle.value = mo;
+  if (wo != null) CLAY.uClayWobble.value = wo;
+  return { bump: CLAY.uClayBump.value, scale: CLAY.uClayScale.value,
+           mottle: CLAY.uClayMottle.value, wobble: CLAY.uClayWobble.value };
+};
 window.__hour = (h) => { SKY.setHour(h); setClockHour(h); skySeen = -1; SAVE.hour = h; UI.save(); };
 /* 카메라 고정 — __W.lock(...) · 풀려면 __W.lock(null) */
 window.__W.lock = (...a) => { window.__camLock = a[0] === null ? null : a; };

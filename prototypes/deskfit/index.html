@@ -263,11 +263,11 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                   box-shadow: inset 0 6px 13px rgba(62,84,118,.18), inset 0 -2px 0 rgba(255,255,255,.9);">
         <span style="flex: 1; min-width: 0; text-align: center; padding-left: 96px;">
           <span style="display: block; font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; letter-spacing: .06em; color: #333D4B;">초대 코드</span>
-          <b style="display: block; margin-top: 9px; font-weight: 820; font-size: 34px; line-height: 1; font-family: inherit; letter-spacing: .16em;
+          <b data-room-code style="display: block; margin-top: 9px; font-weight: 820; font-size: 34px; line-height: 1; font-family: inherit; letter-spacing: .16em;
                     color: #191F28; font-variant-numeric: tabular-nums;">4F2K9A</b>
         </span>
 
-        <button data-copy="4F2K9A" style="display: flex; align-items: center; gap: 8px; padding: 13px 18px; border: 0;
+        <button data-copy-code style="display: flex; align-items: center; gap: 8px; padding: 13px 18px; border: 0;
                        border-radius: 17px; cursor: pointer; background: #F6FAFE; color: #191F28;
                        font-weight: 800; font-size: 13.5px; line-height: 1; font-family: inherit; white-space: nowrap;
                        box-shadow: 0 14px 26px -13px rgba(25,31,40,.44),
@@ -276,7 +276,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="8.6" y="8.6" width="11.4" height="11.4" rx="2.6" /><path d="M15.4 5.4A2.4 2.4 0 0 0 13 3H6.4A2.4 2.4 0 0 0 4 5.4V12a2.4 2.4 0 0 0 2.4 2.4" /></svg>
           코드 복사</button>
 
-        <button data-copy="deskfit.app/r/4F2K9A" aria-label="초대 링크 복사" title="초대 링크 복사" style="width: 44px; height: 44px; border: 0; border-radius: 17px; cursor: pointer;
+        <button data-share-link aria-label="초대 링크 공유" title="초대 링크 공유" style="width: 44px; height: 44px; border: 0; border-radius: 17px; cursor: pointer;
                        display: grid; place-items: center; background: #F6FAFE; color: #333D4B;
                        box-shadow: 0 14px 26px -13px rgba(25,31,40,.44),
                                    inset 0 5px 10px rgba(255,255,255,.95),
@@ -535,7 +535,8 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 <div lang="ko" style="width: 100%; height: 100%; box-sizing: border-box; background: #DDE7F2; padding: 26px;
             font-family: inherit; color: #333D4B;">
 
-  <div style="height: 100%; box-sizing: border-box; border-radius: 34px; background: #F2F7FD; overflow: hidden;
+  <!-- position: relative — 나가기 확인 판이 이 판을 덮습니다 -->
+  <div style="position: relative; height: 100%; box-sizing: border-box; border-radius: 34px; background: #F2F7FD; overflow: hidden;
               padding: 22px 26px 24px; display: flex; flex-direction: column; gap: 16px;
               box-shadow: 0 40px 80px -30px rgba(25,31,40,.45),
                           inset 0 6px 0 rgba(255,255,255,.96),
@@ -552,6 +553,40 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                      box-shadow: 0 16px 28px -14px rgba(176,42,22,.6),
                                  inset 0 5px 10px rgba(255,255,255,.32),
                                  inset 0 -6px 11px rgba(120,26,12,.36);">나가기</button>
+    </div>
+
+    <!-- 나가기를 누르면 덮는 판. 녹음이 돌고 있을 때만 뜹니다 — 카메라와
+         마이크는 꺼지면 그만이지만, 녹음은 나가는 순간 파일이 하나
+         내려옵니다. 값이 남는 일은 묻고 합니다. -->
+    <div data-leave-ask hidden style="position: absolute; inset: 0; z-index: 40; border-radius: 34px;
+                display: grid; place-items: center; background: rgba(18,24,33,.58); backdrop-filter: blur(6px);">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="leaveAskTitle"
+           style="width: 372px; padding: 28px 28px 22px; border-radius: 28px; background: #F6FAFE; text-align: center;
+                  box-shadow: 0 30px 60px -24px rgba(12,18,26,.6),
+                              inset 0 6px 12px rgba(255,255,255,.95),
+                              inset 0 -7px 13px rgba(86,110,146,.2);">
+        <span style="width: 56px; height: 56px; margin: 0 auto; border-radius: 19px; display: grid; place-items: center;
+                     background: #FBE3DC; color: #8A3B2E;
+                     box-shadow: inset 0 4px 8px rgba(255,255,255,.8), inset 0 -5px 9px rgba(138,59,46,.2);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><circle cx="12" cy="12" r="3.4" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <b id="leaveAskTitle" style="display: block; margin-top: 16px; font-weight: 820; font-size: 19px; line-height: 1.35;
+                  font-family: inherit; letter-spacing: -.02em; color: #191F28;">녹음 중이에요. 나갈까요?</b>
+        <p style="margin: 10px 0 0; font-weight: 600; font-size: 14px; line-height: 1.6; font-family: inherit; color: #4E5968;">
+          나가면 녹음이 끝나고 소리 파일과 회의록 틀이 이 기기에 내려와요.<br>카메라와 마이크도 함께 꺼져요.</p>
+        <div style="margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <button data-leave-stay style="padding: 15px 0; border: 0; border-radius: 18px; cursor: pointer;
+                         background: #E4EDF7; color: #333D4B;
+                         font-weight: 820; font-size: 14.5px; line-height: 1; font-family: inherit;
+                         box-shadow: inset 0 5px 10px rgba(255,255,255,.9), inset 0 -6px 11px rgba(86,110,146,.2);">더 있을게요</button>
+          <button data-leave-go style="padding: 15px 0; border: 0; border-radius: 18px; cursor: pointer;
+                         background: linear-gradient(180deg, #F26B58 0%, #DE3E28 100%); color: #FFF3F0;
+                         font-weight: 820; font-size: 14.5px; line-height: 1; font-family: inherit;
+                         box-shadow: 0 16px 28px -14px rgba(176,42,22,.6),
+                                     inset 0 5px 10px rgba(255,255,255,.32),
+                                     inset 0 -6px 11px rgba(120,26,12,.36);">나가기</button>
+        </div>
+      </div>
     </div>
 
     <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0,1fr) 282px; gap: 18px;">
@@ -3732,6 +3767,12 @@ function show(id, dir) {
   const el = document.getElementById('s-' + id);
   if (!el || id === current) return;
   stopLive();
+  /* 타이머만 멈추던 자리입니다. 장치도 같이 닫습니다 — 안 닫으면 화면을
+     떠난 뒤에도 웹캠과 마이크가 열린 채 남습니다.
+
+     current 를 보는 이유 — 첫 그리기에서는 건너뜁니다. 이 줄은 HW 가
+     만들어지기 전에 한 번 지나가므로, 그때 부르면 TDZ 에 걸립니다. */
+  if (current !== null) hwTeardown();
   document.querySelectorAll('.scr').forEach((s) => { s.hidden = s !== el; });
   el.dataset.dir = dir === 'back' ? 'back' : 'fwd';
   el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
@@ -3898,20 +3939,14 @@ document.querySelectorAll('.scr').forEach((sec) => {
   });
 });
 
-/* ── 켜고 끄기 · 복사 ── */
+/* ── 켜고 끄기 ──
+   복사는 여기 있던 [data-copy] 하나가 처리했습니다. 복사할 값을 태그에
+   적어 두는 방식이라, 초대 코드와 링크가 각자 자기 값을 들고 있다가
+   서로 다른 방을 가리켰습니다. 지금은 코드 한 곳에서 읽어 만듭니다. */
 document.addEventListener('click', (e) => {
   const sw = e.target.closest('[data-switch]');
-  if (sw) {
-    const on = sw.dataset.switch !== 'on';
-    setSwitch(sw, on);
-    return;
-  }
-  const copy = e.target.closest('[data-copy]');
-  if (copy) {
-    const v = copy.dataset.copy;
-    if (navigator.clipboard) navigator.clipboard.writeText(v).catch(() => {});
-    toast('복사했어요 · ' + v);
-  }
+  if (!sw) return;
+  setSwitch(sw, sw.dataset.switch !== 'on');
 });
 document.addEventListener('keydown', (e) => {
   if (e.key !== ' ' && e.key !== 'Enter') return;
@@ -3920,6 +3955,104 @@ document.addEventListener('keydown', (e) => {
   e.preventDefault();
   setSwitch(sw, sw.dataset.switch !== 'on');
 });
+
+/* ── 방을 나가는 일 ────────────────────────────────────────────────
+   화면만 바꾸던 자리였습니다. 나가기를 눌러도 카메라·마이크·녹음은 계속
+   돌고 있었습니다 — 회고 화면을 보는 동안 웹캠 불이 켜져 있고, 녹음기는
+   말을 계속 담습니다. 화면이 바뀌면 장치도 닫힙니다. */
+function hwTeardown() {
+  poseStop();
+  recStop();          // 돌고 있으면 onstop 이 파일을 내립니다
+  micOff();
+  camOff();
+}
+
+/* 세션에서 나갈 때 물어야 하는가. 카메라와 마이크는 꺼지면 그만이라 안
+   묻습니다. 녹음만 나가는 순간 파일이 하나 남으므로 묻습니다. */
+function recording() { return !!(HW.rec && HW.rec.state === 'recording'); }
+
+(() => {
+  const sec = document.getElementById('s-Session');
+  if (!sec) return;
+  const ask = sec.querySelector('[data-leave-ask]');
+  const exit = [...sec.querySelectorAll('button')]
+    .find((b) => (b.textContent || '').trim() === '나가기');
+  if (!ask || !exit) return;
+
+  const close = () => { ask.hidden = true; exit.focus(); };
+
+  /* 라우터보다 먼저 잡습니다 — 확인을 받기 전에 화면이 바뀌면 물어본
+     의미가 없습니다. */
+  exit.addEventListener('click', (e) => {
+    if (!recording()) return;         // 안 물어도 되는 경우는 그냥 통과
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    ask.hidden = false;
+    ask.querySelector('[data-leave-stay]').focus();
+  }, true);
+
+  ask.querySelector('[data-leave-stay]').addEventListener('click', close);
+  ask.querySelector('[data-leave-go]').addEventListener('click', () => {
+    ask.hidden = true;
+    show('Done', 'back');             // show() 안에서 장치가 닫힙니다
+  });
+  ask.addEventListener('click', (e) => { if (e.target === ask) close(); });
+  sec.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ask.hidden) close(); });
+})();
+
+/* 탭을 닫거나 다른 곳으로 가는 길도 같습니다. pagehide 는 뒤로가기 캐시로
+   들어가는 경우까지 잡아서, unload 보다 여기서 확실합니다. */
+addEventListener('pagehide', hwTeardown);
+
+/* ── 초대 링크 ────────────────────────────────────────────────────
+   전에는 `deskfit.app/r/4F2K9A` 를 복사했습니다. 있지도 않은 주소라,
+   받은 사람이 눌러도 아무 데도 닿지 않습니다. **지금 이 페이지 주소**로
+   만듭니다 — 링크를 연 사람은 코드가 채워진 대기실로 들어옵니다.
+
+   코드는 한 곳에서만 읽습니다. 화면에 하나, 복사에 하나, 링크에 하나로
+   적어 두면 셋 중 하나만 고쳤을 때 서로 다른 방을 가리킵니다. */
+function roomCode() {
+  const el = document.querySelector('[data-room-code]');
+  return ((el && el.textContent) || '').trim();
+}
+function roomLink() {
+  const u = new URL(location.href);
+  u.search = '?room=' + encodeURIComponent(roomCode());
+  u.hash = '#Room';
+  return u.href;
+}
+
+document.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-copy-code]')) {
+    const v = roomCode();
+    if (navigator.clipboard) await navigator.clipboard.writeText(v).catch(() => {});
+    toast('초대 코드를 복사했어요 · ' + v);
+    return;
+  }
+  if (!e.target.closest('[data-share-link]')) return;
+
+  const url = roomLink();
+  /* 공유 판이 있으면 그것을 씁니다 — 붙여 넣을 곳을 사람이 고르는 편이
+     클립보드보다 한 단계 짧습니다. 없거나 취소하면 복사로 내려옵니다. */
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Deskfit 비공개 세션', text: '초대 코드 ' + roomCode(), url: url });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;   // 사람이 닫은 것은 실패가 아닙니다
+    }
+  }
+  if (navigator.clipboard) await navigator.clipboard.writeText(url).catch(() => {});
+  toast('초대 링크를 복사했어요');
+});
+
+/* 링크를 타고 온 사람 — 코드를 채워 두고 대기실로 보냅니다 */
+(() => {
+  const code = new URLSearchParams(location.search).get('room');
+  if (!code) return;
+  const el = document.querySelector('[data-room-code]');
+  if (el) el.textContent = code.toUpperCase().slice(0, 8);
+})();
 
 addEventListener('popstate', () => show(location.hash.slice(1) || first, 'back'));
 

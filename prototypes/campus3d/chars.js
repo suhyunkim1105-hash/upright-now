@@ -161,6 +161,18 @@ function glbChar(parent, species, fit, opt, SkeletonUtils) {
   return g;
 }
 
+/* 최근 원본 GLB 네 종은 머리와 몸의 비율이 서로 크게 다릅니다. 예전처럼
+   모든 종에 지름 1m짜리 공 하나를 씌우면 특히 개구리·거북이는 옷이 아니라
+   검은 튜브에 들어간 것처럼 보입니다. 아래 값은 높이 1.9m로 정규화한 원본을
+   직접 재서 잡은 **옷의 자리**입니다. 원본 메시나 얼굴은 전혀 바꾸지 않고,
+   몸통에 닿는 얇은 클레이 옷만 이 자리에 얹습니다. */
+const GLB_WEAR_FIT = {
+  '거북이': { top: [0.00, .64, .52, .39, .39], hip: [.13, .31], foot: [.15, .075], hat: 1.73, face: [1.43, .39] },
+  '기린':   { top: [0.00, .68, .48, .44, .36], hip: [.12, .30], foot: [.14, .075], hat: 1.88, face: [1.55, .35] },
+  '펭귄':   { top: [0.00, .66, .59, .46, .43], hip: [.13, .30], foot: [.15, .075], hat: 1.76, face: [1.48, .40] },
+  '개구리': { top: [0.00, .61, .56, .35, .39], hip: [.13, .28], foot: [.15, .070], hat: 1.72, face: [1.45, .42] },
+};
+
 function addGlbWear(g, species, fit) {
   const L = normalizeLook(fit);
   const wear = {};
@@ -168,6 +180,7 @@ function addGlbWear(g, species, fit) {
     const t = L.tint && L.tint[id];
     return t == null ? fallback : hexNum(t);
   };
+  const F = GLB_WEAR_FIT[species] || GLB_WEAR_FIT['기린'];
   const layer = new THREE.Group(); layer.name = 'equipped-clay-outfit'; g.add(layer);
   const mesh = (geo, mat, x, y, z, sx = 1, sy = 1, sz = 1) => {
     const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz);
@@ -176,53 +189,111 @@ function addGlbWear(g, species, fit) {
   const reg = (slot, id, mats) => (wear[slot] = { id, base: mats[0]?.color?.getHex?.() || 0, mats: mats.map((m) => [m, null]) });
   const topC = color(L.topId, L.top), botC = color(L.bottomId, L.bottom), shoeC = color(L.shoesId, L.shoes);
   const topM = M(topC, .62), botM = M(botC, .58), shoeM = M(shoeC, .5);
-  const wide = species === '개구리' || species === '거북이' ? 1.08 : species === '펭귄' ? 1.13 : .94;
   if (L.topId && L.topId !== 'none') {
-    const torso = mesh(new THREE.SphereGeometry(.5, 22, 14), topM, 0, .67, .015, wide, .68, .68);
+    const [tx, ty, tw, th, td] = F.top;
+    /* 둥근 몸판은 원본 몸통에 딱 붙는 크기입니다. 이전 값보다 가로 42~50%,
+       세로 35~48% 작아 얼굴과 다리를 가리지 않습니다. */
+    const torso = mesh(new THREE.SphereGeometry(.5, 24, 16), topM, tx, ty, .018, tw, th, td);
     torso.name = `wear-top-${L.topId}`;
-    /* 티셔츠·과잠·후드가 멀리서도 서로 다르게 읽히는 클레이 디테일. */
+    const collarY = ty + th * .43, frontZ = td * .47;
+    const collar = M(0xF7FBFF, .52);
+    const ring = mesh(new THREE.TorusGeometry(tw * .115, .020, 7, 22), collar, tx, collarY, frontZ);
+    ring.rotation.x = Math.PI / 2;
+    /* 소매는 몸판의 절반 높이에 붙여 '공'이 아니라 실제 상의 실루엣이 되게
+       합니다. 짧은소매와 긴소매 길이도 구분합니다. */
+    const sleeveLong = L.topId === 'hoodie' || L.topId === 'varsity' || L.topId === 'shirt';
+    const sleeveMat = L.topId === 'varsity' ? M(0xF7F0E2, .58) : topM;
+    [-1, 1].forEach((s) => {
+      const sl = mesh(new THREE.CapsuleGeometry(.072, sleeveLong ? .20 : .085, 5, 10), sleeveMat,
+        tx + s * tw * .47, ty + th * .04, .012, 1, 1, .88);
+      sl.rotation.z = s * (sleeveLong ? .17 : .38);
+    });
+    /* 티셔츠·과잠·후드·셔츠가 멀리서도 서로 다르게 읽히는 클레이 디테일. */
     if (L.topId === 'hoodie') {
       const hoodM = M(mix(topC, 0x000000, .08), .58);
-      mesh(new THREE.TorusGeometry(.25, .07, 8, 20), hoodM, 0, 1.02, -.24, 1, 1, .7).rotation.x = Math.PI / 2;
-      mesh(new THREE.SphereGeometry(.18, 14, 9), hoodM, 0, .52, .34, 1.25, .65, .25);
+      const hood = mesh(new THREE.TorusGeometry(tw * .25, .045, 8, 22), hoodM,
+        tx, collarY + .01, -td * .42, 1, 1, .72); hood.rotation.x = Math.PI / 2;
+      mesh(new THREE.SphereGeometry(.5, 14, 9), hoodM, tx, ty - th * .25, frontZ + .006,
+        tw * .43, th * .17, .025);
     } else if (L.topId === 'varsity') {
       const cream = M(0xF7F0E2, .58);
-      mesh(new THREE.BoxGeometry(.055, .52, .035), cream, 0, .72, .36);
-      [-1, 1].forEach((s) => mesh(new THREE.TorusGeometry(.26, .025, 6, 20), cream, 0, .93 + s * .01, .03, 1, .55, 1));
+      mesh(new THREE.BoxGeometry(.025, th * .70, .020), cream, tx, ty, frontZ + .012);
+      [-.09, 0, .09].forEach((dy) => mesh(new THREE.SphereGeometry(.014, 8, 6), cream,
+        tx, ty + dy, frontZ + .028));
+      /* 학교 배지 */
+      mesh(new THREE.CylinderGeometry(.045, .045, .018, 16), M(0xF4D06F, .48),
+        tx - tw * .22, ty + th * .12, frontZ + .025).rotation.x = Math.PI / 2;
     } else if (L.topId === 'shirt') {
       const trim = M(0xF7FBFF, .52);
-      mesh(new THREE.BoxGeometry(.045, .48, .035), trim, 0, .70, .36);
-      [-1, 1].forEach((s) => mesh(new THREE.ConeGeometry(.10, .20, 3), trim, s * .09, .98, .31, 1, 1, .35).rotation.z = s * .48);
+      mesh(new THREE.BoxGeometry(.020, th * .66, .018), trim, tx, ty - .01, frontZ + .012);
+      [-1, 1].forEach((s) => {
+        const lapel = mesh(new THREE.ConeGeometry(.052, .11, 3), trim,
+          tx + s * .055, collarY - .035, frontZ + .018, 1, 1, .42);
+        lapel.rotation.z = s * .48;
+      });
     }
     reg('top', L.topId, [topM]);
   }
   if (L.bottomId && L.bottomId !== 'none') {
     const shorts = L.bottomId === 'shorts';
-    [-1, 1].forEach((s) => mesh(new THREE.CapsuleGeometry(.12, shorts ? .12 : .28, 5, 10), botM,
-      s * .16, shorts ? .34 : .27, .01, 1.12, 1, 1));
+    const [legX, legY] = F.hip;
+    [-1, 1].forEach((s) => mesh(new THREE.CapsuleGeometry(shorts ? .085 : .075, shorts ? .075 : .20, 5, 10), botM,
+      s * legX, shorts ? legY + .055 : legY, .01, shorts ? 1.08 : 1, 1, .94));
+    /* 허리선이 있어야 두 다리 덩이가 아니라 바지로 읽힙니다. */
+    const waist = mesh(new THREE.TorusGeometry(legX * 1.13, .022, 6, 22), botM, 0, legY + .18, .008, 1, 1, .78);
+    waist.rotation.x = Math.PI / 2;
     reg('bottom', L.bottomId, [botM]);
   }
   if (L.shoesId && L.shoesId !== 'none') {
-    [-1, 1].forEach((s) => mesh(new THREE.SphereGeometry(.16, 14, 9), shoeM, s * .17, .09, .10, 1.1, .55, 1.45));
+    const [footX, footY] = F.foot;
+    [-1, 1].forEach((s) => mesh(new THREE.SphereGeometry(.5, 16, 10), shoeM,
+      s * footX, footY, .085, .25, .105, .34));
     reg('shoes', L.shoesId, [shoeM]);
   }
   if (L.hatId && L.hatId !== 'none') {
     const hc = color(L.hatId, L.hat), hm = M(hc, .58);
-    const hy = species === '기린' ? 1.83 : 1.68;
+    const hy = F.hat;
     if (L.hatId === 'grad_cap') {
-      mesh(new THREE.BoxGeometry(.62, .055, .62), M(0x263548, .5), 0, hy, 0).rotation.y = Math.PI / 4;
+      mesh(new THREE.BoxGeometry(.48, .035, .48), M(0x263548, .5), 0, hy, 0).rotation.y = Math.PI / 4;
     } else {
-      mesh(new THREE.SphereGeometry(.34, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), hm, 0, hy - .08, 0, 1, .72, 1);
-      if (L.hatId === 'cap') mesh(new THREE.BoxGeometry(.42, .035, .25), hm, 0, hy - .08, .27);
+      mesh(new THREE.SphereGeometry(.28, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2), hm, 0, hy - .06, 0, 1, .66, 1);
+      if (L.hatId === 'cap') mesh(new THREE.BoxGeometry(.36, .028, .20), hm, 0, hy - .06, .22);
     }
     reg('hat', L.hatId, [hm]);
   }
+  if (L.glassesId && L.glassesId !== 'none') {
+    const [fy, fz] = F.face, gm = M(0x263548, .42);
+    const sunglasses = L.glassesId === 'sunglasses';
+    [-1, 1].forEach((s) => {
+      const lens = mesh(new THREE.TorusGeometry(.095, .018, 7, sunglasses ? 4 : 18), gm,
+        s * .115, fy, fz, 1, sunglasses ? .72 : 1, 1);
+      lens.rotation.x = Math.PI / 2;
+      if (sunglasses) mesh(new THREE.CircleGeometry(.076, 16), M(0x374151, .25),
+        s * .115, fy, fz + .006).rotation.y = Math.PI;
+    });
+    mesh(new THREE.BoxGeometry(.055, .014, .014), gm, 0, fy, fz);
+    reg('glasses', L.glassesId, [gm]);
+  }
   if (L.bagId && L.bagId !== 'none') {
     const bm = M(color(L.bagId, L.bagC), .58);
-    mesh(new THREE.BoxGeometry(.48, .48, .18), bm, 0, .67, -.34);
+    if (L.bagId === 'tote') {
+      mesh(new THREE.BoxGeometry(.30, .30, .10), bm, .30, .55, -.04);
+      const handle = mesh(new THREE.TorusGeometry(.115, .020, 7, 18, Math.PI), bm, .30, .73, -.04);
+      handle.rotation.z = Math.PI;
+    } else {
+      mesh(new THREE.BoxGeometry(.38, .36, .13), bm, 0, .59, -.31);
+      [-1, 1].forEach((s) => {
+        const strap = mesh(new THREE.TorusGeometry(.14, .018, 6, 18, Math.PI), bm,
+          s * .095, .73, -.20, .62, 1, 1); strap.rotation.z = Math.PI;
+      });
+    }
     reg('bag', L.bagId, [bm]);
   }
   g.userData.parts.wear = wear;
+  g.userData.outfitAudit = {
+    source: 'latest-glb', species,
+    slots: Object.fromEntries(Object.entries(wear).map(([k, v]) => [k, v.id])),
+  };
 }
 
 /* 동작을 바꾸고 믹서를 돌립니다 */

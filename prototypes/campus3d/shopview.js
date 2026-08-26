@@ -702,7 +702,13 @@ function buildBare(id, opt) {
      실루엣이 남지만, 여기서는 그 한 조각이 칸을 다 채웁니다 — 성기게
      지으면 동그란테가 팔각형이 되고 반팔티 어깨에 각이 집니다. 한 품목에
      한 번만 짓고 곳간에 두는 길이라 값도 한 번뿐입니다. */
-  const body = character(g, MANNEQUIN_SPECIES, look, { ry: opt.ry ?? X.ry ?? V.ry ?? 0 });
+  /* 상품 카드에서는 원본 캐릭터가 아니라 **옷 한 장**을 떼어 냅니다.
+     GLB 원본은 몸과 옷이 분리된 골조가 아니므로 P.neck이 없고 카드가 빈
+     네모가 됩니다. 여기만 절차형 옷 골조를 강제하고, 오른쪽 입어보기와
+     실제 월드 캐릭터는 계속 최신 원본 GLB를 사용합니다. */
+  const body = character(g, MANNEQUIN_SPECIES, look, {
+    ry: opt.ry ?? X.ry ?? V.ry ?? 0, procedural: true,
+  });
   const P = body && body.userData && body.userData.parts;
   if (!P || !P.neck) return null;
   const K = { skin: P.neck.material, bottom: matSet(P, 'bottom') };
@@ -926,11 +932,18 @@ function ensureCanvas(el, opt) {
 function drawThumb(job) {
   if (!boot()) return;
   const it = getItem(job.kind, job.id, job.opt);
-  if (!it) { job.done = true; return; }
+  if (!it) {
+    job.done = true;
+    job.el.dataset.renderState = 'error';
+    console.warn('[상점 3D] 상품을 만들지 못했습니다', job.kind, job.id);
+    return;
+  }
   const cv = ensureCanvas(job.el, job.opt);
   const ok = paint(cv, it.group, it.box, job.opt.off || it.off,
     job.opt.pad ?? it.pad, job.opt.ground ?? it.ground);
   job.done = !!ok;
+  job.el.dataset.renderState = ok ? 'ready' : 'error';
+  if (!ok) console.warn('[상점 3D] 상품을 그리지 못했습니다', job.kind, job.id);
   if (ok && job.opt.onDraw) { try { job.opt.onDraw(job.el); } catch { /* 부르는 쪽 사정 */ } }
 }
 
@@ -1089,6 +1102,11 @@ function rebuildPreview(p) {
      강제할 이유가 없습니다. 월드에서 뽑은 바로 그 캐릭터에 상품을 입혀
      보여 주고, 새 네 종만 자동으로 클레이 절차형 판본을 씁니다. */
   p.body = character(p.rig, sp, look, {});
+  p.el.dataset.renderState = p.body ? 'ready' : 'error';
+  p.el.dataset.characterSource = p.body?.userData?.characterSource || 'unknown';
+  p.el.dataset.species = sp;
+  p.el.dataset.outfit = [look.topId, look.bottomId, look.shoesId, look.hatId,
+    look.glassesId, look.bagId].filter(Boolean).join(',');
   claim(p.body);
   if (rid) { p.rideG = ride(p.rig, rid, {}); if (p.rideG) claim(p.rideG); }
   p.shape = look;

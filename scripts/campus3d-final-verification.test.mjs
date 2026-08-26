@@ -9,6 +9,7 @@ const world = readFileSync('prototypes/campus3d/index.html', 'utf8')
 const rooms = readFileSync('prototypes/campus3d/rooms.js', 'utf8')
 const spots = readFileSync('prototypes/campus3d/spots.js', 'utf8')
 const chars = readFileSync('prototypes/campus3d/chars.js', 'utf8')
+const shopview = readFileSync('prototypes/campus3d/shopview.js', 'utf8')
 const weatherApi = readFileSync('api/weather.ts', 'utf8')
 const emote = readFileSync('prototypes/campus3d/emote.js', 'utf8')
 const npcs = readFileSync('prototypes/campus3d/npcs.js', 'utf8')
@@ -37,6 +38,13 @@ test('옷 가게의 모든 카테고리 상품이 공유 WebGL의 3D 클레이 �
   assert.match(world, /querySelectorAll\('button\[data-buy\] \.th'\)/, '옷 3D 렌더 대상 연결')
   assert.match(world, /itemThumb\(el, 'wear'/, '공유 WebGL 옷 조형 렌더')
   assert.match(world, /species: curSpecies/, '뽑아 선택한 캐릭터 입어보기')
+  assert.match(shopview, /procedural:\s*true/, 'GLB 골조에서 분리할 수 없는 상품 카드가 다시 빈 칸이 됩니다')
+  assert.match(shopview, /dataset\.renderState = ok \? 'ready' : 'error'/,
+    '3D 상품 카드 렌더 성공 여부를 검수할 수 없습니다')
+  assert.match(world, /tryOn\(WEAR_TRY\)\?\.focus\(null\)/,
+    '옆 미리보기가 상품 부위만 확대해 원본 캐릭터 얼굴·전신을 자릅니다')
+  assert.match(world, /try: WEAR_TRY, focus: null/,
+    '상점을 다시 열면 옆 원본 캐릭터가 전신 대신 잘린 상태로 시작합니다')
 })
 
 test('Git의 원본 네 캐릭터와 복원한 네 캐릭터가 알 상점 여덟 종으로 이어진다', () => {
@@ -199,6 +207,13 @@ test('표현 여덟 개가 각각 별도 캐릭터 모션을 가진다', () => {
 test('최신 GLB 캐릭터도 실제 옷과 앉은 자세를 적용한다', () => {
   assert.match(chars, /addGlbWear\(g, species, fit\)/, 'GLB 캐릭터에 착용 레이어가 연결되지 않았습니다')
   assert.match(chars, /equipped-clay-outfit/, '착용한 옷의 3D 그룹이 없습니다')
+  for (const species of ['거북이', '기린', '펭귄', '개구리'])
+    assert.match(chars, new RegExp(`'${species}':\\s*\\{ top:`), `${species} 원본 체형별 옷 맞춤값이 없습니다`)
+  assert.doesNotMatch(chars, /wide, \.68, \.68/,
+    '원본 체형을 무시한 큰 구형 상의가 다시 캐릭터 몸을 덮습니다')
+  assert.match(chars, /if \(L\.glassesId && L\.glassesId !== 'none'\)/,
+    '원본 네 캐릭터의 안경 착용 경로가 없습니다')
+  assert.match(chars, /g\.userData\.outfitAudit/, '플레이어·NPC 착용 상태를 교차 검수할 정보가 없습니다')
   assert.match(chars, /G\.body\.position\.y = G\.bodyY - \.31/, '앉을 때 몸을 좌판 높이로 내리지 않습니다')
   assert.match(chars, /tilt\('leg\.L', -1\.18/, '앉을 때 다리를 굽히지 않습니다')
 })

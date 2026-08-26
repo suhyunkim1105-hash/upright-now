@@ -18,6 +18,9 @@
   color-scheme: light;
   --ease: cubic-bezier(.16, 1, .3, 1);
   --t-hover: 180ms;
+  --t-press: 90ms;                              /* 내려가는 시간 */
+  --t-back: 420ms;                              /* 되돌아오는 시간 */
+  --spring: cubic-bezier(.22, 1.32, .36, 1);    /* 살짝 지나쳤다 돌아옵니다 */
 
   --lift-sm:
     inset 0 2px 5px rgba(255,255,255,.76),
@@ -55,16 +58,28 @@ body { margin: 0; overflow: hidden; background: #DDE7F2; color: #333D4B; word-br
    ② 올리면 뜨고, 누르면 내려앉습니다. 색은 안 건드립니다 —
       점토는 눌러도 재질이 바뀌지 않습니다. */
 button, [data-hot], [data-switch], [data-seg-item], [data-pick] { cursor: pointer; }
+/* 누르는 맛은 **두 속도**로 만듭니다. 하나로 두면 눌러도 즉시 끝나 버려서
+   손가락이 판을 만졌다는 느낌이 안 남습니다.
+
+     내려갈 때  90ms  — 손을 따라와야 하므로 빠르게
+     올라올 때 420ms  — 되튀는 곡선으로 천천히 제자리
+
+   되튀는 값(1.32)이 1 을 넘으므로 살짝 지나쳤다가 돌아옵니다. 이 한 번의
+   지나침이 "판이 눌렸다 폈다" 로 읽히는 부분입니다. */
 button, [data-hot] {
-  transition: transform var(--t-hover) var(--ease), box-shadow var(--t-hover) var(--ease);
+  transition: transform var(--t-back) var(--spring), box-shadow var(--t-hover) var(--ease);
 }
 button:hover, [data-hot]:hover { transform: translateY(-2px); box-shadow: var(--lift-sm); }
-button:active, [data-hot]:active { transform: translateY(1px); }
+button:active, [data-hot]:active {
+  transform: translateY(1px) scale(.972);
+  transition: transform var(--t-press) cubic-bezier(.3, 0, .4, 1);
+}
 :focus-visible { outline: 3px solid #21C4AE; outline-offset: 3px; border-radius: 6px; }
 
 /* 큰 판은 더 크게 뜹니다. 판 안의 그림은 판보다 한 뼘 더 떠서 살짝 기웁니다
    — 이게 "마우스를 올리면 월드가 살아나는" 그 반응입니다. */
-[data-pick] { transition: transform var(--t-hover) var(--ease), box-shadow var(--t-hover) var(--ease); }
+[data-pick] { transition: transform var(--t-back) var(--spring), box-shadow var(--t-hover) var(--ease); }
+[data-pick]:active { transform: scale(.988); transition: transform var(--t-press) cubic-bezier(.3, 0, .4, 1); }
 [data-pick] img, [data-pick] > span:not([style*="position: absolute; left: 0"]) {
   transition: transform 260ms var(--ease);
 }
@@ -78,7 +93,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 [data-pick]:active { transform: translateY(2px); }
 
 /* 그림을 품은 다른 판(캐릭터 자리·학생증)도 같은 문법으로 */
-[data-lift] { transition: transform var(--t-hover) var(--ease), box-shadow var(--t-hover) var(--ease); }
+[data-lift] { transition: transform var(--t-back) var(--spring), box-shadow var(--t-hover) var(--ease); }
 [data-lift]:hover { transform: translateY(-3px); box-shadow: var(--lift-sm); }
 [data-lift] img { transition: transform 260ms var(--ease); }
 [data-lift]:hover img { transform: translateY(-5px) rotate(-2deg); }
@@ -348,18 +363,13 @@ button:active, [data-hot]:active { transform: translateY(1px); }
       <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: 12px;">
 
         <!-- 프로필 사진을 올린 사람 — 사진이 그대로 자리에 앉습니다 -->
-        <div style="position: relative; border-radius: 22px; overflow: hidden;
-                    background: linear-gradient(165deg, #F3E4DA 0%, #D9C3B4 100%); box-shadow: 0 16px 30px -16px rgba(25,31,40,.45),
-                                inset 0 6px 12px rgba(255,255,255,.6),
-                                inset 0 -7px 13px rgba(86,110,146,.2);">
-          <svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMax meet" aria-label="올린 프로필 사진" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block;">
-            <circle cx="80" cy="38" r="16" fill="#B08D77" />
-            <path d="M38 100c0-16 8-27 20-32 6-3 14-4 22-4s16 1 22 4c12 5 20 16 20 32z" fill="#B08D77" />
-          </svg>
-          <span style="position: absolute; left: 10px; bottom: 9px; padding: 5px 10px; border-radius: 99px;
-                       background: rgba(25,31,40,.68); color: #FBFDFF; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit;
-                       white-space: nowrap;">● 한지우</span>
-        </div>
+          <div aria-label="아직 안 온 자리" style="border-radius: 22px; background: #E9F1FB;
+                      display: grid; place-items: center;
+                      box-shadow: inset 0 5px 11px rgba(62,84,118,.18), inset 0 -2px 0 rgba(255,255,255,.9);">
+            <span style="width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #DBE7F5; color: #8A99AB;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>
+            </span>
+          </div>
 
         <!-- 안 올린 사람 — 온보딩에서 고른 캐릭터가 기본 -->
         <div data-lift="" style="position: relative; border-radius: 22px; overflow: hidden;
@@ -370,19 +380,16 @@ button:active, [data-hot]:active { transform: translateY(1px); }
           <img src="./assets/turtle.webp" alt="" style="height: 112px; display: block;">
           <span style="position: absolute; left: 10px; bottom: 9px; padding: 5px 10px; border-radius: 99px;
                        background: rgba(25,31,40,.68); color: #FBFDFF; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit;
-                       white-space: nowrap;">● 느긋한거북</span>
+                       white-space: nowrap;">● 나 · 느긋한거북</span>
         </div>
 
-        <div data-lift="" style="position: relative; border-radius: 22px; overflow: hidden;
-                    background: linear-gradient(165deg, #E8EEFA, #DCE6F5); display: grid; place-items: center;
-                    box-shadow: 0 16px 30px -16px rgba(25,31,40,.45),
-                                inset 0 6px 12px rgba(255,255,255,.9),
-                                inset 0 -7px 13px rgba(86,110,146,.2);">
-          <img src="./assets/penguin.webp" alt="" style="height: 120px; display: block;">
-          <span style="position: absolute; left: 10px; bottom: 9px; padding: 5px 10px; border-radius: 99px;
-                       background: rgba(25,31,40,.68); color: #FBFDFF; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit;
-                       white-space: nowrap;">밤샘펭귄</span>
-        </div>
+          <div aria-label="아직 안 온 자리" style="border-radius: 22px; background: #E9F1FB;
+                      display: grid; place-items: center;
+                      box-shadow: inset 0 5px 11px rgba(62,84,118,.18), inset 0 -2px 0 rgba(255,255,255,.9);">
+            <span style="width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: #DBE7F5; color: #8A99AB;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>
+            </span>
+          </div>
 
         <!-- 아직 안 온 자리. 글자로 "빈 자리"라 쓰면 자리마다 같은 말이 세 번
              적힙니다. 점 셋이면 읽지 않고도 기다리는 중인 줄 압니다. -->
@@ -602,16 +609,29 @@ button:active, [data-hot]:active { transform: translateY(1px); }
          가운데 칸이 판 한가운데에 옵니다 — 양옆을 flex 로 밀면 오른쪽에
          무엇이 들어오느냐에 따라 시간이 조금씩 흔들립니다.
          나머지 조작은 오른쪽 기둥 아래와 스테이지 위 바에 있습니다. -->
-    <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px;">
-      <span></span>
-      <b data-timer="" style="font-weight: 820; font-size: 34px; line-height: 1; font-family: inherit; letter-spacing: -.045em; color: #191F28;
-                font-variant-numeric: tabular-nums;">23분 집중</b>
+    <!-- 열을 **아래 격자와 똑같이** 잡습니다: 스테이지 | 282px 기둥.
+         시계는 스테이지 칸의 한가운데에 섭니다 — 판 전체의 가운데에 두면
+         자로는 가운데인데 눈에는 오른쪽으로 밀려 보입니다. 사람이 보는
+         가운데는 사람이 보고 있는 것(스테이지)의 가운데입니다.
+         숫자를 적어 두지 않고 같은 열 값을 쓰므로 둘은 항상 붙어 다닙니다. -->
+    <div style="display: grid; grid-template-columns: minmax(0,1fr) 282px; gap: 18px; align-items: center;">
+
+      <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 14px; min-width: 0;">
+        <span style="justify-self: start; display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+          <span style="font-weight: 750; font-size: 10.5px; line-height: 1; font-family: inherit; letter-spacing: .06em; color: #8A99AB;">비공개 세션</span>
+          <b data-session-room style="font-weight: 820; font-size: 16px; line-height: 1.2; font-family: inherit; letter-spacing: -.02em; color: #333D4B;
+                    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">자료구조 3장</b>
+        </span>
+        <b data-timer="" style="font-weight: 820; font-size: 34px; line-height: 1; font-family: inherit; letter-spacing: -.045em; color: #191F28;
+                  font-variant-numeric: tabular-nums; white-space: nowrap;">00:00 집중 중</b>
+        <span></span>
+      </div>
 
       <!-- 진행 중인 방에도 사람을 부를 수 있어야 합니다. 대기실에서 닫고
            들어오면 코드를 다시 볼 길이 없었습니다. 같은 값, 같은 두 버튼. -->
       <!-- 폭을 오른쪽 기둥(282px)에 맞춥니다. 내용만큼만 넓히면 아래 판들과
            오른쪽 모서리는 맞는데 왼쪽이 어긋나, 기둥이 위에서 한 번 끊깁니다. -->
-      <div style="justify-self: end; width: 282px; box-sizing: border-box;
+      <div style="width: 100%; box-sizing: border-box;
                   display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 15px;
                   border-radius: 18px; background: #E9F1FB;
                   box-shadow: inset 0 5px 11px rgba(62,84,118,.18), inset 0 -2px 0 rgba(255,255,255,.9);">
@@ -683,40 +703,51 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 
         <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px;">
           
-            <div data-posture="좋음" style="position: relative; border-radius: 20px; overflow: hidden; background: linear-gradient(165deg, #4A4030 0%, #2C2618 100%);
-                        display: grid; place-items: center;
-                        box-shadow: inset 0 0 0 3px #74E294, 0 14px 24px -14px rgba(0,0,0,.6);">
-              <img src="./assets/giraffe.webp" alt="" style="height: 190px; display: block;">
-              <span style="position: absolute; left: 10px; bottom: 9px; display: flex; align-items: center; gap: 6px;
-                           padding: 5px 11px; border-radius: 99px; background: rgba(12,18,26,.72);
-                           color: #F4F8FC; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit; white-space: nowrap;">● 한지우</span>
-            </div>
-          
-            <div data-posture="좋음" style="position: relative; border-radius: 20px; overflow: hidden; background: linear-gradient(165deg, #2A4A46 0%, #1B2E34 100%);
+            <!-- 내 칸. 남들에게 보이는 것은 카메라가 아니라 캐릭터입니다 —
+                 자세만 테두리 색으로 갑니다. 판정은 진짜 웹캠이 굴립니다. -->
+            <div data-mine-tile data-posture="좋음" style="position: relative; border-radius: 20px; overflow: hidden; background: linear-gradient(165deg, #2A4A46 0%, #1B2E34 100%);
                         display: grid; place-items: center;
                         box-shadow: inset 0 0 0 3px #74E294, 0 14px 24px -14px rgba(0,0,0,.6);">
               <img src="./assets/turtle.webp" alt="" style="height: 190px; display: block;">
               <span style="position: absolute; left: 10px; bottom: 9px; display: flex; align-items: center; gap: 6px;
                            padding: 5px 11px; border-radius: 99px; background: rgba(12,18,26,.72);
-                           color: #F4F8FC; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit; white-space: nowrap;">● 느긋한거북</span>
+                           color: #F4F8FC; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit; white-space: nowrap;">● 나 · 느긋한거북</span>
             </div>
           
-            <div data-posture="주의" style="position: relative; border-radius: 20px; overflow: hidden; background: linear-gradient(165deg, #3A3D52 0%, #23273A 100%);
-                        display: grid; place-items: center;
-                        box-shadow: inset 0 0 0 3px #F5C451, 0 14px 24px -14px rgba(0,0,0,.6);">
-              <img src="./assets/penguin.webp" alt="" style="height: 190px; display: block;">
-              <span style="position: absolute; left: 10px; bottom: 9px; display: flex; align-items: center; gap: 6px;
-                           padding: 5px 11px; border-radius: 99px; background: rgba(12,18,26,.72);
-                           color: #F4F8FC; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit; white-space: nowrap;">밤샘펭귄</span>
+            <!-- 빈 자리. 남의 자세는 서버 없이는 알 수 없어서, 모르는 것을
+                 흔들어 보이는 대신 비워 둡니다. -->
+            <div aria-label="아직 안 온 자리" style="position: relative; border-radius: 20px; background: rgba(255,255,255,.045);
+                        display: grid; place-items: center; gap: 10px; align-content: center;
+                        box-shadow: inset 0 0 0 2px rgba(255,255,255,.09);">
+              <span style="width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+                           background: rgba(255,255,255,.07); color: rgba(244,248,252,.5);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>
+              </span>
+              <span style="font-weight: 750; font-size: 12px; line-height: 1; font-family: inherit; color: rgba(244,248,252,.5);">기다리는 중</span>
             </div>
           
-            <div data-posture="무너짐" style="position: relative; border-radius: 20px; overflow: hidden; background: linear-gradient(165deg, #4A3038 0%, #2C1E26 100%);
-                        display: grid; place-items: center;
-                        box-shadow: inset 0 0 0 3px #FF7E6E, 0 14px 24px -14px rgba(0,0,0,.6);">
-              <img src="./assets/frog.webp" alt="" style="height: 190px; display: block;">
-              <span style="position: absolute; left: 10px; bottom: 9px; display: flex; align-items: center; gap: 6px;
-                           padding: 5px 11px; border-radius: 99px; background: rgba(12,18,26,.72);
-                           color: #F4F8FC; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit; white-space: nowrap;">● 개구리</span>
+            <!-- 빈 자리. 남의 자세는 서버 없이는 알 수 없어서, 모르는 것을
+                 흔들어 보이는 대신 비워 둡니다. -->
+            <div aria-label="아직 안 온 자리" style="position: relative; border-radius: 20px; background: rgba(255,255,255,.045);
+                        display: grid; place-items: center; gap: 10px; align-content: center;
+                        box-shadow: inset 0 0 0 2px rgba(255,255,255,.09);">
+              <span style="width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+                           background: rgba(255,255,255,.07); color: rgba(244,248,252,.5);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>
+              </span>
+              <span style="font-weight: 750; font-size: 12px; line-height: 1; font-family: inherit; color: rgba(244,248,252,.5);">기다리는 중</span>
+            </div>
+          
+            <!-- 빈 자리. 남의 자세는 서버 없이는 알 수 없어서, 모르는 것을
+                 흔들어 보이는 대신 비워 둡니다. -->
+            <div aria-label="아직 안 온 자리" style="position: relative; border-radius: 20px; background: rgba(255,255,255,.045);
+                        display: grid; place-items: center; gap: 10px; align-content: center;
+                        box-shadow: inset 0 0 0 2px rgba(255,255,255,.09);">
+              <span style="width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;
+                           background: rgba(255,255,255,.07); color: rgba(244,248,252,.5);">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg>
+              </span>
+              <span style="font-weight: 750; font-size: 12px; line-height: 1; font-family: inherit; color: rgba(244,248,252,.5);">기다리는 중</span>
             </div>
           
         </div>
@@ -855,7 +886,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                          box-shadow: inset 0 4px 9px rgba(255,255,255,.8), inset 0 -5px 10px rgba(107,83,22,.26);">
               <b style="font-weight: 800; font-size: 20px; line-height: 1; font-family: inherit;">C</b>
             </span>
-            <b style="font-weight: 800; font-size: 23px; line-height: 1; letter-spacing: -.035em; color: #6B5316;
+            <b data-coin style="font-weight: 800; font-size: 23px; line-height: 1; letter-spacing: -.035em; color: #6B5316;
                       font-family: inherit; font-variant-numeric: tabular-nums;">18</b>
             <span style="font-weight: 750; font-size: 11.5px; line-height: 1; color: #8A7620;
                          font-family: inherit;">코인</span>
@@ -927,7 +958,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 
       <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
         <b style="font-weight: 820; font-size: 88px; line-height: 1; font-family: inherit; letter-spacing: -.05em; color: #191F28;
-                  font-variant-numeric: tabular-nums;">72<span style="font-size: 34px; margin-left: 6px; color: #4E5968;">분</span></b>
+                  font-variant-numeric: tabular-nums;" data-done-min>72<span style="font-size: 34px; margin-left: 6px; color: #4E5968;">분</span></b>
         <span style="display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; padding: 10px 18px;
                      border-radius: 99px; background: linear-gradient(168deg, #FFE0C9, #FBC7A4); color: #8F3B12;
                      font-weight: 820; font-size: 15px; line-height: 1; font-family: inherit; font-variant-numeric: tabular-nums;
@@ -935,7 +966,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                                  inset 0 5px 10px rgba(255,255,255,.85),
                                  inset 0 -6px 11px rgba(160,66,20,.22);">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="#E8622A" stroke="#B8410F" stroke-width="1.4" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-          연속 9일째
+          연속 <span data-done-streak>9</span>일째
         </span>
       </div>
     </div>
@@ -975,7 +1006,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
             <b style="font-weight: 800; font-size: 24px; line-height: 1; font-family: inherit;">C</b>
           </span>
           <b style="font-weight: 800; font-size: 29px; line-height: 1; letter-spacing: -.035em; color: #6B5316;
-                    font-family: inherit; font-variant-numeric: tabular-nums;">35</b>
+                    font-family: inherit; font-variant-numeric: tabular-nums;" data-done-coin>35</b>
           <span style="font-weight: 750; font-size: 12.5px; line-height: 1; color: #8A7620;
                        font-family: inherit;">코인</span>
         </span>
@@ -989,10 +1020,10 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                               inset 0 -7px 13px rgba(86,110,146,.18);">
         <span style="display: flex; align-items: baseline; justify-content: space-between;">
           <span style="font-weight: 800; font-size: 13.5px; line-height: 1; font-family: inherit; color: #333D4B;">이번 주 앉은 시간</span>
-          <b style="font-weight: 820; font-size: 17px; line-height: 1; font-family: inherit; color: #191F28; font-variant-numeric: tabular-nums;">4시간 12분</b>
+          <b style="font-weight: 820; font-size: 17px; line-height: 1; font-family: inherit; color: #191F28; font-variant-numeric: tabular-nums;" data-done-week>4시간 12분</b>
         </span>
 
-        <span style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 18px; align-items: end; height: 92px;">
+        <span data-done-bars style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 18px; align-items: end; height: 92px;">
           <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
             <span style="width: 100%; height: 21px; border-radius: 8px; background: #D6E3F1;
                          box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
@@ -1174,7 +1205,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">오늘 집중</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">72<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">분</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-today>72<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">분</span></b>
               </span>
             </div>
           
@@ -1188,7 +1219,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">진행한 세션</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">3<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-sessions>3<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
               </span>
             </div>
           
@@ -1202,7 +1233,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">자세 회복</span>
                 <b data-recover="" style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">12<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-recovers>12<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
               </span>
             </div>
           
@@ -1216,7 +1247,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">연속 출석</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">9<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-streak>9<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일</span></b>
               </span>
             </div>
           
@@ -1230,7 +1261,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">가진 코인</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">340<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;"></span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-coins>340<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;"></span></b>
               </span>
             </div>
           
@@ -1244,7 +1275,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">시즌</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">26<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일째</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-season-nth>26<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일째</span></b>
               </span>
             </div>
           
@@ -1380,7 +1411,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">오늘 집중</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">46<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">분</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-today>46<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">분</span></b>
               </span>
             </div>
           
@@ -1394,7 +1425,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">진행한 세션</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">3<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-sessions>3<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
               </span>
             </div>
           
@@ -1408,7 +1439,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">자세 회복</span>
                 <b data-recover="" style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">12<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-recovers>12<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">회</span></b>
               </span>
             </div>
           
@@ -1422,7 +1453,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">연속 출석</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">9<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-streak>9<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일</span></b>
               </span>
             </div>
           
@@ -1436,7 +1467,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">가진 코인</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">340<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;"></span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-my-coins>340<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;"></span></b>
               </span>
             </div>
           
@@ -1450,7 +1481,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">시즌</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">26<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일째</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;" data-season-nth>26<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">일째</span></b>
               </span>
             </div>
           
@@ -2187,7 +2218,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                          color: #0B6156; font-family: inherit;">이번 주 앉은 시간</span>
             <b style="display: block; margin-top: 12px; font-weight: 820; font-size: 44px; line-height: 1;
                       letter-spacing: -.045em; color: #191F28; font-family: inherit;
-                      font-variant-numeric: tabular-nums;">4시간 12분</b>
+                      font-variant-numeric: tabular-nums;" data-my-week>4시간 12분</b>
           </span>
           <span style="display: inline-flex; align-items: center; gap: 5px; margin-bottom: 4px; padding: 8px 13px;
                        border-radius: 99px; background: rgba(251,253,255,.85); color: #12867A;
@@ -2200,7 +2231,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
         </div>
 
         <!-- 막대는 한 바닥에서 자랍니다. 값은 막대 위에 적어 두 번 안 찾게 -->
-        <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; align-items: end;">
+        <div data-my-bars style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 16px; align-items: end;">
           <span style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 9px; height: 100%;">
             <span style="font-weight: 800; font-size: 12.5px; line-height: 1; color: #4E5968; font-family: inherit; font-variant-numeric: tabular-nums;">22분</span>
             <span style="width: 100%; max-width: 64px; height: 23%; border-radius: 13px; background: #C3D6EA;
@@ -2259,7 +2290,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
             <span>
               <span style="display: block; font-weight: 800; font-size: 12px; line-height: 1; color: #4E5968; font-family: inherit;">세션</span>
               <b style="display: block; margin-top: 5px; font-weight: 820; font-size: 17px; line-height: 1; color: #191F28;
-                        font-family: inherit; font-variant-numeric: tabular-nums;">7회</b>
+                        font-family: inherit; font-variant-numeric: tabular-nums;" data-my-wsessions>7회</b>
             </span>
           </span>
           <span style="display: flex; align-items: center; gap: 11px; padding: 13px 16px; border-radius: 18px;
@@ -2273,7 +2304,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
             <span>
               <span style="display: block; font-weight: 800; font-size: 12px; line-height: 1; color: #4E5968; font-family: inherit;">회복</span>
               <b style="display: block; margin-top: 5px; font-weight: 820; font-size: 17px; line-height: 1; color: #191F28;
-                        font-family: inherit; font-variant-numeric: tabular-nums;">21회</b>
+                        font-family: inherit; font-variant-numeric: tabular-nums;" data-my-wrecovers>21회</b>
             </span>
           </span>
           <span style="display: flex; align-items: center; gap: 11px; padding: 13px 16px; border-radius: 18px;
@@ -2287,7 +2318,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
             <span>
               <span style="display: block; font-weight: 800; font-size: 12px; line-height: 1; color: #4E5968; font-family: inherit;">하루 평균</span>
               <b style="display: block; margin-top: 5px; font-weight: 820; font-size: 17px; line-height: 1; color: #191F28;
-                        font-family: inherit; font-variant-numeric: tabular-nums;">36분</b>
+                        font-family: inherit; font-variant-numeric: tabular-nums;" data-my-avg>36분</b>
             </span>
           </span>
         </div>
@@ -2698,7 +2729,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
         <span style="padding: 9px 15px; border-radius: 99px; background: #FBF1DC; color: #6B5316;
                      font-weight: 800; font-size: 12.5px; line-height: 1; font-family: inherit;
                      font-variant-numeric: tabular-nums; white-space: nowrap;
-                     box-shadow: inset 0 4px 9px rgba(255,255,255,.75), inset 0 -5px 10px rgba(138,118,32,.16);">시즌 종료까지 4일 18시간</span>
+                     box-shadow: inset 0 4px 9px rgba(255,255,255,.75), inset 0 -5px 10px rgba(138,118,32,.16);">시즌 종료까지 <span data-season-left>4일 18시간</span></span>
       </span>
 
       <!-- 트랙. 결승선은 1위가 세운 시간입니다. -->
@@ -2907,7 +2938,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
         <span style="padding: 9px 15px; border-radius: 99px; background: #FBF1DC; color: #6B5316;
                      font-weight: 800; font-size: 12.5px; line-height: 1; font-family: inherit;
                      font-variant-numeric: tabular-nums; white-space: nowrap;
-                     box-shadow: inset 0 4px 9px rgba(255,255,255,.75), inset 0 -5px 10px rgba(138,118,32,.16);">시즌 종료까지 4일 18시간</span>
+                     box-shadow: inset 0 4px 9px rgba(255,255,255,.75), inset 0 -5px 10px rgba(138,118,32,.16);">시즌 종료까지 <span data-season-left>4일 18시간</span></span>
       </span>
 
       <!-- 밤 섬 위에 세 기둥. 기둥은 아래에서 자라 섬을 가리지 않습니다. -->
@@ -3102,7 +3133,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
         <span style="padding: 9px 15px; border-radius: 99px; background: #FBF1DC; color: #6B5316;
                      font-weight: 800; font-size: 12.5px; line-height: 1; font-family: inherit;
                      font-variant-numeric: tabular-nums; white-space: nowrap;
-                     box-shadow: inset 0 4px 9px rgba(255,255,255,.75), inset 0 -5px 10px rgba(138,118,32,.16);">시즌 종료까지 4일 18시간</span>
+                     box-shadow: inset 0 4px 9px rgba(255,255,255,.75), inset 0 -5px 10px rgba(138,118,32,.16);">시즌 종료까지 <span data-season-left>4일 18시간</span></span>
       </span>
 
       <!-- 트랙. 결승선은 1위가 세운 시간입니다. -->
@@ -3713,6 +3744,157 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 
 <script>
 const first = "Main";
+
+/* 방 자리 총수와 지금 도는 세션. 화면 사이를 건너다니는 값이라 한 곳에 둡니다. */
+const SEATS = { total: 6 };
+const SESSION = { startedAt: 0, baseToday: 0, recovers: 0 };
+
+/* ── 기록 ─────────────────────────────────────────────────────────
+   화면에 뜨는 숫자는 전부 **여기서 나옵니다.** 한동안 마크업에 박아 둔
+   값이었고, 그래서 화면마다 오늘이 46분·50분·72분으로 갈렸습니다.
+
+   기기를 떠나지 않습니다. 세션 하나가 끝날 때 {끝난 시각, 앉은 분,
+   회복 횟수} 만 남기고, 오늘·이번 주·연속 출석·코인은 전부 그것에서
+   **계산합니다** — 따로 저장하면 둘이 갈라질 자리가 또 생깁니다. */
+const STORE = {
+  KEY: 'girin.sessions',
+  GOAL: 'girin.goal',
+
+  all() {
+    try {
+      const v = JSON.parse(localStorage.getItem(STORE.KEY) || '[]');
+      return Array.isArray(v) ? v.filter((s) => s && s.at > 0 && s.min >= 0) : [];
+    } catch { return []; }
+  },
+  save(list) {
+    try { localStorage.setItem(STORE.KEY, JSON.stringify(list.slice(-400))); }
+    catch { /* 저장이 막혀 있어도 화면은 돌아야 합니다 */ }
+  },
+  add(min, recovers) {
+    if (!(min > 0)) return null;                       // 0분짜리는 기록이 아닙니다
+    const row = { at: Date.now(), min: Math.round(min), recovers: recovers | 0 };
+    const list = STORE.all(); list.push(row); STORE.save(list);
+    return row;
+  },
+
+  /** 하루 목표(분). 방에서 정한 "함께 앉을 시간" 이 여기로 들어옵니다. */
+  goal() {
+    const v = Number(localStorage.getItem(STORE.GOAL));
+    return v >= 10 && v <= 240 ? v : 60;
+  },
+  setGoal(v) {
+    if (!(v >= 10 && v <= 240)) return;
+    try { localStorage.setItem(STORE.GOAL, String(Math.round(v))); } catch { /* 무시 */ }
+  },
+};
+
+/** 그 날 0시. 날짜 경계는 한 곳에서만 정합니다. */
+function dayStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x.getTime(); }
+const DAY = 86400000;
+
+/** 오늘 앉은 분 (지금 도는 세션은 뺀 값 — 부르는 쪽에서 더합니다) */
+function minsToday() {
+  const t0 = dayStart(Date.now());
+  return STORE.all().filter((s) => s.at >= t0).reduce((a, s) => a + s.min, 0);
+}
+
+/** 월~일 일곱 칸. 오늘이 낀 주를 월요일부터 셉니다. */
+function weekMins() {
+  const now = new Date();
+  const mon = dayStart(now) - ((now.getDay() + 6) % 7) * DAY;   // 일요일=0 이라 +6%7
+  const out = [0, 0, 0, 0, 0, 0, 0];
+  STORE.all().forEach((s) => {
+    const i = Math.floor((dayStart(s.at) - mon) / DAY);
+    if (i >= 0 && i < 7) out[i] += s.min;
+  });
+  return { mon, days: out, todayIndex: Math.floor((dayStart(now) - mon) / DAY) };
+}
+
+/** 오늘(또는 어제)까지 하루도 안 거르고 이어진 날 수 */
+function streakDays() {
+  const days = new Set(STORE.all().map((s) => dayStart(s.at)));
+  if (!days.size) return 0;
+  let d = dayStart(Date.now());
+  if (!days.has(d)) { d -= DAY; if (!days.has(d)) return 0; }   // 오늘 아직이면 어제부터
+  let n = 0;
+  while (days.has(d)) { n += 1; d -= DAY; }
+  return n;
+}
+
+/* 코인은 앉은 1분에 1, 회복 한 번에 2 입니다. 규칙을 여기 한 줄로 두어야
+   화면에서 "왜 이 숫자인지" 를 설명할 수 있습니다. */
+function coins() {
+  return STORE.all().reduce((a, s) => a + s.min + (s.recovers | 0) * 2, 0);
+}
+
+/* ── 시즌 ──────────────────────────────────────────────────────────
+   가을 시즌은 2026-08-31 에 시작해 4주 뒤 끝납니다. "26일째" 와 "종료까지
+   4일 18시간" 이 글자로 박혀 있어서, 날짜가 지나도 그대로였습니다. */
+const SEASON = { name: '가을', start: new Date(2026, 7, 31).getTime(), days: 28 };
+function season() {
+  const end = SEASON.start + SEASON.days * DAY;
+  const now = Date.now();
+  if (now < SEASON.start) {
+    const left = Math.ceil((SEASON.start - now) / DAY);
+    return { phase: 'before', label: left === 0 ? '오늘 시작' : left + '일 뒤 시작', nth: 0 };
+  }
+  if (now >= end) return { phase: 'after', label: '시즌 종료', nth: SEASON.days };
+  const nth = Math.floor((now - dayStart(SEASON.start)) / DAY) + 1;
+  const ms = end - now;
+  const d = Math.floor(ms / DAY), h = Math.floor((ms % DAY) / 3600000);
+  return { phase: 'live', label: d > 0 ? d + '일 ' + h + '시간' : h + '시간', nth: nth };
+}
+
+/** 분을 사람 말로. 60 미만이면 "46분", 넘으면 "1시간 12분". */
+function sayMin(m) {
+  m = Math.max(0, Math.round(m));
+  return m < 60 ? m + '분' : Math.floor(m / 60) + '시간' + (m % 60 ? ' ' + (m % 60) + '분' : '');
+}
+/** 주간 막대 일곱 칸을 다시 그립니다. 제일 긴 날을 꼭대기로 잡되, 하루도
+    안 앉은 주에 막대가 꽉 차 보이지 않게 최소 60분을 바닥으로 둡니다. */
+function paintBars(box, w, size) {
+  if (!box) return;
+  const px = typeof size === 'number';                 // px 판이면 숫자, % 판이면 'pct'
+  const max = px ? size : 100;
+  const top = Math.max(60, ...w.days);                 // 빈 주에 막대가 꽉 차 보이지 않게
+  const DOW = ['월', '화', '수', '목', '금', '토', '일'];
+  [...box.children].forEach((cell, i) => {
+    const min = w.days[i] || 0;
+    const today = i === w.todayIndex;
+    const future = i > w.todayIndex;
+    const kids = [...cell.children];
+    /* line-height 가 아니라 height 입니다. /height:/ 로 찾으면 값 칸의
+       line-height 가 먼저 걸려, 막대 대신 글자에 높이를 먹였습니다. */
+    const rod = kids.find((e) => /(^|;)\s*height:/.test(e.getAttribute('style') || ''));
+    const label = kids[kids.length - 1];
+    /* 값이 막대 위에 따로 적히는 판(마이페이지)과 안 적히는 판(세션 끝)이
+       둘 다 있습니다. 자식이 셋이면 첫째가 값입니다. */
+    const value = kids.length >= 3 ? kids[0] : null;
+    if (rod) {
+      const h = min ? Math.max(px ? 6 : 5, Math.round(min / top * max)) : (px ? 5 : 1);
+      rod.style.height = h + (px ? 'px' : '%');
+      rod.style.background = today
+        ? 'linear-gradient(180deg, #3FE0C9, ' + (px ? '#21C4AE' : '#14A895') + ')'
+        : (future ? '#CBDCEC' : (px ? '#D6E3F1' : '#C3D6EA'));
+    }
+    if (value) {
+      value.textContent = min ? sayMin(min) : ' ';
+      value.style.color = today ? '#0B6156' : (future ? '#A9B7C7' : '#4E5968');
+    }
+    if (label) {
+      label.textContent = today ? DOW[i] + ' · 오늘' : DOW[i];
+      label.style.color = today ? '#0B6156' : (future ? '#A9B7C7' : (px ? '#8A99AB' : '#4E5968'));
+    }
+  });
+}
+
+/** 초를 시계로. 한 시간을 넘으면 앞자리가 붙습니다. */
+function clock(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const mm = String(m).padStart(2, '0'), ss = String(s).padStart(2, '0');
+  return h ? h + ':' + mm + ':' + ss : mm + ':' + ss;
+}
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ── 대답 ────────────────────────────────────────────────────────
@@ -3787,6 +3969,9 @@ function setSlider(bar, ratio) {
   bar.setAttribute('aria-valuemin', min); bar.setAttribute('aria-valuemax', max);
   bar.setAttribute('aria-valuenow', value);
   bar.setAttribute('tabindex', '0');
+  /* '함께 앉을 시간' 은 그 방의 오늘 목표입니다. 세션의 "오늘 목표까지" 가
+     이 값을 씁니다 — 안 넘기면 방에서 정한 것이 아무 데도 안 닿습니다. */
+  if (unit === '분') STORE.setGoal(value);
   return value;
 }
 document.querySelectorAll('[data-slider]').forEach((bar) => {
@@ -3962,73 +4147,114 @@ function startLive(id, root) {
     return;
   }
 
+  /* 이 화면에서 쓸 값을 먼저 한 번만 셉니다. 아래 블록들이 다 같은 것을
+     보므로, 각자 세면 같은 화면 안에서도 값이 갈릴 수 있습니다. */
+  const set = (sel, v) => root.querySelectorAll(sel).forEach((el) => {
+    if (el.children.length) el.childNodes[0].nodeValue = v;   // 숫자 + 단위 span
+    else el.textContent = v;
+  });
+  const w = weekMins();
+  const week = STORE.all().filter((s) => s.at >= w.mon);
+  const todayRows = STORE.all().filter((s) => s.at >= dayStart(Date.now()));
+
   if (id === 'Session') {
     const timer = root.querySelector('[data-timer]');
     const remain = root.querySelector('[data-remain]');
     const bar = root.querySelector('[data-progress]');
     const recover = root.querySelector('[data-recover]');
-    let min = 23, left = 27, hits = 3;
+    const coin = root.querySelector('[data-coin]');
 
-    every(2200, () => {                     // 시계
-      if (left <= 0) return;
-      min += 1; left -= 1;
-      if (timer) { timer.textContent = min + '분 집중'; bump(timer); }
-      if (remain) remain.textContent = left + '분';
-      if (bar) bar.style.width = Math.round(min / (min + left) * 100) + '%';
-    });
+    /* 진짜 시계입니다. 2.2초마다 1분씩 올리던 가짜를 걷어냈습니다 — 화면을
+       오래 켜 두면 몇 시간을 앉은 것으로 나왔습니다. 시작 시각을 적어 두고
+       매 초 지금과의 차이를 읽습니다. 브라우저가 탭을 재우면 setInterval 은
+       느려지지만 뺄셈은 안 느려집니다. */
+    SESSION.startedAt = Date.now();
+    SESSION.baseToday = minsToday();
+    SESSION.recovers = 0;
+    if (recover) recover.textContent = '0회';
+    if (coin) coin.textContent = String(coins());
 
-    const tiles = [...root.querySelectorAll('[data-posture]')].filter((t) => !t.hasAttribute('data-me'));
+    const paint = () => {
+      const sec = (Date.now() - SESSION.startedAt) / 1000;
+      if (timer) timer.textContent = clock(sec) + ' 집중 중';
+      const goal = STORE.goal();
+      const done = SESSION.baseToday + sec / 60;
+      if (remain) remain.textContent = sayMin(Math.max(0, goal - done));
+      if (bar) bar.style.width = Math.min(100, done / goal * 100).toFixed(1) + '%';
+    };
+    paint();
+    every(1000, paint);
+
+    /* 다른 사람의 자세를 흔들던 자리입니다. 서버가 없어 남의 자세는 알 수
+       없고, 모르는 것을 그럴듯하게 움직이면 그게 제일 나쁜 거짓말입니다.
+       빈 자리로 둡니다 — 대기실에서 가짜 입장을 지운 것과 같은 이유입니다. */
     const mine = root.querySelector('[data-my-posture]');
-    every(2600, () => {                     // 자세는 계속 흔들립니다
-      if (HW.poseOn) return;                // 진짜 판정이 도는 동안은 흉내를 멈춥니다
-      const tile = tiles[Math.floor(Math.random() * tiles.length)];
-      if (!tile) return;
-      const was = tile.dataset.posture;
-      const next = was === '좋음'
-        ? (Math.random() < 0.5 ? '주의' : '무너짐')
-        : (Math.random() < 0.7 ? '좋음' : was);
-      if (next === was) return;
-      setPosture(tile, next);
-      if (next === '좋음' && recover) {      // 돌아오면 회복 한 번
-        hits += 1; recover.textContent = hits + '회'; bump(recover);
-      }
-    });
-
     if (mine) every(15000, () => setHold(mine));
-    if (mine) every(7000, () => {
-      setMine(mine, (mine.dataset.state || '좋음') === '좋음' ? '주의' : '좋음');
-    });
   }
 
-  if (id === 'Room') {                      // 사람이 들어옵니다
-    const empties = [...root.querySelectorAll('[aria-label]')]
+  /* 시즌 줄은 어느 화면에 있든 같은 계산을 씁니다. 세 곳에 글자로 박혀
+     있어서 날짜가 지나도 "4일 18시간" 이 그대로였습니다. */
+  const sn = season();
+  root.querySelectorAll('[data-season-left]').forEach((el) => {
+    el.textContent = sn.label;
+    const line = el.parentElement;
+    if (line) line.firstChild.nodeValue = sn.phase === 'live' ? '시즌 종료까지 '
+      : sn.phase === 'before' ? SEASON.name + ' 시즌 ' : '';
+  });
+  root.querySelectorAll('[data-season-nth]').forEach((el) => {
+    /* 시작 전에 '0일째' 는 말이 안 됩니다. 남은 날을 세어 줍니다. */
+    const before = sn.phase === 'before';
+    el.childNodes[0].nodeValue = before ? String(Math.max(1, parseInt(sn.label, 10) || 1)) : String(sn.nth);
+    const unit = el.querySelector('span');
+    if (unit) unit.textContent = before ? '일 뒤' : '일째';
+  });
+
+  if (id === 'Done') {
+    /* 방금 끝낸 세션이 아니라 **오늘 전체**를 보여 줍니다 — 제목이 "오늘의
+       집중을 마쳤어요" 라서, 여기 숫자가 세션 하나면 제목과 어긋납니다. */
+    const today = w.days[w.todayIndex] || 0;
+    const el = root.querySelector('[data-done-min]');
+    if (el) el.childNodes[0].nodeValue = String(today);
+    set('[data-done-streak]', String(streakDays()));
+    set('[data-done-coin]', String(coins()));
+    set('[data-done-week]', sayMin(w.days.reduce((a, b) => a + b, 0)));
+    paintBars(root.querySelector('[data-done-bars]'), w, 92);
+    const rec = root.querySelector('[data-recover]');
+    if (rec) rec.textContent = (SESSION.saved ? SESSION.saved.recovers : 0) + '회';
+  }
+
+  /* 마이페이지의 숫자도 전부 기록에서 나옵니다. 화면마다 값을 박아 두면
+     오늘이 46분·50분·72분으로 갈리던 그 자리로 다시 돌아갑니다. */
+  set('[data-my-today]', String(w.days[w.todayIndex] || 0));
+  set('[data-my-sessions]', String(todayRows.length));
+  set('[data-my-recovers]', String(todayRows.reduce((a, r) => a + (r.recovers | 0), 0)));
+  set('[data-my-streak]', String(streakDays()));
+  set('[data-my-coins]', String(coins()));
+  set('[data-my-week]', sayMin(w.days.reduce((a, b) => a + b, 0)));
+  set('[data-my-wsessions]', week.length + '회');
+  set('[data-my-wrecovers]', week.reduce((a, s) => a + (s.recovers | 0), 0) + '회');
+  /* 평균은 **지나간 날**로 나눕니다. 일곱로 나누면 수요일에도 남은 나흘이
+     0 으로 섞여 들어와 실제보다 늘 작게 나옵니다. */
+  set('[data-my-avg]', sayMin(w.days.reduce((a, b) => a + b, 0) / (w.todayIndex + 1)));
+  paintBars(root.querySelector('[data-my-bars]'), w, 'pct');
+
+  if (id === 'Session') {
+    /* 방에서 정한 것이 세션으로 넘어옵니다. 전에는 방 설정이 화면 안에서만
+       움직이고 세션은 그것을 모른 채 27분에서 내려갔습니다. */
+    const name = document.querySelector('#s-Room [data-room-title]');
+    const here = root.querySelector('[data-session-room]');
+    if (name && here) here.textContent = (name.textContent || '').trim() || '비공개 세션';
+  }
+
+  if (id === 'Room') {
+    /* 가짜 입장을 지웠습니다. 2.6초 뒤부터 개구리·해울·노을이 저절로
+       들어와 자리를 6/6 으로 채웠는데, 서버가 없어 아무도 실제로는 오지
+       않습니다. 방을 만든 사람 하나만 앉아 있고 나머지는 빈 자리입니다 —
+       초대 코드와 링크가 있는 이유가 그것입니다. */
+    const seats = [...root.querySelectorAll('[aria-label]')]
       .filter((e) => e.getAttribute('aria-label') === '아직 안 온 자리');
     const count = root.querySelector('[data-seat-count]');
-    let i = 0;
-    const join = () => {
-      if (i >= empties.length) return;
-      const cell = empties[i];
-      const who = ['개구리', '해울', '노을'][i] || '새 사람';
-      i += 1;
-      cell.style.transition = 'background 260ms ease-out, box-shadow 260ms ease-out';
-      cell.style.background = 'linear-gradient(165deg, #F1EAF9, #E2E6F7)';
-      cell.style.boxShadow = '0 16px 30px -16px rgba(25,31,40,.45),'
-        + ' inset 0 6px 12px rgba(255,255,255,.9), inset 0 -7px 13px rgba(86,110,146,.2)';
-      cell.innerHTML = '';
-      const tag = document.createElement('span');
-      tag.style.cssText = 'padding:5px 10px;border-radius:99px;background:rgba(25,31,40,.68);'
-        + 'color:#FBFDFF;font-weight:750;font-size:10.5px;white-space:nowrap';
-      tag.textContent = who;
-      cell.appendChild(tag);
-      if (count) {
-        const nums = count.textContent.split('/').map((n) => parseInt(n, 10));
-        count.textContent = (nums[0] + 1) + ' / ' + nums[1];
-        bump(count);
-      }
-      toast(who + ' 님이 들어왔어요');
-      after(4200, join);
-    };
-    after(2600, join);
+    if (count) count.textContent = (SEATS.total - seats.length) + ' / ' + SEATS.total;
   }
 }
 
@@ -4100,7 +4326,14 @@ function recording() { return !!(HW.rec && HW.rec.state === 'recording'); }
   if (!ask || !exit) return;
 
   const close = () => { ask.hidden = true; exit.focus(); };
-  const leave = () => { ask.hidden = true; show('Done', 'back'); };  // show() 안에서 장치가 닫힙니다
+  const leave = () => {
+    ask.hidden = true;
+    /* 나가는 순간이 세션이 **기록이 되는** 순간입니다. show() 보다 먼저
+       적어야 합니다 — show() 가 장치를 닫으면서 회복 수를 지웁니다. */
+    const min = (Date.now() - SESSION.startedAt) / 60000;
+    SESSION.saved = STORE.add(min, (typeof HW !== 'undefined' && HW.recovers) | 0);
+    show('Done', 'back');
+  };
 
   exit.addEventListener('click', () => {
     if (recording()) {                // 값이 남는 경우에만 묻습니다
@@ -4746,6 +4979,7 @@ function poseLoop(videoEl, tileEl, chipEl, recoverEl) {
 async function poseStart(videoEl, tileEl, chipEl, recoverEl) {
   if (!window.POSE) return;
   HW.profile = loadBaseline();
+  HW.recovers = 0;                 // 세션마다 0 부터
   HW.smoother = new POSE.Smoother();
   HW.arb = POSE.arbiter();
   HW.prevState = 'good';

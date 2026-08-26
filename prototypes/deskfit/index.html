@@ -234,8 +234,57 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                    box-shadow: 0 24px 42px -16px rgba(18,134,122,.55),
                                inset 0 7px 14px rgba(255,255,255,.62),
                                inset 0 -9px 16px rgba(6,84,74,.3);">시작하기</button>
+
+    <!-- 방을 **만드는** 길만 있었습니다. 코드를 받은 사람은 들어올 문이
+         없었습니다. 만들기와 들어가기는 같은 갈림길이라 여기 둡니다 —
+         메인에 두면 첫 화면에 큰 버튼이 둘이 되어 무엇부터인지 흐려집니다. -->
+    <button data-join-open style="margin-top: 6px; padding: 12px 18px; border: 0; border-radius: 15px; cursor: pointer;
+                   display: flex; align-items: center; gap: 8px; background: rgba(251,253,255,.72); color: #333D4B;
+                   font-weight: 800; font-size: 14px; line-height: 1; font-family: inherit;
+                   box-shadow: inset 0 4px 9px rgba(255,255,255,.9), inset 0 -5px 10px rgba(86,110,146,.18);">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9.6 3.6H6A2.4 2.4 0 0 0 3.6 6v12A2.4 2.4 0 0 0 6 20.4h3.6"/><path d="m14.4 16.8 4.8-4.8-4.8-4.8M19.2 12H8.4"/></svg>
+      초대 코드로 들어가기</button>
+
     <button style="padding: 9px 14px; border: 0; background: none; cursor: pointer;
                    font-weight: 800; font-size: 13.5px; line-height: 1; font-family: inherit; color: #4E5968;">돌아가기</button>
+  </div>
+
+  <!-- 코드 받아 적는 판 -->
+  <div data-join-ask hidden style="position: absolute; inset: 0; z-index: 40;
+              display: grid; place-items: center; background: rgba(18,24,33,.5); backdrop-filter: blur(6px);">
+    <form data-join-form role="dialog" aria-modal="true" aria-labelledby="joinAskTitle"
+          style="width: 400px; padding: 30px 30px 24px; border-radius: 28px; background: #F6FAFE; text-align: center;
+                 box-shadow: 0 30px 60px -24px rgba(12,18,26,.6),
+                             inset 0 6px 12px rgba(255,255,255,.95),
+                             inset 0 -7px 13px rgba(86,110,146,.2);">
+      <b id="joinAskTitle" style="display: block; font-weight: 820; font-size: 20px; line-height: 1.35;
+                font-family: inherit; letter-spacing: -.02em; color: #191F28;">초대 코드를 적어 주세요</b>
+      <p style="margin: 9px 0 0; font-weight: 600; font-size: 13.5px; line-height: 1.6; font-family: inherit; color: #4E5968;">
+        받은 링크를 그대로 붙여 넣어도 돼요.</p>
+
+      <input data-join-input inputmode="latin" autocomplete="off" spellcheck="false" maxlength="80"
+             aria-label="초대 코드" placeholder="4F2K9A"
+             style="width: 100%; box-sizing: border-box; margin-top: 20px; padding: 18px 16px; border: 0; border-radius: 20px;
+                    background: #E9F1FB; color: #191F28; text-align: center;
+                    font-weight: 820; font-size: 26px; line-height: 1; font-family: inherit; letter-spacing: .14em;
+                    font-variant-numeric: tabular-nums;
+                    box-shadow: inset 0 6px 13px rgba(62,84,118,.2), inset 0 -2px 0 rgba(255,255,255,.9);">
+      <span data-join-msg role="status" style="display: block; min-height: 17px; margin-top: 10px;
+                   font-weight: 750; font-size: 12.5px; line-height: 1.3; font-family: inherit; color: #8A3B2E;"></span>
+
+      <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <button type="button" data-join-cancel style="padding: 15px 0; border: 0; border-radius: 18px; cursor: pointer;
+                       background: #E4EDF7; color: #333D4B;
+                       font-weight: 820; font-size: 14.5px; line-height: 1; font-family: inherit;
+                       box-shadow: inset 0 5px 10px rgba(255,255,255,.9), inset 0 -6px 11px rgba(86,110,146,.2);">그만두기</button>
+        <button type="submit" style="padding: 15px 0; border: 0; border-radius: 18px; cursor: pointer;
+                       background: linear-gradient(180deg, #3FE0C9 0%, #21C4AE 100%); color: #04322C;
+                       font-weight: 820; font-size: 14.5px; line-height: 1; font-family: inherit;
+                       box-shadow: 0 16px 28px -14px rgba(18,134,122,.55),
+                                   inset 0 5px 10px rgba(255,255,255,.62),
+                                   inset 0 -6px 11px rgba(6,84,74,.3);">들어가기</button>
+      </div>
+    </form>
   </div>
 
 </div>
@@ -726,8 +775,11 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                        box-shadow: inset 0 3px 6px rgba(255,255,255,.7), inset 0 -3px 6px rgba(20,128,74,.4);"></span>
           <span style="min-width: 0;">
             <b style="display: block; font-weight: 820; font-size: 17px; line-height: 1; font-family: inherit; color: #14603C;">자세 좋아요</b>
-            <span style="display: block; margin-top: 5px; font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #2E7A55;
-                         font-variant-numeric: tabular-nums;">18분째 유지 중</span>
+            <!-- 밑줄은 위 제목을 따라 바뀝니다. 한동안 "18분째 유지 중" 이 박혀
+                 있어서, 카메라가 꺼져 있어도 무언가를 18분째 유지하는 중이라고
+                 말했습니다. 위는 바뀌고 아래는 안 바뀌는 짝이 제일 위험합니다. -->
+            <span data-my-hold style="display: block; margin-top: 5px; font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #2E7A55;
+                         font-variant-numeric: tabular-nums;">카메라를 켜면 시작해요</span>
           </span>
         </div>
 
@@ -871,7 +923,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 
       <div style="display: flex; flex-direction: column; align-items: center; gap: 12px;">
         <b style="font-weight: 820; font-size: 88px; line-height: 1; font-family: inherit; letter-spacing: -.05em; color: #191F28;
-                  font-variant-numeric: tabular-nums;">50<span style="font-size: 34px; margin-left: 6px; color: #4E5968;">분</span></b>
+                  font-variant-numeric: tabular-nums;">72<span style="font-size: 34px; margin-left: 6px; color: #4E5968;">분</span></b>
         <span style="display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; padding: 10px 18px;
                      border-radius: 99px; background: linear-gradient(168deg, #FFE0C9, #FBC7A4); color: #8F3B12;
                      font-weight: 820; font-size: 15px; line-height: 1; font-family: inherit; font-variant-numeric: tabular-nums;
@@ -926,52 +978,52 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 
       </div>
 
-      <!-- 오늘 하루만 보면 50분이 무슨 뜻인지 알 수 없습니다. 주를 옆에 둡니다. -->
+      <!-- 오늘 하루만 보면 72분이 무슨 뜻인지 알 수 없습니다. 주를 옆에 둡니다. -->
       <div style="padding: 20px 22px 22px; border-radius: 26px; background: #F6FAFE;
                   box-shadow: 0 18px 32px -18px rgba(25,31,40,.36),
                               inset 0 6px 12px rgba(255,255,255,.96),
                               inset 0 -7px 13px rgba(86,110,146,.18);">
         <span style="display: flex; align-items: baseline; justify-content: space-between;">
           <span style="font-weight: 800; font-size: 13.5px; line-height: 1; font-family: inherit; color: #333D4B;">이번 주 앉은 시간</span>
-          <b style="font-weight: 820; font-size: 17px; line-height: 1; font-family: inherit; color: #191F28; font-variant-numeric: tabular-nums;">4시간 20분</b>
+          <b style="font-weight: 820; font-size: 17px; line-height: 1; font-family: inherit; color: #191F28; font-variant-numeric: tabular-nums;">4시간 12분</b>
         </span>
 
         <span style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; margin-top: 18px; align-items: end; height: 92px;">
           <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <span style="width: 100%; height: 36px; border-radius: 8px; background: #D6E3F1;
+            <span style="width: 100%; height: 21px; border-radius: 8px; background: #D6E3F1;
                          box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
             <span style="font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #8A99AB;">월</span>
           </span>
           <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <span style="width: 100%; height: 55px; border-radius: 8px; background: #D6E3F1;
+            <span style="width: 100%; height: 44px; border-radius: 8px; background: #D6E3F1;
                          box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
             <span style="font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #8A99AB;">화</span>
           </span>
           <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <span style="width: 100%; height: 20px; border-radius: 8px; background: #D6E3F1;
+            <span style="width: 100%; height: 13px; border-radius: 8px; background: #D6E3F1;
                          box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
             <span style="font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #8A99AB;">수</span>
           </span>
           <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <span style="width: 100%; height: 46px; border-radius: 8px; background: #D6E3F1;
+            <span style="width: 100%; height: 56px; border-radius: 8px; background: #D6E3F1;
                          box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
             <span style="font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #8A99AB;">목</span>
           </span>
           <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <span style="width: 100%; height: 31px; border-radius: 8px; background: #D6E3F1;
+            <span style="width: 100%; height: 38px; border-radius: 8px; background: #D6E3F1;
                          box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
             <span style="font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #8A99AB;">금</span>
           </span>
           <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <span style="width: 100%; height: 25px; border-radius: 8px; background: #D6E3F1;
-                         box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
-            <span style="font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #8A99AB;">토</span>
-          </span>
-          <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <span style="width: 100%; height: 68px; border-radius: 8px;
+            <span style="width: 100%; height: 69px; border-radius: 8px;
                          background: linear-gradient(180deg, #3FE0C9, #21C4AE);
                          box-shadow: inset 0 4px 7px rgba(255,255,255,.5), inset 0 -4px 9px rgba(6,84,74,.3);"></span>
-            <span style="font-weight: 800; font-size: 12.5px; line-height: 1; font-family: inherit; color: #12867A;">오늘</span>
+            <span style="font-weight: 800; font-size: 12.5px; line-height: 1; font-family: inherit; color: #12867A;">토</span>
+          </span>
+          <span style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <span style="width: 100%; height: 5px; border-radius: 8px; background: #D6E3F1;
+                         box-shadow: inset 0 4px 8px rgba(62,84,118,.26), inset 0 -1px 0 rgba(255,255,255,.9);"></span>
+            <span style="font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; color: #8A99AB;">일</span>
           </span>
         </span>
       </div>
@@ -1118,7 +1170,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                 <span style="font-weight: 800; font-size: 13.5px; line-height: 1; color: #4E5968;
                              font-family: inherit;">오늘 집중</span>
                 <b style="font-weight: 820; font-size: 32px; line-height: 1; letter-spacing: -.035em;
-                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">46<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">분</span></b>
+                        color: #191F28; font-family: inherit; font-variant-numeric: tabular-nums;">72<span style="font-size: 13.5px; margin-left: 2px; color: #4E5968;">분</span></b>
               </span>
             </div>
           
@@ -1869,7 +1921,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
           </span>
           <b style="font-weight: 800; font-size: 14.5px; line-height: 1.35; color: #191F28;
-                    font-family: inherit;">무너지면 3초 뒤 알려줘요</b>
+                    font-family: inherit;">무너지면 5초 뒤 알려줘요</b>
         </div>
 
         <div style="display: flex; align-items: center; gap: 13px; padding: 17px 18px; border-radius: 22px;
@@ -2032,7 +2084,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
           </span>
           <b style="font-weight: 800; font-size: 14.5px; line-height: 1.35; color: #191F28;
-                    font-family: inherit;">무너지면 3초 뒤 알려줘요</b>
+                    font-family: inherit;">무너지면 5초 뒤 알려줘요</b>
         </div>
 
         <div style="display: flex; align-items: center; gap: 13px; padding: 17px 18px; border-radius: 22px;
@@ -2170,8 +2222,11 @@ button:active, [data-hot]:active { transform: translateY(1px); }
             <span style="font-weight: 800; font-size: 12.5px; line-height: 1; color: #4E5968; font-family: inherit;">목</span>
           </span>
           <span style="display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 9px; height: 100%;">
-            <span style="font-weight: 800; font-size: 12.5px; line-height: 1; color: #4E5968; font-family: inherit; font-variant-numeric: tabular-nums;">32분</span>
-            <span style="width: 100%; max-width: 64px; height: 33%; border-radius: 13px; background: #C3D6EA;
+            <!-- 40분. 32분이던 자리입니다 — 일곱 칸을 더하면 244분인데 위에서는
+                 4시간 12분(252분)이라 하고 하루 평균도 252 기준이었습니다.
+                 막대가 진짜 값이므로 여기를 맞춥니다. 높이는 분/96 입니다. -->
+            <span style="font-weight: 800; font-size: 12.5px; line-height: 1; color: #4E5968; font-family: inherit; font-variant-numeric: tabular-nums;">40분</span>
+            <span style="width: 100%; max-width: 64px; height: 42%; border-radius: 13px; background: #C3D6EA;
                          box-shadow: inset 0 4px 8px rgba(255,255,255,.55), inset 0 -5px 10px rgba(58,80,112,.24);"></span>
             <span style="font-weight: 800; font-size: 12.5px; line-height: 1; color: #4E5968; font-family: inherit;">금</span>
           </span>
@@ -3879,6 +3934,22 @@ function setMine(card, state) {
   card.style.background = skin.bg;
   if (dot) { dot.style.transition = 'background 320ms ease-out'; dot.style.background = skin.dot; }
   if (title) { title.textContent = skin.title; title.style.color = skin.ink; bump(title); }
+  /* 상태가 바뀌면 유지 시간은 지금부터 다시 셉니다 — 안 그러면 "조금
+     무너졌어요" 밑에 "18분째 유지 중" 이 남아, 방금 바뀐 일을 오래된 일처럼
+     말합니다. */
+  card.dataset.since = String(Date.now());
+  setHold(card);
+}
+
+/** 밑줄 한 줄. 글을 주면 그대로, 안 주면 바뀐 뒤로 얼마나 지났는지. */
+function setHold(card, text) {
+  const el = card && card.querySelector('[data-my-hold]');
+  if (!el) return;
+  if (typeof text === 'string') { el.textContent = text; card.dataset.since = ''; return; }
+  const since = Number(card.dataset.since || 0);
+  if (!since) return;
+  const sec = Math.floor((Date.now() - since) / 1000);
+  el.textContent = sec < 60 ? '방금 바뀌었어요' : Math.floor(sec / 60) + '분째 유지 중';
 }
 
 function startLive(id, root) {
@@ -3919,6 +3990,7 @@ function startLive(id, root) {
       }
     });
 
+    if (mine) every(15000, () => setHold(mine));
     if (mine) every(7000, () => {
       setMine(mine, (mine.dataset.state || '좋음') === '좋음' ? '주의' : '좋음');
     });
@@ -4087,14 +4159,63 @@ document.addEventListener('click', async (e) => {
   toast('초대 링크를 복사했어요');
 });
 
+/* ── 코드로 들어가기 ──────────────────────────────────────────────
+   링크는 눌러서 오는 길이고, 이쪽은 코드만 들은 사람이 오는 길입니다.
+   말로 받아 적는 경우가 있어서 둘 다 있어야 합니다. */
+function setRoomCode(v) {
+  document.querySelectorAll('[data-room-code]').forEach((el) => { el.textContent = v; });
+}
+
+/** 적어 넣은 것에서 코드를 꺼냅니다. 링크를 통째로 붙여 넣는 일이 더 흔해서
+    주소면 room= 를 읽고, 아니면 글자 그대로 봅니다. */
+function parseRoomCode(raw) {
+  const s = (raw || '').trim();
+  if (!s) return '';
+  try {
+    const q = new URL(s, location.href).searchParams.get('room');
+    if (q) return q.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  } catch { /* 주소가 아니면 그냥 글자입니다 */ }
+  return s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+}
+
+(() => {
+  const sec = document.getElementById('s-Choose');
+  const ask = sec && sec.querySelector('[data-join-ask]');
+  if (!ask) return;
+  const form = ask.querySelector('[data-join-form]');
+  const input = ask.querySelector('[data-join-input]');
+  const msg = ask.querySelector('[data-join-msg]');
+  const close = () => { ask.hidden = true; msg.textContent = ''; };
+
+  sec.querySelector('[data-join-open]').addEventListener('click', () => {
+    input.value = ''; msg.textContent = '';
+    ask.hidden = false;
+    input.focus();
+  });
+  ask.querySelector('[data-join-cancel]').addEventListener('click', close);
+  ask.addEventListener('click', (e) => { if (e.target === ask) close(); });
+  sec.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !ask.hidden) close(); });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = parseRoomCode(input.value);
+    /* 여섯 자보다 짧으면 아직 덜 적은 것입니다. 서버가 없어서 "그런 방이
+       없어요" 는 말할 수 없고, 말할 수 없는 것을 지어내지 않습니다. */
+    if (code.length < 6) { msg.textContent = '코드는 여섯 자예요. 다시 확인해 주세요.'; input.focus(); return; }
+    setRoomCode(code);
+    close();
+    show('Room', 'fwd');
+    toast(code + ' 방으로 들어왔어요');
+  });
+})();
+
 /* 링크를 타고 온 사람 — 코드를 채워 두고 대기실로 보냅니다.
    대기실과 세션 두 곳에 같은 코드가 걸려 있으므로 둘 다 씁니다. 한 쪽만
    쓰면 세션 화면이 링크와 다른 방을 알려 주게 됩니다. */
 (() => {
   const code = new URLSearchParams(location.search).get('room');
   if (!code) return;
-  const v = code.toUpperCase().slice(0, 8);
-  document.querySelectorAll('[data-room-code]').forEach((el) => { el.textContent = v; });
+  setRoomCode(parseRoomCode(code));
 })();
 
 addEventListener('popstate', () => show(location.hash.slice(1) || first, 'back'));
@@ -4425,6 +4546,7 @@ const HW = {
   profile: null,
   recovers: 0,
   prevState: 'good',
+  holdState: null,   // 밑줄의 "N분째" 를 언제부터 세는지
 };
 
 const POSE_KO = { good: '좋음', warning: '주의', bad: '무너짐', idle: '자리 비움' };
@@ -4585,9 +4707,16 @@ function poseLoop(videoEl, tileEl, chipEl, recoverEl) {
   if (!out) return;
   const a = out.analysis;
 
+  const card = chipEl && chipEl.closest('[data-my-posture]');
   const say = (state, msg) => {
     if (tileEl) tileEl.dataset.posture = POSE_KO[state] || '좋음';
     if (chipEl) chipEl.textContent = msg || POSE_KO[state];
+    /* 밑줄도 같이 갑니다. msg 가 있으면 판정이 아니라 안내라서 유지 시간을
+       셀 것이 없습니다 — 그때는 밑줄을 비웁니다. */
+    if (!card) return;
+    if (msg) { setHold(card, ''); return; }
+    if (HW.holdState !== state) { HW.holdState = state; card.dataset.since = String(Date.now()); }
+    setHold(card);
   };
 
   if (!a || !a.faceCoreOk || !a.bothShouldersOk || !a.inFrame) { say('idle', '화면에서 벗어났어요'); HW.arb = POSE.arbiter(); return; }
@@ -4640,6 +4769,7 @@ function poseStop() { HW.poseOn = false; }
   const recBtn = sec.querySelector('[data-rec-btn]');
   const recLabel = sec.querySelector('[data-rec-label]');
   const myChip = sec.querySelector('[data-my-posture] b');
+  const myCard = sec.querySelector('[data-my-posture]');
   const recoverEl = sec.querySelector('[data-recover]');
 
   const paintCam = (on) => {
@@ -4668,6 +4798,8 @@ function poseStop() { HW.poseOn = false; }
     if (camBtn.dataset.on) {
       poseStop(); camOff(); paintCam(false);
       if (myChip) myChip.textContent = '카메라 꺼짐';
+      HW.holdState = null;
+      if (myCard) setHold(myCard, '카메라를 켜면 다시 시작해요');
       return;
     }
     if (!(await camOn(video))) return;
@@ -4694,6 +4826,7 @@ function poseStop() { HW.poseOn = false; }
   /* 처음 상태는 셋 다 꺼짐입니다 — 사람이 누르기 전에는 아무 장치도 열지 않습니다 */
   paintCam(false); paintMic(false); paintRec(false);
   if (myChip) myChip.textContent = '카메라를 켜 주세요';
+  if (myCard) setHold(myCard, '카메라를 켜면 시작해요');
 }
 
 /* ---------------- 자세 기준 10초 ---------------- */

@@ -989,7 +989,9 @@ console.info('[캐릭터] GLB', CHAR_OK.length + '종 —', CHAR_OK.join(' '));
    이 월드는 형상이 전부 코드로 그린 단색 덩어리라, 물체끼리 닿는
    자리가 어디인지 그림자만으로는 안 보입니다. AO 가 그 접점을
    어둡게 만들어 **따로 놓인 상자들을 한 공간으로** 묶어 줍니다. */
-import { EffectComposer, RenderPass } from 'postprocessing';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect,
+         NoiseEffect, HueSaturationEffect, BrightnessContrastEffect,
+         SMAAEffect, BlendFunction } from 'postprocessing';
 import { N8AOPostPass } from 'n8ao';
 /* 계단식 그림자 맵. 캠퍼스가 반지름 132 가 되면서 그림자 상자 하나로는
    못 덮습니다 — 사람 주위 22칸만 덮으니 멀리 있는 건물에 그림자가
@@ -2961,6 +2963,14 @@ function applySky(indoor) {
   if (tag !== skySeen) {
     skySeen = tag;
     try { setOutside({ sky: s.sky, night: s.night, weather: SKY.weather }); } catch (e) {}
+    /* 글로우는 **밤에 세집니다.** 낮에 세게 걸면 흰 벽이 번져 뿌예지고,
+       밤에 약하게 걸면 켜진 창이 그냥 노란 사각형입니다. 같은 값으로는
+       두 시각을 다 못 맞춥니다 — 하늘이 바뀔 때 같이 바꿉니다.
+       실내에서는 창이 유일한 광원이라 한 단계 더 올립니다. */
+    if (bloom) {
+      bloom.intensity = .38 + s.night * .78 + (indoor ? .18 : 0);
+      bloom.luminanceMaterial.threshold = .90 - s.night * .30;
+    }
   }
   return s;
 }
@@ -3699,9 +3709,22 @@ function drawMini() {
    사슬을 아예 안 만듭니다 — 만들어 두고 안 쓰면 화면 크기의 버퍼가
    그냥 메모리에 남습니다. */
 const AO_ON = new URLSearchParams(location.search).get('ao') !== '0';
-let composer = null, n8ao = null;
+/* ?fx=0 이면 후처리 마무리(글로우·비네트·결)를 안 겁니다. AO 는 따로
+   ?ao=0 입니다 — 둘은 값이 다르고, 느릴 때 끄는 순서도 다릅니다. */
+const FX_ON = new URLSearchParams(location.search).get('fx') !== '0';
+let composer = null, n8ao = null, fxPass = null, bloom = null;
 if (AO_ON) {
   try {
+    /* multisampling 은 **주면 안 됩니다.** 캔버스의 antialias:true 가
+       EffectComposer 의 렌더 타깃에 안 걸리길래 여기에 4를 넣어 봤더니
+       화면이 통째로 사라졌습니다:
+
+         GL_INVALID_OPERATION: glBlitFramebuffer:
+         Read and write depth stencil attachments cannot be the same image.
+
+       MSAA 를 해상(resolve)하려면 blit 을 하는데, N8AO 가 같은 깊이
+       첨부를 읽고 있어서 읽는 것과 쓰는 것이 같은 이미지가 됩니다.
+       계단은 아래 사슬의 SMAA 가 지웁니다. */
     composer = new EffectComposer(renderer, { frameBufferType: THREE.HalfFloatType });
     composer.addPass(new RenderPass(scene, cam));
     n8ao = new N8AOPostPass(scene, cam, innerWidth, innerHeight);
@@ -3717,9 +3740,59 @@ if (AO_ON) {
     n8ao.configuration.color = new THREE.Color(0x526F7D);
     n8ao.configuration.halfRes = false;     // 윤곽을 반해상도로 늘려 생기던 번짐 제거
     composer.addPass(n8ao);
+
+    /* ══ 마무리 — 사진처럼 보이게 하는 네 가지 ══
+
+       점토 인형을 **찍은 사진**과 점토 인형을 **렌더한 그림**의 차이는
+       기하가 아니라 이것들입니다. 하나씩 값을 적어 둡니다.
+
+       ① 글로우 — 밝은 데가 번집니다. 실제 렌즈가 하는 일이고, 밤에
+          켜진 창이 창으로 보이는 것도 이것 때문입니다. 문턱을 0.78 로
+          높게 잡아 **밝은 것만** 번지게 합니다. 낮은 문턱은 화면 전체를
+          뿌옇게 만들어 물감을 흘린 것처럼 보입니다.
+       ② 비네트 — 가장자리가 살짝 어둡습니다. 화면 가운데로 눈이
+          모이고, 무엇보다 화면에 **테두리가 있다**는 감각이 생깁니다.
+       ③ 결 — 아주 얕은 노이즈. 이게 없으면 넓은 하늘·잔디에 계단(밴딩)
+          이 보이고, 있으면 그 계단이 사라지면서 표면에 종이 질감이
+          생깁니다. 0.045 는 눈에 "노이즈" 로 안 보이는 선입니다.
+       ④ 그레이딩 — 채도 +0.10, 대비 +0.08. AgX 는 중립적이라 그대로
+          쓰면 심심합니다. 색은 재질에서 오고 맛은 여기서 옵니다.
+
+       색수차는 **아주 조금** · 가장자리에만(radialModulation). 세게 걸면
+       장난감 카메라가 되고, 이 정도면 렌즈가 있다는 것만 남습니다. */
+    if (FX_ON) {
+      bloom = new BloomEffect({
+        blendFunction: BlendFunction.ADD,
+        mipmapBlur: true,
+        luminanceThreshold: .90,
+        luminanceSmoothing: .18,
+        intensity: .40,
+        radius: .72,
+      });
+      /* 한 EffectPass 안에서 **합쳐질 수 없는 효과**가 있습니다.
+         SMAA 와 색수차가 그렇습니다(둘 다 이웃 픽셀을 읽는 convolution).
+         한 판에 같이 넣으면 이렇게 터집니다:
+           Error: Convolution effects cannot be merged (ChromaticAberrationEffect)
+         색수차는 뺐습니다 — 이 그림체에서 얻는 것보다 판 하나 값이 큽니다.
+         SMAA 는 제 판을 따로 씁니다. */
+      const noise = new NoiseEffect({ blendFunction: BlendFunction.OVERLAY, premultiply: true });
+      /* NoiseEffect 의 세기는 blendMode 의 opacity 로 잡습니다 */
+      noise.blendMode.opacity.value = .045;
+      fxPass = new EffectPass(cam,
+        bloom,
+        new HueSaturationEffect({ saturation: .08 }),
+        new BrightnessContrastEffect({ brightness: -.035, contrast: .07 }),
+        new VignetteEffect({ offset: .30, darkness: .46 }),
+        noise,
+      );
+      composer.addPass(fxPass);
+      /* 계단 지우기는 맨 끝에. 캔버스의 antialias:true 는 사슬을 켜는
+         순간 안 걸립니다(위 multisampling 주석 참고). */
+      composer.addPass(new EffectPass(cam, new SMAAEffect()));
+    }
   } catch (e) {
     console.warn('후처리를 못 켰습니다 — 그냥 그립니다', e);
-    composer = null; n8ao = null;
+    composer = null; n8ao = null; fxPass = null; bloom = null;
   }
 }
 
@@ -4365,6 +4438,10 @@ function tick(now) {
       sun.shadow.mapSize.set(1024, 1024);
       sun.shadow.map?.dispose(); sun.shadow.map = null;
     }
+    /* 그림자보다 **마무리 사슬을 먼저** 놓습니다. 글로우·비네트·결이
+       없으면 화면이 심심해질 뿐이지만, 그림자가 없으면 물건이 땅에서
+       떠 보입니다 — 잃었을 때 더 아픈 쪽을 나중까지 붙듭니다. */
+    else if (f < 24 && fxPass && fxPass.enabled) fxPass.enabled = false;
     else if (f < 22 && renderer.shadowMap.enabled) {
       /* CSM 이 켜져 있으면 그것부터 끕니다 — 안 끄면 그림자 맵을
          셋씩 그리면서 '껐다' 고 말하게 됩니다. */

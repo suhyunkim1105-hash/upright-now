@@ -79,6 +79,11 @@ f.addEventListener('load', async () => {
   const open = q.get('open');
   if (open) { win.__open(open, '검수', open); await sleep(1600); }
 
+  /* ?cam=x,y,z,tx,ty,tz — index.html 의 __W.lock. 하늘처럼 걸어서는
+     못 보는 것을 확인할 때 씁니다. */
+  const camq = q.get('cam');
+  if (camq) { win.__W.lock(...camq.split(',').map(Number)); await sleep(900); }
+
   const dock = q.get('do');
   if (dock) { click(win, D.querySelector(`#dock [data-do="${dock}"]`)); await sleep(900); }
 

@@ -623,16 +623,17 @@ export function arcade(g, opt = {}) {
      반지름이 1.35 이므로 그 높이에서 폭 2.2 까지 들어갑니다. 좁아진 만큼
      아치가 간판의 테두리 노릇을 해서 오히려 한 덩어리로 읽힙니다. */
   const SG_Y = 2.62, SG_W = 2.15, SG_H = .78;
-  const sg = sign(g, '미니게임', 0, SG_Y, D / 2 + .30, SG_W, SG_H, '#4A3478', '#FFE9A8');
-  /* 전구는 간판 테두리를 두릅니다. 개수를 줄여 좁은 판에서도 안 뭉칩니다. */
-  for (let i = 0; i < 6; i++) {
-    const x = -SG_W / 2 + .18 + i * ((SG_W - .36) / 5);
-    [-SG_H / 2 - .06, SG_H / 2 + .06].forEach((dy) => {
-      const b = cyl(sg, .062, .062, .09, 10, M(i % 2 ? 0xFFF3C4 : 0xFFD16B, .4, {
-        emissive: 0xFFCF6B, emissiveIntensity: .5 }), x, dy, .12);
-      b.rotation.x = Math.PI / 2; b.castShadow = false;
-    });
-  }
+  /* 판은 어두운 남색, 글자는 네온 청록 — 파사드 띠와 같은 말을 합니다 */
+  const sg = sign(g, '미니게임', 0, SG_Y, D / 2 + .30, SG_W, SG_H, '#241B3E', '#9FF6FA');
+  /* 전구 대신 **네온 테** — 판을 청록 선 하나가 두릅니다. 전구알 열둘은
+     "축제" 였고, 이어진 관 하나가 "아케이드" 입니다. 덜 화려하고 더 게임장. */
+  const nf = (w2, h2, dx, dy) => {
+    const n = box(sg, w2, h2, .06, .02,
+      M(0x8FF3F7, .3, { emissive: 0x3FD6E8, emissiveIntensity: 1.0 }), dx, dy, .16);
+    n.castShadow = false;
+  };
+  nf(SG_W + .16, .05, 0, SG_H / 2 + .10); nf(SG_W + .16, .05, 0, -SG_H / 2 - .10);
+  nf(.05, SG_H + .26, SG_W / 2 + .105, 0); nf(.05, SG_H + .26, -SG_W / 2 - .105, 0);
   const yT = Y + H1 + .36;
   box(g, W + .5, .5, D + .5, .12, M(P.roof), 0, yT, 0);
   box(g, W - .1, .34, D - .1, .1, M(P.roofDark, .7), 0, yT + .3, 0);
@@ -646,13 +647,25 @@ export function arcade(g, opt = {}) {
      사람 눈높이에 있어야 읽히고, 지붕 위는 실루엣만 남습니다. */
   box(g, 4.6, 1.05, 3.4, .14, M(0xEEE8F8, .55), 0, yT + .78, -.25);
   box(g, 4.85, .22, 3.65, .07, M(0x6E58A7, .56), 0, yT + 1.36, -.25);
-  /* 정면 양옆의 짧은 차양.
-     문은 안 가렸지만 **창을 가로질렀습니다.** 차양이 y 1.96~2.08 인데
-     둥근 창이 y 1.58~2.88 이라, 창 한복판을 띠가 지나갔습니다.
-     창 위(2.88)와 지붕 트림 아래(3.45) 사이의 빈 띠로 올립니다. */
+  /* ── 네온 파사드 띠 ──
+     레퍼런스의 아케이드는 벽 전체가 아니라 **어두운 띠 위에서만** 네온이
+     삽니다. 벽을 통째로 어둡게 하면 낮 캠퍼스에서 혼자 밤이 되므로,
+     창 위~처마 아래의 빈 띠(2.88~3.45) 하나만 남보라로 어둡게 하고 그
+     위에 네온 두 줄을 눕힙니다 — 화려함은 선 두 개로 충분합니다.
+     (원래 이 자리에 있던 줄무늬 차양 둘은 뺐습니다 — 네온 띠와 겹치면
+     정면이 도로 시끄러워집니다.) */
+  box(g, W + .12, .52, .2, .06, M(0x3A3156, .62), 0, 3.18, D / 2 + .06);
+  const NEON = (c, e) => M(c, .3, { emissive: e, emissiveIntensity: 1.0 });
+  box(g, W - .7, .07, .07, .02, NEON(0x8FF3F7, 0x3FD6E8), 0, 3.30, D / 2 + .18)
+    .castShadow = false;
+  box(g, W - 1.9, .06, .06, .02, NEON(0xFFB3D9, 0xF25CA8), 0, 3.06, D / 2 + .18)
+    .castShadow = false;
+  /* 정면 둥근 창에는 청록 네온 링 — 게임장의 창은 밖으로도 빛납니다 */
   [-2.9, 2.9].forEach((x) => {
-    for (let i = 0; i < 5; i++) box(g, .48, .13, .92, .05,
-      M(i % 2 ? 0x7862B4 : 0xFFF0B5, .57), x - .96 + i * .48, 3.14, D / 2 + .48);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(.74, .045, 8, 30),
+      NEON(0x8FF3F7, 0x3FD6E8));
+    ring.position.set(x, Y + H1 * .62, D / 2 + .09);
+    ring.castShadow = false; g.add(ring);
   });
   /* 티켓 띠와 토큰 — 지붕에서 내려 사람 눈높이로. 지붕 위에서는 위에서
      내려다보는 각도에만 보였습니다.
@@ -730,8 +743,29 @@ export function shop(g, opt = {}) {
   for (let i = 0; i < 4; i++)
     box(g, W + .04, .1, D + .04, .04, M(0xE2C4AE, .8), 0, Y + .5 + i * .34, 0);
   box(g, W + .3, .42, D + .3, .1, M(P.trim), 0, Y + H1 + .14, 0);
-  /* 진열창 셋 — 크고 낮습니다. 물건이 보여야 하니까요 */
+  /* 진열창 둘 — 크고 낮습니다. 물건이 보여야 하니까요 */
   [-2.5, 2.5].forEach((x) => win(g, P, x, Y + H1 * .5, D / 2 + .02, 0, 2.0, 2.0));
+  /* ── 쇼윈도를 **가게의 창**으로 ──
+     레퍼런스의 상점은 창이 셋 다 말을 합니다: 나무 틀 · 안의 따뜻한 불 ·
+     창턱의 물건. 유리만 있으면 사무실 창과 구분이 안 됩니다. */
+  [-2.5, 2.5].forEach((x, i) => {
+    /* 나무 틀 — 위·좌우 세 짝. (아래는 창턱 선반이 대신합니다) */
+    box(g, 2.24, .13, .16, .04, M(0xC97F5B, .6), x, Y + H1 * .5 + 1.06, D / 2 + .07);
+    [-1, 1].forEach((s) =>
+      box(g, .13, 2.24, .16, .04, M(0xC97F5B, .6), x + s * 1.06, Y + H1 * .5, D / 2 + .07));
+    /* 안의 불 — 기숙사 불 켜진 창과 같은 문법의 따뜻한 색. "열려 있다" 는 말 */
+    box(g, 1.84, 1.7, .04, .02, M(0xFFDFA0, .32,
+      { emissive: 0xFFC65C, emissiveIntensity: .55 }), x, Y + H1 * .5 + .06, D / 2 + .045)
+      .castShadow = false;
+    /* 창턱 선반과 물건 셋 — 선물상자 · 병 · 인형. 실루엣이 불빛을 등집니다 */
+    box(g, 2.1, .14, .34, .05, M(0xC49A6C, .7), x, Y + .74, D / 2 + .16);
+    box(g, .34, .3, .26, .04, M(i ? 0x6FC6D9 : 0xF47A6A, .6), x - .6, Y + .96, D / 2 + .16);
+    box(g, .38, .1, .28, .03, M(0xF2B33C, .55), x - .6, Y + 1.16, D / 2 + .16);
+    cyl(g, .11, .13, .4, 10, M(0x5C9E63, .35), x + .02, Y + 1.01, D / 2 + .16);
+    { const b = new THREE.Mesh(new THREE.SphereGeometry(.17, 12, 10),
+        M(i ? 0xF2B6C6 : 0xFFE7A8, .6));
+      b.position.set(x + .62, Y + .98, D / 2 + .16); b.castShadow = true; g.add(b); }
+  });
   [-1.3, 1.3].forEach((z) => {
     win(g, P, W / 2 + .02, Y + H1 * .55, z, Math.PI / 2, 1.5, 1.7);
     win(g, P, -W / 2 - .02, Y + H1 * .55, z, -Math.PI / 2, 1.5, 1.7);
@@ -744,7 +778,32 @@ export function shop(g, opt = {}) {
   door(g, P, 0, Y + 1.15, D / 2 + .12, 2.0, 2.2);
   /* reveal 의 y 는 문 **바닥**입니다(안에서 y-.2 부터 쌓습니다). */
   reveal(g, P, 0, Y + .2, D / 2 + .02, 2.0, 2.2, .26);
+  /* 문 옆 벽등 둘 — 따뜻한 알 하나씩. 레퍼런스의 가게 문은 늘 밝습니다 */
+  [-1, 1].forEach((s) => {
+    box(g, .1, .26, .16, .03, M(0x6B4A2A, .55), s * 1.42, Y + 2.16, D / 2 + .10);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(.1, 10, 8),
+      M(0xFFE2A4, .3, { emissive: 0xFFC65C, emissiveIntensity: .8 }));
+    b.position.set(s * 1.42, Y + 2.02, D / 2 + .16); b.castShadow = false; g.add(b);
+  });
   apron(g, P, 0, 0, D / 2 + 1.0, 4.2);
+  /* ── 행잉 간판 ──
+     벽 모서리에서 나온 쇠막대에 작은 원판이 매달립니다. 정면 간판이
+     "지나가는 사람"에게 말한다면 이것은 **길을 따라 걸어오는 사람**에게
+     말하는 간판입니다 — 레퍼런스의 가게가 전부 이것을 답니다.
+     차양(x 1.3~3.7, z ~4.2까지)을 피해 모서리(x 3.85) 위쪽에 겁니다. */
+  {
+    const hx = 3.85, hy = Y + H1 - .1;
+    const arm = cyl(g, .045, .045, 1.1, 8, M(0x6B4A2A, .5), hx, hy, D / 2 + .55);
+    arm.rotation.x = Math.PI / 2;
+    cyl(g, .032, .032, .4, 8, M(0x6B4A2A, .5), hx, hy - .2, D / 2 + .95);
+    const disc = cyl(g, .44, .44, .1, 22, M(0xFFF3DC, .5), hx, hy - .84, D / 2 + .95);
+    disc.rotation.x = Math.PI / 2;
+    const rim = cyl(g, .48, .48, .05, 22, M(0xC4553F, .5), hx, hy - .84, D / 2 + .93);
+    rim.rotation.x = Math.PI / 2;
+    /* 원판 위 동전 하나 — 파는 집이라는 말을 그림 하나로 */
+    const dot = new THREE.Mesh(new THREE.SphereGeometry(.15, 12, 10), M(0xF2B33C, .45));
+    dot.position.set(hx, hy - .84, D / 2 + 1.02); dot.castShadow = true; g.add(dot);
+  }
   /* 줄무늬 차양 — 가게의 표시 */
   [-2.5, 0, 2.5].forEach((x) => {
     const wdt = x === 0 ? 2.6 : 2.4;

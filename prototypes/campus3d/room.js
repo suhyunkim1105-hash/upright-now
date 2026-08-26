@@ -87,6 +87,36 @@ export function shell(g, w, d, h, opt = {}) {
   box(g, .18, .34, d, .04, M(IN.base, .7), -w / 2 + .24, .17, 0);
   box(g, w, .24, .2, .05, M(IN.wallTop, .6), 0, h - .12, -d / 2 + .25);
   box(g, .2, .24, d, .05, M(IN.wallTop, .6), -w / 2 + .25, h - .12, 0);
+
+  /* ── 가까운 쪽 벽 둘과 천장 ──
+     3인칭 실내 카메라는 +x/+z 모서리 **밖에서** 방을 들여다보므로 그쪽
+     벽 두 장을 안 세웠습니다. index.html 의 clampRoomYaw 가 시점을
+     ±60° 로 묶어 뒤를 못 보게 하고 있어서 여태 안 드러났습니다.
+
+     그런데 **Tab 으로 1인칭이 되면 그 잠금이 풀립니다**(clampRoomYaw
+     첫 줄이 first 면 바로 돌아갑니다). 돌아서면 벽 두 장이 없고 천장도
+     없어서 방이 뚜껑 열린 상자가 되고, 천장등은 허공에 매달립니다.
+
+     그래서 나머지 벽과 천장을 따로 만들어 두고 1인칭일 때만 켭니다.
+     bake 가 합쳐 버리면 따로 못 끄므로 noBake, 부딪힘은 방 경계가
+     이미 막고 있으므로 noCollide 입니다. */
+  const near = new THREE.Group();
+  near.name = 'nearShell';
+  near.visible = false;
+  near.userData.noBake = true;
+  near.userData.noCollide = true;
+  g.add(near);
+  const wm = M(opt.wall || IN.wall, .8);
+  box(near, w, h, .34, .06, wm, 0, h / 2, d / 2);
+  box(near, .34, h, d, .06, wm, w / 2, h / 2, 0);
+  box(near, w, .34, .18, .04, M(IN.base, .7), 0, .17, d / 2 - .24);
+  box(near, .18, .34, d, .04, M(IN.base, .7), w / 2 - .24, .17, 0);
+  box(near, w, .24, .2, .05, M(IN.wallTop, .6), 0, h - .12, d / 2 - .25);
+  box(near, .2, .24, d, .05, M(IN.wallTop, .6), w / 2 - .25, h - .12, 0);
+  /* 천장 — 아랫면이 정확히 h 에 오게 둡니다. 천장등의 고정쇠가
+     매다는 높이 +0.72 라, 방마다 그 끝이 이 판 안에 묻힙니다. */
+  box(near, w, .3, d, .06, M(opt.ceil || IN.wallTop, .92), 0, h + .15, 0);
+  near.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
 }
 /* ════════════════════════════════════════════════════════
    창밖 — 하늘색 · 밤 · 날씨.

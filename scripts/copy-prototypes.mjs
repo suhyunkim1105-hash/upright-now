@@ -21,6 +21,10 @@ import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSy
 function copyDir(src, dst, onHtml) {
   mkdirSync(dst, { recursive: true });
   for (const e of readdirSync(src, { withFileTypes: true })) {
+    /* `_` 로 시작하는 것은 검수용입니다 — 월드를 걸어 다니며 찍는
+       하네스(_walk.html), 경계상자 계측기(_probe.html), 방 검사
+       실행기(_diag.mjs). 제품 화면이 아니므로 배포본에 안 넣습니다. */
+    if (e.name.startsWith('_')) continue;
     if (e.isDirectory()) copyDir(`${src}/${e.name}`, `${dst}/${e.name}`, onHtml);
     else if (onHtml && e.name.endsWith('.html')) {
       writeFileSync(`${dst}/${e.name}`, onHtml(readFileSync(`${src}/${e.name}`, 'utf8')));

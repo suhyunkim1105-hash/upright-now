@@ -13,8 +13,13 @@ import { buildSite, approaches, SITE, BUILDINGS as PLAN_B, ryOf, inSite } from '
 import { buildFaculties } from './faculty.js';
 
 export const PAL = {
-  grass: 0x6FC85E, grassDark: 0x57B04A, grassLight: 0x86D46E,
-  soil: 0x8E6F58, stone: 0xEDF3F5, stoneDark: 0xCFDDE1, kerb: 0xFAFDFF,
+  /* 잔디 채도를 한 단 낮췄습니다. 0x6FC85E 는 채도 51% 라 눈높이에서
+     형광으로 보였고, 크림·연파랑으로 짠 나머지 팔레트와 혼자 톤이
+     달랐습니다. 42% 로 내리면 클레이 재질과 같은 계열로 앉습니다. */
+  grass: 0x80C46E, grassDark: 0x6BAF5E, grassLight: 0x93CE81,
+  /* 광장 돌을 한 단 내렸습니다. 0xEDF3F5 는 AgX 노출 1.30 아래 정오에
+     흰색으로 날아가서, 광장 전체가 종이 한 장으로 보였습니다. */
+  soil: 0x8E6F58, stone: 0xE0E8EB, stoneDark: 0xC2D2D7, kerb: 0xF1F6F8,
   path: 0xDCE9EA, pathDark: 0xBFD3D7,
   water: 0x67C6E8, waterDeep: 0x3FA7CE,
   bronze: 0xC9A05E, bronzeDark: 0xA37E40,
@@ -199,16 +204,29 @@ function ground(g) {
      "대학인데 초원 타일 바닥" 이라는 인상의 정체가 이것입니다. 바깥
      잔디(plan.js)는 원판이라 괜찮고, 안쪽은 어차피 광장과 앞마당이
      덮으므로 얼룩이 필요 없습니다. */
-  for (let i = 0; i < 0; i++) {
+  /* 이 고리가 `i < 0` 으로 **꺼져 있었습니다.** 그래서 실제로 걸어
+     다니는 안쪽 잔디는 색 하나짜리 평면이었고, 눈높이에서 운동장과
+     길가가 당구대처럼 보였습니다(바깥 잔디에만 얼룩이 있었습니다).
+
+     네모 상자 대신 넓고 납작한 원판을 씁니다 — 상자는 각이 보여서
+     "잔디에 놓인 매트" 로 읽혔습니다. 색 차이는 아주 얕게 둡니다.
+     무늬가 되면 얼룩이 아니라 무늬라서 더 나쁩니다. */
+  const blot = [M(PAL.grassDark, .88), M(PAL.grassLight, .88)];
+  for (let i = 0; i < 64; i++) {
     const a = rnd() * Math.PI * 2, r = 6 + rnd() * (CORE - 13);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (Math.hypot(x, z) < PLAZA_R + 2) continue;
     /* 구역 바닥은 구역이 직접 깝니다. 얼룩이 그 밑에 깔리면 판 가장자리
        마다 초록이 삐져나와 판이 잘려 보입니다. */
     if (inZone(x, z, 1.2)) continue;
-    const w = 3 + rnd() * 6;
-    flat(box(g, w, .14, w * (.6 + rnd() * .7), 1.4,
-             M(rnd() < .5 ? PAL.grassDark : PAL.grassLight, .86), x, .04 + i * .0005, z));
+    const w = 5 + rnd() * 13;
+    const m = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 22), blot[i & 1]);
+    m.rotation.x = -Math.PI / 2;
+    m.scale.set(1, .5 + rnd() * .85, 1);
+    m.position.set(x, .105 + i * .0004, z);
+    m.castShadow = false; m.receiveShadow = true;
+    m.userData.noBake = true;
+    g.add(m);
   }
 }
 
@@ -285,7 +303,9 @@ function ringPath(g, r = 30, w = 4.0) {
    교수님 : "가운데 표지판 날리고 동상에 분수 같이 있는 걸로 작게". */
 export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
   const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
-  const wat = M(0xCFEFFA, .12, { transparent: true, opacity: .5 });
+  /* 0xCFEFFA 는 사실상 흰색이라 정오 빛에서 물이 아니라 흰 플라스틱
+     으로 보였습니다. 파랑을 조금 넣고 더 비칩니다. */
+  const wat = M(0xB4E2F2, .1, { transparent: true, opacity: .40 });
   const stone = M(PAL.stone, .72), kerb = M(PAL.kerb, .68);
   const pool = M(PAL.water, .18, { transparent: true, opacity: .86,
     emissive: 0x2A7C9E, emissiveIntensity: .1 });
@@ -357,17 +377,22 @@ export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
      면이라 물이 아니라 **유리 항아리**가 됐습니다. 실제 분수의 낙수는
      테두리에서 갈라져 여러 가닥으로 떨어지고, 그 사이로 뒤가 보입니다.
      그 틈이 물로 읽히게 하는 몫입니다. */
+  /* 굵기와 길이를 **가닥마다 다르게** 합니다. 전 판은 서른네 가닥이
+     전부 같은 길이·같은 굵기라, 눈높이에서 보면 물이 아니라 흰 말뚝을
+     빙 둘러 박아 놓은 것으로 보였습니다(케이크 촛불). 길이를 흩고 사이를
+     띄우면 같은 개수로도 갈라져 떨어지는 물이 됩니다. */
   const fall = (r, y, h, n) => {
     for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      const w2 = .07 + (i % 3) * .022;
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(w2, w2 * 1.5, h, 6), wat);
-      c.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
+      const a = (i / n) * Math.PI * 2 + (i % 2) * .06;
+      const w2 = .05 + (i % 4) * .019;
+      const hh = h * (.62 + ((i * 7) % 5) * .095);
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(w2, w2 * 1.6, hh, 6), wat);
+      c.position.set(Math.cos(a) * r, y + (hh - h) / 2, Math.sin(a) * r);
       p.add(c);
     }
   };
-  fall(2.04, 5.6, 1.5, 22);         // 작은 접시 → 가운데
-  fall(4.38, 2.4, 3.2, 34);         // 가운데 → 못
+  fall(2.04, 5.6, 1.5, 18);         // 작은 접시 → 가운데
+  fall(4.38, 2.4, 3.2, 26);         // 가운데 → 못
 
   /* 부서짐 — 물이 닿는 자리마다 흰 거품 고리 */
   const foamRing = (r, y) => {

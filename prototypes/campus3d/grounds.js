@@ -54,9 +54,11 @@ export const OUTER = {
 };
 
 const PAL2 = {
-  lawn:      0x6FC85E,
-  lawnDark:  0x57B04A,
-  lawnLight: 0x86D46E,
+  /* campus.js 의 PAL.grass 와 **같은 값이어야 합니다** — 안쪽 잔디와
+     바깥 잔디가 맞닿는 자리라, 어긋나면 섬 둘레에 띠가 생깁니다. */
+  lawn:      0x80C46E,
+  lawnDark:  0x6BAF5E,
+  lawnLight: 0x93CE81,
   walk:      0xF0D49A,
   walkDark:  0xDCB87C,
   road:      0xD9D3C4,
@@ -118,7 +120,7 @@ function groundRing(g) {
      쪽으로 당겨 대비를 낮췄습니다. */
   /* 대비를 더 낮춥니다. 12각형 원판은 가까이서 각이 보였고, 색이
      세면 얼룩이 무늬가 됩니다. 24각 + 바탕(0x6FC85E)에 바짝 붙인 두 색. */
-  const blotA = M(0x6AC259, .9), blotB = M(0x74CB61, .9);
+  const blotA = M(0x79BE68, .9), blotB = M(0x88C976, .9);
   for (let i = 0; i < 150; i++) {
     const a = rnd() * TAU;
     const r = OUTER.core + 4 + rnd() * (OUTER.wall - OUTER.core - 12);

@@ -1,0 +1,98 @@
+<meta charset="utf-8"><pre id="out">…</pre>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script type="module">
+/* 검수용 — 방/건물 안 물건의 자리와 **서로 파고든 정도**를 잽니다 (제품 아님).
+
+   눈으로 "저 갈색 판이 뭐지" 를 맞히려다 한 번 틀렸습니다(벤치를 끝에서
+   본 것을 문짝으로 읽었습니다). 그림으로 판단하지 않고 경계상자를
+   겹쳐 봅니다.
+
+   ?r=<방>  또는 ?b=<건물>
+   ?near=x,z   그 자리 반경 6 안의 물건만
+   ?hit=1      서로 파고든 짝만 (겹친 부피가 작은 쪽의 25% 넘는 것) */
+import * as THREE from 'three';
+import { ROOMS } from './rooms.js';
+import { BLD } from './bld.js';
+const q = new URLSearchParams(location.search);
+const g = new THREE.Group();
+if (q.get('r')) ROOMS[q.get('r')](g); else BLD[q.get('b') || 'mainHall'](g);
+
+const items = [];
+const bb = new THREE.Box3(), sz = new THREE.Vector3(), c = new THREE.Vector3();
+g.children.forEach((o, i) => {
+  bb.setFromObject(o); if (!isFinite(bb.min.x)) return;
+  bb.getSize(sz); bb.getCenter(c);
+  items.push({ i, box: bb.clone(), s: sz.clone(), c: c.clone(),
+    kind: o.type + '/' + o.children.length });
+});
+
+const f1 = (v) => v.toFixed(1).padStart(6);
+const row = (t) => `${String(t.i).padStart(3)}  ${t.kind.padEnd(9)}  c ${f1(t.c.x)},${f1(t.c.y)},${f1(t.c.z)}  s ${f1(t.s.x)},${f1(t.s.y)},${f1(t.s.z)}`;
+
+let out;
+if (q.get('hit')) {
+  /* 바닥·벽·천장처럼 방만 한 것은 뺍니다 — 모든 것과 겹칩니다 */
+  const room = items.filter((t) => t.s.x < 12 && t.s.z < 12 && t.s.y > .12);
+  const lines = [];
+  for (let a = 0; a < room.length; a++) for (let b = a + 1; b < room.length; b++) {
+    const A = room[a], B = room[b];
+    const ov = (k) => Math.min(A.box.max[k], B.box.max[k]) - Math.max(A.box.min[k], B.box.min[k]);
+    const ox = ov('x'), oy = ov('y'), oz = ov('z');
+    if (ox <= .06 || oy <= .06 || oz <= .06) continue;
+    const v = ox * oy * oz;
+    const va = A.s.x * A.s.y * A.s.z, vb = B.s.x * B.s.y * B.s.z;
+    const frac = v / Math.max(1e-6, Math.min(va, vb));
+    if (frac < .25) continue;
+    lines.push(`${(frac * 100).toFixed(0).padStart(3)}%  ${row(A)}\n      ${row(B)}`);
+  }
+  out = lines.length ? lines.join('\n') : '겹친 짝 없음';
+} else if (q.get('air')) {
+  /* 허공에 뜬 것 — 바닥에서 0.35 넘게 떠 있는데 발밑(가로세로가 겹치는
+     자리)에 받쳐 주는 물건도 없는 것. 벽에 붙는 것(벽에서 0.5 안쪽)은
+     뺍니다 — 액자·시계·간판은 원래 떠 있는 게 맞습니다. */
+  const hx = +(q.get('hx') || 99), hz = +(q.get('hz') || 99);
+  const lines = items.filter((t) => {
+    if (t.box.min.y <= .35) return false;
+    if (Math.abs(t.c.x) > hx - .8 || Math.abs(t.c.z) > hz - .8) return false;
+    return !items.some((u) => u !== t && u.box.max.y <= t.box.min.y + .12
+      && u.box.max.y > .05
+      && Math.min(u.box.max.x, t.box.max.x) - Math.max(u.box.min.x, t.box.min.x) > .05
+      && Math.min(u.box.max.z, t.box.max.z) - Math.max(u.box.min.z, t.box.min.z) > .05);
+  }).map((t) => `y${t.box.min.y.toFixed(2).padStart(6)}  ${row(t)}`);
+  out = lines.length ? lines.join('\n') : '뜬 것 없음';
+} else if (q.get('stat')) {
+  /* 방이 얼마나 차 있나 — 물건이 바닥을 덮은 넓이와, 한가운데가
+     비어 있는지. "가운데가 텅 빈다" 를 눈이 아니라 수로 잽니다. */
+  const hx = +(q.get('hx') || 10), hz = +(q.get('hz') || 10);
+  const N = 60, cell = [];
+  for (let i = 0; i < N; i++) cell.push(new Array(N).fill(0));
+  const props = items.filter((t) => t.s.x < hx * 1.5 && t.s.z < hz * 1.5
+    && t.box.min.y < 2.2 && t.s.y > .1);
+  for (const t of props) {
+    const i0 = Math.max(0, Math.floor((t.box.min.x + hx) / (hx * 2) * N));
+    const i1 = Math.min(N - 1, Math.ceil((t.box.max.x + hx) / (hx * 2) * N));
+    const j0 = Math.max(0, Math.floor((t.box.min.z + hz) / (hz * 2) * N));
+    const j1 = Math.min(N - 1, Math.ceil((t.box.max.z + hz) / (hz * 2) * N));
+    for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) cell[i][j] = 1;
+  }
+  let all = 0, mid = 0, midN = 0;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    all += cell[i][j];
+    if (i > N * .28 && i < N * .72 && j > N * .28 && j < N * .72) { midN++; mid += cell[i][j]; }
+  }
+  const sunk = items.filter((t) => t.box.min.y < -.06 && t.s.y > .1 && t.s.x < hx);
+  out = [
+    `물건 ${props.length}개 · 방 ${hx * 2}×${hz * 2}`,
+    `바닥을 덮은 비율  전체 ${(all / (N * N) * 100).toFixed(0)}%   가운데 ${(mid / midN * 100).toFixed(0)}%`,
+    `바닥에 박힌 것 ${sunk.length}개`,
+    ...sunk.map((t) => '  ' + row(t)),
+  ].join('\n');
+} else {
+  let list = items;
+  const near = q.get('near');
+  if (near) { const [ox, oz] = near.split(',').map(Number);
+    list = list.filter((t) => Math.hypot(t.c.x - ox, t.c.z - oz) < 6); }
+  out = list.map(row).join('\n');
+}
+document.getElementById('out').textContent = out;
+</script>

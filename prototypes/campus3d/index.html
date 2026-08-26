@@ -184,7 +184,10 @@ addEventListener('unhandledrejection', function (e) {
   #foot{position:absolute;right:16px;bottom:18px;display:flex;align-items:center;gap:8px;
     padding:6px 11px;font-size:10.5px;font-weight:700;color:var(--tx2)}
   #foot .fps{color:var(--tx3);font-variant-numeric:tabular-nums}
-  #help{position:absolute;right:16px;bottom:56px;width:230px;padding:12px 14px;display:none}
+  /* 오른쪽 아래에 두었더니 "내 자세" 카드와 상태 칸을 정확히 덮었습니다
+     (#stack 이 top 16 에서 아래로 500 가까이 내려옵니다). 왼쪽은 비어
+     있으므로 그리로 옮깁니다. */
+  #help{position:absolute;left:16px;bottom:56px;width:230px;padding:12px 14px;display:none}
   #help.on{display:block}
   #help h4{margin:0 0 8px;font-size:11px;font-weight:800;color:var(--tx2);letter-spacing:.03em}
   #help .r{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11.5px;color:var(--tx2)}
@@ -332,6 +335,9 @@ addEventListener('unhandledrejection', function (e) {
     display:flex;align-items:center;gap:8px}
   .lbl::after{content:'';flex:1;height:1px;background:var(--pl)}
   .lbl:first-child{margin-top:0}
+  /* 잠긴 것을 **어디서** 여는지. 전에는 title 툴팁에만 있었는데, 비활성
+     단추에 마우스를 올려 보는 사람은 없습니다 — 자물쇠만 잔뜩 보였습니다. */
+  .hint{margin:7px 0 0;font-size:10.5px;line-height:1.5;color:var(--ink2);opacity:.85}
   #panel input.nick{width:100%;border:1.5px solid var(--pl);border-radius:11px;padding:9px 12px;
     font:700 14px var(--ff);color:var(--ink);background:rgba(34,42,51,.03);outline:none}
   #panel input.nick:focus{border-color:var(--acc2);background:#fff}
@@ -881,6 +887,8 @@ addEventListener('unhandledrejection', function (e) {
     <div class="r"><kbd>Z</kbd><kbd>X</kbd><span>시점 좌우로 돌리기</span></div>
     <div class="r"><kbd>드래그</kbd><span>시점 돌리기</span></div>
     <div class="r"><kbd>휠</kbd><span>멀리 · 가까이</span></div>
+    <div class="r"><kbd>클릭</kbd><span>그 자리로 걸어가기</span></div>
+    <div class="r"><kbd>Esc</kbd><span>닫기</span></div>
   </div>
 
   <div id="xhair" aria-hidden="true"></div>
@@ -1507,9 +1515,16 @@ function buildRoom(key) {
   const r = bake(g);
   g.add(r.group);
   SKY.collect(g);
-  const rec = { key, group: g, size, grid, seats };
+  /* 1인칭에서만 켜는 나머지 벽·천장(room.js shell 참고). 한 번만 찾아
+     둡니다 — 시점을 바꿀 때마다 방 전체를 훑을 이유가 없습니다. */
+  const rec = { key, group: g, size, grid, seats, near: g.getObjectByName('nearShell') };
   roomCache.set(key, rec);
   return rec;
+}
+/** 실내에서 1인칭이면 나머지 벽과 천장을 켭니다. 3인칭은 그 모서리
+    밖에서 들여다보는 시점이라 켜면 방이 가려집니다. */
+function syncRoomShell() {
+  roomCache.forEach((r) => { if (r.near) r.near.visible = !!(room && r === room && first); });
 }
 
 /* ══════ 5. 못 지나가는 곳 ══════ */
@@ -1885,6 +1900,7 @@ function toggleView() {
   fpYaw = yaw; fpPitch = pitch; fpBob = 0;
   $('#foot .md').textContent = first ? '1인칭' : '3인칭';
   dockOn('view', first);
+  syncRoomShell();
   syncLock();
 }
 function clampRoomYaw() {
@@ -2823,7 +2839,7 @@ function rebuildDorm() {
   roomCache.delete('dorm');
   if (room?.key === 'dorm') {
     const rec = buildRoom('dorm');
-    roomRoot.clear(); roomRoot.add(rec.group); room = rec;
+    roomRoot.clear(); roomRoot.add(rec.group); room = rec; syncRoomShell();
     unstick();
   }
 }
@@ -3035,7 +3051,7 @@ function enterRoom(portal) {
   closeDlg();
   const rec = buildRoom(portal.zone === 'clubshop' ? 'shop' : portal.zone);
   roomRoot.clear(); roomRoot.add(rec.group);
-  room = rec; roomRoot.visible = true; campusRoot.visible = false;
+  room = rec; roomRoot.visible = true; campusRoot.visible = false; syncRoomShell();
   NPC.forEach((n) => { n.rig.visible = false; n.el.style.display = 'none'; });
   applySky(true);
   const sp = freeSpotNear(rec.grid, 0, rec.size.d / 2 - 3.4);
@@ -3057,7 +3073,7 @@ function leaveRoom() {
   const p = P.back;
   roomRoot.visible = false; campusRoot.visible = true;
   NPC.forEach((n) => { n.rig.visible = true; });
-  room = null;
+  room = null; syncRoomShell();
   applySky(false);
   const b = BUILDINGS.find((x) => x.zone === p.zone);
   P.x = p.x + Math.sin(b.ry) * 2.8; P.z = p.z + Math.cos(b.ry) * 2.8;
@@ -3299,7 +3315,10 @@ const PLACES = BUILDINGS.map((b) => ({ key: b.zone, name: b.name, b }))
        지금 운동장은 (-84,66), 호수는 (118,70) 이라 셋 다 엉뚱한 잔디
        한복판으로 보내고 있었습니다. */
     { key: 'plaza', name: '중앙 광장', at: { x: 0, z: 12, ry: Math.PI } },
-    { key: 'gate', name: '정문', at: { x: 0, z: 118, ry: Math.PI } },
+    /* 정문은 plan.js 의 GATE = (0, 130) 입니다. z 118 에 세우고 ry 를
+       Math.PI 로 두면 문에서 12칸 떨어진 자리에서 **문을 등지고** 섭니다 —
+       빠른 이동으로 "정문" 을 눌러도 화면에는 빈 포장길뿐이었습니다. */
+    { key: 'gate', name: '정문', at: { x: 0, z: 114, ry: 0 } },
     { key: 'field', name: '운동장', at: { x: -60, z: 50, ry: Math.PI * .8 } },
     { key: 'lake', name: '호수', at: { x: 104, z: 58, ry: Math.PI * .6 } },
   ]);
@@ -3490,6 +3509,10 @@ function wardrobeHTML() {
       return `<button data-sp="${n}" class="${n === curSpecies ? 'on' : ''}" ${own ? '' : 'disabled'}
         title="${own ? n : '알에서 깨어나면 열립니다 — 알 가게(학생회관 미르)'}">${own ? n : '🥚 ' + n}</button>`;
     }).join('') + '</div>'
+    /* 잠금 안내는 **한 줄만** 둡니다. 칸마다 붙였더니 패널이 90px 늘어
+       신발·탈것·설정이 스크롤 밖으로 밀렸습니다 — 안내를 늘리려다 기능을
+       숨긴 셈입니다. */
+    + '<p class="hint">🔒 · 🥚 는 아직 안 열린 것이에요. 옷과 탈것은 동아리 상점 옷 구역에서, 알은 알 구역에서 삽니다.</p>'
     + LOOK_SLOTS.map(([slot, nm, idKey, cKey]) => {
       const items = WEAR[slot];
       let row = `<div class="lbl">${nm}</div><div class="wr">`
@@ -3752,6 +3775,32 @@ let fpsT0 = performance.now();
 let shadowsOff = false;
 const v3 = new THREE.Vector3();
 
+/* ── 이름표 겹침 정리 ──
+   광장에 다섯이 서면 알약 다섯이 같은 자리에 그대로 포개져 분수를
+   통째로 덮었습니다. 각자 자기 자리에 바로 놓지 않고 한 프레임 분을
+   모아 뒀다가 마지막에 한 번에 놓습니다 — **가까운 사람이 먼저**
+   자리를 잡고, 겹치는 것은 위로 밀어 올립니다(아래로 밀면 머리를
+   가립니다). 열두 번 밀어도 자리가 없으면 그대로 둡니다. */
+const tagQ = [];
+const TAG_W = 108, TAG_H = 30;
+function queueTag(el, x, y, d) { tagQ.push({ el, x, y, d }); }
+function placeTags() {
+  if (tagQ.length > 1) tagQ.sort((a, b) => a.d - b.d);
+  const put = [];
+  for (const t of tagQ) {
+    let y = t.y;
+    for (let i = 0; i < 12; i++) {
+      const hit = put.find((p) => Math.abs(p.x - t.x) < TAG_W && Math.abs(p.y - y) < TAG_H);
+      if (!hit) break;
+      y = hit.y - TAG_H;
+    }
+    put.push({ x: t.x, y });
+    t.el.style.left = t.x + 'px';
+    t.el.style.top = Math.max(74, y) + 'px';
+  }
+  tagQ.length = 0;
+}
+
 function tick(now) {
   requestAnimationFrame(tick);
   /* dt 를 0.05 로 자르면 20fps 아래에서는 **세상이 슬로모션이 됩니다** —
@@ -4009,13 +4058,22 @@ function tick(now) {
     }
     /* 이름표 · 말풍선 · 감정표현 */
     v3.set(s.x, 2.5, s.z).project(cam);
-    const on = v3.z < 1 && !mapOn;
+    const pd = Math.hypot(P.x - s.x, P.z - s.z);
+    /* 접속자 이름표에만 거리 규칙이 없어서 캠퍼스 반대편 사람까지
+       광장 한복판에 알약으로 떴습니다. NPC 와 같은 규칙을 씁니다. */
+    const on = v3.z < 1 && !mapOn && pd < 24;
     const sx = (v3.x * .5 + .5) * innerWidth, sy = (-v3.y * .5 + .5) * innerHeight;
     r.el.style.display = on ? 'block' : 'none';
     if (on) {
       const sec = Math.max(0, Math.floor(p.sessionSec || 0));
-      r.el.innerHTML = `<span class="peer-top"><b>${esc3(p.nick || '누군가')}</b><em>${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}</em></span><small>${esc3(p.school || '학교 미설정')}</small>`;
-      r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px';
+      /* 학교를 안 정한 사람이 여럿이면 "학교 미설정" 이 그 수만큼 겹쳐서
+         같은 글자가 화면을 덮었습니다. 값이 없으면 줄을 안 만듭니다 —
+         0:00 배지도 같은 이유로 뺍니다(아직 아무도 안 앉은 상태). */
+      r.el.innerHTML = `<span class="peer-top"><b>${esc3(p.nick || '누군가')}</b>${
+        sec > 0 ? `<em>${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}</em>` : ''
+      }</span>${p.school ? `<small>${esc3(p.school)}</small>` : ''}`;
+      r.el.style.opacity = clamp((24 - pd) / 5, 0, 1);
+      queueTag(r.el, sx, sy, pd);
     }
     const saying = p.say && performance.now() - p.sayT < 6000;
     r.say.style.display = on && saying ? 'block' : 'none';
@@ -4037,9 +4095,8 @@ function tick(now) {
       v3.set(n.rig.position.x, 2.45, n.rig.position.z).project(cam);
       if (v3.z < 1) {
         n.el.style.display = 'block';
-        n.el.style.left = ((v3.x * .5 + .5) * innerWidth) + 'px';
-        n.el.style.top = Math.max(74, (-v3.y * .5 + .5) * innerHeight) + 'px';
         n.el.style.opacity = clamp((22 - dd) / 6, 0, 1);
+        queueTag(n.el, (v3.x * .5 + .5) * innerWidth, (-v3.y * .5 + .5) * innerHeight, dd);
       } else n.el.style.display = 'none';
     } else n.el.style.display = 'none';
   });
@@ -4103,12 +4160,13 @@ function tick(now) {
       v3.set(n.rig.position.x, 2.45, n.rig.position.z).project(cam);
       if (v3.z < 1) {
         n.el.style.display = 'block';
-        n.el.style.left = ((v3.x * .5 + .5) * innerWidth) + 'px';
-        n.el.style.top = ((-v3.y * .5 + .5) * innerHeight) + 'px';
         n.el.style.opacity = clamp((22 - dd) / 6, 0, 1);
+        queueTag(n.el, (v3.x * .5 + .5) * innerWidth, (-v3.y * .5 + .5) * innerHeight, dd);
       } else n.el.style.display = 'none';
     } else n.el.style.display = 'none';
   });
+
+  placeTags();
 
   /* ── 카메라 ── */
   /* 개발용 잠금 — __W.lock(x, y, z, tx, ty, tz) 로 카메라를 세워 둡니다.

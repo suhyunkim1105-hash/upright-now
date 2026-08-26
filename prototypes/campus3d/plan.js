@@ -26,7 +26,7 @@
      정문이 남쪽(z +110), 본관이 북쪽(z -46). 그 사이가 축입니다.
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
-import { M } from './parts.js';
+import { M, sign } from './parts.js';
 import * as KIT from './kit.js';
 
 /* 부지 — 원이 아니라 네모입니다. 가로가 더 긴 것도 실제 캠퍼스의 성질입니다. */
@@ -64,7 +64,10 @@ let _s = 20260825;
 const rnd = () => (_s = (_s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 
 export const PAL = {
-  lawn: 0x6FC85E, lawnDark: 0x63BC53, lawnLight: 0x7BD168,
+  /* 잔디는 세 파일이 각자 들고 있습니다(plan·campus·grounds). 셋이
+     같은 값이어야 합니다 — 부지 잔디·중심 원판·바깥 잔디가 서로
+     맞닿아 있어서, 하나만 고치면 경계에 띠가 보입니다. */
+  lawn: 0x80C46E, lawnDark: 0x76B966, lawnLight: 0x8DCD7B,
   road: 0xD8E2E4, roadEdge: 0xF6FAFB, walk: 0xE5EEF0,
   track: 0xC9705A, turf: 0x5FB765, turfLine: 0xF2F7F0,
   court: 0x4E9E7A, courtLine: 0xF2F7F0, clay: 0xC08A62,
@@ -439,10 +442,14 @@ function fields(g, solid) {
       /* 관중석 — 긴 쪽 한 면에 세 단 */
       const standM = M(PAL.stone, .84), seatM = M(0x7FA0B8, .8);
       const SL = w * .58;
+      /* 단마다 **땅에서부터** 올립니다. 전 판은 두께 0.35 짜리 판을
+         0.45 · 0.80 높이에 띄워 놓았는데, 각 단의 z 가 서로 달라서
+         밑을 받쳐 주는 것이 없었습니다 — 관중석 두 장이 잔디 위에
+         떠 있는 것으로 보이던 정체입니다. */
       for (let i = 0; i < 3; i++) {
-        const sy = .35 * (i + 1), sd = 1.15;
-        const st = new THREE.Mesh(new THREE.BoxGeometry(SL, .35, sd), i % 2 ? seatM : standM);
-        st.position.set(x, sy - .17 + LAYER.field, z - d / 2 - 2.2 - i * sd);
+        const sh = .35 * (i + 1), sd = 1.15;
+        const st = new THREE.Mesh(new THREE.BoxGeometry(SL, sh, sd), i % 2 ? seatM : standM);
+        st.position.set(x, sh / 2 + LAYER.field, z - d / 2 - 2.2 - i * sd);
         st.castShadow = true; st.receiveShadow = true;
         g.add(st);
       }
@@ -534,6 +541,27 @@ function fields(g, solid) {
         leaf.rotation.x = -Math.PI / 2;
         leaf.position.set(x + Math.cos(a) * w * rr2, LAYER.field + .025, z + Math.sin(a) * d * rr2);
         leaf.castShadow = false; g.add(leaf);
+      }
+      /* ── 물가에 앉을 자리 ──
+         캠퍼스에서 제일 예쁜 자리인데 벤치 하나 없었습니다. 걸어가면
+         물을 보고 돌아 나오는 것이 전부라, 사람이 머물 이유가 없습니다.
+         길이 닿는 북쪽 물가(모래톱 바깥 잔디)에 벤치 둘을 물을 보게
+         놓습니다. 사이는 비워 둡니다 — 낚시터 자리가 거기입니다. */
+      { const woodM = M(0xB07A4E, .82), woodD = M(0x8A5C36, .84);
+        const bz = z - d / 2 - 4;
+        for (const bx of [-7, 7]) {
+          const px = x + bx;
+          const seat = new THREE.Mesh(new THREE.BoxGeometry(3.4, .22, .9), woodM);
+          seat.position.set(px, LAYER.field + .74, bz); seat.castShadow = true;
+          seat.receiveShadow = true; g.add(seat);
+          const back = new THREE.Mesh(new THREE.BoxGeometry(3.4, .86, .18), woodM);
+          back.position.set(px, LAYER.field + 1.20, bz - .46); back.castShadow = true; g.add(back);
+          for (const lx of [-1.35, 1.35]) {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(.22, .62, .8), woodD);
+            leg.position.set(px + lx, LAYER.field + .43, bz); leg.castShadow = true; g.add(leg);
+          }
+          solid(px, bz, 3.6, 1.5, 0);
+        }
       }
       solid(x, z, w * .8, d * .8, 0, false);
     } else if (t === 'amphi') {
@@ -741,7 +769,11 @@ function plantTrees(g, trees, solid) {
    함수는 남깁니다 — 부르는 곳이 여럿이고, 되살릴 일이 생기면
    이 한 줄만 지우면 됩니다. */
 function fence(g, solid) {
-  return;
+  /* 첫 줄이 `return;` 이라 담도 정문도 **하나도 안 서 있었습니다.**
+     그래서 섬 가장자리가 잔디에서 그냥 잘렸고, 빠른 이동의 "정문" 은
+     빈 포장길로 데려갔습니다. 왜 껐는지 적혀 있지 않아 되살립니다 —
+     담 조각은 인스턴스 둘이고 충돌 상자는 반경 20 밖이면 건너뛰므로
+     비용이 문제였을 자리는 아닙니다. */
   const wallM = M(0xE8DFC8, .9), capM = M(0xC9BFA4, .86), brickM = M(0xC98A63, .82);
   const SEG = 5.6, GAP = 9;                      // 정문 폭
   const segs = [];
@@ -791,8 +823,11 @@ function fence(g, solid) {
   }
   const lin = new THREE.Mesh(new THREE.BoxGeometry(GAP * 2 + 5, 1.2, 1.4), capM);
   lin.position.set(0, 8.3, 0); lin.castShadow = true; gg.add(lin);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(11, 1.6, .3), M(0x9BA6B2, .5));
-  sign.position.set(0, 6.9, .85); sign.castShadow = true; gg.add(sign);
+  /* 학교 이름 — 회색 판만 걸어 두면 "아직 안 만든 간판" 입니다.
+     parts.js 의 sign 은 캔버스에 글자를 굽고 웹폰트가 온 뒤 한 번 더
+     굽습니다. 안팎 두 장 — 나갈 때도 문은 문이어야 합니다. */
+  sign(gg, '기린캠퍼스', 0, 6.9, 1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF');
+  sign(gg, '기린캠퍼스', 0, 6.9, -1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF').rotation.y = Math.PI;
 }
 
 /* ---- 담 밖 — 도시와 산 ---- */

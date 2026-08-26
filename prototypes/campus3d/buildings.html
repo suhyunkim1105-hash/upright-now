@@ -6,374 +6,53 @@
 </script>
 <script type="module">
 import * as THREE from 'three';
-import { M, box, cyl, prism, win, door, steps, column, tree, bush, plate, sign } from './parts.js';
+import { BLD } from './bld.js';
 
 /* ══════════════════════════════════════════════════════════
-   기린캠퍼스 건물 여섯 채 — 아이소메트릭 아이콘.
-   같은 부품(parts.js)을 같은 규칙으로 쓰되 조합과 색만 다릅니다.
-   나란히 놨을 때 한 캠퍼스로 읽혀야 합니다.
-   ══════════════════════════════════════════════════════════ */
+   건물 여섯 채를 한 채씩 크게 찍어 보는 뷰어.
 
-/* 공통 — 여섯 채가 나눠 쓰는 값. 여기가 캠퍼스의 재질입니다. */
-const BASE = {
-  trim: 0xFFF4DC, frame: 0xFFFFFF, glass: 0x4E8CA8, glassLit: 0x74B5CE,
-  door: 0xB5713F, doorDark: 0x8E5730, doorLight: 0xD08F58,
-  stone: 0xF4F1EA, stoneDark: 0xD9D4C8, gold: 0xF2B33C,
-  base: 0xF0CE7E, baseDark: 0x6B4A2A, grass: 0x5FC15A, grassDark: 0x46A343,
-  path: 0xF6C97E, trunk: 0x8E5A33, leaf: 0x53B84E,
-};
-const C = (o) => Object.assign({}, BASE, o);
+   **여기에 건물 코드를 두지 않습니다.** 한동안 bld.js 와 이 파일에
+   같은 함수 여섯 개가 각각 들어 있었고, 캠퍼스에 보이는 것과 뷰어에
+   보이는 것이 조용히 갈라졌습니다 — 뒷면을 채우고 간판을 옮긴 뒤에도
+   뷰어는 옛 모습을 그대로 보여 줬습니다. 이제 bld.js 하나만 봅니다.
+
+   ?b=mainHall|library|dorm|union|arcade|shop   어느 채인지
+   ?a=0|1|2|3                                   보는 각(앞·오른·뒤·왼)
+   ══════════════════════════════════════════════════════════ */
+const q = new URLSearchParams(location.search);
+const which = q.get('b') || 'mainHall';
+const ang = +(q.get('a') || 0) % 4;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xEFF2F5);
-
-/* ─────────────────────────────────────────────
-   ① 본관 — 가장 격식 있는 집. 시계탑 · 기둥 현관 · 국기
-   ───────────────────────────────────────────── */
-function mainHall(g) {
-  const P = C({ wall: 0xF6E3B4, wallLight: 0xFFF0CC, roof: 0x5B84C4, roofDark: 0x3F6BA8,
-                deck: 0x8E93B8 });
-  plate(g, P, 15.6);
-  [[-5.9, 4.8, .95], [5.9, 4.8, .95], [-6.2, -4.4, 1.15], [6.2, -4.4, 1.15]]
-    .forEach(([x, z, s]) => tree(g, P, x, z, s));
-  const W = 9.6, D = 6.2, H1 = 3.0, H2 = 2.7, Y = .12;
-  box(g, W, H1, D, .12, M(P.wall), 0, Y + H1 / 2, 0);
-  box(g, W + .18, .34, D + .18, .08, M(P.trim), 0, Y + H1, 0);
-  box(g, W, H2, D, .12, M(P.wall), 0, Y + H1 + .34 + H2 / 2, 0);
-  box(g, W + .32, .42, D + .32, .1, M(P.trim), 0, Y + H1 + .34 + H2 + .14, 0);
-  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
-    box(g, .52, H1 + H2 + .34, .52, .08, M(P.wallLight),
-        sx * (W / 2 - .1), Y + (H1 + H2 + .34) / 2, sz * (D / 2 - .1)));
-  const yLo = Y + H1 * .56, yHi = Y + H1 + .34 + H2 * .52;
-  [-3.4, -1.4, 1.4, 3.4].forEach((x) => {
-    if (Math.abs(x) > 1.7) win(g, P, x, yLo, D / 2 + .02, 0, 1.1, 1.5);
-    win(g, P, x, yHi, D / 2 + .02, 0, 1.1, 1.5);
-    win(g, P, x, yHi, -D / 2 - .02, Math.PI, 1.1, 1.5);
-  });
-  [-1.7, 0, 1.7].forEach((z) => {
-    win(g, P, W / 2 + .02, yLo, z, Math.PI / 2, 1.1, 1.5);
-    win(g, P, W / 2 + .02, yHi, z, Math.PI / 2, 1.1, 1.5);
-    win(g, P, -W / 2 - .02, yLo, z, -Math.PI / 2, 1.1, 1.5);
-    win(g, P, -W / 2 - .02, yHi, z, -Math.PI / 2, 1.1, 1.5);
-  });
-  /* 현관 — 기둥 넷이 벽에서 앞으로 나옵니다 */
-  const PZ = D / 2 + 1.5, COL = H1 + .66;
-  [-1.55, -.52, .52, 1.55].forEach((x) => column(g, P, x, Y + .42, PZ, COL));
-  box(g, 4.7, .44, 1.6, .08, M(P.trim), 0, Y + .53 + COL + .32, PZ - .05);
-  prism(g, 4.9, 1.2, 1.35, M(P.roof, .6), 0, Y + .53 + COL + .54, PZ - .06, .08);
-  prism(g, 4.1, .82, .2, M(P.trim, .55), 0, Y + .53 + COL + .68, PZ + .62, .04);
-  /* 시계 — 박공 얼굴 */
-  cyl(g, .42, .42, .16, 26, M(P.trim, .5), 0, Y + .53 + COL + .98, PZ + .74).rotation.x = Math.PI / 2;
-  cyl(g, .33, .33, .18, 26, M(0x3E6E82, .4), 0, Y + .53 + COL + .98, PZ + .78).rotation.x = Math.PI / 2;
-  box(g, .07, .23, .2, .02, M(P.trim, .4), 0, Y + .53 + COL + 1.06, PZ + .84);
-  box(g, .18, .07, .2, .02, M(P.trim, .4), .055, Y + .53 + COL + .98, PZ + .84);
-  door(g, P, 0, Y + 1.3, D / 2 + .12, 2.1, 2.5);
-  steps(g, P, 0, Y + .78, D / 2 + 1.0, 3.6, 4);
-  /* 옥상 — 테 · 바닥 · 물매 · 깃대 */
-  const yT = Y + H1 + .34 + H2 + .36;
-  box(g, W + .52, .5, D + .52, .12, M(P.roof), 0, yT, 0);
-  box(g, W - .1, .34, D - .1, .1, M(P.deck, .68), 0, yT + .3, 0);
-  prism(g, 5.0, 1.9, D + .5, M(P.roof, .6), 1.6, yT + .3, 0);
-  box(g, .72, .28, .72, .07, M(P.trim, .6), -3.3, yT + .5, .3);
-  cyl(g, .07, .07, 2.8, 10, M(0xD8DCE2, .35), -3.3, yT + 1.9, .3);
-  {
-    const s = new THREE.Shape();
-    s.moveTo(0, 0); s.lineTo(1.5, -.3); s.lineTo(1.5, .5); s.lineTo(0, .8); s.closePath();
-    const ge = new THREE.ExtrudeGeometry(s, { depth: .1, bevelEnabled: true, bevelSize: .04,
-      bevelThickness: .04, bevelSegments: 2, steps: 1 });
-    const m = new THREE.Mesh(ge, M(0xE8483C, .62));
-    m.position.set(-3.25, yT + 2.4, .26); m.castShadow = true; g.add(m);
-  }
-  sign(g, '본관', 0, yT + .06, D / 2 + .44, 2.8, .9, '#3F6BA8', '#FFFFFF');
-}
-
-/* ─────────────────────────────────────────────
-   ② 도서관 — 돔과 아치창. 여섯 중 가장 조용해 보여야 합니다
-   ───────────────────────────────────────────── */
-function library(g) {
-  const P = C({ wall: 0xF3EBDA, wallLight: 0xFDF7EA, roof: 0x3FB3A2, roofDark: 0x2C8C7E });
-  plate(g, P, 15.6);
-  [[-5.9, 4.8, .95], [5.9, 4.8, .95], [-6.2, -4.4, 1.15], [6.2, -4.4, 1.15]]
-    .forEach(([x, z, s]) => tree(g, P, x, z, s));
-  const W = 10.0, D = 6.4, H1 = 3.2, H2 = 2.4, Y = .12;
-  box(g, W, H1, D, .12, M(P.wall), 0, Y + H1 / 2, 0);
-  box(g, W + .2, .36, D + .2, .08, M(P.trim), 0, Y + H1, 0);
-  box(g, W, H2, D, .12, M(P.wall), 0, Y + H1 + .36 + H2 / 2, 0);
-  box(g, W + .34, .44, D + .34, .1, M(P.trim), 0, Y + H1 + .36 + H2 + .15, 0);
-  const yLo = Y + H1 * .54, yHi = Y + H1 + .36 + H2 * .5;
-  [-3.6, -1.5, 1.5, 3.6].forEach((x) => {
-    if (Math.abs(x) > 1.8) win(g, P, x, yLo, D / 2 + .02, 0, 1.15, 1.7, 'arch');
-    win(g, P, x, yHi, D / 2 + .02, 0, 1.15, 1.3, 'arch');
-    win(g, P, x, yHi, -D / 2 - .02, Math.PI, 1.15, 1.3, 'arch');
-  });
-  [-1.8, 0, 1.8].forEach((z) => {
-    win(g, P, W / 2 + .02, yLo, z, Math.PI / 2, 1.15, 1.7, 'arch');
-    win(g, P, -W / 2 - .02, yLo, z, -Math.PI / 2, 1.15, 1.7, 'arch');
-    win(g, P, W / 2 + .02, yHi, z, Math.PI / 2, 1.15, 1.3, 'arch');
-    win(g, P, -W / 2 - .02, yHi, z, -Math.PI / 2, 1.15, 1.3, 'arch');
-  });
-  /* 기둥 여섯 — 도서관은 신전 문법 */
-  const PZ = D / 2 + 1.35, COL = H1 + H2 * .4;
-  [-2.6, -1.56, -.52, .52, 1.56, 2.6].forEach((x) => column(g, P, x, Y + .42, PZ, COL, .18));
-  box(g, 6.4, .46, 1.5, .08, M(P.trim), 0, Y + .53 + COL + .33, PZ - .05);
-  prism(g, 6.6, 1.35, 1.3, M(P.roof, .6), 0, Y + .53 + COL + .56, PZ - .06, .08);
-  prism(g, 5.6, .95, .2, M(P.trim, .55), 0, Y + .53 + COL + .7, PZ + .6, .04);
-  /* 박공 안 책 문양 — 펼친 책 두 장 */
-  [-1, 1].forEach((s) => {
-    const b = box(g, .74, .12, .5, .04, M(P.roofDark, .5), s * .42,
-                  Y + .53 + COL + 1.0, PZ + .72);
-    b.rotation.z = -s * .28;
-  });
-  door(g, P, 0, Y + 1.35, D / 2 + .12, 2.3, 2.6);
-  steps(g, P, 0, Y + .78, D / 2 + .95, 4.0, 4);
-  /* 돔 */
-  const yT = Y + H1 + .36 + H2 + .38;
-  box(g, W + .54, .5, D + .54, .12, M(P.roof), 0, yT, 0);
-  box(g, W - .1, .34, D - .1, .1, M(P.roofDark, .7), 0, yT + .3, 0);
-  const R = 2.0;
-  cyl(g, R * 1.12, R * 1.2, .42, 28, M(P.trim, .6), 0, yT + .5, 0);
-  const dm = new THREE.Mesh(new THREE.SphereGeometry(R, 30, 18, 0, Math.PI * 2, 0, Math.PI / 2),
-    M(0xBFE9F2, .35));
-  dm.position.y = yT + .68; dm.scale.y = .86;
-  dm.castShadow = true; dm.receiveShadow = true; g.add(dm);
-  /* 돔에 살을 세로로 세우려다 **가시 여덟 개**가 됐습니다(회전 계산이
-     틀렸습니다). 가로 띠 두 줄이면 돔이 돔으로 읽히고, 계산할 것도 없습니다. */
-  [[.62, R * .80], [.30, R * .96]].forEach(([hy, rr]) => {
-    const t = new THREE.Mesh(new THREE.TorusGeometry(rr, .07, 10, 40), M(P.trim, .5));
-    t.position.y = yT + .68 + R * hy * .86; t.rotation.x = Math.PI / 2;
-    t.castShadow = true; g.add(t);
-  });
-  cyl(g, .3, .34, .34, 18, M(P.trim, .5), 0, yT + .68 + R * .86, 0);
-  cyl(g, .1, .1, .8, 10, M(0xD8DCE2, .35), 0, yT + 1.2 + R * .86, 0);
-  const fin = new THREE.Mesh(new THREE.SphereGeometry(.2, 14, 12), M(P.gold, .35));
-  fin.position.y = yT + 1.66 + R * .86; fin.castShadow = true; g.add(fin);
-  sign(g, '도서관', 0, yT + .06, D / 2 + .46, 3.2, .92, '#2C8C7E', '#FFFFFF');
-}
-
-/* ─────────────────────────────────────────────
-   ③ 기숙사 — 사는 집. 발코니 · 굴뚝 · 옥상 데크
-   ───────────────────────────────────────────── */
-function dorm(g) {
-  const P = C({ wall: 0xFFE7C6, wallLight: 0xFFF3E2, roof: 0xF2934F, roofDark: 0xD1762F,
-                deck: 0x7BC470 });
-  plate(g, P, 14.4);
-  [[-5.4, 4.4, .9], [5.4, 4.4, .9], [-5.6, -4.0, 1.05], [5.6, -4.0, 1.05]]
-    .forEach(([x, z, s]) => tree(g, P, x, z, s));
-  bush(g, P, -3.4, 5.0, 1); bush(g, P, 3.4, 5.0, 1);
-  const W = 8.2, D = 5.4, H1 = 2.7, H2 = 2.5, Y = .12;
-  box(g, W, H1, D, .12, M(P.wall), 0, Y + H1 / 2, 0);
-  box(g, W + .18, .3, D + .18, .08, M(P.trim), 0, Y + H1, 0);
-  box(g, W, H2, D, .12, M(P.wall), 0, Y + H1 + .3 + H2 / 2, 0);
-  box(g, W + .3, .4, D + .3, .1, M(P.trim), 0, Y + H1 + .3 + H2 + .13, 0);
-  const yLo = Y + H1 * .56, yHi = Y + H1 + .3 + H2 * .5;
-  /* 창이 많고 작습니다 — 방이 여럿이라는 뜻입니다 */
-  [-2.9, -1.45, 1.45, 2.9].forEach((x) => {
-    if (Math.abs(x) > 1.2) win(g, P, x, yLo, D / 2 + .02, 0, .92, 1.25);
-    win(g, P, x, yHi, D / 2 + .02, 0, .92, 1.25);
-    win(g, P, x, yHi, -D / 2 - .02, Math.PI, .92, 1.25);
-  });
-  [-1.4, 1.4].forEach((z) => {
-    win(g, P, W / 2 + .02, yLo, z, Math.PI / 2, .92, 1.25);
-    win(g, P, W / 2 + .02, yHi, z, Math.PI / 2, .92, 1.25);
-    win(g, P, -W / 2 - .02, yLo, z, -Math.PI / 2, .92, 1.25);
-    win(g, P, -W / 2 - .02, yHi, z, -Math.PI / 2, .92, 1.25);
-  });
-  /* 발코니 — 위층 창 아래 난간 */
-  [-2.9, 2.9].forEach((x) => {
-    box(g, 1.6, .16, .8, .06, M(P.trim), x, yHi - .78, D / 2 + .38);
-    box(g, 1.6, .5, .1, .04, M(P.wallLight), x, yHi - .52, D / 2 + .74);
-    [-.6, 0, .6].forEach((dx) => box(g, .08, .46, .1, .03, M(P.trim, .5), x + dx, yHi - .54, D / 2 + .74));
-  });
-  door(g, P, 0, Y + 1.2, D / 2 + .12, 1.9, 2.3);
-  box(g, 3.0, .2, 1.5, .07, M(P.roof, .6), 0, Y + 2.6, D / 2 + .7);   // 문 위 차양
-  steps(g, P, 0, Y + .72, D / 2 + 1.1, 3.0, 3);
-  const yT = Y + H1 + .3 + H2 + .34;
-  box(g, W + .48, .5, D + .48, .12, M(P.roof), 0, yT, 0);
-  box(g, W - .1, .34, D - .1, .1, M(P.roofDark, .7), 0, yT + .3, 0);
-  /* 옥상 데크 — 사는 집이라 옥상에 쓸 일이 있습니다 */
-  box(g, 3.6, .22, 3.0, .12, M(P.deck, .8), -1.8, yT + .48, .2);
-  [-3.2, -.4].forEach((x) => box(g, .12, .62, 3.0, .05, M(P.trim, .55), x, yT + .78, .2));
-  /* 굴뚝 */
-  box(g, .9, 1.6, .9, .1, M(0xD98F5C, .8), 2.6, yT + 1.0, -1.2);
-  box(g, 1.1, .26, 1.1, .06, M(P.trim, .7), 2.6, yT + 1.86, -1.2);
-  sign(g, '기숙사', 0, yT + .06, D / 2 + .42, 2.9, .88, '#D1762F', '#FFFFFF');
-}
-
-/* ─────────────────────────────────────────────
-   ④ 학생회관 — 볼일 보는 곳. 넓은 유리 정면 · 차양 · 게시판
-   ───────────────────────────────────────────── */
-function union(g) {
-  const P = C({ wall: 0xF2F6F0, wallLight: 0xFFFFFF, roof: 0x63C47C, roofDark: 0x43A05C });
-  plate(g, P, 14.8);
-  [[-5.6, 4.6, .9], [5.6, 4.6, .9], [-5.8, -4.2, 1.05], [5.8, -4.2, 1.05]]
-    .forEach(([x, z, s]) => tree(g, P, x, z, s));
-  const W = 9.0, D = 5.6, H1 = 3.2, H2 = 2.2, Y = .12;
-  box(g, W, H1, D, .12, M(P.wall), 0, Y + H1 / 2, 0);
-  box(g, W + .2, .32, D + .2, .08, M(P.trim), 0, Y + H1, 0);
-  box(g, W, H2, D, .12, M(P.wall), 0, Y + H1 + .32 + H2 / 2, 0);
-  box(g, W + .32, .42, D + .32, .1, M(P.trim), 0, Y + H1 + .32 + H2 + .14, 0);
-  /* 아래층은 통유리 — 창구가 늘어선 집입니다 */
-  [-3.1, -1.05, 1.05, 3.1].forEach((x) => {
-    win(g, P, x, Y + H1 * .5, D / 2 + .02, 0, 1.7, 2.0);
-  });
-  [-2.7, -.9, .9, 2.7].forEach((x) => {
-    win(g, P, x, Y + H1 + .32 + H2 * .48, D / 2 + .02, 0, 1.2, 1.2);
-    win(g, P, x, Y + H1 + .32 + H2 * .48, -D / 2 - .02, Math.PI, 1.2, 1.2);
-  });
-  [-1.5, 1.5].forEach((z) => {
-    win(g, P, W / 2 + .02, Y + H1 * .5, z, Math.PI / 2, 1.4, 1.8);
-    win(g, P, -W / 2 - .02, Y + H1 * .5, z, -Math.PI / 2, 1.4, 1.8);
-    win(g, P, W / 2 + .02, Y + H1 + .32 + H2 * .48, z, Math.PI / 2, 1.2, 1.2);
-    win(g, P, -W / 2 - .02, Y + H1 + .32 + H2 * .48, z, -Math.PI / 2, 1.2, 1.2);
-  });
-  /* 청록 차양 — 브랜드색이 벽에 닿는 자리 */
-  const aw = box(g, W - .6, .2, 1.7, .08, M(0x2DD4BF, .6), 0, Y + H1 - .3, D / 2 + .78);
-  aw.rotation.x = -.2;
-  [-3.6, 3.6].forEach((x) => cyl(g, .07, .07, 1.5, 8, M(P.trim, .5), x, Y + .9, D / 2 + 1.5));
-  door(g, P, 0, Y + 1.25, D / 2 + .12, 2.4, 2.4);
-  steps(g, P, 0, Y + .74, D / 2 + 1.05, 3.4, 3);
-  /* 게시판 — 학생회관다움 */
-  box(g, 1.9, 1.5, .18, .08, M(0x8E6238, .75), -3.5, Y + 1.5, D / 2 + .3);
-  box(g, 1.6, 1.2, .2, .05, M(0x4E7C52, .8), -3.5, Y + 1.52, D / 2 + .36);
-  [[-.4, .3], [.3, .32], [-.35, -.28], [.35, -.25]].forEach(([dx, dy]) =>
-    box(g, .42, .34, .22, .03, M(0xFFF6E6, .6), -3.5 + dx, Y + 1.52 + dy, D / 2 + .42));
-  const yT = Y + H1 + .32 + H2 + .36;
-  box(g, W + .5, .5, D + .5, .12, M(P.roof), 0, yT, 0);
-  box(g, W - .1, .34, D - .1, .1, M(P.roofDark, .7), 0, yT + .3, 0);
-  prism(g, 4.4, 1.5, D + .4, M(P.roof, .6), -1.4, yT + .3, 0);
-  sign(g, '학생회관', 0, yT + .06, D / 2 + .44, 3.5, .9, '#43A05C', '#FFFFFF');
-}
-
-/* ─────────────────────────────────────────────
-   ⑤ 미니게임관 — 노는 집. 둥근 창 · 전구 간판 · 지붕 위 주사위
-   ───────────────────────────────────────────── */
-function arcade(g) {
-  const P = C({ wall: 0xF6F0FA, wallLight: 0xFFFFFF, roof: 0x9B7BD4, roofDark: 0x7A58B8 });
-  plate(g, P, 14.4);
-  [[-5.4, 4.4, .9], [5.4, 4.4, .9], [-5.6, -4.0, 1.05], [5.6, -4.0, 1.05]]
-    .forEach(([x, z, s]) => tree(g, P, x, z, s));
-  const W = 8.4, D = 5.6, H1 = 3.4, Y = .12;
-  box(g, W, H1, D, .14, M(P.wall), 0, Y + H1 / 2, 0);
-  box(g, W + .3, .42, D + .3, .1, M(P.trim), 0, Y + H1 + .14, 0);
-  /* 둥근 창 — 여섯 중 여기만 동그랗습니다 */
-  [-2.9, -1.1, 1.1, 2.9].forEach((x) => {
-    if (Math.abs(x) > 1.5) win(g, P, x, Y + H1 * .62, D / 2 + .02, 0, 1.3, 1.3, 'round');
-  });
-  [-1.5, 1.5].forEach((z) => {
-    win(g, P, W / 2 + .02, Y + H1 * .62, z, Math.PI / 2, 1.3, 1.3, 'round');
-    win(g, P, -W / 2 - .02, Y + H1 * .62, z, -Math.PI / 2, 1.3, 1.3, 'round');
-  });
-  door(g, P, 0, Y + 1.3, D / 2 + .12, 2.4, 2.5);
-  steps(g, P, 0, Y + .78, D / 2 + 1.05, 3.4, 3);
-  /* 전구를 두른 간판 — 밤에 여기만 눈에 띕니다 */
-  const sg = sign(g, '미니게임', 0, Y + H1 - .5, D / 2 + .24, 4.2, 1.15, '#4A3478', '#FFE9A8');
-  for (let i = 0; i < 9; i++) {
-    const x = -1.9 + i * .475;
-    [-.62, .62].forEach((dy) => {
-      const b = cyl(sg, .075, .075, .1, 10, M(i % 2 ? 0xFFF3C4 : 0xFFD16B, .4, {
-        emissive: 0xFFCF6B, emissiveIntensity: .5 }), x, dy, .12);
-      b.rotation.x = Math.PI / 2; b.castShadow = false;
-    });
-  }
-  const yT = Y + H1 + .36;
-  box(g, W + .5, .5, D + .5, .12, M(P.roof), 0, yT, 0);
-  box(g, W - .1, .34, D - .1, .1, M(P.roofDark, .7), 0, yT + .3, 0);
-  /* 지붕 위 주사위 — 각진 것 하나. 나머지 다섯은 둥근 것을 이고 있습니다 */
-  {
-    const s = 1.15, ink = M(0x2A2036, .5);
-    const cube = box(g, s * 2, s * 2, s * 2, .28, M(0xF9F4E6, .5), 1.2, yT + .3 + s, 0);
-    cube.rotation.y = .5;
-    const pip = (dx, dy, dz, col) => {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(.14, 12, 10), col);
-      m.position.set(dx, dy, dz); cube.add(m);
-    };
-    [[-.5,s+.02,-.5],[.5,s+.02,.5],[0,s+.02,0],[-.5,s+.02,.5],[.5,s+.02,-.5]]
-      .forEach(([a,b,c2], i) => pip(a, b, c2, i === 2 ? M(0xD8442C, .45) : ink));
-    [[-.45,.45,s+.02],[.45,-.45,s+.02]].forEach(([a,b,c2]) => pip(a, b, c2, ink));
-    [[s+.02,.5,0],[s+.02,-.5,0],[s+.02,0,0]].forEach(([a,b,c2]) => pip(a, b, c2, ink));
-  }
-  /* 조이스틱 모양 장식 */
-  cyl(g, .13, .16, 1.1, 10, M(P.trim, .5), -2.8, yT + .84, 1.0);
-  const knob = new THREE.Mesh(new THREE.SphereGeometry(.34, 16, 12), M(0xE8483C, .4));
-  knob.position.set(-2.8, yT + 1.5, 1.0); knob.castShadow = true; g.add(knob);
-}
-
-/* ─────────────────────────────────────────────
-   ⑥ 동아리 상점 — 장사하는 집. 줄무늬 차양 · 진열창 · 매대
-   ───────────────────────────────────────────── */
-function shop(g) {
-  const P = C({ wall: 0xFFEFE2, wallLight: 0xFFF8F0, roof: 0xE8735C, roofDark: 0xC4553F });
-  plate(g, P, 14.0);
-  [[-5.2, 4.2, .9], [5.2, 4.2, .9], [-5.4, -3.8, 1.0], [5.4, -3.8, 1.0]]
-    .forEach(([x, z, s]) => tree(g, P, x, z, s));
-  const W = 8.0, D = 5.2, H1 = 3.1, Y = .12;
-  box(g, W, H1, D, .14, M(P.wall), 0, Y + H1 / 2, 0);
-  /* 벽돌 띠 — 장사하는 집이라 결이 따뜻해야 합니다 */
-  for (let i = 0; i < 4; i++)
-    box(g, W + .04, .1, D + .04, .04, M(0xE2C4AE, .8), 0, Y + .5 + i * .34, 0);
-  box(g, W + .3, .42, D + .3, .1, M(P.trim), 0, Y + H1 + .14, 0);
-  /* 진열창 셋 — 크고 낮습니다. 물건이 보여야 하니까요 */
-  [-2.5, 2.5].forEach((x) => win(g, P, x, Y + H1 * .5, D / 2 + .02, 0, 2.0, 2.0));
-  [-1.3, 1.3].forEach((z) => {
-    win(g, P, W / 2 + .02, Y + H1 * .55, z, Math.PI / 2, 1.5, 1.7);
-    win(g, P, -W / 2 - .02, Y + H1 * .55, z, -Math.PI / 2, 1.5, 1.7);
-  });
-  door(g, P, 0, Y + 1.25, D / 2 + .12, 2.0, 2.4);
-  steps(g, P, 0, Y + .74, D / 2 + 1.0, 3.0, 2);
-  /* 줄무늬 차양 — 가게의 표시 */
-  [-2.5, 0, 2.5].forEach((x) => {
-    const wdt = x === 0 ? 2.6 : 2.4;
-    for (let i = 0; i < 6; i++) {
-      const sw = wdt / 6;
-      const st = box(g, sw, .16, 1.5, .06, M(i % 2 ? 0xE8483C : 0xFFF6E6, .62),
-                     x - wdt / 2 + sw * (i + .5), Y + H1 - .32, D / 2 + .82);
-      st.rotation.x = -.24;
-    }
-    box(g, wdt + .1, .2, .24, .06, M(P.roofDark, .6), x, Y + H1 - .62, D / 2 + 1.52);
-  });
-  /* 매대 — 문 옆 상자 셋 */
-  [[-3.2, .0], [-3.2, .9]].forEach(([x, dz], i) => {
-    box(g, 1.3, .7, 1.0, .08, M(0xC08E58, .75), x, Y + .45, D / 2 + 1.0 + dz);
-    [0xE8483C, 0xF2B33C, 0x63C47C].forEach((col, k) => {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(.19, 14, 12), M(col, .55));
-      b.position.set(x - .35 + k * .35, Y + .92, D / 2 + 1.0 + dz);
-      b.castShadow = true; g.add(b);
-    });
-  });
-  const yT = Y + H1 + .36;
-  box(g, W + .5, .5, D + .5, .12, M(P.roof), 0, yT, 0);
-  prism(g, W + .3, 1.9, D + .4, M(P.roof, .6), 0, yT + .28, 0);
-  /* 지붕 위 간판 */
-  sign(g, '동아리 상점', 0, yT + 2.5, .1, 4.6, 1.1, '#C4553F', '#FFF3DC');
-  [-1.6, 1.6].forEach((x) => box(g, .16, 1.0, .16, .05, M(P.roofDark, .6), x, yT + 1.9, .1));
-}
-
-/* ─────────────────────────────────────────────
-   그리기
-   ───────────────────────────────────────────── */
-const MAKE = { mainHall, library, dorm, union, arcade, shop };
-const which = new URLSearchParams(location.search).get('b') || 'mainHall';
 const g = new THREE.Group(); scene.add(g);
-MAKE[which](g);
+BLD[which](g);
+
+/* 채마다 크기가 다릅니다 — 고정 F 는 본관(폭 28)을 잘라 냈습니다.
+   경계상자에서 뽑고, 네 각이 같은 F 를 써야 앞뒤 비교가 됩니다. */
+const sz = new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3());
+const F = Math.max(sz.x, sz.z) * .62 + 1.6;
+const S = 1200;
 
 scene.add(new THREE.AmbientLight(0xFFFFFF, .78));
 scene.add(new THREE.HemisphereLight(0xE8F4FF, 0xF6E6C4, .95));
 const key = new THREE.DirectionalLight(0xFFFAF0, 2.1);
-key.position.set(-13, 20, 14); key.castShadow = true;
+key.position.set(-F * 1.3, F * 2.0, F * 1.4); key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
-key.shadow.camera.left = -15; key.shadow.camera.right = 15;
-key.shadow.camera.top = 15; key.shadow.camera.bottom = -15;
-key.shadow.camera.near = 1; key.shadow.camera.far = 62;
+key.shadow.camera.left = -F; key.shadow.camera.right = F;
+key.shadow.camera.top = F; key.shadow.camera.bottom = -F;
+key.shadow.camera.near = 1; key.shadow.camera.far = F * 8;
 key.shadow.bias = -.0004; key.shadow.radius = 4; key.shadow.normalBias = .02;
 scene.add(key);
 /* Object.assign 으로 position 을 넣으면 안 됩니다 — 읽기 전용 속성이라
    그 자리에서 전부 멈춥니다. .position.set 을 써야 합니다. */
-const fill = new THREE.DirectionalLight(0xCFE4F5, .75); fill.position.set(14, 8, -10); scene.add(fill);
-const rim = new THREE.DirectionalLight(0xFFFFFF, .5); rim.position.set(4, 6, -16); scene.add(rim);
+const fill = new THREE.DirectionalLight(0xCFE4F5, .75); fill.position.set(F, F * .8, -F); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xFFFFFF, .5); rim.position.set(F * .3, F * .6, -F * 1.5); scene.add(rim);
 
-const S = 1200, F = 10.2;
-const cam = new THREE.OrthographicCamera(-F, F, F, -F, .1, 200);
-cam.position.set(26, 22, 26); cam.lookAt(0, 3.4, 0);
+const cam = new THREE.OrthographicCamera(-F, F, F, -F, .1, F * 12);
+const A = ang * Math.PI / 2;
+cam.position.set(Math.sin(A + Math.PI / 4) * F * 3.6, F * 2.2, Math.cos(A + Math.PI / 4) * F * 3.6);
+cam.lookAt(0, sz.y * .42, 0);
 const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });
 renderer.setSize(S, S, false); renderer.setPixelRatio(1);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;

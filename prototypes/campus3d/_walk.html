@@ -1,0 +1,80 @@
+<!doctype html><meta charset="utf-8"><title>walk</title>
+<style>html,body{margin:0;overflow:hidden;background:#DDE7F2}
+iframe{border:0;display:block;width:100vw;height:100vh}
+#log{position:fixed;left:8px;bottom:8px;z-index:9;font:12px/1.5 monospace;
+     background:#0009;color:#fff;padding:4px 8px;border-radius:6px;white-space:pre}</style>
+<iframe id="f" src="./index.html?shot=1"></iframe>
+<div id="log">…</div>
+<script>
+/* 월드를 실제로 둘러보는 하네스 (검수용, 제품 아님).
+
+   index.html 은 전부 모듈 스코프라 콘솔에서 위치를 못 바꿉니다.
+   그래서 **지도를 눌러서** 이동합니다 — 사용자가 쓰는 경로 그대로입니다.
+
+   ?at=x,z        해당 월드 좌표로 이동(지도 클릭)
+   ?turn=n        시점을 n번 오른쪽으로 돌림(X 키)
+   ?do=view|wear|help|emo|chat   독의 단추 누르기
+
+   **고정 대기를 쓰지 않습니다.** headless 의 --virtual-time-budget 은
+   setTimeout 을 즉시 소진시키므로 `sleep(90초)` 가 실제로는 수십
+   밀리초입니다. 로딩이 끝날 때까지 폴링해야 가상시간이 실제 로딩을
+   기다립니다. 키 이벤트는 이 환경에서 무시되므로 클릭만 씁니다. */
+const q = new URLSearchParams(location.search);
+const log = document.getElementById('log');
+const f = document.getElementById('f');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/* index.html 의 CLAYMAP 과 같은 값이어야 합니다 */
+const CLAYMAP = { S: 620, cx: 310, cy: 306, sx: .82, sy: .48 };
+const clayXY = (x, z) => [CLAYMAP.cx + (x - z) * CLAYMAP.sx, CLAYMAP.cy + (x + z) * CLAYMAP.sy];
+
+function click(win, el, cx, cy) {
+  const r = el.getBoundingClientRect();
+  const x = cx == null ? r.left + r.width / 2 : cx;
+  const y = cy == null ? r.top + r.height / 2 : cy;
+  for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+    el.dispatchEvent(new win.MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true }));
+  }
+}
+
+f.addEventListener('load', async () => {
+  const win = f.contentWindow;
+  const D = win.document;
+  let n = 0;
+  while (n < 900) {
+    if (D.querySelector('canvas') && !/부르는 중/.test(D.body.innerText || '')) break;
+    /* 로딩 문구가 DOM 에 남는 판본이 있어 덮개의 투명도로도 봅니다 */
+    const cover = D.querySelector('#boot, #loading, .boot');
+    if (cover && getComputedStyle(cover).opacity === '0') break;
+    await sleep(120); n++;
+  }
+  log.textContent = 'polls ' + n;
+  await sleep(900);
+  for (const b of D.querySelectorAll('button')) {
+    if (/건너뛰기|닫기/.test(b.getAttribute('aria-label') || b.textContent || '')) click(win, b);
+  }
+  await sleep(500);
+  /* 시각을 못 박습니다 — 실제 시각을 따라가면 밤에 찍은 장이 어두워
+     낮에 찍은 장과 비교가 안 됩니다. */
+  const hr = q.get("hour"); if (hr) { try { win.__hour(+hr); } catch {} await sleep(400); }
+
+  const at = q.get('at');
+  if (at) {
+    const [wx, wz] = at.split(',').map(Number);
+    click(win, D.querySelector('#dock [data-do="map"]'));
+    await sleep(700);
+    const cv = D.querySelector('#map canvas');
+    const r = cv.getBoundingClientRect();
+    const [px, py] = clayXY(wx, wz);
+    click(win, cv, r.left + (px / CLAYMAP.S) * r.width, r.top + (py / CLAYMAP.S) * r.height);
+    log.textContent += ' at ' + at + ' px ' + px.toFixed(0) + ',' + py.toFixed(0);
+    await sleep(900);
+  }
+  const dock = q.get('do');
+  if (dock) { click(win, D.querySelector(`#dock [data-do="${dock}"]`)); await sleep(900); }
+
+  await sleep(900);
+  log.textContent += ' done';
+  document.title = 'walked';
+});
+</script>

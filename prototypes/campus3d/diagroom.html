@@ -91,4 +91,13 @@ for (const key of Object.keys(ROOMS)) {
   };
 }
 window.__out = out; window.__done = true;
+/* 화면에도 적습니다 — 콘솔을 못 여는 자리(headless --dump-dom)에서도
+   같은 표를 읽을 수 있어야 검사가 자동으로 돕니다. */
+const pre = document.createElement('pre');
+pre.id = 'out';
+pre.style.cssText = 'font:12px/1.6 ui-monospace,monospace;padding:16px';
+pre.textContent = Object.entries(out).map(([k, v]) =>
+  k.padEnd(9) + Object.entries(v).map(([a, b]) =>
+    `${a} ${Array.isArray(b) ? b.join(' / ') : b}`).join('   ')).join('\n');
+document.body.append(pre);
 </script>

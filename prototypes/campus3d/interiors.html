@@ -37,9 +37,13 @@ scene.add(key);
 const fill = new THREE.DirectionalLight(0xCFE4F5, .62); fill.position.set(12, 8, 4); scene.add(fill);
 const warm = new THREE.PointLight(0xFFD9A0, .55, 30); warm.position.set(0, 3.2, 1); scene.add(warm);
 
-const S = 1600, F = 13.6;
+/* 방마다 크기가 달라 고정 F 는 도서관(48×34)을 잘라 냅니다 —
+   방 치수에서 F 를 뽑아 어떤 방이든 통째로 들어오게 합니다. */
+const dim = IN[which] || { w: 26, d: 18 };
+const S = 1600, F = Math.max(dim.w, dim.d) * .62 + 3;
 const cam = new THREE.OrthographicCamera(-F, F, F * .78, -F * .78, .1, 200);
-cam.position.set(20, 17, 20); cam.lookAt(0, 1.1, -.2);
+const A = (+(new URLSearchParams(location.search).get('a') || 0) % 4) * Math.PI / 2;
+cam.position.set(Math.sin(A + Math.PI/4)*F*2.12, F*1.28, Math.cos(A + Math.PI/4)*F*2.12); cam.lookAt(0, 1.1, -.2);
 const r = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });
 r.setSize(S, Math.round(S * .78), false); r.setPixelRatio(1);
 r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;

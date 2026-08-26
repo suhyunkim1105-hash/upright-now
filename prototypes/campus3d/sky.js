@@ -67,10 +67,17 @@ export function createSky(THREE, ctx) {
      굽기(bake)가 지오메트리는 합쳐도 **재질은 그대로 둡니다.** 그래서
      재질만 붙잡아 두면 밤에 창 전체가 한 번에 켜집니다. 색으로 고릅니다 —
      bld.js 의 유리색과 실내 창의 하늘색이 그것입니다. */
+  /* ⚠ 이 목록은 **색으로** 창을 찾습니다. 창 색을 바꾸면 여기도 같이
+     고쳐야 하고, 안 고치면 아무 에러 없이 밤에 불만 안 켜집니다.
+     실제로 그렇게 되어 있었습니다 — 아래 0xFFF8EA·0xFFE8C0·0xE8F4FF 에
+     "건물 창(bld.js)" 이라고 적혀 있는데, bld.js 의 BASE 는 언제부턴가
+     glass 0x4E8CA8 · glassLit 0x74B5CE 입니다. 그래서 캠퍼스 여섯 채의
+     창이 **한 장도 안 켜졌고**, 밤 캠퍼스가 폐교로 보였습니다. */
   const GLASS_HEX = new Set([
     0x9EDCEB, 0xBFEAF5, 0xCFEFFA, 0xBFE4F2, 0xD8F2FA, 0xA9DDF2, 0x9FD8EE,
     0xFFF2CE,                                     // 가로등 유리(campus.js lampPost)
-    0xFFF8EA, 0xFFE8C0, 0xE8F4FF,                 // 건물 창(bld.js)
+    0xFFF8EA, 0xFFE8C0, 0xE8F4FF,                 // 옛 건물 창 — 남겨 둡니다
+    0x4E8CA8, 0x74B5CE,                           // 건물 창(bld.js BASE.glass · glassLit)
   ]);
   function collect(root) {
     if (!root) return;

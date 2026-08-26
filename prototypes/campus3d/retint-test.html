@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>아틀라스 재도색 시험</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #BFE4F2; overflow: hidden;
+    font: 13px/1.5 system-ui, sans-serif; color: #17201E; }
+  canvas { display: block; }
+  #hud { position: fixed; left: 14px; top: 14px; padding: 12px 15px; border-radius: 12px;
+    background: rgba(255,255,255,.88); backdrop-filter: blur(10px);
+    box-shadow: 0 8px 26px -12px rgba(0,0,0,.4); max-width: 300px; }
+  #hud b { font-size: 14px; }
+  #hud p { margin: 6px 0 0; color: #55605D; }
+  #hud .k { font-family: ui-monospace, monospace; font-size: 11.5px; color: #0D7769; }
+  .tag { position: fixed; bottom: 16px; padding: 7px 14px; border-radius: 999px;
+    background: rgba(18,26,24,.84); color: #fff; font-weight: 600; }
+  #tagL { left: 24%; } #tagR { right: 24%; }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "./vendor/three.module.min.js",
+  "three/examples/jsm/postprocessing/Pass.js": "./vendor/three-addons/Pass.js",
+  "postprocessing": "./vendor/postprocessing.esm.js",
+  "n8ao": "./vendor/n8ao.esm.js"
+} }
+</script>
+</head>
+<body>
+<div id="hud"><b>아틀라스 재도색 시험</b><p id="msg">불러오는 중…</p></div>
+<span class="tag" id="tagL">원본</span>
+<span class="tag" id="tagR">재도색</span>
+
+<script type="module">
+/* 같은 모델을 왼쪽엔 원본, 오른쪽엔 재도색해서 나란히 놓습니다.
+   나란히 놓지 않으면 "이 정도면 됐나" 를 판단할 기준이 없습니다. */
+import * as THREE from 'three';
+import { GLTFLoader } from './vendor/ext/GLTFLoader.js';
+import { retintMaterial } from './retint.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xBFE4F2);
+scene.fog = new THREE.FogExp2(0xBFE4F2, .0055);
+
+const cam = new THREE.PerspectiveCamera(42, innerWidth / innerHeight, .25, 400);
+cam.position.set(0, 15, 34);
+cam.lookAt(0, 3, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.06;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+/* 월드와 같은 조명이라야 비교가 됩니다 — 여기만 밝으면 실제로 넣었을 때
+   달라 보입니다. */
+scene.add(new THREE.AmbientLight(0xFFFFFF, .52));
+scene.add(new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, 1.08));
+const sun = new THREE.DirectionalLight(0xFFF6E4, 1.95);
+sun.position.set(-26, 40, 20); sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -30; sun.shadow.camera.right = 30;
+sun.shadow.camera.top = 30; sun.shadow.camera.bottom = -30;
+sun.shadow.camera.near = 1; sun.shadow.camera.far = 120;
+sun.shadow.normalBias = .12;
+scene.add(sun, sun.target);
+const rim = new THREE.DirectionalLight(0xFFE9C9, .40);
+rim.position.set(26, 14, -34);
+scene.add(rim);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200),
+  new THREE.MeshStandardMaterial({ color: 0x6FC85E, roughness: .9 }));
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+/* 가운데 선 — 어느 쪽이 어느 쪽인지 */
+const line = new THREE.Mesh(new THREE.PlaneGeometry(.35, 200),
+  new THREE.MeshStandardMaterial({ color: 0xF4EEDF, roughness: .85 }));
+line.rotation.x = -Math.PI / 2; line.position.y = .01;
+scene.add(line);
+
+/* 우리 월드에서 쓸 후보들 */
+const PICKS = [
+  ['nat-tree.glb',          6.5],
+  ['nat-pine.glb',          7.2],
+  ['nat-bush.glb',          1.8],
+  ['park-bench.glb',        1.3],
+  ['bit-streetlight.glb',   4.6],
+  ['car-car.glb',           1.9],
+  ['sign-wooden-sign.glb',  2.4],
+  ['nat-rock-medium.glb',   1.6],
+];
+
+const loader = new GLTFLoader();
+const msg = document.getElementById('msg');
+
+function fit(obj, h) {
+  const bb = new THREE.Box3().setFromObject(obj);
+  const sz = new THREE.Vector3(); bb.getSize(sz);
+  const k = h / Math.max(sz.y, .001);
+  obj.scale.setScalar(k);
+  const bb2 = new THREE.Box3().setFromObject(obj);
+  obj.position.y -= bb2.min.y;
+}
+
+let loaded = 0, colors = 0, withTex = 0;
+const gap = 7;
+PICKS.forEach(([file, h], i) => {
+  const z = (i - (PICKS.length - 1) / 2) * gap;
+  loader.load('./assets/kit/' + file, (gltf) => {
+    for (const side of [-1, 1]) {
+      const o = gltf.scene.clone(true);
+      /* 재질도 복제해야 한쪽만 칠할 수 있습니다 — 안 하면 둘이 같은
+         재질을 가리켜 왼쪽까지 같이 바뀝니다. */
+      o.traverse((m) => {
+        if (!m.isMesh) return;
+        m.material = Array.isArray(m.material) ? m.material.map((x) => x.clone()) : m.material.clone();
+        m.castShadow = true; m.receiveShadow = true;
+        if (side > 0) {
+          const list = Array.isArray(m.material) ? m.material : [m.material];
+          list.forEach((mm) => { if (mm.map) withTex++; retintMaterial(mm); if (mm.map && mm.map.userData.colors) colors = Math.max(colors, mm.map.userData.colors); });
+        }
+      });
+      const wrap = new THREE.Group();
+      wrap.add(o);
+      fit(o, h);
+      wrap.position.set(side * 6, 0, z);
+      scene.add(wrap);
+    }
+    loaded++;
+    msg.innerHTML = '모델 ' + loaded + '/' + PICKS.length + ' · 아틀라스 색 수 <span class="k">'
+      + colors + '</span><br>텍스처 쓰는 재질 <span class="k">' + withTex + '</span>개'
+      + '<br><br>채도 상한 <span class="k">.52</span> · 명도 <span class="k">.30~.93</span>'
+      + '<br>색상은 안 옮깁니다 — 옮기면 나뭇잎이 청록이 됩니다.';
+  }, undefined, () => { loaded++; });
+});
+
+addEventListener('resize', () => {
+  cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+let t = 0;
+function tick() {
+  requestAnimationFrame(tick);
+  t += .0022;
+  /* 천천히 돌며 봅니다 — 한 각도만 보면 판단이 틀립니다 */
+  cam.position.set(Math.sin(t) * 8, 15, 36);
+  cam.lookAt(0, 3.5, 0);
+  renderer.render(scene, cam);
+}
+tick();
+</script>
+</body>
+</html>

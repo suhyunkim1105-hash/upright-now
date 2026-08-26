@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Deskfit</title>
+<title>기린캠퍼스 3D</title>
 <link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
 <style>
   /* ══════════════════════════════════════════════════════════
@@ -17,14 +17,14 @@
      아래 가운데에 한 줄(독)로 모았습니다. 설정은 전부 창 안으로 넣었습니다.
      ══════════════════════════════════════════════════════════ */
   :root{
-    --gl:rgba(19,23,30,.66); --gl2:rgba(26,31,40,.86); --gl3:rgba(255,255,255,.10);
-    --ln:rgba(255,255,255,.14); --ln2:rgba(255,255,255,.07);
-    --tx:#F3F6F9; --tx2:rgba(243,246,249,.60); --tx3:rgba(243,246,249,.38);
-    --acc:#35E0C6; --acc2:#19B9A2; --warn:#F5C451; --bad:#FF7E6E; --ok:#74E294;
-    --paper:#FFFCF5; --ink:#222A33; --ink2:#5C6672; --pl:rgba(34,42,51,.12);
+    --gl:rgba(248,252,255,.88); --gl2:rgba(242,248,253,.96); --gl3:rgba(90,130,170,.09);
+    --ln:rgba(91,126,164,.16); --ln2:rgba(91,126,164,.10);
+    --tx:#26394D; --tx2:#65798E; --tx3:#93A4B5;
+    --acc:#50D9C5; --acc2:#20A997; --warn:#D89D29; --bad:#E76860; --ok:#35A76F;
+    --paper:#F8FBFE; --ink:#223447; --ink2:#607487; --pl:rgba(68,101,134,.13);
     --r:15px; --r2:11px;
-    --sh:0 12px 34px rgba(6,10,17,.34), 0 1px 0 rgba(255,255,255,.09) inset;
-    --shp:0 24px 60px rgba(6,10,17,.30), 0 2px 8px rgba(6,10,17,.14);
+    --sh:0 10px 26px rgba(62,91,122,.14), inset 0 1.5px 0 rgba(255,255,255,.98);
+    --shp:0 24px 58px rgba(56,82,112,.20), inset 0 2px 0 rgba(255,255,255,.98);
     --ff:"Wanted Sans Variable","Wanted Sans","Pretendard","Apple SD Gothic Neo",sans-serif;
   }
   *{box-sizing:border-box}
@@ -40,13 +40,13 @@
   html,body{margin:0;height:100%;overflow:hidden;background:#BFE4F2;color:var(--tx);
     font-family:var(--ff);-webkit-user-select:none;user-select:none;touch-action:none;
     -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-  canvas#cv{display:block;width:100%;height:100%}
+  canvas#cv{display:block;width:100%;height:100%;filter:saturate(1.16) brightness(1.055) contrast(1.02)}
   .hud{position:fixed;inset:0;pointer-events:none;z-index:2}
 
   /* 유리 — 이 화면의 유일한 재질입니다 */
-  .g{background:var(--gl);border:1px solid var(--ln);border-radius:var(--r);
-    box-shadow:var(--sh);backdrop-filter:blur(16px) saturate(150%);
-    -webkit-backdrop-filter:blur(16px) saturate(150%)}
+  .g{background:var(--gl);border:1px solid var(--ln);border-radius:18px;
+    box-shadow:var(--sh);backdrop-filter:blur(18px) saturate(125%);
+    -webkit-backdrop-filter:blur(18px) saturate(125%)}
   kbd{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:19px;
     padding:0 5px;background:rgba(255,255,255,.13);border:1px solid var(--ln);
     border-bottom-width:2px;border-radius:6px;font:700 10.5px/1 var(--ff);color:var(--tx);
@@ -63,6 +63,16 @@
 
   /* ── 오른쪽 위 · 한 기둥 ── */
   #stack{position:absolute;right:16px;top:16px;width:176px;display:flex;flex-direction:column;gap:10px}
+  #myquick{order:-1;width:100%;min-height:48px;border:1px solid rgba(76,112,151,.14);border-radius:18px;
+    padding:7px 10px;pointer-events:auto;cursor:pointer;background:rgba(248,252,255,.96);color:var(--tx);
+    display:grid;grid-template-columns:34px 1fr;grid-template-rows:18px 14px;column-gap:9px;text-align:left;
+    box-shadow:0 9px 24px rgba(56,85,118,.14),inset 0 2px 0 #fff;transition:transform .14s,box-shadow .14s;z-index:5}
+  #myquick .my-mark{grid-row:1/3;width:34px;height:34px;display:grid;place-items:center;border-radius:12px;
+    background:linear-gradient(145deg,#B9EFE6,#8CDBED);color:#156C72;font:950 11px/1 var(--ff);letter-spacing:.02em;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 4px 10px rgba(64,137,150,.18)}
+  #myquick b{font:850 11.5px/18px var(--ff);letter-spacing:-.01em}#myquick small{font:700 9px/13px var(--ff);color:var(--tx3)}
+  #myquick:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(56,85,118,.18),inset 0 2px 0 #fff}
+  #myquick.on{background:#DDF7F2;color:#116F65;box-shadow:inset 0 3px 8px rgba(42,132,120,.13)}
   .ghead{display:flex;align-items:center;gap:6px;padding:0 2px 7px;font-size:10.5px;
     font-weight:800;color:var(--tx2);letter-spacing:.02em}
   .ghead .sp{margin-left:auto;font-weight:700;color:var(--tx3)}
@@ -72,8 +82,8 @@
   #mini .n{position:absolute;right:6px;top:5px;font:800 9.5px/1 var(--ff);color:rgba(255,255,255,.9);
     text-shadow:0 1px 2px rgba(0,0,0,.45)}
   #pip{padding:9px 9px 8px}
-  #pip .fr{position:relative;border-radius:var(--r2);overflow:hidden;height:120px;
-    background:radial-gradient(120% 100% at 50% 0%,#3B4A5C 0%,#222B37 100%)}
+  #pip .fr{position:relative;border-radius:14px;overflow:hidden;height:120px;
+    background:radial-gradient(120% 100% at 50% 0%,#EDF7FC 0%,#DDEAF5 100%)}
   #pip canvas{display:block;width:100%;height:100%}
   /* 카메라가 실제로 켜져 있다는 것을 눈으로 보여 줍니다 — 캐릭터만 있으면
      "판정하는 척" 으로 보입니다. 작게, 구석에. */
@@ -165,7 +175,7 @@
 
   /* ── 위 가운데 · 나 ── */
   #idbar{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:flex;
-    align-items:center;gap:9px;padding:7px 14px;font-size:12px}
+    align-items:center;gap:9px;padding:8px 15px;font-size:12px;background:rgba(250,253,255,.92)}
   #idbar b{font-weight:800;font-size:12.5px}
   #idbar i{width:1px;height:12px;background:var(--ln)}
   #idbar .sc{color:var(--tx2);font-weight:600}
@@ -185,9 +195,15 @@
 
   /* ── 이름표 · 말풍선 ── */
   #tags{position:absolute;inset:0;overflow:hidden}
-  .tag3{position:absolute;transform:translate(-50%,-100%);padding:3px 9px;border-radius:99px;
-    background:var(--gl2);border:1px solid var(--ln);font:700 10.5px/1.4 var(--ff);color:var(--tx);
-    white-space:nowrap;box-shadow:0 3px 10px rgba(6,10,17,.28);backdrop-filter:blur(8px)}
+  .tag3{position:absolute;transform:translate(-50%,-100%);padding:4px 10px;border-radius:99px;
+    background:rgba(249,252,255,.92);border:1px solid rgba(81,116,151,.14);font:750 10.5px/1.4 var(--ff);color:var(--tx);
+    white-space:nowrap;box-shadow:0 5px 14px rgba(55,81,110,.13),inset 0 1.5px 0 #fff;backdrop-filter:blur(10px)}
+  .tag3.peer{min-width:116px;border-radius:15px;padding:7px 9px 7px 10px;text-align:left;line-height:1.2;white-space:normal}
+  .tag3.peer .peer-top{display:flex;align-items:center;gap:7px}
+  .tag3.peer b{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;color:#2C4055}
+  .tag3.peer small{display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8.5px;color:#7D91A5;font-weight:700}
+  .tag3.peer em{margin-left:auto;flex:none;padding:3px 6px;border-radius:8px;background:#DDF5F0;
+    font:850 8.5px/1 var(--ff);color:#258478;font-style:normal}
   .say3{position:absolute;transform:translate(-50%,-100%);padding:6px 11px;border-radius:12px;
     background:var(--paper);color:var(--ink);font:600 12px/1.45 var(--ff);
     max-width:180px;white-space:normal;box-shadow:0 6px 18px rgba(6,10,17,.26)}
@@ -239,17 +255,17 @@
 
   /* ── 종이 창 ── */
   #panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
-    width:min(470px,92vw);max-height:84vh;overflow:auto;padding:0;opacity:0;
+    width:min(470px,92vw);max-height:84vh;overflow:hidden;padding:0;opacity:0;
     pointer-events:none;transition:.18s cubic-bezier(.2,.9,.3,1);background:var(--paper);
-    color:var(--ink);border:0;border-radius:20px;box-shadow:var(--shp)}
+    color:var(--ink);border:0;border-radius:20px;box-shadow:var(--shp);display:flex;flex-direction:column}
   #panel.on{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
-  #panel .ph{position:sticky;top:0;background:var(--paper);padding:18px 22px 12px;
-    border-bottom:1px solid var(--pl);border-radius:20px 20px 0 0;z-index:1}
+  #panel .ph{position:relative;flex:none;background:var(--paper);padding:18px 22px 12px;
+    border-bottom:1px solid var(--pl);border-radius:20px 20px 0 0;z-index:2}
   #panel .tag{display:inline-block;padding:3px 9px;border-radius:99px;background:var(--ink);
     color:var(--paper);font-size:10px;font-weight:800;letter-spacing:.03em}
   #panel h3{margin:9px 0 0;font-size:21px;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
-  #panel .bd{padding:16px 22px 6px}
-  #panel .x{padding:10px 22px 18px;font-size:10.5px;color:var(--ink2)}
+  #panel .bd{padding:16px 22px 6px;overflow:auto;min-height:0;overscroll-behavior:contain}
+  #panel .x{padding:10px 22px 18px;font-size:10.5px;color:var(--ink2);flex:none}
   #panel .x kbd{background:rgba(34,42,51,.08);border-color:var(--pl);color:var(--ink2)}
   #panel p{margin:0 0 6px;font-size:13.5px;line-height:1.65;color:#3A434E}
   #panel .note{margin-top:12px;font-size:11.5px;color:var(--ink2);line-height:1.6}
@@ -344,6 +360,17 @@
       inset 0 3px 0 rgba(255,255,255,.95), inset 0 -5px 0 rgba(86,110,146,.13);
     border-radius:30px}
   #panel .ph{background:transparent;border-bottom:0;padding:22px 26px 6px}
+  #panel.wide{width:min(920px,94vw)}
+  #panel.shop{width:min(1040px,95vw);--store:var(--mint);--storeInk:var(--mintD)}
+  #panel.shop[data-store="wear"]{--store:#F6D5CF;--storeInk:#A6473D}
+  #panel.shop[data-store="furn"]{--store:#E6DDF2;--storeInk:#665087}
+  #panel.shop[data-store="egg"]{--store:#DCECEF;--storeInk:#376B78}
+  #panel.compact{width:min(420px,92vw)}
+  #panel .pclose{position:absolute;right:22px;top:20px;width:44px;height:44px;border:0;
+    border-radius:15px;background:var(--clay2);box-shadow:var(--clayUp2);color:var(--cInk2);
+    font:500 30px/1 var(--ff);cursor:pointer;z-index:3;transition:transform .12s,box-shadow .12s}
+  #panel .pclose:hover{transform:translateY(-2px)}
+  #panel .pclose:active{transform:none;box-shadow:var(--clayIn)}
   #panel .bd{padding:10px 26px 8px}
   #panel .tag{background:var(--clay3);color:var(--cInk3);box-shadow:var(--clayIn);
     padding:5px 12px;font-size:10.5px;letter-spacing:.04em}
@@ -421,6 +448,84 @@
     box-shadow:var(--clayIn);border-radius:14px;padding:11px 13px;color:var(--cInk);
     font:700 14px var(--ff);outline:none}
   #panel input.nick:focus,#panel select:focus{box-shadow:var(--clayIn),0 0 0 3px rgba(18,134,122,.4)}
+  a.rw{text-decoration:none}
+  .board-tabs{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 14px}
+  .board-tabs button,.shop-tabs button{border:0;border-radius:15px;background:var(--clay2);
+    box-shadow:var(--clayUp2);padding:12px 14px;color:var(--cInk3);font:800 13px var(--ff);
+    cursor:pointer;text-align:left}
+  .board-tabs button{text-align:center;font-size:14px}
+  .board-tabs button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .shop-tabs button.on{background:var(--store);color:var(--storeInk);box-shadow:var(--clayIn)}
+  #panel.shop .tag{background:var(--store);color:var(--storeInk)}
+  .board-head{display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:12px 14px;
+    border-radius:17px;background:var(--clay2);box-shadow:var(--clayIn)}
+  .board-head b{font-size:15px;color:var(--cInk)}
+  .board-head span{font-size:11px;font-weight:700;color:var(--cInk3)}
+  .board-view ul.feed{max-height:54vh;overflow:auto;padding:2px 7px 8px 2px}
+  .board-view ul.feed li{padding:14px 16px;align-items:center}
+  .board-view ul.feed li b{min-width:82px}
+  .board-view ul.feed li span{flex:1;min-width:0;font-weight:750}
+  .board-view ul.feed a{color:var(--cInk);text-decoration:none}
+  .board-view ul.feed a:hover{color:var(--mintD)}
+  .shop-layout{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:start}
+  .shop-tabs{display:flex;flex-direction:column;gap:7px;position:sticky;top:0;z-index:1;
+    padding:2px 0 12px;background:linear-gradient(180deg,var(--clay) 0 88%,rgba(246,249,253,0))}
+  .shop-main{min-width:0}
+  .shop-main .coinbar{margin-bottom:12px}
+  .shop-main .cg{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px}
+  .shop-main .cc{min-height:158px}
+  .shop-main .cc .th{border-radius:16px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
+  .shop-main .cc canvas{display:block;width:100%;height:100%}
+  .shop-main .cc .wear-art{display:block;width:100%;height:100%;filter:drop-shadow(0 5px 5px rgba(58,80,112,.16))}
+  .wear-product{position:relative;isolation:isolate;background:
+    radial-gradient(circle at 34% 24%,rgba(255,255,255,.96),transparent 34%),
+    linear-gradient(145deg,#F6FBFF,#DCE8F4)!important}
+  .wear-product::before{content:'';position:absolute;left:18%;right:18%;bottom:8px;height:16px;border-radius:50%;
+    background:rgba(73,96,128,.16);filter:blur(5px);z-index:-1}
+  .wear-chip{position:absolute;left:8px;top:8px;z-index:2;padding:4px 7px;border-radius:99px;
+    background:rgba(250,253,255,.9);box-shadow:var(--clayUp2);color:#6C7E93;font:900 8px/1 var(--ff);font-style:normal;letter-spacing:.08em}
+  .school-pick button{position:relative;padding-left:25px}
+  .school-pick button::before{content:'';position:absolute;left:9px;top:50%;width:9px;height:9px;border-radius:50%;
+    background:var(--school);transform:translateY(-50%);box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
+  .wear-gallery{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px;align-items:start}
+  .wear-preview-card{position:sticky;top:0;display:flex;flex-direction:column;gap:7px;padding:12px;
+    border-radius:22px;background:var(--clay2);box-shadow:var(--clay);color:var(--cInk)}
+  .wear-preview-stage{height:260px;border-radius:17px;overflow:hidden;background:var(--clay3);box-shadow:var(--clayIn)}
+  .wear-preview-card>b{font-size:14px}.wear-preview-card>small{font-size:10.5px;line-height:1.45;color:var(--cInk3)}
+  .gift-reveal{margin:4px 0 16px;padding:18px;border-radius:22px;background:linear-gradient(145deg,#FFF0B8,#FBD6CE);
+    box-shadow:var(--clayUp);display:grid;place-items:center;text-align:center;animation:giftPop .45s cubic-bezier(.18,.9,.24,1.25)}
+  .gift-reveal span{font-size:48px;filter:drop-shadow(0 7px 5px rgba(70,58,30,.18))}
+  .gift-reveal b{font-size:19px;color:var(--cInk);margin-top:7px}.gift-reveal small{color:var(--cInk2);margin-top:4px}
+  @keyframes giftPop{from{opacity:0;transform:scale(.72) rotate(-3deg)}to{opacity:1;transform:none}}
+  .fame-wall{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin:8px 0 14px;
+    padding:26px;border:1px solid rgba(145,176,198,.24);border-radius:28px;background:linear-gradient(145deg,#EAF5FB,#F8FCFF 48%,#E6F2F0);
+    box-shadow:inset 6px 6px 16px rgba(138,166,187,.14),inset -7px -7px 18px rgba(255,255,255,.9),0 18px 34px -24px rgba(57,91,116,.34)}
+  .fame-frame{position:relative;grid-column:span 2;min-height:174px;padding:22px 12px 14px;display:flex;flex-direction:column;
+    align-items:center;text-align:center;border:1px solid rgba(138,166,187,.22);border-radius:22px;background:linear-gradient(145deg,#FFFFFF,#E9F2F8);
+    box-shadow:8px 9px 18px rgba(110,142,166,.18),-7px -7px 16px rgba(255,255,255,.86),inset 1px 1px 0 rgba(255,255,255,.9);color:var(--cInk)}
+  .fame-frame.top1{grid-column:3/span 2;grid-row:1;transform:translateY(-6px);min-height:206px;border-color:rgba(214,183,83,.55);background:linear-gradient(145deg,#FFFDF5,#F2F6F8);box-shadow:0 0 0 3px rgba(239,211,117,.35),0 15px 28px rgba(95,126,148,.20)}
+  .fame-frame.top2{grid-column:1/span 2;grid-row:1;margin-top:24px}
+  .fame-frame.top3{grid-column:5/span 2;grid-row:1;margin-top:24px}
+  .fame-frame.mine{outline:4px solid #2DD4BF;outline-offset:2px}
+  .fame-rank{position:absolute;left:8px;top:8px;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;
+    background:#F7E9AB;color:#75611A;box-shadow:3px 4px 8px rgba(120,105,56,.16),inset 1px 1px 0 rgba(255,255,255,.8);font:900 12px var(--ff)}
+  .fame-logo{width:62px;height:62px;display:grid;place-items:center;border-radius:50%;background:var(--logo);
+    border:5px solid rgba(255,255,255,.75);box-shadow:0 0 0 3px var(--logo);font:900 17px/1 var(--ff)}
+  .fame-school{font:900 13px/1.25 var(--ff);margin-top:13px}
+  .fame-school em{display:block;font:700 9.5px/1.4 var(--ff);color:#79879A;margin-top:5px}
+  .fame-frame strong{margin-top:auto;font:900 18px/1 var(--ff)}
+  .fame-frame strong small{font-size:9px;margin-left:2px;color:#79879A}
+  @media(max-width:760px){.fame-wall{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}.fame-frame,.fame-frame.top1,.fame-frame.top2,.fame-frame.top3{grid-column:span 1;grid-row:auto;margin-top:0;transform:none}}
+  @media(max-width:680px){
+    #panel.wide,#panel.shop{width:min(94vw,520px)}
+    #panel .pclose{right:14px;top:14px;width:40px;height:40px}
+    .shop-layout{display:block}
+    .shop-tabs{position:static;display:flex;flex-direction:row;overflow:auto;margin-bottom:13px;padding:2px 2px 7px;background:none}
+    .shop-tabs button{white-space:nowrap}
+    .shop-main .cg{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .wear-gallery{grid-template-columns:1fr}.wear-preview-card{position:static}.wear-preview-stage{height:220px}
+    .board-view ul.feed li{align-items:flex-start;flex-wrap:wrap}
+  }
   button.tt{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:13px;
     color:var(--cInk3)}
   button.tt.on{box-shadow:var(--clayIn);color:#fff}
@@ -432,12 +537,12 @@
 
   /* ── 지도 ── */
   #map{position:absolute;inset:0;display:none;place-items:center;
-    background:rgba(12,17,24,.62);backdrop-filter:blur(5px);pointer-events:auto}
+    background:rgba(75,111,132,.28);backdrop-filter:blur(7px);pointer-events:auto}
   #map.on{display:grid}
-  #map .box{padding:14px;border-radius:22px;background:var(--gl2);border:1px solid var(--ln);
-    box-shadow:var(--shp);backdrop-filter:blur(18px)}
-  #map canvas{display:block;border-radius:16px;width:min(620px,86vmin);height:min(620px,86vmin);
-    cursor:pointer}
+  #map .box{padding:16px;border-radius:28px;background:linear-gradient(145deg,rgba(248,253,255,.97),rgba(224,241,246,.97));border:1px solid rgba(133,174,194,.22);
+    box-shadow:16px 20px 44px rgba(54,91,116,.24),-8px -8px 24px rgba(255,255,255,.72),inset 2px 2px 0 rgba(255,255,255,.86);backdrop-filter:blur(18px)}
+  #map canvas{display:block;border:1px solid rgba(126,170,192,.22);border-radius:20px;width:min(620px,86vmin);height:min(620px,86vmin);
+    box-shadow:inset 4px 5px 12px rgba(87,133,155,.16),0 8px 18px rgba(72,111,133,.14);cursor:pointer}
   #map .cap{display:flex;align-items:center;gap:9px;margin:2px 6px 11px}
   #map .cap b{font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--tx)}
   #map .cap i{font-style:normal;font-size:11px;color:var(--tx2)}
@@ -513,58 +618,92 @@
      경우가 있었습니다(헤드리스 검사에서 재현). 말은 보이는 게 먼저입니다. */
   #chatlog b{font-weight:800;color:var(--acc);flex:none}
   #chatlog.sys div b{color:var(--warn)}
-  #chatin{display:none;margin-top:7px;pointer-events:auto}
+  #chatchannels{display:none;width:100%;gap:6px;pointer-events:auto}
+  #chatin.on #chatchannels{display:flex}
+  #chatchannels button{border:0;border-radius:99px;padding:7px 11px;background:rgba(19,23,30,.88);
+    color:#AAB4C2;font:800 10px/1 var(--ff);cursor:pointer}
+  #chatchannels button.on{background:#B7EBE1;color:#0D7168}
+  #chatin{display:none;margin-top:7px;pointer-events:auto;flex-wrap:wrap}
   #chatin.on{display:flex;gap:6px}
-  #chatin input{flex:1;border:1px solid var(--ln);border-radius:12px;padding:9px 12px;
+  #chatin input{flex:1;min-width:0;border:1px solid var(--ln);border-radius:12px;padding:9px 12px;
     font:600 13px var(--ff);background:var(--gl2);color:var(--tx);outline:none;
     backdrop-filter:blur(14px)}
   #chatin input::placeholder{color:var(--tx3)}
   #chatin input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(53,224,198,.16)}
 
-  /* ── 미니게임 ── */
+  /* ── 미니게임 — 네 부스와 같은 밝은 클레이 표면 ── */
   #game{position:fixed;inset:0;display:grid;place-items:center;z-index:12;
-    background:rgba(12,17,24,.66);backdrop-filter:blur(5px)}
-  #game .gbox{width:min(620px,94vw);padding:18px;position:relative;background:var(--paper);
-    color:var(--ink);border-radius:20px;box-shadow:var(--shp)}
-  #game .ghead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-  #game .ghead b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
-  #game .ghead span{display:block;font-size:11.5px;color:var(--ink2)}
+    --game:#B7EBE1;--gameInk:#12867A;background:rgba(80,111,139,.24);backdrop-filter:blur(10px)}
+  #game[data-tone="sky"]{--game:#CCE1F8;--gameInk:#2A66A6}
+  #game[data-tone="lilac"]{--game:#DCD8F6;--gameInk:#6355B0}
+  #game[data-tone="peach"]{--game:#FBD6CE;--gameInk:#B75844}
+  #game[data-tone="lemon"]{--game:#F2E7B4;--gameInk:#8A7620}
+  #game .gbox{width:min(700px,94vw);max-height:90vh;overflow:auto;padding:20px;position:relative;
+    background:var(--clay);color:var(--cInk);border-radius:30px;box-shadow:0 30px 70px -24px rgba(40,58,84,.46),
+    inset 0 3px 0 rgba(255,255,255,.96),inset 0 -5px 0 rgba(86,110,146,.13)}
+  #game .ghead{display:flex;align-items:center;gap:13px;margin-bottom:16px;padding:11px 12px;border-radius:22px;
+    background:var(--clay2);box-shadow:var(--clayUp2)}
+  #game .game-badge{width:48px;height:48px;display:grid;place-items:center;flex:none;border-radius:16px;
+    background:var(--game);box-shadow:var(--clayUp2);font:normal 25px/1 sans-serif}
+  #game .game-copy{min-width:0}
+  #game .game-copy small{display:block;margin-bottom:3px;color:var(--gameInk);font:900 8px/1 var(--ff);letter-spacing:.12em}
+  #game .ghead b{display:block;font-size:18px;font-weight:900;letter-spacing:-.025em;color:var(--cInk)}
+  #game .ghead span{display:block;font-size:11px;line-height:1.45;color:var(--cInk3)}
   #game .gstat{margin-left:auto;text-align:right}
-  #game .gstat em{display:block;font-style:normal;font-size:22px;font-weight:800;
-    font-variant-numeric:tabular-nums;color:var(--ink)}
-  #game .gstat i{font-style:normal;font-size:11px;color:var(--ink2)}
-  #game .gx{border:1.5px solid var(--pl);background:transparent;color:var(--ink2);border-radius:99px;
-    padding:7px 13px;font:700 11.5px/1 var(--ff);cursor:pointer}
-  #game .gx:hover{border-color:rgba(34,42,51,.3);color:var(--ink)}
-  #game .gbody{display:grid;gap:7px;place-items:center}
+  #game .gstat em{display:block;font-style:normal;font-size:23px;font-weight:900;
+    font-variant-numeric:tabular-nums;color:var(--gameInk)}
+  #game .gstat i{font-style:normal;font-size:10px;color:var(--cInk3)}
+  #game .gx{border:0;background:var(--clay);box-shadow:var(--clayUp2);color:var(--cInk2);border-radius:14px;
+    padding:10px 13px;font:800 10.5px/1 var(--ff);cursor:pointer;white-space:nowrap}
+  #game .gx:hover{transform:translateY(-1px)}
+  #game .gbody{display:grid;gap:9px;place-items:center;padding:14px;border-radius:22px;
+    background:linear-gradient(145deg,#F9FCFF,#E7EEF7);box-shadow:var(--clayIn)}
   #game .gbody.grid8{grid-template-columns:repeat(4,1fr)}
   #game .gbody.grid7{grid-template-columns:repeat(7,1fr)}
-  #game button.mc{width:100%;aspect-ratio:1;border:1.5px solid var(--pl);border-radius:13px;
-    background:rgba(34,42,51,.05);font-size:22px;cursor:pointer;display:grid;place-items:center;
+  #game button.mc{width:100%;aspect-ratio:1;border:0;border-radius:17px;
+    background:var(--clay2);box-shadow:var(--clayUp2);font-size:22px;cursor:pointer;display:grid;place-items:center;
     transition:.12s}
   #game .grid8 button.mc{font-size:26px}
-  #game button.mc.sel{outline:3px solid var(--ink);transform:scale(.94)}
-  #game button.mc.ok{opacity:.4}
-  #game canvas{border-radius:14px;max-width:100%}
+  #game button.mc.sel{outline:3px solid var(--gameInk);box-shadow:var(--clayIn);transform:scale(.94)}
+  #game button.mc.ok{opacity:.42;box-shadow:var(--clayIn)}
+  #game canvas{border-radius:18px;max-width:100%;box-shadow:var(--clayUp2);background:#F5FAFD}
   #game .gover{position:absolute;inset:0;display:none;place-content:center;text-align:center;gap:9px;
-    background:rgba(255,252,245,.96);border-radius:20px}
+    background:rgba(246,249,253,.97);border-radius:30px;box-shadow:var(--clayIn)}
   #game .gover.on{display:grid}
   #game .gover b{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
   #game .gover span{font-size:14px;color:var(--ink2)}
-  #game .gover button{border:0;border-radius:99px;padding:10px 20px;font:800 13px/1 var(--ff);
-    cursor:pointer;margin:0 4px;background:var(--ink);color:var(--paper)}
-  #game .gover .out{background:rgba(34,42,51,.08);color:var(--ink)}
+  #game .gover button{border:0;border-radius:99px;padding:11px 22px;font:800 13px/1 var(--ff);
+    cursor:pointer;margin:0 4px;background:var(--game);color:var(--gameInk);box-shadow:var(--clayUp2)}
+  #game .gover .out{background:var(--clay2);color:var(--cInk2)}
+  @media(max-width:620px){#game .ghead{align-items:flex-start;flex-wrap:wrap}#game .gstat{margin-left:0}.game-copy{flex:1}.ghead .gx{margin-left:auto}}
 
   /* ── 첫 화면 ── */
-  #load{position:fixed;inset:0;display:grid;place-items:center;align-content:center;gap:14px;
-    background:linear-gradient(180deg,#A9DDF2 0%,#CFEDF6 100%);color:#1E3340;
-    font-size:14.5px;font-weight:800;z-index:9;transition:.45s}
+  #load{position:fixed;inset:0;display:grid;place-items:center;background:
+    radial-gradient(circle at 20% 14%,rgba(255,255,255,.98) 0 8%,transparent 34%),
+    radial-gradient(circle at 82% 78%,rgba(191,238,231,.52),transparent 35%),
+    linear-gradient(145deg,#F6FBFF,#E9F6FB 52%,#E6F5F1);color:#2A4055;
+    font-size:14.5px;font-weight:800;z-index:9;transition:.45s;padding:24px}
   #load.gone{opacity:0;pointer-events:none}
-  #load i{display:block;font-style:normal;font-size:11.5px;color:rgba(30,51,64,.6);
-    margin-top:7px;text-align:center;font-weight:600}
-  #load .sp{width:34px;height:34px;border-radius:50%;border:3px solid rgba(30,51,64,.16);
-    border-top-color:#1E3340;animation:spin .8s linear infinite}
-  @keyframes spin{to{transform:rotate(360deg)}}
+  .load-card{width:min(500px,90vw);padding:28px 32px 26px;border:1px solid rgba(105,142,177,.13);border-radius:32px;
+    background:rgba(250,253,255,.88);box-shadow:0 24px 70px rgba(70,104,137,.16),inset 0 2px 0 #fff;text-align:center;backdrop-filter:blur(16px)}
+  .load-brand{display:flex;justify-content:center;align-items:center;gap:9px;font:950 26px/1 var(--ff);letter-spacing:-.04em}
+  .load-brand::before{content:'';width:12px;height:12px;border-radius:5px;background:linear-gradient(145deg,#57DCC7,#7BBFEF);box-shadow:0 4px 10px rgba(66,161,166,.24)}
+  .load-brand i{font:800 9px/1 var(--ff);letter-spacing:.08em;color:#6F879E;background:#E6EFF7;padding:6px 8px;border-radius:99px}
+  .load-pets{height:132px;display:flex;align-items:flex-end;justify-content:center;gap:3px;margin:18px 0 12px;overflow:visible}
+  .load-pets img{width:94px;height:126px;object-fit:contain;filter:drop-shadow(0 9px 7px rgba(65,86,112,.14));transform-origin:50% 100%;animation:loadWalk 1.35s ease-in-out infinite alternate}
+  .load-pets img:nth-child(2){animation-delay:-.35s}.load-pets img:nth-child(3){animation-delay:-.7s}.load-pets img:nth-child(4){animation-delay:-1.05s}
+  #load strong{display:block;font-size:15px;margin-top:8px;letter-spacing:-.015em}#load small{display:block;margin-top:6px;color:#8497AA;font-size:10.5px;font-weight:650}
+  .load-track{height:8px;border-radius:99px;background:#DDE8F2;box-shadow:inset 0 2px 5px rgba(67,90,118,.12);overflow:hidden;margin-top:20px}
+  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;background:linear-gradient(90deg,#51D8C4,#79BDEB);animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
+  /* 지도·감정표현·채팅·세션·게임도 상점과 같은 밝은 클레이 표면으로 통일. */
+  #post,#tut,#emo .hub,#game .gbox,#chatin{background:var(--clay);border:0;box-shadow:var(--clayUp);color:var(--cInk)}
+  #post,#tut,#game .gbox{border-radius:24px}
+  #emo button{background:var(--clay2);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
+  #chatlog div{background:rgba(249,252,255,.94);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
+  #chatchannels button{background:var(--clay2);color:var(--cInk2);box-shadow:var(--clayUp2)}
+  #chatin input{background:var(--clay3);border:0;box-shadow:var(--clayIn);color:var(--cInk)}
+  #game{background:rgba(92,122,143,.24);backdrop-filter:blur(8px)}
+  @keyframes loadWalk{to{transform:translateY(-6px) rotate(1deg)}}@keyframes loadFill{to{width:96%}}
 
   @media (max-width:860px){
     #help,#foot .fps{display:none}
@@ -616,6 +755,7 @@
 
   <!-- 오른쪽 한 기둥 — 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
   <div id="stack">
+    <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false"><span class="my-mark">MY</span><b>마이페이지</b><small>기록 · 코인 · 설정</small></button>
     <div id="mini" class="g">
       <div class="ghead">지도<span class="sp">M</span></div>
       <div class="wrap"><canvas width="316" height="316"></canvas><span class="n">N</span></div>
@@ -639,8 +779,9 @@
     <div class="more"><kbd>E</kbd> 다음 · <kbd>Esc</kbd> 그만</div>
   </div>
 
-  <div id="panel">
-    <div class="ph"><span class="tag"></span><h3></h3></div>
+  <div id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+    <div class="ph"><span class="tag"></span><h3 id="panel-title"></h3>
+      <button class="pclose" type="button" aria-label="창 닫기">×</button></div>
     <div class="bd"></div>
     <div class="x"><kbd>Esc</kbd> 로 닫기</div>
   </div>
@@ -661,7 +802,10 @@
   <div id="emo"><div class="hub">감정표현<em>1~8 · G</em></div></div>
 
   <div id="chat"><div id="chatlog"></div>
-    <div id="chatin"><input maxlength="60" placeholder="말하기 — Enter 로 보내기"></div></div>
+    <div id="chatin"><div id="chatchannels" role="tablist" aria-label="채팅 채널">
+      <button type="button" role="tab" data-chat-channel="all" class="on" aria-selected="true">전체</button>
+      <button type="button" role="tab" data-chat-channel="school" aria-selected="false">내 학교</button>
+    </div><input maxlength="60" placeholder="전체 채팅 — Enter 로 보내기"></div></div>
 
   <!-- 아래 한 줄 — 늘 켜져 있던 종·옷 고르는 줄은 옷장 창으로 들어갔습니다 -->
   <div id="dock" class="g">
@@ -671,12 +815,6 @@
     <div class="sep"></div>
     <button data-do="wear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 3.5 12 6l3-2.5 5 3-2 3.5-1.6-.8V20H7.6V9.2L6 10 4 6.5l5-3Z"/></svg><em>옷장</em></button>
     <button data-do="view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></svg><em>시점</em></button>
-    <!-- 마이페이지와 코인은 수현 판이 상시 노출로 꺼내 둔 것입니다.
-         저쪽은 오른쪽 위 기둥이었는데, 이 껍데기는 아래 독이 유일한
-         상시 줄이라 여기로 옮깁니다 — 붙박이 위치가 아니라 "언제든
-         한 번에 연다" 가 취지입니다. -->
-    <button data-do="mypage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 20c.8-3.8 3.6-5.6 7-5.6s6.2 1.8 7 5.6"/></svg><em>마이</em></button>
-    <button data-do="coins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8.2v7.6M14.2 10H11a1.6 1.6 0 0 0 0 3.2h2a1.6 1.6 0 0 1 0 3.2H9.8"/></svg><em>코인</em></button>
     <button data-do="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 16.6h.01"/></svg><em>도움</em></button>
   </div>
 
@@ -733,7 +871,15 @@
     </div>
   </div></div>
 </div>
-<div id="load"><span class="sp"></span><div>기린캠퍼스를 세우는 중<i>건물 여섯 · 실내 여섯 · 나무 이백 그루</i></div></div>
+<div id="load"><div class="load-card">
+  <div class="load-brand">DESKFIT <i>3D CAMPUS</i></div>
+  <div class="load-pets" aria-hidden="true">
+    <img src="../landing/assets/char-turtle-cut.webp" alt=""><img src="../landing/assets/char-giraffe-cut.webp" alt="">
+    <img src="../landing/assets/char-penguin-cut.webp" alt=""><img src="../landing/assets/char-frog-cut.webp" alt="">
+  </div>
+  <strong>캠퍼스 친구들을 부르는 중</strong><small>캐릭터 · 건물 · 교실을 선명하게 준비하고 있어요</small>
+  <div class="load-track"><span></span></div>
+</div></div>
 <script type="importmap">
 { "imports": {
   "three": "./vendor/three.module.min.js",
@@ -768,6 +914,10 @@ import { createSky, weatherKind } from './sky.js';
    켜고 끄며 **실제 월드에서** 비교합니다. 별도 씬을 만들면 조명이
    조금만 달라도 색 판단이 통째로 틀어집니다. */
 import { createColorLab } from './colorlab.js';
+/* 원래 상점에 있던 3D 상품 그림. 통합 과정에서 import와 호출만 빠져
+   shopview.js 1,200줄이 통째로 놀고 있었습니다. 새 렌더러를 만들지 않고
+   이 모듈의 한 장짜리 속판을 다시 연결합니다. */
+import { itemThumb, dressPreview } from './shopview.js';
 
 /* ── 캐릭터 GLB 를 먼저 받습니다 ──
    랜딩 렌더에서 변환한 넷입니다. character() 가 아래에서 곧바로
@@ -811,7 +961,6 @@ let SRV = null;                                  // window.WORLD_SAVE
 /* 자세 판정 엔진은 온보딩·메인과 **같은 파일**입니다. 사본을 만들면
    기준을 잡은 곳과 판정하는 곳의 계산이 조용히 갈라집니다. */
 injectScript('../shared/posture.js');
-injectScript('../shared/school-auth.js');
 injectScript('../shared/config.js')
   .then(() => injectScript('../openworld/save.js'))
   .then(() => {
@@ -833,14 +982,18 @@ const cv = $('#cv');
 const SHOT = new URLSearchParams(location.search).has('shot');
 const renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true,
   powerPreference: 'high-performance', preserveDrawingBuffer: SHOT });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
+/* 본체 해상도는 실제 화면 픽셀 밀도를 유지합니다. 예전 품질 사다리는
+   30fps 아래에서 DPR을 0.75까지 내려 화면을 늘렸고, 한 번 떨어지면
+   52fps를 넘어야 돌아와 계속 흐릿했습니다. */
+const WORLD_DPR = Math.min(devicePixelRatio || 1, 2);
+renderer.setPixelRatio(WORLD_DPR);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 /* AgX — ACES 는 색을 눈에 띄게 변조하고 채도를 떨어뜨립니다. AgX 는
    훨씬 중립적이라 Blender 4.0 이 기본값으로 삼았습니다. 대신 전체가
    어둡게 나오므로 노출을 1.06 에서 1.18 로 올려 밝기를 맞춥니다. */
 renderer.toneMapping = THREE.AgXToneMapping;
-renderer.toneMappingExposure = 1.18;
+renderer.toneMappingExposure = 1.30;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 const scene = new THREE.Scene();
@@ -865,21 +1018,21 @@ const cam = new THREE.PerspectiveCamera(48, 1, .25, 400);
 /* AO 가 접점을 어둡게 만들어 주므로 균일광(amb)을 조금 내리고,
    대신 위아래 색이 갈리는 하늘빛(hemi)을 올립니다. 균일광이 세면
    AO 가 만든 그늘이 도로 씻겨 나갑니다. */
-const amb = new THREE.AmbientLight(0xFFFFFF, .52);
-const hemi = new THREE.HemisphereLight(0xE8F4FF, 0x9FD08A, 1.08);
-const sun = new THREE.DirectionalLight(0xFFF6E4, 1.95);
+const amb = new THREE.AmbientLight(0xFFFFFF, .66);
+const hemi = new THREE.HemisphereLight(0xF0F8FF, 0xCBE6D6, 1.20);
+const sun = new THREE.DirectionalLight(0xFFFDF8, 2.08);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 sun.shadow.camera.near = 1; sun.shadow.camera.far = 130;
 /* 얕은 각도로 넓게 받는 바닥에는 normalBias 가 bias 보다 훨씬 잘 듣습니다 */
 sun.shadow.bias = -.0002; sun.shadow.normalBias = .14; sun.shadow.radius = 2;
-const fill = new THREE.DirectionalLight(0xCFE4F5, .45);
+const fill = new THREE.DirectionalLight(0xDCEEFF, .58);
 fill.position.set(40, 30, -30);
 /* 림 라이트 — 해의 **반대편 뒤쪽**에서 옅게 칩니다.
    캐릭터와 배경이 둘 다 파스텔이라 실루엣이 배경에 녹습니다.
    뒤에서 한 겹 얹으면 가장자리만 밝아져 사람이 배경에서 떨어져
    나옵니다 — 애니메이션에서 인물을 세우는 그 방법입니다. */
-const rim = new THREE.DirectionalLight(0xFFE9C9, .40);
+const rim = new THREE.DirectionalLight(0xE6F3FF, .48);
 rim.position.set(26, 14, -34);
 rim.castShadow = false;
 scene.add(amb, hemi, sun, sun.target, fill, rim);
@@ -1020,9 +1173,26 @@ csmOn();
 SKY.collect(campusRoot);
 /* 기상청 값을 한 번 받아 창밖과 하늘을 맞춥니다 — 창은 비 오는데 하늘이
    맑으면 그 어긋남이 제일 먼저 눈에 띕니다. 30분마다 다시 봅니다. */
+function weatherPayload(j) {
+  if (!j) return null;
+  if (j.configured === false || j.ok === false) return { error: j.reason || '기상청 응답을 받지 못했어요' };
+  if (j.tempC !== undefined || j.pty !== undefined) {
+    const p = +j.pty || 0, sky = +j.sky || 1;
+    const kind = [1, 4, 5].includes(p) ? ['🌧', '비']
+      : [2, 6].includes(p) ? ['🌨', '비 또는 눈']
+      : [3, 7].includes(p) ? ['❄️', '눈']
+      : sky === 4 ? ['☁️', '흐림'] : sky === 3 ? ['🌥', '구름 많음'] : ['☀️', '맑음'];
+    const source = j.provider || '기상청 단기예보';
+    const extra = Number.isFinite(+j.pop) ? `강수확률 ${+j.pop}%`
+      : Number.isFinite(+j.humidity) ? `습도 ${+j.humidity}%` : '';
+    return { icon: kind[0], label: kind[1], temp: j.tempC, sky: kind[1],
+      desc: extra ? `${extra} · ${source}` : source };
+  }
+  return { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' };
+}
 function pullWeather() {
   fetch('/api/weather').then((r) => (r.ok ? r.json() : null)).then((j) => {
-    wxData = j ? { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' } : null;
+    wxData = weatherPayload(j);
     SKY.setWeather(weatherKind(wxData));
   }).catch(() => {});
 }
@@ -1039,13 +1209,16 @@ function josa(word, withT, withoutT) {
   const has = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0;
   return word + (has ? withT : withoutT);
 }
-const SPEC = Object.keys(SPECIES);
+/* 실제 월드와 상점에서 쓰는 종은 최근 전달받은 원본 GLB 네 종뿐입니다.
+   chars.js 의 절차형 여분 종은 옛 저장값을 읽기 위한 호환 코드로만 남깁니다. */
+const SPEC = ['거북이', '기린', '펭귄', '개구리'];
 const SAVE = UI.SAVE;
 /* 기본은 기린입니다. 거북이·펭귄은 변환된 메시의 **뒤통수에도 눈이 파여**
    있어서(생성기가 앞면을 뒤에 복사했습니다) 돌아서면 얼굴이 두 개로
    보입니다. 기린과 개구리는 앞뒤가 제대로 나왔습니다.
    그 둘을 다시 뽑으면 여기를 되돌립니다. */
-let curSpecies = SPECIES[SAVE.species] ? SAVE.species : '기린';
+let curSpecies = SPEC.includes(SAVE.species) ? SAVE.species : '기린';
+SAVE.species = curSpecies;
 /* 옷 기본값 + 소유 목록. 공짜 기본템은 늘 갖고 시작합니다 */
 const DEF_LOOK = { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
   shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'none', hat: 0xE8695A,
@@ -1053,7 +1226,8 @@ const DEF_LOOK = { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5
 SAVE.look = Object.assign({}, DEF_LOOK, SAVE.look || {});
 SAVE.owned2 = Array.from(new Set([...WEAR_FREE, ...(SAVE.owned2 || [])]));
 /* 종 — 처음 셋(내 종·기린·개구리)은 열려 있고 나머지는 알에서 깨어납니다 */
-SAVE.ownedSp = Array.from(new Set([curSpecies, '기린', '개구리', ...(SAVE.ownedSp || [])]));
+SAVE.ownedSp = Array.from(new Set([curSpecies, '기린', '개구리', ...(SAVE.ownedSp || [])]))
+  .filter((n) => SPEC.includes(n));
 const myLook = () => SAVE.look;
 /* 코인 쓰기 — 부족하면 거절. 서버가 붙어 있으면 구매류는 서버가 따로 셉니다 */
 function payCoins(n) {
@@ -1106,7 +1280,7 @@ const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
 /* 분수를 지름 20 으로 키우면서 (5,5) 가 물속이 됐습니다. 광장 남쪽,
    본관을 마주 보는 자리로 옮깁니다. */
-const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0 };
+const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0, rise: 0 };
 
 /* ── 바닥 높이 따라가기 ──
    전 판은 캐릭터가 늘 y = 0 이었습니다. 그런데 잔디가 .08, 길이 .126,
@@ -1209,6 +1383,11 @@ function buildIndoor(key) {
   (INDOOR[key] || []).forEach((d, i) => {
     const rig = new THREE.Group(); rig.position.set(d.x, 0, d.z); rig.rotation.y = d.dir;
     inRoot.add(rig);
+    /* 도서관 기린 안내원은 원본 GLB의 둥근 튜브형 몸통이 목을 가려
+       기린으로 읽히지 않았습니다. 같은 클레이 재질의 보정 판본만 이 NPC에
+       쓰고, 플레이어·다른 네 원본 종은 최신 GLB를 그대로 유지합니다. */
+    /* 실내 안내 NPC도 최근 원본 GLB 네 종만 씁니다. 절차형으로 바꾸는
+       예외를 두면 같은 종인데 방마다 얼굴과 비율이 달라집니다. */
     const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1 });
     const el = document.createElement('div');
     el.className = 'tag3'; el.textContent = d.name; $('#tags').appendChild(el);
@@ -1371,6 +1550,9 @@ addEventListener('keyup', (e) => { key[e.code] = false; });
 addEventListener('blur', () => { for (const k in key) key[k] = false; });
 
 let yaw = -Math.PI * .75, pitch = .55, dist = 11.5, camD = 11.5, drag = null;
+/* 1인칭은 입력 목표와 실제 눈을 분리합니다. 마우스의 한 프레임 튐을 그대로
+   카메라에 쓰지 않고 짧게 따라가므로 멀미를 만드는 미세한 떨림이 줄어듭니다. */
+let fpYaw = yaw, fpPitch = 0, fpBob = 0;
 /* 마지막으로 시점을 직접 건드린 시각. 직접 돌린 직후에는 자동 추적을
    쉬게 합니다 — 내가 돌린 걸 카메라가 도로 되돌리면 싸우는 느낌이 납니다. */
 let camHold = 0;
@@ -1396,7 +1578,7 @@ cv.addEventListener('pointermove', (e) => {
     if (CUR.live) { curMove(e.movementX, e.movementY); curHotCheck(); return; }
     /* 마우스를 내리면 아래를 봅니다. 1인칭은 pitch 가 클수록 아래이므로 **더합니다**. */
     yaw -= e.movementX * .0017;
-    pitch = clamp(pitch + e.movementY * .0021, -1.15, 1.15);
+    pitch = clamp(pitch + e.movementY * .0021, -1.52, 1.52);
     turned += Math.abs(e.movementX) * .0024; return;
   }
   /* 3인칭에서 누른 채 잠겨 있으면 movement 를 그대로 씁니다 —
@@ -1404,7 +1586,7 @@ cv.addEventListener('pointermove', (e) => {
   if (!first && drag && document.pointerLockElement === cv) {
     camHold = performance.now() + 1400;
     yaw -= e.movementX * .0075;
-    pitch = clamp(pitch + e.movementY * .005, .04, 1.35);
+    pitch = clamp(pitch + e.movementY * .005, -1.48, 1.48);
     turned += Math.abs(e.movementX) * .0075;
     if (room) clampRoomYaw();
     return;
@@ -1413,7 +1595,7 @@ cv.addEventListener('pointermove', (e) => {
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   camHold = performance.now() + 1400;
   yaw -= dx * (first ? .005 : .0075);
-  pitch = first ? clamp(pitch + dy * .004, -1.15, 1.15) : clamp(pitch + dy * .004, .04, 1.35);
+  pitch = first ? clamp(pitch + dy * .004, -1.52, 1.52) : clamp(pitch + dy * .004, -1.48, 1.48);
   if (!first) clampRoomYaw();
   turned += Math.abs(dx) * .006;
   drag = { x: e.clientX, y: e.clientY };
@@ -1638,6 +1820,7 @@ function toggleView() {
   first = !first;
   player.visible = !first; blob.visible = !first;
   pitch = first ? 0 : .58;
+  fpYaw = yaw; fpPitch = pitch; fpBob = 0;
   $('#foot .md').textContent = first ? '1인칭' : '3인칭';
   dockOn('view', first);
   syncLock();
@@ -1673,6 +1856,12 @@ function setZone(a, b) {
   elZone.querySelector('b').textContent = a;
   elZone.querySelector('.sub').textContent = b || '';
 }
+/* 상점에서 고른 카테고리는 다시 그릴 때만 유지하면 됩니다. 저장까지 하면
+   다음 날 들어와도 어제 보던 '신발'부터 열려 오히려 첫 화면이 어색합니다. */
+const SHOP_CAT = { wear: 'top', furn: 'seat' };
+let boardTab = 'school';
+let scheduleTab = 'calendar';
+let dormInfoTab = 'guide';
 /* 자리에 걸린 창을 만듭니다 — ui.js 가 실제로 도는 것을 돌려줍니다 */
 function panelFor(s) {
   switch (s.panel) {
@@ -1681,6 +1870,10 @@ function panelFor(s) {
     case 'today': return UI.today();
     case 'radio': return UI.radio({ bgm: BGM.on });
     case 'calendar': return UI.calendar();
+    case 'schedule': return UI.schedule({
+      tab: scheduleTab,
+      onTab: (k, again) => { scheduleTab = k; again(); },
+    });
     case 'tour': return UI.tour({ step: tourStep,
       onStep: (i) => { tourStep = i; },
       onDone: () => { closePanel(); SAVE.seenTour = true; UI.save(); } });
@@ -1688,15 +1881,20 @@ function panelFor(s) {
     case 'records': return UI.records();
     case 'card': return UI.studentCard();
     case 'shop': return panelFor({ panel: 'wardrobe' });
-    case 'notice-school': return noticeView();
-    case 'notice-out': return UI.notices('out');
+    case 'notice-school':
+    case 'notice-out': return campusBoardView();
     case 'retro': return UI.retro({ last: SAVE.sessions[SAVE.sessions.length - 1] });
-    case 'coins': return UI.coinPanel({ coins: SAVE.coins, server: !!(SRV && SRV.configured) });
     case 'guide': return UI.guide();
     case 'privacy': return UI.privacy();
+    case 'dorm-info': return UI.dormInfo({
+      tab: dormInfoTab,
+      onTab: (k, again) => { dormInfoTab = k; again(); },
+    });
     case 'mypage': return UI.mypage({
-      coins: SAVE.coins, snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
+      coins: SAVE.coins, server: !!(SRV && SRV.configured), snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
+      schools: SCHOOLS, school: SAVE.school,
       baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
+      onSchool: (school, again) => { chooseSchool(school); again(); },
       onDo: (k, again) => {
         if (k === 'snd') { sndToggle(); again(); }
         else if (k === 'bgm') { BGM.setOn(!BGM.on); SAVE.bgm = BGM.on; UI.save(); again(); }
@@ -1718,6 +1916,19 @@ function panelFor(s) {
     case 'wear-shop': return UI.wearShop({
       wear: WEAR, owned: SAVE.owned2, coins: SAVE.coins, server: !!(SRV && SRV.configured),
       rides: RIDE_LIST, ownedRide: SAVE.ownedRide,
+      schoolColor: SCHOOLS.find((q) => q.name === SAVE.school)?.c,
+      category: SHOP_CAT.wear,
+      onCategory: (k, again) => { SHOP_CAT.wear = k; again(); },
+      preview: WEAR_TRY,
+      onPreview: (id, slot, label) => {
+        const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+        WEAR_TRY = { id, slot, label, color: id === 'varsity' ? sc?.c : undefined };
+        /* 오른쪽은 상품 확대 사진이 아니라 **내 원본 캐릭터 전신 입어보기**입니다.
+           카테고리를 고를 때 상의만 화면 가득 당기면 얼굴과 다리가 잘려 원본
+           캐릭터인지 확인할 수 없습니다. 전신을 유지하고 옷만 갈아입힙니다. */
+        wearPreviewHandle?.tryOn(WEAR_TRY)?.focus(null);
+        const t = elPanel.querySelector('.wear-preview-card>b'); if (t) t.textContent = label + ' 미리보기';
+      },
       onBuy: (id, slot, again) => buyWear(id, slot, again),
       onBuyRide: (id, again) => {
         if (SAVE.ownedRide.includes(id)) return;
@@ -1728,7 +1939,8 @@ function panelFor(s) {
       },
     });
     case 'furn-shop': return UI.furnShop({
-      coins: SAVE.coins, furn: SAVE.furn,
+      coins: SAVE.coins, furn: SAVE.furn, category: SHOP_CAT.furn,
+      onCategory: (k, again) => { SHOP_CAT.furn = k; again(); },
       onBuy: (id, again) => {
         const item = UI.FURN.find(([q]) => q === id);
         if (!item || !payCoins(item[2])) return;
@@ -1738,21 +1950,15 @@ function panelFor(s) {
     });
     case 'egg-shop': return UI.eggShop({
       coins: SAVE.coins, egg: SAVE.egg, ownedSp: SAVE.ownedSp, allSp: SPEC,
-      onBuy: (again) => {
+      onBuy: (species, again) => {
         if (SAVE.egg) { toast('이미 품는 알이 있어요', '깨어난 뒤에 또 사요'); return; }
+        if (SAVE.ownedSp.includes(species)) return;
         if (!payCoins(40)) return;
-        SAVE.egg = { hatchAt: Date.now() + 180000 }; UI.save();
-        toast('알을 샀어요', '3분 뒤에 깨어나요 — 돌아다녀도 돼요'); again();
+        SAVE.egg = { species, hatchAt: Date.now() + 180000 }; UI.save();
+        toast(species + ' 알을 샀어요', '3분 뒤에 깨어나요 — 돌아다녀도 돼요'); again();
       },
     });
-    case 'cafeteria': return UI.cafeteria({
-      coins: SAVE.coins,
-      onBuy: (nm, price, again) => {
-        if (!payCoins(price)) return;
-        toast(nm + ' 냠냠', '기운이 났어요'); myEmo = { k: 'yes', t0: performance.now() };
-        again();
-      },
-    });
+    case 'cafeteria': return cafeteriaView();
     case 'vending': return UI.vending({
       coins: SAVE.coins,
       onBuy: (nm, price, again) => {
@@ -1761,18 +1967,29 @@ function panelFor(s) {
       },
     });
     case 'claw': return UI.claw({
-      coins: SAVE.coins,
+      coins: SAVE.coins, prize: SAVE.lastPrize,
       onPlay: (again) => {
         if (!payCoins(30)) return;
-        const pool = ['bear', 'plant', 'books2'];
-        const got = pool[Math.floor(Math.random() * pool.length)];
-        SAVE.furn[got] = (SAVE.furn[got] || 0) + 1; UI.save();
-        const nm = UI.FURN.find(([q]) => q === got)[1];
-        toast(nm + ' 뽑았다!', '기숙사에 놓을 수 있어요'); again();
+        const locked = SPEC.filter((n) => !SAVE.ownedSp.includes(n));
+        const roll = Math.random();
+        if (roll < .26 && locked.length) {
+          const got = locked[Math.floor(Math.random() * locked.length)];
+          SAVE.ownedSp.push(got);
+          SAVE.lastPrize = { title: got + ' 희귀 알', desc: '부화 완료 · 옷장(C)에서 바로 선택할 수 있어요' };
+        } else if (roll < .58) {
+          SAVE.coins += 70;
+          SAVE.lastPrize = { title: '집중 티켓 +70코인', desc: '코인 잔액에 바로 들어왔어요' };
+        } else {
+          const pool = ['fur-floorlamp','fur-fishtank','fur-plant2','books2'];
+          const got = pool[Math.floor(Math.random() * pool.length)];
+          SAVE.furn[got] = (SAVE.furn[got] || 0) + 1;
+          const nm = UI.FURN.find(([q]) => q === got)?.[1] || '한정 가구';
+          SAVE.lastPrize = { title: nm, desc: '기숙사 방 꾸미기에 바로 들어왔어요' };
+        }
+        UI.save(); playEmoteSound('love'); toast('선물 상자가 열렸어요!', SAVE.lastPrize.title); again();
       },
     });
     case 'fame': return fameView();
-    case 'school': return schoolView();
     case 'weather': return weatherView();
     case 'bus': return UI.bus();
     case 'invite': return UI.invitePanel({ nick: myNick(), school: SAVE.school, species: curSpecies });
@@ -1809,12 +2026,6 @@ function panelFor(s) {
           else if (b.dataset.cslot) { SAVE.look[b.dataset.cslot] = +b.dataset.c; }
           else if (b.dataset.snd) { sndToggle(); again(); return; }
           else if (b.dataset.shadow) { setShadows(!renderer.shadowMap.enabled); again(); return; }
-          else if (b.dataset.sc) {
-            SAVE.school = b.dataset.sc; idbarPaint();
-            /* 과잠 띠를 학교 색으로 */
-            const sc = SCHOOLS.find((q) => q.name === SAVE.school);
-            if (sc && SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
-          }
           else return;
           UI.save(); rebuildMe(); net?.setLook(curSpecies, myLook(), myNick()); again();
         };
@@ -1832,28 +2043,86 @@ function panelFor(s) {
   }
 }
 let panelSpot = null, redrawPanel = () => {};
+/* 상점의 3D 상품 그림. shopview.js 는 하나의 WebGL 속판을 나눠 쓰고,
+   화면에 들어온 카드만 한 번 그립니다. 카테고리를 바꿀 때 떠난 카드의
+   손잡이만 접어 월드 렌더러와 웹캠에 불필요한 일을 남기지 않습니다. */
+let thumbHandles = [], wearPreviewHandle = null, WEAR_TRY = null;
+function clearThumbs() {
+  thumbHandles.forEach((h) => { try { h.dispose(); } catch (_) {} });
+  thumbHandles = [];
+  wearPreviewHandle = null;
+}
+function paintThumbs(root) {
+  clearThumbs();
+  try {
+    const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+    root.querySelectorAll('button[data-buy] .th').forEach((el) => {
+      const b = el.parentElement;
+      thumbHandles.push(itemThumb(el, 'wear', b.dataset.buy, {
+        bare: true, slot: b.dataset.slot, look: myLook(),
+        color: b.dataset.buy === 'varsity' ? sc?.c : undefined,
+      }));
+    });
+    root.querySelectorAll('button[data-rbuy] .th').forEach((el) =>
+      thumbHandles.push(itemThumb(el, 'ride', el.parentElement.dataset.rbuy, { rider: curSpecies })));
+    root.querySelectorAll('button[data-fbuy] .th').forEach((el) =>
+      thumbHandles.push(itemThumb(el, 'furn', el.parentElement.dataset.fbuy)));
+    const eggColors = {
+      '거북이': 0x78C98A, '기린': 0xE7AD45, '펭귄': 0x4F6078, '햄스터': 0xDCA76E,
+      '개구리': 0x72D62D, '고슴도치': 0xC99972, '알파카': 0xD8C0A6, '백조': 0xDDE4EA,
+    };
+    root.querySelectorAll('button[data-egg] .th').forEach((el) => {
+      const species = el.parentElement.dataset.egg;
+      thumbHandles.push(itemThumb(el, 'egg', 'egg', { color: eggColors[species] || 0xF2D08A }));
+    });
+    const stage = root.querySelector('.wear-preview-stage');
+    if (stage) {
+      wearPreviewHandle = dressPreview(stage, {
+        species: curSpecies, look: myLook(), try: WEAR_TRY, focus: null,
+        spin: .38, w: 210, h: 260,
+      });
+      thumbHandles.push(wearPreviewHandle);
+    }
+  } catch (_) { /* 3D 그림이 실패해도 이름·가격·구매는 그대로 남습니다 */ }
+}
 function openPanel(s) {
   panelSpot = s;
+  if (s.panel === 'notice-school') boardTab = 'school';
+  else if (s.panel === 'notice-out') boardTab = 'out';
   const draw = () => {
     const v = panelFor(s);
     elPanel.querySelector('.tag').textContent = v.tag;
     elPanel.querySelector('h3').textContent = v.title;
     elPanel.querySelector('.bd').innerHTML = v.html;
+    elPanel.classList.toggle('wide', !!v.wide);
+    elPanel.classList.toggle('shop', !!v.shop);
+    elPanel.classList.toggle('compact', !v.wide && ['weather','bus','invite','vending','claw'].includes(s.panel));
+    elPanel.dataset.store = s.panel === 'wear-shop' ? 'wear'
+      : s.panel === 'furn-shop' ? 'furn' : s.panel === 'egg-shop' ? 'egg' : '';
     if (v.on) v.on(elPanel, draw);
+    paintThumbs(elPanel);
   };
   redrawPanel = draw; draw();
   elPanel.classList.add('on'); panelOn = true; syncLock();
   elTut.style.display = 'none';
   dockOn('wear', s.panel === 'wardrobe');
+  const mq = document.querySelector('#myquick');
+  if (mq) { mq.classList.toggle('on', s.panel === 'mypage'); mq.setAttribute('aria-pressed', String(s.panel === 'mypage')); }
 }
 function closePanel() {
-  elPanel.classList.remove('on'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
+  clearThumbs();
+  delete elPanel.dataset.store;
+  elPanel.classList.remove('on', 'compact'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
+  const mq = document.querySelector('#myquick');
+  if (mq) { mq.classList.remove('on'); mq.setAttribute('aria-pressed', 'false'); }
 }
+elPanel.querySelector('.pclose').addEventListener('click', closePanel);
 
-let dlgWho = null;
+let dlgWho = null, dlgTimer = 0;
 function openDlg(n) {
+  clearTimeout(dlgTimer);
   dlgWho = n;
   /* 처음 만나는 사람에게는 한 번만 5코인 — 2D 판의 `once:npc_…` 규칙입니다.
      캠퍼스를 한 바퀴 돌 이유가 되고, 두 번째부터는 안 줍니다. */
@@ -1867,12 +2136,17 @@ function openDlg(n) {
   n.paused = true;
   n.faceMe = true;
   elDlg.querySelector('b').textContent = n.d.name;
-  elDlg.querySelector('span').textContent = n.d.species;
-  elDlg.querySelector('p').textContent = n.d.lines[n.line % n.d.lines.length];
+  if (n.line >= n.d.lines.length) n.line = 0;
+  elDlg.querySelector('span').textContent = n.d.role || n.d.species;
+  elDlg.querySelector('p').textContent = n.d.lines[n.line];
   n.line++;
+  const last = n.line >= n.d.lines.length;
+  elDlg.querySelector('.more').textContent = last ? '안내가 끝났어요 · 잠시 후 자동으로 닫혀요' : 'E 다음 이야기';
   elDlg.classList.add('on'); dlgOn = true; syncLock();
+  if (last) dlgTimer = setTimeout(() => { if (dlgWho === n) closeDlg(); }, 2800);
 }
 function closeDlg() {
+  clearTimeout(dlgTimer); dlgTimer = 0;
   if (dlgWho) { dlgWho.paused = false; dlgWho.faceMe = false; dlgWho.wait = .8; }
   elDlg.classList.remove('on'); dlgOn = false; dlgWho = null; syncLock();
 }
@@ -1919,45 +2193,6 @@ function buyWear(id, slot, again) {
   } else if (payCoins(item[2])) done();
 }
 
-/* 학교 인증 — 학교 메일로 여섯 자리를 받습니다(shared/school-auth.js).
-   목록에서 고르기만 하면 아무나 남의 학교 점수를 올릴 수 있어서, 랭킹전이
-   학교 대항인 이상 여기는 인증이 있어야 말이 됩니다. */
-const SA = { state: SAVE.schoolVerifiedAt ? 'done' : 'idle', email: SAVE.schoolMail || '', err: '' };
-function schoolView() {
-  const A = window.SchoolAuth;
-  return UI.schoolAuth({
-    configured: !!(A && A.configured), state: SA.state, email: SA.email, err: SA.err,
-    onDo: (k, v, again) => {
-      SA.err = '';
-      if (k === 'back') { SA.state = 'idle'; again(); return; }
-      if (k === 'reset') { SA.state = 'idle'; SAVE.schoolVerifiedAt = 0; UI.save(); again(); return; }
-      if (k === 'send') {
-        const m = (v.email || '').toLowerCase();
-        if (!/^[^@\s]+@[^@\s]+$/.test(m)) { SA.err = '메일 주소 형식이 아닙니다.'; again(); return; }
-        if (!/\.ac\.kr$|^.*@skku\.edu$/.test(m)) { SA.err = '학교 메일(ac.kr)만 됩니다.'; again(); return; }
-        SA.email = m; SA.state = 'sending'; again();
-        A.sendCode(m).then(() => { SA.state = 'code'; again(); })
-          .catch((e) => { SA.state = 'idle'; SA.err = '보내지 못했습니다 — 잠시 뒤에 다시 해 주세요.'; again(); });
-        return;
-      }
-      if (k === 'verify') {
-        const c = (v.code || '').replace(/\D/g, '');
-        if (c.length !== 6) { SA.err = '여섯 자리를 넣어 주세요.'; again(); return; }
-        A.verifyCode(SA.email, c).then((r) => {
-          if (!r) { SA.err = '번호가 맞지 않습니다.'; again(); return; }
-          const dom = SA.email.split('@')[1] || '';
-          const hit = SCHOOLS.find((q) => DOMAIN_OF[q.name] === dom);
-          SAVE.school = hit ? hit.name : (SAVE.school || dom);
-          SAVE.schoolMail = SA.email; SAVE.schoolVerifiedAt = Date.now();
-          UI.save(); idbarPaint();
-          SA.state = 'done'; again();
-          toast('학교 인증 끝', SAVE.school + ' 로 쌓입니다');
-        }).catch(() => { SA.err = '확인하지 못했습니다.'; again(); });
-      }
-    },
-  });
-}
-
 /* 명예의 전당 — 서버 집계를 실제로 부릅니다 */
 /* 명예의 전당. 창 쪽에 미달 학교 · 지난 시즌 · 참여자 수 · 학교 색 ·
    오류 네 가지를 다 채워 놓고, 여기서는 `rows` 하나만 넘기고 있었습니다.
@@ -1982,25 +2217,40 @@ function fameView() {
     }).catch(() => { fameState = 'offline'; redrawPanel(); });
   }
   return UI.fame({ state: fameState, data: fameData, schoolColor,
-    myschool: SAVE.school, verified: !!SAVE.schoolVerifiedAt,
+    myschool: SAVE.school,
     onRetry: (again) => { fameState = 'idle'; again(); } });
 }
 
-/* 학교 공지 — /api/notice 가 학교 RSS 를 받아 옵니다(2D 판과 같은 주소) */
-let ntRows;
-function noticeView() {
-  if (ntRows === undefined) {
-    ntRows = null;
-    fetch('/api/notice?school=mju.ac.kr')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        ntRows = Array.isArray(j) ? j : (j && Array.isArray(j.items) ? j.items : null);
-        redrawPanel();
-      })
-      .catch(() => { ntRows = null; redrawPanel(); });
-    return UI.notices('school', undefined);
-  }
-  return UI.notices('school', ntRows);
+/* 학교 공지 — 설정한 학교의 도메인으로 요청합니다. 전에는 mju.ac.kr 로
+   못박혀 있어서 서울대를 골라도 명지대 공지가 나왔습니다. 학교가 바뀌면
+   캐시 열쇠도 바뀌므로 앞 학교 결과가 한 프레임도 섞이지 않습니다. */
+let ntKey = '', ntState = 'idle', ntData = null;
+function ensureSchoolNotice() {
+  const domain = DOMAIN_OF[SAVE.school] || '';
+  if (!domain) { ntKey = ''; ntState = 'empty'; ntData = null; return; }
+  if (ntKey === domain && ntState !== 'idle') return;
+  ntKey = domain; ntState = 'loading'; ntData = null;
+  fetch('/api/notice?school=' + encodeURIComponent(domain))
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => {
+      if (ntKey !== domain) return;
+      ntData = j; ntState = 'done'; redrawPanel();
+    })
+    .catch(() => {
+      if (ntKey !== domain) return;
+      ntData = { reason: '학교 서버에 닿지 못했어요.' }; ntState = 'done'; redrawPanel();
+    });
+}
+function campusBoardView() {
+  if (boardTab === 'school') ensureSchoolNotice();
+  const rows = boardTab === 'school'
+    ? (ntState === 'loading' ? undefined : (ntData && Array.isArray(ntData.items) ? ntData.items : null))
+    : null;
+  return UI.campusBoard({
+    tab: boardTab, rows,
+    meta: { school: SAVE.school, name: ntData?.name, page: ntData?.page, reason: ntData?.reason },
+    onTab: (k, again) => { boardTab = k; if (k === 'school') ensureSchoolNotice(); again(); },
+  });
 }
 
 /* 창밖 날씨 — /api/weather 는 배포본에서만 있습니다 */
@@ -2008,12 +2258,41 @@ let wxData;
 function weatherView() {
   if (wxData === undefined) {
     fetch('/api/weather').then((r) => (r.ok ? r.json() : null)).then((j) => {
-      wxData = j ? { icon: j.icon, label: j.label || j.sky || '', temp: j.temp ?? j.t1h, desc: j.desc || '' } : null;
+      wxData = weatherPayload(j);
       redrawPanel();
     }).catch(() => { wxData = null; redrawPanel(); });
     return UI.weather({ data: undefined });
   }
   return UI.weather({ data: wxData });
+}
+
+/* 학교별 공식 식단 — 학교가 바뀌면 그 학교 자료만 다시 받습니다. */
+let mealKey = '', mealData, mealState = 'idle';
+function cafeteriaView() {
+  const domain = DOMAIN_OF[SAVE.school] || '';
+  if (domain && (mealKey !== domain || mealState === 'idle')) {
+    mealKey = domain; mealData = undefined; mealState = 'loading';
+    fetch('/api/meal?school=' + encodeURIComponent(domain))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (mealKey === domain) { mealData = j; mealState = 'done'; redrawPanel(); } })
+      .catch(() => { if (mealKey === domain) { mealData = { reason: '학교 식단 서버에 닿지 못했어요.' }; mealState = 'done'; redrawPanel(); } });
+  }
+  return UI.cafeteria({ school: SAVE.school, data: domain && mealState === 'loading' ? undefined : mealData });
+}
+
+/* 학교는 옷의 일부가 아니므로 MY에서만 바꿉니다. 공지·학식 캐시는 즉시
+   비우고 채팅 채널과 과잠 대표색까지 한 번에 맞춥니다. */
+function chooseSchool(name) {
+  const sc = SCHOOLS.find((q) => q.name === name);
+  if (!sc || SAVE.school === sc.name) return;
+  SAVE.school = sc.name;
+  ntKey = ''; ntState = 'idle'; ntData = null;
+  mealKey = ''; mealState = 'idle'; mealData = undefined;
+  if (SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
+  UI.save(); idbarPaint();
+  net?.setSchool(SAVE.school); setChatChannel(chatChannel);
+  rebuildMe(); net?.setLook(curSpecies, myLook(), myNick());
+  toast('학교를 바꿨어요', `${SAVE.school} 공지·학식·학교 채팅으로 연결합니다`);
 }
 
 /* ══════ 8. 자세 세션 ══════ */
@@ -2159,6 +2438,8 @@ window.deskfit3d = {
 /* ══════ 8.5 감정표현 · 채팅 · 실시간 ══════ */
 const elEmo = $('#emo'), elChatLog = $('#chatlog'), elChatIn = $('#chatin'),
       chatBox = elChatIn.querySelector('input'), elNet = $('#net');
+let chatChannel = 'all';
+const chatRows = { all: [], school: [] };
 let emoOn = false, myEmo = null;     // { k, t0 }
 { /* 바퀴 — 여덟 개를 원으로 */
   EMOTES.forEach((e, i) => {
@@ -2193,6 +2474,7 @@ function sayAllowed() {
   sayLog.push(now); lastSay = now; return true;
 }
 function openChat() {
+  if (chatChannel === 'school' && !SAVE.school) setChatChannel('all');
   chatting = true; elChatIn.classList.add('on'); chatBox.value = ''; chatBox.focus();
   dockOn('chat', true);
 }
@@ -2211,20 +2493,50 @@ chatBox.addEventListener('keydown', (e) => {
     if (t !== raw) toast('고운 말', '걸린 말은 가려서 보냈어요');
     if (!sayAllowed()) return;
     closeChat();
-    pushChat(myNick(), t);
-    net?.say(t);
+    pushChat(myNick(), t, chatChannel);
+    net?.say(t, chatChannel, SAVE.school || '');
     mySay = { text: t, t0: performance.now() };
   }
 });
-function pushChat(who, text) {
-  const d = document.createElement('div');
+function setChatChannel(channel) {
+  if (channel === 'school' && !SAVE.school) {
+    toast('학교를 먼저 골라 주세요', '옷장(C)의 학교 항목에서 설정할 수 있어요');
+    channel = 'all';
+  }
+  chatChannel = channel === 'school' ? 'school' : 'all';
+  elChatIn.querySelectorAll('[data-chat-channel]').forEach((b) => {
+    const on = b.dataset.chatChannel === chatChannel;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on));
+    if (b.dataset.chatChannel === 'school') b.textContent = SAVE.school ? SAVE.school : '내 학교';
+  });
+  chatBox.placeholder = chatChannel === 'school' ? `${SAVE.school} 채팅 — Enter 로 보내기` : '전체 채팅 — Enter 로 보내기';
+  renderChat();
+}
+function renderChat() {
+  elChatLog.innerHTML = '';
+  chatRows[chatChannel].slice(-6).forEach(({ who, text }) => {
+    const d = document.createElement('div');
+    d.innerHTML = `<b>${esc3(who)}</b><span>${esc3(text)}</span>`;
+    elChatLog.appendChild(d);
+  });
+}
+elChatIn.querySelector('#chatchannels').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-chat-channel]'); if (!b) return;
+  e.stopPropagation(); setChatChannel(b.dataset.chatChannel); chatBox.focus();
+});
+function pushChat(who, text, channel = 'all') {
+  channel = channel === 'school' ? 'school' : 'all';
   /* 이름도 **글로 취급**합니다. 글은 막아 두고 이름만 안 막아 뒀는데,
      이름은 남이 정하는 값입니다(presence 로 옵니다) — 남이 정하는 값이
      내 화면에서 태그가 되면 그건 남의 코드가 내 화면에서 도는 것입니다. */
-  d.innerHTML = `<b>${esc3(who)}</b><span>${esc3(text)}</span>`;
-  elChatLog.appendChild(d);
-  while (elChatLog.children.length > 6) elChatLog.firstChild.remove();
-  setTimeout(() => d.remove(), 12000);
+  const row = { who: String(who || ''), text: String(text || ''), at: Date.now() };
+  chatRows[channel].push(row);
+  if (chatRows[channel].length > 24) chatRows[channel].shift();
+  if (channel === chatChannel) renderChat();
+  setTimeout(() => {
+    const i = chatRows[channel].indexOf(row); if (i >= 0) chatRows[channel].splice(i, 1);
+    if (channel === chatChannel) renderChat();
+  }, 12000);
 }
 let mySay = null;
 /* 내 머리 위 표시 */
@@ -2241,7 +2553,7 @@ const remotes = new Map();   // id → { rig, g, el, say, emoEl }
 let net = null;
 try {
   net = createNet({
-    nick: myNick(), species: curSpecies, fit: myLook(),
+    nick: myNick(), species: curSpecies, fit: myLook(), school: SAVE.school,
     onMode: (m) => {
       elNet.classList.toggle('on', m === 'online');
       elNet.querySelector('span').textContent =
@@ -2255,7 +2567,7 @@ try {
         : '혼자';
     },
     /* t 는 net.js 가 들어올 때 이미 가린 말입니다 — 여기서 또 훑지 않습니다 */
-    onSay: (p, t) => pushChat(p.nick || '누군가', t),
+    onSay: (p, t, channel) => pushChat(p.nick || '누군가', t, channel),
     onGone: (id) => dropRemote(id),
     onReset: () => { [...remotes.keys()].forEach(dropRemote); },
     onPeers: () => {
@@ -2279,7 +2591,7 @@ function remoteFor(p) {
     const fitVal = typeof p.fit === 'object' && p.fit ? p.fit : OUTFITS[(p.fit | 0) % OUTFITS.length];
     /* 남의 캐릭터도 덜 잘게 — 몇 명이 들어올지 모르는 자리입니다 */
     const g = character(rig, SPECIES[p.species] ? p.species : '기린', fitVal, { lod: 1 });
-    const el = document.createElement('div'); el.className = 'tag3'; $('#tags').appendChild(el);
+    const el = document.createElement('div'); el.className = 'tag3 peer'; $('#tags').appendChild(el);
     const say = document.createElement('div'); say.className = 'say3'; say.style.display = 'none'; $('#tags').appendChild(say);
     const emoEl = document.createElement('div'); emoEl.className = 'emo3'; emoEl.style.display = 'none'; $('#tags').appendChild(emoEl);
     remotes.set(p.id, r = { rig, g, el, say, emoEl, species: p.species, fitKey, walk: 0, last: null });
@@ -2291,9 +2603,12 @@ function remoteFor(p) {
 function tickEgg() {
   if (!SAVE.egg || Date.now() < SAVE.egg.hatchAt) return;
   const locked = SPEC.filter((n) => !SAVE.ownedSp.includes(n));
+  const wanted = SAVE.egg.species;
   SAVE.egg = null;
   if (!locked.length) { UI.save(); return; }
-  const born = locked[Math.floor(Math.random() * locked.length)];
+  /* 옛 저장본에는 species 가 없습니다. 그 판본만 기존처럼 무작위이고,
+     새 상점에서 고른 알은 고른 종이 그대로 깨어납니다. */
+  const born = locked.includes(wanted) ? wanted : locked[Math.floor(Math.random() * locked.length)];
   SAVE.ownedSp.push(born); UI.save();
   toast('알이 깨어났어요!', born + ' — 옷장(C)에서 고를 수 있어요');
   playEmoteSound('love');
@@ -2496,14 +2811,14 @@ function applySky(indoor) {
 }
 
 /* ══════ 9. 드나들기 ══════ */
-let near = null, spot = null, npcNear = null, spotD = 1e9, npcD = 1e9;
+let near = null, spot = null, npcNear = null, chairNear = null, spotD = 1e9, npcD = 1e9;
 /* 아무 의자에나 앉기 — 방을 지을 때 적어 둔 자리 목록에서 찾습니다.
    도서관·본관·기숙사 의자는 앉는 순간 자세 세션이 시작되고,
    소파·벤치·식당 의자는 그냥 앉아서 쉽니다. */
 const CSIT = { on: false, from: null };
 function nearSeat() {
   if (!room || !room.seats) return null;
-  let best = null, bd = 1.15 * 1.15;
+  let best = null, bd = 1.65 * 1.65;
   for (const q of room.seats) {
     const d2 = (P.x - q.x) ** 2 + (P.z - q.z) ** 2;
     if (d2 < bd) { bd = d2; best = q; }
@@ -2528,7 +2843,6 @@ function interact() {
   if (dlgOn) { openDlg(dlgWho); return; }        // 다음 줄
   if (SESS.on) { endSession(); return; }
   if (CSIT.on) { standCasual(); return; }
-  if (npcNear) { openDlg(npcNear); return; }
   if (spot) {
     if (spot.game) {
       /* 러너 하나만 자세를 조작으로 씁니다. 카메라를 못 켜도 그 게임은
@@ -2559,6 +2873,7 @@ function interact() {
       else sitCasual(q);
       return;
     } }
+  if (npcNear) { openDlg(npcNear); return; }
   if (room) { leaveRoom(); return; }
   if (near) enterRoom(near);
 }
@@ -2681,9 +2996,13 @@ function drawBlocks(g, k, big) {
 const MAPSHOT = { img: null, cam: null };
 function shootMap() {
   try {
-    const S = 1100;
+    /* 표시 크기는 620px 입니다. 1100px PNG 는 시작 뒤 한 프레임을 길게
+       멈췄습니다. 768px 이면 지도 글자와 건물 윤곽에 충분합니다. */
+    const S = 768;
     const r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     r2.setSize(S, S, false);
+    r2.setPixelRatio(1.5);
+    r2.shadowMap.enabled = true; r2.shadowMap.type = THREE.PCFSoftShadowMap;
     r2.outputColorSpace = THREE.SRGBColorSpace;
     r2.toneMapping = THREE.ACESFilmicToneMapping; r2.toneMappingExposure = 1.05;
     /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다. 그리고 카메라가
@@ -2698,9 +3017,10 @@ function shootMap() {
        far 는 넉넉히 — 400 높이에서 900 이면 바닥까지 여유가 있습니다.
        전 판은 높이 92 에 far 300 이라, 캠퍼스를 320 으로 넓힌 뒤로는
        먼 구석이 잘려 옛 섬 크기로 찍히고 있었습니다. */
-    const halfW = CAMPUS.SITE.hx + 14;
+    const halfW = CAMPUS.SITE.hx + 34;
     const mc = new THREE.OrthographicCamera(-halfW, halfW, halfW, -halfW, .5, 1200);
-    mc.position.set(46, 420, 46);
+    /* 완전 수직 평면도보다 건물 높이와 정면이 읽히는 3D 조감 시점. */
+    mc.position.set(150, 360, 175);
     mc.lookAt(0, 0, 0);
     const wasBg = scene.background;
     /* **안개를 끕니다.** 밀도 .0040 에서 420 칸 위에서 내려다보면
@@ -2749,7 +3069,6 @@ const PLACES = BUILDINGS.map((b) => ({ key: b.zone, name: b.name, b }))
     { key: 'gate', name: '정문', at: { x: 0, z: 118, ry: Math.PI } },
     { key: 'field', name: '운동장', at: { x: -60, z: 50, ry: Math.PI * .8 } },
     { key: 'lake', name: '호수', at: { x: 104, z: 58, ry: Math.PI * .6 } },
-    { key: 'dormyard', name: '기숙사 마당', at: { x: 92, z: -89, ry: -Math.PI / 2 } },
   ]);
 function goPlace(pl) {
   if (room) return;
@@ -2771,7 +3090,8 @@ mapCv.addEventListener('click', (e) => {
   const S = 620;
   const px = ((e.clientX - r.left) / r.width) * S;
   const py = ((e.clientY - r.top) / r.height) * S;
-  let best = null, bd = 42 * 42;
+  /* 지도 어디를 눌러도 가장 가까운 시설로 갑니다. */
+  let best = null, bd = Infinity;
   BUILDINGS.forEach((b) => {
     let bx, by;
     if (MAPSHOT.img?.complete) { const [u, v] = mapUV(b.x, b.z); bx = u * S; by = v * S; }
@@ -2907,6 +3227,8 @@ const SCHOOLS = [
   { name: '서강대학교', c: 0x8B0029 }, { name: '명지대학교', c: 0x003A70 },
 ];
 function idbarPaint() {
+  const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+  if (sc && SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
   $('#idbar .nm').textContent = myNick();
   $('#idbar .sc').textContent = SAVE.school || '학교 미설정';
 }
@@ -2944,9 +3266,7 @@ function wardrobeHTML() {
   const L = myLook();
   return '<div class="lbl">이름</div>'
     + `<input class="nick" maxlength="10" placeholder="${curSpecies}" value="${(SAVE.nick || '').replace(/"/g, '')}">`
-    + '<div class="lbl">학교</div><div class="wr">'
-    + SCHOOLS.map((q) => `<button data-sc="${q.name}" class="${q.name === SAVE.school ? 'on' : ''}">${q.name.replace('대학교', '대')}</button>`).join('')
-    + '</div><div class="lbl">종</div><div class="wr sp">'
+    + '<div class="lbl">종</div><div class="wr sp">'
     + SPEC.map((n) => {
       const own = SAVE.ownedSp.includes(n);
       return `<button data-sp="${n}" class="${n === curSpecies ? 'on' : ''}" ${own ? '' : 'disabled'}
@@ -3021,6 +3341,7 @@ function myNick() { return (SAVE.nick || '').trim() || curSpecies; }
 
 /* ── 아래 한 줄 ── */
 const elDock = $('#dock');
+const elMyQuick = $('#myquick');
 /* 이 함수는 모듈 평가 중(elDock 이 아직 TDZ 일 때)에도 불릴 수 있으므로
    문서에서 바로 찾습니다. */
 function dockOn(k, on) {
@@ -3034,9 +3355,11 @@ elDock.addEventListener('click', (e) => {
   else if (k === 'chat') openChat();
   else if (k === 'wear') { if (panelOn && panelSpot?.panel === 'wardrobe') closePanel(); else openWardrobe(); }
   else if (k === 'view') toggleView();
-  else if (k === 'mypage') openPanel({ tag: '마이', title: '마이페이지', panel: 'mypage' });
-  else if (k === 'coins') openPanel({ tag: '지갑', title: '코인', panel: 'coins' });
   else if (k === 'help') toggleHelp();
+});
+elMyQuick.addEventListener('click', () => {
+  if (panelOn && panelSpot?.panel === 'mypage') closePanel();
+  else openPanel({ tag: 'MY', title: '마이페이지', panel: 'mypage' });
 });
 let helpOn = false;
 function toggleHelp(v) {
@@ -3139,12 +3462,12 @@ if (AO_ON) {
        진해집니다. 캠퍼스처럼 깊이가 넓은 화면에서는 화면 기준이 맞습니다. */
     n8ao.configuration.aoRadius = 5.0;
     n8ao.configuration.distanceFalloff = 2.0;
-    n8ao.configuration.intensity = 2.6;
+    n8ao.configuration.intensity = 1.55;
     /* 그늘 색을 순검정이 아니라 **청록을 섞은 어두운 값**으로 둡니다.
        순검정 그늘은 점토가 아니라 플라스틱이 됩니다 — 로비·마이페이지의
        클레이 토큰이 쓰는 규칙과 같은 이유입니다. */
-    n8ao.configuration.color = new THREE.Color(0x0D3C34);
-    n8ao.configuration.halfRes = true;      // 절반 해상도로 계산하고 올립니다
+    n8ao.configuration.color = new THREE.Color(0x526F7D);
+    n8ao.configuration.halfRes = false;     // 윤곽을 반해상도로 늘려 생기던 번짐 제거
     composer.addPass(n8ao);
   } catch (e) {
     console.warn('후처리를 못 켰습니다 — 그냥 그립니다', e);
@@ -3325,7 +3648,7 @@ function tick(now) {
   if (!SESS.on) unstick();
   /* 발밑 높이 — 올라갈 때는 빠르게 붙고(계단이 뚝뚝 끊기지 않게),
      내려올 때는 조금 느리게(모서리에서 뚝 떨어지지 않게). */
-  { const gy = groundAt(P.x, P.z, P.y);
+  { const gy = groundAt(P.x, P.z, P.y), y0 = P.y;
     const up = gy > P.y;
     /* 양방향 다 **낙차에 비례**해서 붙입니다.
 
@@ -3336,8 +3659,16 @@ function tick(now) {
        부드럽고, 큰 턱일수록 빨리 붙습니다. */
     const gap = Math.abs(gy - P.y);
     const rate = (up ? 16 : 9) + Math.min(26, gap * 34);
-    P.y += (gy - P.y) * Math.min(1, dt * rate); }
+    P.y += (gy - P.y) * Math.min(1, dt * rate);
+    /* 계단에서는 높이만 바뀌면 캐릭터가 수직 엘리베이터처럼 보입니다.
+       실제 상승 속도를 짧게 감쇠해 몸을 진행방향으로 살짝 기울입니다.
+       단차가 끝나면 즉시 곧게 돌아오고, 최대 7도라 멀미나 미끄러짐 없이
+       '딛고 올라간다/내려간다'는 단서만 남습니다. */
+    const vy = dt > 0 ? (P.y - y0) / dt : 0;
+    P.rise += (vy - P.rise) * Math.min(1, dt * 8); }
   playerRig.position.set(P.x, P.y, P.z);
+  const stepLean = clamp(-P.rise * .032, -.12, .10);
+  player.rotation.x += (stepLean - player.rotation.x) * Math.min(1, dt * 9);
   /* 몸은 **각속도 상한**을 두고 돕니다.
      비율로만 감으면(전에 쓰던 1 - .00005^dt 는 프레임당 15%) 180도 전환이
      0.3초에 끝나서, 도는 게 아니라 팽이처럼 튕겨 돌아갑니다. 방향을
@@ -3382,7 +3713,7 @@ function tick(now) {
   }
 
   /* ── 문 · 자리 · 사람 ── */
-  spot = null; npcNear = null; spotD = 1e9; npcD = 1e9;
+  spot = null; npcNear = null; chairNear = null; spotD = 1e9; npcD = 1e9;
   if (!panelOn) {
     let best = 1e9;
     for (const s of spotsHere()) {
@@ -3410,16 +3741,18 @@ function tick(now) {
     });
     /* 사람이 자리보다 가까우면 **말 걸기가 이깁니다** — 창구 앞의 미르에게
        말을 걸려는데 자리 창이 대신 열리던 것을 고칩니다 */
-    if (spot && npcNear && npcD < spotD) spot = null;
+    if (spot && npcNear) npcNear = null;
     if (near) { elPrompt.innerHTML = `<em>E</em><span>${near.name} 들어가기</span>`; spot = null; npcNear = null; }
     else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
     else if (npcNear) elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
     elPrompt.classList.toggle('on', !!(near || spot || npcNear) && !panelOn && !SESS.on && !dlgOn && !mapOn);
   } else {
     const out = P.z > room.size.d / 2 - 1.3;
+    chairNear = !out && !spot ? nearSeat() : null;
     if (out) { elPrompt.innerHTML = '<em>E</em><span>나가기</span>'; spot = null; }
     else if (spot) elPrompt.innerHTML = `<em>E</em><span>${spot.title}</span>`;
-    elPrompt.classList.toggle('on', !!(out || spot) && !panelOn && !SESS.on && !mapOn);
+    else if (chairNear) elPrompt.innerHTML = `<em>E</em><span>${chairNear.kind === 'chair' && (room.key === 'library' || room.key === 'mainhall') ? '앉아서 자세 세션 시작' : '앉기'}</span>`;
+    elPrompt.classList.toggle('on', !!(out || spot || chairNear) && !panelOn && !SESS.on && !mapOn);
     if (out && !SESS.on && P.sp > .2 && P.z > room.size.d / 2 - .55) leaveRoom();
   }
   /* 대화는 상대가 잠깐 감지에서 빠졌다고 닫지 않습니다 — 내가 **걸어서
@@ -3428,7 +3761,7 @@ function tick(now) {
       && Math.hypot(P.x - dlgWho.rig.position.x, P.z - dlgWho.rig.position.z) > 4.5) closeDlg();
 
   /* ── 실시간 · 남들 ── */
-  net?.move(P.x, P.z, P.dir, P.sp > .1);
+  net?.move(P.x, P.z, P.dir, P.sp > .1, SESS.on ? SESS.t : 0);
   if (net) remotes.forEach((r, id) => { if (!net.peers.has(id)) dropRemote(id); });
   net?.peers.forEach((p) => {
     const s = net.sample(p); if (!s) return;
@@ -3456,7 +3789,11 @@ function tick(now) {
     const on = v3.z < 1 && !mapOn;
     const sx = (v3.x * .5 + .5) * innerWidth, sy = (-v3.y * .5 + .5) * innerHeight;
     r.el.style.display = on ? 'block' : 'none';
-    if (on) { r.el.textContent = p.nick || '누군가'; r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px'; }
+    if (on) {
+      const sec = Math.max(0, Math.floor(p.sessionSec || 0));
+      r.el.innerHTML = `<span class="peer-top"><b>${esc3(p.nick || '누군가')}</b><em>${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}</em></span><small>${esc3(p.school || '학교 미설정')}</small>`;
+      r.el.style.left = sx + 'px'; r.el.style.top = Math.max(74, sy) + 'px';
+    }
     const saying = p.say && performance.now() - p.sayT < 6000;
     r.say.style.display = on && saying ? 'block' : 'none';
     if (on && saying) { r.say.textContent = p.say; r.say.style.left = sx + 'px'; r.say.style.top = (sy - 26) + 'px'; }
@@ -3472,7 +3809,7 @@ function tick(now) {
     gaze(n.g, n.rig.position.x, n.rig.position.z, n.rig.rotation.y, P.x, P.z, 1.5, 6.0);
     const dd = Math.hypot(P.x - n.rig.position.x, P.z - n.rig.position.z);
     if (dd < 3.0 && dd < npcD) { npcNear = n; npcD = dd; }
-    if (npcNear && npcD < spotD) spot = null;
+    if (spot || chairNear) npcNear = null;
     if (dd < 16 && !mapOn) {
       v3.set(n.rig.position.x, 2.45, n.rig.position.z).project(cam);
       if (v3.z < 1) {
@@ -3487,7 +3824,7 @@ function tick(now) {
      spot 을 지워 두고도, 여기 덮어쓰기가 그 결과를 안 보고 무조건 사람
      문구를 썼습니다 — 계산대 위에 서 있어도 "미르에게 말 걸기" 가 뜨고,
      상점 여섯 자리 중 넷이 그렇게 가려져 있었습니다. */
-  if (room && npcNear && !near && !spot) {
+  if (room && npcNear && !near && !spot && !chairNear) {
     elPrompt.innerHTML = `<em>E</em><span>${npcNear.d.name} 에게 말 걸기</span>`;
     elPrompt.classList.toggle('on', !panelOn && !SESS.on && !mapOn && !dlgOn);
   }
@@ -3517,11 +3854,23 @@ function tick(now) {
     else if (n.wait > 0) { n.wait -= dt; n.sp = Math.max(0, n.sp - dt * 6); }
     else if (d < .7) { n.leg = (n.leg + 1) % R.length; n.wait = 1.2 + (idx % 4) * .8; }
     else {
-      const v = n.d.speed * dt;
-      n.rig.position.x += (dx / d) * v; n.rig.position.z += (dz / d) * v;
-      n.dir = Math.atan2(dx, dz); n.walk += v / 1.15;
-      n.sp = Math.min(1, n.sp + dt * 5);
+      const v = n.d.speed * dt, base = Math.atan2(dx, dz);
+      /* 정해 둔 경로가 분수·벽·다른 사람을 직선으로 관통하지 않도록
+         앞과 양옆의 짧은 후보를 검사합니다. 길이 막히면 잠깐 양보합니다. */
+      const free = (x, z) => {
+        if (hitCampus(x, z) || Math.hypot(x - P.x, z - P.z) < .82) return false;
+        for (const m of NPC) if (m !== n && Math.hypot(x - m.rig.position.x, z - m.rig.position.z) < .92) return false;
+        return true;
+      };
+      let moved = false;
+      for (const off of [0,.42,-.42,.78,-.78,1.16,-1.16]) {
+        const a = base + off, nx = n.rig.position.x + Math.sin(a) * v, nz = n.rig.position.z + Math.cos(a) * v;
+        if (!free(nx, nz)) continue;
+        n.rig.position.x = nx; n.rig.position.z = nz; n.dir = a; n.walk += v / 1.15; moved = true; break;
+      }
+      n.sp = moved ? Math.min(1, n.sp + dt * 4) : Math.max(0, n.sp - dt * 7);
     }
+    n.rig.position.y = groundAt(n.rig.position.x, n.rig.position.z, n.rig.position.y) + .015;
     n.rig.rotation.y = smoothAngle(n.rig.rotation.y, n.dir, 1 - Math.pow(.002, dt));
     if (n.sp > .04) stride(n.g, n.walk, n.sp); else idle(n.g, T, idx);
     gaze(n.g, n.rig.position.x, n.rig.position.z, n.rig.rotation.y, P.x, P.z, 1.5, n.sp > .04 ? 4.5 : 7);
@@ -3550,8 +3899,12 @@ function tick(now) {
     /* 눈높이 1.84 는 키 1.9 짜리 몸에서 정수리 바로 아래라, 턱을 들면
        천장이 코앞이었습니다. 흔들림도 절반으로 줄입니다 — 화면 전체가
        흔들리는 것은 3인칭에서 캐릭터가 흔들리는 것보다 훨씬 셉니다. */
-    cam.position.set(P.x, P.y + 1.70 + Math.sin(P.walk * TAU * 2) * .011 * P.sp, P.z);
-    const f = new THREE.Vector3(Math.sin(yaw), -Math.tan(pitch), Math.cos(yaw));
+    const follow = 1 - Math.exp(-dt * 18);
+    fpYaw = smoothAngle(fpYaw, yaw, follow); fpPitch += (pitch - fpPitch) * follow;
+    const wantBob = Math.sin(P.walk * TAU * 2) * .006 * Math.min(1, P.sp);
+    fpBob += (wantBob - fpBob) * (1 - Math.exp(-dt * 12));
+    cam.position.set(P.x, P.y + 1.68 + fpBob, P.z);
+    const f = new THREE.Vector3(Math.sin(fpYaw), -Math.tan(fpPitch), Math.cos(fpYaw));
     cam.lookAt(cam.position.x + f.x * 10, cam.position.y + f.y * 10, cam.position.z + f.z * 10);
   } else {
     /* 가림 검사 결과를 **바로 쓰지 않습니다.** 건물 옆을 지나가면
@@ -3717,7 +4070,10 @@ function tick(now) {
     /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
        이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
        느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */
-    if (f < 30 && quality > .75) { quality = .75; renderer.setPixelRatio(Math.min(devicePixelRatio, 1) * quality); resize(); }
+    if (f < 30 && n8ao && n8ao.configuration.halfRes === false) {
+      /* 프레임이 부족해도 본 화면 픽셀은 보존하고 AO 계산만 줄입니다. */
+      n8ao.configuration.halfRes = true;
+    }
     /* 끄기 전에 **반으로 줄여** 봅니다. 2048 → 1024 면 그림자 그리는 값이
        사분의 일이 되는데, 이 그림체에서 가장자리가 부드러워지는 것 말고는
        티가 잘 안 납니다. 있는 그림자가 없는 그림자보다 낫습니다. */
@@ -3734,7 +4090,7 @@ function tick(now) {
       shadowsOff = true;
       toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
     }
-    else if (f > 52 && quality < 1) { quality = 1; renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75)); resize(); }
+    else if (f > 48 && n8ao && n8ao.configuration.halfRes) n8ao.configuration.halfRes = false;
     frames = 0; acc = 0;
   }
   /* CSM 은 카메라를 따라 칸을 다시 잡아야 합니다 */
@@ -3765,7 +4121,6 @@ NPC.forEach((n) => n.rig.position.set(n.d.route[n.leg][0], 0, n.d.route[n.leg][1
 aimSun(P.x, P.z);
 requestAnimationFrame(tick);
 if (!SAVE.seenTour) setTimeout(() => { if (!panelOn && !SAVE.seenTour) openTour(0); }, 1400);
-setTimeout(() => $('#load').classList.add('gone'), 260);
 toast('기린캠퍼스', '중앙 광장');
 
 idbarPaint();
@@ -3773,15 +4128,17 @@ checkStreak();
 if (SAVE.hour !== undefined && SAVE.hour !== null) { SKY.setHour(SAVE.hour); setClockHour(SAVE.hour); }
 pullWeather();
 setInterval(pullWeather, 1800000);
-/* 로드가 끝나면: ① 지도 사진 한 장 ② 방 여섯을 미리 지어 둡니다.
-   문에 닿고서야 지으면 그 순간 화면이 몇 백 ms 얼었습니다 —
-   "들어갈 때 몇 초 깨진다" 의 정체가 이것입니다. */
-setTimeout(shootMap, 900);
+/* 지도와 실내 여섯은 로딩막이 내려오기 전에 한 번만 만듭니다.
+   전에는 플레이 시작 뒤 지도와 방을 0.65초 간격으로 구워 첫 7초 동안
+   규칙적으로 멎었습니다. */
+shootMap();
 /* 커서를 처음부터 켭니다 — syncLock 은 시점·창이 바뀔 때만 도는데,
    그전까지 3인칭에서 우리 커서가 없어 윈도우 커서가 나왔습니다. */
 syncLock();
-['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k, i) =>
-  setTimeout(() => { try { buildRoom(k); } catch {} }, 2400 + i * 650));
+['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k) => {
+  try { buildRoom(k); } catch {}
+});
+setTimeout(() => $('#load').classList.add('gone'), 720);
 if (SAVE.shadow === false) setShadows(false);
 window.__ready = true;
 window.__P = P;

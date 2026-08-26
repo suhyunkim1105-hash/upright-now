@@ -265,7 +265,15 @@ export function sign(p, text, x, y, z, w, h, bg, fg) {
        기본 글꼴로 구워져 끝까지 그대로 남습니다.
      · 이 재질에는 map 이 있으므로 bake 가 절대 합치지 않습니다. */
   const g = new THREE.Group(); g.position.set(x, y, z); p.add(g);
-  box(g, w, h, .26, .07, M(bg, .5), 0, 0, 0);
+  /* 클레이 간판: 벽에서 분리되는 그림자판 → 크림 프레임 → 색 패널의
+     세 겹입니다. 얇은 색 판 하나였을 때는 정면 외 각도에서 사라졌습니다. */
+  box(g, w + .18, h + .18, .30, .10, M(0xB6C8D3, .72), .05, -.06, -.10);
+  box(g, w + .12, h + .12, .34, .11, M(0xF7FBFC, .48), 0, 0, 0);
+  box(g, w, h, .28, .09, M(bg, .5), 0, 0, .10);
+  [-1, 1].forEach((s) => {
+    box(g, .14, h * .48, .18, .06, M(0xF7FBFC, .5), s * (w / 2 + .11), 0, -.03);
+    cyl(g, .065, .065, .12, 10, M(0xF3C96B, .38), s * (w / 2 - .13), h / 2 - .11, .27).rotation.x = Math.PI / 2;
+  });
   const PX = 150;
   const cw = Math.round((w - .16) * PX), ch = Math.round((h - .16) * PX);
   const c = document.createElement('canvas');
@@ -296,7 +304,7 @@ export function sign(p, text, x, y, z, w, h, bg, fg) {
   tex.anisotropy = 4;
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(w - .16, h - .16),
     new THREE.MeshStandardMaterial({ map: tex, roughness: .5 }));
-  pl.position.z = .15; g.add(pl);
+  pl.position.z = .255; g.add(pl);
   draw();
   if (document.fonts?.ready) document.fonts.ready.then(draw).catch(() => {});
   return g;

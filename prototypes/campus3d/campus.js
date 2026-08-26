@@ -14,8 +14,8 @@ import { buildFaculties } from './faculty.js';
 
 export const PAL = {
   grass: 0x6FC85E, grassDark: 0x57B04A, grassLight: 0x86D46E,
-  soil: 0x8E6238, stone: 0xF2E6CC, stoneDark: 0xDCCBAA, kerb: 0xFFF6E4,
-  path: 0xF0D49A, pathDark: 0xDCB87C,
+  soil: 0x8E6F58, stone: 0xEDF3F5, stoneDark: 0xCFDDE1, kerb: 0xFAFDFF,
+  path: 0xDCE9EA, pathDark: 0xBFD3D7,
   water: 0x67C6E8, waterDeep: 0x3FA7CE,
   bronze: 0xC9A05E, bronzeDark: 0xA37E40,
   wood: 0xC08E58, woodDark: 0x8E6238, metal: 0x9BA6B2, metalDark: 0x6E7A88,
@@ -50,6 +50,24 @@ const CORE = 40;
    원이면 아무리 넓혀도 섬으로 읽힙니다. HALF 는 미니맵 축척용으로만
    남습니다(부지의 절반 폭). */
 const HALF = SITE.hx;
+
+/* 여섯 시설 현관의 공통 클레이 디자인. 건물 자체의 아치·간판은 각자
+   유지하고, 문 앞 포석·색 띠·양쪽 조명을 한 문법으로 묶어 멀리서도
+   출입구가 읽히게 합니다. 전부 건물 로컬 좌표라 회전한 건물도 맞습니다. */
+function dressEntrance(p, b) {
+  const col = { mainHall: 0x6F99D1, library: 0x54B8A9, dorm: 0xE4A061,
+    union: 0x73C38A, arcade: 0x8C75C8, shop: 0xDF7D6B }[b.key] || PAL.teal;
+  const z = b.d / 2 + .55, y = b.key === 'mainHall' ? 4.25 : 3.15;
+  layBox(p, 5.4, 2.25, .22, M(0xFFF4DE, .78), 0, z + .78);
+  layBox(p, 4.45, 1.72, .23, M(col, .62), 0, z + .78);
+  box(p, 4.8, .18, .34, .08, M(col, .52), 0, y, z + .12);
+  [-2.15, 2.15].forEach((x) => {
+    box(p, .22, 1.55, .24, .08, M(0xF8F2E7, .55), x, y - .82, z + .17);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(.16, 12, 8), M(0xFFF0B3, .28, {
+      emissive: 0xFFD878, emissiveIntensity: .45 }));
+    lamp.position.set(x, y - .18, z + .38); p.add(lamp);
+  });
+}
 
 /* ══════════════════════════════════════════════════════════
    야외 구역 셋 — 운동장 · 호수 · 동아리 거리
@@ -279,6 +297,15 @@ export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
   ctx.water.push({ mesh: surf, y: .66, amp: .035, ph: 0 });
   { const t = new THREE.Mesh(new THREE.TorusGeometry(9.2, .2, 8, 72), kerb);
     t.rotation.x = Math.PI / 2; t.position.y = .5; t.castShadow = true; p.add(t); }
+  /* 외곽 화단 포인트 — 기존 원 안에서만 배치해 충돌 반경은 그대로입니다. */
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2, rr = 9.55;
+    const base = cyl(p, .52, .62, .25, 16, M(0xD5E3E2, .65), Math.cos(a) * rr, .64, Math.sin(a) * rr);
+    base.castShadow = true;
+    const shrub = new THREE.Mesh(new THREE.SphereGeometry(.46, 14, 9), M(i % 2 ? 0x75C977 : 0x5EB86A, .62));
+    shrub.position.set(Math.cos(a) * rr, 1.02, Math.sin(a) * rr); shrub.scale.set(1.15, .72, 1.15);
+    shrub.castShadow = true; p.add(shrub);
+  }
 
   /* ── 대 ── */
   cyl(p, 2.3, 3.2, .7, 36, stone, 0, 1.0, 0);
@@ -312,6 +339,16 @@ export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
     j.position.set(Math.cos(a) * 1.0, 8.2, Math.sin(a) * 1.0);
     j.rotation.z = -Math.cos(a) * .42; j.rotation.x = Math.sin(a) * .42;
     p.add(j);
+  }
+  /* 바깥 못에서 가운데 접시로 모이는 방사형 아치 물줄기. */
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(Math.cos(a) * 7.4, 1.05, Math.sin(a) * 7.4),
+      new THREE.Vector3(Math.cos(a) * 5.8, 3.05, Math.sin(a) * 5.8),
+      new THREE.Vector3(Math.cos(a) * 4.5, 2.05, Math.sin(a) * 4.5));
+    const jet = new THREE.Mesh(new THREE.TubeGeometry(curve, 12, .055, 6, false), wat);
+    jet.renderOrder = 4; p.add(jet);
   }
 
   /* 떨어짐 — 낱 줄기 묶음.
@@ -522,14 +559,21 @@ export function boardOut(g, x, z, ry) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   [-1, 1].forEach((s) => cyl(p, .14, .17, 2.0, 10, M(PAL.woodDark, .74), s * 1.5, 1.0, 0));
   box(p, 3.6, 2.0, .24, .08, M(PAL.woodDark, .76), 0, 2.1, 0);
-  box(p, 3.3, 1.72, .16, .06, M(0x4E7C52, .84), 0, 2.1, .08);
   const cols = [0xFFF8EA, 0xFFE8C0, 0xE8F4FF, 0xFFF0F0];
-  [[-1.0,.42],[.1,.5],[1.05,.4],[-.9,-.44],[.25,-.4],[1.1,-.5]].forEach(([dx, dy], i) => {
-    box(p, .68, .52, .1, .03, M(cols[i % cols.length], .6), dx, 2.1 + dy, .14);
-    [0,1,2].forEach((k) => box(p, .5 - k * .08, .05, .1, .02, M(0x8A9098, .5), dx, 2.24 + dy - k * .12, .17));
+  /* 앞뒤 어느 쪽으로 돌아가도 같은 기능이 읽히는 양면 게시판입니다.
+     뒤에는 검은 나무판만 보여 "막힌 면"처럼 보이던 것을 고칩니다. */
+  [-1, 1].forEach((side) => {
+    box(p, 3.3, 1.72, .16, .06, M(side > 0 ? 0x3E765E : 0x476D82, .84), 0, 2.1, side * .08);
+    [[-1.0,.42],[.1,.5],[1.05,.4],[-.9,-.44],[.25,-.4],[1.1,-.5]].forEach(([dx, dy], i) => {
+      box(p, .68, .52, .1, .03, M(cols[(i + (side < 0 ? 2 : 0)) % cols.length], .6),
+        side * dx, 2.1 + dy, side * .14);
+      [0,1,2].forEach((k) => box(p, .5 - k * .08, .05, .1, .02, M(0x657486, .5),
+        side * dx, 2.24 + dy - k * .12, side * .17));
+    });
   });
   prism(p, 3.9, .5, .5, M(PAL.red, .6), 0, 3.1, 0, .06);
-  box(p, 1.9, .38, .18, .08, M(PAL.gold, .5), 0, 3.28, .12);
+  [-1, 1].forEach((side) => box(p, 2.1, .38, .18, .08,
+    M(side > 0 ? 0xD8EFE9 : 0xDCEAF5, .5), 0, 3.28, side * .12));
   return p;
 }
 
@@ -943,6 +987,7 @@ export function buildCampus(scene) {
     bg.scale.setScalar(b.s);
     g.add(bg);
     BLD[b.key](bg, { plate: false });
+    dressEntrance(bg, b);
     /* 건물이 놓인 자리에 돌바닥을 깝니다 — 잔디 위에 뜬 것처럼 보이지 않게 */
     const pad = box(g, (b.w + 4) * b.s, .3, (b.d + b.front + 4.5) * b.s, 1.2,
                     M(PAL.stoneDark, .8), 0, .12, 0);
@@ -967,6 +1012,12 @@ export function buildCampus(scene) {
 
   /* --- 광장 한가운데 --- */
   fountain(g, 0, 0, ctx);
+  /* 학교 공지와 공모전 탭을 한 창에 합쳤으므로 실제 게시판도 하나입니다.
+     상호작용 좌표(spots.js)는 남아 있었는데
+     모델만 광장 소품 정리 때 같이 빠져, 허공에서 E를 눌러야 했습니다.
+     분수 북쪽 가장자리에 세우고 판 앞면은 광장 쪽을 봅니다. */
+  boardOut(g, -8.6, 13.2, Math.PI);
+  solid(-8.6, 13.2, 3.9, .55, Math.PI, false);
   /* 둥근 분수를 **네모로** 막고 있었습니다. 20.6 짜리 정사각형이라
      광장 네 귀퉁이가 통째로 막히고, 대각선으로 가로지르는 길이 전부
      끊겼습니다. 물받이는 반지름 10 인 원인데 막힌 것은 한 변 20.6 이니
@@ -983,8 +1034,9 @@ export function buildCampus(scene) {
     }
   }
 
-  /* 광장 소품 없음 — 벤치 · 가로등 · 화단 · 쓰레기통 · 게시판 · 이정표를
-     전부 걷었습니다. 자리를 하나씩 손보는 것으로는 안 되는 단계입니다:
+  /* 광장 장식 소품 없음 — 벤치 · 가로등 · 화단 · 쓰레기통 · 이정표를
+     전부 걷었습니다. 기능이 있는 게시판 하나만 위에 다시 세웠습니다.
+     자리를 하나씩 손보는 것으로는 안 되는 단계입니다:
      이 물건들은 옛 극좌표 배치(반지름 9.2 · 13.0 · 15.6)에 매여 있어서
      부지가 네모로 바뀐 지금은 **아무 근거 없는 원**을 그리고 있었습니다.
      조성 계획을 다시 세운 뒤 길과 건물을 기준으로 다시 놓습니다. */

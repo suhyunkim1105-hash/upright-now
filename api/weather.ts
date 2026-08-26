@@ -35,6 +35,35 @@ const DEFAULT_GRID = { nx: 60, ny: 127 }
 
 const BASE =
   'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst'
+const APIHUB = 'https://apihub.kma.go.kr/api/typ01/url/kma_sfctm2.php'
+const APIHUB_FIELDS = [
+  'TM', 'STN', 'WD', 'WS', 'GST_WD', 'GST_WS', 'GST_TM', 'PA', 'PS', 'PT', 'PR',
+  'TA', 'TD', 'HM', 'PV', 'RN', 'RN_DAY', 'RN_JUN', 'SD_HR3', 'SD_DAY', 'SD_TOT',
+  'WC', 'WP', 'WW', 'CA_TOT', 'CA_MID', 'CH_MIN', 'CT', 'CT_TOP', 'CT_MID', 'CT_LOW',
+  'VS', 'SS', 'SI', 'ST_GD', 'TS', 'TE_005', 'TE_01', 'TE_02', 'TE_03', 'ST_SEA',
+  'WH', 'BF', 'IR', 'IX',
+]
+
+/* APIHub 종관관측의 help=1 응답은 공백 구분 텍스트입니다. 필드 머리글을
+   함께 받아 위치를 이름으로 찾으므로 기상청이 열 순서를 문서와 맞춰
+   유지하는 동안 숫자 인덱스를 코드에 박지 않아도 됩니다. */
+function parseApiHub(text: string): Record<string, string> | null {
+  const lines = text.split(/\r?\n/).map((s) => s.trim()).filter(Boolean)
+  if (lines.some((s) => /AUTH|인증|ERROR|INVALID/i.test(s) && !s.startsWith('#'))) return null
+  let fields: string[] = []
+  for (const line of lines) {
+    const cols = line.replace(/^#\s*/, '').split(/\s+/)
+    if (cols.includes('TM') && cols.includes('STN') && cols.includes('TA')) fields = cols
+  }
+  const data = [...lines].reverse().find((s) => !s.startsWith('#') && /^\d{12}\s+108\b/.test(s))
+  if (!data) return null
+  const values = data.split(/\s+/)
+  if (!fields.length) fields = APIHUB_FIELDS
+  if (fields.length > values.length + 3) return null
+  const out: Record<string, string> = {}
+  fields.forEach((k, i) => { if (values[i] !== undefined) out[k] = values[i] })
+  return out
+}
 
 /* 단기예보는 하루 여덟 번(02·05·08·11·14·17·20·23시)만 새로 나옵니다.
    아무 시각이나 넣으면 NO_DATA 입니다. 발표 후 10분쯤 지나야 조회되므로
@@ -98,6 +127,39 @@ export default async function weather(
   const nx = Number(url.searchParams.get('nx')) || DEFAULT_GRID.nx
   const ny = Number(url.searchParams.get('ny')) || DEFAULT_GRID.ny
   const slot = baseSlot(new Date())
+
+  /* 사용자가 발급한 APIHub 키를 먼저 확인합니다. 서울 ASOS(108)의 현재
+     관측값이라 창가 날씨가 예보 발표시각을 기다리지 않고 바로 바뀝니다. */
+  try {
+    const qh = new URLSearchParams({ tm: '0', stn: '108', help: '0', authKey: key })
+    const rh = await fetch(APIHUB + '?' + qh.toString(), { signal: AbortSignal.timeout(8500) })
+    const hubText = await rh.text()
+    if (rh.ok) {
+      const obs = parseApiHub(hubText)
+      if (obs) {
+        const rain = Math.max(0, Number(obs.RN || 0), Number(obs.RN_DAY || 0))
+        const cloud = Number(obs.CA_TOT)
+        return json(response, 200, {
+          configured: true, ok: true, provider: 'KMA APIHub ASOS',
+          pty: rain > 0 ? 1 : 0,
+          sky: Number.isFinite(cloud) ? (cloud >= 8 ? 4 : cloud >= 5 ? 3 : 1) : 1,
+          tempC: Number.isFinite(Number(obs.TA)) ? Number(obs.TA) : null,
+          pop: null, humidity: Number.isFinite(Number(obs.HM)) ? Number(obs.HM) : null,
+          observedAt: obs.TM || null, station: 108,
+        })
+      }
+    }
+    /* APIHub 키 자체가 유효해도 API별 활용신청은 따로입니다. 사용자가 준
+       fct_shrt_reg 키는 확인됐지만 ASOS가 403이면 현재 기온을 지어내지 않고
+       정확한 조치만 알려 줍니다. 같은 키를 data.go.kr에 다시 넣어 봐도
+       인증 체계가 달라 성공하지 않으므로 여기서 끝냅니다. */
+    if (rh.status === 403 || /활용신청|status\s*"?\s*:\s*403/i.test(hubText)) {
+      return json(response, 200, {
+        configured: true, ok: false, provider: 'KMA APIHub',
+        reason: '키는 유효하지만 종관기상관측(ASOS) API 활용신청이 필요합니다.',
+      })
+    }
+  } catch { /* APIHub 활용신청 범위가 다르면 아래 단기예보 API를 시도합니다. */ }
 
   const q = new URLSearchParams({
     serviceKey: key,

@@ -260,6 +260,30 @@ function visibleBox(root) {
   return out;
 }
 
+/** 보이는 옷 조각만 독립 그룹으로 떼어 냅니다.
+    숨긴 캐릭터의 마디 아래에 옷을 둔 채 그리면 부모 visible 상태와 접힌
+    행렬의 조합에 따라 카드가 통째로 비는 브라우저가 있었습니다. 월드 행렬을
+    그대로 복사한 메시만 새 그룹에 담으면 결과에는 몸도, 숨은 부모도 없습니다. */
+function flattenVisible(root) {
+  root.updateMatrixWorld(true);
+  const flat = new THREE.Group();
+  const walk = (o) => {
+    if (!o.visible) return;
+    if (o.isMesh && o.geometry && o.material) {
+      const m = new THREE.Mesh(o.geometry, o.material);
+      m.matrixAutoUpdate = false;
+      m.matrix.copy(o.matrixWorld);
+      m.castShadow = false;
+      m.receiveShadow = false;
+      flat.add(m);
+    }
+    o.children.forEach(walk);
+  };
+  walk(root);
+  flat.updateMatrixWorld(true);
+  return flat;
+}
+
 /* 옷 한 장을 볼 때 나머지 칸을 못 박아 둡니다. 골조는 안 보이지만
    **어디에 있는지**는 정해져 있어야 잘라 내는 규칙이 매번 맞습니다.
    신발 칸에 반바지를 입히는 것은 맨정강이가 살색이 되어 살 규칙 하나로
@@ -648,6 +672,40 @@ function baseLook(src) {
   return out;
 }
 
+/* 옷은 캐릭터 몸에서 떼어 내되, 허공에는 띄우지 않습니다. 가구 카드처럼
+   클레이 전시대 위에 세워 상품 자체의 두께와 앞·옆면이 읽히게 합니다.
+   전시대는 장착 대상이 아니고 썸네일 안에서만 존재합니다. */
+function addWearDisplay(group, box, slot) {
+  const w = Math.max(.42, box.max.x - box.min.x);
+  const d = Math.max(.22, box.max.z - box.min.z);
+  const cx = (box.min.x + box.max.x) / 2;
+  const cz = (box.min.z + box.max.z) / 2;
+  const y0 = box.min.y;
+  const cream = new THREE.MeshStandardMaterial({ color: 0xEEF4FA, roughness: .72, metalness: .02 });
+  const blue = new THREE.MeshStandardMaterial({ color: 0xAFC7DD, roughness: .66, metalness: .03 });
+  const add = (geo, mat, x, y, z) => {
+    const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+    group.add(m); return m;
+  };
+  const base = add(new THREE.CylinderGeometry(w * .68, w * .74, .085, 28), cream, cx, y0 - .11, cz);
+  base.scale.z = Math.max(.72, d / Math.max(.2, w) * 1.25);
+  add(new THREE.CylinderGeometry(w * .47, w * .53, .045, 28), blue, cx, y0 - .045, cz);
+  if (slot === 'top' || slot === 'bottom' || slot === 'bag') {
+    const rear = box.min.z - .055;
+    const h = Math.max(.45, box.max.y - y0);
+    const pole = add(new THREE.CylinderGeometry(.014, .014, h * .88, 10), blue,
+      cx, y0 + h * .47, rear);
+    const bar = add(new THREE.CylinderGeometry(.014, .014, w * .78, 10), blue,
+      cx, box.max.y - h * .08, rear);
+    bar.rotation.z = Math.PI / 2;
+  } else if (slot === 'hat' || slot === 'glasses') {
+    const h = Math.max(.25, box.max.y - y0);
+    add(new THREE.CylinderGeometry(.018, .026, h * .58, 10), blue, cx, y0 + h * .25, cz - .04);
+  }
+  group.updateMatrixWorld(true);
+  return new THREE.Box3().setFromObject(group);
+}
+
 /** 옷 한 장만 세웁니다(opt.bare). 몸은 지어 두되 안 보이게 합니다 —
     위 "옷 한 장만" 머리말에 왜 그래야 하는지 적어 두었습니다. */
 function buildBare(id, opt) {
@@ -678,7 +736,13 @@ function buildBare(id, opt) {
      실루엣이 남지만, 여기서는 그 한 조각이 칸을 다 채웁니다 — 성기게
      지으면 동그란테가 팔각형이 되고 반팔티 어깨에 각이 집니다. 한 품목에
      한 번만 짓고 곳간에 두는 길이라 값도 한 번뿐입니다. */
-  const body = character(g, MANNEQUIN_SPECIES, look, { ry: opt.ry ?? X.ry ?? V.ry ?? 0 });
+  /* 상품 카드에서는 원본 캐릭터가 아니라 **옷 한 장**을 떼어 냅니다.
+     GLB 원본은 몸과 옷이 분리된 골조가 아니므로 P.neck이 없고 카드가 빈
+     네모가 됩니다. 여기만 절차형 옷 골조를 강제하고, 오른쪽 입어보기와
+     실제 월드 캐릭터는 계속 최신 원본 GLB를 사용합니다. */
+  const body = character(g, MANNEQUIN_SPECIES, look, {
+    ry: opt.ry ?? X.ry ?? V.ry ?? 0, procedural: true,
+  });
   const P = body && body.userData && body.userData.parts;
   if (!P || !P.neck) return null;
   const K = { skin: P.neck.material, bottom: matSet(P, 'bottom') };
@@ -691,10 +755,12 @@ function buildBare(id, opt) {
   if (X.pose) { try { X.pose(node, P, body); } catch { /* 자세는 덤입니다 */ } }
   /* 자세를 만졌으니 다시 굳히고 상자를 냅니다 */
   g.updateMatrixWorld(true);
-  const box = visibleBox(body);
+  const flat = flattenVisible(body);
+  let box = visibleBox(flat);
   if (box.isEmpty() || !isFinite(box.min.x)) return null;
   if (X.crop) { try { X.crop(box); } catch { /* 자르기도 덤입니다 */ } }
-  return { group: g, box, off: X.off || V.off, pad: X.pad ?? V.pad, ground: V.ground || false };
+  box = addWearDisplay(flat, box, slot);
+  return { group: flat, box, off: X.off || V.off, pad: Math.max(.08, (X.pad ?? V.pad) - .02), ground: 1.12 };
 }
 
 /** 옷 한 장을 마네킹에 입혀 세웁니다. 몸에 걸친 그림이 필요할 때만
@@ -752,9 +818,9 @@ function buildProp(kind, id, opt) {
        칸의 절반이 나무 기둥입니다. 알과 받침 접시까지만 잘라 봅니다. */
     return {
       group: g,
-      box: new THREE.Box3(new THREE.Vector3(-0.36, 0.86, -0.36),
-        new THREE.Vector3(0.36, 1.70, 0.36)),
-      off: opt.off || OFF_ITEM, pad: 0.1, ground: false,
+      box: new THREE.Box3(new THREE.Vector3(-0.46, 0.0, -0.46),
+        new THREE.Vector3(0.46, 1.78, 0.46)),
+      off: opt.off || new THREE.Vector3(.48, .32, 1), pad: 0.12, ground: 1.15,
     };
   } else return null;
 
@@ -901,11 +967,18 @@ function ensureCanvas(el, opt) {
 function drawThumb(job) {
   if (!boot()) return;
   const it = getItem(job.kind, job.id, job.opt);
-  if (!it) { job.done = true; return; }
+  if (!it) {
+    job.done = true;
+    job.el.dataset.renderState = 'error';
+    console.warn('[상점 3D] 상품을 만들지 못했습니다', job.kind, job.id);
+    return;
+  }
   const cv = ensureCanvas(job.el, job.opt);
   const ok = paint(cv, it.group, it.box, job.opt.off || it.off,
     job.opt.pad ?? it.pad, job.opt.ground ?? it.ground);
   job.done = !!ok;
+  job.el.dataset.renderState = ok ? 'ready' : 'error';
+  if (!ok) console.warn('[상점 3D] 상품을 그리지 못했습니다', job.kind, job.id);
   if (ok && job.opt.onDraw) { try { job.opt.onDraw(job.el); } catch { /* 부르는 쪽 사정 */ } }
 }
 
@@ -1060,7 +1133,15 @@ function rebuildPreview(p) {
   const look = previewLook(p);
   const sp = previewSpecies(p);
   const rid = previewRide(p);
+  /* 최신 원본 네 종도 이제 별도 3D 착용 레이어를 가지므로 구형 절차형을
+     강제할 이유가 없습니다. 월드에서 뽑은 바로 그 캐릭터에 상품을 입혀
+     보여 주고, 새 네 종만 자동으로 클레이 절차형 판본을 씁니다. */
   p.body = character(p.rig, sp, look, {});
+  p.el.dataset.renderState = p.body ? 'ready' : 'error';
+  p.el.dataset.characterSource = p.body?.userData?.characterSource || 'unknown';
+  p.el.dataset.species = sp;
+  p.el.dataset.outfit = [look.topId, look.bottomId, look.shoesId, look.hatId,
+    look.glassesId, look.bagId].filter(Boolean).join(',');
   claim(p.body);
   if (rid) { p.rideG = ride(p.rig, rid, {}); if (p.rideG) claim(p.rideG); }
   p.shape = look;

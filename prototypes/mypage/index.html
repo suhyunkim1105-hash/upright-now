@@ -188,14 +188,17 @@ h2 {
 
 section + section { margin-top: var(--s-5); }
 
+/* 줄을 선이 아니라 **판**이 가릅니다. 밑줄로 나누면 칸이 여덟이 넘는
+   순간 화면이 격자가 되고, 어디까지가 한 줄인지는 눈이 매번 다시
+   찾습니다. 월드 창과 같은 문법입니다. */
 .field {
   display: grid; grid-template-columns: 148px minmax(0, 1fr) auto;
   align-items: center; gap: var(--s-3);
-  padding: var(--s-2) 0;
-  border-bottom: var(--edge-2);
+  padding: 11px 14px; margin-bottom: 7px;
+  border-radius: var(--cr-rw);
+  background: var(--clay2); box-shadow: var(--clayUp2);
 }
-.field:last-child { border-bottom: 0; }
-.field .lb { color: var(--ink-2); font-size: 14px; font-weight: 600; }
+.field .lb { color: var(--cInk3); font-size: 13px; font-weight: 800; }
 .field .val { font-weight: 700; overflow-wrap: anywhere; }
 .field .val small { display: block; font-weight: 500; font-size: 13px; color: var(--ink-3); }
 

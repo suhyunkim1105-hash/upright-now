@@ -19,11 +19,19 @@ import * as THREE from 'three';
 import { GLTFLoader } from './vendor/ext/GLTFLoader.js';
 
 const SIZE = 300;
-const FILES = [['거북이', 'turtle'], ['기린', 'giraffe'], ['펭귄', 'penguin'], ['개구리', 'frog']];
 /* GLB 의 정면은 +X 쪽입니다(π/2). 처음에 0 을 앞으로 잡아 옆모습을 앞이라
-   불렀습니다. 앞·뒤·전신 세 장을 찍습니다. */
+   불렀습니다.
+   `?sp=turtle` 한 종만, `?turn=1` 전신을 여섯 방향으로 돌려 봅니다 —
+   등껍질이 앞에 붙었는지 같은 것은 한 방향만 봐서는 알 수 없습니다. */
+const Q = new URLSearchParams(location.search);
+const ALL = [['거북이', 'turtle'], ['기린', 'giraffe'], ['펭귄', 'penguin'], ['개구리', 'frog']];
+const FILES = Q.get('sp')
+  ? (ALL.filter(([, f]) => f === Q.get('sp')).length ? ALL.filter(([, f]) => f === Q.get('sp')) : [[Q.get('sp'), Q.get('sp')]])
+  : ALL;
 const HALF = Math.PI / 2;
-const VIEWS = [['머리 앞', HALF, 'head'], ['머리 뒤', -HALF, 'head'], ['전신 앞', HALF, 'body']];
+const VIEWS = Q.has('turn')
+  ? [0, 1, 2, 3, 4, 5].map((i) => [['앞', '앞우', '뒤우', '뒤', '뒤좌', '앞좌'][i], HALF + i * Math.PI / 3, 'body'])
+  : [['머리 앞', HALF, 'head'], ['머리 뒤', -HALF, 'head'], ['전신 앞', HALF, 'body']];
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
 renderer.setSize(SIZE, SIZE);
@@ -49,6 +57,22 @@ for (const [name, file] of FILES) {
   try { gltf = await load(file); } catch (e) { console.error(file, e); continue; }
   const root = gltf.scene;
   scene.add(root);
+
+  /* `?anim=walk&t=0.4` — 동작을 그 시각으로 돌려 놓고 찍습니다.
+     뼈를 옮겨 붙인 뒤 살이 제대로 따라오는지는 **움직여 봐야** 압니다.
+     가만히 선 자세는 뼈가 틀려도 멀쩡해 보입니다. */
+  const animName = Q.get('anim');
+  if (animName) {
+    const clip = (gltf.animations || []).find((c) => c.name === animName);
+    if (clip) {
+      const mixer = new THREE.AnimationMixer(root);
+      mixer.clipAction(clip).play();
+      mixer.update(Number(Q.get('t') || 0.4));
+      root.updateMatrixWorld(true);
+    } else {
+      console.warn('동작 없음:', animName, (gltf.animations || []).map((c) => c.name));
+    }
+  }
 
   const box = new THREE.Box3().setFromObject(root);
   const size = box.getSize(new THREE.Vector3());
@@ -78,7 +102,8 @@ for (const [name, file] of FILES) {
 /* 한 판으로 합쳐 저장합니다 */
 window.__shots = shots;
 window.__sheet = async () => {
-  const cols = 3, rows = FILES.length, PAD = 10, CAP = 18;
+  const cols = VIEWS.length <= 3 ? VIEWS.length : 3;
+  const rows = Math.ceil(shots.length / cols), PAD = 10, CAP = 18;
   const cv = document.createElement('canvas');
   cv.width = cols * (SIZE + PAD) + PAD;
   cv.height = rows * (SIZE + PAD + CAP) + PAD;

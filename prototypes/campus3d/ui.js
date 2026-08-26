@@ -1614,6 +1614,11 @@ export function mypage(ctx) {
         <button data-tab="cal">자세 기준</button>
         <button data-tab="set">설정</button></div>
       <div data-pane="me">`
+      /* 이름 — 원래 옷장(C)에 있었습니다. 옷장은 "입는 것"의 집이고
+         이름은 내 정보라, 마이페이지 첫 칸으로 옮깁니다. */
+      + lbl('user', '이름')
+      + `<input class="nick" id="mynick" maxlength="10" placeholder="${esc(ctx.species || '')}"
+          value="${esc(ctx.nick || '')}" autocomplete="off">`
       + `<div class="cg two">${cc('clock', '', mshort(total), '앉은 시간')}`
       + `${cc('cam', 'sky', mshort(judged), '판정이 돈 시간')}</div>`
       + `<div class="cg">${cc('seat', '', SAVE.sessions.length, '세션')}`
@@ -1675,6 +1680,13 @@ export function mypage(ctx) {
         const b = e.target.closest('button[data-do]'); if (!b) return;
         ctx.onDo(b.dataset.do, again);
       };
+      /* 이름 칸 — WASD 가 글자 입력을 걷기로 먹지 않도록 키를 여기서 멈춥니다.
+         (옷장에 있던 것과 같은 규칙) */
+      const nk = root.querySelector('#mynick');
+      if (nk) {
+        nk.onkeydown = (e) => e.stopPropagation();
+        nk.oninput = () => ctx.onNick?.(nk.value);
+      }
     },
   };
 }

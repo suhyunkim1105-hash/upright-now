@@ -883,32 +883,96 @@ addEventListener('unhandledrejection', function (e) {
   @media(max-width:620px){#game .ghead{align-items:flex-start;flex-wrap:wrap}#game .gstat{margin-left:0}.game-copy{flex:1}.ghead .gx{margin-left:auto}}
 
   /* ── 첫 화면 ── */
-  #load{position:fixed;inset:0;display:grid;place-items:center;background:
-    radial-gradient(circle at 20% 14%,rgba(255,255,255,.98) 0 8%,transparent 34%),
-    radial-gradient(circle at 82% 78%,rgba(191,238,231,.52),transparent 35%),
-    linear-gradient(145deg,#F6FBFF,#E9F6FB 52%,#E6F5F1);color:#2A4055;
-    font-size:14.5px;font-weight:800;z-index:9;transition:.45s;padding:24px}
+  /* ── 로딩 ──
+     세 번째 판입니다. 첫 판은 흰 카드, 둘째 판은 평평한 잔디 타원이었고,
+     이제 **떠 있는 클레이 섬**입니다 — M 지도의 디오라마와 같은 문법:
+     잔디 윗판 밑에 흙(크림색) 옆면이 보여야 "섬" 으로 읽힙니다.
+     섬이 통째로 천천히 떠오르내리고, 그림자는 반대로 숨을 쉽니다.
+     구름 셋이 뒤에서 흘러가면 하늘이 정지화면이 아니게 됩니다. */
+  #load{position:fixed;inset:0;display:grid;place-items:center;z-index:9;transition:.55s;
+    overflow:hidden;color:#2A4055;background:
+      radial-gradient(circle at 18% 10%,rgba(255,255,255,.85),transparent 32%),
+      radial-gradient(circle at 84% 20%,rgba(255,255,255,.5),transparent 28%),
+      linear-gradient(180deg,#BFE3F7 0%,#DDF1F8 52%,#EEF9F1 100%)}
   #load.gone{opacity:0;pointer-events:none}
-  .load-card{width:min(500px,90vw);padding:28px 32px 26px;border:1px solid rgba(105,142,177,.13);border-radius:32px;
-    background:rgba(250,253,255,.88);box-shadow:0 24px 70px rgba(70,104,137,.16),inset 0 2px 0 #fff;text-align:center;backdrop-filter:blur(16px)}
-  .load-brand{display:flex;justify-content:center;align-items:center;gap:9px;font:950 26px/1 var(--ff);letter-spacing:-.04em}
-  .load-brand::before{content:'';width:12px;height:12px;border-radius:5px;background:linear-gradient(145deg,#57DCC7,#7BBFEF);box-shadow:0 4px 10px rgba(66,161,166,.24)}
-  .load-brand i{font:800 9px/1 var(--ff);letter-spacing:.08em;color:#6F879E;background:#E6EFF7;padding:6px 8px;border-radius:99px}
-  .load-pets{height:132px;display:flex;align-items:flex-end;justify-content:center;gap:3px;margin:18px 0 12px;overflow:visible}
-  .load-pets img{width:94px;height:126px;object-fit:contain;filter:drop-shadow(0 9px 7px rgba(65,86,112,.14));transform-origin:50% 100%;animation:loadWalk 1.35s ease-in-out infinite alternate}
-  .load-pets img:nth-child(2){animation-delay:-.35s}.load-pets img:nth-child(3){animation-delay:-.7s}.load-pets img:nth-child(4){animation-delay:-1.05s}
-  #load strong{display:block;font-size:15px;margin-top:8px;letter-spacing:-.015em}#load small{display:block;margin-top:6px;color:#8497AA;font-size:10.5px;font-weight:650}
-  .load-track{height:8px;border-radius:99px;background:#DDE8F2;box-shadow:inset 0 2px 5px rgba(67,90,118,.12);overflow:hidden;margin-top:20px}
-  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;background:linear-gradient(90deg,#51D8C4,#79BDEB);animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
-  /* 지도·감정표현·채팅·세션·게임도 상점과 같은 밝은 클레이 표면으로 통일. */
-  #post,#tut,#emo .hub,#game .gbox,#chatin{background:var(--clay);border:0;box-shadow:var(--clayUp);color:var(--cInk)}
-  #post,#tut,#game .gbox{border-radius:24px}
-  #emo button{background:var(--clay2);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
-  #chatlog div{background:rgba(249,252,255,.94);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
-  #chatchannels button{background:var(--clay2);color:var(--cInk2);box-shadow:var(--clayUp2)}
-  #chatin input{background:var(--clay3);border:0;box-shadow:var(--clayIn);color:var(--cInk)}
-  #game{background:rgba(92,122,143,.24);backdrop-filter:blur(8px)}
-  @keyframes loadWalk{to{transform:translateY(-6px) rotate(1deg)}}@keyframes loadFill{to{width:96%}}
+  /* 구름 — 알약 하나에 혹 둘. 셋이 서로 다른 높이 · 속도로 흐릅니다 */
+  .ld-cloud{position:absolute;height:26px;width:92px;border-radius:99px;
+    background:rgba(255,255,255,.9);filter:blur(.4px);
+    box-shadow:0 6px 14px rgba(120,160,190,.12);animation:ldDrift linear infinite}
+  .ld-cloud::before,.ld-cloud::after{content:'';position:absolute;border-radius:50%;
+    background:inherit;box-shadow:none}
+  .ld-cloud::before{width:38px;height:38px;left:16px;top:-16px}
+  .ld-cloud::after{width:26px;height:26px;right:18px;top:-10px}
+  .ld-cloud.c1{top:12%;animation-duration:46s;transform:scale(1.15)}
+  .ld-cloud.c2{top:26%;animation-duration:64s;animation-delay:-30s;opacity:.75;transform:scale(.85)}
+  .ld-cloud.c3{top:7%;animation-duration:78s;animation-delay:-55s;opacity:.6;transform:scale(.65)}
+  @keyframes ldDrift{from{left:-140px}to{left:calc(100% + 60px)}}
+  .load-in{position:relative;display:flex;flex-direction:column;align-items:center;
+    text-align:center;padding:0 24px;transform:translateY(-2vh)}
+  .load-brand{display:flex;align-items:center;gap:9px;font:950 15px/1 var(--ff);
+    letter-spacing:-.02em;color:#42607A}
+  .load-brand::before{content:'';width:10px;height:10px;border-radius:5px;
+    background:linear-gradient(145deg,#57DCC7,#7BBFEF);box-shadow:0 4px 10px rgba(66,161,166,.28)}
+  .load-brand i{font:800 8px/1 var(--ff);letter-spacing:.1em;color:#5E7890;
+    background:rgba(255,255,255,.75);padding:5px 8px;border-radius:99px;
+    box-shadow:inset 0 0 0 1px rgba(105,142,177,.14)}
+  .load-title{margin:10px 0 0;font:900 27px/1.2 var(--ff);letter-spacing:-.035em;color:#1E3345}
+  /* ── 떠 있는 섬 ── */
+  .load-isle{position:relative;width:min(520px,92vw);height:252px;margin:6px 0 0}
+  .isle-shadow{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);
+    width:62%;height:30px;border-radius:50%;
+    background:radial-gradient(50% 50% at 50% 50%,rgba(74,110,92,.28),rgba(74,110,92,0) 72%);
+    animation:isleShadow 3.4s ease-in-out infinite alternate}
+  .isle-float{position:absolute;inset:0;animation:isleFloat 3.4s ease-in-out infinite alternate}
+  /* 잔디 윗판 + 흙 옆면 — 타원 두 장을 세로로 어긋 놓으면 아래 초승달만큼이
+     두께가 됩니다. 흙 밑에 어두운 입술 한 줄을 더 깔아 바닥을 닫습니다. */
+  .isle-top,.isle-side,.isle-lip{position:absolute;left:50%;transform:translateX(-50%);
+    border-radius:50%}
+  .isle-top{bottom:40px;width:100%;height:104px;z-index:1;
+    background:radial-gradient(58% 62% at 50% 36%,#BFE7A9 0 46%,#9ED98E 74%,#83C97F 100%);
+    box-shadow:inset 0 -8px 14px rgba(74,140,86,.22)}
+  .isle-side{bottom:22px;width:96%;height:100px;
+    background:linear-gradient(180deg,#EBDCB4 26%,#DCC391 62%,#C8AB77 100%)}
+  .isle-lip{bottom:16px;width:84%;height:88px;background:#B29566}
+  /* 섬 위 소품 — 나무 둘과 덤불. 캐릭터가 서는 가운데는 비웁니다 */
+  .isle-tree{position:absolute;z-index:2;width:14px;height:26px;border-radius:5px;
+    background:#A97443}
+  .isle-tree::before{content:'';position:absolute;left:50%;top:-34px;transform:translateX(-50%);
+    width:52px;height:50px;border-radius:50%;
+    background:radial-gradient(circle at 38% 30%,#8FD98A,#5FBB66 78%);
+    box-shadow:0 6px 10px -4px rgba(60,110,70,.4)}
+  .isle-tree.t1{left:7%;bottom:96px}
+  .isle-tree.t2{right:6%;bottom:104px;transform:scale(.82)}
+  .isle-bush{position:absolute;z-index:2;width:34px;height:22px;border-radius:99px;
+    background:radial-gradient(circle at 40% 30%,#A5E093,#74C578 80%)}
+  .isle-bush.b1{left:19%;bottom:74px}
+  .isle-bush.b2{right:17%;bottom:66px;transform:scale(.8)}
+  .load-stage{position:absolute;left:0;right:0;bottom:86px;z-index:3;
+    display:flex;align-items:flex-end;justify-content:center;gap:8px}
+  .load-stage img{position:relative;width:100px;height:136px;object-fit:contain;
+    transform-origin:50% 100%;
+    filter:drop-shadow(0 9px 5px rgba(58,92,74,.24));
+    animation:loadPop .5s cubic-bezier(.34,1.5,.5,1) backwards, loadBob 1.5s ease-in-out .5s infinite alternate}
+  .load-stage img:nth-child(1){animation-delay:.05s,.55s}
+  .load-stage img:nth-child(2){animation-delay:.15s,.95s}
+  .load-stage img:nth-child(3){animation-delay:.25s,.72s}
+  .load-stage img:nth-child(4){animation-delay:.35s,1.2s}
+  #load strong{display:block;margin-top:20px;font-size:14.5px;font-weight:800;letter-spacing:-.015em}
+  #load small{display:block;margin-top:7px;color:#7B90A4;font-size:11px;font-weight:650}
+  /* 진행 줄 — 흰 클레이 홈 안에 민트 살. 끝의 반짝 점이 살아 있음을 말합니다 */
+  .load-track{position:relative;width:min(260px,64vw);height:9px;border-radius:99px;margin-top:16px;
+    background:rgba(255,255,255,.85);
+    box-shadow:inset 0 2px 5px rgba(67,90,118,.18),0 1px 0 rgba(255,255,255,.8)}
+  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;
+    background:linear-gradient(90deg,#51D8C4,#79BDEB);
+    box-shadow:0 0 10px rgba(87,220,199,.55);
+    animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes loadPop{from{opacity:0;transform:translateY(16px) scale(.82)}}
+  @keyframes loadBob{to{transform:translateY(-7px)}}
+  @keyframes loadFill{to{width:96%}}
+  @keyframes isleFloat{from{transform:translateY(0)}to{transform:translateY(-11px)}}
+  @keyframes isleShadow{from{transform:translateX(-50%) scale(1);opacity:1}
+    to{transform:translateX(-50%) scale(.88);opacity:.6}}
 
   @media (max-width:860px){
     #help,#foot .fps{display:none}
@@ -1079,13 +1143,24 @@ addEventListener('unhandledrejection', function (e) {
     </div>
   </div></div>
 </div>
-<div id="load"><div class="load-card">
+<div id="load">
+  <i class="ld-cloud c1" aria-hidden="true"></i><i class="ld-cloud c2" aria-hidden="true"></i><i class="ld-cloud c3" aria-hidden="true"></i>
+  <div class="load-in">
   <div class="load-brand">DESKFIT <i>3D CAMPUS</i></div>
-  <div class="load-pets" aria-hidden="true">
-    <img src="../landing/assets/char-turtle-cut.webp" alt=""><img src="../landing/assets/char-giraffe-cut.webp" alt="">
-    <img src="../landing/assets/char-penguin-cut.webp" alt=""><img src="../landing/assets/char-frog-cut.webp" alt="">
+  <h1 class="load-title">기린캠퍼스로 가는 중</h1>
+  <div class="load-isle" aria-hidden="true">
+    <span class="isle-shadow"></span>
+    <div class="isle-float">
+      <i class="isle-lip"></i><i class="isle-side"></i><i class="isle-top"></i>
+      <i class="isle-tree t1"></i><i class="isle-tree t2"></i>
+      <i class="isle-bush b1"></i><i class="isle-bush b2"></i>
+      <div class="load-stage">
+        <img src="../landing/assets/char-turtle-cut.webp" alt=""><img src="../landing/assets/char-giraffe-cut.webp" alt="">
+        <img src="../landing/assets/char-penguin-cut.webp" alt=""><img src="../landing/assets/char-frog-cut.webp" alt="">
+      </div>
+    </div>
   </div>
-  <strong>캠퍼스 친구들을 부르는 중</strong><small>캐릭터 · 건물 · 교실을 선명하게 준비하고 있어요</small>
+  <strong>캠퍼스 친구들을 부르는 중</strong><small>캐릭터 · 건물 · 교실을 준비하고 있어요</small>
   <div class="load-track"><span></span></div>
 </div></div>
 <script type="importmap">
@@ -2142,6 +2217,11 @@ function panelFor(s) {
     case 'mypage': return UI.mypage({
       coins: SAVE.coins, server: !!(SRV && SRV.configured), snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
       schools: SCHOOLS, school: SAVE.school,
+      nick: SAVE.nick || '', species: curSpecies,
+      onNick: (v) => {
+        SAVE.nick = v.trim().slice(0, 10); UI.save(); idbarPaint();
+        net?.setLook(curSpecies, myLook(), myNick());
+      },
       baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
       onSchool: (school, again) => { chooseSchool(school); again(); },
       onDo: (k, again) => {
@@ -2275,14 +2355,6 @@ function panelFor(s) {
           else return;
           UI.save(); rebuildMe(); net?.setLook(curSpecies, myLook(), myNick()); again();
         };
-        const nk = root.querySelector('input.nick');
-        if (nk) {
-          nk.onkeydown = (e) => e.stopPropagation();
-          nk.oninput = () => {
-            SAVE.nick = nk.value.trim().slice(0, 10); UI.save(); idbarPaint();
-            net?.setLook(curSpecies, myLook(), myNick());
-          };
-        }
       },
     };
     default: return UI.stub(s.tag, s.title, s.body);
@@ -3337,43 +3409,61 @@ function drawBlocks(g, k, big) {
 const MAPSHOT = { img: null, cam: null };
 function shootMap() {
   try {
-    /* 표시 크기는 620px 입니다. 1100px PNG 는 시작 뒤 한 프레임을 길게
-       멈췄습니다. 768px 이면 지도 글자와 건물 윤곽에 충분합니다. */
-    const S = 768;
+    /* ── 지도는 세계의 사진입니다 ──
+       손으로 그린 도식은 실제 월드가 좋아질수록 뒤처집니다. 건물을
+       다듬어도 지도는 그대로라, M 을 누르는 순간 딴 게임이 됩니다.
+       그래서 **진짜 씬을 아이소메트릭으로 한 번 찍어** 그대로 씁니다 —
+       월드가 바뀌면 지도도 저절로 바뀝니다.
+
+       45도에서 내려다보고(고도 약 38도), 부지 밑에 받침 블록을 잠깐
+       끼워 넣어 디오라마 모형처럼 보이게 합니다. 배경은 투명으로 두고
+       칠은 그리는 쪽(drawMap)이 합니다 — 큰 지도와 미니맵이 다른
+       바탕을 쓸 수 있어야 합니다. */
+    const S = 1024;
     const r2 = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     r2.setSize(S, S, false);
-    r2.setPixelRatio(1.5);
+    r2.setPixelRatio(1.25);
     r2.shadowMap.enabled = true; r2.shadowMap.type = THREE.PCFSoftShadowMap;
     r2.outputColorSpace = THREE.SRGBColorSpace;
     r2.toneMapping = THREE.ACESFilmicToneMapping; r2.toneMappingExposure = 1.05;
-    /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다. 그리고 카메라가
-       높이 92 에 far 300 이면 먼 구석이 잘립니다 — 캠퍼스를 넓히고도
-       이 값이 그대로라 지도가 옛 섬 크기로 찍히고 있었습니다. */
-    /* 부지가 320×260 이라 반폭 160 을 다 담아야 합니다.
-
-       그리고 **정직하게 내려다봅니다.** 비스듬히 두면 높은 건물이 옆으로
-       누워 낮은 것을 덮고, 지도에서 길이 사라집니다. 지도는 어디로
-       가는지 보는 것이지 조감도가 아닙니다. 살짝만 기울입니다.
-
-       far 는 넉넉히 — 400 높이에서 900 이면 바닥까지 여유가 있습니다.
-       전 판은 높이 92 에 far 300 이라, 캠퍼스를 320 으로 넓힌 뒤로는
-       먼 구석이 잘려 옛 섬 크기로 찍히고 있었습니다. */
-    const halfW = CAMPUS.SITE.hx + 34;
-    const mc = new THREE.OrthographicCamera(-halfW, halfW, halfW, -halfW, .5, 1200);
-    /* 완전 수직 평면도보다 건물 높이와 정면이 읽히는 3D 조감 시점. */
-    mc.position.set(150, 360, 175);
-    mc.lookAt(0, 0, 0);
-    const wasBg = scene.background;
-    /* **안개를 끕니다.** 밀도 .0040 에서 420 칸 위에서 내려다보면
-       exp(-(0.004*420)^2) ≈ 0.06 — 94% 가 안개입니다. 지도가 통째로
-       까맣게 찍히던 정체입니다. 지도는 안개 너머를 보는 그림입니다. */
-    const wasFog = scene.fog;
-    scene.fog = null;
-    scene.background = new THREE.Color(0x8FD8EE);
+    /* 45도로 돌린 네모 부지의 화면 폭은 (hx+hz)/√2 입니다. 여유 30. */
+    /* 가로는 돌린 네모의 대각 폭, 세로는 고도(38도)로 눌린 만큼만 —
+       정사각 프러스텀이면 위아래가 하늘과 여백으로 절반이 빕니다. */
+    const halfW = (CAMPUS.SITE.hx + CAMPUS.SITE.hz) * .707 + 16;
+    const halfH = halfW * .74;
+    const mc = new THREE.OrthographicCamera(-halfW, halfW, halfH, -halfH, .5, 1600);
+    const D = 420;
+    /* 고도를 38도에서 32도로 낮춥니다 — 옆면(흙)이 보여야 섬이지,
+       위에서만 보면 여전히 평면도입니다. */
+    mc.position.set(D * .707, D * .62, D * .707);
+    mc.lookAt(0, -3, 0);
+    const wasFog = scene.fog, wasBg = scene.background;
+    scene.fog = null; scene.background = null;
+    /* 받침 — 흙 케이크 두 단. 레퍼런스 디오라마는 전부 잔디 밑에
+       크림색 흙단이 보입니다. 찍는 동안만 끼웁니다. */
+    const soil = new THREE.Mesh(
+      new THREE.BoxGeometry(CAMPUS.SITE.hx * 2 + 8, 15, CAMPUS.SITE.hz * 2 + 8),
+      new THREE.MeshStandardMaterial({ color: 0xEAD9B0, roughness: .9 }));
+    soil.position.y = -7.65; scene.add(soil);
+    const lip = new THREE.Mesh(
+      new THREE.BoxGeometry(CAMPUS.SITE.hx * 2 + 1, 12, CAMPUS.SITE.hz * 2 + 1),
+      new THREE.MeshStandardMaterial({ color: 0xC7A97D, roughness: .95 }));
+    lip.position.y = -20.6; scene.add(lip);
     const wasVis = { room: roomRoot.visible, campus: campusRoot.visible, player: playerRig.visible };
     roomRoot.visible = false; campusRoot.visible = true; playerRig.visible = false;
     NPC.forEach((n) => (n.rig.visible = false));
+    /* 부지 밖 잔디 원반은 모형 밖 세상입니다 — 찍는 동안만 끕니다.
+       안 끄면 배경까지 잔디가 차서 받침 블록이 안 보입니다. */
+    const outer = scene.getObjectByName('outerLawn');
+    const patch = scene.getObjectByName('outerPatch');
+    const wasOuter = outer ? outer.visible : true;
+    const wasPatch = patch ? patch.visible : true;
+    if (outer) outer.visible = false;
+    if (patch) patch.visible = false;
     r2.render(scene, mc);
+    if (outer) outer.visible = wasOuter;
+    if (patch) patch.visible = wasPatch;
+    [soil, lip].forEach((m) => { scene.remove(m); m.geometry.dispose(); m.material.dispose(); });
     const img = new Image();
     img.src = r2.domElement.toDataURL('image/png');
     MAPSHOT.img = img; MAPSHOT.cam = mc;
@@ -3385,6 +3475,16 @@ function shootMap() {
 }
 /* 세계 좌표 → 지도 그림 픽셀 (0..1) */
 const _mv = new THREE.Vector3();
+/* 지도 픽셀(0..1) → 세계 바닥 좌표. 직교 카메라라 두 깊이를 풀어
+   y=0 평면과 만나는 점을 구합니다 — 사진 지도에서 아무 데나 눌러도
+   그 자리로 걸어가게 하는 짝입니다. */
+function mapWorld(u, v) {
+  if (!MAPSHOT.cam) return null;
+  const a = new THREE.Vector3(u * 2 - 1, -(v * 2 - 1), -1).unproject(MAPSHOT.cam);
+  const b = new THREE.Vector3(u * 2 - 1, -(v * 2 - 1), 1).unproject(MAPSHOT.cam);
+  const t = a.y / (a.y - b.y);
+  return { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t };
+}
 function mapUV(x, z) {
   if (!MAPSHOT.cam) return [.5, .5];
   _mv.set(x, 0, z).project(MAPSHOT.cam);
@@ -3596,15 +3696,20 @@ mapCv.addEventListener('click', (e) => {
   /* 시설·호수·운동장 라벨 근처는 문/중심 앞으로, 그 밖은 누른 좌표
      그대로 갑니다. 이제 이름 없는 잔디·길도 가장 가까운 건물로 빨려
      가지 않습니다. */
+  /* 사진 지도가 있으면 그 카메라로, 아직이면 옛 도식 좌표로 잽니다 */
+  const shot = MAPSHOT.cam && MAPSHOT.img?.complete;
+  const IH = S * .74, IY = (S - IH) / 2;
+  const toXY = (x, z) => { if (!shot) return clayXY(x, z); const [u, v] = mapUV(x, z); return [u * S, IY + v * IH]; };
   let best = null, bd = 42 * 42;
   PLACES.forEach((pl) => {
-    const p = pl.b ? clayXY(pl.b.x, pl.b.z) : clayXY(pl.at.x, pl.at.z);
+    const p = pl.b ? toXY(pl.b.x, pl.b.z) : toXY(pl.at.x, pl.at.z);
     const d2 = (px - p[0]) ** 2 + (py - p[1]) ** 2;
     if (d2 < bd) { bd = d2; best = pl; }
   });
   e.stopPropagation();
   if (best) { goPlace(best); return; }
-  const w = clayWorld(px, py);
+  const w = shot ? mapWorld(px / S, (py - IY) / IH) : clayWorld(px, py);
+  if (!w) return;
   w.x = clamp(w.x, -CAMPUS.SITE.hx + 2, CAMPUS.SITE.hx - 2);
   w.z = clamp(w.z, -CAMPUS.SITE.hz + 2, CAMPUS.SITE.hz - 2);
   /* 건물 한가운데를 눌러도 주변 빈 길을 찾습니다. */
@@ -3627,9 +3732,41 @@ function drawMap() {
   mg.textAlign = 'center'; mg.textBaseline = 'middle';
   if (!room) {
     const sea = mg.createLinearGradient(0, 0, 0, S);
-    sea.addColorStop(0, MAPC.sea); sea.addColorStop(1, MAPC.seaDeep);
+    sea.addColorStop(0, '#DFF2FB'); sea.addColorStop(1, '#CBE9F4');
     mg.fillStyle = sea; mg.fillRect(0, 0, S, S);
-    drawClayCampus(mg);
+    if (MAPSHOT.img?.complete && MAPSHOT.img.naturalWidth) {
+      /* 하늘 소품 — 구름 셋. 사진 위가 아니라 **하늘 여백**에만 둡니다.
+         레퍼런스 디오라마는 섬이 하늘에 떠 있고, 하늘은 비어 있지 않습니다. */
+      const puff = (x, y, s, a) => {
+        mg.save(); mg.globalAlpha = a; mg.fillStyle = '#FFFFFF';
+        mg.beginPath(); mg.roundRect(x - s * 1.5, y - s * .34, s * 3, s * .95, 99); mg.fill();
+        [[-.5, -.42, .62], [.28, -.55, .8], [.95, -.3, .5]].forEach(([dx, dy, r]) => {
+          mg.beginPath(); mg.arc(x + dx * s, y + dy * s, r * s, 0, TAU); mg.fill();
+        });
+        mg.restore();
+      };
+      puff(S * .15, S * .085, 24, .95); puff(S * .82, S * .13, 18, .8); puff(S * .68, S * .045, 12, .55);
+      /* 받침 그늘 — 가장자리로 풀리는 그라데이션이어야 모형이 "떠" 보입니다 */
+      const sh = mg.createRadialGradient(C, C + S * .335, S * .04, C, C + S * .335, S * .36);
+      sh.addColorStop(0, 'rgba(52,92,110,.26)'); sh.addColorStop(1, 'rgba(52,92,110,0)');
+      mg.save(); mg.translate(C, C + S * .335); mg.scale(1, .22); mg.translate(-C, -(C + S * .335));
+      mg.fillStyle = sh; mg.beginPath(); mg.arc(C, C + S * .335, S * .36, 0, TAU); mg.fill();
+      mg.restore();
+      /* 프러스텀이 가로로 길어서(halfH = .74·halfW) 정사각에 그대로 늘리면
+         찌그러집니다. 비율대로 세로를 줄여 가운데 둡니다. */
+      const IH = S * .74, IY = (S - IH) / 2;
+      mg.drawImage(MAPSHOT.img, 0, IY, S, IH);
+      const uv = (x, z) => { const [u, v] = mapUV(x, z); return [u * S, IY + v * IH]; };
+      /* 지나다니는 사람 — 점으로 */
+      mg.fillStyle = 'rgba(255,255,255,.85)'; mg.strokeStyle = 'rgba(30,50,64,.35)'; mg.lineWidth = 1;
+      NPC.forEach((n) => { const [x2, y2] = uv(n.rig.position.x, n.rig.position.z);
+        mg.beginPath(); mg.arc(x2, y2, 3.2, 0, TAU); mg.fill(); mg.stroke(); });
+      /* 번호 이름표 — 지도를 연 채 숫자를 치면 그리로 갑니다 */
+      const numOf = (k) => { const i = PLACES.findIndex((q) => q.key === k); return i < 0 ? '' : ((i + 1) % 10) + '. '; };
+      BUILDINGS.forEach((b) => { const [x2, y2] = uv(b.x, b.z); mapLabel(mg, numOf(b.zone) + b.name, x2, y2 - 20, 10.5); });
+      PLACES.filter((q) => q.at).forEach((q) => { const [x2, y2] = uv(q.at.x, q.at.z); mapLabel(mg, numOf(q.key) + q.name, x2, y2, 9.8); });
+      { const [x2, y2] = uv(P.x, P.z); mapMe(mg, x2, y2, P.dir + Math.PI * .25, 6.5); }
+    } else drawClayCampus(mg);
     /* 나침반 */
     mg.save(); mg.translate(S - 34, 34);
     mg.fillStyle = 'rgba(20,28,38,.60)'; mg.beginPath(); mg.arc(0, 0, 17, 0, TAU); mg.fill();
@@ -3752,9 +3889,8 @@ const LOOK_SLOTS = [['top', '상의', 'topId', 'top'], ['bottom', '하의', 'bot
 const LOOK_PAL = [0x2DD4BF, 0xE8695A, 0xF2C14E, 0x9B7BD4, 0xF7F4EC, 0x63C47C, 0x5B84C4, 0x3A4150];
 function wardrobeHTML() {
   const L = myLook();
-  return '<div class="lbl">이름</div>'
-    + `<input class="nick" maxlength="10" placeholder="${curSpecies}" value="${(SAVE.nick || '').replace(/"/g, '')}">`
-    + '<div class="lbl">종</div><div class="wr sp">'
+  /* 이름 칸은 마이페이지(내 정보)로 옮겼습니다 — 옷장은 입는 것만. */
+  return '<div class="lbl">종</div><div class="wr sp">'
     + SPEC.map((n) => {
       const own = SAVE.ownedSp.includes(n);
       return `<button data-sp="${n}" class="${n === curSpecies ? 'on' : ''}" ${own ? '' : 'disabled'}
@@ -3909,12 +4045,13 @@ function drawMini() {
     sea.addColorStop(0, MAPC.sea); sea.addColorStop(1, MAPC.seaDeep);
     mx.fillStyle = sea; mx.fillRect(0, 0, MS, MS);
     if (MAPSHOT.img?.complete) {
-      mx.drawImage(MAPSHOT.img, 0, 0, MS, MS);
+      const IH2 = MS * .74, IY2 = (MS - IH2) / 2;
+      mx.drawImage(MAPSHOT.img, 0, IY2, MS, IH2);
       mx.fillStyle = 'rgba(255,255,255,.8)';
       NPC.forEach((n) => { const [u, v] = mapUV(n.rig.position.x, n.rig.position.z);
-        mx.beginPath(); mx.arc(u * MS, v * MS, 1.8, 0, TAU); mx.fill(); });
+        mx.beginPath(); mx.arc(u * MS, IY2 + v * IH2, 1.8, 0, TAU); mx.fill(); });
       const [u, v] = mapUV(P.x, P.z);
-      mapMe(mx, u * MS, v * MS, P.dir + Math.PI * .25, 3.6);
+      mapMe(mx, u * MS, IY2 + v * IH2, P.dir + Math.PI * .25, 3.6);
     } else {
       mx.save(); mx.translate(MC, MC);
       drawIsland(mx, MMS, false);
@@ -4770,6 +4907,8 @@ window.__netPeers = () => (net ? [...net.peers.entries()] : []);
 window.__game = (k) => openGame(k, () => {}, { posture: PZ });
 window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.error } : null);
 window.__scene = scene;
+window.__mapshot = MAPSHOT;
+window.__shootMap = shootMap;
 window.__renderer = renderer;
 window.__ride = () => rideId;
 window.__seats = () => (room ? room.seats : []);

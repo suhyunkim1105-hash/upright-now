@@ -59,16 +59,24 @@ export function prism(p, w, h, d, mat, x, y, z, bevel = .12) {
 /* ---- 창 — 틀 · 유리 · 반사 · 문설주 둘 · 창턱 여섯 조각 ---- */
 export function win(p, C, x, y, z, ry, w, h, style) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; p.add(g);
-  box(g, w + .26, h + .26, .16, .06, M(C.frame, .5), 0, 0, 0);
-  box(g, w, h, .2, .04, M(C.glass, .18), 0, 0, .04);
-  box(g, w * .5, h * .42, .22, .03, M(C.glassLit, .16), -w * .22, h * .22, .05);
+  /* 둥근 창은 네모 틀을 깔지 않습니다.
+     전에는 style 과 무관하게 사각 틀·사각 유리를 먼저 깔고 그 위에 원통을
+     얹었습니다. 원통이 틀보다 작아서 네모가 그대로 보였고, 그래서 미니게임관의
+     "여섯 중 여기만 동그랗다" 가 화면에서는 성립하지 않았습니다. */
+  const round = style === 'round';
+  if (!round) {
+    box(g, w + .26, h + .26, .16, .06, M(C.frame, .5), 0, 0, 0);
+    box(g, w, h, .2, .04, M(C.glass, .18), 0, 0, .04);
+    box(g, w * .5, h * .42, .22, .03, M(C.glassLit, .16), -w * .22, h * .22, .05);
+  }
   if (style !== 'round') {
     box(g, .07, h, .26, .02, M(C.frame, .5), 0, 0, .06);
     box(g, w, .07, .26, .02, M(C.frame, .5), 0, 0, .06);
   } else {
-    cyl(g, w * .52, w * .52, .16, 22, M(C.frame, .5), 0, 0, .01).rotation.x = Math.PI / 2;
-    cyl(g, w * .42, w * .42, .2, 22, M(C.glass, .18), 0, 0, .05).rotation.x = Math.PI / 2;
-    cyl(g, w * .2, w * .2, .22, 18, M(C.glassLit, .16), -w * .1, w * .1, .07).rotation.x = Math.PI / 2;
+    /* 테두리를 한 단 키워 사각 창과 비슷한 무게로 맞춥니다 */
+    cyl(g, w * .60, w * .60, .18, 24, M(C.frame, .5), 0, 0, 0).rotation.x = Math.PI / 2;
+    cyl(g, w * .48, w * .48, .22, 24, M(C.glass, .18), 0, 0, .05).rotation.x = Math.PI / 2;
+    cyl(g, w * .22, w * .22, .24, 18, M(C.glassLit, .16), -w * .12, w * .12, .08).rotation.x = Math.PI / 2;
   }
   if (style === 'arch') {
     cyl(g, (w + .26) / 2, (w + .26) / 2, .16, 22, M(C.frame, .5), 0, h / 2, 0).rotation.x = Math.PI / 2;

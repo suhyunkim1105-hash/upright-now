@@ -317,3 +317,76 @@ export function sign(p, text, x, y, z, w, h, bg, fg) {
   if (document.fonts?.ready) document.fonts.ready.then(draw).catch(() => {});
   return g;
 }
+
+/* ══════════════════════════════════════════════════════════
+   격 — 건물을 "박스에 창을 뚫은 것" 에서 **건축**으로 올리는 부품 셋.
+
+   여섯 채를 다시 그리는 대신 여기에 공통 부품을 두고 필요한 채에만
+   붙입니다. 셋 다 실제 학교 건물이 늘 갖고 있는 것이고, 없으면
+   면이 그냥 끝나서 종이 상자로 보입니다.
+   ══════════════════════════════════════════════════════════ */
+
+/** 처마 아래 이빨 — 덴틸.
+    코니스가 두꺼운 띠 하나면 무게만 있고 격이 없습니다. 그 밑에 작은
+    블록을 촘촘히 두르면 그림자가 잘게 끊겨 **깊이**가 생깁니다.
+    실제로 이 한 줄이 "학교 건물" 과 "상자" 를 가릅니다. */
+export function dentil(p, C, w, d, y, size = .16, gap = .34) {
+  const g = new THREE.Group(); g.position.y = y; p.add(g);
+  const m = M(C.trim, .55);
+  const run = (len, ax) => {
+    const n = Math.max(2, Math.round(len / gap));
+    const step = len / n;
+    for (let i = 0; i < n; i++) {
+      const t = -len / 2 + step * (i + .5);
+      if (ax === 'x') {
+        box(g, size, size * 1.1, size * .8, .02, m, t, 0, d / 2);
+        box(g, size, size * 1.1, size * .8, .02, m, t, 0, -d / 2);
+      } else {
+        box(g, size * .8, size * 1.1, size, .02, m, w / 2, 0, t);
+        box(g, size * .8, size * 1.1, size, .02, m, -w / 2, 0, t);
+      }
+    }
+  };
+  run(w, 'x'); run(d, 'z');
+  return g;
+}
+
+/** 모서리 돌 — 쿼인.
+    벽이 만나는 자리에 돌을 번갈아 물립니다. 큰 면일수록 모서리가
+    허전한데, 이게 있으면 벽이 **끝나는 자리**가 분명해집니다. */
+export function quoins(p, C, w, d, y0, h, n = 6, s = .52) {
+  const g = new THREE.Group(); p.add(g);
+  const m = M(C.wallLight, .5), step = h / n;
+  [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => {
+    for (let i = 0; i < n; i++) {
+      const long = i % 2 === 0;
+      const y = y0 + step * (i + .5);
+      box(g, long ? s * 1.7 : s, step * .82, s, .04, m,
+          sx * (w / 2 - (long ? s * .85 : s * .5) + .06), y, sz * (d / 2 + .02));
+      box(g, s, step * .82, long ? s : s * 1.7, .04, m,
+          sx * (w / 2 + .02), y, sz * (d / 2 - (long ? s * .5 : s * .85) + .06));
+    }
+  }));
+  return g;
+}
+
+/** 난간 — 지붕 가장자리의 짧은 기둥 줄.
+    평지붕이 그냥 끝나면 잘린 상자입니다. 난간이 있으면 위에 사람이
+    올라갈 수 있는 곳이 되고, 실루엣도 하늘과 톱니로 만납니다. */
+export function balustrade(p, C, w, d, y, h = .5, gap = .62) {
+  const g = new THREE.Group(); g.position.y = y; p.add(g);
+  const m = M(C.trim, .55), cap = M(C.wallLight, .5);
+  const run = (len, ax) => {
+    const n = Math.max(2, Math.round(len / gap));
+    const step = len / n;
+    for (let i = 0; i <= n; i++) {
+      const t = -len / 2 + step * i;
+      const put = (x, z) => cyl(g, .07, .09, h, 8, m, x, h / 2, z);
+      if (ax === 'x') { put(t, d / 2); put(t, -d / 2); }
+      else { put(w / 2, t); put(-w / 2, t); }
+    }
+  };
+  run(w, 'x'); run(d, 'z');
+  box(g, w + .22, .13, d + .22, .04, cap, 0, h + .06, 0);
+  return g;
+}

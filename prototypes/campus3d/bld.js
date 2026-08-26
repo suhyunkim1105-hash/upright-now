@@ -6,7 +6,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
 import { M, box, cyl, prism, win, door, archPortal, apron, column, tree, bush, plate, sign,
-         steps, reveal } from './parts.js';
+         steps, reveal, dentil, quoins, balustrade } from './parts.js';
 
 /* ══════════════════════════════════════════════════════════
    기린캠퍼스 건물 여섯 채 — 아이소메트릭 아이콘.
@@ -83,6 +83,7 @@ export function mainHall(g, opt = {}) {
     box(g, GW, GT - Y, GD, .12, M(P.wall), gx, Y + (GT - Y) / 2, -.6);
     box(g, GW + .22, .3, GD + .22, .07, M(P.trim), gx, Y + H1, -.6);
     box(g, GW + .4, .42, GD + .4, .1, M(P.trim), gx, GT + .1, -.6);
+    dentil(g, P, GW + .24, GD + .24, GT - .12, .14, .36);
     box(g, GW - .3, .34, GD - .3, .08, M(P.roof), gx, GT + .42, -.6);
     /* 모서리 기둥 — 덩어리에 세로선을 줍니다 */
     [-1, 1].forEach((ex) => [-1, 1].forEach((ez) =>
@@ -104,18 +105,26 @@ export function mainHall(g, opt = {}) {
   box(g, CW + .24, .3, CD + .24, .07, M(P.trim), 0, Y + H1, 0);
   box(g, CW + .24, .26, CD + .24, .07, M(P.trim), 0, Y + H1 + H2, 0);
   box(g, CW + .55, .5, CD + .55, .12, M(P.trim), 0, CT + .12, 0);
+  /* 처마 밑 덴틸과 모서리 돌 — parts.js 머리말 참고. 큰 면일수록
+     끝나는 자리가 분명해야 하고, 그 일을 이 둘이 합니다. */
+  dentil(g, P, CW + .38, CD + .38, CT - .14, .17, .40);
+  quoins(g, P, CW, CD, Y, CT - Y, 7, .5);
   box(g, CW - .3, .4, CD - .3, .1, M(P.roof), 0, CT + .46, 0);
   [-1, 1].forEach((ex) => [-1, 1].forEach((ez) =>
     box(g, .52, CT - Y, .52, .07, M(P.wallLight),
         ex * (CW / 2 - .12), Y + (CT - Y) / 2, ez * (CD / 2 - .12))));
 
-  /* 창 — 주랑이 가운데 아래를 가리므로 1층은 바깥 두 짝만 */
-  const yA = Y + H1 * .56, yB = Y + H1 + H2 * .52, yC = Y + H1 + H2 + H3 * .5;
-  [-5.4, -3.9, 3.9, 5.4].forEach((wx) => win(g, P, wx, yA, CD / 2 + .02, 0, .8, 1.1));
+  /* ── 창의 위계 ──
+     세 층이 전부 폭 0.8 · 높이 1.1 이면 격자무늬 벽지입니다. 실제
+     학교 건물은 **아래가 크고 위로 갈수록 작아집니다** — 1층은 강당·
+     로비라 층고가 높고, 꼭대기는 다락이라 낮습니다. 그 차이 하나로
+     면이 "층이 쌓인 것" 으로 읽힙니다. 1.45 / 1.15 / 0.82. */
+  const yA = Y + H1 * .52, yB = Y + H1 + H2 * .52, yC = Y + H1 + H2 + H3 * .5;
+  [-5.4, -3.9, 3.9, 5.4].forEach((wx) => win(g, P, wx, yA, CD / 2 + .02, 0, .92, 1.45, 'arch'));
   [-5.4, -3.9, -2.4, -.9, .9, 2.4, 3.9, 5.4].forEach((wx) => {
-    win(g, P, wx, yB, CD / 2 + .02, 0, .8, 1.1);
-    win(g, P, wx, yC, CD / 2 + .02, 0, .8, .95);
-    win(g, P, wx, yB, -CD / 2 - .02, Math.PI, .8, 1.1);
+    win(g, P, wx, yB, CD / 2 + .02, 0, .84, 1.15);
+    win(g, P, wx, yC, CD / 2 + .02, 0, .72, .82);
+    win(g, P, wx, yB, -CD / 2 - .02, Math.PI, .84, 1.15);
   });
   [-2.6, 0, 2.6].forEach((wz) => [yA, yB, yC].forEach((wy) => {
     win(g, P, CW / 2 + .02, wy, wz, Math.PI / 2, .8, 1.05);
@@ -310,7 +319,14 @@ export function library(g, opt = {}) {
 
   /* ── 처마 · 난간 ── */
   box(g, W + .5, .42, D + .1, .1, M(P.trim), 0, TOP + .1, 0);
+  /* 처마 밑 이빨 — 아치창 일곱과 같은 리듬으로 잘게 끊습니다 */
+  dentil(g, P, W + .32, D - .06, TOP - .16, .17, .38);
+  /* 모서리 돌 — 기단부터 처마까지. 폭 15 짜리 면은 모서리가 없으면
+     어디서 끝나는지 안 보입니다. */
+  quoins(g, P, W, D, Y, TOP - Y, 8, .48);
   box(g, W + .1, .55, D - .3, .08, M(P.wallLight), 0, TOP + .58, 0);
+  /* 옥상 난간 — 평지붕이 그냥 끝나면 잘린 상자입니다 */
+  balustrade(g, P, W - .5, D - .9, TOP + .84, .46, .66);
   for (let i = -6; i <= 6; i++)
     box(g, .2, .5, .2, .04, M(P.trim, .5), i * 1.1, TOP + .58, (D - .3) / 2 + .02);
 
@@ -396,6 +412,8 @@ export function dorm(g, opt = {}) {
   box(g, W + .18, .3, D + .18, .08, M(P.trim), 0, Y + H1, 0);
   box(g, W, H2, D, .12, M(P.wall), 0, Y + H1 + .3 + H2 / 2, 0);
   box(g, W + .3, .4, D + .3, .1, M(P.trim), 0, Y + H1 + .3 + H2 + .13, 0);
+  /* 처마 밑 이빨 — 작은 집이라 잘게(0.11 · 간격 0.28) */
+  dentil(g, P, W + .14, D + .14, Y + H1 + .3 + H2 - .09, .11, .28);
   const yLo = Y + H1 * .56, yHi = Y + H1 + .3 + H2 * .5;
   /* 창이 많고 작습니다 — 방이 여럿이라는 뜻입니다.
 
@@ -566,6 +584,9 @@ export function union(g, opt = {}) {
   });
 
   /* ── 옥상 — 난간과 퍼걸러 ── */
+  /* 처마 밑 이빨 — 띠창이 가로로 길어 수평이 세므로, 잘게 끊어 줘야
+     면이 판 한 장으로 안 보입니다. */
+  dentil(g, P, W - .8, D - .6, TOP - .10, .15, .36);
   box(g, W - .6, .5, D - .4, .1, M(P.trim), 0, TOP + .16, 0);
   box(g, W - 1.0, .34, D - .8, .08, M(P.deck, .7), 0, TOP + .1, 0);
   [-1, 1].forEach((sx) => box(g, .22, .5, D - 2.4, .05, M(P.trim, .5),
@@ -624,6 +645,8 @@ export function arcade(g, opt = {}) {
   const W = 8.4, D = 5.6, H1 = 3.4, Y = .12;
   box(g, W, H1, D, .14, M(P.wall), 0, Y + H1 / 2, 0);
   box(g, W + .3, .42, D + .3, .1, M(P.trim), 0, Y + H1 + .14, 0);
+  /* 처마 밑 이빨 — 여섯 채가 같은 규칙을 나눠 씁니다(parts.js 머리말) */
+  dentil(g, P, W + .14, D + .14, Y + H1 - .10, .13, .32);
   /* 둥근 창 — 여섯 중 여기만 동그랗습니다.
      뒷면에는 아무것도 없었습니다. 캐릭터가 뒤로 돌면 보라색 빈 벽 하나가
      화면을 채웁니다. 뒤에는 **큰 창 하나**를 답니다 — 여러 개를 흩는 것보다
@@ -770,6 +793,8 @@ export function shop(g, opt = {}) {
   for (let i = 0; i < 4; i++)
     box(g, W + .04, .1, D + .04, .04, M(0xE2C4AE, .8), 0, Y + .5 + i * .34, 0);
   box(g, W + .3, .42, D + .3, .1, M(P.trim), 0, Y + H1 + .14, 0);
+  /* 처마 밑 이빨 — 여섯 채가 같은 규칙을 나눠 씁니다(parts.js 머리말) */
+  dentil(g, P, W + .14, D + .14, Y + H1 - .10, .13, .32);
   /* 진열창 셋 — 크고 낮습니다. 물건이 보여야 하니까요 */
   [-2.5, 2.5].forEach((x) => win(g, P, x, Y + H1 * .5, D / 2 + .02, 0, 2.0, 2.0));
   [-1.3, 1.3].forEach((z) => {

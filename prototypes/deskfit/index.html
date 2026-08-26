@@ -3747,15 +3747,32 @@ function coins() {
 /* ── 시즌 ──────────────────────────────────────────────────────────
    가을 시즌은 2026-08-31 에 시작해 4주 뒤 끝납니다. "26일째" 와 "종료까지
    4일 18시간" 이 글자로 박혀 있어서, 날짜가 지나도 그대로였습니다. */
-const SEASON = { name: '가을', start: new Date(2026, 7, 31).getTime(), days: 28 };
+/* 2026-08-31 00:00 부터 3개월. 서버의 ensure_active_campus_season 과 같은
+   기준점입니다 — 둘이 다르면 랭킹전의 "내가 채운" 이 어느 구간의 합인지
+   아무도 말하지 못합니다. 길이를 날짜 수가 아니라 달로 세는 이유는, 달마다
+   길이가 달라 28일로 세면 경계가 조금씩 밀리기 때문입니다. */
+const SEASON = { name: '가을', start: new Date(2026, 7, 31).getTime(), months: 3 };
+function seasonEnd(start) {
+  /* 31일에 시작하는 시즌이라 달 넘김을 조심해야 합니다. setMonth 는
+     11월 31일을 12월 1일로 넘기는데, Postgres 의 interval '3 months' 는
+     그 달 마지막 날(11월 30일)로 잡습니다. 서버와 하루 어긋나면 시즌
+     마지막 날의 기록이 어느 시즌 것인지 둘이 다르게 답합니다.
+     넘어갔으면 되돌립니다 — Postgres 와 같은 규칙입니다. */
+  const d = new Date(start);
+  const want = d.getDate();
+  d.setMonth(d.getMonth() + SEASON.months);
+  if (d.getDate() !== want) d.setDate(0);   // 넘어간 만큼 전달 말일로
+  return d.getTime();
+}
 function season() {
-  const end = SEASON.start + SEASON.days * DAY;
+  const end = seasonEnd(SEASON.start);
   const now = Date.now();
   if (now < SEASON.start) {
     const left = Math.ceil((SEASON.start - now) / DAY);
     return { phase: 'before', label: left === 0 ? '오늘 시작' : left + '일 뒤 시작', nth: 0 };
   }
-  if (now >= end) return { phase: 'after', label: '시즌 종료', nth: SEASON.days };
+  /* 끝난 시즌의 '몇 일째' 는 시즌 전체 길이입니다. 달로 세므로 여기서 잽니다. */
+  if (now >= end) return { phase: 'after', label: '시즌 종료', nth: Math.round((end - SEASON.start) / DAY) };
   const nth = Math.floor((now - dayStart(SEASON.start)) / DAY) + 1;
   const ms = end - now;
   const d = Math.floor(ms / DAY), h = Math.floor((ms % DAY) / 3600000);

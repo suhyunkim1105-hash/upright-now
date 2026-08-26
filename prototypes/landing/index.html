@@ -10,6 +10,11 @@
 <meta property="og:description" content="웹캠이 앉은 자세를 조용히 봐 주는 온라인 자습실. 영상은 브라우저 밖으로 나가지 않아요.">
 <meta property="og:image" content="assets/still-campus.webp">
 <meta name="twitter:card" content="summary_large_image">
+<!-- 심벌. svg 를 먼저 주고 .ico 는 못 읽는 곳을 위해 남깁니다.
+     크롬 탭에 지구본이 뜨던 자리입니다 — 아무 것도 안 걸어 두면 그렇습니다. -->
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="assets/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="assets/favicon.svg">
 <link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
 <style>
 /* ============================================================
@@ -152,6 +157,12 @@ p{text-wrap:pretty}
   backdrop-filter:blur(14px);
 }
 .header.hide{transform:translateY(-100%);transition:transform .4s var(--ease)}
+/* 심벌은 글자와 같은 색을 물려받습니다 — 머리글이 먹 위로 올라가면 둘이
+   같이 뒤집혀야 합니다. 가운데 막대만 청록으로 고정합니다. */
+.brand .mark{width:1.15em;height:1.15em;flex:none;margin-right:.42em}
+.brand .mark rect{fill:currentColor}
+.brand .mark .mid{fill:var(--teal)}
+
 .header .brand{
   font-weight:800;font-size:1.15rem;letter-spacing:-.01em;
   /* 심벌을 뺀 뒤 글자 높이(22px)만 남아 표적이 24px 아래로 내려갔습니다.
@@ -854,7 +865,12 @@ a:hover > .roll i,a:hover .roll i,button:hover .roll i{transform:translateY(-50%
   <!-- 심벌은 뺐습니다. 워드마크 하나로 갑니다 — 이름 옆에 그림을 하나 더
        두면 헤더에서 시선이 두 번 멈추고, 어차피 이 페이지의 주인공은
        캐릭터입니다. -->
-  <a class="brand" href="#top" data-mag>Deskfit</a>
+  <a class="brand" href="#top" data-mag>
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="14" y="12" width="36" height="10" rx="5"/>
+      <rect x="6"  y="27" width="52" height="10" rx="5" class="mid"/>
+      <rect x="14" y="42" width="36" height="10" rx="5"/>
+    </svg>Deskfit</a>
   <nav aria-label="주요 섹션">
     <a href="#world" data-nav="world">서비스</a>
     <a href="#camera" data-nav="camera">카메라</a>

@@ -25,10 +25,17 @@ s = s.replace(/<script src="(\.\.\/shared\/[^"]+)"><\/script>/g, (m, rel) => {
   return '<script>\n/* ' + rel + ' */\n' + code + '\n</script>';
 });
 
+// 심벌은 랜딩 폴더에 있습니다. 한 파일로 넘기면 그 폴더가 따라가지 않으므로
+// svg 를 그대로 품고, .ico 줄은 지웁니다 — 못 읽을 주소를 남겨 둘 이유가 없습니다.
+const mark = readFileSync(join(HERE, '../landing/assets/favicon.svg'), 'utf8');
+s = s.replace(/href="\.\.\/landing\/assets\/favicon\.svg"/g,
+  'href="data:image/svg+xml;base64,' + Buffer.from(mark, 'utf8').toString('base64') + '"');
+s = s.replace(/\n?<link rel="alternate icon"[^>]*>/g, '');
+
 s = s.replace(/url\(\.\/(fonts\/[^)]+)\)/g, (m, rel) => 'url(' + inline(rel) + ')');
 s = s.replace(/\.\/(assets\/[^"')\s]+)/g, (m, rel) => inline(rel));
 s = s.replace(/<!-- 이 파일이 원본입니다[\s\S]*?-->\n/, '');
 
 writeFileSync(join(HERE, 'standalone.html'), s, 'utf8');
-const left = (s.match(/\.\/(assets|fonts)\//g) || []).length;
+const left = (s.match(/\.\/(assets|fonts)\/|\.\.\/landing\//g) || []).length;
 console.log('standalone.html ' + Math.round(s.length / 1024) + ' KB · 남은 외부 참조 ' + left);

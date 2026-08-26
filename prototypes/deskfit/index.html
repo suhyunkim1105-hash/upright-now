@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Deskfit</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="../landing/assets/favicon.ico" sizes="16x16 32x32 48x48">
 <!-- 이 파일이 원본입니다. 여기서 바로 고칩니다.
      서체는 ./fonts, 그림은 ./assets 에 있습니다.
      공유용 한 파일이 필요하면: node build-standalone.mjs -->
@@ -3835,11 +3837,37 @@ const PROFILE = {
   },
 };
 
-/** 세션 목록 한 줄. 가장 최근 것에만 리포트를 낼 수 있게 둡니다. */
+/** 세션 목록 한 줄. 가장 최근 것에만 리포트를 낼 수 있게 둡니다.
+ *
+ *  줄을 왼쪽으로 밀면 오른쪽 끝에서 삭제가 나옵니다. 목록 안에 삭제 버튼을
+ *  늘 띄워 두면 여덟 줄에 여덟 개의 빨간 것이 생기고, 그러면 목록이 아니라
+ *  경고문이 됩니다. 미는 동작은 되돌릴 수 있어서(다시 밀면 닫힘) 물어보는
+ *  단계를 하나 아낍니다 — 실수로 열려도 아무 일이 안 일어납니다. */
 function logRow(row, first) {
+  const slot = document.createElement('div');
+  slot.dataset.logRow = String(row.at);
+  slot.style.cssText = 'position: relative; flex: none; border-radius: 20px; overflow: hidden;';
+
+  /* 뒤에 깔리는 판. 줄이 밀려나야 보입니다. */
+  const del = document.createElement('button');
+  del.dataset.logDel = String(row.at);
+  del.setAttribute('aria-label', sayDate(row.at) + ' 기록 지우기');
+  del.style.cssText = 'position: absolute; right: 0; top: 0; bottom: 0; width: 96px; border: 0; cursor: pointer;'
+    + 'display: grid; place-items: center; gap: 5px; align-content: center;'
+    + 'background: linear-gradient(180deg, #F26B58 0%, #DE3E28 100%); color: #FFF3F0;'
+    + 'font-weight: 820; font-size: 12.5px; line-height: 1; font-family: inherit;';
+  del.innerHTML = '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
+    + ' stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">'
+    + '<path d="M4.8 6.6h14.4M9.6 6.6V4.8a1.2 1.2 0 0 1 1.2-1.2h2.4a1.2 1.2 0 0 1 1.2 1.2v1.8"/>'
+    + '<path d="M6.6 6.6 7.5 19.2a1.2 1.2 0 0 0 1.2 1.2h6.6a1.2 1.2 0 0 0 1.2-1.2L17.4 6.6"/></svg>'
+    + '<span>지우기</span>';
+  slot.appendChild(del);
+
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 20px;'
-    + 'background: #F6FAFE; flex: none;'
+  wrap.dataset.logFace = '1';
+  wrap.style.cssText = 'position: relative; display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 20px;'
+    + 'background: #F6FAFE; touch-action: pan-y;'
+    + 'transition: transform 420ms cubic-bezier(.22, 1.32, .36, 1);'
     + 'box-shadow: 0 12px 22px -12px rgba(25,31,40,.36),'
     + ' inset 0 5px 10px rgba(255,255,255,.95), inset 0 -6px 11px rgba(86,110,146,.16);';
   const when = document.createElement('span');
@@ -3872,7 +3900,28 @@ function logRow(row, first) {
         + 'box-shadow: 0 8px 16px -8px rgba(25,31,40,.4), inset 0 4px 8px rgba(255,255,255,.95), inset 0 -5px 9px rgba(86,110,146,.18);');
 
   wrap.append(when, nums, btn);
-  return wrap;
+  slot.appendChild(wrap);
+  return slot;
+}
+
+/* 열려 있는 줄은 하나뿐입니다. 둘이 동시에 열려 있으면 어느 것을 지우는지
+   화면이 말해 주지 못합니다. */
+function closeRows(except) {
+  document.querySelectorAll('[data-log-row]').forEach((r) => {
+    if (r === except) return;
+    const face = r.querySelector('[data-log-face]');
+    if (face) face.style.transform = '';
+    r.dataset.open = '';
+  });
+}
+
+function toggleRow(slot) {
+  const open = slot.dataset.open === '1';
+  closeRows(slot);
+  const face = slot.querySelector('[data-log-face]');
+  if (!face) return;
+  face.style.transform = open ? '' : 'translateX(-96px)';
+  slot.dataset.open = open ? '' : '1';
 }
 
 /** 초를 시계로. 한 시간을 넘으면 앞자리가 붙습니다. */
@@ -4486,6 +4535,75 @@ function parseRoomCode(raw) {
   const code = new URLSearchParams(location.search).get('room');
   if (!code) return;
   setRoomCode(parseRoomCode(code));
+})();
+
+/* ── 목록 줄 밀기 ──
+   포인터로 끌면 따라오고, 손을 떼면 절반을 넘겼는지로 열지 닫을지 정합니다.
+   끌지 않고 그냥 누르면 열림/닫힘을 뒤집습니다 — 트랙패드에서 미는 동작이
+   잘 안 잡히는 사람도 같은 곳에 닿을 수 있어야 합니다. */
+(() => {
+  let slot = null, x0 = 0, dx = 0, moved = false;
+  const face = () => slot && slot.querySelector('[data-log-face]');
+
+  document.addEventListener('pointerdown', (e) => {
+    const row = e.target.closest('[data-log-row]');
+    if (!row || e.target.closest('[data-log-del]')) return;
+    slot = row; x0 = e.clientX; dx = 0; moved = false;
+    const f = face(); if (f) f.style.transition = 'none';
+  });
+
+  document.addEventListener('pointermove', (e) => {
+    if (!slot) return;
+    dx = e.clientX - x0;
+    if (Math.abs(dx) > 4) moved = true;
+    const f = face(); if (!f) return;
+    const base = slot.dataset.open === '1' ? -96 : 0;
+    f.style.transform = 'translateX(' + Math.max(-96, Math.min(0, base + dx)) + 'px)';
+  });
+
+  const settle = () => {
+    if (!slot) return;
+    const f = face();
+    if (f) f.style.transition = '';
+    if (moved) {
+      const base = slot.dataset.open === '1' ? -96 : 0;
+      const at = Math.max(-96, Math.min(0, base + dx));
+      const open = at < -48;
+      if (f) f.style.transform = open ? 'translateX(-96px)' : '';
+      slot.dataset.open = open ? '1' : '';
+      if (open) closeRows(slot);
+    }
+    slot = null;
+  };
+  addEventListener('pointerup', settle);
+  addEventListener('pointercancel', settle);
+
+  /* 끌지 않은 누름은 뒤집기입니다. 리포트 버튼 위에서는 아무 것도 안 합니다. */
+  document.addEventListener('click', (e) => {
+    const row = e.target.closest('[data-log-row]');
+    if (!row) { closeRows(null); return; }
+    if (e.target.closest('[data-report-for]') || e.target.closest('[data-log-del]')) return;
+    if (!moved) toggleRow(row);
+  });
+
+  /* 지우기 */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-log-del]');
+    if (!b) return;
+    const at = Number(b.dataset.logDel);
+    const left = STORE.all().filter((r) => r.at !== at);
+    STORE.save(left);
+    const row = b.closest('[data-log-row]');
+    if (row) {
+      row.style.transition = 'opacity 220ms ease-out, height 260ms ease-out, margin 260ms ease-out';
+      row.style.height = row.offsetHeight + 'px';
+      requestAnimationFrame(() => {
+        row.style.opacity = '0'; row.style.height = '0'; row.style.marginTop = '-10px';
+      });
+      setTimeout(() => { const id = current; current = null; show(id, 'fwd'); }, 280);
+    }
+    toast('기록 하나를 지웠어요');
+  });
 })();
 
 /* 목록의 버튼 — 누른 줄의 세션을 들고 리포트 화면으로 갑니다. 전에는 어느

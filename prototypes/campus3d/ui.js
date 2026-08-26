@@ -777,7 +777,7 @@ export function notices(kind, rows, meta = {}) {
   let body;
   const school = meta.school || '';
   if (!school) {
-    body = rw('board', 'peach', '학교를 먼저 설정해 주세요', '옷장(C)의 학교 항목에서 고르면 이 게시판이 바뀝니다');
+    body = rw('board', 'peach', '학교를 먼저 설정해 주세요', 'MY의 내 정보에서 학교를 고르면 이 게시판이 바뀝니다');
   } else if (rows === undefined) body = rw('board', 'sky', '학교 공지를 받아 오는 중이에요', school);
   else if (!rows || !rows.length) {
     body = rw('board', 'peach', '목록을 직접 받아오지 못했어요', meta.reason || '학교 공식 게시판에서 확인할 수 있습니다')
@@ -882,14 +882,15 @@ export function wearShop(ctx) {
       return items.map(([id, label, price]) => {
           const own = ctx.owned.includes(id) || price === 0;
           return `<button class="cc ${own ? 'on' : ''}" data-buy="${esc(id)}" data-preview="${esc(id)}" data-slot="${esc(slot)}" data-owned="${own ? '1' : '0'}">
-            <span class="th" style="width:100%;height:108px" data-wear-art="${esc(id)}" aria-label="${esc(label)} 3D 상품 미리보기"></span>
-            <b>${esc(label)}</b><small>${own ? '가지고 있어요' : won(price)}</small></button>`;
+            <span class="th wear-product" style="width:100%;height:118px" data-wear-art="${esc(id)}" aria-label="${esc(label)} 3D 클레이 상품 미리보기">
+              <i class="wear-chip">3D CLAY</i></span>
+            <b>${esc(label)}</b><small>${own ? '가지고 있어요' : won(price)} · 미리보기</small></button>`;
         }).join('');
     })();
   const gallery = active === 'ride' ? `<div class="cg">${itemHtml}</div>`
     : `<div class="wear-gallery"><div class="cg">${itemHtml}</div><aside class="wear-preview-card">
         <div class="wear-preview-stage" aria-label="현재 캐릭터 옷 입어보기"></div>
-        <b>${esc(ctx.preview?.label || nm)} 미리보기</b><small>상품에 마우스를 올리거나 키보드로 초점을 맞춰 입어 보세요.</small>
+        <b>${esc(ctx.preview?.label || nm)} 미리보기</b><small>상품에 마우스를 올리거나 키보드로 초점을 맞추면 원본 캐릭터에만 미리 보여요. 구매해도 여기서 바로 장착되지는 않습니다.</small>
       </aside></div>`;
   const html = `<div class="shop-layout"><nav class="shop-tabs" aria-label="옷 가게 카테고리">`
     + cats.map(([k, label]) => `<button type="button" data-shop-cat="${k}" class="${k === active ? 'on' : ''}">${label}</button>`).join('')
@@ -1537,6 +1538,11 @@ export function mypage(ctx) {
         ? Object.entries(zones).sort((a, b) => b[1] - a[1]).map(([z, v]) =>
           rw('seat', '', ROOM_LABEL[z] || esc(z), '', mshort(v))).join('')
         : rw('seat', 'lilac', '아직 앉은 자리가 없어요', '도서관이나 본관 자리에서 E'))
+      + lbl('user', '내 학교')
+      + `<div class="wr school-pick">${(ctx.schools || []).map((q) =>
+          `<button type="button" data-school="${esc(q.name)}" class="${q.name === ctx.school ? 'on' : ''}"
+            style="--school:#${Number(q.c).toString(16).padStart(6, '0')}">${esc(q.name.replace('대학교', '대'))}</button>`).join('')}</div>`
+      + '<div class="note">학교를 바꾸면 공지 · 학식 · 학교 채팅과 과잠 대표색이 함께 바뀝니다.</div>'
       + `<div class="wr"><button data-do="retro">세션 회고 열기</button></div>
       </div>
       <div data-pane="coin" style="display:none">${coinPanel({ coins: ctx.coins, server: ctx.server }).html}</div>
@@ -1579,6 +1585,8 @@ export function mypage(ctx) {
             { x.style.display = x.dataset.pane === t.dataset.tab ? '' : 'none'; });
           return;
         }
+        const school = e.target.closest('button[data-school]');
+        if (school) { ctx.onSchool?.(school.dataset.school, again); return; }
         const b = e.target.closest('button[data-do]'); if (!b) return;
         ctx.onDo(b.dataset.do, again);
       };

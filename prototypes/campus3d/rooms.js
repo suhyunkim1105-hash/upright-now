@@ -344,12 +344,14 @@ export const ROOMS = {
     R.exitSign(g, 0, 6.72, 0x9B7BD4);
 
     R.shell(g, 20, 14, 4.6, { floorA: 0xDDD8EC, floorB: 0xC7C0DE, wall: 0xF3EFFA, under: 0xA69CBE });
-    const cols = [0x2DD4BF, 0x9B7BD4, 0x63C47C];
+    const cols = [0x5FAFE0, 0x55C6AE, 0x9B7BD4];
+    const themes = ['runner', 'memory', 'match3'];
     /* 2048을 삭제하고 남은 게임 셋을 뒤벽 한 줄에 같은 간격으로 정렬합니다. 각 기계 앞 원형
        발판 색이 기능 구역과 같아 어느 기계를 누르는지 바로 보입니다. */
     [-6.4, 0, 6.4].forEach((x, i) => {
-      R.cabinet(g, x, -6.4, 0, cols[i]);
+      R.cabinet(g, x, -6.4, 0, cols[i], themes[i]);
       R.neon(g, '', x, 3.1, -6.92, 0, cols[i], 1.8);
+      R.rug(g, x, -5.15, 3.2, 2.35, cols[i], i === 0 ? 0xE1F2FB : i === 1 ? 0xDDF4EE : 0xECE8FA);
       cyl(g, .34, .3, .12, 14, M(0x2DD4BF, .6), x, .62, -5.0);
       [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
         cyl(g, .04, .05, .56, 8, M(IN.metal, .45), x + sx * .2, .3, -5.0 + sz * .2));
@@ -360,8 +362,11 @@ export const ROOMS = {
     /* 에어하키 · 인생네컷 — 오른쪽 */
     R.airHockey(g, 6.8, 1.0, .08);
     R.photoBooth(g, 7.4, 4.6, .7, 0xFF7FA8);
-    /* 리듬 발판 — 앞 왼쪽 */
-    R.dancePad(g, -6.4, 4.6, .12);
+    /* 네 번째 실제 게임 — 동물 합치기. 장식용 리듬 발판을 치우고 전용
+       기계·클레이 구슬 화면·대기 발판을 출입구 왼쪽에 독립 배치합니다. */
+    R.cabinet(g, -5.8, 4.15, Math.PI, 0xE98D79, 'merge');
+    R.rug(g, -5.8, 2.85, 3.4, 2.5, 0xE98D79, 0xFBE7E1);
+    R.neon(g, '', -5.8, 3.1, 6.92, Math.PI, 0xE98D79, 2.0);
     /* 교환대 */
     R.counter(g, -3.6, 6.1, 0, 3.0, 0x4E4068);
     R.counterTop(g, -3.6, 1.1, 6.4);

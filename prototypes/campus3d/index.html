@@ -255,17 +255,17 @@
 
   /* ── 종이 창 ── */
   #panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.97);
-    width:min(470px,92vw);max-height:84vh;overflow:auto;padding:0;opacity:0;
+    width:min(470px,92vw);max-height:84vh;overflow:hidden;padding:0;opacity:0;
     pointer-events:none;transition:.18s cubic-bezier(.2,.9,.3,1);background:var(--paper);
-    color:var(--ink);border:0;border-radius:20px;box-shadow:var(--shp)}
+    color:var(--ink);border:0;border-radius:20px;box-shadow:var(--shp);display:flex;flex-direction:column}
   #panel.on{opacity:1;transform:translate(-50%,-50%) scale(1);pointer-events:auto}
-  #panel .ph{position:sticky;top:0;background:var(--paper);padding:18px 22px 12px;
-    border-bottom:1px solid var(--pl);border-radius:20px 20px 0 0;z-index:1}
+  #panel .ph{position:relative;flex:none;background:var(--paper);padding:18px 22px 12px;
+    border-bottom:1px solid var(--pl);border-radius:20px 20px 0 0;z-index:2}
   #panel .tag{display:inline-block;padding:3px 9px;border-radius:99px;background:var(--ink);
     color:var(--paper);font-size:10px;font-weight:800;letter-spacing:.03em}
   #panel h3{margin:9px 0 0;font-size:21px;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
-  #panel .bd{padding:16px 22px 6px}
-  #panel .x{padding:10px 22px 18px;font-size:10.5px;color:var(--ink2)}
+  #panel .bd{padding:16px 22px 6px;overflow:auto;min-height:0;overscroll-behavior:contain}
+  #panel .x{padding:10px 22px 18px;font-size:10.5px;color:var(--ink2);flex:none}
   #panel .x kbd{background:rgba(34,42,51,.08);border-color:var(--pl);color:var(--ink2)}
   #panel p{margin:0 0 6px;font-size:13.5px;line-height:1.65;color:#3A434E}
   #panel .note{margin-top:12px;font-size:11.5px;color:var(--ink2);line-height:1.6}
@@ -468,7 +468,8 @@
   .board-view ul.feed a{color:var(--cInk);text-decoration:none}
   .board-view ul.feed a:hover{color:var(--mintD)}
   .shop-layout{display:grid;grid-template-columns:150px minmax(0,1fr);gap:18px;align-items:start}
-  .shop-tabs{display:flex;flex-direction:column;gap:7px;position:sticky;top:4px}
+  .shop-tabs{display:flex;flex-direction:column;gap:7px;position:sticky;top:0;z-index:1;
+    padding:2px 0 12px;background:linear-gradient(180deg,var(--clay) 0 88%,rgba(246,249,253,0))}
   .shop-main{min-width:0}
   .shop-main .coinbar{margin-bottom:12px}
   .shop-main .cg{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:13px}
@@ -476,6 +477,16 @@
   .shop-main .cc .th{border-radius:16px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
   .shop-main .cc canvas{display:block;width:100%;height:100%}
   .shop-main .cc .wear-art{display:block;width:100%;height:100%;filter:drop-shadow(0 5px 5px rgba(58,80,112,.16))}
+  .wear-product{position:relative;isolation:isolate;background:
+    radial-gradient(circle at 34% 24%,rgba(255,255,255,.96),transparent 34%),
+    linear-gradient(145deg,#F6FBFF,#DCE8F4)!important}
+  .wear-product::before{content:'';position:absolute;left:18%;right:18%;bottom:8px;height:16px;border-radius:50%;
+    background:rgba(73,96,128,.16);filter:blur(5px);z-index:-1}
+  .wear-chip{position:absolute;left:8px;top:8px;z-index:2;padding:4px 7px;border-radius:99px;
+    background:rgba(250,253,255,.9);box-shadow:var(--clayUp2);color:#6C7E93;font:900 8px/1 var(--ff);font-style:normal;letter-spacing:.08em}
+  .school-pick button{position:relative;padding-left:25px}
+  .school-pick button::before{content:'';position:absolute;left:9px;top:50%;width:9px;height:9px;border-radius:50%;
+    background:var(--school);transform:translateY(-50%);box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
   .wear-gallery{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px;align-items:start}
   .wear-preview-card{position:sticky;top:0;display:flex;flex-direction:column;gap:7px;padding:12px;
     border-radius:22px;background:var(--clay2);box-shadow:var(--clay);color:var(--cInk)}
@@ -509,7 +520,7 @@
     #panel.wide,#panel.shop{width:min(94vw,520px)}
     #panel .pclose{right:14px;top:14px;width:40px;height:40px}
     .shop-layout{display:block}
-    .shop-tabs{position:static;display:flex;flex-direction:row;overflow:auto;margin-bottom:13px;padding:2px 2px 7px}
+    .shop-tabs{position:static;display:flex;flex-direction:row;overflow:auto;margin-bottom:13px;padding:2px 2px 7px;background:none}
     .shop-tabs button{white-space:nowrap}
     .shop-main .cg{grid-template-columns:repeat(2,minmax(0,1fr))}
     .wear-gallery{grid-template-columns:1fr}.wear-preview-card{position:static}.wear-preview-stage{height:220px}
@@ -620,39 +631,51 @@
   #chatin input::placeholder{color:var(--tx3)}
   #chatin input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(53,224,198,.16)}
 
-  /* ── 미니게임 ── */
+  /* ── 미니게임 — 네 부스와 같은 밝은 클레이 표면 ── */
   #game{position:fixed;inset:0;display:grid;place-items:center;z-index:12;
-    background:rgba(12,17,24,.66);backdrop-filter:blur(5px)}
-  #game .gbox{width:min(620px,94vw);padding:18px;position:relative;background:var(--paper);
-    color:var(--ink);border-radius:20px;box-shadow:var(--shp)}
-  #game .ghead{display:flex;align-items:center;gap:12px;margin-bottom:14px}
-  #game .ghead b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
-  #game .ghead span{display:block;font-size:11.5px;color:var(--ink2)}
+    --game:#B7EBE1;--gameInk:#12867A;background:rgba(80,111,139,.24);backdrop-filter:blur(10px)}
+  #game[data-tone="sky"]{--game:#CCE1F8;--gameInk:#2A66A6}
+  #game[data-tone="lilac"]{--game:#DCD8F6;--gameInk:#6355B0}
+  #game[data-tone="peach"]{--game:#FBD6CE;--gameInk:#B75844}
+  #game[data-tone="lemon"]{--game:#F2E7B4;--gameInk:#8A7620}
+  #game .gbox{width:min(700px,94vw);max-height:90vh;overflow:auto;padding:20px;position:relative;
+    background:var(--clay);color:var(--cInk);border-radius:30px;box-shadow:0 30px 70px -24px rgba(40,58,84,.46),
+    inset 0 3px 0 rgba(255,255,255,.96),inset 0 -5px 0 rgba(86,110,146,.13)}
+  #game .ghead{display:flex;align-items:center;gap:13px;margin-bottom:16px;padding:11px 12px;border-radius:22px;
+    background:var(--clay2);box-shadow:var(--clayUp2)}
+  #game .game-badge{width:48px;height:48px;display:grid;place-items:center;flex:none;border-radius:16px;
+    background:var(--game);box-shadow:var(--clayUp2);font:normal 25px/1 sans-serif}
+  #game .game-copy{min-width:0}
+  #game .game-copy small{display:block;margin-bottom:3px;color:var(--gameInk);font:900 8px/1 var(--ff);letter-spacing:.12em}
+  #game .ghead b{display:block;font-size:18px;font-weight:900;letter-spacing:-.025em;color:var(--cInk)}
+  #game .ghead span{display:block;font-size:11px;line-height:1.45;color:var(--cInk3)}
   #game .gstat{margin-left:auto;text-align:right}
-  #game .gstat em{display:block;font-style:normal;font-size:22px;font-weight:800;
-    font-variant-numeric:tabular-nums;color:var(--ink)}
-  #game .gstat i{font-style:normal;font-size:11px;color:var(--ink2)}
-  #game .gx{border:1.5px solid var(--pl);background:transparent;color:var(--ink2);border-radius:99px;
-    padding:7px 13px;font:700 11.5px/1 var(--ff);cursor:pointer}
-  #game .gx:hover{border-color:rgba(34,42,51,.3);color:var(--ink)}
-  #game .gbody{display:grid;gap:7px;place-items:center}
+  #game .gstat em{display:block;font-style:normal;font-size:23px;font-weight:900;
+    font-variant-numeric:tabular-nums;color:var(--gameInk)}
+  #game .gstat i{font-style:normal;font-size:10px;color:var(--cInk3)}
+  #game .gx{border:0;background:var(--clay);box-shadow:var(--clayUp2);color:var(--cInk2);border-radius:14px;
+    padding:10px 13px;font:800 10.5px/1 var(--ff);cursor:pointer;white-space:nowrap}
+  #game .gx:hover{transform:translateY(-1px)}
+  #game .gbody{display:grid;gap:9px;place-items:center;padding:14px;border-radius:22px;
+    background:linear-gradient(145deg,#F9FCFF,#E7EEF7);box-shadow:var(--clayIn)}
   #game .gbody.grid8{grid-template-columns:repeat(4,1fr)}
   #game .gbody.grid7{grid-template-columns:repeat(7,1fr)}
-  #game button.mc{width:100%;aspect-ratio:1;border:1.5px solid var(--pl);border-radius:13px;
-    background:rgba(34,42,51,.05);font-size:22px;cursor:pointer;display:grid;place-items:center;
+  #game button.mc{width:100%;aspect-ratio:1;border:0;border-radius:17px;
+    background:var(--clay2);box-shadow:var(--clayUp2);font-size:22px;cursor:pointer;display:grid;place-items:center;
     transition:.12s}
   #game .grid8 button.mc{font-size:26px}
-  #game button.mc.sel{outline:3px solid var(--ink);transform:scale(.94)}
-  #game button.mc.ok{opacity:.4}
-  #game canvas{border-radius:14px;max-width:100%}
+  #game button.mc.sel{outline:3px solid var(--gameInk);box-shadow:var(--clayIn);transform:scale(.94)}
+  #game button.mc.ok{opacity:.42;box-shadow:var(--clayIn)}
+  #game canvas{border-radius:18px;max-width:100%;box-shadow:var(--clayUp2);background:#F5FAFD}
   #game .gover{position:absolute;inset:0;display:none;place-content:center;text-align:center;gap:9px;
-    background:rgba(255,252,245,.96);border-radius:20px}
+    background:rgba(246,249,253,.97);border-radius:30px;box-shadow:var(--clayIn)}
   #game .gover.on{display:grid}
   #game .gover b{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
   #game .gover span{font-size:14px;color:var(--ink2)}
-  #game .gover button{border:0;border-radius:99px;padding:10px 20px;font:800 13px/1 var(--ff);
-    cursor:pointer;margin:0 4px;background:var(--ink);color:var(--paper)}
-  #game .gover .out{background:rgba(34,42,51,.08);color:var(--ink)}
+  #game .gover button{border:0;border-radius:99px;padding:11px 22px;font:800 13px/1 var(--ff);
+    cursor:pointer;margin:0 4px;background:var(--game);color:var(--gameInk);box-shadow:var(--clayUp2)}
+  #game .gover .out{background:var(--clay2);color:var(--cInk2)}
+  @media(max-width:620px){#game .ghead{align-items:flex-start;flex-wrap:wrap}#game .gstat{margin-left:0}.game-copy{flex:1}.ghead .gx{margin-left:auto}}
 
   /* ── 첫 화면 ── */
   #load{position:fixed;inset:0;display:grid;place-items:center;background:
@@ -673,14 +696,13 @@
   .load-track{height:8px;border-radius:99px;background:#DDE8F2;box-shadow:inset 0 2px 5px rgba(67,90,118,.12);overflow:hidden;margin-top:20px}
   .load-track span{display:block;height:100%;width:12%;border-radius:inherit;background:linear-gradient(90deg,#51D8C4,#79BDEB);animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
   /* 지도·감정표현·채팅·세션·게임도 상점과 같은 밝은 클레이 표면으로 통일. */
-  #post,#tut,#emo .hub,#game .box,#chatin{background:var(--clay);border:0;box-shadow:var(--clayUp);color:var(--cInk)}
-  #post,#tut,#game .box{border-radius:24px}
+  #post,#tut,#emo .hub,#game .gbox,#chatin{background:var(--clay);border:0;box-shadow:var(--clayUp);color:var(--cInk)}
+  #post,#tut,#game .gbox{border-radius:24px}
   #emo button{background:var(--clay2);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
   #chatlog div{background:rgba(249,252,255,.94);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
   #chatchannels button{background:var(--clay2);color:var(--cInk2);box-shadow:var(--clayUp2)}
   #chatin input{background:var(--clay3);border:0;box-shadow:var(--clayIn);color:var(--cInk)}
   #game{background:rgba(92,122,143,.24);backdrop-filter:blur(8px)}
-  #game .gover{background:rgba(247,251,255,.96);box-shadow:var(--clayIn)}
   @keyframes loadWalk{to{transform:translateY(-6px) rotate(1deg)}}@keyframes loadFill{to{width:96%}}
 
   @media (max-width:860px){
@@ -1187,13 +1209,16 @@ function josa(word, withT, withoutT) {
   const has = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0;
   return word + (has ? withT : withoutT);
 }
-const SPEC = Object.keys(SPECIES);
+/* 실제 월드와 상점에서 쓰는 종은 최근 전달받은 원본 GLB 네 종뿐입니다.
+   chars.js 의 절차형 여분 종은 옛 저장값을 읽기 위한 호환 코드로만 남깁니다. */
+const SPEC = ['거북이', '기린', '펭귄', '개구리'];
 const SAVE = UI.SAVE;
 /* 기본은 기린입니다. 거북이·펭귄은 변환된 메시의 **뒤통수에도 눈이 파여**
    있어서(생성기가 앞면을 뒤에 복사했습니다) 돌아서면 얼굴이 두 개로
    보입니다. 기린과 개구리는 앞뒤가 제대로 나왔습니다.
    그 둘을 다시 뽑으면 여기를 되돌립니다. */
-let curSpecies = SPECIES[SAVE.species] ? SAVE.species : '기린';
+let curSpecies = SPEC.includes(SAVE.species) ? SAVE.species : '기린';
+SAVE.species = curSpecies;
 /* 옷 기본값 + 소유 목록. 공짜 기본템은 늘 갖고 시작합니다 */
 const DEF_LOOK = { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
   shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'none', hat: 0xE8695A,
@@ -1201,7 +1226,8 @@ const DEF_LOOK = { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5
 SAVE.look = Object.assign({}, DEF_LOOK, SAVE.look || {});
 SAVE.owned2 = Array.from(new Set([...WEAR_FREE, ...(SAVE.owned2 || [])]));
 /* 종 — 처음 셋(내 종·기린·개구리)은 열려 있고 나머지는 알에서 깨어납니다 */
-SAVE.ownedSp = Array.from(new Set([curSpecies, '기린', '개구리', ...(SAVE.ownedSp || [])]));
+SAVE.ownedSp = Array.from(new Set([curSpecies, '기린', '개구리', ...(SAVE.ownedSp || [])]))
+  .filter((n) => SPEC.includes(n));
 const myLook = () => SAVE.look;
 /* 코인 쓰기 — 부족하면 거절. 서버가 붙어 있으면 구매류는 서버가 따로 셉니다 */
 function payCoins(n) {
@@ -1360,7 +1386,9 @@ function buildIndoor(key) {
     /* 도서관 기린 안내원은 원본 GLB의 둥근 튜브형 몸통이 목을 가려
        기린으로 읽히지 않았습니다. 같은 클레이 재질의 보정 판본만 이 NPC에
        쓰고, 플레이어·다른 네 원본 종은 최신 GLB를 그대로 유지합니다. */
-    const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1, procedural: !!d.refined });
+    /* 실내 안내 NPC도 최근 원본 GLB 네 종만 씁니다. 절차형으로 바꾸는
+       예외를 두면 같은 종인데 방마다 얼굴과 비율이 달라집니다. */
+    const g = character(rig, d.species, OUTFITS[d.fit], { bag: false, lod: 1 });
     const el = document.createElement('div');
     el.className = 'tag3'; el.textContent = d.name; $('#tags').appendChild(el);
     inNPC.push({ d, rig, g, el, line: 0, seed: i + 3 });
@@ -1864,7 +1892,9 @@ function panelFor(s) {
     });
     case 'mypage': return UI.mypage({
       coins: SAVE.coins, server: !!(SRV && SRV.configured), snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
+      schools: SCHOOLS, school: SAVE.school,
       baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
+      onSchool: (school, again) => { chooseSchool(school); again(); },
       onDo: (k, again) => {
         if (k === 'snd') { sndToggle(); again(); }
         else if (k === 'bgm') { BGM.setOn(!BGM.on); SAVE.bgm = BGM.on; UI.save(); again(); }
@@ -1996,13 +2026,6 @@ function panelFor(s) {
           else if (b.dataset.cslot) { SAVE.look[b.dataset.cslot] = +b.dataset.c; }
           else if (b.dataset.snd) { sndToggle(); again(); return; }
           else if (b.dataset.shadow) { setShadows(!renderer.shadowMap.enabled); again(); return; }
-          else if (b.dataset.sc) {
-            SAVE.school = b.dataset.sc; idbarPaint();
-            net?.setSchool(SAVE.school); setChatChannel(chatChannel);
-            /* 과잠 띠를 학교 색으로 */
-            const sc = SCHOOLS.find((q) => q.name === SAVE.school);
-            if (sc && SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
-          }
           else return;
           UI.save(); rebuildMe(); net?.setLook(curSpecies, myLook(), myNick()); again();
         };
@@ -2255,6 +2278,21 @@ function cafeteriaView() {
       .catch(() => { if (mealKey === domain) { mealData = { reason: '학교 식단 서버에 닿지 못했어요.' }; mealState = 'done'; redrawPanel(); } });
   }
   return UI.cafeteria({ school: SAVE.school, data: domain && mealState === 'loading' ? undefined : mealData });
+}
+
+/* 학교는 옷의 일부가 아니므로 MY에서만 바꿉니다. 공지·학식 캐시는 즉시
+   비우고 채팅 채널과 과잠 대표색까지 한 번에 맞춥니다. */
+function chooseSchool(name) {
+  const sc = SCHOOLS.find((q) => q.name === name);
+  if (!sc || SAVE.school === sc.name) return;
+  SAVE.school = sc.name;
+  ntKey = ''; ntState = 'idle'; ntData = null;
+  mealKey = ''; mealState = 'idle'; mealData = undefined;
+  if (SAVE.look.topId === 'varsity') SAVE.look.top = sc.c;
+  UI.save(); idbarPaint();
+  net?.setSchool(SAVE.school); setChatChannel(chatChannel);
+  rebuildMe(); net?.setLook(curSpecies, myLook(), myNick());
+  toast('학교를 바꿨어요', `${SAVE.school} 공지·학식·학교 채팅으로 연결합니다`);
 }
 
 /* ══════ 8. 자세 세션 ══════ */
@@ -3228,9 +3266,7 @@ function wardrobeHTML() {
   const L = myLook();
   return '<div class="lbl">이름</div>'
     + `<input class="nick" maxlength="10" placeholder="${curSpecies}" value="${(SAVE.nick || '').replace(/"/g, '')}">`
-    + '<div class="lbl">학교</div><div class="wr">'
-    + SCHOOLS.map((q) => `<button data-sc="${q.name}" class="${q.name === SAVE.school ? 'on' : ''}">${q.name.replace('대학교', '대')}</button>`).join('')
-    + '</div><div class="lbl">종</div><div class="wr sp">'
+    + '<div class="lbl">종</div><div class="wr sp">'
     + SPEC.map((n) => {
       const own = SAVE.ownedSp.includes(n);
       return `<button data-sp="${n}" class="${n === curSpecies ? 'on' : ''}" ${own ? '' : 'disabled'}

@@ -29,7 +29,7 @@ test('2D 월드의 미니게임은 모두 3D 공간에서 열 수 있다', () =>
   }
   /* 사용자가 삭제를 확정한 게임. 2D 목록에는 기록으로 남아 있어도
      3D 공간에 다시 생기면 안 됩니다. */
-  const retired = new Set(['eggMerge', 'giraffeNeck'])
+  const retired = new Set(['eggMerge', 'giraffeNeck', 'trackRace', 'n2048'])
 
   assert.ok(oldKeys.length >= 8, '2D 미니게임 목록을 충분히 읽지 못했습니다')
   for (const oldKey of oldKeys) {
@@ -46,7 +46,7 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
   const parity = {
     weather: ['panel', 'weather'], radio: ['panel', 'radio'], calendar: ['panel', 'calendar'],
     campusBoard: ['panel', 'notice-school'], animalFind: ['game', 'memory'],
-    postureRun: ['game', 'postureRun'], trackRace: ['game', 'trackRace'],
+    postureRun: ['game', 'postureRun'],
     pondFish: ['game', 'pondFish'], bookSort: ['game', 'bookSort'],
     animalRunner: ['game', 'run'],
     animalMatch3: ['game', 'match3'],
@@ -57,7 +57,7 @@ test('2D 패널 기능마다 3D 대응 기능을 명시한다', () => {
     settings: ['panel', 'mypage'],
   }
 
-  assert.deepEqual(oldKeys.filter((key) => !['eggMerge', 'giraffeNeck'].includes(key) && !parity[key]), [],
+  assert.deepEqual(oldKeys.filter((key) => !['eggMerge', 'giraffeNeck', 'trackRace', 'n2048'].includes(key) && !parity[key]), [],
     '대응표에 없는 2D 패널이 생겼습니다')
   for (const [oldKey, [kind, key]] of Object.entries(parity)) {
     const source = kind === 'game' ? games + spots : kind === 'panel' ? world3d + spots : world3d

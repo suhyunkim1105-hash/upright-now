@@ -352,19 +352,41 @@ export function vending(g, x, z, ry) {
   return p;
 }
 /** 오락기 — 미니게임관 */
-export function cabinet(g, x, z, ry, col) {
+export function cabinet(g, x, z, ry, col, theme = '') {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, 1.1, 2.0, .9, .1, M(col, .6), 0, 1.0, 0);
+  /* 본체·받침·둥근 측면 장식까지 한 덩어리로 보여 종이 상자가 아니라
+     실제 클레이 오락기처럼 읽히게 합니다. */
+  box(p, 1.22, .16, 1.06, .08, M(0x33435A, .52), 0, .08, 0);
+  box(p, 1.1, 2.0, .9, .13, M(col, .6), 0, 1.0, 0);
+  [-1, 1].forEach((s) => box(p, .11, 1.74, .98, .05, M(0xF6FAFD, .52), s * .56, 1.05, 0));
   const scr = box(p, .82, .66, .1, .04, M(0x1E2630, .25, { emissive: 0x3E6E9E, emissiveIntensity: .55 }),
                   0, 1.42, .42);
   scr.rotation.x = .22;
+  const zf = .485;
+  if (theme === 'runner') {
+    [-.20, 0, .20].forEach((yy) => box(p, .58, .025, .025, .01, M(0xD8EEF8, .45), 0, 1.40 + yy, zf));
+    [0, 1, 2].forEach((i) => cyl(p, .045, .045, .025, 12, M(0xF3D564, .45), -.22 + i * .22, 1.43, zf).rotation.x = Math.PI / 2);
+  } else if (theme === 'memory') {
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sy], i) =>
+      box(p, .22, .21, .025, .055, M([0x65C8B2,0xE98D79,0x8CB9E8,0xB39AE1][i], .52), sx * .15, 1.42 + sy * .15, zf));
+  } else if (theme === 'match3') {
+    for (let yy = -1; yy <= 1; yy++) for (let xx = -1; xx <= 1; xx++)
+      cyl(p, .052, .052, .025, 12, M([0x65C8B2,0xE98D79,0x8CB9E8][(xx + yy + 6) % 3], .5), xx * .18, 1.42 + yy * .17, zf).rotation.x = Math.PI / 2;
+  } else if (theme === 'merge') {
+    [[-.18,1.32,.12],[.14,1.34,.12],[-.05,1.57,.17]].forEach(([xx, yy, rr], i) => {
+      const q = new THREE.Mesh(new THREE.SphereGeometry(rr, 14, 10), M([0xF19B86,0x7FCDBA,0xAFA0E3][i], .55));
+      q.position.set(xx, yy, zf); p.add(q);
+    });
+  }
   box(p, .9, .34, .3, .06, M(0x2A2036, .5), 0, 1.02, .38);          // 조작판
   cyl(p, .05, .05, .22, 8, M(IN.metal, .4), -.2, 1.2, .44);
   const kn = new THREE.Mesh(new THREE.SphereGeometry(.1, 12, 10), M(0xE8483C, .4));
   kn.position.set(-.2, 1.32, .44); kn.castShadow = true; p.add(kn);
   [0, 1, 2].forEach((i) => cyl(p, .06, .06, .06, 10, M(BOOKS[i], .5), .06 + i * .18, 1.14, .46)
     .rotation.x = Math.PI / 2);
-  box(p, 1.16, .2, .96, .05, M(0x2A2036, .5), 0, 2.05, 0);
+  box(p, 1.18, .25, .98, .08, M(0x2A2036, .5), 0, 2.07, 0);
+  box(p, .72, .08, .08, .03, M(col, .45, { emissive: col, emissiveIntensity: .34 }), 0, 2.09, .49);
+  [-.35, .35].forEach((dx) => cyl(p, .055, .055, .035, 12, M(0xF4D06F, .4, { emissive: 0xF4D06F, emissiveIntensity: .4 }), dx, .20, .49).rotation.x = Math.PI / 2);
   return p;
 }
 /** 옷걸이 — 상점 */

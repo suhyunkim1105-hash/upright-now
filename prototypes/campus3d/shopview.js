@@ -672,6 +672,40 @@ function baseLook(src) {
   return out;
 }
 
+/* 옷은 캐릭터 몸에서 떼어 내되, 허공에는 띄우지 않습니다. 가구 카드처럼
+   클레이 전시대 위에 세워 상품 자체의 두께와 앞·옆면이 읽히게 합니다.
+   전시대는 장착 대상이 아니고 썸네일 안에서만 존재합니다. */
+function addWearDisplay(group, box, slot) {
+  const w = Math.max(.42, box.max.x - box.min.x);
+  const d = Math.max(.22, box.max.z - box.min.z);
+  const cx = (box.min.x + box.max.x) / 2;
+  const cz = (box.min.z + box.max.z) / 2;
+  const y0 = box.min.y;
+  const cream = new THREE.MeshStandardMaterial({ color: 0xEEF4FA, roughness: .72, metalness: .02 });
+  const blue = new THREE.MeshStandardMaterial({ color: 0xAFC7DD, roughness: .66, metalness: .03 });
+  const add = (geo, mat, x, y, z) => {
+    const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.castShadow = true; m.receiveShadow = true;
+    group.add(m); return m;
+  };
+  const base = add(new THREE.CylinderGeometry(w * .68, w * .74, .085, 28), cream, cx, y0 - .11, cz);
+  base.scale.z = Math.max(.72, d / Math.max(.2, w) * 1.25);
+  add(new THREE.CylinderGeometry(w * .47, w * .53, .045, 28), blue, cx, y0 - .045, cz);
+  if (slot === 'top' || slot === 'bottom' || slot === 'bag') {
+    const rear = box.min.z - .055;
+    const h = Math.max(.45, box.max.y - y0);
+    const pole = add(new THREE.CylinderGeometry(.014, .014, h * .88, 10), blue,
+      cx, y0 + h * .47, rear);
+    const bar = add(new THREE.CylinderGeometry(.014, .014, w * .78, 10), blue,
+      cx, box.max.y - h * .08, rear);
+    bar.rotation.z = Math.PI / 2;
+  } else if (slot === 'hat' || slot === 'glasses') {
+    const h = Math.max(.25, box.max.y - y0);
+    add(new THREE.CylinderGeometry(.018, .026, h * .58, 10), blue, cx, y0 + h * .25, cz - .04);
+  }
+  group.updateMatrixWorld(true);
+  return new THREE.Box3().setFromObject(group);
+}
+
 /** 옷 한 장만 세웁니다(opt.bare). 몸은 지어 두되 안 보이게 합니다 —
     위 "옷 한 장만" 머리말에 왜 그래야 하는지 적어 두었습니다. */
 function buildBare(id, opt) {
@@ -722,10 +756,11 @@ function buildBare(id, opt) {
   /* 자세를 만졌으니 다시 굳히고 상자를 냅니다 */
   g.updateMatrixWorld(true);
   const flat = flattenVisible(body);
-  const box = visibleBox(flat);
+  let box = visibleBox(flat);
   if (box.isEmpty() || !isFinite(box.min.x)) return null;
   if (X.crop) { try { X.crop(box); } catch { /* 자르기도 덤입니다 */ } }
-  return { group: flat, box, off: X.off || V.off, pad: X.pad ?? V.pad, ground: V.ground || false };
+  box = addWearDisplay(flat, box, slot);
+  return { group: flat, box, off: X.off || V.off, pad: Math.max(.08, (X.pad ?? V.pad) - .02), ground: 1.12 };
 }
 
 /** 옷 한 장을 마네킹에 입혀 세웁니다. 몸에 걸친 그림이 필요할 때만

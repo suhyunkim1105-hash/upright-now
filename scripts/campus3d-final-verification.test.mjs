@@ -7,6 +7,7 @@ import { INDOOR } from '../prototypes/campus3d/npcs.js'
 
 const world = readFileSync('prototypes/campus3d/index.html', 'utf8')
 const rooms = readFileSync('prototypes/campus3d/rooms.js', 'utf8')
+const games = readFileSync('prototypes/campus3d/games.js', 'utf8')
 const spots = readFileSync('prototypes/campus3d/spots.js', 'utf8')
 const chars = readFileSync('prototypes/campus3d/chars.js', 'utf8')
 const shopview = readFileSync('prototypes/campus3d/shopview.js', 'utf8')
@@ -47,16 +48,37 @@ test('옷 가게의 모든 카테고리 상품이 공유 WebGL의 3D 클레이 �
     '상점을 다시 열면 옆 원본 캐릭터가 전신 대신 잘린 상태로 시작합니다')
 })
 
-test('Git의 원본 네 캐릭터와 복원한 네 캐릭터가 알 상점 여덟 종으로 이어진다', () => {
+test('상점 제목은 고정되고 본문만 스크롤되어 카테고리와 겹치지 않는다', () => {
+  assert.match(world, /#panel\{[^}]*overflow:hidden[^}]*display:flex[^}]*flex-direction:column/,
+    '팝업 전체가 스크롤되어 상점 제목이 카테고리 뒤로 들어갑니다')
+  assert.match(world, /#panel \.ph\{[^}]*position:relative[^}]*flex:none/,
+    '팝업 제목 영역이 고정 레이아웃이 아닙니다')
+  assert.match(world, /#panel \.bd\{[^}]*overflow:auto[^}]*min-height:0/,
+    '팝업 본문만 독립적으로 스크롤하지 않습니다')
+  assert.match(world, /\.shop-tabs\{[^}]*position:sticky[^}]*top:0/,
+    '긴 상품 목록에서 카테고리 탭이 안전하게 고정되지 않습니다')
+})
+
+test('학교 선택은 옷장이 아니라 MY에서 공지·학식·채팅과 함께 바뀐다', () => {
+  assert.doesNotMatch(world, /data-sc=/, '옷장에 이전 학교 선택 버튼이 남아 있습니다')
+  assert.match(world, /onSchool:\s*\(school, again\) => \{ chooseSchool\(school\); again\(\); \}/)
+  assert.match(world, /function chooseSchool\(name\)/)
+  assert.match(world, /ntKey = ''; ntState = 'idle'; ntData = null;/)
+  assert.match(world, /mealKey = ''; mealState = 'idle'; mealData = undefined;/)
+  assert.match(readFileSync('prototypes/campus3d/ui.js', 'utf8'), /data-school=/,
+    'MY 내 정보에 학교 선택 버튼이 없습니다')
+})
+
+test('최근 원본 GLB 네 캐릭터만 월드 NPC와 알 상점에 노출한다', () => {
   for (const [ko, file] of [['거북이','turtle'],['기린','giraffe'],['펭귄','penguin'],['개구리','frog']]) {
     assert.match(chars, new RegExp(`${ko}: '${file}'`), `${ko} GLB 연결`)
     assert.match(chars, new RegExp(`${ko}:\\s*\\{\\s*skin:`), `${ko} 절차형 대체 모델`)
-  }
-  for (const ko of ['알파카','햄스터','고슴도치','백조']) {
-    assert.match(chars, new RegExp(`${ko}\\(h, C\\)`), `${ko} 머리 조형`)
-    assert.match(chars, new RegExp(`${ko}:\\s*\\{\\s*skin:`), `${ko} 재질`)
     assert.match(npcs, new RegExp(`species: '${ko}'`), `${ko} 월드 NPC`)
   }
+  for (const ko of ['알파카','햄스터','고슴도치','백조']) {
+    assert.doesNotMatch(npcs, new RegExp(`species: '${ko}'`), `${ko} 임의 NPC가 남았습니다`)
+  }
+  assert.match(world, /const SPEC = \['거북이', '기린', '펭귄', '개구리'\]/)
   assert.match(world, /allSp: SPEC/)
   assert.match(world, /dressPreview\(stage, \{/)
   assert.match(world, /wearPreviewHandle\?\.tryOn\(WEAR_TRY\)/)
@@ -132,6 +154,12 @@ test('미니게임관에서 2048 기계와 상호작용을 모두 삭제했다',
   assert.doesNotMatch(arcade, /2048|n2048/)
   assert.doesNotMatch(rooms, /\[-8\.0, -3\.6, 3\.6, 8\.0\]/)
   assert.match(rooms, /\[-6\.4, 0, 6\.4\]\.forEach/)
+  assert.doesNotMatch(games, /n2048|2048-logic/, '2048 규칙이 번들에 남아 있습니다')
+})
+
+test('광장 달리기 시합은 장소와 게임 규칙에서 모두 삭제했다', () => {
+  assert.doesNotMatch(spots, /trackRace|달리기 시합 100m|출발선/)
+  assert.doesNotMatch(games, /trackRace|달리기 시합 100m/)
 })
 
 test('내 캐릭터는 상단 정보줄, 다른 사용자는 머리 위 3줄을 쓴다', () => {

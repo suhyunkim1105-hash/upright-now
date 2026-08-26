@@ -3804,11 +3804,14 @@ if (AO_ON) {
        반해상도로 내리는데, 반경이 크면 그때 잡음이 네 배가 됩니다.
 
        ?ao=0 과 비교해서 갈랐습니다(clay=0 · csm=0 · fx=0 은 다 그대로였고
-       ao=0 만 깨끗했습니다). 반경 2.8 · 세기 1.15 — 물건이 바닥에 닿는
-       자리를 어둡게 하는 본래 일은 그대로 하고, 넓은 면은 안 건드립니다. */
-    n8ao.configuration.aoRadius = 2.8;
-    n8ao.configuration.distanceFalloff = 1.4;
-    n8ao.configuration.intensity = 1.15;
+       ao=0 만 깨끗했습니다). 2.8 · 1.15 로 한 번 줄였는데 아직 보여서
+       **1.8 · 0.78** 까지 내렸습니다 — 물건이 바닥에 닿는 자리만 어둡게
+       하는 접촉 그늘로 쓰고, 넓은 면은 아예 안 건드리는 값입니다.
+       (스위프트셰이더로만 봐서 실제 GPU 에서는 더 올려도 될 수 있습니다.
+        ?ao=0 으로 끄고 비교해 보세요.) */
+    n8ao.configuration.aoRadius = 1.8;
+    n8ao.configuration.distanceFalloff = 1.0;
+    n8ao.configuration.intensity = .78;
     /* 뭉개기 — 표본이 적을수록 잡음이 남습니다. 이 그림체는 경계가
        또렷한 면이 많아 조금 더 문질러도 형태가 안 뭉개집니다. */
     n8ao.configuration.denoiseSamples = 8;

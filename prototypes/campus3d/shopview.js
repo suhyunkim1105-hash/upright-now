@@ -1133,9 +1133,17 @@ function rebuildPreview(p) {
   const look = previewLook(p);
   const sp = previewSpecies(p);
   const rid = previewRide(p);
-  /* 최신 원본 네 종도 이제 별도 3D 착용 레이어를 가지므로 구형 절차형을
-     강제할 이유가 없습니다. 월드에서 뽑은 바로 그 캐릭터에 상품을 입혀
-     보여 주고, 새 네 종만 자동으로 클레이 절차형 판본을 씁니다. */
+  /* **여기는 지금 옷이 안 보입니다.** 월드에서 쓰는 그 캐릭터를 그대로
+     세우는데, 원본 네 종(GLB)의 클레이 옷 레이어를 chars.js 에서 걷었기
+     때문입니다 — 사람 몸에 맞춘 한 벌이라 네 종 어디에도 안 맞아서,
+     기린에서는 옷이 몸 안에 들어가고 거북이에서는 등딱지를 뚫었습니다.
+
+     그래서 지금 입어 보기는 **왼쪽 상품 카드**가 눈이고, 오른쪽은 누가
+     입는지를 보여 줍니다. 카드는 절차형 골조에서 옷 한 장만 떼어 내는
+     길이라(wearThumb) 그대로 멀쩡합니다.
+
+     오른쪽에도 옷을 보이려면 종마다 옷을 따로 빚어야 합니다. 잠금 해제
+     네 종은 절차형이라 지금도 옷이 보입니다. */
   p.body = character(p.rig, sp, look, {});
   p.el.dataset.renderState = p.body ? 'ready' : 'error';
   p.el.dataset.characterSource = p.body?.userData?.characterSource || 'unknown';

@@ -182,7 +182,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
   </div>
 </div>
 </section>
-<section class="scr" id="s-Choose" data-links='{"시작하기":"Room","돌아가기":"Main"}' hidden>
+<section class="scr" id="s-Choose" data-links='{"시작하기":"Invite","돌아가기":"Main"}' hidden>
 
 
 <div lang="ko" style="width: 100%; height: 100%; box-sizing: border-box; position: relative; overflow: hidden;
@@ -240,6 +240,97 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 
 </div>
 </section>
+<section class="scr" id="s-Invite" data-links='{"이 방으로 시작":"Room","입장하기":"Room","돌아가기":"Choose"}' hidden>
+
+<div lang="ko" style="width: 100%; height: 100%; box-sizing: border-box; position: relative; overflow: hidden;
+            background: radial-gradient(120% 90% at 50% 0%, #E9F3FB 0%, #DDE9F4 55%, #D3E2F0 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 24px; padding: 26px; font-family: inherit;">
+
+  <b style="font-weight: 820; font-size: 22px; line-height: 1; letter-spacing: -.03em; color: #191F28;">비공개방</b>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 640px;">
+
+    <button data-pick="off" data-mode="create" style="position: relative; overflow: hidden; padding: 0; border: 0; cursor: pointer;
+                   border-radius: 30px; aspect-ratio: 16 / 10; text-align: left;
+                   background: linear-gradient(165deg, #F5FAFF 0%, #E4EEF9 100%);
+                   box-shadow: 0 30px 54px -22px rgba(58,80,112,.45),
+                               inset 0 8px 16px rgba(255,255,255,.96),
+                               inset 0 -10px 18px rgba(86,110,146,.22);">
+      <span data-ring aria-hidden="true" style="position: absolute; inset: 0; z-index: 3;
+                   border-radius: 30px; pointer-events: none; box-shadow: none;"></span>
+      <span style="position: absolute; left: 0; right: 0; bottom: 0; padding: 24px;">
+        <b style="display: block; font-weight: 820; font-size: 22px; line-height: 1; font-family: inherit; letter-spacing: -.025em; color: #191F28;">방 만들기</b>
+        <span style="display: block; margin-top: 6px; font-weight: 600; font-size: 12.5px; color: #4E5968;">방 이름과 인원을 정해요</span>
+      </span>
+    </button>
+
+    <button data-pick="off" data-mode="join" style="position: relative; overflow: hidden; padding: 0; border: 0; cursor: pointer;
+                   border-radius: 30px; aspect-ratio: 16 / 10; text-align: left;
+                   background: linear-gradient(165deg, #F5FAFF 0%, #E4EEF9 100%);
+                   box-shadow: 0 30px 54px -22px rgba(58,80,112,.45),
+                               inset 0 8px 16px rgba(255,255,255,.96),
+                               inset 0 -10px 18px rgba(86,110,146,.22);">
+      <span data-ring aria-hidden="true" style="position: absolute; inset: 0; z-index: 3;
+                   border-radius: 30px; pointer-events: none; box-shadow: none;"></span>
+      <span style="position: absolute; left: 0; right: 0; bottom: 0; padding: 24px;">
+        <b style="display: block; font-weight: 820; font-size: 22px; line-height: 1; font-family: inherit; letter-spacing: -.025em; color: #191F28;">초대 코드로 입장</b>
+        <span style="display: block; margin-top: 6px; font-weight: 600; font-size: 12.5px; color: #4E5968;">받은 코드 6자리를 입력해요</span>
+      </span>
+    </button>
+
+  </div>
+
+  <!-- 방 만들기 패널 -->
+  <div data-panel="create" style="width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 14px;
+              padding: 22px; border-radius: 24px; background: #F6FAFE;
+              box-shadow: 0 24px 44px -22px rgba(25,31,40,.4),
+                          inset 0 7px 14px rgba(255,255,255,.96),
+                          inset 0 -9px 16px rgba(86,110,146,.2);">
+    <label style="display: block;">
+      <span style="display: block; font-weight: 800; font-size: 13px; color: #333D4B; margin-bottom: 8px;">방 이름</span>
+      <input data-room-name value="자료구조 3장" style="width: 100%; box-sizing: border-box; padding: 13px 16px; border: 0;
+             border-radius: 16px; background: #E4EDF7; font: inherit; font-weight: 700; color: #191F28;
+             box-shadow: inset 0 5px 12px rgba(62,84,118,.2), inset 0 -2px 0 rgba(255,255,255,.85);">
+    </label>
+    <label style="display: block;">
+      <span style="display: flex; justify-content: space-between; font-weight: 800; font-size: 13px; color: #333D4B; margin-bottom: 8px;">
+        인원 <b data-room-seats-out style="color: #191F28;">4명</b>
+      </span>
+      <input data-room-seats type="range" min="2" max="8" step="1" value="4" style="width: 100%;">
+    </label>
+    <button data-create-go style="padding: 16px; border: 0; border-radius: 18px; cursor: pointer;
+                   background: linear-gradient(180deg, #3FE0C9 0%, #21C4AE 100%);
+                   color: #04322C; font-weight: 820; font-size: 16px; font-family: inherit;
+                   box-shadow: 0 20px 36px -16px rgba(18,134,122,.55),
+                               inset 0 6px 12px rgba(255,255,255,.6);">이 방으로 시작</button>
+  </div>
+
+  <!-- 코드 입장 패널 -->
+  <div data-panel="join" hidden style="width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 14px;
+              padding: 22px; border-radius: 24px; background: #F6FAFE;
+              box-shadow: 0 24px 44px -22px rgba(25,31,40,.4),
+                          inset 0 7px 14px rgba(255,255,255,.96),
+                          inset 0 -9px 16px rgba(86,110,146,.2);">
+    <label style="display: block;">
+      <span style="display: block; font-weight: 800; font-size: 13px; color: #333D4B; margin-bottom: 8px;">초대 코드</span>
+      <input data-join-code placeholder="예: 4F2K9A" maxlength="6" style="width: 100%; box-sizing: border-box; padding: 13px 16px; border: 0;
+             border-radius: 16px; background: #E4EDF7; font: inherit; font-weight: 800; letter-spacing: .16em;
+             text-transform: uppercase; color: #191F28;
+             box-shadow: inset 0 5px 12px rgba(62,84,118,.2), inset 0 -2px 0 rgba(255,255,255,.85);">
+    </label>
+    <button data-join-go style="padding: 16px; border: 0; border-radius: 18px; cursor: pointer;
+                   background: linear-gradient(180deg, #3FE0C9 0%, #21C4AE 100%);
+                   color: #04322C; font-weight: 820; font-size: 16px; font-family: inherit;
+                   box-shadow: 0 20px 36px -16px rgba(18,134,122,.55),
+                               inset 0 6px 12px rgba(255,255,255,.6);">입장하기</button>
+  </div>
+
+  <button style="padding: 9px 14px; border: 0; background: none; cursor: pointer;
+                 font-weight: 800; font-size: 13.5px; line-height: 1; font-family: inherit; color: #4E5968;">돌아가기</button>
+
+</div>
+</section>
 <section class="scr" id="s-Room" data-links='{"세션 시작":"Session","나가기":"Main"}' hidden>
 
 
@@ -263,7 +354,7 @@ button:active, [data-hot]:active { transform: translateY(1px); }
                   box-shadow: inset 0 6px 13px rgba(62,84,118,.18), inset 0 -2px 0 rgba(255,255,255,.9);">
         <span style="flex: 1; min-width: 0; text-align: center; padding-left: 96px;">
           <span style="display: block; font-weight: 750; font-size: 12.5px; line-height: 1; font-family: inherit; letter-spacing: .06em; color: #333D4B;">초대 코드</span>
-          <b style="display: block; margin-top: 9px; font-weight: 820; font-size: 34px; line-height: 1; font-family: inherit; letter-spacing: .16em;
+          <b data-invite-code style="display: block; margin-top: 9px; font-weight: 820; font-size: 34px; line-height: 1; font-family: inherit; letter-spacing: .16em;
                     color: #191F28; font-variant-numeric: tabular-nums;">4F2K9A</b>
         </span>
 
@@ -294,18 +385,20 @@ button:active, [data-hot]:active { transform: translateY(1px); }
 
       <div style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: 12px;">
 
-        <!-- 프로필 사진을 올린 사람 — 사진이 그대로 자리에 앉습니다 -->
-        <div style="position: relative; border-radius: 22px; overflow: hidden;
-                    background: linear-gradient(165deg, #F3E4DA 0%, #D9C3B4 100%); box-shadow: 0 16px 30px -16px rgba(25,31,40,.45),
-                                inset 0 6px 12px rgba(255,255,255,.6),
+        <!-- 나. 얼굴은 안 나갑니다 — 카메라는 자세만 보고, 화면에는 캐릭터만 뜹니다.
+             테두리 색이 자세 상태입니다(초록=좋음, 노랑=주의, 빨강=무너짐). -->
+        <div data-me data-posture="좋음" style="position: relative; border-radius: 22px; overflow: hidden;
+                    background: linear-gradient(165deg, #E4F5F0, #D6EAF7); display: grid; place-items: center;
+                    box-shadow: inset 0 0 0 3px #74E294, 0 16px 30px -16px rgba(25,31,40,.45),
+                                inset 0 6px 12px rgba(255,255,255,.9),
                                 inset 0 -7px 13px rgba(86,110,146,.2);">
-          <svg viewBox="0 0 160 100" preserveAspectRatio="xMidYMax meet" aria-label="올린 프로필 사진" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block;">
-            <circle cx="80" cy="38" r="16" fill="#B08D77" />
-            <path d="M38 100c0-16 8-27 20-32 6-3 14-4 22-4s16 1 22 4c12 5 20 16 20 32z" fill="#B08D77" />
-          </svg>
+          <video data-cam hidden playsinline muted></video>
+          <img data-me-char src="./assets/turtle.webp" alt="" style="height: 112px; display: block;">
+          <span data-state-chip style="position: absolute; right: 10px; top: 10px; padding: 4px 9px; border-radius: 99px;
+                       background: #74E294; color: #0C4F2E; font-weight: 800; font-size: 10.5px; line-height: 1; font-family: inherit;">좋음</span>
           <span style="position: absolute; left: 10px; bottom: 9px; padding: 5px 10px; border-radius: 99px;
                        background: rgba(25,31,40,.68); color: #FBFDFF; font-weight: 750; font-size: 11.5px; line-height: 1; font-family: inherit;
-                       white-space: nowrap;">● 한지우</span>
+                       white-space: nowrap;">나</span>
         </div>
 
         <!-- 안 올린 사람 — 온보딩에서 고른 캐릭터가 기본 -->
@@ -3722,6 +3815,55 @@ document.querySelectorAll('.scr').forEach((sec) => {
     location.href = '../campus3d/index.html';
   }, true);
 });
+
+/* ── 비공개방: 방 만들기 / 코드로 입장 ──
+   둘 다 같은 대기실(Room)로 가지만, 코드와 방 이름이 다릅니다.
+   여기서 만든 값을 window.ROOM_STATE 에 담아 두면 Room 화면이 열릴 때 읽습니다. */
+{
+  const sec = document.getElementById('s-Invite');
+  if (sec) {
+    const panels = { create: sec.querySelector('[data-panel="create"]'), join: sec.querySelector('[data-panel="join"]') };
+    const showPanel = (mode) => {
+      if (panels.create) panels.create.hidden = mode !== 'create';
+      if (panels.join) panels.join.hidden = mode !== 'join';
+    };
+    sec.querySelectorAll('[data-mode]').forEach((btn) => {
+      btn.addEventListener('click', () => showPanel(btn.dataset.mode));
+    });
+
+    const seatsIn = sec.querySelector('[data-room-seats]');
+    const seatsOut = sec.querySelector('[data-room-seats-out]');
+    if (seatsIn && seatsOut) {
+      seatsIn.addEventListener('input', () => { seatsOut.textContent = seatsIn.value + '명'; });
+    }
+
+    /* 헷갈리는 글자(0·O·1·I)는 뺍니다 — 말로 불러 주는 코드입니다. */
+    const makeCode = () => {
+      const A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+      let out = '';
+      for (let i = 0; i < 6; i++) out += A[Math.floor(Math.random() * A.length)];
+      return out;
+    };
+
+    const createGo = sec.querySelector('[data-create-go]');
+    if (createGo) createGo.addEventListener('click', () => {
+      const nameEl = sec.querySelector('[data-room-name]');
+      window.ROOM_STATE = {
+        host: true,
+        title: (nameEl && nameEl.value.trim()) || '내 방',
+        seats: seatsIn ? Number(seatsIn.value) : 4,
+        code: makeCode(),
+      };
+    });
+
+    const joinGo = sec.querySelector('[data-join-go]');
+    if (joinGo) joinGo.addEventListener('click', () => {
+      const codeEl = sec.querySelector('[data-join-code]');
+      const typed = ((codeEl && codeEl.value) || '').trim().toUpperCase();
+      window.ROOM_STATE = { host: false, title: '초대받은 방', seats: 4, code: typed || makeCode() };
+    });
+  }
+}
 /* ── 화면 바꾸기 ────────────────────────────────────────────────
    앞으로 갈 때와 되돌아올 때가 같은 방향으로 들어오면, 사용자는 자기가
    어디로 움직였는지 모릅니다. 되돌아오는 길은 왼쪽에서 들어옵니다. */
@@ -3731,6 +3873,9 @@ let current = null;
 function show(id, dir) {
   const el = document.getElementById('s-' + id);
   if (!el || id === current) return;
+  /* 대기실을 나가면 자세 카메라도 놓습니다 — 안 놓으면 다른 화면에서도
+     카메라 불이 계속 켜져 있습니다. */
+  if (current === 'Room' && id !== 'Room') { roomPoseStop(); camOff(); }
   stopLive();
   document.querySelectorAll('.scr').forEach((s) => { s.hidden = s !== el; });
   el.dataset.dir = dir === 'back' ? 'back' : 'fwd';
@@ -3839,6 +3984,37 @@ function startLive(id, root) {
   }
 
   if (id === 'Room') {                      // 사람이 들어옵니다
+    /* Invite 에서 넘어온 값 — 없으면(주소창으로 바로 들어온 경우) 예전 하드코딩 값 그대로 둡니다. */
+    const st = window.ROOM_STATE;
+    if (st) {
+      const codeEl = root.querySelector('[data-invite-code]');
+      if (codeEl) codeEl.textContent = st.code;
+      const titleEl = root.querySelector('[data-room-title]');
+      if (titleEl) titleEl.textContent = st.title;
+      root.querySelectorAll('[data-copy]').forEach((b) => {
+        b.dataset.copy = b.dataset.copy.indexOf('/r/') >= 0 ? ('deskfit.app/r/' + st.code) : st.code;
+      });
+      const seatEl = root.querySelector('[data-seat-count]');
+      if (seatEl) seatEl.textContent = '1 / ' + st.seats;
+    }
+
+    /* 내 캐릭터 — 온보딩에서 고른 종이 있으면 그걸, 없으면 거북이. */
+    const meTile = root.querySelector('[data-me]');
+    const meChar = meTile && meTile.querySelector('[data-me-char]');
+    if (meChar) {
+      try {
+        const signup = JSON.parse(localStorage.getItem('girin.signup') || 'null');
+        const species = (signup && signup.species) || 'turtle';
+        meChar.src = './assets/' + species + '.webp';
+      } catch { /* 저장된 값이 깨졌으면 기본 거북이로 둡니다 */ }
+    }
+    /* 카메라는 자세만 봅니다 — 화면에는 안 뜨고(위 <video hidden>), 얼굴 없이도
+       테두리 색으로만 상태를 알립니다. 권한을 거절해도 방은 그대로 씁니다. */
+    const meVideo = meTile && meTile.querySelector('[data-cam]');
+    if (meTile && meVideo) {
+      camOn(meVideo).then((ok) => { if (ok) roomPoseStart(meVideo, meTile); });
+    }
+
     const empties = [...root.querySelectorAll('[aria-label]')]
       .filter((e) => e.getAttribute('aria-label') === '아직 안 온 자리');
     const count = root.querySelector('[data-seat-count]');
@@ -4449,6 +4625,52 @@ async function poseStart(videoEl, tileEl, chipEl, recoverEl) {
 }
 
 function poseStop() { HW.poseOn = false; }
+
+/* ---------------- 대기실 자세 판정 ----------------
+   Session 의 poseLoop 과 갈립니다: 저기는 dataset.posture 만 바꾸고 테두리
+   색은 CSS 몫이지만, Room 의 타일은 색을 인라인으로 들고 있어서 직접
+   setPosture() 를 불러 테두리와 칩을 같이 바꿉니다. */
+function roomPoseLoop(videoEl, tileEl) {
+  if (!HW.roomPoseOn) return;
+  requestAnimationFrame(() => roomPoseLoop(videoEl, tileEl));
+  if (!videoEl || videoEl.readyState < 2 || !window.POSE || !POSE.ready()) return;
+
+  const now = performance.now();
+  if (now - (HW.roomLastDetect || 0) < 66) return;
+  HW.roomLastDetect = now;
+
+  const out = POSE.detect(videoEl, now, HW.roomSmoother);
+  if (!out) return;
+  const a = out.analysis;
+
+  if (!a || !a.faceCoreOk || !a.bothShouldersOk || !a.inFrame) { HW.roomArb = POSE.arbiter(); return; }
+  if (a.shoulderWidth < POSE.MIN_SHOULDER_WIDTH) return;
+  if (out.multi) return;
+  if (a.severeRotation) return;
+  if (!HW.roomProfile) return;             // 자세 기준을 안 잡았으면 색은 그대로 둡니다
+
+  const v = POSE.votes(a.features, HW.roomProfile, 'default', a.meanVisibility >= 0.6);
+  if (v.usedFeatureCount < 3) return;
+
+  HW.roomArb = POSE.step(HW.roomArb, v, now);
+  const s = HW.roomArb.current;            // 'good' | 'warning' | 'bad' | 'idle'
+  if (s === 'idle') return;
+  setPosture(tileEl, s === 'good' ? '좋음' : s === 'warning' ? '주의' : '무너짐');
+}
+
+async function roomPoseStart(videoEl, tileEl) {
+  if (!window.POSE) return;
+  HW.roomProfile = loadBaseline();
+  HW.roomSmoother = new POSE.Smoother();
+  HW.roomArb = POSE.arbiter();
+  if (!POSE.ready()) {
+    try { await POSE.load(); } catch { return; }
+  }
+  HW.roomPoseOn = true;
+  roomPoseLoop(videoEl, tileEl);
+}
+
+function roomPoseStop() { HW.roomPoseOn = false; }
 
 /* ---------------- 세션 화면의 배선 ---------------- */
 {

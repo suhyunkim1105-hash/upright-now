@@ -877,46 +877,84 @@ export function wearShop(ctx) {
     : (() => {
       /* 글자만 있던 칩을 카드로 바꿉니다. `.th` 는 비워 두고 부르는 쪽이
          3D 그림을 그려 넣습니다 — 옷은 모양이 값보다 먼저 궁금한 물건이라
-         이름만 적어 두면 뭘 사는지 모르고 삽니다. */
-      const items = ctx.wear[slot].filter(([id]) => id !== 'none');
-      return items.map(([id, label, price]) => {
-          const own = ctx.owned.includes(id) || price === 0;
-          return `<button class="cc ${own ? 'on' : ''}" data-buy="${esc(id)}" data-preview="${esc(id)}" data-slot="${esc(slot)}" data-owned="${own ? '1' : '0'}">
-            <span class="th wear-product" style="width:100%;height:118px" data-wear-art="${esc(id)}" aria-label="${esc(label)} 3D 클레이 상품 미리보기">
-              <i class="wear-chip">3D CLAY</i></span>
-            <b>${esc(label)}</b><small>${own ? '가지고 있어요' : won(price)} · 미리보기</small></button>`;
-        }).join('');
-    })();
+         이름만 적어 두면 뭘 사는지 모르고 삽니다.
+
+         **카드를 누르면 사던 것을 입어보는 것으로 바꿨습니다.** 사기 전에
+         입어 보는 것이 옷 가게가 하는 일이고, 사는 것은 그 다음입니다.
+         전에는 마우스를 올렸을 때만 잠깐 보이고 떼면 사라져서, 둘을 겹쳐
+         입어 보거나 하나만 벗어 볼 방법이 아예 없었습니다.
+
+         `none`(없음)도 카드로 냅니다 — 벗는 것도 골라 보는 일입니다. */
+      const tried = ctx.tryOn || {};
+      return ctx.wear[slot].map(([id, label, price]) => {
   const gallery = active === 'ride' ? `<div class="cg">${itemHtml}</div>`
-    : `<div class="wear-gallery"><div class="cg">${itemHtml}</div><aside class="wear-preview-card">
-        <div class="wear-preview-stage" aria-label="현재 캐릭터 옷 입어보기"></div>
-        <b>${esc(ctx.preview?.label || nm)} 미리보기</b><small>상품에 마우스를 올리거나 키보드로 초점을 맞추면 원본 캐릭터에만 미리 보여요. 구매해도 여기서 바로 장착되지는 않습니다.</small>
-      </aside></div>`;
-  const html = `<div class="shop-layout"><nav class="shop-tabs" aria-label="옷 가게 카테고리">`
-    + cats.map(([k, label]) => `<button type="button" data-shop-cat="${k}" class="${k === active ? 'on' : ''}">${label}</button>`).join('')
-    + `</nav><section class="shop-main">${coinbar(ctx.coins, ctx.server)}${lbl(ic, nm)}${gallery}`
+          const on = tried[slot]?.id === id;
+          const none = id === 'none';
+          return `<button class="cc ${own ? 'on' : ''}" data-try="${esc(id)}" data-slot="${esc(slot)}"
+            aria-pressed="${on ? 'true' : 'false'}" data-owned="${own ? '1' : '0'}">
+            <span class="th wear-product" style="width:100%;height:118px" ${none ? '' : `data-wear-art="${esc(id)}"`} aria-label="${esc(label)} 3D 클레이 미리보기">
+              <i class="wear-chip">${none ? '벗기' : '3D CLAY'}</i></span>
+            <b>${esc(label)}</b><small>${none ? '이 칸 비우기' : (own ? '가지고 있어요' : won(price))} · ${on ? '입는 중' : '입어보기'}</small></button>`;
     + rw('shirt', 'lilac', '산 것은 옷장에서 입어요', '어디서든 C. 탈것도 옷장에서 탑니다', 'C')
     + '</section></div>';
-  return {
-    tag: '동아리 상점', title: '옷 가게', html, wide: true, shop: true,
-    on(root, again) {
-      const bd = root.querySelector('.bd');
-      const preview = (e) => {
-        const b = e.target.closest('button[data-preview]');
-        if (b) ctx.onPreview?.(b.dataset.preview, b.dataset.slot, b.querySelector('b')?.textContent || '옷');
-      };
-      bd.onmouseover = preview;
-      bd.onfocusin = preview;
-      bd.onclick = (e) => {
-        const cat = e.target.closest('button[data-shop-cat]');
-        if (cat) { ctx.onCategory(cat.dataset.shopCat, again); return; }
-        const r = e.target.closest('button[data-rbuy]');
-        if (r && !r.disabled) { ctx.onBuyRide?.(r.dataset.rbuy, again); return; }
-        const b = e.target.closest('button[data-buy]'); if (!b || b.dataset.owned === '1') return;
-        ctx.onBuy(b.dataset.buy, b.dataset.slot, again);
-      };
-    },
-  };
+
+  /* ── 입어보는 중 ──
+     오른쪽 칸이 하던 말이 "구매해도 여기서 바로 장착되지는 않습니다" 였습니다.
+     창이 할 수 있는 일을 스스로 줄여 놓은 문장이었습니다. 여기서 입고 삽니다. */
+  const tried = ctx.tryOn || {};
+  const nameOf = (sl) => (SLOT.find(([k]) => k === sl) || [, sl])[1];
+  const worn = Object.entries(tried).filter(([, v]) => v && v.id !== 'none');
+  const emptied = Object.entries(tried).filter(([, v]) => v && v.id === 'none');
+  const unowned = worn.filter(([, v]) => !v.own);
+  const cost = unowned.reduce((s, [, v]) => s + (v.price || 0), 0);
+  const tryList = (worn.length || emptied.length)
+    ? '<ul class="try-list">'
+      + worn.map(([sl, v]) => `<li><b>${esc(v.label)}</b><em>${v.own ? '가진 것' : won(v.price)}</em>
+          <button data-try-off="${esc(sl)}" aria-label="${esc(v.label)} 벗기">벗기</button></li>`).join('')
+      + emptied.map(([sl]) => `<li><b>${esc(nameOf(sl))} 비움</b><em>—</em>
+          <button data-try-off="${esc(sl)}" aria-label="${esc(nameOf(sl))} 되돌리기">되돌리기</button></li>`).join('')
+      + '</ul>'
+    : '<p class="try-empty">상품을 누르면 여기 캐릭터가 바로 입습니다. 여러 개를 같이 입어 볼 수 있어요.</p>';
+  const acts = (worn.length || emptied.length)
+    ? '<div class="try-acts">'
+      + (unowned.length
+          ? `<button class="try-main" data-try-buy>${unowned.length}벌 사고 입기 · ${won(cost)}</button>`
+          : '<button class="try-main" data-try-apply>이대로 입기</button>')
+      + '<button data-try-clear>전부 벗기</button></div>'
+    : '';
+
+   **같이 쓰는 파일**이라, 그 순간 2D 판이 "three 를 못 찾겠다" 며 통째로
+   안 열렸습니다. 표는 글자와 값일 뿐이고, 파는 일은 이 파일 몫입니다.
+        <div class="wear-preview-stage" aria-label="내 캐릭터 옷 입어보기"></div>
+        <b>입어보는 중</b>${tryList}${acts}
+   id 는 2D 판 아이템 표와 같은 것을 씁니다 — 서버 구매(world_buy_item)가
+   두 판에서 하나로 이어져야 하므로 여기서 새 이름을 지으면 안 됩니다. */
+export const FURN_MORE = [
+  ['fur-cushion',   '방석',          25, '🟥'],
+    + rw('shirt', 'lilac', '입어 보고 사요', '카드를 누르면 오른쪽 캐릭터가 입습니다. 옷장(C)에서도 갈아입어요', 'C')
+  ['fur-beanbag',   '빈백',          70, '🛋'],
+  ['fur-chair',     '나무 의자',     35, '🪑'],
+  ['fur-sidetable', '협탁',          40, '🧰'],
+  ['fur-shelf',     '낮은 책장',     50, '📕'],
+  ['fur-drawers',   '서랍장',        60, '🗄'],
+      /* 마우스를 올렸을 때 보여 주던 것을 뗐습니다. 눌러서 입는 것과
+         올려서 보는 것이 같이 있으면, 입어 둔 것이 마우스가 지나갈 때마다
+         덮여서 무엇을 입고 있는지 알 수 없습니다. */
+  ['fur-fan',       '선풍기',        40, '🌀'],
+  ['fur-tv',        '브라운관 TV',   75, '📺'],
+  ['fur-mirror',    '전신 거울',     55, '🪞'],
+  ['fur-fishtank',  '어항',          65, '🐟'],
+  ['fur-dumbbell',  '아령',          25, '🏋'],
+        const off = e.target.closest('button[data-try-off]');
+        if (off) { ctx.onTry?.(null, off.dataset.tryOff, again); return; }
+        if (e.target.closest('button[data-try-clear]')) { ctx.onTryClear?.(again); return; }
+        if (e.target.closest('button[data-try-buy]')) { ctx.onTryBuy?.(again); return; }
+        if (e.target.closest('button[data-try-apply]')) { ctx.onTryApply?.(again); return; }
+        const b = e.target.closest('button[data-try]');
+        if (b) ctx.onTry?.(b.dataset.try, b.dataset.slot, again);
+   두 판에서 하나로 이어져야 하므로 여기서 새 이름을 지으면 안 됩니다.
+   네 번째 칸은 상점에 보여 줄 글자입니다. */
+export const FURN = [
 }
 
 /** 가구 목록 — 기숙사에 놓는 것들 */

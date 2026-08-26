@@ -1,0 +1,103 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>GLB 앞뒤 점검</title>
+<style>
+  body { margin: 0; background: #F4F1EA; font: 13px system-ui; color: #3A423F; }
+  #out { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px; }
+  figure { margin: 0; text-align: center; }
+  figcaption { font-size: 11px; color: #7A857F; margin-top: 4px; }
+</style>
+<body>
+<div id="out"></div>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module">
+/* 캐릭터 GLB 를 앞·뒤·옆에서 한 장씩 찍습니다.
+   "거북이·펭귄은 뒤통수에도 눈이 있다" 는 주석이 사실인지 눈으로 봅니다. */
+import * as THREE from 'three';
+import { GLTFLoader } from './vendor/ext/GLTFLoader.js';
+
+const SIZE = 300;
+const FILES = [['거북이', 'turtle'], ['기린', 'giraffe'], ['펭귄', 'penguin'], ['개구리', 'frog']];
+/* GLB 의 정면은 +X 쪽입니다(π/2). 처음에 0 을 앞으로 잡아 옆모습을 앞이라
+   불렀습니다. 앞·뒤·전신 세 장을 찍습니다. */
+const HALF = Math.PI / 2;
+const VIEWS = [['머리 앞', HALF, 'head'], ['머리 뒤', -HALF, 'head'], ['전신 앞', HALF, 'body']];
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true });
+renderer.setSize(SIZE, SIZE);
+renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xF4F1EA);
+scene.add(new THREE.HemisphereLight(0xFFFFFF, 0x9AA6A0, 2.2));
+const key = new THREE.DirectionalLight(0xFFFFFF, 1.6);
+key.position.set(-2, 3, 2.4);
+scene.add(key);
+
+const cam = new THREE.PerspectiveCamera(28, 1, .05, 40);
+const loader = new GLTFLoader();
+const out = document.getElementById('out');
+const shots = [];
+
+const load = (f) => new Promise((res, rej) => loader.load('./assets/chars/' + f + '.glb', res, undefined, rej));
+
+for (const [name, file] of FILES) {
+  let gltf;
+  try { gltf = await load(file); } catch (e) { console.error(file, e); continue; }
+  const root = gltf.scene;
+  scene.add(root);
+
+  const box = new THREE.Box3().setFromObject(root);
+  const size = box.getSize(new THREE.Vector3());
+  const cx = (box.min.x + box.max.x) / 2, cz = (box.min.z + box.max.z) / 2;
+
+  for (const [vName, yaw, mode] of VIEWS) {
+    /* 머리는 눈이 뒤에도 있는지 보려고 크게, 전신은 비율과 마감을 보려고 멀리 */
+    const ty = mode === 'head' ? box.min.y + size.y * 0.82 : box.min.y + size.y * 0.5;
+    const dist = mode === 'head' ? size.y * 1.15 : size.y * 3.1;
+    const target = new THREE.Vector3(cx, ty, cz);
+    cam.position.set(cx + Math.sin(yaw) * dist, ty + size.y * (mode === 'head' ? 0.05 : 0.06), cz + Math.cos(yaw) * dist);
+    cam.lookAt(target);
+    cam.updateProjectionMatrix();
+    renderer.render(scene, cam);
+    const url = renderer.domElement.toDataURL('image/png');
+    shots.push({ name, view: vName, url });
+    const f = document.createElement('figure');
+    const im = new Image(); im.src = url; im.width = SIZE;
+    f.appendChild(im);
+    const c = document.createElement('figcaption'); c.textContent = name + ' · ' + vName;
+    f.appendChild(c);
+    out.appendChild(f);
+  }
+  scene.remove(root);
+}
+
+/* 한 판으로 합쳐 저장합니다 */
+window.__shots = shots;
+window.__sheet = async () => {
+  const cols = 3, rows = FILES.length, PAD = 10, CAP = 18;
+  const cv = document.createElement('canvas');
+  cv.width = cols * (SIZE + PAD) + PAD;
+  cv.height = rows * (SIZE + PAD + CAP) + PAD;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#F4F1EA'; g.fillRect(0, 0, cv.width, cv.height);
+  g.font = '13px system-ui'; g.textAlign = 'center';
+  await Promise.all(shots.map((s, i) => new Promise((r) => {
+    const im = new Image();
+    im.onload = () => {
+      const c = i % cols, rw = (i / cols) | 0;
+      const x = PAD + c * (SIZE + PAD), y = PAD + rw * (SIZE + PAD + CAP);
+      g.drawImage(im, x, y);
+      g.fillStyle = '#3A423F';
+      g.fillText(s.name + ' · ' + s.view, x + SIZE / 2, y + SIZE + 13);
+      r();
+    };
+    im.src = s.url;
+  })));
+  return cv.toDataURL('image/png');
+};
+document.title = 'GLB 점검 완료 ' + shots.length + '장';
+</script>

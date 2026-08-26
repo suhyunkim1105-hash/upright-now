@@ -503,9 +503,29 @@
     border-radius:22px;background:var(--clay2);box-shadow:var(--clay);color:var(--cInk)}
   .wear-preview-stage{height:260px;border-radius:17px;overflow:hidden;background:var(--clay3);box-shadow:var(--clayIn)}
   .wear-preview-card>b{font-size:14px}.wear-preview-card>small{font-size:10.5px;line-height:1.45;color:var(--cInk3)}
-  .gift-reveal{margin:4px 0 16px;padding:18px;border-radius:22px;background:linear-gradient(145deg,#FFF0B8,#FBD6CE);
-    box-shadow:var(--clayUp);display:grid;place-items:center;text-align:center;animation:giftPop .45s cubic-bezier(.18,.9,.24,1.25)}
-  .gift-reveal span{font-size:48px;filter:drop-shadow(0 7px 5px rgba(70,58,30,.18))}
+  /* ── 입어보는 중 ──
+     입은 것은 **눌린 판**입니다. 클레이에서 솟은 것은 누르는 것이고 파인
+     것은 담긴 것이라, 지금 몸에 얹혀 있는 옷은 파여 있어야 맞습니다. */
+  .cc[aria-pressed="true"]{box-shadow:var(--clayIn);background:var(--clay3);transform:none}
+  .cc[aria-pressed="true"] b::after{content:' ·';color:var(--cInk3)}
+  .cc[aria-pressed="true"] small{color:var(--cInk)}
+  .try-empty{margin:0;font-size:10.5px;line-height:1.5;color:var(--cInk3);word-break:keep-all}
+  .try-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .try-list li{display:flex;align-items:center;gap:6px;font-size:11px}
+  .try-list b{flex:1;font-weight:800;color:var(--cInk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .try-list em{font-style:normal;font-weight:700;color:var(--cInk3);font-size:10px}
+  .try-list button{flex:none;padding:3px 7px;border-radius:9px;border:0;cursor:pointer;
+    font:800 10px/1 var(--ff);color:var(--cInk2);background:var(--clay3);box-shadow:var(--clayIn)}
+  .try-list button:hover{color:var(--cInk)}
+  .try-acts{display:flex;flex-direction:column;gap:6px;margin-top:2px}
+  .try-acts button{padding:9px 10px;border:0;border-radius:13px;cursor:pointer;
+    font:800 11.5px/1.2 var(--ff);color:var(--cInk2);background:var(--clay2);box-shadow:var(--clay)}
+  .try-acts button:hover{transform:translateY(-1px)}
+  .try-acts button:active{box-shadow:var(--clayIn);transform:none}
+  .try-acts .try-main{color:#22302C;background:linear-gradient(145deg,#8FE3D2,#5FCBB6)}
+  .fame-school em{display:block;font:700 9.5px/1.4 var(--ff);color:#79879A;margin-top:5px}
+  .fame-frame strong{margin-top:auto;font:900 18px/1 var(--ff)}
+  .fame-frame strong small{font-size:9px;margin-left:2px;color:#79879A}
   .gift-reveal b{font-size:19px;color:var(--cInk);margin-top:7px}.gift-reveal small{color:var(--cInk2);margin-top:4px}
   @keyframes giftPop{from{opacity:0;transform:scale(.72) rotate(-3deg)}to{opacity:1;transform:none}}
   .fame-wall{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:14px;margin:8px 0 14px;
@@ -871,7 +891,7 @@
       <circle cx="14" cy="14" r="8" fill="none" stroke="#0E6F63" stroke-width="1.1"/>
       <circle cx="14" cy="14" r="2.6" fill="#7DEBDD" stroke="#0E6F63" stroke-width="1"/>
     </svg>
-  </div>
+  </div>
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
@@ -1227,20 +1247,33 @@ function josa(word, withT, withoutT) {
    chars.js 의 절차형 여분 종은 옛 저장값을 읽기 위한 호환 코드로만 남깁니다. */
 const SPEC = ['거북이', '기린', '펭귄', '개구리'];
 const SAVE = UI.SAVE;
-/* 기본은 기린입니다. 거북이·펭귄은 변환된 메시의 **뒤통수에도 눈이 파여**
-   있어서(생성기가 앞면을 뒤에 복사했습니다) 돌아서면 얼굴이 두 개로
-   보입니다. 기린과 개구리는 앞뒤가 제대로 나왔습니다.
-   그 둘을 다시 뽑으면 여기를 되돌립니다. */
-let curSpecies = SPEC.includes(SAVE.species) ? SAVE.species : '기린';
-SAVE.species = curSpecies;
+/* 기본은 온보딩에서 고른 종입니다.
+   전에는 기린으로 묶여 있었습니다 — "거북이·펭귄은 뒤통수에도 눈이 파여
+   있다" 는 이유였는데, 네 종을 앞뒤로 렌더해 보니 **뒤통수에 눈은 없습니다.**
+   거북이는 뒤통수 아래 면이 찌그러져 있고 펭귄은 뒤통수에 이음새 자국이
+   있지만, 둘 다 얼굴이 두 개로 보이는 것과는 다른 문제입니다.
+   고른 종을 못 쓰게 막을 이유가 아니라 메시를 다시 뽑을 이유입니다. */
 /* 옷 기본값 + 소유 목록. 공짜 기본템은 늘 갖고 시작합니다 */
 const DEF_LOOK = { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
-  shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'none', hat: 0xE8695A,
-  glassesId: 'none', bagId: 'backpack', bagC: 0x4A6EA8 };
-SAVE.look = Object.assign({}, DEF_LOOK, SAVE.look || {});
-SAVE.owned2 = Array.from(new Set([...WEAR_FREE, ...(SAVE.owned2 || [])]));
-/* 종 — 처음 셋(내 종·기린·개구리)은 열려 있고 나머지는 알에서 깨어납니다 */
-SAVE.ownedSp = Array.from(new Set([curSpecies, '기린', '개구리', ...(SAVE.ownedSp || [])]))
+/* 옷 기본값 + 소유 목록. 공짜 기본템은 늘 갖고 시작합니다.
+
+   **가방은 안 멥니다.** 처음 만나는 캐릭터는 아무것도 안 걸친 상태여야
+   합니다 — 기본으로 백팩을 메워 두면 그게 내가 고른 것인지 원래 그런
+   것인지 알 수 없고, 옷장에서 벗기 전까지 계속 따라다닙니다.
+   백팩은 여전히 공짜라(WEAR_FREE) 상점에서 바로 메 볼 수 있습니다. */
+  .filter((n) => SPEC.includes(n));
+const myLook = () => SAVE.look;
+  glassesId: 'none', bagId: 'none', bagC: 0x4A6EA8 };
+function payCoins(n) {
+/* 전에 열어 본 사람은 저장본에 백팩이 박혀 있습니다. 그건 고른 게 아니라
+   그때의 기본값이라, 한 번만 벗깁니다. 이 뒤로 직접 멘 백팩은 그대로 남습니다. */
+if (!SAVE.bagUnset) {
+  if (SAVE.look.bagId === 'backpack') SAVE.look.bagId = 'none';
+  SAVE.bagUnset = 1; UI.save();
+}
+   존이 일곱이 되고 미니게임이 흩어지면서 광장에서 동아리 거리까지
+   걷는 데 스무 걸음이 넘습니다. 지도(M)로 건너뛸 수는 있지만 그건
+   **월드를 건너뛰는 것**이라, 자주 쓰면 걸어 다닐 이유가 사라집니다.
   .filter((n) => SPEC.includes(n));
 const myLook = () => SAVE.look;
 /* 코인 쓰기 — 부족하면 거절. 서버가 붙어 있으면 구매류는 서버가 따로 셉니다 */
@@ -1292,8 +1325,8 @@ const BGM = createMusic({ on: SAVE.bgm !== false, vol: SAVE.bgmVol ?? .45, pick:
 
 const playerRig = new THREE.Group(); scene.add(playerRig);
 let player = character(playerRig, curSpecies, myLook(), {});
-/* 분수를 지름 20 으로 키우면서 (5,5) 가 물속이 됐습니다. 광장 남쪽,
-   본관을 마주 보는 자리로 옮깁니다. */
+/* 분수를 지름 20 으로 키우면서 (5,5) 가 물속이 됐습니다. 광장 남쪽,
+   본관을 마주 보는 자리로 옮깁니다. */
 const P = { x: 0, z: 22, y: 0, dir: -Math.PI * .75, sp: 0, walk: 0, moved: 0, rise: 0 };
 
 /* ── 바닥 높이 따라가기 ──
@@ -1933,20 +1966,17 @@ function panelFor(s) {
       schoolColor: SCHOOLS.find((q) => q.name === SAVE.school)?.c,
       category: SHOP_CAT.wear,
       onCategory: (k, again) => { SHOP_CAT.wear = k; again(); },
-      preview: WEAR_TRY,
-      onPreview: (id, slot, label) => {
-        const sc = SCHOOLS.find((q) => q.name === SAVE.school);
-        WEAR_TRY = { id, slot, label, color: id === 'varsity' ? sc?.c : undefined };
-        /* 오른쪽은 상품 확대 사진이 아니라 **내 원본 캐릭터 전신 입어보기**입니다.
-           카테고리를 고를 때 상의만 화면 가득 당기면 얼굴과 다리가 잘려 원본
-           캐릭터인지 확인할 수 없습니다. 전신을 유지하고 옷만 갈아입힙니다. */
-        wearPreviewHandle?.tryOn(WEAR_TRY)?.focus(null);
+      tryOn: WEAR_TRY,
+      /* id 가 null 이면 그 칸을 벗깁니다(원래 차림으로). 같은 것을 다시
+         누르면 토글로 벗습니다 — 입어 본 것을 되돌릴 길이 없으면
+         사람은 창을 닫았다 다시 엽니다. */
+      onTry: (id, slot, again) => { toggleTry(id, slot); again(); },
+      onTryClear: (again) => { WEAR_TRY = {}; again(); },
+      onTryBuy: (again) => buyTried(again),
+      onTryApply: (again) => { applyTried(); again(); },
         const t = elPanel.querySelector('.wear-preview-card>b'); if (t) t.textContent = label + ' 미리보기';
       },
       onBuy: (id, slot, again) => buyWear(id, slot, again),
-      onBuyRide: (id, again) => {
-        if (SAVE.ownedRide.includes(id)) return;
-        if (!payCoins(RIDE_PRICE[id])) return;
         SAVE.ownedRide.push(id); UI.save();
         toast(josa(RIDES[id].name, '을', '를') + ' 샀어요', '옷장(C)에서 탑니다');
         again();
@@ -2060,19 +2090,31 @@ let panelSpot = null, redrawPanel = () => {};
 /* 상점의 3D 상품 그림. shopview.js 는 하나의 WebGL 속판을 나눠 쓰고,
    화면에 들어온 카드만 한 번 그립니다. 카테고리를 바꿀 때 떠난 카드의
    손잡이만 접어 월드 렌더러와 웹캠에 불필요한 일을 남기지 않습니다. */
-let thumbHandles = [], wearPreviewHandle = null, WEAR_TRY = null;
-function clearThumbs() {
-  thumbHandles.forEach((h) => { try { h.dispose(); } catch (_) {} });
+/* WEAR_TRY 는 **칸별 표**입니다 — { top: {...}, hat: {...} }.
+   하나짜리였을 때는 상의와 모자를 같이 입어 볼 수가 없었습니다. */
+let thumbHandles = [], wearPreviewHandle = null, WEAR_TRY = {};
   thumbHandles = [];
+  wearPreviewHandle = null;
+}
   wearPreviewHandle = null;
 }
 function paintThumbs(root) {
   clearThumbs();
   try {
     const sc = SCHOOLS.find((q) => q.name === SAVE.school);
-    root.querySelectorAll('button[data-buy] .th').forEach((el) => {
-      const b = el.parentElement;
-      thumbHandles.push(itemThumb(el, 'wear', b.dataset.buy, {
+    /* 옷 카드는 `data-buy` 에서 `data-try` 로 바뀌었습니다 — 카드를 누르는
+       일이 사는 것에서 입어보는 것으로 바뀌었기 때문입니다.
+       '없음' 칸은 그릴 옷이 없으니 건너뜁니다. */
+    root.querySelectorAll('button[data-try] .th[data-wear-art]').forEach((el) => {
+      const b = el.closest('button[data-try]');
+      thumbHandles.push(itemThumb(el, 'wear', b.dataset.try, {
+        bare: true, slot: b.dataset.slot, look: myLook(),
+        color: b.dataset.try === 'varsity' ? sc?.c : undefined,
+      }));
+    });
+      thumbHandles.push(itemThumb(el, 'furn', el.parentElement.dataset.fbuy)));
+    const eggColors = {
+      '거북이': 0x78C98A, '기린': 0xE7AD45, '펭귄': 0x4F6078, '햄스터': 0xDCA76E,
         bare: true, slot: b.dataset.slot, look: myLook(),
         color: b.dataset.buy === 'varsity' ? sc?.c : undefined,
       }));
@@ -2091,11 +2133,14 @@ function paintThumbs(root) {
     });
     const stage = root.querySelector('.wear-preview-stage');
     if (stage) {
-      wearPreviewHandle = dressPreview(stage, {
-        species: curSpecies, look: myLook(), try: WEAR_TRY, focus: null,
-        spin: .38, w: 210, h: 260,
+      /* 오른쪽은 상품 확대 사진이 아니라 **내 캐릭터 전신**입니다.
+         입어 본 것을 합쳐 한 벌로 넘깁니다 — 칸 하나만 넘기면 겹쳐 입은
+         것이 안 보입니다. */
       });
-      thumbHandles.push(wearPreviewHandle);
+        species: curSpecies, look: myLook(), try: { look: triedLook() }, focus: null,
+    }
+  } catch (_) { /* 3D 그림이 실패해도 이름·가격·구매는 그대로 남습니다 */ }
+}
     }
   } catch (_) { /* 3D 그림이 실패해도 이름·가격·구매는 그대로 남습니다 */ }
 }
@@ -2188,14 +2233,83 @@ function seatYaw(seat) {
   return d0;
 }
 
-/* 옷 사기 — 서버(world_buy_item)가 붙어 있으면 서버가 값을 정하고 잔액을 깎습니다.
-   varsity 는 서버 표의 varsity_red 로 통일해 보냅니다. */
-function buyWear(id, slot, again) {
+/* ══════ 옷 입어보기 ══════
+   `WEAR_TRY` 는 **칸별로 하나씩** 담습니다 — { top: {...}, hat: {...} }.
+   전에는 하나짜리였고 마우스를 올릴 때만 채워져서, 상의와 모자를 같이
+   입어 볼 수가 없었습니다.
+
+   여기 담긴 것은 아직 **산 것도 입은 것도 아닙니다.** 창을 닫으면 사라지고,
+   `이대로 입기` 를 눌러야 SAVE.look 으로 넘어갑니다. */
+const LOOK_OF_SLOT = { top: ['topId', 'top'], bottom: ['bottomId', 'bottom'], shoes: ['shoesId', 'shoes'],
+  hat: ['hatId', 'hat'], glasses: ['glassesId', null], bag: ['bagId', 'bagC'] };
+
+function toggleTry(id, slot) {
+  if (!slot || !LOOK_OF_SLOT[slot]) return;
+  if (!id || WEAR_TRY[slot]?.id === id) { delete WEAR_TRY[slot]; return; }
+  const item = (WEAR[slot] || []).find(([q]) => q === id);
+  if (!item) return;
+  const own = SAVE.owned2.includes(id) || item[2] === 0;
+  const sc = SCHOOLS.find((q) => q.name === SAVE.school);
+  WEAR_TRY[slot] = { id, label: item[1], price: item[2], own,
+    color: id === 'varsity' ? sc?.c : undefined };
+}
+
+/** 지금 차림 + 입어본 것. 미리보기와 `이대로 입기` 가 같은 것을 봅니다. */
+function triedLook() {
+  const L = Object.assign({}, myLook());
+  for (const [slot, v] of Object.entries(WEAR_TRY)) {
+    const [idKey, cKey] = LOOK_OF_SLOT[slot];
+    L[idKey] = v.id;
+    if (cKey && v.color != null) L[cKey] = v.color;
+  }
+  return L;
+}
+
+/** 입어본 대로 실제로 입습니다. 산 것만 넘어갑니다 — 안 산 것은 못 입습니다. */
+function applyTried() {
+  const L = myLook();
+  let n = 0;
+  for (const [slot, v] of Object.entries(WEAR_TRY)) {
+    if (v.id !== 'none' && !(SAVE.owned2.includes(v.id) || v.price === 0)) continue;
+    const [idKey, cKey] = LOOK_OF_SLOT[slot];
+    L[idKey] = v.id;
+    if (cKey && v.color != null) L[cKey] = v.color;
+    n++;
+  }
+  WEAR_TRY = {};
+  UI.save(); rebuildMe(); net?.setLook(curSpecies, myLook(), myNick());
+  if (n) toast('갈아입었어요', '옷장(C)에서 색도 바꿔요');
+}
+
+/** 입어본 것 중 안 산 것을 전부 삽니다. 다 사지면 그대로 입힙니다. */
+function buyTried(again) {
+  const rest = Object.entries(WEAR_TRY)
+    .filter(([, v]) => v.id !== 'none' && !(SAVE.owned2.includes(v.id) || v.price === 0));
+  if (!rest.length) { applyTried(); again(); return; }
+  /* 하나씩 순서대로 삽니다. 서버 구매는 비동기라, 앞의 것이 끝나야
+     잔액이 맞습니다 — 한꺼번에 쏘면 코인이 모자라도 다 통과합니다. */
+  const step = (i) => {
+    if (i >= rest.length) { applyTried(); again(); return; }
+    const [slot, v] = rest[i];
+    const before = SAVE.owned2.length;
+    buyWear(v.id, slot, () => {
+      /* 못 샀으면(코인 부족) 거기서 멈춥니다 — 뒤엣것을 계속 사면
+         왜 이건 사지고 저건 안 사졌는지 알 수 없습니다. */
+      if (SAVE.owned2.length === before) { again(); return; }
+      step(i + 1);
+    });
+  };
+  step(0);
+}
+
+  if (boardTab === 'school') ensureSchoolNotice();
+  const rows = boardTab === 'school'
+    ? (ntState === 'loading' ? undefined : (ntData && Array.isArray(ntData.items) ? ntData.items : null))
   const item = WEAR[slot].find(([q]) => q === id);
   if (!item) return;
   const done = () => {
     SAVE.owned2.push(id); UI.save();
-    toast(item[1] + ' 샀어요', '옷장(C)에서 갈아입어요'); again();
+    toast(item[1] + ' 샀어요', '바로 입어 봐요 — 옷장(C)에서도 갈아입어요'); again();
   };
   if (SRV && SRV.configured) {
     const srvId = id === 'varsity' ? 'varsity_red' : id;
@@ -4234,8 +4348,8 @@ setInterval(pullWeather, 1800000);
    전에는 플레이 시작 뒤 지도와 방을 0.65초 간격으로 구워 첫 7초 동안
    규칙적으로 멎었습니다. */
 shootMap();
-/* 커서를 처음부터 켭니다 — syncLock 은 시점·창이 바뀔 때만 도는데,
-   그전까지 3인칭에서 우리 커서가 없어 윈도우 커서가 나왔습니다. */
+/* 커서를 처음부터 켭니다 — syncLock 은 시점·창이 바뀔 때만 도는데,
+   그전까지 3인칭에서 우리 커서가 없어 윈도우 커서가 나왔습니다. */
 syncLock();
 ['library', 'mainhall', 'union', 'arcade', 'shop', 'dorm'].forEach((k) => {
   try { buildRoom(k); } catch {}
@@ -4306,9 +4420,14 @@ window.__walkAudit = () => {
 };
 
 window.__roomInfo = () => ({ root: roomRoot, size: room ? ROOM_SIZE[room.key] : null });
-/* __enter 는 아래 포털 판(3530줄께)이 진짜입니다 — 짓기만 하는 판이 위에 하나 더 있어서, 포털 zone(clubshop)과 방 key(shop)가 갈리는 상점에서 조용히 아무 일도 안 했습니다. */
-window.__hour = (h) => { SKY.setHour(h); setClockHour(h); skySeen = -1; SAVE.hour = h; UI.save(); };
-/* 카메라 고정 — __W.lock(...) · 풀려면 __W.lock(null) */
+/* 검토용 — 창을 걸어가지 않고 바로 엽니다. 옷 가게는 캠퍼스 반대편이라
+   문구 하나 고칠 때마다 거기까지 걸어가야 했습니다.
+   `__open('wear-shop')` · `__open('wardrobe')`
+   (`__panel` 은 이미 **내 앞에 있는 지점**을 여는 다른 손잡이입니다) */
+window.__open = (panel, tag = '검토', title = panel) => openPanel({ tag, title, panel });
+window.__hit = (x, z) => hitCampus(x, z);
+window.__sess = () => SESS;
+window.__portals = () => CAMPUS.portals;
 window.__W.lock = (...a) => { window.__camLock = a[0] === null ? null : a; };
 window.__wx = (k) => SKY.setWeather(k);
 window.__hit = (x, z) => hitCampus(x, z);

@@ -30,11 +30,11 @@ const SPS = Q.get('sp') ? [Q.get('sp')] : ['기린', '거북이', '펭귄', '개
 const LOOK = Q.get('look') === 'none'
   ? { topId: 'none', bottomId: 'none', shoesId: 'none', hatId: 'none', glassesId: 'none', bagId: 'none', tint: {} }
   : { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
-      shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'beanie', hat: 0xE8695A,
-      glassesId: 'none', bagId: 'none', bagC: 0x4A6EA8, tint: {} };
+      shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'cap', hat: 0xE8695A,
+      glassesId: 'round', bagId: 'backpack', bagC: 0x4A6EA8, tint: {} };
 
 /* 앞·옆 두 방향 × 선 자세·달리는 중간 두 시각 */
-const SHOTS = [['선 앞', 0, 'idle'], ['뛰는 앞 ㉠', 0, 'run', .30], ['뛰는 앞 ㉡', 0, 'run', .62], ['뛰는 옆', Math.PI / 2, 'run', .30]];
+const SHOTS = [['선 앞', 0, 'idle'], ['선 옆', Math.PI / 2, 'idle'], ['뛰는 앞', 0, 'run', .34], ['뛰는 뒤', Math.PI, 'run', .34]];
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setSize(SIZE, SIZE); renderer.setPixelRatio(1);

@@ -12,6 +12,7 @@
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
 import { M, roundedBox } from './parts.js';
+import { dressSkin } from './wearskin.js';
 import { mergeGeometries } from './vendor/BufferGeometryUtils.js';
 
 const SK = { ink: 0x2E2A2E, white: 0xFFFFFF, blush: 0xF4A2A6, gum: 0xE08A94 };
@@ -184,24 +185,29 @@ function glbChar(parent, species, fit, opt, SkeletonUtils) {
     glb: { mixer, act, cur: 'idle', last: 0, body, bodyY: body.position.y,
       bodyQ: body.quaternion.clone(), poseNodes },
   };
-  /* 옷은 **안 씌웁니다.** 여기 있던 클레이 옷 한 벌(addGlbWear)을 걷었습니다.
+  /* 옷 — **몸 표면을 떼어 내서** 입힙니다(wearskin.js).
 
-     그 옷은 사람 몸에 맞춰 만든 한 벌을 네 종에 그대로 얹는 것이었습니다.
-     네 몸이 서로 너무 달라 어느 종에서도 옷으로 안 읽혔습니다 — 몸통이
-     통통한 기린·개구리에서는 옷이 통째로 몸 **안에** 들어가 민트색 조각과
-     청바지 다리만 옆구리로 삐져나왔고(뛸 때 몸 옆에 사람 형체가 따라
-     다니던 것이 이것입니다), 등딱지가 있는 거북이·펭귄에서는 등 뒤로
-     뚫고 나왔습니다.
+     여기 있던 앞 판(addGlbWear)은 사람 몸에 맞춰 빚은 한 벌을 네 종에
+     그대로 얹는 것이었습니다. 네 몸이 서로 너무 달라 기린에서는 옷이
+     몸 안으로 들어가고 거북이에서는 등딱지를 뚫었고, 넷 다 뼈를 안
+     따라가서 뛸 때 몸에서 떨어졌습니다.
 
-     자리를 손으로 더 맞춰도 안 됩니다. 뼈는 네 종이 다 같은 자리인데
-     (spine 0.57 · head 0.87) 메시는 그렇지 않기 때문입니다 — 기린은 머리가
-     y 1.07 위에 있고 거북이는 몸이 x 로 0.1 밀려 있습니다. 옷이 몸에
-     붙어 보이려면 종마다 옷을 따로 빚어야 합니다. 값을 맞추는 일이
-     아니라 만드는 일이라 여기서 하지 않습니다.
+     지금은 옷을 안 빚습니다. 원본 메시에서 옷이 덮을 띠만 떼어 내
+     법선으로 밀고 색을 칠합니다. 같은 skeleton 에 묶으므로 뛰든 앉든
+     몸과 같이 접히고, 옷이 몸 표면 그 자체라 뚫고 나올 수 없습니다.
 
-     옷장·상점·서버는 그대로입니다. 무엇을 가졌고 무엇을 입었는지는 계속
-     저장되고, 상점 카드의 옷 그림도 절차형 골조로 따로 그립니다
-     (shopview.js). 월드의 몸에 얹지 않을 뿐입니다. */
+     염색을 아는 곳이 여기라 색 고르는 함수를 넘겨 줍니다 — wearskin 은
+     TINTS 를 몰라야 합니다(옷 표가 늘면 여기만 고치면 됩니다). */
+  const L = normalizeLook(fit);
+  const colorOf = (id, fallback) => {
+    const t = L.tint && L.tint[id];
+    return t == null ? (fallback | 0) : hexNum(t);
+  };
+  g.userData.parts.wear = dressSkin(g, body, species, L, colorOf);
+  g.userData.outfitAudit = {
+    source: L.topId ? 'skin-shell' : 'bare', species,
+    slots: Object.fromEntries(Object.entries(g.userData.parts.wear).map(([k, v]) => [k, v.id])),
+  };
   g.userData.base = { armZ: [0, 0] };
   g.userData.seed = Math.random() * 10;
   return g;

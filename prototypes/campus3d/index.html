@@ -2161,7 +2161,10 @@ function paintThumbs(root) {
         /* 입어 본 것을 합쳐 한 벌로 넘깁니다 — 칸 하나만 넘기면 겹쳐
            입은 것이 안 보입니다. */
         species: curSpecies, look: myLook(), try: { look: triedLook() }, focus: null,
-        spin: .38, w: 210, h: 260,
+        /* 계속 한 방향으로 돌면 절반은 **등**을 봅니다 — 옷을 입혀 놓고도
+           화면에 아무 변화가 없는 것처럼 보였습니다. 앞을 보인 채로
+           좌우로만 흔듭니다. */
+        spin: 'sway', w: 210, h: 260,
       });
       thumbHandles.push(wearPreviewHandle);
     }

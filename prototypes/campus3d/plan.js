@@ -513,18 +513,46 @@ function fields(g, solid) {
         m.castShadow = false; m.receiveShadow = true; g.add(m); return m;
       };
       mk(wob(w / 2 + 3.4, 44, .05, 1.7), M(PAL.sand, .9), LAYER.fieldBase);          // 모래톱
-      mk(wob(w / 2 + .8, 44, .05, 1.7), M(0x8FD8E8, .35), LAYER.field);               // 얕은 물
-      const deep = mk(wob(w / 2 - 3.2, 40, .06, 1.7), M(PAL.waterDeep, .3), LAYER.field + .012);
-      deep.receiveShadow = false;
-      /* 물결 링 — 천천히 도는 밝은 선 둘. index.html 의 시계가 돌립니다 */
-      const rip = new THREE.MeshBasicMaterial({ color: 0xCFF0F8, transparent: true, opacity: .3 });
-      for (const [rr, ph] of [[.32, 0], [.2, 2.1]]) {
-        const ring = new THREE.Mesh(new THREE.RingGeometry(.96, 1, 40), rip);
-        ring.rotation.x = -Math.PI / 2;
-        ring.scale.set(w * rr, d * rr, 1);
-        ring.position.set(x + ph, LAYER.field + .02, z - ph * .5);
-        ring.castShadow = false; g.add(ring);
-      }
+
+      /* ── 물 ──
+         전 판은 얕은 물 한 겹 · 깊은 물 한 겹, 그 위에 **흰 윤곽선 링 둘**
+         이었습니다. 얇은 링은 물결이 아니라 그냥 선으로 보였고(과녁),
+         두 겹 사이 경계도 칼로 자른 자국이었습니다. 물이 아니라 색종이.
+
+         물로 읽히게 하는 것 넷을 넣습니다.
+           ① 깊이 — 겹을 다섯으로 늘리고 색을 사이사이 섞습니다
+           ② 비침 — 물가 두 겹은 반투명. 모래가 비쳐야 얕아 보입니다
+           ③ 반짝임 — 거칠기를 0.14 까지 내려 해가 한 번 물낯에 맺힙니다
+              (평평한 면 + 방향광이면 스페큘러가 실제로 생깁니다)
+           ④ 물결 — 윤곽선이 아니라 **넓고 흐린 띠**. 폭도 중심도 제각각 */
+      const WCOL = [0x9FE0EE, 0x7ECDE5, 0x62B9DA, 0x4CA6CB, 0x3E93BB];
+      WCOL.forEach((c, i) => {
+        const m = mk(wob(w / 2 + .8 - i * (w * .052), 44 - i * 3, .05 + i * .004, 1.7),
+          M(c, .14 + i * .03, i < 2
+            ? { transparent: true, opacity: i ? .92 : .72, metalness: .12 }
+            : { metalness: .10 }),
+          LAYER.field + i * .004);
+        m.receiveShadow = i > 2;
+      });
+      /* 물가 거품선 — 물 겹보다 살짝 넓은 밝은 판을 **밑에** 깔면
+         가장자리 0.35 만 테로 남습니다. 젖은 자리는 늘 밝습니다. */
+      { const foam = new THREE.Mesh(wob(w / 2 + 1.15, 44, .05, 1.7),
+          new THREE.MeshBasicMaterial({ color: 0xF0FBFD, transparent: true,
+            opacity: .55, depthWrite: false }));
+        foam.rotation.x = -Math.PI / 2;
+        foam.position.set(x, LAYER.field - .002, z);
+        foam.castShadow = false; foam.receiveShadow = false; g.add(foam); }
+      /* 물결 — 넓고 흐린 띠 넷. index.html 의 시계가 천천히 돌립니다 */
+      const rip = new THREE.MeshBasicMaterial({ color: 0xE8F7FC, transparent: true,
+        opacity: .17, depthWrite: false });
+      [[.30, .10, 0, 0], [.45, .07, 3.5, -2], [.19, .08, -4, 3], [.37, .05, -1, 5]]
+        .forEach(([rr, wd, ox, oz], i) => {
+          const ring = new THREE.Mesh(new THREE.RingGeometry(1 - wd, 1, 48), rip);
+          ring.rotation.x = -Math.PI / 2;
+          ring.scale.set(w * rr, d * rr, 1);
+          ring.position.set(x + ox, LAYER.field + .026 + i * .002, z + oz);
+          ring.castShadow = false; g.add(ring);
+        });
       /* 바위 — 물가에 셋 */
       const rockM = M(0xB9B4A6, .9);
       [[-.42, .38, 1.2], [.46, .3, .9], [.1, -.5, 1.4]].forEach(([fx, fz, s2]) => {

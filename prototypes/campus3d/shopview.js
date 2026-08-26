@@ -298,6 +298,13 @@ const BARE = {
     fit: { bottomId: 'jeans', shoesId: 'sneakers', hatId: 'none', glassesId: 'none', bagId: 'none' },
     show(P, K, body) {
       P.torso.visible = true;
+      /* ponytail: 카드 그림에서 옷 뒤에 크림색 몸통이 남습니다. 74px
+         에서는 그 덩이가 옷보다 커서 반팔티·후드티·셔츠·과잠이 거의
+         같은 그림으로 보입니다. `o.material === K.skin` 도, 상의 재질만
+         남기는 `!matSet(P,'top').has(...)` 도 시험해 봤는데 전자는 아무
+         것도 안 지우고 후자는 카드를 통째로 비웁니다 — 몸통 메시가
+         P.wear.top 의 재질 목록과 안 맞습니다. chars.js 쪽 골조를 보고
+         고쳐야 하는 자리라 지금은 원래대로 둡니다. */
       hideIf(P.torso, (o) => K.bottom.has(o.material));   // 허리춤은 하의입니다
       P.arms.forEach((a, i) => {
         a.visible = true;
@@ -1185,8 +1192,17 @@ function drawPreview(p, t) {
 
   /* 도는 각은 한 바퀴마다 접습니다. 접지 않으면 창을 켜 둔 채 한나절이
      지났을 때 각이 커져서 소수점이 성겨지고, 도는 것이 덜컹거립니다. */
-  const spin = p.ctx.spin === false ? 0 : (typeof p.ctx.spin === 'number' ? p.ctx.spin : SPIN);
-  p.rig.rotation.y = (p.turn0 + t * spin) % TAU;
+  /* `spin: 'sway'` — **앞을 보이는 채로** 좌우로만 흔듭니다.
+     옷 가게의 "입어보는 중" 칸이 계속 한 방향으로 돌고 있었습니다.
+     16초에 한 바퀴라 절반은 캐릭터의 **등**을 보고 있었고, 옷을 눌러
+     입혀 놓고도 화면에는 아무 변화가 없는 것처럼 보였습니다 —
+     입어 보는 창이 등을 보여 주면 입어 보는 창이 아닙니다. */
+  if (p.ctx.spin === 'sway') {
+    p.rig.rotation.y = p.turn0 + Math.sin(t * .55) * .42;
+  } else {
+    const spin = p.ctx.spin === false ? 0 : (typeof p.ctx.spin === 'number' ? p.ctx.spin : SPIN);
+    p.rig.rotation.y = (p.turn0 + t * spin) % TAU;
+  }
 
   /* 당기기 — 목표 상자로 천천히 옮겨 갑니다. 툭 끊어 바꾸면 어디를 보고
      있었는지 놓칩니다. 매 프레임 일정 비율씩 좁히는 것이면 충분합니다. */

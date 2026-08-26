@@ -70,11 +70,21 @@ f.addEventListener('load', async () => {
     log.textContent += ' at ' + at + ' px ' + px.toFixed(0) + ',' + py.toFixed(0);
     await sleep(900);
   }
+  /* index.html 이 이미 내놓은 손잡이들 — 지도를 눌러 걸어가는 것보다
+     이쪽이 정확합니다. __tp(x,z,dir) · __enter(zone) · __open(panel) */
+  const tp = q.get('tp');
+  if (tp) { const [x, z, d] = tp.split(',').map(Number); win.__tp(x, z, d); await sleep(700); }
+  const room = q.get('enter');
+  if (room) { win.__enter(room); await sleep(1400); }
+  const open = q.get('open');
+  if (open) { win.__open(open, '검수', open); await sleep(1600); }
+
   const dock = q.get('do');
   if (dock) { click(win, D.querySelector(`#dock [data-do="${dock}"]`)); await sleep(900); }
 
   await sleep(900);
-  log.textContent += ' done';
+  const errs = (win.__ERRS || []).slice(0, 3).map((e) => String(e && e.message || e));
+  log.textContent += ' done' + (errs.length ? ' | ERR ' + errs.join(' ; ') : ' | no err');
   document.title = 'walked';
 });
 </script>

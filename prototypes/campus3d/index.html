@@ -129,7 +129,7 @@
   /* 게임 안 커서 — 잠금을 유지한 채 창을 조작합니다.
      pointer-events:none 이라야 자기 밑의 버튼을 가리지 않습니다. */
   /* 자체 커서 — 잠겨 있든 아니든 늘 이것만 보입니다 */
-  #gcur{position:absolute;left:0;top:0;z-index:400;pointer-events:none;opacity:0;
+  #gcur{position:fixed;left:0;top:0;z-index:400;pointer-events:none;opacity:0;
     /* 테가 없으니 그림자가 바탕에서 떼어 놓는 몫을 혼자 합니다 */
     filter:drop-shadow(0 2px 6px rgba(10,40,36,.55)) drop-shadow(0 0 1px rgba(10,40,36,.5));
     transition:opacity .12s}
@@ -540,11 +540,68 @@
     .wear-gallery{grid-template-columns:1fr}.wear-preview-card{position:static}.wear-preview-stage{height:220px}
     .board-view ul.feed li{align-items:flex-start;flex-wrap:wrap}
   }
-  button.tt{border:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:13px;
-    color:var(--cInk3)}
-  button.tt.on{box-shadow:var(--clayIn);color:#fff}
-  table.tt{border-spacing:5px}
-  table.tt th{color:var(--cInk3)}
+  /* ── 기숙사 노트북 · 흰색 주간 시간표 ──
+     카드 일곱 개를 세로로 쌓던 판을 없애고, 실제 일정 앱처럼 시간과
+     요일이 한눈에 교차하는 흰 격자를 씁니다. 편집 기능은 같은 저장소를
+     그대로 써서 기존 수업도 사라지지 않습니다. */
+  #panel:has(.schedule-surface){background:#fff}
+  #panel:has(.schedule-surface) .ph{background:#fff;border-bottom-color:#EDF1F5}
+  #panel:has(.schedule-surface) .bd{background:#fff;padding-top:13px}
+  .schedule-surface{background:#fff;color:#1D2939}
+  .schedule-surface .schedule-tabs{padding:5px;border:1px solid #E7EDF3;border-radius:17px;background:#F7F9FC}
+  .schedule-surface .schedule-tabs button{background:transparent;box-shadow:none;border-radius:12px;color:#7B8798}
+  .schedule-surface .schedule-tabs button.on{background:#fff;color:#172333;box-shadow:0 6px 15px rgba(58,78,101,.10),inset 0 1px 0 #fff}
+  .tt-app{overflow:hidden;border:1px solid #E5EBF1;border-radius:20px;background:#fff;
+    box-shadow:0 18px 38px -30px rgba(35,55,78,.38)}
+  .tt-toolbar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:15px;
+    min-height:68px;padding:13px 15px;border-bottom:1px solid #E9EEF3;background:#fff}
+  .tt-heading{display:flex;flex-direction:column;gap:2px;min-width:112px}
+  .tt-heading small{font:800 8.5px/1.2 var(--ff);letter-spacing:.12em;color:#98A4B3}
+  .tt-heading strong{font:850 18px/1.25 var(--ff);letter-spacing:-.025em;color:#192536}
+  .tt-status{min-width:0;padding:8px 12px;border-left:1px solid #EDF1F4}
+  .tt-status b,.tt-status small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-status b{font:800 11.5px/1.35 var(--ff);color:#344155}
+  .tt-status small{margin-top:2px;font:600 9.5px/1.35 var(--ff);color:#8B97A7}
+  .tt-add{border:0;border-radius:12px;padding:10px 12px;background:#17212F;color:#fff;
+    box-shadow:0 7px 14px rgba(25,35,50,.16);font:800 10.5px/1 var(--ff);cursor:pointer}
+  .tt-grid-scroll{overflow:auto;background:#fff;scrollbar-width:thin;scrollbar-color:#CAD5E1 transparent}
+  table.tt.tt-week{width:100%;min-width:575px;border-collapse:collapse;border-spacing:0;table-layout:fixed;font-size:11px}
+  table.tt.tt-week th,table.tt.tt-week td{border-right:1px solid #EDF1F4;border-bottom:1px solid #EDF1F4}
+  table.tt.tt-week tr>*:last-child{border-right:0}
+  table.tt.tt-week thead th{height:43px;padding:6px;background:#FBFCFD;text-align:center;color:#253247}
+  table.tt.tt-week thead th:first-child{width:58px;color:#98A4B3}
+  table.tt.tt-week thead b,table.tt.tt-week thead span{display:block}
+  table.tt.tt-week thead b{font:850 11px/1.2 var(--ff)}
+  table.tt.tt-week thead span{margin-top:2px;font:650 8.5px/1.1 var(--ff);color:#A0AAB7}
+  table.tt.tt-week tbody th{width:58px;padding:0 8px;background:#FBFCFD;text-align:right;vertical-align:top}
+  table.tt.tt-week tbody th time{display:block;padding-top:11px;font:800 10px/1 var(--ff);color:#536174}
+  table.tt.tt-week tbody th i{display:block;margin-top:4px;font:650 8px/1 var(--ff);font-style:normal;color:#A2ACB8}
+  table.tt.tt-week td{height:67px;padding:5px;background:#fff;vertical-align:top}
+  .tt-app button.tt{width:100%;height:100%;min-height:55px;margin:0;border:0;border-radius:10px;padding:7px 8px;
+    text-align:left;font-family:var(--ff);cursor:pointer;transition:transform .13s,box-shadow .13s,background .13s}
+  .tt-app button.tt.empty{display:grid;place-items:center;background:transparent;color:#C4CDD7;box-shadow:none}
+  .tt-app button.tt.empty span{display:grid;place-items:center;width:24px;height:24px;border-radius:9px;
+    opacity:0;background:#F1F5F8;font-size:15px;transition:opacity .13s,transform .13s}
+  .tt-app button.tt.empty:hover span,.tt-app button.tt.empty:focus-visible span{opacity:1;transform:scale(1.04)}
+  .tt-app button.tt.on{display:flex;flex-direction:column;align-items:flex-start;background:color-mix(in srgb,var(--tt-color) 26%,#fff);
+    color:#253044;box-shadow:inset 3px 0 0 var(--tt-color),0 3px 8px color-mix(in srgb,var(--tt-color) 13%,transparent)}
+  .tt-app button.tt.on:hover{transform:translateY(-1px);box-shadow:inset 3px 0 0 var(--tt-color),0 7px 13px color-mix(in srgb,var(--tt-color) 20%,transparent)}
+  .tt-app button.tt.on b{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:850 10.5px/1.25 var(--ff)}
+  .tt-app button.tt.on i{display:block;margin-top:3px;font:700 8.5px/1.25 var(--ff);font-style:normal;color:#657186}
+  .tt-app button.tt.on small{display:block;margin-top:auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 8px/1.2 var(--ff);color:#7C8797}
+  .tt-editor{margin:14px;padding:15px;border:1px solid #E7ECF2;border-radius:16px;background:#FAFBFD;
+    box-shadow:inset 0 1px 0 #fff}
+  .tt-editor-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px}
+  .tt-editor-head b{font:850 14px/1.2 var(--ff);color:#253247}
+  .tt-editor-head span{font:650 9px/1.3 var(--ff);color:#98A4B3}
+  .tt-editor .lbl{margin-top:11px;color:#647186}
+  .tt-editor .nick,.tt-editor select{background:#fff;border-color:#E0E7EE;box-shadow:none}
+  .tt-editor .wr button{box-shadow:none;border:1px solid #E0E7EE;background:#fff}
+  .tt-editor .wr button.on{border-color:#17212F;background:#17212F;color:#fff}
+  @media(max-width:680px){
+    .tt-toolbar{grid-template-columns:1fr auto}.tt-status{display:none}.tt-heading strong{font-size:16px}
+    .tt-add{padding:10px}.tt-editor-head span{display:none}
+  }
   .card-id{border:0;background:linear-gradient(135deg,var(--mint),var(--sky));
     box-shadow:var(--clayUp);border-radius:22px;padding:16px}
   .card-id .ph{box-shadow:var(--clayUp2)}
@@ -553,16 +610,16 @@
   #map{position:absolute;inset:0;display:none;place-items:center;
     background:rgba(75,111,132,.28);backdrop-filter:blur(7px);pointer-events:auto}
   #map.on{display:grid}
-  #map .box{padding:16px;border-radius:28px;background:linear-gradient(145deg,rgba(248,253,255,.97),rgba(224,241,246,.97));border:1px solid rgba(133,174,194,.22);
-    box-shadow:16px 20px 44px rgba(54,91,116,.24),-8px -8px 24px rgba(255,255,255,.72),inset 2px 2px 0 rgba(255,255,255,.86);backdrop-filter:blur(18px)}
-  #map canvas{display:block;border:1px solid rgba(126,170,192,.22);border-radius:20px;width:min(620px,86vmin);height:min(620px,86vmin);
-    box-shadow:inset 4px 5px 12px rgba(87,133,155,.16),0 8px 18px rgba(72,111,133,.14);cursor:pointer}
-  #map .cap{display:flex;align-items:center;gap:9px;margin:2px 6px 11px}
-  #map .cap b{font-size:16px;font-weight:800;letter-spacing:-.02em;color:var(--tx)}
-  #map .cap i{font-style:normal;font-size:11px;color:var(--tx2)}
+  #map .box{padding:15px;border-radius:30px;background:linear-gradient(145deg,rgba(250,254,255,.98),rgba(226,243,249,.98));border:1px solid rgba(112,169,195,.24);
+    box-shadow:18px 22px 48px rgba(54,91,116,.25),-9px -9px 25px rgba(255,255,255,.76),inset 2px 2px 0 rgba(255,255,255,.9);backdrop-filter:blur(18px)}
+  #map canvas{display:block;border:1px solid rgba(106,164,190,.25);border-radius:23px;width:min(680px,86vmin);height:min(680px,86vmin);
+    box-shadow:inset 4px 5px 13px rgba(87,133,155,.14),0 10px 22px rgba(72,111,133,.16);cursor:pointer}
+  #map .cap{display:flex;align-items:center;gap:9px;margin:2px 6px 11px;min-height:34px}
+  #map .cap:before{content:'M';display:grid;place-items:center;width:31px;height:31px;border-radius:11px;background:linear-gradient(145deg,#7CE0D0,#52BED0);color:#fff;font-size:12px;font-weight:900;box-shadow:var(--clayUp2)}
+  #map .cap b{font-size:17px;font-weight:850;letter-spacing:-.025em;color:var(--tx)}
+  #map .cap i{font-style:normal;font-size:11px;color:var(--tx2);padding:5px 9px;border-radius:99px;background:rgba(255,255,255,.56)}
   #map .cap span{margin-left:auto;font-size:10.5px;color:var(--tx2)}
-  #map .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:11px 6px 2px;font-size:10.5px;
-    color:var(--tx2)}
+  #map .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:11px 6px 2px;font-size:10.5px;color:var(--tx2)}
   #map .lg span{display:flex;align-items:center;gap:5px}
   #map .lg i{width:9px;height:9px;border-radius:3px;display:block}
 
@@ -875,13 +932,13 @@
   <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
-    <div class="cap"><b>기린캠퍼스</b><i></i><span>누르거나 앞의 <b>숫자</b>를 치면 그 앞으로 · <kbd>M</kbd> 닫기</span></div>
+    <div class="cap"><b>기린캠퍼스 3D 지도</b><i></i><span>건물·도로·잔디 어디든 눌러 이동 · <kbd>M</kbd> 닫기</span></div>
     <canvas width="1240" height="1240"></canvas>
     <div class="lg">
       <span><i style="background:#E8483C"></i>나</span>
-      <span><i style="background:#3F6BA8"></i>주요 건물</span>
-      <span><i style="background:#8E9AA8"></i>부속 건물</span>
-      <span><i style="background:rgba(255,255,255,.55)"></i>지나다니는 사람</span>
+      <span><i style="background:#5B84C4"></i>들어갈 수 있는 시설</span>
+      <span><i style="background:#91AFC0"></i>캠퍼스 블록</span>
+      <span><i style="background:#F5FAFC"></i>누른 곳으로 바로 이동</span>
     </div>
   </div></div>
 </div>
@@ -1746,7 +1803,7 @@ cv.addEventListener('wheel', (e) => { e.preventDefault();
    그리고 잠겨 있는 동안에는 화면 가운데에 조준점을 그립니다 — 커서가
    사라진 채로 무엇을 겨누는지 모르면 그것대로 답답합니다. */
 /* 창이 열려 있으면 마우스는 시점이 아니라 **커서**를 움직입니다 */
-function uiOpen() { return panelOn || dlgOn || mapOn; }
+function uiOpen() { return panelOn || dlgOn || mapOn || gameOpen(); }
 /* 잠금은 1인칭이면 늘 켭니다 — 창이 열려도 풀지 않습니다.
    풀면 그 순간 커서가 화면 한복판에 튀어나오고, 다시 잠그려면
    화면을 눌러야 합니다. 그 왕복을 없애는 것이 이 작업의 목적입니다. */
@@ -1758,6 +1815,27 @@ function wantLock() { return first && !room; }
    목적이라, 두 경우가 같은 그림을 씁니다. */
 const CUR = { x: 0, y: 0, live: false, hot: false };
 const curEl = () => $('#gcur');
+/* #game은 body 바로 아래 z-index 12로 열립니다. 커서가 .hud(z-index 2)
+   안에 남아 있으면 자기 z-index가 400이어도 부모의 층을 넘지 못해 게임
+   뒤로 숨습니다. body의 마지막 자식으로 옮겨 짝 맞추기·셋 지우기에서도
+   같은 청록 커서가 항상 가장 위에 보이게 합니다. */
+document.body.appendChild(curEl());
+/* openGame 은 디버그 진입(window.__game), NPC/부스 진입 등 여러 경로에서
+   호출됩니다. 어느 경로든 게임이 열리면 커서를 body의 마지막 층으로
+   다시 올리고, 카메라 드래그 중 남은 look 상태를 지운 뒤 잠금/좌표를
+   재동기화합니다. 짝 맞추기와 셋 지우기는 이 한 경로를 함께 씁니다. */
+addEventListener('campus:game-state', (e) => {
+  const el = curEl();
+  document.body.appendChild(el);
+  el.classList.remove('look', 'press');
+  if (e.detail?.open) {
+    CUR.x = innerWidth / 2;
+    CUR.y = innerHeight / 2;
+    curPaint();
+    el.classList.add('on');
+  }
+  requestAnimationFrame(syncLock);
+});
 function curPaint() {
   curEl().style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
 }
@@ -2870,6 +2948,7 @@ function interact() {
       /* 러너 하나만 자세를 조작으로 씁니다. 카메라를 못 켜도 그 게임은
          자판으로 그대로 돌아갑니다 — 조작을 카메라 뒤에 잠그지 않습니다. */
       openGame(spot.game, (score) => {
+        requestAnimationFrame(syncLock);
         if (score <= 0) return;
         /* 2D 판 규칙 그대로 — 클리어 10코인, 게임별 하루 한 번 */
         const today = new Date().toISOString().slice(0, 10);
@@ -2883,6 +2962,7 @@ function interact() {
         }
         UI.save();
       }, { posture: PZ });
+      syncLock();
       return;
     }
     if (spot.seat) startSession(spot); else openPanel(spot);
@@ -2958,13 +3038,16 @@ const MAPC = {
   wallBig: '#3F6BA8', wallBigTop: '#5788C4', wall: '#8E9AA8', wallTop: '#A7B2BE',
   me: '#E8483C', ink: '#1B2430',
 };
-/* 이름표 — 어두운 알약 위에 흰 글씨. 어떤 배경 위에서도 읽힙니다 */
+/* 이름표 — 검은 알약 대신 흰 클레이 칩. 밝은 지도와 같은 UI 문법입니다. */
 function mapLabel(g, text, x, y, fs = 12) {
-  g.font = `800 ${fs}px "Wanted Sans Variable",sans-serif`;
+  g.font = `850 ${fs}px "Wanted Sans Variable",sans-serif`;
   const w = g.measureText(text).width + fs * 1.1, h = fs * 1.75;
-  g.fillStyle = 'rgba(20,28,38,.82)';
+  g.fillStyle = 'rgba(65,105,125,.16)';
+  g.beginPath(); g.roundRect(x - w / 2 + 1.5, y - h / 2 + 2.5, w, h, h / 2); g.fill();
+  g.fillStyle = 'rgba(250,253,255,.95)';
   g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, h / 2); g.fill();
-  g.fillStyle = '#FFFFFF'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.strokeStyle='rgba(78,132,158,.28)';g.lineWidth=1;g.stroke();
+  g.fillStyle = '#304A5D'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(text, x, y + .5);
 }
 /* 나 — 점 하나와 시야 부채꼴 */
@@ -3079,7 +3162,7 @@ function mapUV(x, z) {
    실제 월드 스크린샷을 축소하면 큰 본관이 작은 시설을 가리고 조경이
    글자를 덮었습니다. 지도는 같은 좌표를 단순한 클레이 블록으로 다시
    그려, 레퍼런스처럼 건물 높이·도로·블록이 한눈에 읽히게 합니다. */
-const CLAYMAP = { S: 620, cx: 310, cy: 306, sx: .82, sy: .48 };
+const CLAYMAP = { S: 620, cx: 310, cy: 304, sx: .82, sy: .48 };
 function clayXY(x, z) {
   return [CLAYMAP.cx + (x - z) * CLAYMAP.sx, CLAYMAP.cy + (x + z) * CLAYMAP.sy];
 }
@@ -3093,32 +3176,83 @@ function mapPoly(g, pts, fill, stroke) {
   if (fill) { g.fillStyle = fill; g.fill(); }
   if (stroke) { g.strokeStyle = stroke; g.stroke(); }
 }
-function clayPrism(g, b) {
-  const w = Math.max(9, b.w * b.s), d = Math.max(7, b.d * b.s);
-  const base = [[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]]
-    .map(([dx,dz]) => clayXY(b.x + dx, b.z + dz));
-  const h = ({ mainhall:42, library:35, union:31, dorm:29, arcade:27, clubshop:27 }[b.zone] || 25);
-  const top = base.map(([x,y]) => [x,y-h]);
-  const pal = {
-    mainhall:['#91B9EA','#6E96C9','#BBD7F5'], library:['#74D2C0','#4BAA9A','#B8EBE2'],
-    union:['#8ED39F','#5DAD73','#C6EFCE'], dorm:['#F3B87B','#D68B4F','#FFD8AC'],
-    arcade:['#A68CDF','#7960BA','#D8CCF1'], clubshop:['#EC9486','#C86B60','#F8C9C2'],
-  }[b.zone] || ['#A8B7C8','#7E90A5','#D4DEE8'];
-  mapPoly(g, [top[1],top[2],base[2],base[1]], pal[1]);
-  mapPoly(g, [top[2],top[3],base[3],base[2]], pal[0]);
-  g.lineWidth = 1.5; mapPoly(g, top, pal[2], 'rgba(255,255,255,.84)');
-  /* 창은 벽에 붙인 작은 클레이 알약입니다. */
-  g.fillStyle = 'rgba(239,249,255,.78)';
-  for (let i=0;i<3;i++) {
-    const x = top[1][0] + (top[2][0]-top[1][0])*(.22+i*.27);
-    const y = top[1][1] + (top[2][1]-top[1][1])*(.22+i*.27) + h*.50;
-    g.beginPath(); g.roundRect(x-4,y-3,8,6,2); g.fill();
+function clayRect(g, x, z, w, d, fill, stroke) {
+  const pts=[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]]
+    .map(([dx,dz])=>clayXY(x+dx,z+dz));
+  g.lineWidth=1.2; mapPoly(g,pts,fill,stroke); return pts;
+}
+function clayRoad(g, pts, w = 18) {
+  const line=(width,col,dash=[])=>{
+    g.save(); g.strokeStyle=col; g.lineWidth=width; g.lineCap='round'; g.lineJoin='round';
+    g.setLineDash(dash); g.beginPath(); pts.forEach(([x,z],i)=>{const p=clayXY(x,z);i?g.lineTo(...p):g.moveTo(...p)}); g.stroke(); g.restore();
+  };
+  line(w+8,'#EAF2F5'); line(w,'#8297A4'); line(1.6,'rgba(255,255,255,.86)',[7,7]);
+}
+function clayCrosswalk(g, x, z, along = 'x') {
+  for(let i=-2;i<=2;i++) clayRect(g,
+    x+(along==='x'?i*1.6:0),z+(along==='z'?i*1.6:0),
+    along==='x'?1.05:7.5,along==='z'?1.05:7.5,'rgba(255,255,255,.9)');
+}
+function clayBox(g, b) {
+  const base=[[-b.w/2,-b.d/2],[b.w/2,-b.d/2],[b.w/2,b.d/2],[-b.w/2,b.d/2]]
+    .map(([dx,dz])=>clayXY(b.x+dx,b.z+dz));
+  const top=base.map(([x,y])=>[x,y-b.h]);
+  mapPoly(g,[top[1],top[2],base[2],base[1]],b.pal[1]);
+  mapPoly(g,[top[2],top[3],base[3],base[2]],b.pal[0]);
+  g.lineWidth=1.3; mapPoly(g,top,b.pal[2],'rgba(255,255,255,.78)');
+  /* 양쪽 벽에 층별 창을 넣어 납작한 상자가 아니라 건물로 읽히게 합니다. */
+  g.fillStyle='rgba(237,250,255,.83)';
+  const floors=Math.max(1,Math.min(3,Math.round(b.h/12)));
+  for(let f=0;f<floors;f++) for(let i=0;i<3;i++) {
+    const t=.2+i*.29, drop=b.h*(.34+.20*f);
+    const x1=top[1][0]+(top[2][0]-top[1][0])*t, y1=top[1][1]+(top[2][1]-top[1][1])*t+drop;
+    const x2=top[2][0]+(top[3][0]-top[2][0])*t, y2=top[2][1]+(top[3][1]-top[2][1])*t+drop;
+    g.beginPath();g.roundRect(x1-3.5,y1-2.2,7,4.4,1.4);g.fill();
+    g.beginPath();g.roundRect(x2-3.5,y2-2.2,7,4.4,1.4);g.fill();
   }
-  /* 지붕 장식/간판이 건물마다 달라 실루엣으로도 구분됩니다. */
-  const [cx,cy] = clayXY(b.x,b.z);
-  g.fillStyle = pal[0]; g.beginPath(); g.roundRect(cx-18,cy-h-10,36,13,6); g.fill();
-  g.fillStyle = '#FFFFFF'; g.font = '900 9px "Wanted Sans Variable",sans-serif';
-  g.textAlign='center'; g.textBaseline='middle'; g.fillText(b.name, cx, cy-h-3.5);
+  return {base,top,cx:clayXY(b.x,b.z)[0],cy:clayXY(b.x,b.z)[1]};
+}
+const MAP_BLOCKS=[
+  [-124,-92,25,18,20,'blue'],[-88,-100,22,17,15,'mint'],[-48,-100,22,16,17,'coral'],
+  [83,-102,25,18,19,'lav'],[126,-83,22,18,16,'blue'],[-126,-38,24,18,17,'coral'],
+  [-91,45,24,18,15,'mint'],[-48,79,23,17,16,'blue'],[44,78,23,17,15,'coral'],
+  [79,80,22,17,18,'lav'],[126,91,24,18,15,'mint'],[-112,105,25,17,14,'lav'],
+];
+const BLOCKPAL={blue:['#87AFC5','#698DA2','#CDE0EA'],mint:['#7CCAB9','#55A997','#C3EAE1'],coral:['#E79A83','#C87361','#F6CABB'],lav:['#A999D2','#8170B3','#DCD3EF']};
+function clayAmbient(g, a) {
+  const [x,z,w,d,h,k]=a, q=clayBox(g,{x,z,w,d,h,pal:BLOCKPAL[k]});
+  /* 옥상 설비와 작은 차양만 넣고 라벨은 붙이지 않습니다. */
+  g.fillStyle='rgba(255,255,255,.82)';g.beginPath();g.roundRect(q.cx-6,q.cy-h-5,12,7,3);g.fill();
+}
+function clayPrism(g, b) {
+  const w=Math.max(16,b.w*b.s*.66), d=Math.max(12,b.d*b.s*.76);
+  const h={mainhall:42,library:35,union:31,dorm:30,arcade:29,clubshop:29}[b.zone]||25;
+  const pal={
+    mainhall:['#82AEE4','#5E86BE','#C5DCF6'],library:['#61CBB6','#3EA08F','#BDECE2'],
+    union:['#79D092','#4DA96A','#C8F0D2'],dorm:['#F2AC70','#D27B43','#FFD7AD'],
+    arcade:['#9A7DDB','#7356B7','#DCD0F4'],clubshop:['#ED8C7B','#C96055','#F9C9C1'],
+  }[b.zone];
+  const q=clayBox(g,{x:b.x,z:b.z,w,d,h,pal});
+  const cx=q.cx, cy=q.cy-h;
+  /* 시설별 지붕 장식과 1층 차양. 같은 블록 복제품처럼 보이지 않게 합니다. */
+  if(b.zone==='mainhall'){
+    g.fillStyle='#F7FBFF';g.beginPath();g.roundRect(cx-11,cy-13,22,15,5);g.fill();
+    g.strokeStyle='#5E86BE';g.lineWidth=2;g.beginPath();g.arc(cx,cy-6,4,0,TAU);g.stroke();
+  } else if(b.zone==='library'){
+    ['#FFFFFF','#E9F6F3','#CFEAE4'].forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.roundRect(cx-14+i*4,cy-9-i*3,22,7,3);g.fill();});
+  } else if(b.zone==='union'){
+    g.fillStyle='#FFF4C8';g.beginPath();g.arc(cx,cy-7,9,0,TAU);g.fill();g.fillStyle='#79D092';g.beginPath();g.arc(cx,cy-7,4,0,TAU);g.fill();
+  } else if(b.zone==='dorm'){
+    g.fillStyle='#FFF6EB';g.beginPath();g.roundRect(cx-15,cy-10,30,11,5);g.fill();
+    g.fillStyle='#F2AC70';[-8,0,8].forEach(dx=>{g.beginPath();g.roundRect(cx+dx-3,cy-7,6,5,2);g.fill();});
+  } else {
+    const stripe=b.zone==='arcade'?['#9A7DDB','#62CDE1']:['#ED8C7B','#FFD28A'];
+    for(let i=0;i<6;i++){g.fillStyle=stripe[i%2];g.beginPath();g.roundRect(cx-18+i*6,cy+20,6,7,2);g.fill();}
+    g.fillStyle=stripe[0];g.beginPath();g.roundRect(cx-13,cy-10,26,11,5);g.fill();
+    g.fillStyle='#FFFFFF';g.beginPath();g.arc(cx,cy-4.5,3.2,0,TAU);g.fill();
+  }
+  /* 건물 앞 그림자를 줄인 밝은 클레이 입구. */
+  g.fillStyle='rgba(255,255,255,.92)';g.beginPath();g.roundRect(cx-6,q.base[2][1]-10,12,11,4);g.fill();
 }
 function clayTree(g, x, z, c = '#65C56B') {
   const [px,py] = clayXY(x,z);
@@ -3126,34 +3260,55 @@ function clayTree(g, x, z, c = '#65C56B') {
   g.fillStyle='#A97652'; g.fillRect(px-1.5,py-9,3,11);
   g.fillStyle=c; [[0,-14,7],[-5,-10,5],[5,-10,5]].forEach(([dx,dy,r])=>{g.beginPath();g.arc(px+dx,py+dy,r,0,TAU);g.fill();});
 }
+function clayLamp(g,x,z){
+  const [px,py]=clayXY(x,z);g.strokeStyle='#657A89';g.lineWidth=2;g.beginPath();g.moveTo(px,py);g.lineTo(px,py-12);g.stroke();
+  g.fillStyle='#FFF1A8';g.beginPath();g.arc(px,py-13,3.2,0,TAU);g.fill();
+}
 function drawClayCampus(g) {
   const S=CLAYMAP.S;
-  const bg=g.createLinearGradient(0,0,0,S); bg.addColorStop(0,'#BFEAFF'); bg.addColorStop(1,'#88D4F1');
+  const bg=g.createLinearGradient(0,0,0,S); bg.addColorStop(0,'#CFF2FF'); bg.addColorStop(1,'#79D2EF');
   g.fillStyle=bg; g.fillRect(0,0,S,S);
   const corners=[[-CAMPUS.SITE.hx,-CAMPUS.SITE.hz],[CAMPUS.SITE.hx,-CAMPUS.SITE.hz],[CAMPUS.SITE.hx,CAMPUS.SITE.hz],[-CAMPUS.SITE.hx,CAMPUS.SITE.hz]].map(([x,z])=>clayXY(x,z));
   const low=corners.map(([x,y])=>[x,y+16]);
-  g.lineWidth=2; mapPoly(g,[corners[1],corners[2],low[2],low[1]],'#9BBCC9');
-  mapPoly(g,[corners[2],corners[3],low[3],low[2]],'#86AAB8');
-  mapPoly(g,corners,'#A7E58E','rgba(255,255,255,.82)');
+  g.lineWidth=2; mapPoly(g,[corners[1],corners[2],low[2],low[1]],'#89AEBB');
+  mapPoly(g,[corners[2],corners[3],low[3],low[2]],'#769CAA');
+  mapPoly(g,corners,'#9DE27F','rgba(255,255,255,.9)');
 
-  /* 회색 도로 위에 밝은 보행로를 겹쳐 레퍼런스의 도시 블록감을 냅니다. */
-  const route=(pts,w,col)=>{g.strokeStyle=col;g.lineWidth=w;g.lineCap='round';g.lineJoin='round';g.beginPath();pts.forEach(([x,z],i)=>{const p=clayXY(x,z);i?g.lineTo(...p):g.moveTo(...p)});g.stroke();};
-  route([[0,124],[0,10],[0,-82]],28,'#D0DCE2'); route([[-135,8],[135,8]],25,'#D0DCE2');
-  route([[-112,70],[120,70],[120,8]],22,'#D0DCE2');
-  route([[0,124],[0,10],[0,-82]],17,'#F8FCFD'); route([[-135,8],[135,8]],15,'#F8FCFD');
-  BUILDINGS.forEach((b)=>route([[0,8],[b.x,b.z]],12,'#F8FCFD'));
+  /* 도로 사이 잔디 필지와 작은 광장 — 목적지가 아닌 배경이라 라벨은 없습니다. */
+  [[-113,-103,51,25],[-35,-102,55,25],[36,-101,53,25],[102,-100,48,25],
+   [-112,-24,50,70],[-35,-23,54,70],[37,-23,54,70],[103,-23,48,70],
+   [-112,50,50,34],[-35,50,54,34],[37,50,54,34],[103,50,48,34],
+   [-112,102,50,31],[-35,102,54,31],[37,102,54,31],[103,102,48,31]]
+    .forEach(([x,z,w,d],i)=>clayRect(g,x,z,w,d,i%3===0?'#B5E99A':'#A7E58D','rgba(255,255,255,.42)'));
+
+  /* 레퍼런스처럼 길이 블록을 만들되 실제 여섯 시설 좌표는 그대로 둡니다. */
+  [[[-146,-72],[146,-72]], [[-146,22],[146,22]], [[-146,76],[146,76]],
+   [[-72,-118],[-72,116]], [[0,-126],[0,124]], [[72,-118],[72,112]], [[120,-108],[120,105]]]
+    .forEach((r,i)=>clayRoad(g,r,i===1?19:16));
+  BUILDINGS.forEach((b)=>clayRoad(g,[[b.x,b.z],[Math.round(b.x/72)*72,b.z]],9));
+  [[0,76,'x'],[0,22,'x'],[0,-72,'x'],[-72,22,'z'],[72,22,'z'],[120,76,'z']]
+    .forEach(([x,z,a])=>clayCrosswalk(g,x,z,a));
+
+  MAP_BLOCKS.forEach((a)=>clayAmbient(g,a));
 
   /* 운동장·호수·광장도 이름표가 없어도 모양으로 찾을 수 있습니다. */
-  { const [x,y]=clayXY(-60,50); g.fillStyle='#D9826E'; g.beginPath(); g.ellipse(x,y,34,17,.5,0,TAU); g.fill();
-    g.strokeStyle='#FFF8EF';g.lineWidth=3;g.beginPath();g.ellipse(x,y,25,11,.5,0,TAU);g.stroke(); }
-  { const [x,y]=clayXY(104,58); g.fillStyle='#62C6E9';g.beginPath();g.ellipse(x,y,31,16,.5,0,TAU);g.fill();
-    g.strokeStyle='rgba(255,255,255,.72)';g.lineWidth=3;g.stroke(); }
-  { const [x,y]=clayXY(0,12); g.fillStyle='#F7F0DC';g.beginPath();g.ellipse(x,y,31,17,0,0,TAU);g.fill();
-    g.fillStyle='#6CC9E9';g.beginPath();g.ellipse(x,y-2,13,7,0,0,TAU);g.fill();
-    g.fillStyle='#FFFFFF';g.beginPath();g.ellipse(x,y-7,5,3,0,0,TAU);g.fill(); }
+  { const [x,y]=clayXY(-60,50); g.fillStyle='#D87867';g.beginPath();g.ellipse(x,y,35,18,.5,0,TAU);g.fill();
+    g.strokeStyle='#FFF9F1';g.lineWidth=3;[1,.72,.45].forEach(s=>{g.beginPath();g.ellipse(x,y,30*s,14*s,.5,0,TAU);g.stroke();});
+    g.fillStyle='#6CCB79';g.beginPath();g.ellipse(x,y,19,8,.5,0,TAU);g.fill(); }
+  { const [x,y]=clayXY(104,58);g.fillStyle='#EAF6DF';g.beginPath();g.ellipse(x,y,36,20,.5,0,TAU);g.fill();
+    g.fillStyle='#60C9EB';g.beginPath();g.ellipse(x,y,29,15,.5,0,TAU);g.fill();
+    g.strokeStyle='rgba(255,255,255,.82)';g.lineWidth=2;g.beginPath();g.ellipse(x-3,y-2,16,7,.5,0,TAU);g.stroke(); }
+  { const [x,y]=clayXY(0,12);g.fillStyle='#F9F4E8';g.beginPath();g.ellipse(x,y,34,19,0,0,TAU);g.fill();
+    g.fillStyle='#62C9EB';g.beginPath();g.ellipse(x,y-1,16,9,0,0,TAU);g.fill();
+    ['#FFFFFF','#EDF8FB'].forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.ellipse(x,y-7-i*6,8-i*2,4-i,0,0,TAU);g.fill();});
+    g.strokeStyle='rgba(255,255,255,.9)';g.lineWidth=1.5;[-10,-5,0,5,10].forEach(dx=>{g.beginPath();g.moveTo(x+dx,y-7);g.quadraticCurveTo(x+dx*1.25,y-18,x+dx*1.5,y-3);g.stroke();}); }
 
-  [[-130,-82],[-105,-62],[-78,-92],[-128,94],[-95,106],[80,-96],[112,-80],[140,-55],[142,96],[72,104],[-130,30],[145,28]]
+  [[-142,-112],[-116,-115],[-92,-116],[-44,-118],[43,-118],[88,-118],[137,-111],
+    [-145,-58],[-145,-8],[-145,46],[-142,113],[-86,118],[-25,119],[27,119],[88,119],[143,110],
+    [145,47],[145,-10],[145,-57],[-94,-54],[96,-47],[-94,91],[92,99]]
     .forEach(([x,z],i)=>clayTree(g,x,z,i%3?'#66C96C':'#89D66F'));
+  [[-72,76],[0,76],[72,76],[-72,22],[0,22],[72,22],[-72,-72],[0,-72],[72,-72]]
+    .forEach(([x,z])=>clayLamp(g,x+5,z+5));
   [...BUILDINGS].sort((a,b)=>(a.x+a.z)-(b.x+b.z)).forEach((b)=>clayPrism(g,b));
 
   const numOf=(k)=>{const i=PLACES.findIndex((q)=>q.key===k);return i<0?'':((i+1)%10)+'. ';};

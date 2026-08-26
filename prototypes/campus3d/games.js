@@ -9,8 +9,8 @@
         2D 월드가 쓰던 순수 엔진 모듈 그대로(../openworld/*.mjs).
         규칙을 두 벌 쓰면 반드시 어긋납니다.
      ③ 동물 러너
-        같은 레포의 Phaser 게임(animal-runner-game.mjs)을 그대로 띄웁니다.
-        Phaser 는 MIT 이고 vendor/ 에 이미 들어와 있습니다.
+        같은 레포의 점수·충돌 엔진(animal-runner-engine.mjs)을 쓰고,
+        불필요한 1.2MB 런타임 없이 Canvas 화면을 필요할 때만 불러옵니다.
    ---- 뒤에 붙은 게임들은 사정이 다릅니다 ----
    기린 목 펴기 · 연못 낚시 · 책 정리는 2D 판
    openworld/index.html **안에** 규칙과 그림이 한 덩어리로 들어 있어서,
@@ -39,6 +39,14 @@ export const GAMES = {
 
 let host = null, raf = 0, keyH = null, done = null, closing = false, teardown = null;
 
+/* 월드의 자체 커서는 WebGL HUD와 별개이고, 미니게임은 body 최상단에
+   붙습니다. 게임 상태가 바뀌는 순간을 월드에 알려야 1인칭 포인터 잠금과
+   커서 좌표를 같은 프레임에 다시 맞출 수 있습니다. 각 게임에서 따로
+   처리하면 새 게임을 붙일 때 또 빠지므로 shell/close 한 곳에서만 보냅니다. */
+function announceGameState(open) {
+  window.dispatchEvent(new CustomEvent('campus:game-state', { detail: { open } }));
+}
+
 function shell(key) {
   const G = GAMES[key];
   if (!G) throw new Error(`없는 미니게임: ${key}`);
@@ -59,6 +67,7 @@ function shell(key) {
         <button class="out">나가기</button></div>
     </div>`;
   document.body.appendChild(host);
+  announceGameState(true);
   host.querySelector('.gx').addEventListener('click', () => close(0));
   host.querySelector('.out').addEventListener('click', () => close(lastScore));
   return host.querySelector('.gbody');
@@ -79,6 +88,7 @@ function close(score) {
   try { teardown?.(); } catch {} teardown = null;
   if (keyH) { removeEventListener('keydown', keyH); removeEventListener('keyup', keyH); keyH = null; }
   host?.remove(); host = null;
+  announceGameState(false);
   const d = done; done = null;
   d?.(score || 0);
 }
@@ -198,10 +208,10 @@ function match3(body) {
   setScore(0); draw(); loop();
 }
 
-/* ---------- ③ 동물 러너 — 같은 레포의 Phaser 게임 ---------- */
-/* 손으로 그린 「달리기 100m」(막대 하나 + 네모 주자)를 버리고,
-   연우가 만들어 둔 Phaser 러너를 그대로 띄웁니다. 물리·난이도·동전·
-   무적시간까지 animal-runner-engine.mjs 가 이미 다 들고 있습니다. */
+/* ---------- ③ 동물 러너 — 같은 레포의 검증된 점수 엔진 ---------- */
+/* 광장에서 삭제한 달리기 시합과 별개인 미니게임관 러너입니다. 점수·난이도·
+   동전·무적시간은 animal-runner-engine.mjs가 들고 있고, 화면은 독립
+   Canvas라 느린 Phaser 번들이 없어도 바로 열립니다. */
 function run(body) {
   body.className = 'gbody';
   const box = document.createElement('div');
@@ -216,7 +226,7 @@ function run(body) {
   setScore(0); setTime('');
   let live = true, handle = null;
   teardown = () => { live = false; try { handle?.destroy(); } catch {} };
-  /* Phaser 는 1.2MB 라 **필요할 때만** 받아옵니다 — 월드 첫 화면을 늦추지 않습니다 */
+  /* 게임 화면은 필요할 때만 받습니다 — 월드 첫 화면을 늦추지 않습니다. */
   import('../openworld/animal-runner-game.mjs').then((mod) => {
     if (!live) return;
     wait.remove();

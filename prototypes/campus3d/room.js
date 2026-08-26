@@ -1194,6 +1194,93 @@ export function displayTable(g, x, z, ry, w = 2.0, kind = 'cloth') {
   box(p, .44, .06, .3, .02, M(IN.paper, .5), 0, .9, .5).rotation.x = -.5;   // 가격표
   return p;
 }
+
+/** 가구 상점 전용 쇼룸.
+    생활방 가구를 그대로 흩어 놓으면 실제 방처럼 보이고, sofa/chair가
+    앉기 자리까지 등록해 가구 상점 E 구역과 경쟁합니다. 이 쇼룸은
+    판매용 샘플만 직접 그려 좌석을 등록하지 않고, 가운데 1.8m 통로는
+    비워 둡니다. 왼쪽은 소재 벽과 소파, 오른쪽은 수납·조명 코너입니다. */
+export function furnitureShowroom(g, x, z, ry = 0) {
+  const p = new THREE.Group(); p.name = 'furnitureShowroom';
+  p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  const wood = P(0xB9784F, .68), woodDark = P(0x80513A, .76);
+  const cream = P(0xFFF6EA, .76), mint = P(0x79CFC1, .62);
+  const sky = P(0x82B8D8, .62), coral = P(0xE98D79, .64);
+  const ink = P(0x526477, .58), gold = P(0xE7B94E, .52);
+
+  /* 쇼룸 바닥 — 문길과 옷/알 구역까지 번지지 않는 독립된 섬입니다. */
+  const base = box(p, 6.35, .10, 4.45, .14, P(0xEEF2F8, .84), 0, .055, 0);
+  const inset = box(p, 5.92, .05, 4.02, .12, P(0xDCE8F2, .86), 0, .115, 0);
+  base.userData.noCollide = true; inset.userData.noCollide = true;
+  /* 바닥의 짧은 동선 띠가 기능 중심으로 안내합니다. */
+  const aisle = box(p, 2.1, .025, 3.45, .12, P(0xFAFCFF, .9), .18, .15, -.25);
+  aisle.userData.noCollide = true;
+
+  /* 소재 라이브러리 벽. 방의 왼벽과 평행해 다른 구역을 가리지 않습니다. */
+  box(p, .18, 2.34, 4.02, .07, cream, -3.02, 1.22, 0);
+  box(p, .23, .16, 3.66, .05, wood, -2.88, 2.34, 0);
+  [-1.25, -.42, .42, 1.25].forEach((dz, i) => {
+    box(p, .12, .68, .68, .09, P([0xE98D79, 0x79CFC1, 0x82B8D8, 0xE7B94E][i], .6),
+      -2.86, 1.55, dz);
+    box(p, .13, .08, .46, .03, ink, -2.77, 1.10, dz);
+  });
+  /* 소파 모양 입체 픽토그램 — 글자를 억지로 붙이지 않아도 가구점으로 읽힙니다. */
+  box(p, .13, .42, 1.42, .13, mint, -2.79, 2.02, 0);
+  [-.58, .58].forEach((dz) => box(p, .16, .58, .22, .08, mint, -2.74, 1.94, dz));
+
+  const sampleSofa = (lx, lz, a, w, col) => {
+    const q = new THREE.Group(); q.position.set(lx, 0, lz); q.rotation.y = a; p.add(q);
+    const c = P(col, .66), d = P(col, .78);
+    box(q, w, .28, .92, .13, d, 0, .36, 0);
+    box(q, w - .34, .24, .72, .12, c, 0, .57, .06);
+    box(q, w, .70, .24, .11, d, 0, .72, -.39);
+    [-1, 1].forEach((s) => box(q, .28, .56, .9, .11, d, s * (w / 2 - .14), .58, 0));
+    [-.42, .42].forEach((dx) => box(q, .58, .16, .35, .08, cream, dx, .79, -.23));
+    return q;
+  };
+  const sampleChair = (lx, lz, a, col) => {
+    const q = new THREE.Group(); q.position.set(lx, 0, lz); q.rotation.y = a; p.add(q);
+    box(q, .78, .25, .82, .16, P(col, .66), 0, .43, 0);
+    box(q, .82, .78, .25, .14, P(col, .76), 0, .82, -.34);
+    [-1, 1].forEach((s) => box(q, .16, .48, .78, .08, P(col, .76), s * .38, .60, 0));
+    [-.27, .27].forEach((dx) => cyl(q, .055, .065, .22, 10, woodDark, dx, .13, .22));
+    return q;
+  };
+  sampleSofa(-2.05, .22, Math.PI / 2, 2.12, 0x82B8D8);
+  sampleChair(-.92, 1.53, -.42, 0xE98D79);
+
+  /* 오른쪽 수납 코너. 가운데 E 트리거(.2,-.6)는 비워 둡니다. */
+  { const q = new THREE.Group(); q.position.set(1.80, 0, 1.60); p.add(q);
+    box(q, 2.18, .78, .58, .08, wood, 0, .43, 0);
+    [-.72, 0, .72].forEach((dx, i) => {
+      box(q, .58, .51, .08, .04, P(i === 1 ? 0xF2C9A8 : 0xD7A67D, .7), dx, .45, .34);
+      cyl(q, .035, .035, .08, 10, gold, dx, .45, .41).rotation.x = Math.PI / 2;
+    });
+    box(q, 2.34, .12, .70, .05, cream, 0, .88, 0);
+    box(q, .72, .46, .42, .09, mint, -.57, 1.17, 0);
+    box(q, .72, .32, .42, .08, sky, .22, 1.10, 0);
+    box(q, .72, .22, .42, .07, coral, .91, 1.05, 0);
+  }
+  { const q = new THREE.Group(); q.position.set(1.88, 0, -1.48); p.add(q);
+    cyl(q, .70, .70, .12, 24, wood, 0, .55, 0);
+    cyl(q, .10, .12, .52, 12, woodDark, 0, .28, 0);
+    cyl(q, .38, .42, .08, 18, woodDark, 0, .05, 0);
+    /* 작은 테이블 램프 */
+    cyl(q, .05, .06, .44, 10, ink, 0, .84, 0);
+    const sh = new THREE.Mesh(new THREE.CylinderGeometry(.18, .28, .28, 18), gold);
+    sh.position.y = 1.10; sh.castShadow = true; q.add(sh);
+  }
+
+  /* 가격표와 안내 토템은 통로 바깥쪽에 모아 둡니다. */
+  [[-.76,-1.56,0xE98D79],[2.72,.22,0x79CFC1]].forEach(([lx,lz,col]) => {
+    const q = new THREE.Group(); q.position.set(lx, 0, lz); p.add(q);
+    box(q, .52, .08, .36, .05, woodDark, 0, .04, 0);
+    box(q, .08, .70, .08, .03, ink, 0, .39, 0);
+    const card = box(q, .74, .48, .10, .08, cream, 0, .78, 0); card.rotation.x = -.12;
+    box(q, .42, .08, .11, .03, P(col, .6), 0, .82, .06).rotation.x = -.12;
+  });
+  return p;
+}
 /** 긴 벤치 — 회관 · 복도 */
 export function bench(g, x, z, ry, w = 3.0, col = IN.wood) {
   [-w / 4, w / 4].forEach((off) => regSeatLocal(x, z, ry, off, 0, 'bench'));

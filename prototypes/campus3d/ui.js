@@ -167,24 +167,42 @@ function ttLineHtml() {
     `${esc(it.day)}요일${where}`, ttHM(it.s));
 }
 
+function ttTopHtml() {
+  const nx = ttNext(new Date());
+  let status = '<b>이번 주 수업을 채워 보세요</b><small>빈 칸이나 수업 추가를 누르면 바로 입력할 수 있어요.</small>';
+  if (nx) {
+    const it = nx.it;
+    const lead = nx.kind === 'now' ? '지금 수업' : '다음 수업';
+    status = `<b>${lead} · ${esc(it.name)}</b><small>${esc(it.day)} ${ttHM(it.s)}–${ttHM(it.e)}${it.room ? ' · ' + esc(it.room) : ''}</small>`;
+  }
+  return `<div class="tt-toolbar">
+    <div class="tt-heading"><small>WEEKLY SCHEDULE</small><strong>월–금 수업</strong></div>
+    <div class="tt-status">${status}</div>
+    <button type="button" class="tt-add" data-tt="add">+ 수업 추가</button>
+  </div>`;
+}
+
 function ttGridHtml() {
   const all = ttItems();
   const at = (di, p) => all.find((it) => it.di === di && it.p === p);
   const rows = PERIODS.map(([nm, tm], p) => `
-    <tr><th><b>${nm}</b><i>${tm}</i></th>${DAYS.map((d, di) => {
+    <tr><th><time>${tm}</time><i>${nm}</i></th>${DAYS.map((d, di) => {
       const c = at(di, p);
-      if (!c) return `<td><button class="tt" data-tt="new" data-d="${d}" data-p="${p}">+</button></td>`;
-      /* 교시 시각과 다르게 넣은 강의만 시각을 덧붙입니다. 전부 적으면
-         09:00 이 여섯 줄 왼쪽에도, 칸 안에도 또 적혀 있게 됩니다. */
-      const odd = c.s !== P_START[p] || c.e !== P_START[p] + P_LEN;
+      if (!c) return `<td><button class="tt empty" data-tt="new" data-d="${d}" data-p="${p}"
+        aria-label="${d}요일 ${tm}에 수업 추가"><span>＋</span></button></td>`;
       return `<td><button class="tt on" data-tt="edit" data-k="${esc(c.key)}"
         title="${esc(c.name)} ${ttHM(c.s)}~${ttHM(c.e)}${c.room ? ' · ' + esc(c.room) : ''}"
-        style="background:${esc(c.color)};color:#1B2430">${esc(c.name)}${odd
-          ? `<i style="display:block;font-style:normal;font-size:9px;opacity:.72">${ttHM(c.s)}~${ttHM(c.e)}</i>`
-          : ''}</button></td>`;
+        style="--tt-color:${esc(c.color)}"><b>${esc(c.name)}</b>
+        <i>${ttHM(c.s)}–${ttHM(c.e)}</i>${c.room ? `<small>${esc(c.room)}</small>` : ''}</button></td>`;
     }).join('')}</tr>`).join('');
-  return `<table class="tt"><thead><tr><th></th>${DAYS.map((d) => `<th>${d}</th>`).join('')}</tr></thead>
-    <tbody>${rows}</tbody></table>`;
+  const now = new Date();
+  const monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const heads = DAYS.map((d, i) => {
+    const date = new Date(monday); date.setDate(monday.getDate() + i);
+    return `<th><b>${d}</b><span>${date.getMonth() + 1}/${date.getDate()}</span></th>`;
+  }).join('');
+  return `<div class="tt-grid-scroll"><table class="tt tt-week"><thead><tr><th><span>시간</span></th>${heads}</tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
 }
 
 /* 지금 고치고 있는 칸. null 이면 폼이 닫혀 있습니다. 창을 다시 그릴 때마다
@@ -201,9 +219,7 @@ function ttTimeOptions(sel) {
 }
 function ttFormHtml() {
   const d = TT_DRAFT;
-  if (!d) {
-    return '<div class="wr"><button data-tt="add">강의 넣기</button></div>';
-  }
+  if (!d) return '';
   const days = DAYS.map((n) =>
     `<button data-tt="day" data-d="${n}" class="${d.d === n ? 'on' : ''}">${n}</button>`).join('');
   /* 칩에 글자가 없으므로 이름을 따로 답니다 — 색만으로 말하는 단추는
@@ -213,7 +229,8 @@ function ttFormHtml() {
       style="background:${esc(c)}" aria-label="색 ${i + 1}" aria-pressed="${d.color === c}"></button>`).join('');
   /* 칸 사이를 벌리려고 여백을 손으로 박아 두던 자리에 머리글을 세웁니다.
      간격도 생기고, 아래 칸이 무엇을 받는 칸인지도 같이 말합니다. */
-  return lbl('board', d.key ? '강의 고치기' : '새 강의')
+  return `<section class="tt-editor"><div class="tt-editor-head"><b>${d.key ? '강의 고치기' : '새 강의'}</b>
+      <span>수업 정보는 이 기기에만 저장돼요.</span></div>`
     + `<input id="ttname" class="nick" maxlength="16" placeholder="강의 이름 (예: 자료구조)" value="${esc(d.name)}">`
     + lbl('map', '장소')
     + `<input id="ttroom" class="nick" maxlength="20"
@@ -228,14 +245,13 @@ function ttFormHtml() {
       <button data-tt="save" class="on">저장</button>
       <button data-tt="cancel">취소</button>
       ${d.key ? '<button data-tt="del">지우기</button>' : ''}
-    </div>`;
+    </div></section>`;
 }
 
 export function timetable() {
   return {
     tag: '시간표', title: '내 시간표',
-    html: ttLineHtml() + ttGridHtml() + ttFormHtml()
-      + '<div class="note">찬 칸을 누르면 고치고, 빈 칸을 누르면 그 교시부터 새로 넣습니다.</div>',
+    html: `<div class="tt-app">${ttTopHtml()}${ttGridHtml()}${ttFormHtml()}</div>`,
     on(root, again) {
       const bd = root.querySelector('.bd');
       /* 월드가 W·A·S·D 로 걷고 화살표로 시점을 돌립니다. 칸에 글자를 넣는
@@ -463,6 +479,18 @@ export function calendarEmbed(raw) {
     + ids.map((id) => '&src=' + encodeURIComponent(id)).join('');
 }
 
+/* 개인 캘린더는 제3자 iframe 쿠키가 막히면 embed가 비어 보일 수 있습니다.
+   그때 새 탭에서도 embed를 다시 열면 똑같이 실패합니다. 캘린더 ID만
+   다시 base64로 감싼 Google의 `cid` 주소를 별도로 만들어, 로그인된
+   Google Calendar 본 화면에서 확실히 열도록 합니다. */
+export function calendarOpenLink(raw) {
+  const ids = calendarIds(raw);
+  if (!ids.length) return null;
+  try {
+    return 'https://calendar.google.com/calendar/u/0?cid=' + encodeURIComponent(btoa(ids[0]).replace(/=+$/, ''));
+  } catch { return null; }
+}
+
 /* 창 안에 끼우는 바깥 화면 한 칸.
 
    **안 뜨는 것을 안 뜬다고 말하는 것**이 이 함수의 전부입니다. iframe 은
@@ -497,7 +525,7 @@ function embedHtml(src, label) {
      글자가 얹혀 있고, 뒤에 두면 화면이 뜨는 순간 자연히 가려집니다. */
   return `<div class="embed" style="position:relative;margin:10px 0 6px;height:380px;
       border-radius:13px;overflow:hidden;background:rgba(34,42,51,.05);border:1.5px solid var(--pl)">
-      <iframe title="${esc(label)}" src="${esc(src)}" loading="lazy"
+      <iframe title="${esc(label)}" src="${esc(src)}" loading="eager"
         referrerpolicy="no-referrer-when-downgrade"
         allow="autoplay; clipboard-write; encrypted-media; picture-in-picture"
         style="position:relative;z-index:1;display:block;width:100%;height:100%;border:0"></iframe>
@@ -524,27 +552,42 @@ function watchEmbeds(root) {
     const frame = box.querySelector('iframe');
     const wait = box.querySelector('.embed-wait');
     if (!frame || !wait) continue;
-    let done = false;
+    let done = false, timer = 0;
+    const originalSrc = frame.src;
+    const arm = () => {
+      clearTimeout(timer);
+      /* Google/Spotify 첫 연결은 DNS·로그인 쿠키 확인 때문에 6초를 넘길 수
+         있습니다. 12초까지 기다리고, 실패해도 주소를 다시 붙여 넣게 하지
+         않고 같은 프레임만 재시도합니다. */
+      timer = setTimeout(() => fail('처음 연결이 조금 늦어요. 아래에서 한 번 더 불러올 수 있어요.'), 12000);
+    };
     const fail = (text) => {
       if (done) return;
       done = true;
-      /* 빈 칸을 남기지 않으려고 치웁니다. 380px 짜리 회색 판에 글자 한
-         줄이 떠 있으면 아직 뭔가 오는 중처럼 보입니다. */
-      frame.remove();
+      frame.style.display = 'none';
       box.style.height = 'auto';
       wait.style.position = 'static';
       wait.style.padding = '18px 20px';
-      wait.textContent = text;
+      wait.textContent = text + ' ';
+      const retry = document.createElement('button');
+      retry.type = 'button'; retry.className = 'on'; retry.textContent = '다시 불러오기';
+      retry.style.marginLeft = '8px'; wait.appendChild(retry);
+      retry.onclick = () => {
+        done = false; box.style.height = '380px'; frame.style.display = 'block';
+        wait.style.position = 'absolute'; wait.style.padding = '0 24px';
+        wait.textContent = '다시 불러오는 중…';
+        frame.src = originalSrc; arm();
+      };
     };
-    const good = () => { if (!done) { done = true; wait.remove(); } };
+    const good = () => { if (!done) { done = true; clearTimeout(timer); wait.remove(); } };
     fetch(frame.src, { mode: 'no-cors', cache: 'no-store' })
       .then(() => { /* 호스트가 답했습니다 — load 를 기다립니다 */ })
-      .catch(() => fail('지금은 못 불러왔어요. 인터넷이 막혀 있거나 이 주소가 차단돼 있어요. 아래 “새 탭에서 열기” 로는 열릴 수 있어요.'));
+      /* 한 번의 probe 실패만으로 iframe을 지우지 않습니다. 첫 접속 때
+         probe만 늦고 실제 frame은 곧 뜨는 경우가 있었습니다. */
+      .catch(() => {});
     frame.addEventListener('load', () => setTimeout(good, 250));
     frame.addEventListener('error', () => fail('지금은 못 불러왔어요. 새 탭에서 열어 보세요.'));
-    /* 6초. 느린 회선에서 성급하게 실패라고 하지 않을 만큼이면서,
-       사람이 빈 칸을 보고 있기에는 이미 긴 시간입니다. */
-    setTimeout(() => fail('지금은 못 불러왔어요. 주소가 공개가 아니거나 응답이 없어요.'), 6000);
+    arm();
   }
 }
 
@@ -612,19 +655,21 @@ export function radio(ctx) {
 export function calendar(ctx) {
   const raw = SAVE.links.calendar;
   const src = calendarEmbed(raw);
+  const open = calendarOpenLink(raw);
   return {
     tag: '달력', title: '탁상 달력',
     html: (src
       ? embedHtml(src, '구글 캘린더')
-        + `<div class="note"><a href="${esc(src)}" target="_blank" rel="noopener">새 탭에서 열기 ↗</a></div>`
+        + `<div class="note"><a href="${esc(open)}" target="_blank" rel="noopener">Google Calendar에서 직접 열기 ↗</a><br>
+          <small>개인 캘린더가 창 안에서 비면 이 버튼을 누르세요. 로그인된 내 캘린더로 엽니다.</small></div>`
       : rw('cal', 'lilac', '아직 아무것도 안 걸려 있어요',
         '강의 시간표는 노트북에 따로 있어요 — 이쪽은 강의가 아닌 약속입니다'))
       + linkRowHtml('lnkcal', raw, !!src, '캘린더 ID 또는 공유 링크')
       /* 안 뜨는 이유가 대개 "비공개" 라 그 한 가지만 남깁니다. 주소가
          틀린 것과 달력이 잠긴 것은 사람이 할 일이 다릅니다. */
-      + `<div class="cg two">${cb('key', 'lemon', '공개로 켠 달력만',
-        '캘린더 설정 → 액세스 권한 → 공개 사용 설정. 잠긴 달력은 구글이 창 안에서 로그인을 막아 빈 칸이 됩니다')}`
-      + `${cb('board', 'sky', '뭘 붙여 넣나', '캘린더 ID · 공유 링크 · &lt;iframe …&gt; 조각 — 셋 다 읽습니다')}</div>`,
+      + `<div class="cg two">${cb('key', 'lemon', '개인 일정은 직접 열기',
+        '개인 캘린더는 브라우저가 iframe 로그인을 막을 수 있어요. 위 버튼은 로그인된 Google Calendar 본 화면으로 엽니다')}`
+      + `${cb('board', 'sky', '지원하는 주소', '캘린더 ID · cid 공유 링크 · embed 링크 · &lt;iframe …&gt; 조각')}</div>`,
     on(root, again) {
       linkOn(root, again, 'lnkcal', (v) => {
         if (!v) { SAVE.links.calendar = ''; return true; }
@@ -642,12 +687,12 @@ export function schedule(ctx) {
   const active = tab === 'calendar' ? calendar() : timetable();
   return {
     tag: '노트북', title: '일정 관리', medium: true,
-    html: `<div class="board-tabs schedule-tabs" role="tablist" aria-label="일정 관리 종류">
+    html: `<div class="schedule-surface"><div class="board-tabs schedule-tabs" role="tablist" aria-label="일정 관리 종류">
       <button type="button" role="tab" data-schedule-tab="calendar" class="${tab === 'calendar' ? 'on' : ''}"
         aria-selected="${tab === 'calendar'}">내 일정 · 구글 캘린더</button>
       <button type="button" role="tab" data-schedule-tab="timetable" class="${tab === 'timetable' ? 'on' : ''}"
         aria-selected="${tab === 'timetable'}">강의 시간표</button></div>
-      <div class="schedule-view">${active.html}</div>`,
+      <div class="schedule-view">${active.html}</div></div>`,
     on(root, again) {
       active.on?.(root, again);
       root.querySelector('.schedule-tabs').onclick = (e) => {

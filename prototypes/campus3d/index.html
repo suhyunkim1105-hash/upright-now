@@ -2530,7 +2530,10 @@ const schoolColor = (n) => {
   return q ? '#' + q.c.toString(16).padStart(6, '0') : null;
 };
 function fameView() {
-  if (!(SRV && SRV.configured)) fameState = 'unconfigured';
+  /* 서버 정리(8/26)에서 랭킹 RPC 와 마이그레이션이 빠졌습니다. 함수가
+     없는데 부르면 창을 짓다 터져서 명예의 전당이 아예 안 열립니다 —
+     붙기 전까지는 '아직 없음' 으로 정직하게 보여 줍니다. */
+  if (!(SRV && SRV.configured && typeof SRV.schoolRanking === 'function')) fameState = 'unconfigured';
   else if (fameState === 'idle') {
     fameState = 'loading';
     SRV.schoolRanking().then((r) => {
@@ -4769,6 +4772,10 @@ window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.
 window.__scene = scene;
 window.__renderer = renderer;
 window.__ride = () => rideId;
+window.__seats = () => (room ? room.seats : []);
+window.__hitRoom = (x, z) => (room ? hitGrid(room.grid, x, z) : true);
+window.__spin = () => ({ yaw:+yaw.toFixed(3), dir:+P.dir.toFixed(3), rigY:+playerRig.rotation.y.toFixed(3),
+  sp:+P.sp.toFixed(2), x:+P.x.toFixed(2), z:+P.z.toFixed(2), goTo: !!goTo, ride: rideId, first, moved:+P.moved.toFixed(1) });
 window.__setCam = (y, pi, d) => { yaw = y; pitch = camPitch = pi; dist = camD = d; camHold = performance.now() + 9e5; };
 window.__setRide = (id) => setRide(id);
 window.__path = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.length : null; };

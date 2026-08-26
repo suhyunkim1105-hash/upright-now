@@ -60,7 +60,11 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
    창은 글자 크기가 다릅니다. 네 조각만 두고 전부 여기를 지나가게 합니다.
    글자는 **넣기 전에** esc 를 거칩니다 — 이 조각들은 받은 것을 그대로
    붙입니다(<b> 같은 것을 섞어 쓰는 자리가 있어서요). */
-const pic = (id, big) => `<svg class="pic${big ? ' lg' : ''}"><use href="#pic-${id}"/></svg>`;
+/* viewBox 가 없으면 24 격자 도안이 svg 크기에 **맞춰지지 않고** 왼쪽 위에
+   원래 크기로 붙습니다. 22px 에서는 티가 안 나다가 36px 투어 아이콘에서
+   칸 밖으로 어긋나 보였습니다 — 모든 아이콘이 칸 정중앙에 오게 여기서
+   한 번만 답니다. */
+const pic = (id, big) => `<svg class="pic${big ? ' lg' : ''}" viewBox="0 0 24 24"><use href="#pic-${id}"/></svg>`;
 /* 줄 — 이름과 값 한 쌍. 두 칸짜리 표가 전부 이리로 옵니다.
    tone 은 비워 두면 하늘색으로 받습니다. 아이콘 바탕의 기본색(민트)이
    스타일표에서 칸(.cc) 안쪽에만 걸려 있어서, 줄에 색을 안 주면 그 줄만
@@ -1911,7 +1915,7 @@ export function tour(ctx) {
     <div class="cg" style="grid-template-columns:1fr">
       <div class="cc tour-card">
         <span class="ic ${it.tone} tour-icon">
-          <svg class="pic lg"><use href="#${it.ic}"/></svg></span>
+          <svg class="pic lg" viewBox="0 0 24 24"><use href="#${it.ic}"/></svg></span>
         <b class="tour-title">${esc(it.t)}</b>
         <small class="tour-copy">${esc(it.p)}</small>
       </div>

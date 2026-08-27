@@ -1976,14 +1976,12 @@ function turnCam(dir) { yaw -= dir * .55; camHold = performance.now() + 1400; tu
 cv.addEventListener('pointerdown', (e) => {
   if (first) { if (CUR.live) { curClick(); return; } syncLock(); return; }
   drag = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId);
-  /* 누르는 동안 포인터를 잠급니다.
-
-     "시점이 잘 안 돌아간다" 의 정체는 감도가 아니라 **화면 가장자리**
-     였습니다. 마우스가 끝에 닿으면 clientX 가 더 안 늘어나므로 계속
-     밀어도 카메라가 멈춥니다 — 입력을 못 받는 것처럼 느껴집니다.
-     잠그면 movementX 가 끝없이 오므로 한 방향으로 얼마든지 돌립니다.
-     떼면 바로 풉니다. */
-  try { cv.requestPointerLock?.(); } catch {}
+  /* 3인칭에서는 마우스를 잠그지 않습니다.
+     잠갔다 풀었다를 반복하면(누르고-보고-떼고-또 누르고, 흔한 동작입니다)
+     크롬이 잠글 때마다 "esc 를 누르세요" 안내를 띄우고, 잠기는 순간
+     움직임 계산 방식이 절대좌표(clientX)에서 상대좌표(movementX)로
+     바뀌면서 화면이 한 번 튀는 것도 실측으로 봤습니다. 화면 가장자리에서
+     막히는 손해보다 이 둘이 더 나쁩니다. */
   curEl().classList.add('look');
 });
 cv.addEventListener('pointermove', (e) => {
@@ -1994,16 +1992,6 @@ cv.addEventListener('pointermove', (e) => {
     yaw -= e.movementX * .0017;
     pitch = clamp(pitch + e.movementY * .0021, -1.52, 1.52);
     turned += Math.abs(e.movementX) * .0024; return;
-  }
-  /* 3인칭에서 누른 채 잠겨 있으면 movement 를 그대로 씁니다 —
-     화면 끝에 걸리지 않고, 감도도 한 단계 올립니다(.006 → .0075). */
-  if (!first && drag && document.pointerLockElement === cv) {
-    camHold = performance.now() + 1400;
-    yaw -= e.movementX * .0075;
-    pitch = clamp(pitch + e.movementY * .005, TP_PITCH_MIN, 1.48);
-    turned += Math.abs(e.movementX) * .0075;
-    if (room) clampRoomYaw();
-    return;
   }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -2111,7 +2099,8 @@ let goTo = null, goStall = 0, goFrom = null, goPath = null, goEnd = null, goRetr
 cv.addEventListener('pointerdown', (e) => { goFrom = { x: e.clientX, y: e.clientY, t: performance.now() }; });
 function endLook() {
   curEl().classList.remove('look');
-  if (!first && document.pointerLockElement === cv) { try { document.exitPointerLock?.(); } catch {} }
+  /* 3인칭은 애초에 안 잠그므로(위 pointerdown) 여기서 할 일이 없습니다.
+     1인칭 잠금은 syncLock() 이 화면 상태(UI 열림 등)로 따로 관리합니다. */
 }
 addEventListener('pointerup', endLook, true);
 addEventListener('pointercancel', endLook, true);
@@ -4687,19 +4676,24 @@ function tick(now) {
        바닥이 통째로 모래가 됐습니다 — 켜 두는 것이 끄는 것보다 나쁩니다.
        AO 는 물건이 바닥에 닿는 자리를 어둡게 하는 것이고, 그게 없다고
        화면이 무너지지는 않습니다. 그냥 끕니다. */
-    if (f < 30 && n8ao && n8ao.enabled) n8ao.enabled = false;
+    /* 기준을 30/26/24/22 에서 위로 올립니다. 그 값들은 "30 밑으로 떨어져야
+       깎는다" 는 뜻인데, 실측해 보니 30~45fps 대에 그냥 머무는 기기가
+       흔했습니다 — 60은 아니지만 30도 아닌 그 구간에서는 사다리가 한 번도
+       안 눌리고 계속 끊겼습니다. 사다리가 있는데 안 켜지면 없는 것과
+       같습니다. */
+    if (f < 45 && n8ao && n8ao.enabled) n8ao.enabled = false;
     /* 끄기 전에 **반으로 줄여** 봅니다. 2048 → 1024 면 그림자 그리는 값이
        사분의 일이 되는데, 이 그림체에서 가장자리가 부드러워지는 것 말고는
        티가 잘 안 납니다. 있는 그림자가 없는 그림자보다 낫습니다. */
-    else if (f < 26 && sun.shadow.mapSize.width > 1024) {
+    else if (f < 38 && sun.shadow.mapSize.width > 1024) {
       sun.shadow.mapSize.set(1024, 1024);
       sun.shadow.map?.dispose(); sun.shadow.map = null;
     }
     /* 그림자보다 **마무리 사슬을 먼저** 놓습니다. 글로우·비네트·결이
        없으면 화면이 심심해질 뿐이지만, 그림자가 없으면 물건이 땅에서
        떠 보입니다 — 잃었을 때 더 아픈 쪽을 나중까지 붙듭니다. */
-    else if (f < 24 && fxPass && fxPass.enabled) fxPass.enabled = false;
-    else if (f < 22 && renderer.shadowMap.enabled) {
+    else if (f < 34 && fxPass && fxPass.enabled) fxPass.enabled = false;
+    else if (f < 30 && renderer.shadowMap.enabled) {
       /* CSM 이 켜져 있으면 그것부터 끕니다 — 안 끄면 그림자 맵을
          셋씩 그리면서 '껐다' 고 말하게 됩니다. */
       csmOff();
@@ -4708,7 +4702,11 @@ function tick(now) {
       shadowsOff = true;
       toast('가볍게 바꿨어요', '느려서 그림자를 껐습니다 — 옷장(C)의 설정에서 되돌립니다');
     }
-    else if (f > 48 && n8ao && !n8ao.enabled) n8ao.enabled = true;
+    /* 다시 켜지 않습니다. 꺼졌다 켜지는 순간 화면 전체가 노이즈로
+       뒤덮이는 것을 실측으로 봤습니다 — N8AO 내부 버퍼가 껐다 켜는 것을
+       버티도록 만들어져 있지 않은 것으로 보입니다. 반해상도보다 정지가
+       낫다고 이미 결론 낸 자리라, 한번 끈 것은 새로고침 전까지 그대로
+       둡니다. */
     frames = 0; acc = 0;
   }
   /* CSM 은 카메라를 따라 칸을 다시 잡아야 합니다 */

@@ -17,7 +17,7 @@
 | 대상 | 하루 4시간 이상 PC 를 쓰는 대학생 |
 | 플랫폼 | 데스크톱 웹 (Chrome·Edge 116+) |
 
-이 문서는 Claude Code·Codex가 UpRight Now를 구현할 때 제품 방향, 개인정보 경계, 화면 디자인을 임의로 바꾸지 않도록 하는 최상위 작업 계약입니다.
+이 문서는 Claude Code·Codex가 Deskfit를 구현할 때 제품 방향, 개인정보 경계, 화면 디자인을 임의로 바꾸지 않도록 하는 최상위 작업 계약입니다.
 
 ## 1. Source of truth
 
@@ -66,7 +66,7 @@
 2. `docs/ARCHITECTURE.md` - 앱 구조, 데이터 흐름, 환경변수, 배포 구조
 3. `docs/DECISIONS.md` - 최근 의사결정, 대안, 재검토 항목
 
-그 다음 `docs/TEAM_START.md`, `docs/AI_HANDOFF.md`, `docs/20_DECISION_LOG.md`를 참고합니다. `docs/AI_HANDOFF.md`와 `docs/20_DECISION_LOG.md`는 더 긴 과거 기록이므로, 최신 상태 판단은 위 3개 문서와 현재 Git 상태를 우선합니다.
+그 다음 `docs/TEAM_START.md`, `docs/AI_HANDOFF.md`를 참고합니다. `docs/AI_HANDOFF.md`는 더 긴 과거 기록이므로, 최신 상태 판단은 위 3개 문서와 현재 Git 상태를 우선합니다.
 
 새 환경에서 첫 작업을 시작하기 전에는 반드시 아래를 확인합니다.
 
@@ -234,7 +234,7 @@ src/
 │  ├─ posture-engine/ 랜드마크 → 자세 상태 판정 (민철)
 │  ├─ calibration/    5초 개인 기준 등록 (민철)
 │  ├─ pip/            PIP 미니 위젯 (민철)
-│  ├─ rooms/          2인 친구 방·실시간 동기화 (수현)
+│  ├─ rooms/          친구 방(최대 10인)·실시간 동기화 (수현)
 │  ├─ campus/         학교 테마·96 영토전 (연우)
 │  ├─ sessions/       집중 세션 타이머·완주 판정
 │  ├─ game/           회복 공격·괴물 진행도·보상 지급

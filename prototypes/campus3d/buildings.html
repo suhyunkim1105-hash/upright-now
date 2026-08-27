@@ -1,0 +1,65 @@
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#EFF2F5;overflow:hidden}canvas{display:block}</style>
+<canvas id="cv"></canvas>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { BLD } from './bld.js';
+
+/* ══════════════════════════════════════════════════════════
+   건물 여섯 채를 한 채씩 크게 찍어 보는 뷰어.
+
+   **여기에 건물 코드를 두지 않습니다.** 한동안 bld.js 와 이 파일에
+   같은 함수 여섯 개가 각각 들어 있었고, 캠퍼스에 보이는 것과 뷰어에
+   보이는 것이 조용히 갈라졌습니다 — 뒷면을 채우고 간판을 옮긴 뒤에도
+   뷰어는 옛 모습을 그대로 보여 줬습니다. 이제 bld.js 하나만 봅니다.
+
+   ?b=mainHall|library|dorm|union|arcade|shop   어느 채인지
+   ?a=0|1|2|3                                   보는 각(앞·오른·뒤·왼)
+   ══════════════════════════════════════════════════════════ */
+const q = new URLSearchParams(location.search);
+const which = q.get('b') || 'mainHall';
+const ang = +(q.get('a') || 0) % 4;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xEFF2F5);
+const g = new THREE.Group(); scene.add(g);
+BLD[which](g);
+
+/* 채마다 크기가 다릅니다 — 고정 F 는 본관(폭 28)을 잘라 냈습니다.
+   경계상자에서 뽑고, 네 각이 같은 F 를 써야 앞뒤 비교가 됩니다. */
+const sz = new THREE.Box3().setFromObject(g).getSize(new THREE.Vector3());
+const F = Math.max(sz.x, sz.z) * .62 + 1.6;
+const S = 1200;
+
+scene.add(new THREE.AmbientLight(0xFFFFFF, .78));
+scene.add(new THREE.HemisphereLight(0xE8F4FF, 0xF6E6C4, .95));
+const key = new THREE.DirectionalLight(0xFFFAF0, 2.1);
+key.position.set(-F * 1.3, F * 2.0, F * 1.4); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -F; key.shadow.camera.right = F;
+key.shadow.camera.top = F; key.shadow.camera.bottom = -F;
+key.shadow.camera.near = 1; key.shadow.camera.far = F * 8;
+key.shadow.bias = -.0004; key.shadow.radius = 4; key.shadow.normalBias = .02;
+scene.add(key);
+/* Object.assign 으로 position 을 넣으면 안 됩니다 — 읽기 전용 속성이라
+   그 자리에서 전부 멈춥니다. .position.set 을 써야 합니다. */
+const fill = new THREE.DirectionalLight(0xCFE4F5, .75); fill.position.set(F, F * .8, -F); scene.add(fill);
+const rim = new THREE.DirectionalLight(0xFFFFFF, .5); rim.position.set(F * .3, F * .6, -F * 1.5); scene.add(rim);
+
+const cam = new THREE.OrthographicCamera(-F, F, F, -F, .1, F * 12);
+const A = ang * Math.PI / 2;
+cam.position.set(Math.sin(A + Math.PI / 4) * F * 3.6, F * 2.2, Math.cos(A + Math.PI / 4) * F * 3.6);
+cam.lookAt(0, sz.y * .42, 0);
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });
+renderer.setSize(S, S, false); renderer.setPixelRatio(1);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.06;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const cv = document.getElementById('cv');
+cv.style.width = S + 'px'; cv.style.height = S + 'px';
+renderer.render(scene, cam);
+window.__ready = true;
+</script>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>마이페이지 검수</title>
+<!-- 창 하나만 재려고 만든 검수판입니다. 3D 를 다 띄우지 않고
+     index.html 의 스타일과 픽토그램만 빌려 와 마이페이지를 그립니다.
+     `_` 로 시작해 배포본에서 빠집니다. -->
+<style>
+  html,body{margin:0;height:100%;background:#7FB2DD;font-family:'Wanted Sans Variable',sans-serif}
+</style>
+</head>
+<body>
+<div class="hud"></div>
+<script type="module">
+const src = await (await fetch('./index.html', { cache: 'reload' })).text();
+
+/* 스타일과 픽토그램 자리를 그대로 가져옵니다 */
+const css = src.slice(src.indexOf('<style>') + 7, src.indexOf('</style>'));
+const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+const svgAt = src.indexOf('<svg', src.indexOf('</style>'));
+const svgEnd = src.indexOf('</svg>', svgAt) + 6;
+document.body.insertAdjacentHTML('afterbegin', src.slice(svgAt, svgEnd));
+
+document.querySelector('.hud').innerHTML = `
+  <div id="panel" class="on wide" role="dialog" aria-modal="true" aria-labelledby="panel-title">
+    <div class="ph"><span class="tag">마이페이지</span><h3 id="panel-title">내 기록</h3>
+      <button class="pclose" type="button" aria-label="창 닫기">×</button></div>
+    <div class="bd"></div>
+    <div class="x"><kbd>Esc</kbd> 로 닫기</div>
+  </div>`;
+
+const UI = await import('./ui.js');
+const { MUSIC } = await import('./music.js');
+const SCHOOLS = [
+  { name: '서울대학교', c: 0x00468B }, { name: '연세대학교', c: 0x0F4C81 },
+  { name: '고려대학교', c: 0x862633 }, { name: '성균관대학교', c: 0x00563F },
+  { name: '한양대학교', c: 0x0E4A84 }, { name: '중앙대학교', c: 0x0B4DA2 },
+  { name: '경희대학교', c: 0x8C1D40 }, { name: '이화여자대학교', c: 0x00713C },
+  { name: '서강대학교', c: 0x8B0029 }, { name: '명지대학교', c: 0x003A70 },
+];
+/* 빈 저장본이면 모든 탭이 "아직 없어요" 라 배치가 안 보입니다. 채워 둡니다. */
+UI.SAVE.sessions = [
+  { t: Date.now() - 864e5, sec: 3120, judged: 2870, bad: 4, zone: 'library' },
+  { t: Date.now() - 432e5, sec: 1840, judged: 1710, bad: 2, zone: 'mainhall' },
+  { t: Date.now() - 36e5, sec: 2260, judged: 2100, bad: 3, zone: 'dorm' },
+];
+UI.SAVE.school = '명지대학교';
+UI.SAVE.attend = { run: 6 };
+UI.SAVE.coinDay = { date: new Date().toISOString().slice(0, 10), got: 140 };
+
+const bd = document.querySelector('#panel .bd');
+function draw() {
+  const v = UI.mypage({
+    coins: 1240, server: false, snd: true, bgm: true, bgmVol: .45, bgmPick: 'auto',
+    music: MUSIC, schools: SCHOOLS, school: UI.SAVE.school,
+    baseline: { features: { neck: 1, shoulder: 1, lean: 1, chin: 1 }, sampleCount: 148, createdAt: Date.now() - 72e5 },
+    onSchool: (s) => { UI.SAVE.school = s; draw(); },
+    onDo: () => draw(),
+  });
+  document.querySelector('#panel .tag').textContent = v.tag;
+  document.querySelector('#panel h3').textContent = v.title;
+  bd.innerHTML = v.html;
+  v.on?.(document.querySelector('#panel'), draw);
+}
+draw();
+/* 검수용 — ?tab=set 로 열면 그 탭이 펴진 채로 나옵니다 */
+const want = new URLSearchParams(location.search).get('tab');
+if (want) document.querySelector(`[data-tab="${want}"]`)?.click();
+if (new URLSearchParams(location.search).has('open')) document.querySelector('[data-do="schoolopen"]')?.click();
+window.__ready = true;
+</script>
+</body>
+</html>

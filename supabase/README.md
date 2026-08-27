@@ -1,6 +1,6 @@
 # Supabase 설정
 
-이 폴더는 UpRight Now의 실제 2인 친구 방과 캠퍼스 영토전을 위한 Supabase 스키마입니다.
+이 폴더는 Deskfit의 실제 2인 친구 방과 캠퍼스 영토전을 위한 Supabase 스키마입니다.
 
 ## 적용 순서
 

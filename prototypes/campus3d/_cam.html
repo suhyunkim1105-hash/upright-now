@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>웹캠 판정 자가진단</title>
+<!-- 월드를 다 띄우지 않고 **카메라 배선만** 재는 검수판입니다.
+     posture-live.js → ../shared/posture.js → MediaPipe 까지 실제로 돌립니다.
+     `_` 로 시작해 배포본에서 빠집니다.
+
+     헤드리스에서 볼 때:
+       chrome --headless=new --use-fake-device-for-media-stream
+              --use-fake-ui-for-media-stream --virtual-time-budget=60000
+              --dump-dom  http://.../_cam.html
+     가짜 장치는 사람이 안 찍히므로 mode 가 calibrating 까지 가면 성공입니다
+     (권한 · getUserMedia · wasm · 모델 · 추론 루프가 전부 살아 있다는 뜻). -->
+<style>
+  body{margin:0;padding:24px;background:#0E1520;color:#DCE6F2;
+    font:13px/1.7 ui-monospace,SFMono-Regular,Consolas,monospace}
+  h1{margin:0 0 4px;font-size:15px;color:#8FD8CB}
+  p{margin:0 0 16px;color:#7A8CA3}
+  #sum{margin:0 0 16px;padding:12px 14px;border-radius:8px;background:#16202E}
+  #sum b{display:inline-block;min-width:150px;color:#7A8CA3;font-weight:400}
+  .ok{color:#6FE3B8} .no{color:#FF8E7E} .wait{color:#F2C14E}
+  #log{margin:0;padding:12px 14px;border-radius:8px;background:#16202E;white-space:pre-wrap}
+  video{margin-top:14px;width:240px;border-radius:8px;background:#000}
+</style>
+</head>
+<body>
+<h1>웹캠 자세 판정 — 자가진단</h1>
+<p>월드가 앉을 때 부르는 것과 똑같은 경로를 그대로 한 번 돌립니다.</p>
+<div id="sum"></div>
+<pre id="log">…</pre>
+<video id="v" autoplay playsinline muted></video>
+<script src="../shared/posture.js"></script>
+<script type="module">
+const S = {
+  'posture.js 로드': () => !!window.POSE,
+  'getUserMedia 있음': () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+  '보안 컨텍스트': () => window.isSecureContext,
+  '저장된 기준(girin.baseline)': () => {
+    try { const j = JSON.parse(localStorage.getItem('girin.baseline') || 'null');
+      return j && j.version === 3 ? Object.keys(j.features || {}).length + '축' : '없음 — 10초 잡기로 갑니다'; }
+    catch (_) { return '읽기 실패'; }
+  },
+};
+const lines = [];
+const t0 = performance.now();
+const put = (s) => { lines.push(`+${((performance.now() - t0) / 1000).toFixed(1)}s  ${s}`);
+  document.querySelector('#log').textContent = lines.join('\n'); };
+
+let mode = 'off', frames = 0, states = {};
+function paint() {
+  const done = mode === 'live' || mode === 'calibrating';
+  const rows = Object.entries(S).map(([k, f]) => {
+    let v; try { v = f(); } catch (e) { v = 'ERR ' + e.message; }
+    const cls = v === true ? 'ok' : v === false ? 'no' : '';
+    return `<b>${k}</b><span class="${cls}">${v === true ? 'OK' : v === false ? '없음' : v}</span>`;
+  });
+  rows.push(`<b>mode</b><span class="${done ? 'ok' : mode === 'denied' || mode === 'failed' ? 'no' : 'wait'}">${mode}</span>`);
+  rows.push(`<b>판정 프레임</b><span class="${frames ? 'ok' : 'wait'}">${frames}</span>`);
+  rows.push(`<b>본 상태</b><span>${Object.entries(states).map(([k, n]) => k + '×' + n).join(' · ') || '—'}</span>`);
+  rows.push(`<b>판정</b><span class="${done ? 'ok' : 'no'}">${done ? '배선 정상' : '여기서 막힙니다'}</span>`);
+  document.querySelector('#sum').innerHTML = rows.join('<br>');
+  window.__diag = { mode, frames, states };
+}
+
+const { createPosture } = await import('./posture-live.js');
+const PZ = createPosture({
+  video: document.querySelector('#v'),
+  onStatus: (t) => { if (t) put('status: ' + t); paint(); },
+  onMode: (m) => { mode = m; put('mode: ' + m); paint(); },
+  onCalib: (p) => { if (Math.round(p * 100) % 20 === 0) put(`기준 잡는 중 ${Math.round(p * 100)}%`); },
+  onState: (st) => { frames++; states[st] = (states[st] || 0) + 1; if (frames % 30 === 1) paint(); },
+});
+paint();
+put('start() 부릅니다');
+PZ.start().then((m) => { put('start() 돌아옴: ' + m); paint(); });
+setInterval(paint, 500);
+
+/* 모듈이 끝나야 load 가 뜹니다. 헤드리스의 --screenshot 은 load 를
+   기다리므로, 여기서 판정이 끝날 때까지 붙잡아 두면 **가상 시계 없이도**
+   결과가 찍힙니다. 가상 시계를 쓰면 카메라가 실제 시계로 도느라
+   getUserMedia 가 영영 안 돌아옵니다 — 한 번 그렇게 헛돌았습니다. */
+await new Promise((done) => {
+  const t0b = performance.now();
+  const tick = setInterval(() => {
+    const settled = mode === 'live' || mode === 'denied' || mode === 'failed'
+      || (mode === 'calibrating' && frames > 20);
+    if (settled || performance.now() - t0b > 25000) { clearInterval(tick); paint(); done(); }
+  }, 250);
+});
+</script>
+</body>
+</html>

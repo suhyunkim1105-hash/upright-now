@@ -1,0 +1,183 @@
+/* ══════════════════════════════════════════════════════════
+   클레이 — 한 벌
+
+   출처는 월드 안 팝업(campus3d/index.html)입니다. 그쪽이 스물 몇 개
+   창을 이 문법으로 만들어 놓았고, 로비·마이페이지·랭킹전·초대 세션이
+   저마다 다른 클레이를 쓰고 있었습니다. 같은 제품 안에서 재질이 넷이면
+   셋은 남의 것으로 보입니다.
+
+   값을 여기 한 번만 적고 네 화면이 가져다 씁니다. 월드 쪽 값을 고치면
+   여기도 같이 고쳐야 하는데, 그건 두 곳이지 다섯 곳이 아닙니다.
+
+   ── 이 재질이 말하는 것 ──
+
+     솟은 것은 누르는 것,  파인 것은 담는 것.
+
+   그 둘뿐입니다. 그림자를 세기로 등급을 나누지 않습니다 — 세 단계쯤
+   되면 사람은 이미 구분을 못 하고, 화면은 그냥 뿌예집니다.
+
+   ── 왜 파랑 섞인 흰색인가 ──
+
+   처음에 크림(#FBF6EC)이었는데 베이지가 너무 셌습니다. 월드가 하늘·
+   잔디·물이라 창만 따뜻한 쪽으로 떨어져 나왔습니다. 흰색에 파랑을 아주
+   조금 섞고, 그림자도 갈색이 아니라 **남색 계열**로 지게 했습니다 —
+   같은 빛 아래 있는 것으로 보이려면 그림자 색이 같아야 합니다.
+   ══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ---- 면 ---- 세 단. 그 위는 사람이 구분 못 합니다. */
+  --clay:   #F6F9FD;   /* 창 바닥 */
+  --clay2:  #EAF0F8;   /* 한 단 낮은 면 — 칸·줄이 앉는 자리 */
+  --clay3:  #DAE3EF;   /* 눌린 면 */
+
+  /* ---- 두 방향 ----
+     솟은 것: 위에서 들어온 빛(흰 안그림자) + 아래로 말리는 그늘 +
+     바닥에 지는 그림자. 파인 것: 안쪽 그늘만, 바깥 그림자 없음.
+     바깥 그림자를 조금이라도 남기면 파인 것이 솟은 것으로 보입니다. */
+  --clayUp:
+    0 10px 22px -8px rgba(58,80,112,.30),
+    0 -4px 12px -6px rgba(255,255,255,.95),
+    inset 0 2px 0 rgba(255,255,255,.96),
+    inset 0 -3px 0 rgba(86,110,146,.13);
+  --clayUp2:
+    0 5px 12px -5px rgba(58,80,112,.26),
+    inset 0 1.5px 0 rgba(255,255,255,.95),
+    inset 0 -2px 0 rgba(86,110,146,.12);
+  --clayIn:
+    inset 0 3px 7px rgba(62,84,118,.22),
+    inset 0 -1.5px 0 rgba(255,255,255,.75);
+
+  /* 창 자신. 화면에서 가장 높이 뜬 것 하나라 값을 따로 둡니다. */
+  --clayWin:
+    0 30px 70px -24px rgba(40,58,84,.44),
+    0 -6px 20px -10px rgba(255,255,255,.9),
+    inset 0 3px 0 rgba(255,255,255,.95),
+    inset 0 -5px 0 rgba(86,110,146,.13);
+
+  /* ---- 글자 ---- 갈색을 뺀 남색 계열 */
+  --cInk:  #22303F;
+  --cInk2: #3F4E60;
+  --cInk3: #79879A;
+
+  /* ---- 아이콘 판 다섯 ----
+     칸마다 색을 다르게 두는 것이 아니라, **뜻이 다른 것에만** 다른 색을
+     줍니다. 시간은 민트, 사람은 복숭아, 기록은 라일락, 돈은 레몬,
+     장소는 하늘. 같은 뜻이면 화면이 달라도 같은 색입니다. */
+  --mint:  #B7EBE1;  --mintD:  #12867A;
+  --peach: #FBD6CE;  --peachD: #B75844;
+  --lilac: #DCD8F6;  --lilacD: #6355B0;
+  --lemon: #F2E7B4;  --lemonD: #8A7620;
+  --sky:   #CCE1F8;  --skyD:   #2A66A6;
+
+  /* ---- 모서리 ---- 창 30, 칸 20, 줄 17, 아이콘 판 13, 알약 99 */
+  --cr-win: 30px;
+  --cr-cc:  20px;
+  --cr-rw:  17px;
+  --cr-ic:  13px;
+
+  --cease: cubic-bezier(.2,.9,.3,1);
+}
+
+/* ── 픽토그램 ──
+   한 벌이라 굵기를 여기서 한 번만 정합니다. 화면마다 2·2.2·2.6 으로
+   갈리면 한 세트인 척하면서 펜이 셋인 것입니다. */
+.pic { width: 22px; height: 22px; flex: none; fill: none; stroke: currentColor;
+  stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.pic.lg { width: 28px; height: 28px; stroke-width: 1.6; }
+
+/* ── 칸 ── 줄글 대신 이걸 씁니다.
+   문장으로 적으면 읽어야 알고, 칸으로 두면 보면 압니다. */
+.cg { display: grid; grid-template-columns: repeat(auto-fill, minmax(122px, 1fr));
+  gap: 10px; margin: 4px 0 6px; }
+.cg.two { grid-template-columns: 1fr 1fr; }
+.cg.three { grid-template-columns: repeat(3, 1fr); }
+.cc {
+  display: flex; flex-direction: column; gap: 7px;
+  padding: 14px 13px; border-radius: var(--cr-cc); border: 0;
+  background: var(--clay2); box-shadow: var(--clayUp2);
+  font: 700 12px/1.35 inherit; color: var(--cInk2); text-align: left;
+  cursor: default; transition: transform .12s var(--cease), box-shadow .12s var(--cease);
+}
+button.cc { cursor: pointer; }
+button.cc:hover { transform: translateY(-2px); }
+/* 누르면 **파입니다.** 색을 바꾸거나 테두리를 두르지 않습니다 —
+   찰흙을 손가락으로 누른 자국이라, 어느 것이 눌려 있는지가
+   색맹인 사람에게도 보입니다. */
+button.cc:active, .cc.on { box-shadow: var(--clayIn); background: var(--clay3); transform: none; }
+.cc .ic { width: 38px; height: 38px; border-radius: var(--cr-ic); display: grid; place-items: center;
+  background: var(--mint); color: var(--mintD); box-shadow: var(--clayUp2); }
+.cc.on .ic { box-shadow: none; }
+.cc b { font-size: 14px; font-weight: 800; color: var(--cInk); letter-spacing: -.01em; }
+.cc small { font-size: 10.5px; font-weight: 700; color: var(--cInk3); line-height: 1.45; }
+.cc .big { font: 800 22px/1 inherit; color: var(--cInk); letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums; }
+
+.ic.peach { background: var(--peach); color: var(--peachD); }
+.ic.lilac { background: var(--lilac); color: var(--lilacD); }
+.ic.lemon { background: var(--lemon); color: var(--lemonD); }
+.ic.sky   { background: var(--sky);   color: var(--skyD); }
+
+/* ── 줄 ── 아이콘 + 이름 + 값. 표를 대신합니다.
+   표는 칸이 맞아야 읽히는데, 화면 폭이 바뀌면 제일 먼저 무너집니다. */
+.rw { display: flex; align-items: center; gap: 11px; padding: 11px 13px;
+  border-radius: var(--cr-rw); background: var(--clay2); box-shadow: var(--clayUp2);
+  margin-bottom: 7px; font: 700 13px inherit; color: var(--cInk2);
+  width: 100%; border: 0; text-align: left; }
+button.rw { cursor: pointer; transition: transform .12s var(--cease); }
+button.rw:hover { transform: translateY(-1px); }
+button.rw:active { box-shadow: var(--clayIn); }
+.rw .ic { width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--mint); color: var(--mintD); box-shadow: var(--clayUp2); flex: none; }
+.rw .ic .pic { width: 19px; height: 19px; }
+.rw span.t { flex: 1; min-width: 0; }
+.rw span.t em { display: block; font-style: normal; font-size: 10.5px; font-weight: 700;
+  color: var(--cInk3); margin-top: 2px; }
+.rw span.v { font-weight: 800; color: var(--cInk); font-size: 13.5px; white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
+
+/* ── 채워지는 막대 ── 길은 파여 있고 채움은 솟습니다 */
+.mtr { height: 11px; border-radius: 99px; background: var(--clay3);
+  box-shadow: var(--clayIn); overflow: hidden; }
+.mtr i { display: block; height: 100%; border-radius: 99px;
+  background: var(--mintD); width: var(--w, 0%); transition: width .4s var(--cease); }
+
+/* ── 딱지 ── 창 위 작은 이름표. 파여 있습니다(누르는 것이 아니므로). */
+.ctag { display: inline-block; padding: 5px 12px; border-radius: 99px;
+  background: var(--clay3); color: var(--cInk3); box-shadow: var(--clayIn);
+  font-size: 10.5px; font-weight: 800; letter-spacing: .04em; }
+
+/* ── 담는 판 ── 안내문·빈 상태가 앉는 자리 */
+.cnote { background: var(--clay2); box-shadow: var(--clayIn); border-radius: 16px;
+  padding: 12px 14px; color: var(--cInk3); font-size: 12.5px; font-weight: 700; line-height: 1.55; }
+
+/* ── 주 버튼 ──
+   화면에서 가장 두꺼운 것 하나입니다. 두 개가 같은 두께면 둘 다 주 버튼이
+   아닌 것이 됩니다. */
+.cbtn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 22px; border: 0; border-radius: 16px;
+  background: var(--mintD); color: #F2FBF9;
+  font: 800 14.5px inherit; letter-spacing: -.01em; cursor: pointer;
+  box-shadow: 0 4px 0 #0B6156, 0 10px 20px -8px rgba(18,134,122,.5);
+  transition: transform .14s var(--cease), box-shadow .14s var(--cease);
+}
+.cbtn:hover { transform: translateY(-2px); box-shadow: 0 4px 0 #0B6156, 0 14px 26px -8px rgba(18,134,122,.55); }
+/* 누르면 입술이 접히고 딱 그만큼 내려앉습니다 — 높이 합이 일정해서
+   아래 칸이 안 밀립니다. */
+.cbtn:active { transform: translateY(4px); box-shadow: 0 0 0 #0B6156, 0 3px 8px -3px rgba(18,134,122,.5); }
+.cbtn.ghost {
+  background: var(--clay2); color: var(--cInk2);
+  box-shadow: var(--clayUp2);
+}
+.cbtn.ghost:hover { transform: translateY(-2px); }
+.cbtn.ghost:active { box-shadow: var(--clayIn); transform: none; }
+
+/* 초점은 지웁니다가 아니라 **더 보이게** 합니다 */
+.cc:focus-visible, .rw:focus-visible, .cbtn:focus-visible {
+  outline: 3px solid var(--mintD); outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc, .rw, .cbtn, .mtr i { transition: none; }
+  button.cc:hover, button.rw:hover, .cbtn:hover { transform: none; }
+}

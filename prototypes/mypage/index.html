@@ -1,0 +1,2390 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deskfit — 마이페이지</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../landing/assets/favicon.ico" sizes="48x48">
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="../shared/clay.css">
+
+<style>
+/* ==================================================================
+   Deskfit 마이페이지
+
+   창 문법은 월드의 패널에서 가져왔습니다 — 청록 머리띠, 채운 탭,
+   먹 테두리, 흐림 없는 그림자. 로비와 같은 값을 씁니다(--edge, --drop).
+
+   읽히는 것이 먼저입니다. 이 화면은 훑는 곳이 아니라 **읽는** 곳이라
+   본문 15px / 행간 1.7 로 두고, 라벨과 값의 대비를 벌립니다.
+
+   이 화면이 지켜야 하는 제품 불변조건 셋 (AGENTS.md):
+     · 의료 판정 금지 — 진단·통증·위험도를 말하지 않습니다
+     · 자세 점수 금지 — 점수·등급·정상/비정상 표시를 만들지 않습니다
+     · 카메라 영상 저장·전송 금지 — 그래서 "자세 기준" 탭이 그 사실을
+       사용자에게 직접 보여 주는 자리입니다
+   ================================================================== */
+
+:root {
+  --teal:      #2DD4BF;
+  --teal-50:   #EFFBF9;
+  --teal-100:  #CFF2ED;
+  --teal-700:  #0D7769;
+  --ink:       #17201E;
+  --ink-2:     #55605D;
+  /* #7C8683 은 흰 위 3.75 로 AA 미달이었습니다(axe 가 잡음). 이 화면이
+     쓰는 세 면 전부에서 4.5 를 넘는 값으로 내립니다 — 흰 5.27 ·
+     wash 4.89 · teal-50 4.98. */
+  --ink-3:     #646E6B;
+  --paper:     #FFFFFF;
+  --wash:      #F4F7F6;
+  --line:      #E3E8E7;
+  --warn-50:   #FFF7ED;
+  --warn-700:  #9A5B14;
+  /* 인증 실패는 만료 예정과 **다른 일** 입니다. 같은 호박색으로 묶으면
+     "기다리면 되는 것" 과 "다시 해야 하는 것" 이 구분되지 않습니다.
+     카드 면(#FBFDFC) 위에서 6.4:1 — AA 를 넘습니다. */
+  --bad-50:    #FDF1EF;
+  --bad-700:   #A8352A;
+
+  /* 카드 면. 아이보리와 아주 옅은 민트 사이입니다 — 흰 종이로 두면
+     흰 창 위에서 카드가 안 떠 보이고, 청록을 더 넣으면 카드가 강조
+     요소가 되어 버립니다(청록은 CTA·인증 상태에만 씁니다). */
+  --card-hi:   #FCFEFD;
+  --card-lo:   #EFF7F5;
+  --r-card:    24px;
+
+  --s-1: 8px;  --s-2: 14px; --s-3: 22px;
+  --s-4: 34px; --s-5: 52px;
+
+  /* 클레이는 모서리가 넉넉해야 부푼 것으로 보입니다. 각지면 아무리
+     그림자를 넣어도 카드로 읽힙니다. */
+  --r-sm: 12px;  --r: 20px;  --r-pill: 999px;
+
+  /* ---- 클레이 ---- 로비와 같은 값입니다.
+     세 겹입니다: 위에서 들어온 빛(inset 밝은), 아래 그늘(inset 어두운),
+     바닥에 지는 그림자(바깥). 이 셋이 있어야 눌러 붙인 색이 아니라
+     부푼 덩어리로 보입니다. 그늘은 순검정이 아니라 청록을 섞은 어두운
+     값입니다 — 검정 그늘은 점토가 아니라 플라스틱이 됩니다. */
+
+  /* 이 화면이 들고 있던 클레이 다섯을 공용(shared/clay.css)으로 넘겼습니다.
+     값은 세 화면이 똑같이 복사해 둔 것이었고, 그런데도 **월드와는 달랐습니다** —
+     그늘이 청록 계열이라 같은 빛 아래 있는 것으로 안 보였습니다.
+     옛 이름을 새 값에 이어 두어, 이 이름을 쓰던 자리를 한꺼번에 안 고쳐도
+     됩니다. 남은 이름은 옮기면서 하나씩 지웁니다. */
+  --sh:       var(--clayUp);
+  --sh-lift:  var(--clayUp);
+  --sh-press: var(--clayIn);
+  --sh-sm:    var(--clayUp2);
+  --sh-well:  var(--clayIn);
+
+  /* 안으로만 파인 홈. 무언가가 그 안에 앉는 자리에 씁니다 — 탭 트랙, 입력칸. */
+  --edge-2:  1px solid var(--line);
+
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--wash);
+  color: var(--ink);
+  font: 500 15px/1.7 'Wanted Sans Variable', 'Wanted Sans', 'Pretendard Variable',
+        -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.008em;
+  display: grid; place-items: start center;
+  padding: var(--s-4) 100px var(--s-5);
+}
+
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; border-radius: 6px; }
+
+/* ---------------- 창 ---------------- */
+/* 1140 인 이유 — 카드 560 + 사이 32 + 오른쪽 판 480 이 본문 여백(34×2)
+   안에 정확히 들어갑니다. 좌우 100px 은 모서리 아이콘이 앉을 골입니다. */
+.win {
+  width: min(1140px, 100%);
+  background: var(--paper);
+  border: 0; border-radius: 28px;
+  box-shadow: var(--sh);
+  overflow: hidden;
+}
+
+.titlebar {
+  display: flex; align-items: center; gap: var(--s-2);
+  padding: 16px var(--s-3);
+  /* 위에서 빛이 들어와 아래로 갈수록 짙어집니다. 평평한 한 색은 스티커고,
+     이 기울기가 있어야 띠가 부푼 것으로 보입니다. */
+  background: linear-gradient(180deg, #46DCC9 0%, var(--teal) 58%, #23C4B0 100%);
+  border-bottom: 0;
+  box-shadow: inset 0 -3px 6px rgba(12,90,79,.16);
+}
+/* 절 제목이 17px/800 입니다. 18px 로 두면 한 단 차이가 1px 이라 위계가
+   안 생깁니다 — 창 이름이 그 안의 제목과 같은 크기로 보였습니다. */
+.titlebar h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.025em; }
+/* 청록 위에서 회색 계열은 전부 4.5:1 밑으로 떨어집니다. 부제도 먹입니다 —
+   위계는 색이 아니라 크기와 무게가 냅니다. */
+.titlebar .sub { font-size: 13px; font-weight: 500; color: var(--ink); opacity: .72; }
+/* 보이는 것은 30px 그대로 두고 누르는 자리만 40px 로 넓힙니다. 제목줄
+   안쪽이라 동그라미를 키우면 줄 전체가 두꺼워집니다. */
+.titlebar .x {
+  position: relative;
+  margin-left: auto; width: 30px; height: 30px; display: grid; place-items: center;
+  background: var(--paper); border: 0; border-radius: 50%;
+  cursor: pointer;
+}
+.titlebar .x::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: 40px; height: 40px; transform: translate(-50%, -50%);
+}
+.titlebar .x { box-shadow: var(--sh-sm);
+  transition: background .14s var(--ease), transform .14s var(--ease), box-shadow .14s var(--ease); }
+.titlebar .x:hover { background: var(--teal-50); transform: translateY(-1px); }
+.titlebar .x:active { transform: translateY(1px); box-shadow: var(--sh-press); }
+
+/* ---------------- 탭 ----------------
+   고른 칸을 주색으로 채웁니다. 밑줄 방식은 어느 칸이 켜졌는지 훑을 때
+   한 번 더 봐야 합니다. 칸은 폭을 나눠 가집니다 — 글자 길이에 따라
+   들쭉날쭉하면 누를 곳을 매번 다시 찾습니다. */
+/* 줄 자체가 안으로 파인 홈이고, 고른 칸만 그 홈에서 솟아오릅니다.
+   칸 사이 실선을 없앴습니다 — 파인 트랙 안에서는 높이 차이가 이미
+   경계라 선이 하나 더 있으면 시끄럽습니다. */
+/* 창 안쪽 내용과 같은 폭을 씁니다(좌우 --s-4). 왼쪽에만 짧게 붙어
+   있으면 아래 카드·설정 줄과 왼쪽 끝만 맞고 오른쪽이 비어, 창 안에
+   덩어리가 둘로 보입니다. */
+.tabs {
+  display: flex; gap: 4px;
+  margin: var(--s-3) var(--s-4) 0; padding: 5px;
+  border-radius: var(--r-pill); background: var(--wash);
+  box-shadow: var(--sh-well);
+}
+.tabs button {
+  flex: 1 1 0; min-width: 0;
+  padding: 11px 22px; border-radius: var(--r-pill);
+  background: none; border: 0;
+  font-size: 14.5px; font-weight: 700; color: var(--ink-2);
+  cursor: pointer;
+  transition: background .18s var(--ease), color .18s var(--ease), box-shadow .18s var(--ease);
+}
+.tabs button:hover { color: var(--ink); background: rgba(255,255,255,.7); }
+.tabs button[aria-selected="true"] {
+  background: var(--teal); color: var(--ink); box-shadow: var(--sh-sm);
+}
+.tabs button[aria-selected="true"]:hover { background: var(--teal); }
+.tabs button:focus-visible { outline-offset: -3px; }
+
+.body { padding: var(--s-4) var(--s-4) var(--s-5); }
+.pane[hidden] { display: none; }
+
+/* ---------------- 공통 ---------------- */
+h2 {
+  margin: 0 0 var(--s-3);
+  font-size: 17px; font-weight: 800; letter-spacing: -0.02em;
+}
+
+section + section { margin-top: var(--s-5); }
+
+/* 줄을 선이 아니라 **판**이 가릅니다. 밑줄로 나누면 칸이 여덟이 넘는
+   순간 화면이 격자가 되고, 어디까지가 한 줄인지는 눈이 매번 다시
+   찾습니다. 월드 창과 같은 문법입니다. */
+.field {
+  display: grid; grid-template-columns: 148px minmax(0, 1fr) auto;
+  align-items: center; gap: var(--s-3);
+  padding: 11px 14px; margin-bottom: 7px;
+  border-radius: var(--cr-rw);
+  background: var(--clay2); box-shadow: var(--clayUp2);
+}
+.field .lb { color: var(--cInk3); font-size: 13px; font-weight: 800; }
+.field .val { font-weight: 700; overflow-wrap: anywhere; }
+.field .val small { display: block; font-weight: 500; font-size: 13px; color: var(--ink-3); }
+
+/* 입력칸은 솟은 것이 아니라 파인 것입니다 — 글자를 그 안에 넣는
+   자리니까요. 버튼과 같은 그림자를 주면 둘 다 눌러야 할 것으로 보입니다. */
+input[type="text"] {
+  width: 100%; padding: 12px 16px;
+  background: var(--wash); border: 0; border-radius: var(--r-sm);
+  font-weight: 600;
+  box-shadow: var(--sh-well);
+  transition: box-shadow .16s var(--ease), background .16s var(--ease);
+}
+input[type="text"]:focus {
+  outline: none; background: var(--paper);
+  box-shadow: var(--sh-well), 0 0 0 3px var(--teal-100);
+}
+
+/* 버튼 — 누르면 그림자 거리가 줄어 종이에 붙습니다. 요소가 내려간
+   만큼 그림자도 줄어 절대 위치가 그대로입니다. */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  padding: 11px 22px; border: 0; border-radius: var(--r-pill);
+  background: var(--paper); font-size: 14px; font-weight: 700; cursor: pointer;
+  box-shadow: var(--sh-sm);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease), background .16s var(--ease);
+}
+.btn:hover { background: var(--wash); transform: translateY(-2px); box-shadow: var(--sh-lift); }
+/* 점토는 밀리는 게 아니라 들어갑니다 — 위치는 거의 그대로 두고 빛과
+   그늘만 뒤집습니다. */
+.btn:active { transform: translateY(1px); box-shadow: var(--sh-press); }
+.btn.on { background: var(--teal); }
+.btn.on:hover { background: var(--teal); }
+.btn[disabled] { opacity: .46; cursor: not-allowed; box-shadow: var(--sh-well); transform: none; }
+/* 입력칸 옆에 붙는 작은 버튼입니다. 보이는 높이는 38px 로 두고 누르는
+   자리만 위아래로 넓힙니다 — 키우면 입력칸보다 커집니다. */
+.btn.sm { position: relative; padding: 8px 17px; font-size: 13px; }
+.btn.sm::after {
+  content: ""; position: absolute; inset: -3px 0; border-radius: inherit;
+}
+
+/* 저장 확인. 버튼 글자를 갈아 끼우면 누를 때마다 버튼 폭이 튑니다 —
+   눌린 것을 알려 주자고 레이아웃을 흔들 이유가 없습니다. */
+.said {
+  font-size: 13px; font-weight: 700; color: var(--teal-700);
+  opacity: 0; transition: opacity .16s var(--ease);
+}
+.said.on { opacity: 1; }
+
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 11px; border-radius: var(--r-pill);
+  font-size: 12.5px; font-weight: 700;
+  background: var(--teal-50); color: var(--teal-700); border: 1px solid var(--teal-100);
+}
+.pill.warn { background: var(--warn-50); color: var(--warn-700); border-color: #F5D9AE; }
+.pill i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* 안내 상자 — 읽으라고 있는 것이라 본문과 같은 크기로 둡니다. 12px 로
+   줄이면 "안 읽어도 되는 것" 이 되고, 이 화면에서는 그게 제일 읽혀야
+   하는 문단입니다. */
+.note {
+  padding: var(--s-3); border: 0; border-radius: var(--r);
+  background: var(--wash); box-shadow: var(--sh-well);
+}
+.note.teal { background: var(--teal-50); border-color: var(--teal-100); }
+.note h3 { margin: 0 0 var(--s-1); font-size: 14.5px; font-weight: 800; }
+.note p { margin: 0; font-size: 14.5px; line-height: 1.75; color: var(--ink-2); }
+.note p + p { margin-top: var(--s-2); }
+.note b { color: var(--ink); font-weight: 800; }
+
+.facts { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 10px; }
+.facts li { display: flex; gap: 10px; font-size: 14.5px; line-height: 1.7; color: var(--ink-2); }
+.facts li b { color: var(--ink); font-weight: 800; }
+.facts li::before {
+  content: ''; flex: none; width: 7px; height: 7px; margin-top: 9px;
+  background: var(--teal); border: 1.5px solid var(--ink);
+}
+
+/* ---------------- 세션 목록 ---------------- */
+.rows { border: 0; border-radius: var(--r); overflow: hidden; box-shadow: var(--sh-well); }
+.row {
+  display: grid; grid-template-columns: 132px 1fr auto auto auto;
+  align-items: center; gap: var(--s-3);
+  padding: 13px var(--s-3);
+  border-bottom: var(--edge-2);
+  background: var(--paper);
+}
+.row:last-child { border-bottom: 0; }
+.row:nth-child(even) { background: var(--wash); }
+.row .when { font-weight: 700; font-variant-numeric: tabular-nums; }
+.row .where { color: var(--ink-2); font-size: 14px; }
+.row .nums { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 14px; }
+.row .nums span { color: var(--ink-3); font-weight: 600; }
+
+/* 회고 결과 — 세션 행 바로 아래에 펼쳐집니다. 다른 곳으로 보내면
+   어느 세션의 회고인지 잃어버립니다. */
+.report {
+  grid-column: 1 / -1; margin-top: var(--s-2);
+  padding: var(--s-3); border: 0; border-radius: var(--r);
+  background: var(--teal-50); box-shadow: var(--sh-sm);
+}
+.report .head { font-size: 16px; font-weight: 800; line-height: 1.55; }
+.report .stats { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-2); }
+.report .stat {
+  padding: 8px 14px; background: var(--paper);
+  border: var(--edge-2); border-radius: var(--r-sm);
+}
+.report .stat b { display: block; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.report .stat span { font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+.report .obs { margin: var(--s-2) 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.report .obs li { font-size: 14.5px; line-height: 1.7; color: var(--ink-2); }
+
+/* 화면에는 안 보이지만 보조기술은 읽습니다. display:none 이면 안 읽힙니다. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+.msg { font-size: 14px; color: var(--ink-2); }
+.msg.bad { color: var(--warn-700); }
+
+/* ---- 학교 재인증 ----
+   온보딩으로 보내지 않습니다. 재인증 하나 때문에 알 고르기부터 카메라
+   기준까지 다시 걷게 하면, 바꾸려던 것은 주소 한 줄인데 화면 일곱 장을
+   지나야 합니다. 주소 → 번호 두 단계가 이 자리에서 끝납니다. */
+/* [hidden] 은 display:none 을 "쓰기" 로 넣습니다. 여기서 display:flex 를
+   선언하면 특정도가 같아 나중 규칙이 이깁니다 — 숨긴 줄이 안 숨습니다. */
+.vrow { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.vrow[hidden] { display: none; }
+.vstage { margin-top: var(--s-3); display: grid; gap: 10px; }
+.vstage[hidden] { display: none; }
+.vstage .vlb { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+/* 번호는 읽는 것이 아니라 대조하는 것입니다. 자간을 벌리고 고정폭
+   숫자를 써서 여섯 자리가 눈에 한 번에 들어오게 합니다. */
+/* 자릿수에 맞춰 자릅니다. 칸 너비는 들어갈 내용이 정합니다 — 판을
+   가로지르면 입력할 양을 잘못 알려 줍니다. 232px 는 여섯 자리에 맞춰
+   잰 값이고, --otp-n 은 JS 가 SchoolAuth.OTP_LEN 으로 채웁니다. */
+.vstage input.otp {
+  width: calc(232px * var(--otp-n, 6) / 6);
+  font-variant-numeric: tabular-nums; letter-spacing: .38em;
+  font-size: 21px; font-weight: 800; text-align: center; padding-left: .38em;
+}
+.vstage input#v-email { max-width: 420px; }
+.vstage .msg[hidden] { display: none; }
+/* 들어올 때만 22ms 대 짧은 감속. 나갈 때는 즉시 사라집니다 — 없애는
+   것을 기다리게 할 이유가 없습니다. */
+@media (prefers-reduced-motion: no-preference) {
+  .vstage { animation: vstage-in .22s cubic-bezier(.16, 1, .3, 1) both; }
+}
+@keyframes vstage-in { from { opacity: 0; transform: translateY(-6px); } }
+
+.empty {
+  padding: var(--s-5) var(--s-3); text-align: center;
+  border: 1.5px dashed var(--line); border-radius: var(--r);
+  color: var(--ink-2);
+}
+.empty b { display: block; color: var(--ink); font-size: 15.5px; font-weight: 800; margin-bottom: 6px; }
+
+/* 데이터가 예시일 때 숨기지 않고 말합니다 — 예시를 자기 기록으로
+   읽으면 그 다음 판단이 전부 어긋납니다. */
+.demo-flag { margin-bottom: var(--s-3); }
+
+/* ==================================================================
+   DESKFIT CAMPUS CARD
+
+   학교가 발급한 학생증이 **아닙니다.** 학교 메일 인증을 마친 사람의
+   소속과 활동을 보여 주는 Deskfit 안의 프로필 카드입니다. 그래서
+   교표를 쓰지 않고 학교명은 글자로만 적으며, 기능이 없는 바코드와
+   QR 은 넣지 않았습니다 — 장식으로 넣는 순간 진짜 출입증으로
+   오인됩니다.
+
+   비율 1.58:1 은 실제 카드의 비율입니다. 손에 쥐던 물건의 비율을
+   그대로 쓰면 설명 없이도 "카드" 로 읽힙니다.
+   ================================================================== */
+.cc {
+  width: 560px; max-width: 100%; aspect-ratio: 560 / 354;
+  /* 뒤집을 때만 쓰는 원근입니다. 값이 작으면 카드가 렌즈처럼 휘어
+     장난감이 됩니다 — 1500 은 거의 평행에 가깝게 돕니다. */
+  perspective: 1500px;
+  cursor: pointer;
+}
+.cc-inner {
+  position: relative; width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform .4s cubic-bezier(.2, 0, 0, 1);
+}
+.cc[data-face="back"] .cc-inner { transform: rotateY(180deg); }
+.cc-face {
+  position: absolute; inset: 0;
+  padding: 30px; border-radius: var(--r-card);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: linear-gradient(180deg, var(--card-hi) 0%, var(--card-lo) 100%);
+  box-shadow: var(--sh);
+  overflow: hidden;
+}
+.cc-back { transform: rotateY(180deg); }
+
+/* 앞면 — 왼쪽 62% 가 글자, 오른쪽이 캐릭터 자리입니다. 둘이 겹치면
+   이름을 읽는 데 캐릭터가 방해가 됩니다. */
+.cc-front {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 178px;
+  grid-template-rows: auto 1fr auto;
+  column-gap: 10px;
+}
+.cc-head { grid-column: 1 / -1; display: flex; align-items: flex-start; justify-content: space-between; }
+.cc-logo {
+  font-size: 15px; font-weight: 800; letter-spacing: 0.04em;
+  color: var(--teal-700);
+}
+.cc-kind {
+  text-align: right; font-size: 10.5px; font-weight: 600;
+  letter-spacing: 0.13em; color: var(--ink-3); line-height: 1.5;
+}
+.cc-kind b { display: block; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.cc-id { grid-column: 1; grid-row: 2; align-self: center; min-width: 0; }
+/* 이름이 가장 큽니다. 카드를 확인용으로 쓸 때 눈이 먼저 닿아야 하는
+   것이 이름이라, 위계를 크기 하나로 분명히 냅니다. */
+.cc-name {
+  margin: 0; font-size: 30px; font-weight: 800; letter-spacing: -0.03em;
+  line-height: 1.15;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cc-name-en {
+  margin: 2px 0 0; font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.10em; color: var(--ink-3); text-transform: uppercase;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cc-org { margin: 14px 0 0; display: grid; gap: 1px; }
+.cc-org .sch { font-size: 15.5px; font-weight: 600; letter-spacing: -0.015em; }
+/* 학과명은 길어집니다 — "디지털콘텐츠디자인학과" 가 11자입니다.
+   폭을 고정하지 않고 두 줄까지 접히게 둡니다. */
+.cc-org .dep { font-size: 13px; font-weight: 500; color: var(--ink-2); line-height: 1.45; }
+.cc-aux {
+  margin: 9px 0 0; display: flex; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 12px; font-weight: 500; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.cc-hidden { color: var(--ink-3); font-weight: 500; font-style: normal; opacity: .82; }
+
+.cc-foot {
+  grid-column: 1; grid-row: 3;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+}
+/* 왼쪽 글이 버튼을 밀어내지 않게. 버튼은 줄바꿈이 없고(글자 다섯 자),
+   줄어드는 쪽은 설명입니다. */
+.cc-foot > div { min-width: 0; flex: 1; }
+.cc-foot .cc-verify { flex: none; }
+/* 상태는 색만으로 말하지 않습니다 — 아이콘과 글자를 늘 같이 답니다. */
+.cc-state { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+.cc-state svg { flex: none; }
+.cc-sub { margin: 3px 0 0; font-size: 11px; font-weight: 500; color: var(--ink-3); }
+/* 카드 안 인증 버튼. 미인증이면 눌러 달라고 하고(청록), 인증했으면
+   조용히 있습니다(선만) — 끝난 일에 대고 다시 하라고 조르지 않습니다. */
+.cc-verify {
+  align-self: flex-end;
+  padding: 7px 14px; border: 0; border-radius: 999px;
+  background: var(--teal); color: #06312B;
+  font-size: 12.5px; font-weight: 800; white-space: nowrap;
+  box-shadow: 0 3px 0 var(--teal-700), 0 6px 14px rgba(16,74,66,.22);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.cc-verify:hover { transform: translateY(-2px); box-shadow: 0 3px 0 var(--teal-700), 0 10px 20px rgba(16,74,66,.26); }
+.cc-verify:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--teal-700); }
+.cc-verify.quiet {
+  background: rgba(255,255,255,.72); color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* 사진 바꾸기 — 캐릭터/사진 위 오른쪽 아래 모서리 */
+.cc-char { position: relative; }
+.cc-char .cc-photo {
+  position: absolute; right: 2px; bottom: 6px;
+  width: 30px; height: 30px; display: grid; place-items: center;
+  border: 0; border-radius: 50%;
+  background: rgba(255,255,255,.94); color: var(--ink-2);
+  box-shadow: 0 2px 6px rgba(16,74,66,.24);
+}
+.cc-char .cc-photo:hover { color: var(--ink); transform: translateY(-1px); }
+/* 사진은 정사각으로 잘라 두었으므로 동그랗게 담습니다 — 캐릭터는
+   배경이 비어 있어 그대로 둡니다. */
+.cc-char img.is-photo {
+  width: 96px; height: 96px; object-fit: cover; border-radius: 50%;
+  box-shadow: 0 4px 12px rgba(16,74,66,.22);
+}
+
+.cc-when {
+  margin: 0; flex: none; font-size: 11.5px; font-weight: 600; color: var(--ink-3);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.cc[data-state="verified"] .cc-state { color: var(--teal-700); }
+.cc[data-state="expiring"] .cc-state { color: var(--warn-700); }
+.cc[data-state="failed"]   .cc-state { color: var(--bad-700); }
+.cc[data-state="none"]     .cc-state,
+.cc[data-state="checking"] .cc-state { color: var(--ink-2); }
+
+/* 캐릭터 — 신분증 사진 칸이 아닙니다. 카드 표면 위에 점토 인형이
+   놓여 있는 것처럼 보여야 해서, 테두리 대신 바닥 그림자와 옅은
+   받침으로 깊이를 냅니다. */
+.cc-char {
+  grid-column: 2; grid-row: 2 / 4; align-self: end; justify-self: center;
+  position: relative; width: 178px; height: 100%;
+  display: flex; align-items: flex-end; justify-content: center;
+  margin-bottom: 0;
+}
+.cc-char img {
+  position: relative; z-index: 1;
+  width: 156px; height: auto; display: block;
+  filter: drop-shadow(0 12px 14px rgba(13, 60, 52, .20));
+}
+.cc-char .pad {
+  position: absolute; left: 50%; bottom: 12px;
+  width: 146px; height: 38px; transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(45, 212, 191, .22), rgba(45, 212, 191, 0));
+}
+
+/* 뒷면 — 신원이 아니라 활동만 놓습니다. 항목마다 판을 깔면 카드 안에
+   작은 카드가 여섯 개 생겨서 무거워집니다. 글자와 여백만 씁니다. */
+.cc-back { display: flex; flex-direction: column; }
+.cc-back-h {
+  margin: 0; font-size: 11px; font-weight: 700; letter-spacing: 0.14em;
+  color: var(--teal-700);
+}
+.cc-rec {
+  flex: 1; margin: 20px 0 0;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 14px; align-content: center;
+}
+.cc-rec dt { font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
+.cc-rec dd {
+  margin: 2px 0 0; font-size: 21px; font-weight: 700; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cc-rec dd small { font-size: 13px; font-weight: 600; margin-left: 1px; }
+/* 동아리·캐릭터는 숫자가 아닙니다. 21px/700 로 두면 통계와 같은 무게가
+   되어 여섯 칸이 전부 표제처럼 읽힙니다. */
+.cc-rec dd.txt { font-size: 16px; letter-spacing: -0.02em; }
+.cc-back-note { margin: 0; font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
+
+/* 카드 아래 한 줄 — 뒤집기 버튼과 상태 안내 */
+.cc-bar { margin-top: var(--s-3); display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.cc-note { margin: var(--s-2) 0 0; font-size: 12.5px; font-weight: 500; color: var(--ink-3); }
+
+/* 불러오는 중 — 원형 스피너 대신 카드 모양 그대로의 뼈대를 씁니다.
+   자리를 미리 잡아 두면 내용이 들어올 때 화면이 안 튑니다. */
+.cc[data-load="1"] .cc-face { background: var(--wash); box-shadow: var(--sh-well); }
+.cc[data-load="1"] .cc-front > * { visibility: hidden; }
+.cc-skeleton { position: absolute; inset: 30px; display: none; }
+.cc[data-load="1"] .cc-skeleton { display: grid; align-content: center; gap: 12px; }
+.cc-skeleton i {
+  display: block; height: 14px; border-radius: 7px;
+  background: linear-gradient(90deg, #E7EDEB 0%, #F2F6F5 40%, #E7EDEB 80%);
+  background-size: 260% 100%;
+  animation: cc-sheen 1.25s linear infinite;
+}
+.cc-skeleton i:nth-child(1) { width: 46%; height: 30px; }
+.cc-skeleton i:nth-child(2) { width: 32%; }
+.cc-skeleton i:nth-child(3) { width: 58%; }
+@keyframes cc-sheen { to { background-position: -160% 0; } }
+
+/* ---------------- 오른쪽 요약 ---------------- */
+.info-top {
+  display: grid; grid-template-columns: 560px minmax(0, 1fr);
+  gap: 32px; align-items: start;
+}
+/* 카드 비율은 화면이 좁아져도 유지합니다. 한 열로 접을 뿐입니다. */
+@media (max-width: 1080px) {
+  .info-top { grid-template-columns: minmax(0, 1fr); }
+}
+
+.today {
+  padding: var(--s-3) var(--s-3) var(--s-4);
+  border-radius: var(--r); background: var(--paper);
+  box-shadow: var(--sh);
+}
+.today h3 { margin: 0 0 var(--s-3); font-size: 14.5px; font-weight: 800; letter-spacing: -0.02em; }
+.today dl {
+  margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 10px;
+}
+.today dt { font-size: 12px; font-weight: 500; color: var(--ink-3); }
+.today dd {
+  margin: 2px 0 0; font-size: 23px; font-weight: 700; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.today dd small { font-size: 13px; font-weight: 600; margin-left: 1px; }
+/* 이 화면에서 청록으로 채우는 것은 이 버튼 하나입니다. */
+.today .go {
+  display: block; width: 100%; margin-top: var(--s-4);
+  padding: 15px 20px; border: 0; border-radius: 14px;
+  background: var(--teal); color: var(--ink);
+  font-size: 15px; font-weight: 700; letter-spacing: -0.015em;
+  text-align: center; text-decoration: none; cursor: pointer;
+  box-shadow: var(--sh-sm);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.today .go:hover { transform: translateY(-2px); box-shadow: var(--sh-lift); }
+.today .go:active { transform: translateY(1px); box-shadow: var(--sh-press); }
+
+/* ---------------- 공개 설정 ---------------- */
+/* 행마다 둥근 판을 깔지 않습니다. 얇은 선과 글자면 충분하고, 여섯 개가
+   전부 부풀면 카드가 주인공인 화면에서 무게가 아래로 쏠립니다. */
+.setrow {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-3);
+  padding: 13px 0; border-bottom: var(--edge-2);
+}
+.setrow:last-child { border-bottom: 0; }
+.setrow .k { font-size: 14.5px; font-weight: 600; }
+.setrow select {
+  min-height: 40px; padding: 9px 14px; border: 0; border-radius: var(--r-sm);
+  background: var(--wash); font-size: 14px; font-weight: 600;
+  box-shadow: var(--sh-well); cursor: pointer;
+}
+/* 스위치 — 켠 상태를 라벨이 말합니다("학교명 공개"). 끈 상태를 라벨로
+   쓰면 이중부정이 되어 무엇이 켜진 것인지 헷갈립니다. */
+.sw { position: relative; flex: none; width: 52px; height: 30px; }
+/* 보이는 스위치는 30px 이지만 누르는 자리는 위아래로 넓힙니다. */
+.sw::after {
+  content: ""; position: absolute; inset: -5px 0; pointer-events: none;
+}
+.sw input { touch-action: manipulation; }
+.sw input {
+  position: absolute; inset: -5px 0; width: 100%; height: 40px;
+  margin: 0; opacity: 0; cursor: pointer;
+}
+.sw .track {
+  display: block; width: 100%; height: 100%; border-radius: var(--r-pill);
+  background: var(--wash); box-shadow: var(--sh-well);
+  transition: background .18s var(--ease);
+  pointer-events: none;
+}
+.sw .knob {
+  position: absolute; top: 4px; left: 4px; width: 22px; height: 22px;
+  border-radius: 50%; background: var(--paper); box-shadow: var(--sh-sm);
+  transition: transform .18s var(--ease);
+  pointer-events: none;
+}
+.sw input:checked ~ .track { background: var(--teal); }
+.sw input:checked ~ .knob { transform: translateX(22px); }
+.sw input:focus-visible ~ .track { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-inner { transition: none; }
+  .cc-skeleton i { animation: none; }
+}
+
+/* ==================================================================
+   오늘의 집중 장면 — 세션 카드
+
+   미리보기와 저장 결과가 **같은 그림** 이어야 합니다. 그래서 화면에
+   보이는 것도 canvas 이고, 저장하는 것도 그 canvas 입니다. HTML 을
+   그려서 이미지로 바꾸는 방법을 쓰면 서체·그림자·자간이 미묘하게
+   달라져서 "본 것과 다른 것" 이 저장됩니다.
+
+   canvas 는 화면 폭에 맞춰 줄여 보여 주고, 저장할 때는 1080 폭
+   원본을 그대로 내보냅니다.
+   ================================================================== */
+.sheet {
+  position: fixed; inset: 0; z-index: 70;
+  display: grid; place-items: center;
+  padding: var(--s-3);
+  background: rgba(23, 32, 30, .40);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.sheet[hidden] { display: none; }
+
+.sheet-box {
+  width: min(980px, 100%); max-height: calc(100dvh - 44px);
+  display: grid; grid-template-columns: minmax(0, auto) minmax(300px, 1fr);
+  background: var(--paper);
+  border-radius: 26px; overflow: hidden;
+  box-shadow: var(--sh), 0 34px 70px -22px rgba(23,32,30,.36);
+}
+@media (max-width: 860px) {
+  .sheet-box { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- 왼쪽: 미리보기 ---- */
+/* 카드가 주인공이라 바탕을 한 단 눕혀 카드만 떠 보이게 합니다. */
+.sheet-view {
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  background: var(--wash);
+  display: flex; flex-direction: column; align-items: center; gap: var(--s-2);
+  box-shadow: inset -1px 0 0 var(--line);
+}
+#card-canvas {
+  display: block; border-radius: 18px;
+  /* 얕고 부드러운 그림자 한 단만. 저장 그림에는 안 들어갑니다. */
+  box-shadow: 0 14px 34px -10px rgba(23,32,30,.26), 0 2px 6px rgba(23,32,30,.10);
+  background: var(--paper);
+}
+.sheet-view .cap {
+  font-size: 12.5px; font-weight: 600; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- 오른쪽: 설정 ---- */
+.sheet-side {
+  padding: var(--s-3) var(--s-3) var(--s-4);
+  overflow-y: auto; display: flex; flex-direction: column;
+}
+.sheet-head { display: flex; align-items: flex-start; gap: var(--s-2); }
+.sheet-head h2 { margin: 0; font-size: 19px; font-weight: 800; letter-spacing: -0.025em; }
+.sheet-head p { margin: 4px 0 0; font-size: 13.5px; font-weight: 500; color: var(--ink-2); }
+.sheet-head .x {
+  position: relative; margin-left: auto; flex: none;
+  width: 30px; height: 30px; display: grid; place-items: center;
+  background: var(--paper); border: 0; border-radius: 50%;
+  cursor: pointer; box-shadow: var(--sh-sm);
+  transition: background .14s var(--ease), transform .14s var(--ease), box-shadow .14s var(--ease);
+}
+.sheet-head .x::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: 40px; height: 40px; transform: translate(-50%, -50%);
+}
+.sheet-head .x:hover { background: var(--teal-50); transform: translateY(-1px); }
+.sheet-head .x:active { transform: translateY(1px); box-shadow: var(--sh-press); }
+
+.sheet-side h3 {
+  margin: var(--s-3) 0 10px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: 0.06em; color: var(--ink-3);
+}
+
+/* 스타일 셋 — 같은 배치 안에서 표현만 바뀝니다. 서로 다른 테마 셋이
+   아니라, 무엇을 장면으로 삼을지의 차이입니다. */
+.styles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.styles button {
+  position: relative; padding: 0; border: 0; cursor: pointer;
+  border-radius: 14px; overflow: hidden; background: var(--wash);
+  aspect-ratio: 3 / 4;
+  box-shadow: inset 0 0 0 2px var(--line);
+  transition: box-shadow .16s var(--ease), transform .16s var(--ease);
+}
+.styles button:hover { transform: translateY(-2px); }
+.styles button canvas { width: 100%; height: 100%; display: block; }
+/* 색만으로 고른 것을 말하지 않습니다 — 테두리가 굵어지고 체크가 붙습니다. */
+.styles button[aria-pressed="true"] { box-shadow: inset 0 0 0 3px var(--teal), var(--sh-sm); }
+.styles .tick {
+  position: absolute; top: 6px; right: 6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--teal); color: var(--ink);
+  display: none; place-items: center;
+}
+.styles button[aria-pressed="true"] .tick { display: grid; }
+.styles .nm {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 5px 4px; font-size: 11.5px; font-weight: 700;
+  background: rgba(255,255,255,.92); color: var(--ink);
+}
+
+/* 비율 — 두 가지뿐입니다. */
+.ratios { display: flex; gap: 8px; }
+.ratios button {
+  flex: 1 1 0; min-height: 44px; padding: 0 10px;
+  border: 0; border-radius: var(--r-sm); cursor: pointer;
+  background: var(--wash); color: var(--ink-2);
+  font-size: 13.5px; font-weight: 700;
+  box-shadow: var(--sh-well);
+  transition: background .16s var(--ease), color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.ratios button[aria-pressed="true"] {
+  background: var(--teal); color: var(--ink); box-shadow: var(--sh-sm);
+}
+
+/* 표시할 정보 — 얇은 줄 목록. 행마다 판을 깔지 않습니다. */
+.show-list { margin: 0; padding: 0; list-style: none; }
+.show-list li {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s-2);
+  padding: 9px 0; border-bottom: var(--edge-2);
+}
+.show-list li:last-child { border-bottom: 0; }
+.show-list .k { font-size: 14px; font-weight: 600; }
+.show-list .k small { display: block; font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
+
+/* 행동 — 데스크톱에서는 이미지 저장이 주 행동입니다. 여기서 인스타그램을
+   직접 열 수 없으므로 "바로 공유" 라고 말하지 않습니다. */
+.sheet-acts { margin-top: auto; padding-top: var(--s-3); display: grid; gap: 9px; }
+.act-main {
+  padding: 16px 20px; border: 0; border-radius: 14px;
+  background: var(--teal); color: var(--ink);
+  font-size: 15.5px; font-weight: 800; letter-spacing: -0.015em; cursor: pointer;
+  box-shadow: var(--sh);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.act-main:hover { transform: translateY(-2px); box-shadow: var(--sh-lift); }
+.act-main:active { transform: translateY(1px); box-shadow: var(--sh-press); }
+.act-main[disabled] { opacity: .5; cursor: progress; transform: none; box-shadow: var(--sh-well); }
+.act-sub {
+  padding: 13px 20px; border: 0; border-radius: 14px;
+  background: var(--paper); color: var(--ink);
+  font-size: 14.5px; font-weight: 700; cursor: pointer;
+  box-shadow: var(--sh-sm);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease), background .16s var(--ease);
+}
+.act-sub:hover { background: var(--wash); transform: translateY(-2px); box-shadow: var(--sh-lift); }
+.act-sub:active { transform: translateY(1px); box-shadow: var(--sh-press); }
+.act-text {
+  border: 0; background: none; cursor: pointer; padding: 8px;
+  font-size: 13.5px; font-weight: 600; color: var(--ink-3);
+  transition: color .16s var(--ease);
+}
+.act-text:hover { color: var(--ink-2); }
+
+/* 상태 한 줄 — 만드는 중·저장함·실패를 같은 자리에서 말합니다. */
+.act-say { min-height: 20px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.act-say.bad { color: var(--bad-700); }
+.act-say.ok { color: var(--teal-700); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet-box { animation: sheet-in .26s cubic-bezier(.16, 1, .3, 1) both; }
+}
+@keyframes sheet-in { from { opacity: 0; transform: translateY(12px) scale(.99); } }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: .001ms !important; animation-duration: .001ms !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="win">
+
+  <header class="titlebar">
+    <h1>마이페이지</h1>
+    <span class="sub">내 정보 · 자세 기준 · AI 회고</span>
+    <button class="x" type="button" aria-label="로비로 돌아가기">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+  </header>
+
+  <!-- 탭 줄과 판을 통째로 본문 지표에 넣습니다. 밖에 두면 보조기술이
+       "본문으로 건너뛰기" 를 걸 자리를 못 찾습니다. -->
+  <main>
+  <div class="tabs" role="tablist" aria-label="마이페이지">
+    <button role="tab" id="t-info" aria-controls="p-info" aria-selected="true"  type="button">내 정보</button>
+    <button role="tab" id="t-base" aria-controls="p-base" aria-selected="false" type="button">자세 기준</button>
+    <button role="tab" id="t-ai"   aria-controls="p-ai"   aria-selected="false" type="button">AI 세션 회고</button>
+  </div>
+
+  <div class="body">
+
+    <!-- ============ 내 정보 ============ -->
+    <div class="pane" id="p-info" role="tabpanel" aria-labelledby="t-info" tabindex="-1">
+      <!-- ============ DESKFIT CAMPUS CARD ============
+           공식 학생증이 아닙니다. 학교 메일 인증을 마친 사람의 소속과
+           활동을 보여 주는 Deskfit 안의 프로필 카드입니다. 그래서
+           교표를 쓰지 않고 학교명은 글자로만 적으며, 기능 없는 바코드와
+           QR 은 넣지 않았습니다. -->
+      <section class="info-top" aria-labelledby="cc-h">
+        <div>
+          <h2 id="cc-h" class="sr-only">DESKFIT CAMPUS CARD</h2>
+
+          <div class="cc" id="cc" data-face="front" data-state="none">
+            <div class="cc-inner">
+
+              <!-- 앞면 · 신원 -->
+              <div class="cc-face cc-front" id="cc-front">
+                <div class="cc-head">
+                  <span class="cc-logo">DESKFIT</span>
+                  <span class="cc-kind">CAMPUS CARD<b>2026</b></span>
+                </div>
+
+                <div class="cc-id">
+                  <p class="cc-name" id="cc-name">이름을 적어 주세요</p>
+                  <p class="cc-name-en" id="cc-name-en"></p>
+                  <p class="cc-org">
+                    <span class="sch" id="cc-school">학교 미인증</span>
+                    <span class="dep" id="cc-dept"></span>
+                  </p>
+                  <p class="cc-aux">
+                    <span id="cc-year"></span>
+                    <span id="cc-sid"></span>
+                  </p>
+                </div>
+
+                <div class="cc-foot">
+                  <div>
+                    <p class="cc-state" id="cc-state"></p>
+                    <p class="cc-sub" id="cc-sub"></p>
+                  </div>
+                  <!-- 인증을 카드 안으로. 아래 별도 구역에 있을 때는 카드가
+                       "학교 미인증" 이라고 말해 놓고 고칠 곳은 한 화면 밑에
+                       있었습니다. 말한 자리에서 고칠 수 있어야 합니다. -->
+                  <button class="cc-verify" type="button" id="cc-verify"></button>
+                </div>
+
+                <!-- 프로필 사진을 올리면 캐릭터 대신 사진이 앉습니다.
+                     안 올린 사람이 빈 칸을 보는 일은 없습니다 — 캐릭터가
+                     기본이고, 사진은 그 위에 덮습니다. -->
+                <div class="cc-char">
+                  <span class="pad" aria-hidden="true"></span>
+                  <img id="cc-face-img" src="assets/char-turtle.png" alt="내 캐릭터">
+                  <button class="cc-photo" type="button" id="cc-photo" aria-label="프로필 사진 바꾸기">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4z"/>
+                      <circle cx="12" cy="13" r="3.2"/>
+                    </svg>
+                  </button>
+                  <input type="file" id="cc-file" accept="image/*" hidden>
+                </div>
+
+                <div class="cc-skeleton" aria-hidden="true"><i></i><i></i><i></i></div>
+              </div>
+
+              <!-- 뒷면 · 활동 -->
+              <div class="cc-face cc-back" id="cc-back" aria-hidden="true">
+                <p class="cc-back-h">MY DESKFIT RECORD</p>
+                <dl class="cc-rec" id="cc-rec"></dl>
+                <p class="cc-back-note">함께 집중한 시간이 나의 캠퍼스 기록이 됩니다.</p>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- 뒤집기 버튼과 그 아래 두 줄을 뺐습니다. 카드 옆에 회고 카드가
+               생기면서 "활동 기록" 이 두 군데가 됐고, 공개 설정 설명은 그
+               설정 바로 위에 있을 때만 읽힙니다. -->
+        </div>
+
+        <!-- 시즌 회고. 학생증과 같은 크기라 둘이 한 쌍으로 읽힙니다 —
+             왼쪽은 내가 누구인지, 오른쪽은 내가 뭘 했는지.
+
+             순서는 사람이 확인하는 차례입니다. 오늘 얼마나 앉았나가 먼저고,
+             그것을 설명하는 두 개(몇 번 · 자세)가 따라옵니다. 그다음이
+             오래 이어 온 것(연속·코인)이고, 시즌은 맨 뒤입니다 — 90일짜리
+             단위라 매일 볼 이유가 가장 적습니다. -->
+        <div class="today season" aria-labelledby="sr-h">
+          <h3 id="sr-h">시즌 회고</h3>
+          <dl class="sr-grid">
+            <div><dt>오늘 집중</dt><dd id="td-min">0<small>분</small></dd></div>
+            <div><dt>진행한 세션</dt><dd id="td-ses">0<small>회</small></dd></div>
+            <div><dt>자세 회복</dt><dd id="td-rec">0<small>회</small></dd></div>
+            <div><dt>연속 출석</dt><dd id="td-streak">1<small>일</small></dd></div>
+            <div><dt>가진 코인</dt><dd id="td-coin">0</dd></div>
+            <div><dt>시즌</dt><dd id="td-season">1<small>일째</small></dd></div>
+          </dl>
+          <a class="go" href="../lobby/index.html">집중 세션 시작</a>
+        </div>
+      </section>
+
+      <section>
+        <h2>내 정보</h2>
+
+        <div class="field">
+          <span class="lb">이름</span>
+          <input type="text" id="f-name" autocomplete="name" placeholder="이름을 적어 주세요">
+          <span style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
+            <span class="said" id="said-name" role="status"></span>
+            <button class="btn sm" type="button" data-save="name">저장</button>
+          </span>
+        </div>
+
+        <div class="field">
+          <span class="lb">닉네임</span>
+          <input type="text" id="f-nick" maxlength="12" placeholder="캠퍼스에서 보일 이름">
+          <span style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
+            <span class="said" id="said-nickname" role="status"></span>
+            <button class="btn sm" type="button" data-save="nickname">저장</button>
+          </span>
+        </div>
+
+        <!-- 카드가 이 세 칸을 그대로 읽습니다. 비어 있으면 카드에서 그
+             줄이 빠질 뿐 흉내 값을 채워 넣지 않습니다 — 남의 이름이
+             자기 카드에 실리면 그게 자기 정보인 줄 압니다. -->
+        <div class="field">
+          <label class="lb" for="f-dept">학과</label>
+          <input type="text" id="f-dept" placeholder="디지털콘텐츠디자인학과" autocomplete="off">
+          <span style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
+            <span class="said" id="said-dept" role="status"></span>
+            <button class="btn sm" type="button" data-save="dept">저장</button>
+          </span>
+        </div>
+
+        <div class="field">
+          <label class="lb" for="f-year">입학 연도</label>
+          <input type="text" id="f-year" placeholder="23" inputmode="numeric" maxlength="4" autocomplete="off">
+          <span style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
+            <span class="said" id="said-entryYear" role="status"></span>
+            <button class="btn sm" type="button" data-save="entryYear">저장</button>
+          </span>
+        </div>
+
+        <div class="field">
+          <label class="lb" for="f-sid">학번</label>
+          <input type="text" id="f-sid" placeholder="60221008" inputmode="numeric" autocomplete="off">
+          <span style="display:flex;align-items:center;gap:10px;justify-content:flex-end">
+            <span class="said" id="said-studentNo" role="status"></span>
+            <button class="btn sm" type="button" data-save="studentNo">저장</button>
+          </span>
+        </div>
+
+        <div class="field">
+          <span class="lb">대학교</span>
+          <span class="val" id="f-school"></span>
+          <span id="f-verified"></span>
+        </div>
+      </section>
+
+      <section>
+        <h2>학교 인증</h2>
+        <div class="note">
+          <p id="f-authmsg"></p>
+
+          <div class="vrow" style="margin-top:14px" id="v-open-row">
+            <button class="btn on" type="button" id="b-verify">학교 인증하기</button>
+            <span class="said" id="said-school" role="status"></span>
+          </div>
+
+          <!-- 1단계: 주소 -->
+          <div class="vstage" id="v-mail" hidden>
+            <label class="vlb" for="v-email">학교 이메일</label>
+            <input type="text" id="v-email" placeholder="you@mju.ac.kr"
+                   inputmode="email" autocomplete="email" spellcheck="false"
+                   aria-describedby="v-mail-err">
+            <p class="msg bad" id="v-mail-err" role="alert" hidden></p>
+            <div class="vrow">
+              <button class="btn on" type="button" id="v-send" disabled>인증 메일 받기</button>
+              <button class="btn" type="button" id="v-cancel">그만두기</button>
+            </div>
+          </div>
+
+          <!-- 2단계: 번호 -->
+          <div class="vstage" id="v-code" hidden>
+            <p class="msg" id="v-code-msg" role="status"></p>
+            <!-- 자릿수는 shared/school-auth.js 가 정합니다. -->
+            <label class="vlb" for="v-otp">메일로 받은 <span id="v-otp-len">8자리</span></label>
+            <input type="text" class="otp" id="v-otp"
+                   inputmode="numeric" autocomplete="one-time-code"
+                   aria-describedby="v-code-err">
+            <p class="msg bad" id="v-code-err" role="alert" hidden></p>
+            <div class="vrow">
+              <button class="btn on" type="button" id="v-verify" disabled>인증하기</button>
+              <button class="btn" type="button" id="v-resend">메일 다시 받기</button>
+              <button class="btn" type="button" id="v-back">주소 다시 입력</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 공개 설정 ============
+           카드에 무엇이 실릴지를 여기서 정합니다. 설정과 카드가 따로
+           놀면 무엇을 끈 것인지 확인할 방법이 없어서, 끄는 즉시 위
+           카드에서 그 줄이 사라집니다. -->
+      <section aria-labelledby="pv-h">
+        <h2 id="pv-h">공개 설정</h2>
+
+        <div class="setrow">
+          <label class="k" for="pv-scope">프로필 공개 범위</label>
+          <select id="pv-scope">
+            <option value="all">전체 공개</option>
+            <option value="school">같은 학교 사람만</option>
+            <option value="none">비공개</option>
+          </select>
+        </div>
+
+        <div class="setrow">
+          <span class="k" id="pv-school-l">학교명 공개</span>
+          <span class="sw">
+            <input type="checkbox" id="pv-school" role="switch" aria-labelledby="pv-school-l">
+            <span class="track"></span><span class="knob"></span>
+          </span>
+        </div>
+
+        <div class="setrow">
+          <span class="k" id="pv-dept-l">학과 공개</span>
+          <span class="sw">
+            <input type="checkbox" id="pv-dept" role="switch" aria-labelledby="pv-dept-l">
+            <span class="track"></span><span class="knob"></span>
+          </span>
+        </div>
+
+        <div class="setrow">
+          <span class="k" id="pv-rec-l">활동 기록 공개</span>
+          <span class="sw">
+            <input type="checkbox" id="pv-rec" role="switch" aria-labelledby="pv-rec-l">
+            <span class="track"></span><span class="knob"></span>
+          </span>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ 자세 기준 ============ -->
+    <div class="pane" id="p-base" role="tabpanel" aria-labelledby="t-base" tabindex="-1" hidden>
+      <section>
+        <h2>지금 기준</h2>
+
+        <div class="field">
+          <span class="lb">잡은 때</span>
+          <span class="val" id="b-when"></span>
+          <span id="b-state"></span>
+        </div>
+        <div class="field">
+          <span class="lb">민감도</span>
+          <span class="val" id="b-sens"><small>높일수록 조금만 달라져도 알려 줘요</small></span>
+          <span></span>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:var(--s-3);flex-wrap:wrap">
+          <button class="btn on" type="button" id="b-recal">기준 다시 잡기</button>
+          <button class="btn" type="button" id="b-clear">기준 지우기</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>카메라로 무엇을 하나</h2>
+        <div class="note teal">
+          <p><b>영상은 기기 밖으로 안 나갑니다.</b> 카메라 화면도, 캡처한 프레임도,
+             몸에서 읽은 좌표도 어떤 서버로도 보내지 않아요. 분석은 브라우저 안에서
+             시작하고 브라우저 안에서 끝납니다.</p>
+          <ul class="facts">
+            <li><b>브라우저에서 돕니다.</b> 자세를 보는 모델이 이 페이지 안에서 실행돼요. 서버에 올려서 계산하지 않습니다.</li>
+            <li><b>남는 것은 숫자 몇 개입니다.</b> 앉은 시간, 회복 횟수, 세션 시각. 이 기기의 저장소에만 쌓여요.</li>
+            <li><b>기준도 기기에 있습니다.</b> 10초 동안 잰 값은 이 브라우저에만 남고, 지우면 사라집니다.</li>
+            <li><b>끄면 시간만 셉니다.</b> 카메라를 안 켜도 세션은 되고, 그때는 앉은 시간만 기록돼요.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>무엇을 말하지 않나</h2>
+        <div class="note">
+          <p>Deskfit 은 <b>의료 기기가 아니고 진단을 하지 않습니다.</b> 통증이나 질환의
+             위험을 말하지 않고, 자세에 점수나 등급을 매기지도 않아요.</p>
+          <p>보여 주는 것은 <b>기준과 달라진 시간</b>과 <b>돌아온 횟수</b>뿐입니다.
+             몸이 불편하면 화면이 아니라 의료진에게 물어보세요.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ AI 세션 회고 ============ -->
+    <div class="pane" id="p-ai" role="tabpanel" aria-labelledby="t-ai" tabindex="-1" hidden>
+      <section>
+        <h2>세션 기록</h2>
+        <div id="ai-demo" class="demo-flag"></div>
+        <div id="ai-list"></div>
+      </section>
+
+      <section>
+        <h2>회고에 무엇이 나가나</h2>
+        <div class="note">
+          <p>회고를 누른 <b>그 세션의 집계값만</b> 나갑니다. 앉은 시간, 감지된 시간,
+             회복 횟수, 가장 자주 흔들린 축의 이름 같은 <b>숫자와 이름</b>이에요.</p>
+          <p>영상도, 프레임도, 몸에서 읽은 좌표도, 이름도 학교도 나가지 않습니다.
+             누르지 않으면 아무것도 나가지 않아요.</p>
+        </div>
+      </section>
+    </div>
+
+  </div>
+  </main>
+</div>
+
+<!-- ============ 오늘의 집중 장면 ============
+     세션 하나를 카드 한 장으로 남깁니다. 미리보기와 저장 그림이 같은
+     canvas 라 "본 것과 다른 것" 이 저장될 자리가 없습니다. -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" hidden>
+  <div class="sheet-box">
+
+    <div class="sheet-view">
+      <canvas id="card-canvas" role="img" aria-label="오늘의 집중 장면 카드 미리보기"></canvas>
+      <span class="cap" id="card-cap"></span>
+    </div>
+
+    <div class="sheet-side">
+      <div class="sheet-head">
+        <div>
+          <h2 id="sheet-h">오늘의 집중을 마쳤어요</h2>
+          <p>집중했던 순간을 카드로 남겨보세요.</p>
+        </div>
+        <button class="x" type="button" id="sheet-close" aria-label="닫기">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+
+      <h3>카드 장면</h3>
+      <div class="styles" role="group" aria-label="카드 장면">
+        <button type="button" data-style="basic" aria-pressed="true">
+          <canvas id="thumb-basic" width="270" height="338" aria-hidden="true"></canvas>
+          <span class="tick" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"
+            stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.4 3 3L12.5 5"/></svg></span>
+          <span class="nm">기본</span>
+        </button>
+        <button type="button" data-style="campus" aria-pressed="false">
+          <canvas id="thumb-campus" width="270" height="338" aria-hidden="true"></canvas>
+          <span class="tick" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"
+            stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.4 3 3L12.5 5"/></svg></span>
+          <span class="nm">캠퍼스</span>
+        </button>
+        <button type="button" data-style="friends" aria-pressed="false">
+          <canvas id="thumb-friends" width="270" height="338" aria-hidden="true"></canvas>
+          <span class="tick" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none"
+            stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 8.4 3 3L12.5 5"/></svg></span>
+          <span class="nm">함께</span>
+        </button>
+      </div>
+
+      <h3>비율</h3>
+      <div class="ratios" role="group" aria-label="이미지 비율">
+        <button type="button" data-ratio="story" aria-pressed="true">스토리 9:16</button>
+        <button type="button" data-ratio="feed" aria-pressed="false">피드 4:5</button>
+      </div>
+
+      <h3>카드에 표시할 정보</h3>
+      <ul class="show-list">
+        <li><span class="k">닉네임</span><span class="sw"><input type="checkbox" data-show="nick" role="switch" aria-label="닉네임 표시"><span class="track"></span><span class="knob"></span></span></li>
+        <li><span class="k">학교명</span><span class="sw"><input type="checkbox" data-show="school" role="switch" aria-label="학교명 표시"><span class="track"></span><span class="knob"></span></span></li>
+        <li><span class="k">세션 날짜</span><span class="sw"><input type="checkbox" data-show="date" role="switch" aria-label="세션 날짜 표시"><span class="track"></span><span class="knob"></span></span></li>
+        <!-- 회복 횟수·연속 일수·함께한 인원 스위치는 뺐습니다. 카드에서
+             그 값이 들어가던 자리를 없앴으므로 켜도 아무 일이 안 일어나는
+             스위치가 됩니다. 그 기록은 마이페이지 목록에서 봅니다. -->
+      </ul>
+      <p class="cc-note" style="margin-top:12px">실명·학교 이메일·학번·학과·카메라 화면은 어떤 설정에서도 카드에 안 들어가요.</p>
+
+      <div class="sheet-acts">
+        <span class="act-say" id="act-say" role="status"></span>
+        <button class="act-main" type="button" id="act-save">인스타 스토리용 이미지 저장</button>
+        <button class="act-sub" type="button" id="act-share" hidden>공유하기</button>
+        <button class="act-text" type="button" id="act-exit">완료하고 나가기</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Supabase 주소와 anon 키. 없으면 인증이 흉내로 돕니다. -->
+<script src="../shared/config.js"></script>
+<script src="../shared/school-auth.js"></script>
+<script>
+/* ==================================================================
+   데이터는 이 저장소가 이미 쓰는 키를 그대로 읽습니다. 새 키를 만들지
+   않습니다 — 이 화면은 기록을 **보여 주는** 곳이지 따로 쌓는 곳이
+   아닙니다.
+   ================================================================== */
+const K = { room: 'girin.room', sessions: 'girin.sessions', baseline: 'girin.baseline', session: 'girin.session' };
+const $ = (id) => document.getElementById(id);
+const read = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const write = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
+
+const ROOM = Object.assign(
+  { name: '', nickname: '익명의 기린', school: '', schoolVerifiedAt: '', sensitivity: 1 },
+  read(K.room, {}),
+);
+
+/* ---------------- 탭 ---------------- */
+const TABS = [['t-info', 'p-info'], ['t-base', 'p-base'], ['t-ai', 'p-ai']];
+
+/* 탭 이름 ↔ 주소. 탭도 화면 전환인데 주소에 자국이 없어서, AI 회고를
+   보다가 뒤로가기를 누르면 "내 정보" 로 돌아가는 게 아니라 이전
+   페이지(랭킹전)로 갔습니다. */
+const TAB_HASH = { 't-info': '#info', 't-base': '#posture', 't-ai': '#sessions' };
+const HASH_TAB = Object.fromEntries(Object.entries(TAB_HASH).map(([k, v]) => [v, k]));
+
+function show(tabId) {
+  TABS.forEach(([t, p]) => {
+    const on = t === tabId;
+    $(t).setAttribute('aria-selected', String(on));
+    $(p).hidden = !on;
+  });
+  /* 화면이 바뀌면 초점을 그 판으로 옮깁니다 — 안 옮기면 스크린리더
+     사용자는 탭을 눌러도 어디가 바뀐 줄 모릅니다. */
+  $(TABS.find(([t]) => t === tabId)[1]).focus({ preventScroll: true });
+}
+
+TABS.forEach(([t]) => $(t).addEventListener('click', () => {
+  if (location.hash !== TAB_HASH[t]) history.pushState({ t }, '', TAB_HASH[t]);
+  show(t);
+}));
+
+addEventListener('popstate', () => {
+  /* 카드가 열려 있으면 카드부터 닫습니다 — 뒤로가기 한 번에 두 층이
+     닫히면 어디로 돌아왔는지 알 수 없습니다. */
+  if (typeof SCENE !== 'undefined' && SCENE.open) { sheetClose(); return; }
+  show(HASH_TAB[location.hash] || 't-info');
+});
+
+/* 좌우 화살표로 탭을 옮깁니다 — WAI-ARIA 탭 패턴의 기본 조작입니다. */
+document.querySelector('.tabs').addEventListener('keydown', (e) => {
+  const i = TABS.findIndex(([t]) => t === document.activeElement.id);
+  if (i < 0) return;
+  let next = i;
+  if (e.key === 'ArrowRight') next = (i + 1) % TABS.length;
+  else if (e.key === 'ArrowLeft') next = (i - 1 + TABS.length) % TABS.length;
+  else if (e.key === 'Home') next = 0;
+  else if (e.key === 'End') next = TABS.length - 1;
+  else return;
+  e.preventDefault();
+  $(TABS[next][0]).focus();
+  show(TABS[next][0]);
+});
+
+/* ---------------- 내 정보 ---------------- */
+$('f-name').value = ROOM.name || '';
+$('f-nick').value = ROOM.nickname || '';
+$('f-dept').value = ROOM.dept || '';
+$('f-year').value = ROOM.entryYear || '';
+$('f-sid').value = ROOM.studentNo || '';
+/* 인증이 끝나면 같은 함수를 다시 부릅니다 — 성공 후 화면을 손으로
+   고치면 세 곳 중 하나를 빠뜨립니다. */
+function renderSchool() {
+  const has = Boolean(ROOM.schoolVerifiedAt);
+  $('f-school').textContent = ROOM.school || '아직 인증 안 함';
+  $('f-verified').innerHTML = has
+    ? '<span class="pill"><i></i>인증됨</span>'
+    : '<span class="pill warn"><i></i>미인증</span>';
+  $('f-authmsg').innerHTML = has
+    ? '<b>' + esc(ROOM.school) + '</b>로 인증했어요. 학교를 옮겼거나 주소가 바뀌었으면 다시 인증하면 돼요.'
+    : '아직 학교를 인증하지 않았어요. 인증해야 <b>랭킹전</b>과 <b>우리 학교 캠퍼스</b>에 들어갈 수 있어요.';
+  $('b-verify').textContent = has ? '학교 다시 인증' : '학교 인증하기';
+  /* 카드 안 버튼. 미인증이면 권하는 말투, 인증했으면 조용한 말투 —
+     같은 자리에 있되 인증한 사람에게 다시 하라고 조르지 않습니다. */
+  const cv = $('cc-verify');
+  cv.textContent = has ? '재인증' : '학교 인증하기';
+  cv.className = 'cc-verify' + (has ? ' quiet' : '');
+}
+renderSchool();
+
+/* 카드 안 버튼은 아래 인증 구역으로 데려다 놓고 그쪽을 엽니다 — 인증
+   흐름을 두 벌 만들면 한쪽만 고쳐지는 날이 옵니다. */
+$('cc-verify').addEventListener('click', () => {
+  $('b-verify').scrollIntoView({ block: 'center', behavior: 'smooth' });
+  $('b-verify').click();
+});
+
+/* ---------------- 프로필 사진 ----------------
+   사진은 **이 기기에만** 남습니다. 어떤 서버로도 안 나가고, localStorage 에
+   작게 줄여 넣습니다 — 원본을 그대로 넣으면 5MB 한도를 한 장으로 넘깁니다.
+   안 올린 사람은 캐릭터가 기본이라 빈 칸을 볼 일이 없습니다. */
+const PHOTO_KEY = 'girin.photo';
+function paintPhoto() {
+  let url = '';
+  try { url = localStorage.getItem(PHOTO_KEY) || ''; } catch (e) {}
+  const img = $('cc-face-img');
+  if (url) { img.src = url; img.alt = '내 프로필 사진'; img.classList.add('is-photo'); }
+  else { img.src = 'assets/char-turtle.png'; img.alt = '내 캐릭터'; img.classList.remove('is-photo'); }
+}
+$('cc-photo').addEventListener('click', () => $('cc-file').click());
+$('cc-file').addEventListener('change', () => {
+  const file = $('cc-file').files && $('cc-file').files[0];
+  if (!file) return;
+  if (file.type.indexOf('image/') !== 0) { say('face', '그림 파일만 올릴 수 있어요'); return; }
+  const fr = new FileReader();
+  fr.onload = () => {
+    const im = new Image();
+    im.onload = () => {
+      /* 가운데를 정사각으로 잘라 256px 로 줄입니다. 카드에서 보이는
+         크기가 그 정도라 그 위로는 저장 공간만 먹습니다. */
+      const S2 = 256;
+      const c = document.createElement('canvas');
+      c.width = c.height = S2;
+      const g = c.getContext('2d');
+      const side = Math.min(im.width, im.height);
+      g.drawImage(im, (im.width - side) / 2, (im.height - side) / 2, side, side, 0, 0, S2, S2);
+      try {
+        localStorage.setItem(PHOTO_KEY, c.toDataURL('image/jpeg', 0.86));
+        paintPhoto();
+        say('face', '사진을 바꿨어요');
+      } catch (e) { say('face', '사진이 너무 커서 저장을 못 했어요'); }
+    };
+    im.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+});
+paintPhoto();
+
+/* 저장 버튼 하나가 칸 하나를 맡습니다. data-save 값이 곧 ROOM 의 키라
+   칸을 늘려도 배선을 다시 안 짭니다. */
+const SAVE_FIELD = {
+  name: 'f-name', nickname: 'f-nick', dept: 'f-dept',
+  entryYear: 'f-year', studentNo: 'f-sid',
+};
+document.querySelectorAll('[data-save]').forEach((b) => {
+  b.addEventListener('click', () => {
+    const key = b.dataset.save;
+    const el = $(SAVE_FIELD[key]);
+    if (!el) return;
+    const v = el.value.trim();
+    if (key === 'nickname' && !v) { say(key, '닉네임을 적어 주세요'); return; }
+    ROOM[key] = v;
+    const done = write(K.room, ROOM);
+    say(key, done ? '저장했어요' : '저장하지 못했어요');
+    /* 카드가 이 값을 그리고 있습니다. 저장하고 카드가 그대로면
+       저장이 됐는지 알 수 없습니다. */
+    if (typeof ccRender === 'function') ccRender();
+  });
+});
+
+/* 저장은 눈에 보여야 합니다 — 아무 반응이 없으면 사용자는 한 번 더
+   누릅니다. role="status" 라 스크린리더는 초점을 뺏기지 않고 듣습니다. */
+const timers = {};
+function say(key, msg) {
+  /* 알릴 자리가 없는 화면도 있습니다 — 뒤집기 버튼을 빼면서 그 옆의
+     알림 칸도 같이 사라졌습니다. 자리가 없으면 조용히 넘어갑니다.
+     부르는 쪽마다 있는지 확인하게 하면 스무 곳을 고쳐야 합니다. */
+  const el = $('said-' + key);
+  if (!el) return;
+  el.textContent = msg;
+  el.classList.add('on');
+  clearTimeout(timers[key]);
+  timers[key] = setTimeout(() => el.classList.remove('on'), 1800);
+}
+
+/* ---------------- 학교 재인증 ----------------
+   온보딩과 **같은 모듈**을 부릅니다(shared/school-auth.js). 주소 판정도,
+   학교 이름도, 메일 발송도 거기 한 벌만 있습니다 — 여기에 따로 두면
+   같은 주소가 화면마다 다른 학교로 저장됩니다.
+
+   설정이 없거나 file:// 로 열었으면 흉내로 돕니다. 그때는 그 사실을
+   화면에 적습니다 — 조용히 통과시키면 가짜 인증을 진짜로 믿습니다. */
+const AUTH = window.SchoolAuth;
+const LIVE_AUTH = Boolean(AUTH && AUTH.live);
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+let vEmail = "";
+let resendAt = 0;
+let resendTimer = 0;
+
+function vShow(which) {
+  $('v-mail').hidden = which !== 'mail';
+  $('v-code').hidden = which !== 'code';
+  $('v-open-row').hidden = which !== 'none';
+}
+function vErr(id, msg) {
+  const el = $(id);
+  el.textContent = msg || '';
+  el.hidden = !msg;
+}
+function busy(btn, on, label) {
+  btn.disabled = on;
+  btn.textContent = on ? '잠시만요…' : label;
+}
+
+$('b-verify').addEventListener('click', () => {
+  vShow('mail');
+  $('v-email').value = ROOM.schoolEmail || '';
+  vErr('v-mail-err', '');
+  checkVEmail();
+  $('v-email').focus();
+});
+$('v-cancel').addEventListener('click', () => { vShow('none'); $('b-verify').focus(); });
+
+/* 주소 판정은 서버와 같은 함수로 합니다. 여기서 통과시킨 주소를 서버가
+   거절하면 사용자는 이유를 알 수 없습니다. */
+function checkVEmail() {
+  const v = $('v-email').value.trim();
+  const ok = EMAIL_RE.test(v) && AUTH.isSchoolEmail(v);
+  $('v-send').disabled = !ok;
+  return ok;
+}
+$('v-email').addEventListener('input', () => { checkVEmail(); vErr('v-mail-err', ''); });
+$('v-email').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && checkVEmail()) $('v-send').click();
+});
+$('v-email').addEventListener('blur', () => {
+  const v = $('v-email').value.trim();
+  if (!v) return;
+  if (!EMAIL_RE.test(v)) vErr('v-mail-err', '이메일 형식이 아니에요.');
+  else if (!AUTH.isSchoolEmail(v)) vErr('v-mail-err', '학교 이메일이 아니에요. ac.kr로 끝나는 주소가 필요해요.');
+});
+
+async function sendMail(btn, label) {
+  const v = $('v-email').value.trim();
+  busy(btn, true);
+  if (!LIVE_AUTH) {
+    /* 흉내. 흐름만 확인하는 경로입니다. */
+    setTimeout(() => { busy(btn, false, label); vEmail = v; toCode(); }, 700);
+    return;
+  }
+  try {
+    await AUTH.sendCode(v);
+    busy(btn, false, label);
+    vEmail = v;
+    toCode();
+  } catch (err) {
+    busy(btn, false, label);
+    vErr('v-mail-err', err.friendly || '메일을 보내지 못했어요. 잠시 뒤에 다시 해 주세요.');
+  }
+}
+$('v-send').addEventListener('click', () => {
+  if (!checkVEmail()) return;
+  sendMail($('v-send'), '인증 메일 받기');
+});
+
+function toCode() {
+  vShow('code');
+  $('v-otp').value = '';
+  $('v-verify').disabled = true;
+  vErr('v-code-err', '');
+  $('v-code-msg').textContent = vEmail + ' 로 ' + V_LEN + '자리를 보냈어요.'
+    + (LIVE_AUTH ? '' : ' (설정이 없어 흉내로 돕니다 — ' + AUTH.reason + ')');
+  startResend();
+  $('v-otp').focus();
+}
+
+/* 다시 보내기는 잠깁니다. 서버의 발송 한도가 있어 연타하면 진짜 메일이
+   막히고, 그때 사용자는 아무 설명 없이 실패만 봅니다. */
+function startResend() {
+  resendAt = Date.now() + AUTH.RESEND_SEC * 1000;
+  clearInterval(resendTimer);
+  tickResend();
+  resendTimer = setInterval(tickResend, 1000);
+}
+function tickResend() {
+  const btn = $('v-resend');
+  const left = Math.ceil((resendAt - Date.now()) / 1000);
+  if (left > 0) { btn.disabled = true; btn.textContent = left + "초 뒤 다시 보내기"; return; }
+  clearInterval(resendTimer); resendTimer = 0;
+  btn.disabled = false;
+  btn.textContent = '메일 다시 받기';
+}
+$('v-resend').addEventListener('click', () => {
+  vErr('v-code-err', '');
+  sendMail($('v-resend'), '메일 다시 받기');
+});
+$('v-back').addEventListener('click', () => {
+  clearInterval(resendTimer); resendTimer = 0;
+  vShow('mail');
+  $('v-email').focus();
+});
+
+/* 자릿수는 shared/school-auth.js 한 곳에서 옵니다. 확인 버튼은 OTP_MIN
+   부터 열어 둡니다 — 설정과 서버가 어긋난 동안에도 서버가 뭐라고 하는지는
+   볼 수 있어야 합니다. */
+const V_LEN = AUTH.OTP_LEN, V_MIN = AUTH.OTP_MIN;
+$('v-otp-len').textContent = V_LEN + '자리';
+$('v-otp').style.setProperty('--otp-n', String(V_LEN));
+$('v-otp').setAttribute('maxlength', String(V_LEN));
+$('v-otp').setAttribute('placeholder', '0'.repeat(V_LEN));
+
+$('v-otp').addEventListener('input', () => {
+  const v = $('v-otp').value.replace(/\D/g, '').slice(0, V_LEN);
+  $('v-otp').value = v;
+  $('v-verify').disabled = v.length < V_MIN;
+  vErr('v-code-err', '');
+});
+$('v-otp').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && $('v-otp').value.length >= V_MIN) $('v-verify').click();
+});
+
+$('v-verify').addEventListener('click', async () => {
+  const btn = $('v-verify');
+  busy(btn, true);
+  if (!LIVE_AUTH) {
+    setTimeout(() => {
+      busy(btn, false, '인증하기');
+      /* 전부 0 만 실패로 둡니다 — 자릿수가 바뀌어도 실패 화면을 볼 수 있게. */
+      if (/^0+$/.test($('v-otp').value)) { vErr('v-code-err', '번호가 맞지 않아요. 메일을 다시 확인해 주세요.'); return; }
+      finishVerified(vEmail);
+    }, 700);
+    return;
+  }
+  try {
+    const sess = await AUTH.verifyCode(vEmail, $('v-otp').value);
+    busy(btn, false, '인증하기');
+    /* 화면에 입력된 값이 아니라 세션에 들어 있는 주소를 씁니다 — 실제로
+       인증된 것은 그쪽입니다. */
+    finishVerified((sess && sess.email) || vEmail);
+  } catch (err) {
+    busy(btn, false, '인증하기');
+    vErr('v-code-err', err.friendly || '번호를 확인하지 못했어요.');
+  }
+});
+
+function finishVerified(email) {
+  clearInterval(resendTimer); resendTimer = 0;
+  ROOM.school = AUTH.schoolOf(email) || ROOM.school;
+  ROOM.schoolEmail = email;
+  ROOM.schoolVerifiedAt = new Date().toISOString();
+  const saved = write(K.room, ROOM);
+  renderSchool();
+  vShow('none');
+  say('school', saved ? ROOM.school + '로 인증했어요' : '인증했지만 저장하지 못했어요');
+  /* 카드만 옛 상태로 남으면 방금 인증한 사람이 "미인증" 카드를 봅니다. */
+  if (typeof ccRender === 'function') ccRender();
+  $('b-verify').focus();
+}
+
+/* ---------------- 자세 기준 ---------------- */
+const BASE = read(K.baseline, null);
+
+function renderBaseline() {
+  const has = BASE && (BASE.at || BASE.axes);
+  $('b-when').textContent = has && BASE.at ? fullDate(BASE.at) : '아직 안 잡았어요';
+  $('b-state').innerHTML = has
+    ? '<span class="pill"><i></i>사용 중</span>'
+    : '<span class="pill warn"><i></i>없음</span>';
+  const s = Number(ROOM.sensitivity ?? 1);
+  $('b-sens').innerHTML = (s <= 0.8 ? '느슨하게' : s >= 1.2 ? '민감하게' : '보통')
+    + '<small>높일수록 조금만 달라져도 알려 줘요</small>';
+  $('b-clear').disabled = !has;
+}
+renderBaseline();
+
+$('b-recal').addEventListener('click', () => { location.href = '../onboarding/index.html#step=6'; });
+$('b-clear').addEventListener('click', () => {
+  /* 되돌릴 수 없는 것 앞에서는 한 번 묻습니다. */
+  if (!confirm('기준을 지우면 다음 세션에서 10초를 다시 재요. 지울까요?')) return;
+  localStorage.removeItem(K.baseline);
+  location.reload();
+});
+
+/* ---------------- AI 세션 회고 ---------------- */
+const ZONE = { library: '도서관', mainhall: '본관', dorm: '기숙사', union: '학생회관', plaza: '중앙 광장' };
+const REAL = read(K.sessions, []);
+const IS_DEMO = !Array.isArray(REAL) || REAL.length === 0;
+const SESSIONS = (IS_DEMO ? demoSessions() : REAL).slice().sort((a, b) => b.at - a.at);
+
+function demoSessions() {
+  const D = 86400000, now = Date.now();
+  return [[0, 46, 'mainhall', 2], [2, 74, 'library', 5], [3, 52, 'library', 3],
+          [5, 61, 'library', 4], [6, 25, 'mainhall', 1]]
+    .map(([ago, minutes, zone, recoveries]) => ({
+      at: now - ago * D - 3600000, zone, minutes, recoveries,
+      seatedMs: minutes * 60000, detectableMinutes: Math.round(minutes * 0.86),
+    }));
+}
+
+if (IS_DEMO) {
+  $('ai-demo').innerHTML =
+    '<span class="pill warn"><i></i>예시 · 아직 내 기록이 없어요</span>';
+}
+
+$('ai-list').innerHTML = SESSIONS.length === 0
+  ? '<div class="empty"><b>아직 세션이 없어요</b>캠퍼스에 앉으면 여기에 쌓여요.</div>'
+  : '<div class="rows">' + SESSIONS.map((s, i) => `
+      <div class="row" data-i="${i}">
+        <span class="when">${esc(shortDate(s.at))}</span>
+        <span class="where">${esc(ZONE[s.zone] || s.zone || '캠퍼스')}</span>
+        <span class="nums">${s.minutes}<span>분</span> · 회복 ${s.recoveries}<span>번</span></span>
+        <button class="btn sm" type="button" data-card="${i}">카드로 보기</button>
+        <button class="btn sm" type="button" data-report="${i}">회고 받기</button>
+      </div>`).join('') + '</div>';
+
+/* AI 회고는 서버가 켜져 있어야 돕니다. 켜져 있지 않은 것도, 로그인이
+   안 된 것도, 한도에 걸린 것도 **서로 다른 상황**이라 다르게 말합니다 —
+   "실패했어요" 하나로 뭉치면 사용자가 무엇을 해야 할지 모릅니다. */
+const SAY = {
+  AI_REPORT_UNAVAILABLE: '회고 기능이 아직 안 켜져 있어요. 준비되면 알려 드릴게요.',
+  AI_REPORT_RATE_LIMITED: '조금 전에 받았어요. 잠시 뒤에 다시 눌러 주세요.',
+  AI_REPORT_GENERATION_FAILED: '회고를 못 만들었어요. 잠시 뒤에 다시 눌러 주세요.',
+  ORIGIN_NOT_ALLOWED: '이 주소에서는 회고를 받을 수 없어요. 배포된 주소에서 열어 주세요.',
+  UNAUTHORIZED: '학교 인증을 먼저 해 주세요.',
+  OFFLINE: '연결이 안 돼요. 인터넷을 확인해 주세요.',
+};
+
+document.querySelectorAll('[data-report]').forEach((btn) => {
+  btn.addEventListener('click', () => askReport(btn, SESSIONS[Number(btn.dataset.report)]));
+});
+
+async function askReport(btn, s) {
+  const row = btn.closest('.row');
+  row.querySelector('.report, .msg')?.remove();
+  btn.disabled = true;
+  const keep = btn.textContent;
+  btn.textContent = '쓰는 중…';
+
+  const box = document.createElement('div');
+  box.className = 'msg';
+  box.setAttribute('role', 'status');
+  box.textContent = '이 세션의 숫자를 보고 회고를 쓰고 있어요.';
+  row.appendChild(box);
+
+  try {
+    const auth = read(K.session, null);
+    const res = await fetch('/api/ai-report', {
+      method: 'POST',
+      headers: Object.assign(
+        { 'Content-Type': 'application/json' },
+        auth && auth.access_token ? { Authorization: 'Bearer ' + auth.access_token } : {},
+      ),
+      body: JSON.stringify({
+        plannedMinutes: s.minutes,
+        elapsedMinutes: s.minutes,
+        detectableMinutes: s.detectableMinutes ?? s.minutes,
+        awayMinutes: 0,
+        recoveryOpportunities: s.recoveries,
+        recoveries: s.recoveries,
+        status: 'completed',
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      const code = res.status === 401 || res.status === 403 && !body.code ? 'UNAUTHORIZED' : body.code;
+      throw new Error(code || 'AI_REPORT_GENERATION_FAILED');
+    }
+    box.replaceWith(renderReport(await res.json()));
+  } catch (err) {
+    const code = err instanceof TypeError ? 'OFFLINE' : err.message;
+    box.className = 'msg bad';
+    box.textContent = SAY[code] || SAY.AI_REPORT_GENERATION_FAILED;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = keep;
+  }
+}
+
+function renderReport(r) {
+  const el = document.createElement('div');
+  el.className = 'report';
+  const stats = (r.stats || []).map((x) =>
+    `<div class="stat"><b>${esc(x.value)}</b><span>${esc(x.label)}</span></div>`).join('');
+  /* observations 는 **비어 있을 수 있습니다** — 표본이 적으면 서버가
+     패턴을 지어내지 않습니다. 그때는 그 자리를 그냥 비웁니다. */
+  const obs = (r.observations || []).map((o) =>
+    `<li>${esc(o.fact || o.text || '')}</li>`).join('');
+  el.innerHTML =
+    `<div class="head">${esc(r.headline || '')}</div>` +
+    (stats ? `<div class="stats">${stats}</div>` : '') +
+    (obs ? `<ul class="obs">${obs}</ul>` : '');
+  return el;
+}
+
+/* ---------------- 도구 ---------------- */
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function shortDate(t) {
+  const d = new Date(t);
+  return (d.getMonth() + 1) + '월 ' + d.getDate() + '일 '
+    + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+}
+function fullDate(t) {
+  const d = new Date(t);
+  return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일';
+}
+
+document.querySelector('.titlebar .x').addEventListener('click', () => { location.href = '../lobby/index.html'; });
+
+/* ==================================================================
+   DESKFIT CAMPUS CARD
+
+   앞면은 **신원**, 뒷면은 **활동** 입니다. 둘을 한 면에 올리면 카드가
+   작은 대시보드가 되고, 확인용으로 쓸 때 이름을 찾는 데 시간이 걸립니다.
+
+   앞면에 담기는 것은 이름·학교·학과·학번(가림)·인증 상태뿐입니다.
+   학번 전체와 학교 이메일 전체는 **어떤 상태에서도** 카드에 안 실립니다 —
+   카드는 남에게 보이는 면이고, 그 둘은 남이 볼 이유가 없습니다.
+
+   공식 학생증이 아닙니다. 그래서 교표를 안 쓰고, 학교명은 글자로만
+   적으며, 기능 없는 바코드와 QR 은 넣지 않았습니다.
+   ================================================================== */
+
+const CC = $('cc');
+
+/* 상태 다섯. 색만으로 말하지 않으므로 아이콘과 글자가 늘 같이 옵니다. */
+const CC_ICON = {
+  check: '<path d="m4 8.6 2.9 2.9L12.2 4"/>',
+  clock: '<circle cx="8" cy="8" r="6.2"/><path d="M8 4.6V8l2.4 1.5"/>',
+  info:  '<circle cx="8" cy="8" r="6.2"/><path d="M8 7.4v3.8M8 4.9v.1"/>',
+  wait:  '<path d="M4.6 2.6h6.8M4.6 13.4h6.8"/>'
+       + '<path d="M5.4 2.6c0 3 2.6 3.6 2.6 5.4s-2.6 2.4-2.6 5.4"/>'
+       + '<path d="M10.6 2.6c0 3-2.6 3.6-2.6 5.4s2.6 2.4 2.6 5.4"/>',
+  alert: '<path d="M8 2.6 14 13H2L8 2.6Z"/><path d="M8 6.6v2.9M8 11.6v.1"/>',
+};
+
+const CC_STATE = {
+  verified: { icon: 'check', text: '학교 메일 인증됨',
+              sub: 'DESKFIT에서 확인한 학교 이메일 기준' },
+  expiring: { icon: 'clock', text: '인증이 곧 만료돼요',
+              sub: '학교 메일로 한 번 더 인증하면 이어져요' },
+  none:     { icon: 'info',  text: '학교 메일 인증 전',
+              sub: '인증하면 카드가 채워져요' },
+  checking: { icon: 'wait',  text: '인증 확인 중',
+              sub: '메일로 받은 번호를 확인하고 있어요' },
+  failed:   { icon: 'alert', text: '인증하지 못했어요',
+              sub: '학교 메일 주소를 다시 확인하고 인증해 주세요' },
+};
+
+/* 상태 다섯과 예시 데이터를 주소로 강제할 수 있습니다. 다섯 가지를 눈으로
+   확인하려면 인증을 다섯 번 다르게 실패시켜야 하기 때문입니다 —
+   검토용이지 제품 경로가 아닙니다. */
+const CC_Q = new URLSearchParams(location.search);
+const CC_FORCE = CC_Q.get('state');
+const CC_DEMO = CC_Q.get('demo') === '1';
+
+/* 예시로 볼 때만 쓰는 값입니다. 진짜 카드에는 사용자가 적은 것만 실립니다 —
+   비어 있는 칸을 남의 이름으로 채우면 그게 자기 정보인 줄 압니다. */
+if (CC_DEMO) {
+  Object.assign(ROOM, {
+    name: ROOM.name || '김수현', nameEn: ROOM.nameEn || 'SUHYUN KIM',
+    school: ROOM.school || '명지대학교', dept: ROOM.dept || '디지털콘텐츠디자인학과',
+    entryYear: ROOM.entryYear || '23', studentNo: ROOM.studentNo || '60221008',
+    club: ROOM.club || '디자인학회',
+    schoolVerifiedAt: ROOM.schoolVerifiedAt || new Date().toISOString(),
+  });
+}
+
+function ccState() {
+  if (CC_STATE[CC_FORCE]) return CC_FORCE;
+  if (!ROOM.schoolVerifiedAt) return 'none';
+  /* 학교 메일 인증은 한 해 단위로 다시 받습니다. 30일 남으면 미리 알리고,
+     지나면 인증 전으로 되돌립니다 — 만료된 인증을 인증됨으로 두면 카드가
+     사실이 아닌 것을 말합니다. */
+  const YEAR = 365 * 86400000;
+  const t = new Date(ROOM.schoolVerifiedAt).getTime();
+  if (Number.isNaN(t)) return 'verified';
+  const left = t + YEAR - Date.now();
+  if (left <= 0) return 'none';
+  return left < 30 * 86400000 ? 'expiring' : 'verified';
+}
+
+/* 학번은 어떤 상태에서도 통째로 안 보입니다. 앞 둘과 뒤 둘만 남깁니다. */
+function maskSid(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  if (d.length < 5) return '';
+  return d.slice(0, 2) + '•'.repeat(Math.max(2, d.length - 4)) + d.slice(-2);
+}
+
+function ymShort(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+/* 공개 설정 — 기본은 학교·학과 켜짐, 활동 기록 꺼짐. 소속은 이 제품에서
+   랭킹전의 전제라 켜 두고, 활동은 본인 기록이라 꺼 둡니다. */
+const PV = Object.assign(
+  { scope: 'school', school: true, dept: true, rec: false },
+  read('girin.privacy', null) || {});
+
+const SVG_OPEN = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" '
+  + 'stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">';
+
+function ccRender() {
+  const st = ccState();
+  const ok = st === 'verified' || st === 'expiring';
+  CC.dataset.state = st;
+
+  const meta = CC_STATE[st];
+  $('cc-state').innerHTML =
+    SVG_OPEN + CC_ICON[meta.icon] + '</svg><span>' + esc(meta.text) + '</span>';
+  $('cc-sub').textContent = meta.sub;
+
+  $('cc-name').textContent = ROOM.name || ROOM.nickname || '이름을 적어 주세요';
+  $('cc-name-en').textContent = ROOM.nameEn || '';
+
+  /* 공개 설정이 끈 줄은 카드에서 빠집니다. 끄고도 그대로 보이면 무엇이
+     꺼진 것인지 확인할 방법이 없습니다. */
+  const sch = $('cc-school'), dep = $('cc-dept');
+  if (!ok) {
+    sch.textContent = '학교 미인증';
+    sch.className = 'sch cc-hidden';
+    dep.textContent = '';
+    dep.className = 'dep';
+  } else if (PV.school) {
+    sch.textContent = ROOM.school || '학교 미인증';
+    sch.className = 'sch';
+    dep.textContent = PV.dept ? (ROOM.dept || '') : '학과 비공개';
+    dep.className = PV.dept ? 'dep' : 'dep cc-hidden';
+  } else {
+    sch.textContent = '학교 비공개';
+    sch.className = 'sch cc-hidden';
+    dep.textContent = '';
+    dep.className = 'dep';
+  }
+
+  $('cc-year').textContent = ok && ROOM.entryYear ? ROOM.entryYear + '학번' : '';
+  const sid = ok ? maskSid(ROOM.studentNo) : '';
+  $('cc-sid').textContent = sid ? '학번 ' + sid : '';
+  /* 발급일 줄은 뺐습니다 — 그 자리를 인증 버튼이 씁니다. 언제 인증했는지는
+     아래 인증 구역이 문장으로 말해 줍니다. */
+}
+
+/* ---------------- 뒷면 · 활동 ----------------
+   숫자는 이 기기에 쌓인 세션에서 나옵니다. 기록이 없으면 예시가 도는데,
+   그 사실을 카드 밖에 적습니다 — 예시를 자기 기록으로 읽으면 그 다음
+   판단이 전부 어긋납니다. */
+function ccRecord() {
+  const mins = SESSIONS.reduce((a, x) => a + (x.minutes || 0), 0);
+  const recs = SESSIONS.reduce((a, x) => a + (x.recoveries || 0), 0);
+  const rows = [
+    ['누적 세션', SESSIONS.length, '회'],
+    ['누적 집중', mins, '분'],
+    ['자세 회복', recs, '회'],
+    ['학교 랭킹', 7, '위'],
+    ['가입 동아리', ROOM.club || '없음', ''],
+    ['대표 캐릭터', ROOM.character || '거북이', ''],
+  ];
+  $('cc-rec').innerHTML = rows.map(([k, v, u]) => {
+    const num = typeof v === 'number';
+    return '<div><dt>' + esc(k) + '</dt><dd class="' + (num ? '' : 'txt') + '">'
+      + esc(String(v)) + (u ? '<small>' + u + '</small>' : '') + '</dd></div>';
+  }).join('');
+}
+
+/* ---------------- 뒤집기 ----------------
+   판 전체를 button 으로 만들지 않았습니다. 그러면 안의 글자를 못 긁고,
+   버튼 안에 버튼이 들어갑니다. 마우스는 카드를 눌러 뒤집고, 키보드는
+   아래 버튼으로 뒤집습니다 — 같은 동작에 길이 둘입니다.
+
+   Hover 로는 절대 안 뒤집힙니다. 지나가다 뒤집히면 읽던 면을 잃습니다. */
+const FACE_LABEL = { front: '활동 기록 보기', back: '학생 정보 보기' };
+
+function ccFlip(to) {
+  const face = to || (CC.dataset.face === 'front' ? 'back' : 'front');
+  CC.dataset.face = face;
+  /* 안 보이는 면은 backface-visibility 로 가려지지만 보조기술은 그것을
+     안 봅니다. aria-hidden 을 같이 넘겨야 두 면이 겹쳐 읽히지 않습니다. */
+  $('cc-front').setAttribute('aria-hidden', String(face !== 'front'));
+  $('cc-back').setAttribute('aria-hidden', String(face !== 'back'));
+  if (to !== 'front' || CC.dataset.ready) {
+    say('face', face === 'front' ? '학생 정보 면' : '활동 기록 면');
+  }
+}
+
+CC.addEventListener('click', (e) => {
+  /* 카드 안의 글자를 긁는 중이면 뒤집지 않습니다. */
+  if (String(getSelection())) return;
+  if (e.target.closest('a, button')) return;
+  ccFlip();
+});
+
+/* ---------------- 오늘의 나 ---------------- */
+function ccToday() {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const today = SESSIONS.filter((x) => x.at >= d0.getTime());
+  $('td-min').innerHTML = today.reduce((a, x) => a + (x.minutes || 0), 0) + '<small>분</small>';
+  $('td-ses').innerHTML = today.length + '<small>회</small>';
+  $('td-rec').innerHTML = today.reduce((a, x) => a + (x.recoveries || 0), 0) + '<small>회</small>';
+
+  /* 연속 출석과 코인은 월드가 쌓는 값입니다 — 여기서 따로 세지 않고
+     읽기만 합니다. 메인에서 뺀 그 숫자들이 제 자리로 왔습니다. */
+  let reward = {};
+  try { reward = JSON.parse(localStorage.getItem('girin.reward') || '{}') || {}; } catch (e) {}
+  $('td-streak').innerHTML = (reward.streak || 1) + '<small>일</small>';
+  $('td-coin').textContent = reward.coins || 0;
+
+  /* 시즌 며칠째. 90일 한 바퀴는 랭킹전과 같은 값입니다. */
+  const EPOCH = Date.parse('2026-08-01T00:00:00+09:00');
+  const day = Math.floor((Date.now() - EPOCH) / 86400000);
+  $('td-season').innerHTML = ((day % 90) + 1) + '<small>일째</small>';
+}
+
+/* ---------------- 공개 설정 ---------------- */
+function pvBind(id, key) {
+  const el = $(id);
+  el.checked = Boolean(PV[key]);
+  el.addEventListener('change', () => {
+    PV[key] = el.checked;
+    write('girin.privacy', PV);
+    ccRender();
+  });
+}
+pvBind('pv-school', 'school');
+pvBind('pv-dept', 'dept');
+pvBind('pv-rec', 'rec');
+$('pv-scope').value = PV.scope;
+$('pv-scope').addEventListener('change', () => {
+  PV.scope = $('pv-scope').value;
+  write('girin.privacy', PV);
+});
+
+/* ---------------- 첫 그리기 ---------------- */
+ccFlip('front');
+
+/* 로비 게이트가 #verify 를 달고 보냅니다. 보낸 곳에서 바로 그 일을
+   할 수 있어야지, 도착해서 다시 찾게 하면 안 됩니다. */
+/* 주소가 탭을 정합니다. 초대방이 끝나면 #sessions 로 보냅니다. */
+if (HASH_TAB[location.hash]) show(HASH_TAB[location.hash]);
+
+if (location.hash === '#verify') {
+  show('t-info');
+  $('b-verify').click();
+  $('v-email').scrollIntoView({ block: 'center' });
+}
+ccRender();
+ccRecord();
+ccToday();
+CC.dataset.ready = '1';
+
+/* 예시로 볼 때는 아래 입력칸도 같이 채웁니다. 카드에는 김수현이 있는데
+   칸은 비어 있으면 어느 쪽이 진짜인지 알 수 없습니다. */
+if (CC_DEMO) {
+  $('f-name').value = ROOM.name;
+  $('f-dept').value = ROOM.dept;
+  $('f-year').value = ROOM.entryYear;
+  $('f-sid').value = ROOM.studentNo;
+  renderSchool();
+}
+
+/* 카드 아래 안내 두 줄을 뺐습니다. 공개 설정 설명은 그 설정 바로 위에
+   있을 때만 읽히고, 실제로 아래 "공개 설정" 구역이 같은 말을 합니다. */
+
+/* ==================================================================
+   오늘의 집중 장면
+
+   세션이 끝난 순간을 남기는 카드입니다. 결과 보고서가 아니라 기념사진에
+   가깝게 다룹니다 — 그래서 지표는 셋까지만 싣고, 가운데를 차지하는 것은
+   숫자가 아니라 집중했던 자리(책상·캠퍼스·같이 앉은 친구들)입니다.
+
+   지키는 것 셋.
+
+     · 자세를 채점하지 않습니다. "점수" · "나쁜 자세" · "정확도" 는
+       쓰지 않고, 회복을 돌아온 횟수로만 말합니다.
+     · 개인정보는 기본이 비공개입니다. 이름·학교·학번·메일은 사용자가
+       켜야만 그림에 들어갑니다.
+     · 미리보기와 저장 그림이 **같은 canvas** 입니다. HTML 을 이미지로
+       바꾸는 방법은 서체와 그림자가 미묘하게 달라져 "본 것과 다른 것"
+       이 저장됩니다.
+   ================================================================== */
+
+const RATIO = {
+  story: { w: 1080, h: 1920, label: '스토리 9:16', safeTop: 250, safeBottom: 260 },
+  feed:  { w: 1080, h: 1350, label: '피드 4:5',    safeTop: 90,  safeBottom: 90 },
+};
+
+const STYLE = {
+  basic:   { label: '기본',   need: null },
+  campus:  { label: '캠퍼스', need: null },
+  friends: { label: '함께',   need: null },
+};
+
+/* 카드에 실을지 사용자가 정합니다. 실명·학교 메일·학번·학과·카메라
+   화면은 목록에 아예 없습니다 — 켤 수 있게 두면 언젠가 켜집니다. */
+const SHOW_DEF = {
+  nick: true, school: true, date: true,
+};
+const SHOW_ROWS = [
+  ['nick', '닉네임', ''],
+  ['school', '학교명', ''],
+  ['date', '세션 날짜', ''],
+  ['recover', '자세 회복 횟수', ''],
+  ['streak', '연속 집중 일수', ''],
+  ['mates', '함께 집중한 인원', '초대 세션일 때만 보여요'],
+];
+
+const SCENE = {
+  open: false, ses: null, style: 'basic', ratio: 'story',
+  show: Object.assign({}, SHOW_DEF, read('girin.cardshow', null) || {}),
+  imgs: {}, busy: false,
+};
+
+/* 그림은 한 번만 불러 두고 계속 씁니다. */
+function sceneLoad() {
+  const files = {
+    turtle: 'assets/char-turtle.png',
+    penguin: 'assets/char-penguin.png',
+    frog: 'assets/char-frog.png',
+    campus: 'assets/world-still.jpg',
+  };
+  return Promise.all(Object.entries(files).map(([k, src]) => new Promise((ok) => {
+    const im = new Image();
+    im.onload = () => { SCENE.imgs[k] = im; ok(); };
+    im.onerror = () => ok();          /* 하나 없어도 나머지는 그립니다 */
+    im.src = src;
+  })));
+}
+
+const hm = (m) => (m >= 60 ? Math.floor(m / 60) + '시간 ' + (m % 60) + '분' : m + '분');
+const ymd = (t) => { const d = new Date(t); return d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0'); };
+
+/* 세션 종류를 자리에서 읽습니다. 초대 방은 zone 이 없고 mates 가 있습니다. */
+function sceneKind(ses) {
+  if (ses && ses.mates) return 'invite';
+  return ses && ses.zone ? 'open' : 'solo';
+}
+
+/* ------------------------------------------------------------------
+   그리기 — 한 함수가 미리보기와 저장을 모두 만듭니다.
+   ------------------------------------------------------------------ */
+function drawCard(cv, ses, opt) {
+  const o = opt || {};
+  const R = RATIO[o.ratio || SCENE.ratio];
+  const st = o.style || SCENE.style;
+  const W = R.w, H = R.h;
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+  const F = (w, px) => w + ' ' + px + 'px "Wanted Sans Variable", "Wanted Sans", sans-serif';
+
+  /* 바탕 — 아이보리에서 아주 옅은 민트로. 두 단 차이라 그러데이션이라기보다
+     빛이 위에서 든 것으로 읽힙니다. */
+  const bg = g.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#FDFEFD');
+  bg.addColorStop(1, '#E8F5F2');
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+
+  const M = 96;                                   /* 좌우 여백 */
+  const top = R.safeTop;                          /* 인스타 UI 가 덮는 구간 */
+  const bot = H - R.safeBottom;
+
+  /* ---- 머리: 워드마크 + 날짜 + (켰다면) 닉네임·학교 ---- */
+  g.fillStyle = '#191F28';
+  g.font = F(800, 40); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  g.fillText('Deskfit', M, top + 6);
+
+  /* 머리에는 날짜만. 닉네임과 학교는 아래 신원 줄로 내려갔습니다 —
+     같은 값이 위아래로 두 번 나오면 안 됩니다. */
+  if (SCENE.show.date) {
+    g.fillStyle = '#646E6B'; g.font = F(600, 26); g.textAlign = 'right';
+    g.fillText(ymd(ses.at), W - M, top + 4);
+  }
+
+  /* ---- 가운데 덩어리 ----
+     장면 · 집중 시간 · 신원 셋을 한 덩어리로 묶어 안전 영역 가운데에
+     놓습니다. 위에서부터 쌓으면 스토리(9:16)에서 아래가 통째로 비고,
+     인스타 UI 가 아래를 덮을 때 남는 것이 여백뿐입니다.
+
+     전에는 여기에 지표 셋(집중·학교 기여·자세 회복)이 검은 글자로
+     차 있었습니다. 집중 시간은 바로 위에 이미 크게 있어서 같은 값이
+     두 번 나왔고, 나머지 둘은 기념사진에 붙은 성적표처럼 읽혔습니다.
+     그 자리를 비워 **닉네임과 학교명**이 들어올 수 있게 했습니다. */
+  const isStory = R === RATIO.story;
+  const gapA = isStory ? 134 : 108;   /* 장면 → 시간. 기준선이 글자 아랫줄이라 글자 높이만큼 더 뗍니다 */
+
+  /* 켠 것만 실립니다. 아무것도 안 켰으면 줄 자체가 없습니다 —
+     빈 줄을 남겨 두면 무언가 빠진 것으로 보입니다. */
+  const who = [];
+  if (SCENE.show.nick && ROOM.nickname) who.push(ROOM.nickname);
+  if (SCENE.show.school && ROOM.school) who.push(ROOM.school);
+  const gapB = who.length ? (isStory ? 80 : 68) : 0;
+
+  const sceneH = Math.round((bot - top - 62) * (isStory ? 0.46 : 0.42));
+  const stackH = sceneH + gapA + gapB;
+  const sceneTop = Math.round((top + 62 + bot - stackH) / 2);
+  drawScene(g, st, ses, M, sceneTop, W - M * 2, sceneH);
+
+  /* ---- 집중 시간이 가장 먼저 읽힙니다 ---- */
+  let y = sceneTop + sceneH + gapA;
+  g.textAlign = 'center';
+  g.fillStyle = '#0D7769';
+  g.font = F(800, isStory ? 104 : 92);
+  g.fillText(hm(ses.minutes) + ' 집중 완료', W / 2, y);
+
+  /* ---- 누구의 기록인가 ---- */
+  if (who.length) {
+    y += gapB;
+    g.fillStyle = '#55605D'; g.font = F(600, isStory ? 34 : 30);
+    g.fillText(who.join(' · '), W / 2, y);
+  }
+  /* ---- 발: 짧은 한 줄 + 작은 로고. URL 도 QR 도 안 넣습니다 ---- */
+  g.fillStyle = '#8A9491'; g.font = F(600, 26); g.textAlign = 'center';
+  g.fillText(FOOT[sceneKind(ses)], W / 2, bot - 12);
+
+  return cv;
+}
+
+const FOOT = {
+  solo:   '오늘의 집중 장면을 남겼어요',
+  invite: '함께 앉은 자리를 남겼어요',
+  open:   '오늘 우리 학교 기록에 보탰어요',
+};
+
+/* 장면 셋 — 배치는 같고 무엇을 담는지만 다릅니다. */
+function drawScene(g, style, ses, x, y, w, h) {
+  g.save();
+  /* 바닥 판 하나. 캐릭터가 공중에 뜨지 않고 자리에 놓이게 합니다. */
+  roundRect(g, x, y, w, h, 44);
+  g.fillStyle = '#FFFFFF'; g.fill();
+  g.save(); g.clip();
+
+  if (style === 'campus' && SCENE.imgs.campus) {
+    const im = SCENE.imgs.campus;
+    const s = Math.max(w / im.width, h / im.height);
+    g.drawImage(im, x + (w - im.width * s) / 2, y + (h - im.height * s) / 2, im.width * s, im.height * s);
+    /* 위에서 옅은 막 — 그림이 세지면 아래 숫자를 이깁니다. */
+    const v = g.createLinearGradient(0, y, 0, y + h);
+    v.addColorStop(0, 'rgba(255,255,255,.34)');
+    v.addColorStop(1, 'rgba(255,255,255,.04)');
+    g.fillStyle = v; g.fillRect(x, y, w, h);
+  } else {
+    /* 방 바닥 — 책상 선 하나면 "자리" 로 읽힙니다. */
+    const f = g.createLinearGradient(0, y, 0, y + h);
+    f.addColorStop(0, '#FBFDFC'); f.addColorStop(1, '#EAF6F3');
+    g.fillStyle = f; g.fillRect(x, y, w, h);
+    g.fillStyle = '#EFE7DA';
+    g.fillRect(x, y + h * 0.74, w, h * 0.26);
+    g.fillStyle = 'rgba(23,32,30,.06)';
+    g.fillRect(x, y + h * 0.74, w, 6);
+  }
+
+  const cast = style === 'friends'
+    ? ['penguin', 'turtle', 'frog']
+    : ['turtle'];
+  const baseY = y + h * (style === 'campus' ? 0.90 : 0.84);
+  const ch = h * (style === 'friends' ? 0.56 : 0.68);
+  const gap = ch * 0.24;
+  const totalW = cast.reduce((a, k) => a + charW(k, ch), 0) + gap * (cast.length - 1);
+  let cx = x + (w - totalW) / 2;
+  cast.forEach((k) => {
+    const im = SCENE.imgs[k];
+    if (!im) return;
+    const cwid = charW(k, ch);
+    /* 접지 그림자 — 없으면 인형이 떠 있습니다. */
+    g.save();
+    g.fillStyle = 'rgba(13,60,52,.16)';
+    g.beginPath();
+    g.ellipse(cx + cwid / 2, baseY - 4, cwid * 0.42, ch * 0.055, 0, 0, Math.PI * 2);
+    g.fill(); g.restore();
+    g.drawImage(im, cx, baseY - ch, cwid, ch);
+    cx += cwid + gap;
+  });
+
+  g.restore();
+  g.restore();
+}
+
+function charW(k, h) {
+  const im = SCENE.imgs[k];
+  return im ? (im.width / im.height) * h : h * 0.7;
+}
+
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+/* ---------------- 카드 화면 열고 닫기 ---------------- */
+
+let sheetReturn = null;
+
+async function sheetOpen(ses) {
+  /* 카드도 화면입니다. 자국을 남겨야 뒤로가기가 카드만 닫습니다. */
+  history.pushState({ card: 1 }, '', '#card');
+  SCENE.ses = ses;
+  SCENE.open = true;
+  sheetReturn = document.activeElement;
+  $('sheet').hidden = false;
+  say2('');
+  /* 서체가 아직 안 왔으면 canvas 가 대체 글꼴로 그립니다 — 한글이
+     네모로 나가는 것을 여기서 막습니다. */
+  await document.fonts.ready;
+  await sceneLoad();
+  sheetPaint();
+  $('sheet-close').focus();
+}
+
+function sheetClose() {
+  if (location.hash === '#card') history.back();
+  $('sheet').hidden = true;
+  SCENE.open = false;
+  if (sheetReturn && sheetReturn.isConnected) sheetReturn.focus();
+}
+
+/* 미리보기는 화면 폭에 맞춰 줄여 보여 줍니다. 그리는 것은 늘 1080 폭
+   원본이라 저장 결과와 같습니다. */
+function sheetPaint() {
+  const cv = $('card-canvas');
+  drawCard(cv, SCENE.ses, {});
+  const R = RATIO[SCENE.ratio];
+  const maxH = Math.min(560, innerHeight - 220);
+  const scale = Math.min(maxH / R.h, 320 / R.w);
+  cv.style.width = Math.round(R.w * scale) + 'px';
+  cv.style.height = Math.round(R.h * scale) + 'px';
+  $('card-cap').textContent = R.label + ' · ' + R.w + '×' + R.h;
+
+  /* 썸네일 셋도 같은 함수로 그립니다 — 고른 뒤 다른 그림이 나오면
+     안 됩니다. */
+  Object.keys(STYLE).forEach((k) => {
+    const t = $('thumb-' + k);
+    if (t) drawCard(t, SCENE.ses, { style: k, ratio: 'feed' });
+  });
+
+  document.querySelectorAll('.styles button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.style === SCENE.style));
+  });
+  document.querySelectorAll('.ratios button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.ratio === SCENE.ratio));
+  });
+}
+
+function say2(msg, tone) {
+  const el = $('act-say');
+  el.textContent = msg || '';
+  el.className = 'act-say' + (tone ? ' ' + tone : '');
+}
+
+/* ---------------- 내보내기 ----------------
+   저장 그림에는 편집용 조각이 하나도 안 들어갑니다. canvas 를 그대로
+   내보내므로 토글·비율 버튼·닫기·그림자가 섞일 자리가 없습니다. */
+function cardName(ext) {
+  const d = new Date(SCENE.ses.at);
+  const p = (n) => String(n).padStart(2, '0');
+  return 'deskfit-session-' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '.' + ext;
+}
+
+function cardBlob() {
+  return new Promise((ok, no) => {
+    const cv = document.createElement('canvas');
+    drawCard(cv, SCENE.ses, {});
+    cv.toBlob((b) => (b ? ok(b) : no(new Error('toBlob'))), 'image/png');
+  });
+}
+
+async function cardSave() {
+  if (SCENE.busy) return;
+  SCENE.busy = true;
+  $('act-save').disabled = true;
+  say2('이미지를 만들고 있어요…');
+  try {
+    const blob = await cardBlob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = cardName('png');
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    say2('이미지를 저장했어요. 인스타그램 스토리에서 불러올 수 있어요.', 'ok');
+  } catch {
+    say2('이미지를 만들지 못했어요. 다시 눌러 주세요.', 'bad');
+  }
+  $('act-save').disabled = false;
+  SCENE.busy = false;
+}
+
+/* 공유는 되는 곳에서만 공유입니다. 안 되는 곳에서 "공유" 라고 적어 두면
+   눌러 보고 나서야 안 된다는 것을 압니다. */
+function canShareFile() {
+  if (!navigator.canShare || !navigator.share) return false;
+  try {
+    return navigator.canShare({ files: [new File([new Blob()], 'a.png', { type: 'image/png' })] });
+  } catch { return false; }
+}
+
+async function cardShare() {
+  if (SCENE.busy) return;
+  SCENE.busy = true;
+  say2('이미지를 만들고 있어요…');
+  try {
+    const blob = await cardBlob();
+    const file = new File([blob], cardName('png'), { type: 'image/png' });
+    await navigator.share({ files: [file], title: 'Deskfit 오늘의 집중 장면' });
+    say2('공유 창을 열었어요.', 'ok');
+  } catch (err) {
+    if (err && err.name === 'AbortError') say2('');
+    else { say2('공유가 안 돼서 이미지를 저장할게요.', 'bad'); SCENE.busy = false; await cardSave(); return; }
+  }
+  SCENE.busy = false;
+}
+
+/* ---------------- 배선 ---------------- */
+$('sheet-close').addEventListener('click', sheetClose);
+$('act-exit').addEventListener('click', sheetClose);
+$('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) sheetClose(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && SCENE.open) { e.preventDefault(); sheetClose(); }
+});
+
+document.querySelectorAll('.styles button').forEach((b) => {
+  b.addEventListener('click', () => { SCENE.style = b.dataset.style; sheetPaint(); });
+});
+document.querySelectorAll('.ratios button').forEach((b) => {
+  b.addEventListener('click', () => { SCENE.ratio = b.dataset.ratio; sheetPaint(); });
+});
+document.querySelectorAll('[data-show]').forEach((el) => {
+  el.checked = Boolean(SCENE.show[el.dataset.show]);
+  el.addEventListener('change', () => {
+    SCENE.show[el.dataset.show] = el.checked;
+    write('girin.cardshow', SCENE.show);
+    sheetPaint();
+  });
+});
+$('act-save').addEventListener('click', cardSave);
+$('act-share').addEventListener('click', cardShare);
+
+/* 데스크톱에서는 이미지 저장이 주 행동입니다. 파일 공유가 되는 기기에서만
+   공유 버튼을 보여 주고, 그때는 그쪽이 주 행동이 됩니다. */
+if (canShareFile()) {
+  $('act-share').hidden = false;
+  $('act-share').className = 'act-main';
+  $('act-save').className = 'act-sub';
+  $('act-share').textContent = '공유하기';
+  $('act-save').textContent = '이미지 저장';
+} else {
+  $('act-share').hidden = true;
+}
+
+/* 세션 줄의 '카드로 보기' 가 이 화면을 엽니다. */
+document.querySelectorAll('[data-card]').forEach((b) => {
+  b.addEventListener('click', () => sheetOpen(SESSIONS[Number(b.dataset.card)]));
+});
+</script>
+<!-- 오른쪽 위 = 로비(집), 오른쪽 아래 = 랭킹전. -->
+<script src="../shared/corner-nav.js" data-page="mypage"></script>
+
+
+</body>
+</html>

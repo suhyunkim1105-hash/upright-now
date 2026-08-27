@@ -12,6 +12,18 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
       "port": 4173
+    },
+    {
+      "name": "deskfit",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", ".", "-p", "8177", "-c-1"],
+      "port": 8177
+    },
+    {
+      "name": "openworld",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "prototypes", "-p", "8166", "-c-1"],
+      "port": 8166
     }
   ]
 }

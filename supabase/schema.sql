@@ -1,4 +1,4 @@
--- UpRight Now: Supabase prototype schema for two-person rooms.
+-- Deskfit: Supabase prototype schema for two-person rooms.
 -- Review and test policies before production use.
 
 create extension if not exists pgcrypto;

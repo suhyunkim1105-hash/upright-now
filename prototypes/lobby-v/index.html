@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>메인 시안 다섯 — Deskfit</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+
+<style>
+/* 시안 다섯 장을 한 화면에 놓고 봅니다. 축소한 진짜 화면이라
+   스크린샷이 아니라 **지금 상태**입니다. */
+:root {
+  --teal:     #2DD4BF;
+  --teal-700: #0D7769;
+  --teal-50:  #EFFBF9;
+  --ink:      #17201E;
+  --ink-toss: #191F28;
+  --ink-2:    #55605D;
+  --ink-3:    #79847F;
+  --paper:    #FFFFFF;
+  --wash:     #F4F7F6;
+  --line:     #E4EAE8;
+  --warn:     #B03A0B;
+  --warn-50:  #FDF3EC;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--wash);
+  color: var(--ink);
+  font-family: "Wanted Sans Variable", "Wanted Sans", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.7;
+}
+.page { max-width: 1280px; margin: 0 auto; padding: 0 28px 100px; }
+
+header {
+  padding: 64px 0 34px;
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 14px;
+}
+h1 { margin: 0; font-size: clamp(32px, 4.4vw, 48px); font-weight: 900; letter-spacing: -.032em; line-height: 1.1; }
+.eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--teal-700);
+}
+.lede { margin: 0; max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+.lede b { color: var(--ink); font-weight: 700; }
+
+.fix {
+  margin-top: 8px;
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: var(--warn-50);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+}
+.fix b { color: var(--warn); }
+.fix p { margin: 0; font-size: 14.5px; max-width: 66ch; }
+.fix p + p { margin-top: 7px; }
+
+h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -.024em; }
+section { padding-top: 56px; display: flex; flex-direction: column; gap: 20px; }
+
+/* ---- 시안 격자 ---- */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 22px; }
+.card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  box-shadow: 0 14px 32px -20px rgba(13,60,52,.5);
+}
+.frame {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: #E9F1EC;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+}
+.frame iframe {
+  position: absolute; top: 0; left: 0;
+  width: 1440px; height: 900px;
+  border: 0;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+.frame a.open {
+  position: absolute; inset: 0; z-index: 2;
+  display: block;
+  background: linear-gradient(180deg, transparent 60%, rgba(9,20,18,.5));
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.frame a.open span {
+  position: absolute; left: 16px; bottom: 14px;
+  padding: 8px 16px; border-radius: 999px;
+  background: var(--teal); color: #06332B;
+  font-size: 13.5px; font-weight: 800;
+}
+.frame a.open:hover, .frame a.open:focus-visible { opacity: 1; }
+.frame a.open:focus-visible { outline: 3px solid var(--teal-700); outline-offset: -3px; }
+
+.body { padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.tt { display: flex; align-items: baseline; gap: 10px; }
+.tt .n {
+  width: 26px; height: 26px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 999px; background: var(--teal-50);
+  color: var(--teal-700); font-size: 13px; font-weight: 800;
+}
+.tt b { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.claim { font-size: 14.5px; color: var(--ink-2); margin: 0; }
+.claim + .claim { margin-top: -2px; }
+dl { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 13.5px; }
+dt { color: var(--ink-3); font-weight: 700; white-space: nowrap; }
+dd { margin: 0; color: var(--ink-2); }
+dd.risk { color: var(--warn); }
+
+.tw { overflow-x: auto; }
+table {
+  width: 100%; border-collapse: collapse; font-size: 14px; min-width: 700px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+}
+th, td { text-align: left; padding: 11px 15px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+td.k { font-weight: 700; white-space: nowrap; }
+.yes { color: var(--teal-700); font-weight: 700; }
+.no  { color: var(--warn); font-weight: 700; }
+
+.note { font-size: 13px; color: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<header>
+  <p class="eyebrow">Deskfit · 메인 페이지 시안</p>
+  <h1>시안 다섯</h1>
+  <p class="lede">
+    <a href="https://claude.ai/code/artifact/1ebcc294-72dc-43eb-8662-5f6da0577c93">클레이 리서치</a>에서
+    나온 문법 넷에, 우리 자산이 시키는 다섯째를 더했습니다.
+    아래 다섯은 <b>축소한 진짜 화면</b>입니다 — 눌러서 열면 그대로 씁니다.
+  </p>
+
+  <div class="fix">
+    <p><b>다섯 장 전부에 공통으로 들어간 것</b> — 리서치가 시킨 <b>깊이 세 단</b>입니다.</p>
+    <p>
+      본판 로비는 못 누르는 바(트랙)가 inset 2개를 걸치고 있고, 정작 눌리는 버튼이
+      <code>box-shadow: none</code> 이었습니다. 깊이가 뒤집혀 있었어요.
+      다섯 시안 모두 <b>볼록 = 누를 수 있음 / 평면 = 판 / 오목 = 넣는 곳</b> 을 지킵니다.
+      시안끼리 다른 것은 그 위의 <b>재질</b>뿐입니다.
+    </p>
+  </div>
+</header>
+
+<section>
+  <h2>다섯 장</h2>
+
+  <div class="grid">
+
+    <article class="card">
+      <div class="frame">
+        <iframe src="v1-ladder.html" title="시안 1 정론 미리 보기" loading="lazy" scrolling="no" tabindex="-1"></iframe>
+        <a class="open" href="v1-ladder.html"><span>열어서 보기 →</span></a>
+      </div>
+      <div class="body">
+        <div class="tt"><span class="n">1</span><b>정론</b></div>
+        <p class="claim">지금 화면의 문제는 취향이 아니라 <b>위계</b>다. 리서치가 시킨 것만 정확히 하면 스타일을 안 바꾸고도 정리된다.</p>
+        <dl>
+          <dt>재질</dt><dd>흐린 클레이 + 세션 시작에만 단단한 아래 입술</dd>
+          <dt>가져온 곳</dt><dd>superdesign(위계) · Joon(물든 그림자·음수 spread) · Duolingo(입술)</dd>
+          <dt>배치</dt><dd>지금과 같음 — 가운데 정렬</dd>
+          <dt>위험</dt><dd class="risk">가장 안전한 만큼 가장 안 새롭다</dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="frame">
+        <iframe src="v2-tile.html" title="시안 2 타일 미리 보기" loading="lazy" scrolling="no" tabindex="-1"></iframe>
+        <a class="open" href="v2-tile.html"><span>열어서 보기 →</span></a>
+      </div>
+      <div class="body">
+        <div class="tt"><span class="n">2</span><b>타일</b></div>
+        <p class="claim">우리는 게임이다. 게임의 깊이는 흐린 그림자가 아니라 <b>단단한 아래 입술</b>이다.</p>
+        <dl>
+          <dt>재질</dt><dd>blur 0. 누를 수 있는 것에 흐린 그림자를 한 겹도 안 씀</dd>
+          <dt>가져온 곳</dt><dd>Duolingo 전면</dd>
+          <dt>배치</dt><dd>알약 없음. 세션 시작 아래 두 칸 격자</dd>
+          <dt>위험</dt><dd class="risk">한글엔 대문자가 없어 두올링고의 타이포 축 하나를 못 씀</dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="frame">
+        <iframe src="v3-sticker.html" title="시안 3 스티커 미리 보기" loading="lazy" scrolling="no" tabindex="-1"></iframe>
+        <a class="open" href="v3-sticker.html"><span>열어서 보기 →</span></a>
+      </div>
+      <div class="body">
+        <div class="tt"><span class="n">3</span><b>스티커</b></div>
+        <p class="claim">진짜 제약은 클레이가 아니라 <b>배경이 사진이라는 것</b>. 흐림 뒤에 숨지 말고 사진 위에 붙는다.</p>
+        <dl>
+          <dt>재질</dt><dd>흰 외곽선 4px + blur 0 오프셋 그림자. 누르면 자기 그림자로 들어감</dd>
+          <dt>가져온 곳</dt><dd>Fall Guys</dd>
+          <dt>배치</dt><dd>같음. 대신 워드마크도 스티커가 됨</dd>
+          <dt>위험</dt><dd class="risk">시끄러워지기 쉬움 — 외곽선을 흰색 하나로 묶어 억제</dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="frame">
+        <iframe src="v4-quiet.html" title="시안 4 절제 미리 보기" loading="lazy" scrolling="no" tabindex="-1"></iframe>
+        <a class="open" href="v4-quiet.html"><span>열어서 보기 →</span></a>
+      </div>
+      <div class="body">
+        <div class="tt"><span class="n">4</span><b>절제</b></div>
+        <p class="claim">클레이를 더 잘하는 길 말고 <b>덜 하는 길</b>. Pitch 는 페이지 전체에 의미 있는 그림자가 하나다.</p>
+        <dl>
+          <dt>재질</dt><dd>inset 0개. 그림자는 세션 시작 하나, 그것도 한 겹</dd>
+          <dt>가져온 곳</dt><dd>Pitch(타이포·절제) · Joon(그림자 없는 CTA)</dd>
+          <dt>배치</dt><dd><b>가운데 정렬을 버림.</b> 왼쪽 기둥 · 워드마크 최대 132px</dd>
+          <dt>위험</dt><dd class="risk">게임인데 얌전해 보일 수 있음</dd>
+        </dl>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="frame">
+        <iframe src="v5-world.html" title="시안 5 월드 미리 보기" loading="lazy" scrolling="no" tabindex="-1"></iframe>
+        <a class="open" href="v5-world.html"><span>열어서 보기 →</span></a>
+      </div>
+      <div class="body">
+        <div class="tt"><span class="n">5</span><b>월드</b></div>
+        <p class="claim">Dribbble 상위 작업은 대부분 아이콘·일러스트다. 점토는 껍데기가 아니라 <b>물건</b>에 붙는다. 우리는 그 물건을 이미 갖고 있다.</p>
+        <dl>
+          <dt>재질</dt><dd>UI 는 HUD 로 축소. 부푼 것은 캐릭터와 세션 시작 둘뿐</dd>
+          <dt>가져온 곳</dt><dd>Dribbble 188건의 경향 · clay-ui(숨쉬기 모션)</dd>
+          <dt>배치</dt><dd>캐릭터가 화면 한가운데. 7초로 떠오르고 <b>접지 그림자가 같이 좁아짐</b></dd>
+          <dt>위험</dt><dd class="risk">캐릭터 그림 품질이 곧 화면 품질 — 지금은 2D 픽셀</dd>
+        </dl>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+<section>
+  <h2>한눈에</h2>
+  <div class="tw">
+    <table>
+      <thead>
+        <tr><th>축</th><th>1 정론</th><th>2 타일</th><th>3 스티커</th><th>4 절제</th><th>5 월드</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="k">깊이 세 단</td>
+          <td class="yes">지킴</td><td class="yes">지킴</td><td class="yes">지킴</td><td class="yes">지킴</td><td class="yes">지킴</td>
+        </tr>
+        <tr>
+          <td class="k">흐린 그림자</td>
+          <td>있음</td><td class="no">없음</td><td class="no">없음</td><td>한 겹만</td><td>세션 시작만</td>
+        </tr>
+        <tr>
+          <td class="k">사진 위 가독</td>
+          <td>보통</td><td>보통</td><td class="yes">가장 좋음</td><td>배경을 눕혀 해결</td><td>보통</td>
+        </tr>
+        <tr>
+          <td class="k">배치 변경</td>
+          <td>없음</td><td>격자</td><td>없음</td><td class="yes">왼쪽 정렬</td><td class="yes">캐릭터 중심</td>
+        </tr>
+        <tr>
+          <td class="k">월드(3D)와 재질 궁합</td>
+          <td>보통</td><td class="yes">좋음</td><td class="yes">좋음</td><td>보통</td><td class="yes">가장 좋음</td>
+        </tr>
+        <tr>
+          <td class="k">발표에서 눈에 띄는 정도</td>
+          <td>낮음</td><td>중간</td><td class="yes">높음</td><td>중간</td><td class="yes">높음</td>
+        </tr>
+        <tr>
+          <td class="k">지금 자산으로 완성 가능</td>
+          <td class="yes">바로</td><td class="yes">바로</td><td class="yes">바로</td><td class="yes">바로</td><td>캐릭터 교체 필요</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">
+    다섯 장 모두 같은 동작(<code>variant.js</code>)을 씁니다 — 화면 전환·뒤로가기·고르기·문 앞 확인.
+    동작이 같아야 비교가 재질 비교가 됩니다.
+  </p>
+</section>
+
+</div>
+
+<script>
+/* 미리 보기는 1440×900 을 실제로 띄운 뒤 칸에 맞춰 줄입니다.
+   스크린샷이 아니라 지금 상태라, 시안을 고치면 여기도 같이 바뀝니다. */
+function fit() {
+  document.querySelectorAll('.frame').forEach(function (f) {
+    var el = f.querySelector('iframe');
+    if (!el) return;
+    el.style.transform = 'scale(' + (f.clientWidth / 1440) + ')';
+  });
+}
+addEventListener('resize', fit);
+fit();
+</script>
+</body>
+</html>

@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deskfit</title>
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="../shared/clay.css">
+
+<style>
+/* ==================================================================
+   시안 2 · 타일 — 흐린 것이 하나도 없음
+
+   가설: 우리는 게임이다. 게임 UI 의 깊이는 흐린 그림자가 아니라
+   **단단한 아래 입술**이다. 두올링고를 실측하면 버튼에 box-shadow 가
+   아예 없고 border-bottom 4px 만 있다. 반경도 12px 로 타이트하다.
+
+   이 시안이 걸고 있는 것
+     · 화면 전체에서 blur 를 0 으로 — 누를 수 있는 것에 흐린 그림자를
+       한 겹도 쓰지 않습니다
+     · 알약을 없앰 — 전부 모서리가 정해진 타일
+     · 누름이 진짜 물리 — 입술이 접히고 그만큼 내려앉습니다
+     · 배치도 타일로 — 세션 시작 아래에 두 칸이 격자로 붙습니다
+
+   두올링고가 쓰는 축 하나는 못 가져옵니다. 그쪽 버튼 글자는
+   uppercase + 자간으로 단단해지는데 **한글에는 대문자가 없습니다.**
+   그래서 굵기(800)와 크기로 대신했습니다.
+   ================================================================== */
+
+:root {
+  --teal:      #2DD4BF;
+  --teal-lip:  #0F9E8C;    /* 입술 — 채움보다 두 단 어두운 값 */
+  --teal-700:  #0D7769;
+  --teal-800:  #0C5A4F;
+  --teal-50:   #EFFBF9;
+  --ink:       #17201E;
+  --ink-toss:  #191F28;
+  --ink-2:     #5C6663;
+  --ink-3:     #79847F;
+  --paper:     #FFFFFF;
+  --paper-lip: #D7DEDC;    /* 흰 타일의 입술 */
+  --wash:      #F1F5F4;
+  --line:      #E2E8E6;
+
+  --s-1: 8px;  --s-2: 16px; --s-3: 22px;
+  --s-4: 34px; --s-5: 64px;
+
+  /* 반경 사다리 — 알약 없음. 두올링고 실측 12px 을 바닥으로 삼고
+     크기에 따라 한 계단씩 올립니다. */
+  --r-tile: 20px;
+  --r-ctl:  14px;
+  --r-chip: 12px;
+
+  /* 입술 두께. 큰 것은 6, 보통 4, 작은 것은 3. */
+  --lip-lg: 6px;
+  --lip:    4px;
+  --lip-sm: 3px;
+
+  /* 판에만 쓰는 아주 얕은 그림자. 누를 수 있는 것에는 안 씁니다 —
+     그러면 입술과 그림자가 같은 말을 두 번 하게 됩니다. */
+  --plate: 0 3px 0 rgba(13,60,52,.10);
+
+  --ease: cubic-bezier(.2, .9, .3, 1);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Wanted Sans Variable", "Wanted Sans", system-ui, sans-serif;
+  color: var(--ink);
+  background: #E9F1EC;
+  overflow: hidden;
+}
+
+.bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; background: #E9F1EC; }
+.bg-blur {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; filter: blur(38px) saturate(1.06); transform: scale(1.18);
+}
+.bg-room { position: absolute; left: 0; bottom: 0; width: 100%; height: auto; aspect-ratio: 1672 / 941; }
+.bg-room img {
+  width: 100%; height: 100%; display: block;
+  mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+}
+
+.shell { position: relative; height: 100%; display: grid; place-items: center; padding: var(--s-5) var(--s-4) 92px; }
+.stage { width: min(1140px, 100%); }
+.view {
+  display: none; flex-direction: column; align-items: center;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 260ms var(--ease), transform 260ms var(--ease);
+}
+.view.on { display: flex; opacity: 1; transform: none; }
+.view[hidden] { display: none; }
+
+/* ---------------- 로비 ---------------- */
+.wordmark {
+  margin: 0;
+  font-size: clamp(52px, 6.4vw, 88px);
+  font-weight: 900;
+  letter-spacing: -.028em;
+  line-height: 1;
+  color: var(--ink-toss);
+  text-shadow: 0 2px 0 rgba(255,255,255,.9), 0 3px 0 rgba(25,31,40,.10);
+}
+.tagline {
+  margin: 12px 0 0;
+  font-size: 17.5px; font-weight: 700; color: #52605C;
+  text-shadow: 0 1px 0 rgba(255,255,255,.9);
+}
+.tagline b { color: var(--teal-700); }
+
+/* ---- 타일 공통 ----
+   깊이가 전부 실선입니다. 누르면 입술이 사라지고 그만큼 내려앉아,
+   높이가 변하지 않도록 margin 으로 되받습니다. */
+.tile {
+  border: 0;
+  border-bottom: var(--lip) solid var(--paper-lip);
+  border-radius: var(--r-tile);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  box-shadow: none;
+  transition: filter 120ms var(--ease), transform 90ms var(--ease);
+}
+.tile:hover { filter: brightness(.985); }
+.tile:active {
+  transform: translateY(var(--lip));
+  border-bottom-width: 0;
+  margin-bottom: var(--lip);
+}
+.tile:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+
+.tile-teal {
+  background: var(--teal);
+  border-bottom-color: var(--teal-lip);
+  color: #06332B;
+}
+.tile-teal:hover { filter: brightness(1.05); }
+
+/* 세션 시작 — 가장 큰 타일. 입술도 가장 두껍습니다. */
+.start {
+  margin-top: 42px;
+  width: min(420px, 100%);
+  padding: 25px 40px;
+  border-bottom-width: var(--lip-lg);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.015em;
+}
+.start:active { transform: translateY(var(--lip-lg)); margin-bottom: var(--lip-lg); }
+
+/* 마이페이지·랭킹전 — 격자 두 칸.
+   트랙(껍데기)을 아예 없앴습니다. 못 누르는 것을 그리지 않으면
+   깊이가 뒤집힐 자리도 없습니다. */
+.cnav {
+  margin-top: 14px;
+  width: min(420px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.cnav .tile {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  padding: 18px 12px;
+  border-radius: var(--r-ctl);
+  font-size: 14px; font-weight: 700;
+}
+/* 이모지를 쓰다가 선 아이콘으로 바꿨습니다. 이모지는 기기마다 다른
+   그림이 나오고, 이 화면에서 **우리가 안 그린 유일한 그림**이었습니다. */
+.cnav .ico { flex: none; color: var(--teal-700); }
+
+
+/* 들어가기가 이 화면의 유일한 할 일입니다. 돌아가기를 같은 크기 타일로
+   두면 둘의 무게가 같아 보여서, 매번 어느 쪽인지 읽게 됩니다. */
+.backlink {
+  margin-top: 12px; padding: 6px 10px;
+  background: none; border: 0; border-radius: var(--r-chip);
+  font-size: 13px; font-weight: 700; color: var(--ink-3);
+}
+.backlink:hover { color: var(--ink-toss); }
+.backlink:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 2px; }
+
+/* ---------------- 고르기 ---------------- */
+.ask {
+  margin: 0 0 var(--s-4);
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 800; letter-spacing: -.025em;
+  color: var(--ink-toss);
+  text-shadow: 0 2px 0 rgba(255,255,255,.9);
+}
+.panels { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); width: 100%; }
+.panel {
+  position: relative;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  aspect-ratio: 16 / 10;
+  padding: var(--s-3);
+  border: 0;
+  border-bottom: var(--lip-lg) solid var(--paper-lip);
+  border-radius: var(--r-tile);
+  background: var(--paper);
+  overflow: hidden;
+  cursor: pointer; font: inherit; text-align: left;
+  box-shadow: none;
+  transition: filter 120ms var(--ease), transform 90ms var(--ease);
+}
+.panel:hover { filter: brightness(1.03); }
+.panel:active { transform: translateY(var(--lip-lg)); border-bottom-width: 0; margin-bottom: var(--lip-lg); }
+.panel:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+/* 고른 것은 입술이 청록으로 바뀝니다 — 깊이는 그대로고 색만 옮겨
+   가므로 "더 눌림" 이라는 없는 뜻이 안 생깁니다. */
+.panel.sel { border-bottom-color: var(--teal); }
+.panel.sel::after {
+  content: ""; position: absolute; inset: 0;
+  border: 4px solid var(--teal); border-radius: var(--r-tile);
+  pointer-events: none;
+}
+.panel .media, .panel .room { position: absolute; inset: 0; }
+.panel .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.panel .media .still { display: none; }
+.panel .veil { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 42%, rgba(10,22,20,.70) 100%); }
+.panel .name {
+  position: relative; color: #fff; font-size: 22px; font-weight: 800;
+  letter-spacing: -.015em; text-shadow: 0 2px 8px rgba(0,0,0,.42);
+}
+.panel .bar { display: none; }
+.panel.light { background: linear-gradient(180deg, #FFFDF6 0%, #F3EEE0 100%); border-bottom-color: #D9D0BC; }
+.panel.light .room { display: flex; align-items: flex-end; justify-content: center; gap: 6%; padding: 0 10% 22%; }
+.panel.light figure { margin: 0; position: relative; }
+.panel.light img { width: 74px; height: auto; display: block; image-rendering: pixelated; }
+.panel.light .b img { width: 88px; }
+.panel.light .gnd {
+  position: absolute; left: 50%; bottom: -8px; translate: -50% 0;
+  width: 72%; height: 12px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(13,60,52,.26), transparent 70%);
+}
+.panel.light .veil { background: linear-gradient(180deg, transparent 52%, rgba(24,20,10,.42) 100%); }
+
+.confirm { display: flex; gap: 12px; margin-top: var(--s-4); }
+.go { padding: 18px 36px; font-size: 17px; font-weight: 800; letter-spacing: -.01em; border-radius: var(--r-ctl); }
+.back { padding: 18px 26px; font-size: 15px; font-weight: 700; color: var(--ink-2); border-radius: var(--r-ctl); }
+
+/* ---------------- 문 앞 확인 ---------------- */
+.gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center; padding: var(--s-4);
+  background: rgba(12,22,20,.44);
+  opacity: 0; transition: opacity 180ms var(--ease);
+}
+.gate.on { opacity: 1; }
+.gate[hidden] { display: none; }
+.gate-box {
+  width: min(430px, 100%);
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  border-radius: var(--r-tile);
+  border-bottom: var(--lip-lg) solid var(--paper-lip);
+  background: var(--paper);
+  text-align: center;
+  transform: translateY(10px);
+  transition: transform 200ms var(--ease);
+}
+.gate.on .gate-box { transform: none; }
+.gate-ico {
+  display: grid; place-items: center;
+  width: 58px; height: 58px; margin: 0 auto var(--s-2);
+  border-radius: var(--r-ctl);
+  background: var(--teal-50);
+  border-bottom: var(--lip-sm) solid #C9EDE6;
+  color: var(--teal-700); font-size: 24px;
+}
+.gate-box h2 { margin: 0 0 8px; font-size: 20px; font-weight: 800; letter-spacing: -.02em; }
+.gate-box p { margin: 0 0 var(--s-3); font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
+.gate-acts { display: flex; flex-direction: column; gap: 9px; }
+.gate-go {
+  display: block; padding: 16px;
+  border-radius: var(--r-ctl);
+  border-bottom: var(--lip) solid var(--teal-lip);
+  background: var(--teal); color: #06332B;
+  font-size: 16px; font-weight: 800; text-decoration: none;
+  transition: filter 120ms var(--ease), transform 90ms var(--ease);
+}
+.gate-go:hover { filter: brightness(1.05); }
+.gate-go:active { transform: translateY(var(--lip)); border-bottom-width: 0; margin-bottom: var(--lip); }
+.gate-go:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 3px; }
+.gate-x {
+  padding: 13px; border: 0; border-radius: var(--r-ctl);
+  background: transparent; color: var(--ink-3);
+  font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.gate-x:hover { color: var(--ink-2); background: var(--wash); }
+.gate-x:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 2px; }
+
+.note-chip {
+  position: fixed; left: 18px; top: 18px; z-index: 150;
+  padding: 9px 15px;
+  border-radius: var(--r-chip);
+  border-bottom: var(--lip-sm) solid var(--paper-lip);
+  background: rgba(255,255,255,.92);
+  font-size: 12.5px; font-weight: 700; color: var(--ink-2);
+}
+.note-chip b { color: var(--teal-700); }
+
+@media (prefers-reduced-motion: reduce) {
+  .view, .tile, .panel, .gate, .gate-box, .gate-go { transition: none; }
+  .tile:active, .panel:active, .gate-go:active { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <img class="bg-blur" src="assets/campus-hero.jpg" alt="">
+  <div class="bg-room"><img src="assets/campus-hero.jpg" alt=""></div>
+</div>
+
+
+<main class="shell">
+  <div class="stage">
+
+    <section class="view on" id="v-lobby" aria-labelledby="wm">
+      <h1 class="wordmark" id="wm">Deskfit</h1>
+      <p class="tagline">자세교정과 공부를 <b>한 번에</b></p>
+
+      <button class="tile tile-teal start" type="button" id="start">세션 시작</button>
+
+      <nav class="cnav" aria-label="바로 가기">
+        <button class="tile" type="button" onclick="location.href='../mypage/index.html'">
+          <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="5" width="20" height="14" rx="3"/><circle cx="8.5" cy="12" r="2.4"/>
+            <path d="M14 10h5M14 14h3"/>
+          </svg>마이페이지
+        </button>
+        <button class="tile" type="button" onclick="location.href='../league/index.html'">
+          <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>
+            <path d="M12 14v4M9 21h6"/>
+          </svg>랭킹전
+        </button>
+      </nav>
+    </section>
+
+    <section class="view" id="v-choose" aria-label="세션 종류 고르기" hidden>
+
+      <div class="panels" role="group" aria-label="세션 종류">
+        <button class="panel dark" type="button" id="p-open" aria-pressed="true">
+          <span class="media">
+            <img class="anim" src="assets/world-3d.webp" alt="캠퍼스 위로 카메라가 천천히 들어가는 장면">
+            <img class="still" src="assets/world-still.jpg" alt="캠퍼스 전경">
+          </span>
+          <span class="veil"></span>
+          <span class="name">온라인</span>
+          <span class="bar"></span>
+        </button>
+
+        <button class="panel light" type="button" id="p-invite" aria-pressed="false">
+          <span class="room">
+            <figure class="a"><img src="assets/char-turtle.png" alt=""><span class="gnd"></span></figure>
+            <figure class="b"><img src="assets/char-penguin.png" alt=""><span class="gnd"></span></figure>
+            <figure class="c"><img src="assets/char-frog.png" alt=""><span class="gnd"></span></figure>
+          </span>
+          <span class="veil"></span>
+          <span class="name">초대</span>
+          <span class="bar"></span>
+        </button>
+      </div>
+
+      <div class="confirm">
+        <button class="tile tile-teal go" type="button" id="go">캠퍼스로 들어가기</button>
+        <button class="backlink" type="button" id="back">돌아가기</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h" hidden>
+  <div class="gate-box">
+    <span class="gate-ico" id="gate-ico" aria-hidden="true"></span>
+    <h2 id="gate-h"></h2>
+    <p id="gate-p"></p>
+    <div class="gate-acts">
+      <a class="gate-go" id="gate-go" href="#"></a>
+      <button class="gate-x" type="button" id="gate-x">나중에 할게요</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* variant.js — 시안 다섯 장이 함께 쓰는 동작.
+   ==================================================================
+   시안끼리 다른 것은 **재질과 배치**뿐이고, 동작은 같아야 합니다.
+   같아야 비교가 재질 비교가 됩니다 — 한쪽만 뒤로가기가 되면 그게
+   디자인 평가에 섞입니다.
+
+   여기 있는 것: 화면 전환(주소 자국 포함) · 고르기 · 문 앞 확인.
+   여기 없는 것: 실제 기준 맞추기와 학교 인증. 그 둘은 본판
+   (prototypes/lobby/index.html)에서 shared/calibrate.js 와
+   shared/school-auth.js 로 이미 돕니다. 시안은 **그 판이 어떻게
+   생겼는지**만 보면 되므로 문구만 띄웁니다.
+   ================================================================== */
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  var lobby  = $('v-lobby');
+  var choose = $('v-choose');
+  var gate   = $('gate');
+  if (!lobby || !choose) return;
+
+  var kind = 'open';        /* 'open' | 'invite' */
+
+  /* ---------------- 화면 전환 ----------------
+     주소에 자국을 남깁니다. 안 남기면 브라우저 뒤로가기가 "고르는
+     화면 → 로비" 가 아니라 "로비 → 이전 페이지" 가 됩니다. */
+  function paint(toChoose) {
+    lobby.hidden  = toChoose;
+    choose.hidden = !toChoose;
+    lobby.classList.toggle('on', !toChoose);
+    choose.classList.toggle('on', toChoose);
+    document.body.classList.toggle('picking', toChoose);
+    var focusOn = toChoose ? $('p-open') : $('start');
+    if (focusOn) focusOn.focus({ preventScroll: true });
+  }
+
+  function toChoose() {
+    if (location.hash !== '#choose') history.pushState({ v: 1 }, '', '#choose');
+    paint(true);
+  }
+  function toLobby(fromPop) {
+    if (fromPop) paint(false);
+    else history.back();
+  }
+
+  $('start').addEventListener('click', function () { toChoose(); });
+  $('back').addEventListener('click', function () { toLobby(false); });
+
+  addEventListener('popstate', function () {
+    if (gate && !gate.hidden) { closeGate(); return; }
+    paint(location.hash === '#choose');
+  });
+
+  /* 새로고침·직접 접속에서도 주소가 화면을 정합니다. */
+  if (location.hash === '#choose') paint(true);
+
+  /* ---------------- 고르기 ---------------- */
+  function pick(which) {
+    kind = which;
+    var open = which === 'open';
+    $('p-open').setAttribute('aria-pressed', String(open));
+    $('p-invite').setAttribute('aria-pressed', String(!open));
+    $('p-open').classList.toggle('sel', open);
+    $('p-invite').classList.toggle('sel', !open);
+    var go = $('go');
+    if (go) go.textContent = open ? '캠퍼스로 들어가기' : '방 만들기';
+  }
+  $('p-open').addEventListener('click', function () { pick('open'); });
+  $('p-invite').addEventListener('click', function () { pick('invite'); });
+  pick('open');
+
+  /* 오늘 한 줄(캐릭터·앉은 시간·코인)은 뺐습니다 — 히어로 한가운데에 끼어
+     있어서 이름을 읽는 화면인지 시작하는 화면인지 흐려졌습니다. 그 숫자는
+     마이페이지가 제 자리입니다. */
+
+  /* ---------------- 문 앞 확인 ----------------
+     초대는 막지 않습니다. 기준도 학교 인증도 안 봅니다 — 친구가 부른
+     자리에 들어가는 데 관문을 세우면 초대가 초대가 아니게 됩니다. */
+  var GATES = {
+    cal: {
+      ico: '◎',
+      h: '앉은 자세를 10초만 볼게요',
+      p: '지금 앉은 모습이 기준이 돼요. 이 값은 기기 밖으로 나가지 않아요.',
+      act: '기준 맞추기'
+    },
+    verify: {
+      ico: '✉',
+      h: '학교 이메일을 확인할게요',
+      p: '같은 학교끼리 겨루는 자리라, 소속만 한 번 확인해요.',
+      act: '학교 인증하기'
+    }
+  };
+
+  /* MVP 동안은 아무도 안 막습니다.
+     자세 기준과 학교 인증을 문 앞에서 물어보면, 발표에서 화면 하나를
+     보여 주려고 카메라를 켜고 10초를 앉아야 합니다. 기준은 방 안에서
+     원할 때 잡고, 인증은 랭킹전에 실제로 이름을 올릴 때 받습니다.
+     서버가 붙으면 이 함수를 되살리면 됩니다 — 창과 문구는 그대로
+     아래에 있습니다. */
+  function needs() { return null; }
+
+  function openGate(which) {
+    var g = GATES[which];
+    $('gate-ico').textContent = g.ico;
+    $('gate-h').textContent   = g.h;
+    $('gate-p').textContent   = g.p;
+    $('gate-go').textContent  = g.act;
+    gate.hidden = false;
+    requestAnimationFrame(function () { gate.classList.add('on'); });
+    $('gate-go').focus({ preventScroll: true });
+  }
+  function closeGate() {
+    gate.classList.remove('on');
+    gate.hidden = true;
+    var go = $('go');
+    if (go) go.focus({ preventScroll: true });
+  }
+
+  $('go').addEventListener('click', function () {
+    var n = needs();
+    if (n) { openGate(n); return; }
+    location.href = kind === 'open' ? '../campus3d/index.html' : '../room/index.html';
+  });
+
+  if (gate) {
+    $('gate-x').addEventListener('click', closeGate);
+    /* 시안에서는 관문을 통과한 척합니다 — 재질만 보면 되므로. */
+    $('gate-go').addEventListener('click', function (e) {
+      e.preventDefault();
+      try {
+        localStorage.setItem('girin.baseline', '{"demo":true}');
+        if ($('gate-h').textContent.indexOf('학교') >= 0) localStorage.setItem('girin.school', '데모대학교');
+      } catch (err) { /* 저장을 막아 둔 브라우저 — 그냥 닫습니다 */ }
+      closeGate();
+    });
+  }
+
+  addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (gate && !gate.hidden) { closeGate(); return; }
+    if (!choose.hidden) toLobby(false);
+  });
+  /* 시안 이름표 블록은 승격하면서 뺐습니다 — 화면이 하나뿐입니다. */
+})();
+
+</script>
+</body>
+</html>

@@ -3,13 +3,14 @@ import {
   AiSessionReportSchema,
   isSafeAiSessionReport,
   type AiReportInput,
-} from '../src/features/ai-report/contract.js'
-import type { AiSessionReport } from '../src/types/index.js'
+} from '../api/_shared/contract.js'
+import type { AiSessionReport } from '../api/_shared/types.js'
 import {
   AiReportConfigurationError,
   generateAiSessionReport,
   recordAiReportObservation,
 } from './ai-report-service.js'
+import { authErrorStatus, requireUser, type AuthedUser } from './require-auth.js'
 
 const MAX_BODY_BYTES = 12_000
 const RATE_LIMIT_WINDOW_MS = 10 * 60_000
@@ -23,6 +24,7 @@ export interface AiReportHandlerDependencies {
   enabled?: boolean
   generate?: (input: AiReportInput) => Promise<AiSessionReport>
   observe?: (input: { outcome: 'success' | 'failed'; durationMs: number }) => Promise<void>
+  verify?: (token: string) => Promise<AuthedUser>
 }
 
 class RequestBodyError extends Error {}
@@ -46,8 +48,10 @@ function isSameOrigin(request: Request): boolean {
   }
 }
 
-function requestKey(request: Request): string {
-  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+/* **사용자 id 로 셉니다.** 전에는 `x-forwarded-for` 를 썼는데 그건 보내는
+   쪽이 정하는 값이라, 매번 다른 가짜 IP 를 실으면 통이 무한히 열렸습니다. */
+function requestKey(user: AuthedUser): string {
+  return user.id
 }
 
 function withinRateLimit(key: string, now: number): boolean {
@@ -110,6 +114,17 @@ export async function handleAiReport(
     return jsonResponse(503, { code: 'AI_REPORT_UNAVAILABLE' })
   }
 
+  /* 이 뒤부터 **우리 돈이 나갑니다.** 로그인한 사람만 지나갑니다.
+     입력 파싱보다 앞에 둡니다 — 로그인 안 한 사람의 본문을 읽고 검사할
+     이유가 없습니다. */
+  let user: AuthedUser
+  try {
+    user = await requireUser(request, dependencies.verify)
+  } catch (error) {
+    const { status, code } = authErrorStatus(error)
+    return jsonResponse(status, { code })
+  }
+
   let input: AiReportInput
   try {
     input = AiReportInputSchema.parse(await readJsonBody(request))
@@ -118,7 +133,7 @@ export async function handleAiReport(
     return jsonResponse(400, { code })
   }
 
-  if (!withinRateLimit(requestKey(request), Date.now())) {
+  if (!withinRateLimit(requestKey(user), Date.now())) {
     return jsonResponse(429, { code: 'AI_REPORT_RATE_LIMITED' })
   }
 

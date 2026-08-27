@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="variant" content="1">
+<title>시안 1 · 정론 — Deskfit</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="nav.css">
+
+<style>
+/* ==================================================================
+   시안 1 · 정론 — 깊이 세 단
+
+   가설: 지금 로비의 문제는 취향이 아니라 **위계**다. 리서치가 시킨
+   것만 정확히 하면 스타일을 바꾸지 않고도 화면이 정리된다.
+
+   고친 것 넷
+     1. 깊이가 곧 "누를 수 있음" — 볼록/평면/오목 세 단으로 못 박음
+        (본판은 못 누르는 바가 inset 2개를 걸치고, 정작 눌리는 버튼이
+         box-shadow: none 이었습니다. 뒤집혀 있었습니다.)
+     2. 바깥 그림자를 요소 색으로 물들임 — 중성 먹빛은 "떠 있다"로,
+        물든 그림자는 "빛을 받는다"로 읽힙니다
+     3. 접지 그림자에 **음수 spread** — 그림자가 요소보다 좁아져야
+        번지지 않고 바닥에 닿습니다 (Joon -8px, Pitch -20px)
+     4. 세션 시작에 **단단한 아래 입술** — 흐린 겹 밑에 실선 하나.
+        누르면 입술이 접히며 그만큼 내려앉습니다 (Duolingo)
+
+   안 바꾼 것: 배치, 서체, 색. 이 시안의 값어치는 "재질만 고쳐도
+   이만큼 정리된다" 를 보이는 데 있습니다.
+   ================================================================== */
+
+:root {
+  --teal:      #2DD4BF;
+  --teal-400:  #56DCCA;
+  --teal-600:  #12A592;
+  --teal-700:  #0D7769;
+  --teal-800:  #0C5A4F;
+  --teal-50:   #EFFBF9;
+  --ink:       #17201E;
+  --ink-toss:  #191F28;
+  --ink-2:     #5C6663;
+  --ink-3:     #79847F;
+  --paper:     #FFFFFF;
+  --wash:      #F4F7F6;
+  --line:      #E7EBEA;
+
+  --s-1: 8px;  --s-2: 16px; --s-3: 22px;
+  --s-4: 34px; --s-5: 64px; --s-6: 96px;
+
+  /* ---- 반경 사다리 ----
+     clay-ui 의 규칙: 안에 든 것은 바깥보다 8px 작게. 근거 없이
+     999px 과 작은 값이 섞이지 않도록 계단을 만듭니다. */
+  --r-hero:  28px;
+  --r-card:  20px;
+  --r-ctl:   14px;
+  --r-pill:  999px;
+
+  /* ================= 깊이 세 단 =================
+     클레이에서 깊이는 장식이 아니라 **문법**입니다.
+       볼록 = 누를 수 있다
+       평면 = 읽는 것이다
+       오목 = 여기에 넣어라
+     한 단이라도 섞이면 사람이 판을 누르려 듭니다. */
+
+  /* 1단 · 볼록 — 누를 수 있는 것에만.
+     inset 밝은(위) + inset 그늘(아래) + 물든 바깥.
+     바깥의 -6px 이 음수 spread 입니다 — 그림자를 요소보다 좁혀
+     번짐 대신 접지를 만듭니다. */
+  --convex:
+    inset 0 3px 6px rgba(255,255,255,.62),
+    inset 0 -5px 9px rgba(13,60,52,.13),
+    0 10px 22px -6px rgba(13,120,105,.30),
+    0 2px 5px -1px rgba(13,60,52,.14);
+  --convex-lift:
+    inset 0 3px 6px rgba(255,255,255,.70),
+    inset 0 -5px 9px rgba(13,60,52,.12),
+    0 18px 34px -8px rgba(13,120,105,.36),
+    0 4px 8px -2px rgba(13,60,52,.15);
+  /* 누르면 빛과 그늘이 뒤집힙니다. 위가 어두워지고 아래가 밝아지면서
+     물건이 안으로 들어갑니다. */
+  --convex-press:
+    inset 0 5px 10px rgba(13,60,52,.20),
+    inset 0 -2px 5px rgba(255,255,255,.52),
+    0 2px 5px -2px rgba(13,60,52,.14);
+
+  /* 2단 · 평면 — 판. **inset 금지.** 바깥 그림자만으로 높이를 말합니다. */
+  --plate:
+    0 12px 28px -10px rgba(13,60,52,.24),
+    0 2px 6px -2px rgba(13,60,52,.10);
+
+  /* 3단 · 오목 — 입력칸·선택된 탭·꺼진 스위치. **바깥 그림자 금지.** */
+  --well:
+    inset 0 4px 9px rgba(13,60,52,.16),
+    inset 0 -2px 4px rgba(255,255,255,.86);
+
+  /* ---- 세션 시작 전용 ----
+     이 화면에서 누를 것이 그것 하나라 두께로 "여기" 를 말합니다.
+     그늘은 순검정이 아니라 청록을 섞은 어두운 값입니다 — 청록 위에서
+     검정 그늘은 때가 탄 것처럼 보입니다. */
+  --hero:
+    inset 0 6px 11px rgba(255,255,255,.74),
+    inset 0 -11px 17px rgba(11,86,76,.34),
+    0 8px 14px -4px rgba(13,119,105,.34),
+    0 26px 42px -12px rgba(13,119,105,.46),
+    0 44px 66px -28px rgba(13,60,52,.34);
+  --hero-lift:
+    inset 0 6px 11px rgba(255,255,255,.80),
+    inset 0 -11px 17px rgba(11,86,76,.32),
+    0 10px 18px -4px rgba(13,119,105,.34),
+    0 34px 52px -12px rgba(13,119,105,.48),
+    0 58px 80px -30px rgba(13,60,52,.36);
+  --hero-press:
+    inset 0 9px 15px rgba(11,86,76,.42),
+    inset 0 -4px 8px rgba(255,255,255,.44),
+    0 3px 6px -2px rgba(13,119,105,.26);
+
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: "Wanted Sans Variable", "Wanted Sans", system-ui, sans-serif;
+  color: var(--ink);
+  background: #E9F1EC;
+  overflow: hidden;
+}
+
+/* ---------------- 배경 ----------------
+   흐린 판과 선명한 판이 **같은 파일** 입니다. 색이 어긋날 수가 없습니다. */
+.bg { position: fixed; inset: 0; z-index: -2; overflow: hidden; background: #E9F1EC; }
+.bg-blur {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; filter: blur(38px) saturate(1.06); transform: scale(1.18);
+}
+.bg-room {
+  position: absolute; left: 0; bottom: 0;
+  width: 100%; height: auto; aspect-ratio: 1672 / 941;
+}
+.bg-room img {
+  width: 100%; height: 100%; display: block;
+  mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 54px);
+}
+
+/* ---------------- 뼈대 ---------------- */
+.shell {
+  position: relative;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--s-5) var(--s-4) 92px;
+}
+.stage { width: min(1140px, 100%); }
+
+.view {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 340ms var(--ease), transform 340ms var(--ease);
+}
+.view.on { display: flex; opacity: 1; transform: none; }
+.view[hidden] { display: none; }
+
+/* ---------------- 로비 ---------------- */
+.wordmark {
+  margin: 0;
+  font-size: clamp(52px, 6.4vw, 88px);
+  font-weight: 900;
+  /* Pitch 가 180px 에 -0.04em 을 씁니다. 큰 글자는 조여야 단단합니다. */
+  letter-spacing: -.025em;
+  line-height: 1;
+  color: var(--ink-toss);
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.92),
+    0 2px 2px rgba(25,31,40,.20),
+    0 12px 24px rgba(25,31,40,.20);
+}
+.tagline {
+  margin: 14px 0 0;
+  font-size: 17.5px;
+  font-weight: 600;
+  color: #55625E;
+  text-shadow: 0 1px 0 rgba(255,255,255,.86);
+}
+.tagline b { color: var(--teal-700); font-weight: 700; }
+
+/* 세션 시작 — 볼록 + 단단한 아래 입술.
+   입술이 흐린 겹 밑에 깔려 가장자리를 잡아 줍니다. 우리 월드에는
+   저폴리 3D 와 픽셀이 사는데 둘 다 가장자리가 단단합니다. */
+.start {
+  margin-top: 40px;
+  padding: 21px 46px;
+  border: 0;
+  border-bottom: 5px solid var(--teal-800);
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--teal-400) 0%, var(--teal) 58%, var(--teal-600) 100%);
+  color: #07332C;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  cursor: pointer;
+  box-shadow: var(--hero);
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.start:hover { transform: translateY(-3px); box-shadow: var(--hero-lift); }
+.start:active {
+  transform: translateY(5px);
+  border-bottom-width: 0;
+  margin-bottom: 5px;
+  box-shadow: var(--hero-press);
+}
+.start:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 4px; }
+
+/* 마이페이지·랭킹전 —
+   **여기가 본판에서 뒤집혀 있던 자리입니다.**
+   바(트랙)는 못 누르므로 평면(바깥 그림자만), 안의 두 개는 누르므로
+   볼록. 본판은 정반대였습니다. */
+.cnav {
+  margin-top: 44px;
+  display: flex;
+  gap: 10px;
+  padding: 9px;
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--plate);          /* 평면 — inset 없음 */
+}
+.cnav button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--convex);          /* 볼록 — 누를 수 있음 */
+  transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+.cnav button:hover { transform: translateY(-2px); box-shadow: var(--convex-lift); }
+.cnav button:active { transform: translateY(1px); box-shadow: var(--convex-press); }
+.cnav button:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+.cnav .ico { font-size: 16px; line-height: 1; }
+
+/* ---------------- 고르기 ---------------- */
+.ask {
+  margin: 0 0 var(--s-4);
+  font-size: clamp(26px, 3.2vw, 36px);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  color: var(--ink-toss);
+  text-shadow: 0 1px 0 rgba(255,255,255,.9);
+}
+.panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+  width: 100%;
+}
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  aspect-ratio: 16 / 10;
+  padding: var(--s-3);
+  border: 0;
+  border-radius: var(--r-hero);
+  background: var(--paper);
+  overflow: hidden;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  box-shadow: var(--convex);          /* 누를 수 있으니 볼록 */
+  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.panel:hover { transform: translateY(-4px); box-shadow: var(--convex-lift); }
+.panel:active { transform: translateY(0); box-shadow: var(--convex-press); }
+.panel:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 4px; }
+.panel .media, .panel .room { position: absolute; inset: 0; }
+.panel .media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.panel .media .still { display: none; }
+.panel .veil {
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 42%, rgba(10,22,20,.70) 100%);
+}
+.panel .name {
+  position: relative;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  text-shadow: 0 2px 8px rgba(0,0,0,.4);
+}
+/* 고른 것은 테두리로 표시합니다 — 깊이를 더 주면 볼록이 두 단이 되어
+   "더 누를 수 있는 것" 이라는 없는 뜻이 생깁니다. */
+.panel.sel { outline: 3px solid var(--teal); outline-offset: -3px; }
+.panel .bar { display: none; }
+
+.panel.light { background: linear-gradient(180deg, #FFFDF6 0%, #F3EEE0 100%); }
+.panel.light .room {
+  display: flex; align-items: flex-end; justify-content: center; gap: 6%;
+  padding: 0 10% 22%;
+}
+.panel.light figure { margin: 0; position: relative; }
+.panel.light img { width: 74px; height: auto; display: block; image-rendering: pixelated; }
+.panel.light .b img { width: 88px; }
+.panel.light .gnd {
+  position: absolute; left: 50%; bottom: -8px; translate: -50% 0;
+  width: 72%; height: 12px; border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(13,60,52,.26), transparent 70%);
+}
+.panel.light .veil { background: linear-gradient(180deg, transparent 52%, rgba(24,20,10,.42) 100%); }
+
+.confirm { display: flex; gap: 12px; margin-top: var(--s-4); }
+.go {
+  padding: 16px 34px;
+  border: 0;
+  border-bottom: 4px solid var(--teal-800);
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--teal-400), var(--teal) 60%, var(--teal-600));
+  color: #07332C;
+  font: inherit; font-size: 16px; font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--convex);
+  transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+.go:hover { transform: translateY(-2px); box-shadow: var(--convex-lift); }
+.go:active { transform: translateY(3px); border-bottom-width: 0; margin-bottom: 4px; box-shadow: var(--convex-press); }
+.go:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 3px; }
+
+.back {
+  padding: 16px 26px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,.86);
+  color: var(--ink-2);
+  font: inherit; font-size: 15px; font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--convex);
+  transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+.back:hover { transform: translateY(-2px); box-shadow: var(--convex-lift); }
+.back:active { transform: translateY(1px); box-shadow: var(--convex-press); }
+.back:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 3px; }
+
+/* ---------------- 문 앞 확인 ---------------- */
+.gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center;
+  padding: var(--s-4);
+  background: rgba(12,22,20,.44);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  opacity: 0;
+  transition: opacity 200ms var(--ease);
+}
+.gate.on { opacity: 1; }
+.gate[hidden] { display: none; }
+.gate-box {
+  position: relative;
+  width: min(430px, 100%);
+  padding: var(--s-4) var(--s-4) var(--s-3);
+  border-radius: var(--r-hero);
+  background: var(--paper);
+  text-align: center;
+  box-shadow: var(--plate);           /* 판이므로 평면 */
+  transform: translateY(8px) scale(.98);
+  transition: transform 240ms var(--ease);
+}
+.gate.on .gate-box { transform: none; }
+.gate-ico {
+  display: grid; place-items: center;
+  width: 58px; height: 58px; margin: 0 auto var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--teal-50);
+  color: var(--teal-700);
+  font-size: 24px;
+  box-shadow: var(--well);            /* 아이콘 자리는 파인 것 */
+}
+.gate-box h2 { margin: 0 0 8px; font-size: 20px; font-weight: 800; letter-spacing: -.015em; }
+.gate-box p { margin: 0 0 var(--s-3); font-size: 14.5px; line-height: 1.65; color: var(--ink-2); }
+.gate-acts { display: flex; flex-direction: column; gap: 8px; }
+.gate-go {
+  display: block;
+  padding: 15px;
+  border-radius: var(--r-ctl);
+  border-bottom: 4px solid var(--teal-800);
+  background: linear-gradient(180deg, var(--teal-400), var(--teal) 60%, var(--teal-600));
+  color: #07332C;
+  font-size: 15.5px; font-weight: 800;
+  text-decoration: none;
+  box-shadow: var(--convex);
+  transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+}
+.gate-go:hover { transform: translateY(-2px); box-shadow: var(--convex-lift); }
+.gate-go:active { transform: translateY(3px); border-bottom-width: 0; margin-bottom: 4px; }
+.gate-go:focus-visible { outline: 3px solid var(--teal-800); outline-offset: 3px; }
+.gate-x {
+  padding: 12px;
+  border: 0; border-radius: var(--r-ctl);
+  background: transparent;
+  color: var(--ink-3);
+  font: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+}
+.gate-x:hover { color: var(--ink-2); background: var(--wash); }
+.gate-x:focus-visible { outline: 3px solid var(--teal-700); outline-offset: 2px; }
+
+/* 시안 이름표 */
+.note-chip {
+  position: fixed; left: 18px; top: 18px; z-index: 150;
+  padding: 8px 15px;
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,.84);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-size: 12.5px; font-weight: 700; color: var(--ink-2);
+  box-shadow: var(--plate);
+}
+.note-chip b { color: var(--teal-700); }
+
+@media (prefers-reduced-motion: reduce) {
+  .view, .start, .cnav button, .panel, .go, .back, .gate, .gate-box, .gate-go { transition: none; }
+  .start:hover, .cnav button:hover, .panel:hover, .go:hover, .back:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg" aria-hidden="true">
+  <img class="bg-blur" src="../lobby/assets/campus-hero.jpg" alt="">
+  <div class="bg-room"><img src="../lobby/assets/campus-hero.jpg" alt=""></div>
+</div>
+
+<p class="note-chip"><b>시안 1</b> · 정론 — 깊이 세 단</p>
+
+<main class="shell">
+  <div class="stage">
+
+    <section class="view on" id="v-lobby" aria-labelledby="wm">
+      <h1 class="wordmark" id="wm">Deskfit</h1>
+      <p class="tagline">자세교정과 공부를 <b>한 번에</b></p>
+      <button class="start" type="button" id="start">세션 시작</button>
+
+      <nav class="cnav" aria-label="바로 가기">
+        <button type="button" onclick="location.href='../mypage/index.html'">
+          <span class="ico" aria-hidden="true">🪪</span>마이페이지
+        </button>
+        <button type="button" onclick="location.href='../league/index.html'">
+          <span class="ico" aria-hidden="true">🏆</span>랭킹전
+        </button>
+      </nav>
+    </section>
+
+    <section class="view" id="v-choose" aria-labelledby="ask" hidden>
+      <h1 class="ask" id="ask">둘 중 어디로 앉을까요</h1>
+
+      <div class="panels" role="group" aria-label="세션 종류">
+        <button class="panel dark" type="button" id="p-open" aria-pressed="true">
+          <span class="media">
+            <img class="anim" src="../lobby/assets/world-3d.webp" alt="캠퍼스 위로 카메라가 천천히 들어가는 장면">
+            <img class="still" src="../lobby/assets/world-still.jpg" alt="캠퍼스 전경">
+          </span>
+          <span class="veil"></span>
+          <span class="name">온라인</span>
+          <span class="bar"></span>
+        </button>
+
+        <button class="panel light" type="button" id="p-invite" aria-pressed="false">
+          <span class="room">
+            <figure class="a"><img src="../lobby/assets/char-turtle.png" alt=""><span class="gnd"></span></figure>
+            <figure class="b"><img src="../lobby/assets/char-penguin.png" alt=""><span class="gnd"></span></figure>
+            <figure class="c"><img src="../lobby/assets/char-frog.png" alt=""><span class="gnd"></span></figure>
+          </span>
+          <span class="veil"></span>
+          <span class="name">초대</span>
+          <span class="bar"></span>
+        </button>
+      </div>
+
+      <div class="confirm">
+        <button class="go" type="button" id="go">캠퍼스로 들어가기</button>
+        <button class="back" type="button" id="back">돌아가기</button>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h" hidden>
+  <div class="gate-box">
+    <span class="gate-ico" id="gate-ico" aria-hidden="true"></span>
+    <h2 id="gate-h"></h2>
+    <p id="gate-p"></p>
+    <div class="gate-acts">
+      <a class="gate-go" id="gate-go" href="#"></a>
+      <button class="gate-x" type="button" id="gate-x">나중에 할게요</button>
+    </div>
+  </div>
+</div>
+
+<script src="variant.js"></script>
+</body>
+</html>

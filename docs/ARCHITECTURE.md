@@ -1,315 +1,355 @@
-# ARCHITECTURE
+# ARCHITECTURE — Deskfit 시스템 구조
 
-마지막 갱신: 2026-08-11
+> 마지막 갱신: 2026-08-04 · 브랜치 `feat/wanted-sans-font`
+>
+> 이 문서는 **지금 코드에 있는 것**만 적습니다. 계획은
+> [`22_PRODUCT_SPEC_V2.md`](22_PRODUCT_SPEC_V2.md) 에 있습니다.
+> 수치가 다르면 `src/constants/` 가 정답입니다.
 
-이 문서는 UpRight Now의 현재 시스템 구조를 설명합니다. 실제 서비스 URL, Supabase 프로젝트 URL, API 키, 토큰 값은 기록하지 않습니다.
+---
 
-## 1. 전체 구조
+## 1. 한 장 요약
 
-```text
-Browser SPA
-  React 19 + Vite + TypeScript
-  ├─ 라우트와 화면
-  ├─ 자세 감지와 세션 진행
-  ├─ 성장·상점·캠퍼스 UI
-  └─ Supabase 클라이언트
-
-Local device
-  ├─ getUserMedia camera
-  ├─ MediaPipe Pose Landmarker
-  └─ localStorage based persistence
-
-Supabase
-  ├─ Auth: 익명 사용자, 학교 이메일 링크 인증
-  ├─ Postgres: 방, 캠퍼스, 성장 보상 데이터
-  ├─ RLS/RPC: 검증된 쓰기 경로
-  └─ Realtime: 친구 방, 캠퍼스 갱신
-
-Vercel
-  ├─ Static SPA hosting
-  ├─ /api/ai-report server function
-  └─ Environment Variables
+```
+┌─────────────────────────── 브라우저 (여기서 거의 모든 것이 끝납니다) ───────────────────────────┐
+│                                                                                              │
+│  웹캠 ──► usePoseDetection ──► analyzeLandmarks ──► computeVotes ──► arbiterStep             │
+│  (getUserMedia)   12fps          코어/보조 지표      방향성 편차      ★ 지속시간의 유일한 소유자  │
+│                                                          │                                   │
+│                                                          ▼                                   │
+│                                              postureStore (good/warning/bad/away/unstable)   │
+│                                                          │                                   │
+│                          ┌───────────────────────────────┼───────────────────────────┐       │
+│                          ▼                               ▼                           ▼       │
+│                   postureMachine                  PostureGameBridge          PipWidget       │
+│                  (회복 창 30s)                   ├─ gameStore (전투)          (별도 창)      │
+│                          │                       ├─ applyReward (XP·포인트)                  │
+│                          ▼                       └─ roomService.reportRecovery               │
+│                    finalizeSession                                                           │
+│                          │                                                                   │
+│                          ▼                                                                   │
+│                 localStorage (upright-now:*)                                                 │
+└──────────────────────────────────────────────────────────────────────────────────────────────┘
+        │                              │                                  │
+        │ 닉네임·상태·게임 이벤트만     │ 비식별 집계 8개만                │ WASM·모델 (읽기)
+        ▼                              ▼                                  ▼
+   Supabase                    Vercel Function                     jsDelivr CDN
+   (Realtime · RPC · RLS)      /api/ai-report → Gemini            storage.googleapis.com
+                                       │
+                                       ▼
+                                   Langfuse (원문 없음)
 ```
 
-## 2. 주요 기술 스택
+**카메라 영상·프레임·랜드마크 좌표·개인 자세 기준은 이 그림에서 브라우저 밖으로
+나가는 화살표가 하나도 없습니다.** 이것이 이 아키텍처의 첫 번째 제약입니다.
 
-- React 19
-- TypeScript strict
-- Vite
-- React Router
-- Tailwind CSS v4
-- Zustand
-- Supabase JS
-- MediaPipe Tasks Vision
-- Vitest, Testing Library, Playwright
-- Vercel
-- 선택 기능: Gemini/Genkit/Langfuse 기반 AI 세션 회고
-- 진행 중인 픽셀 월드: Phaser 3, 별도 worktree에서 작업 중
+---
 
-## 3. 주요 디렉터리와 역할
+## 2. 기술 스택
 
-```text
-src/
-├─ app/
-│  ├─ routes/          페이지 단위 화면
-│  ├─ router/          라우트 등록
-│  └─ providers/       전역 provider
-├─ components/
-│  ├─ ui/              공통 UI
-│  ├─ layout/          AppShell, 사이드바
-│  ├─ session/         세션 UI 조각
-│  ├─ character/       캐릭터 렌더링
-│  ├─ room/            친구 방 UI
-│  └─ campus/          캠퍼스 지도, 학교 선택, 인증 UI
-├─ features/
-│  ├─ posture-engine/  자세 상태 판정
-│  ├─ calibration/     개인 기준 자세 등록
-│  ├─ sessions/        집중 세션 상태
-│  ├─ game/            회복 공격, 보상 연결
-│  ├─ progression/     XP, 포인트, 성장, 아이템
-│  ├─ rooms/           친구 방 실시간 로직
-│  ├─ campus/          학교, 인증, 기여도, 영토전
-│  ├─ persistence/     localStorage 래퍼
-│  └─ qa-lab/          개발용 테스트 화면
-├─ lib/
-│  ├─ supabase/        Supabase client, auth callback
-│  ├─ feature-flags/   환경변수 기반 기능 스위치
-│  ├─ mediapipe/       Pose Landmarker loader
-│  └─ storage/         저장소 추상화
-├─ constants/          제품 상수와 라우트 상수
-├─ assets/             승인된 정적 에셋
-└─ test/               테스트 셋업
+| 층 | 사용 | 버전 |
+|---|---|---|
+| 런타임 | 브라우저 (Chrome·Edge 116+) | — |
+| 프레임워크 | React | 19.2 |
+| 언어 | TypeScript `strict` | 5.9 |
+| 번들러 | Vite (rolldown) | 8.1 |
+| 스타일 | Tailwind CSS 4 + `@theme` 토큰 | 4.3 |
+| 상태 | Zustand | 5.0 |
+| 라우팅 | react-router-dom | 7.18 |
+| 자세 추정 | MediaPipe Tasks Vision — Pose Landmarker | 0.10.35 |
+| 보조 진단 | TF.js MoveNet + WASM backend | 4.22 |
+| 3D | three.js (랜딩 히어로만) | 0.185 |
+| 서버 | Supabase (Postgres · Realtime · 익명 인증) | JS SDK 2.110 |
+| AI | Google GenAI (Gemini) + Genkit + Zod | — |
+| 관찰 | Langfuse (원문 없이 메타데이터만) | 5.9 |
+| 단위 테스트 | Vitest + Testing Library + jsdom | 4.1 |
+| E2E | Playwright (chromium) + axe-core | 1.61 |
+| 컴포넌트 문서 | Storybook | 10.5 |
+| 린터 | oxlint | 1.75 |
+| 프롬프트 회귀 | promptfoo | 0.121 |
+| 폰트 | Wanted Sans Variable (OFL-1.1, 자체 호스팅) | 1.0.3 |
+| 배포 | Vercel | — |
 
-supabase/
-├─ schema.sql
-├─ migrations/
-└─ manual/
+---
 
-docs/
-├─ CODEX_HANDOFF.md
-├─ ARCHITECTURE.md
-├─ DECISIONS.md
-├─ TEAM_START.md
-├─ AI_HANDOFF.md
-├─ 20_DECISION_LOG.md
-└─ superpowers/
+## 3. 디렉터리 구조
+
 ```
+upright-now/
+├─ api/                      Vercel Serverless Function (AI 리포트 한 개)
+│  ├─ ai-report.ts             엔트리 — Node IncomingMessage ↔ Web Request 변환
+│  ├─ ai-report-handler.ts     요청 검증·응답 조립 (dev 서버와 공유)
+│  └─ ai-report-service.ts     Gemini 호출 + Zod 이중 검증
+├─ e2e/                      Playwright 스펙 13개
+├─ promptfoo/               AI 리포트 프롬프트 회귀 평가
+├─ public/
+│  ├─ assets/                 승인 에셋 — 캐릭터 6단계·괴물 3종×4단계·상점 레이어·스트레칭·캠퍼스
+│  ├─ fonts/wanted-sans/      Wanted Sans Variable 92 subset + OFL
+│  ├─ icons/
+│  └─ mediapipe/              ⚠ 41MB — 코드가 참조하지 않습니다 (§8)
+├─ scripts/                  에셋 변환, 테스트 수집 가드
+├─ src/
+│  ├─ app/
+│  │  ├─ router/AppRoutes.tsx      라우트 등록 (플래그 꺼진 기능은 등록 자체를 안 함)
+│  │  ├─ providers/                PostureGameBridge · ToastProvider
+│  │  └─ routes/                   화면 컴포넌트
+│  ├─ assets/manifest/             캐릭터 에셋 해석 (stage × 상태 → 파일 경로 + 폴백)
+│  ├─ components/                  ui · character · posture · session · game · room · campus · layout
+│  ├─ constants/                   ★ 모든 수치·문구의 단일 출처
+│  ├─ features/                    도메인 로직 (§4)
+│  ├─ lib/                         a11y · feature-flags · mediapipe · storage · supabase · time · validation
+│  ├─ test/setup.ts
+│  └─ types/
+├─ supabase/
+│  ├─ schema.sql                   최초 구조 (친구 방)
+│  ├─ migrations/                  ★ DB 변경은 반드시 여기에 SQL 파일로
+│  └─ manual/                      1회성 정리 SQL
+├─ tools/                    승인 에셋 가져오기·검증
+└─ docs/                     이 문서들
+```
+
+경로 별칭은 `@` → `src/` 하나뿐입니다 (`vite.config.ts`).
+
+---
 
 ## 4. 주요 컴포넌트와 역할
 
-### 라우팅
+### 4.1 `src/features/` — 도메인 로직
 
-- `src/app/router/AppRoutes.tsx`
-  - SPA 라우트를 등록합니다.
-  - 캠퍼스 라우트는 `featureFlags.campusTerritory`가 켜져 있을 때만 등록됩니다.
-  - QA Lab은 운영에서 기본 비활성입니다.
+| 폴더 | 역할 | 건드리기 전 상의 |
+|---|---|---|
+| `posture-engine/` | 랜드마크 → 자세 상태 5종. **지속 시간을 세는 유일한 주체** | ★ |
+| `calibration/` | 5초 개인 기준 등록, 프레이밍 게이트, 다중 프로필 | ★ |
+| `sessions/` | 세션 타이머·완주 판정·`finalizeSession` | ★ |
+| `game/` | 회복 공격·괴물 체력·`applyReward` (보상 단일 통로) | ★ |
+| `progression/` | XP·포인트·캐릭터 단계·상점 보유/장착 | ★ |
+| `rooms/` | 방 서비스·Presence·Broadcast·기린 싱크·이벤트 검증 | |
+| `campus/` | 학교 테마·96 영토·기여도·시즌·학교 인증 | |
+| `modes/` | 도서관·내 공간·팀플 + 내 모드 3개. 유효 설정 공급 | |
+| `stretch/` | 모드별 가중 랜덤 추천 | |
+| `pip/` | Document PiP 컨트롤러 + 위젯 | |
+| `ai-report/` | 집계 계약·프롬프트·결과 카드 | |
+| `sound/` | Web Audio 합성음 단일 출처 | |
+| `onboarding/` `settings/` `persistence/` `demo/` `qa-lab/` | 보조 | |
 
-### Supabase 연결
+★ 표시는 [`TEAM_START.md`](TEAM_START.md) §6 의 "혼자 판단해서 고치지 않는" 목록입니다.
 
-- `src/lib/supabase/client.ts`
-  - `VITE_SUPABASE_URL`과 publishable/anon key가 없으면 `null`을 반환합니다.
-  - 이메일 링크 인증 후 `consumeAuthCallback()`으로 PKCE code를 세션으로 교환합니다.
-  - 익명 사용자는 `ensureAnonymousUser()`로 생성합니다.
-  - 카메라 프레임, 자세 좌표, 랜드마크 원본을 전송하지 않는 것이 핵심 원칙입니다.
+### 4.2 단일 진입점 규칙
 
-### 캠퍼스
+이 아키텍처는 **같은 일을 하는 곳을 한 군데로 모으는 것**에 기대고 있습니다.
 
-- `src/app/routes/Campus.tsx`
-  - 캠퍼스 메인 화면입니다.
-  - 학교 인증, 시즌 요약, 기여도, 지도, 소식을 보여줍니다.
-- `src/components/campus/SchoolPicker.tsx`
-  - 검색형 학교 선택 UI입니다.
-  - 지역 선택 후 대학 검색 UX를 목표로 합니다.
-- `src/components/campus/SchoolVerification.tsx`
-  - 학교 이메일 인증 UI입니다.
-  - Supabase Auth 이메일 링크를 사용합니다.
-- `src/components/campus/TerritoryMap.tsx`
-  - 캠퍼스 영토 지도입니다.
-  - 현재는 서울 25개 자치구 기반 프로토타입입니다.
-- `src/features/campus/`
-  - 학교 목록, 커스텀 학교 저장, 기여도 계산, 영토 소유권, Supabase repository, outbox를 포함합니다.
+| 하는 일 | 유일한 통로 | 우회하면 |
+|---|---|---|
+| 지속 시간 세기 | `posture-engine/arbiterStep` | 판정이 두 번 일어남 |
+| XP·포인트 지급 | `game/rewards.ts` `applyReward` | 중복 지급 방지가 깨짐 |
+| 세션 종료 확정 | `sessions/finalizeSession` | 중도 종료에도 보상이 나감 |
+| 캐릭터 표시 | `components/character/CharacterViewport` | 화면마다 다른 캐릭터가 나옴 |
+| 소리 재생 | `sound/soundEngine` | 음량·중복 제어가 깨짐 |
+| 캠퍼스 기여 | `campus/recordContribution` | eventId 중복 차단이 깨짐 |
+| 색·폰트 토큰 | `src/index.css` `@theme` | 화면마다 색이 달라짐 |
 
-### 성장·보상
-
-- `src/features/progression/`
-  - 로컬 성장 상태와 아이템 보유/장착을 관리합니다.
-- `supabase/migrations/20260804_growth_reward_foundation.sql`
-- `supabase/migrations/20260804_growth_balance_rules.sql`
-- `supabase/migrations/20260805_progression_dynamic_session_rewards.sql`
-- `supabase/migrations/20260806_progression_streak_rewards.sql`
-  - 서버 기준 성장 보상 원장과 규칙을 정의합니다.
-
-### 픽셀 월드
-
-- 설계 문서: `docs/superpowers/specs/2026-08-11-campus-pixel-world-design.md`
-- 구현 계획: `docs/superpowers/plans/2026-08-11-campus-pixel-world-plan.md`
-- 작성 시점 구현 흔적: `.worktrees/campus-pixel-world/`
-
-픽셀 월드는 React 페이지 안에 Phaser 캔버스를 마운트하는 방식입니다. 초기 범위는 로컬 단일 플레이어 기숙사 방입니다.
+---
 
 ## 5. 데이터 흐름
 
-### 자세 세션
+### 5.1 자세 판정 (브라우저 안에서만)
 
-```text
-Camera
-  → MediaPipe Pose Landmarker
-  → posture-engine 상태 판정
-  → session state
-  → 회복 이벤트
-  → game/progression reward
-  → localStorage 또는 Supabase RPC
+```
+카메라 → usePoseDetection (12fps, numPoses 2)
+       → analyzeLandmarks   코어 = 코·눈 + 양어깨 / 보조 = 귀·엉덩이·z
+       → computeVotes       개인 기준 대비 방향성 편차, MAD tolerance, z 는 보조
+       → arbiterStep        warning 1.5s · bad 5s · good 2s  ← 시간의 유일한 소유자
+       → postureStore.setInstant
+       → postureMachine     확정 bad 진입 시 "즉시" 회복 기회 (여기서 5초를 다시 세지 않음)
+       → 회복 창 30s · good 5s 유지 → 성공 → 냉각 20s
+       → PostureGameBridge  → gameStore + applyReward + roomService.reportRecovery
 ```
 
-영상 프레임과 랜드마크 원본은 서버로 보내지 않습니다.
+`away`·`unstable` 에서는 **모든 타이머가 동결**됩니다.
 
-### 친구 방
+### 5.2 로컬 저장 (`localStorage`)
 
-```text
-User action
-  → Supabase anonymous auth
-  → room membership
-  → Presence for state
-  → Broadcast for instant events
-  → UI sync
+네임스페이스 `upright-now`, 스키마 버전 **2**.
+
+| 키 | 담는 것 |
+|---|---|
+| `upright-now:user` | 닉네임·온보딩 여부·소리·PiP·응원 문구 |
+| `upright-now:progression` | XP·포인트·출석·보유/장착 아이템·최근 XP 5건 |
+| `upright-now:calibration` | 개인 기준 **요약 통계만**. 원본 좌표·프레임 없음 |
+| `upright-now:sessions` | 세션 기록 + AI 회고 |
+
+v1 → v2 마이그레이션은 데모 시드만 초기화하고 획득 데이터를 보존합니다.
+전체 초기화는 `features/settings/dataReset.ts` 한 곳입니다.
+
+### 5.3 친구 방 (Supabase)
+
+```
+익명 로그인 (signInAnonymously)
+  → create_room / join_room RPC → 초대 코드
+  → Presence : 준비·집중·자리 비움처럼 느리게 바뀌는 상태
+  → Broadcast: 회복·스트레칭·응원처럼 순간 이벤트
+  → apply_room_damage / apply_room_shield RPC (event_id 중복 차단, 원자적)
+  → rooms.boss_hp 가 최종 기준
 ```
 
-친구에게 공개되는 것은 닉네임, 참가 상태, 게임 이벤트 수준입니다.
+`sanitizeRoomEvent` 가 **영상·프레임·랜드마크·좌표·`bad` 상태 전송을 차단**합니다.
+30초 재연결, presence 메타는 `participantId` 로 dedupe(최신 우선)합니다.
 
-### 학교 인증
+### 5.4 AI 세션 회고
 
-```text
-학교 선택
-  → 학교 도메인 확인
-  → Supabase Auth email OTP/magic link
-  → redirect back to app
-  → consumeAuthCallback()
-  → campus_verify_school RPC
-  → verified membership
+```
+결과 화면에서 사용자가 요청
+  → POST /api/ai-report  (비식별 집계 8개)
+  → Zod 검증 → Gemini → Zod 재검증
+  → 결과를 세션 기록에 저장 (updateSummary)
+  → Langfuse 에는 모델·스키마·성공 여부·지연 시간만
 ```
 
-인증 성공 후에만 캠퍼스 기여와 점령 쓰기가 가능해야 합니다.
+**전송하는 8개** — `plannedMinutes` · `elapsedMinutes` · `detectableMinutes` ·
+`awayMinutes` · `recoveryOpportunities` · `recoveries` · `bestCombo` · `status`.
 
-### 캠퍼스 기여와 영토
+**전송하지 않는 것** — 카메라 원본·스냅샷·좌표·자세 상태·나쁜 자세 지속 시간·
+목표 문구·식별자·건강 정보.
 
-```text
-세션 완료/회복/스트레칭
-  → CampusContributionBridge
-  → campus contribution RPC
-  → campus season standings
-  → district territory read RPC
-  → TerritoryMap render
-```
+---
 
-학교 점수, 시즌 점수, 영토 상태는 Supabase의 `campus_*` 테이블과 RPC가 기준입니다.
+## 6. 외부 의존성
 
-### 성장 보상
+| 대상 | 용도 | 없으면 |
+|---|---|---|
+| **Supabase** | 친구 방·캠퍼스 라이브 저장소, 익명 인증 | 혼자 모드 전 기능 정상. 방·캠퍼스 라이브만 비활성 |
+| **jsDelivr CDN** | MediaPipe WASM (`@mediapipe/tasks-vision@0.10.35/wasm`) | **카메라 자세 감지 불가** |
+| **storage.googleapis.com** | `pose_landmarker_lite.task` 모델 | **카메라 자세 감지 불가** |
+| **Vercel Functions** | `/api/ai-report` | AI 회고만 비활성. 로컬 결과 요약은 그대로 |
+| **Google Gemini** | AI 회고 생성 | 위와 동일 |
+| **Langfuse** | 운영 관찰 (선택) | 관찰만 안 됨 |
 
-```text
-세션 이벤트
-  → event_id 생성
-  → progression reward RPC
-  → reward rules lookup
-  → reward event ledger
-  → progression balance update
-  → Growth UI
-```
+> **CDN 두 곳이 자세 감지의 단일 장애점입니다.** 저장소에 `public/mediapipe/`
+> (41MB) 로 같은 파일이 들어 있지만 **코드가 참조하지 않습니다.** §8 참고.
 
-클라이언트는 XP·포인트 금액을 보내지 않습니다. 서버가 규칙 테이블로 결정합니다.
+---
 
-## 6. 외부 API 및 인프라 의존성
+## 7. 환경변수
 
-### Supabase
+**실제 값은 이 문서에 적지 않습니다.** 로컬은 `.env.example` 을 `.env.local` 로
+복사해 채우고, 운영은 Vercel 대시보드에서 설정합니다.
 
-용도:
+### 7.1 클라이언트 (`VITE_` 접두어 — 번들에 포함되어 공개됨)
 
-- Auth: 익명 로그인, 학교 이메일 링크 인증
-- Postgres: 친구 방, 캠퍼스, 성장 보상
-- Realtime: 친구 방과 캠퍼스 갱신
-- SQL Editor: migration 직접 적용
+| 변수 | 용도 | 로컬 기본 |
+|---|---|---|
+| `VITE_SUPABASE_URL` | Supabase 프로젝트 주소 | 비어 있음 (팀에서 받기) |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase 공개 키. `VITE_SUPABASE_ANON_KEY` 도 같은 뜻 | 비어 있음 |
+| `VITE_ENABLE_CAMERA` | 실제 웹캠 자세 감지 | `true` |
+| `VITE_ENABLE_FRIEND_ROOM` | 방 만들기·입장 | `true` |
+| `VITE_ENABLE_REALTIME` | 방 실시간 동기화 (친구 방이 켜져야 의미 있음) | `true` |
+| `VITE_ENABLE_PIP` | PiP 미니 위젯 자동 열기 | `true` |
+| `VITE_ENABLE_CAMPUS_THEME` | 학교 테마 색 | `true` |
+| `VITE_ENABLE_CAMPUS_TERRITORY` | 캠퍼스 영토전 화면 | `true` |
+| `VITE_ENABLE_CAMPUS_SUPABASE` | 캠퍼스를 라이브 DB 로. `false` 면 mock | `true` |
+| `VITE_ENABLE_QA_LAB` | `/lab` 개발자 도구 | dev 는 자동 `true` |
+| `VITE_ENABLE_AI_REPORT` | 결과 화면의 AI 회고 노출 | `false` |
 
-주의:
+**`VITE_` 접두어가 붙은 값은 번들에 그대로 들어갑니다.** 비밀 값을 넣지 않습니다.
 
-- 새 프로젝트를 만들면 `supabase/schema.sql`과 `supabase/migrations/`를 순서대로 적용해야 합니다.
-- Supabase Auth URL Configuration은 배포 주소마다 다시 설정해야 합니다.
-- Custom SMTP는 Supabase 기본 발송 제한을 피하기 위해 필요할 수 있습니다.
+### 7.2 서버 전용 (`VITE_` 를 붙이면 안 됨)
 
-### Vercel
+| 변수 | 용도 | 어디에 |
+|---|---|---|
+| `AI_REPORT_ENABLED` | 서버 함수의 AI 회고 호출 허용 | Vercel |
+| `GEMINI_API_KEY` | Gemini 키 | Vercel (**절대 프론트 금지**) |
+| `LANGFUSE_PUBLIC_KEY` | 관찰 (선택) | Vercel |
+| `LANGFUSE_SECRET_KEY` | 관찰 (선택) | Vercel |
+| `LANGFUSE_BASE_URL` | 관찰 (선택) | Vercel |
+| `AI_REPORT_MOCK` | dev·E2E 에서 고정 응답 | 로컬·CI 만 |
 
-용도:
+AI 회고가 실제로 동작하려면 `VITE_ENABLE_AI_REPORT=true` + `AI_REPORT_ENABLED=true`
++ `GEMINI_API_KEY` **셋 다** 필요합니다.
 
-- SPA 정적 배포
-- 환경변수 관리
-- `/api/ai-report` 서버 함수 실행
+### 7.3 운영 현재 상태 (2026-08-04 기준)
 
-주의:
+`.env.production` 은 **저장소 안의 기본값**이고, Vercel 대시보드 값이 이를 덮어씁니다.
+`.env.production` 은 카메라·친구 방·Realtime·캠퍼스·QA Lab 을 모두 `false` 로 둡니다.
 
-- GitHub main에 push하면 연결된 Vercel 프로젝트가 자동 배포할 수 있습니다.
-- 환경변수를 바꾸면 redeploy가 필요합니다.
-- 팀원 프로젝트와 개인 프로젝트는 서로 다른 Supabase 환경변수를 가질 수 있습니다.
+Vercel Production 에 실제로 설정된 것: Supabase URL·키, `VITE_ENABLE_CAMERA`,
+`VITE_ENABLE_FRIEND_ROOM`, `VITE_ENABLE_REALTIME`, `VITE_ENABLE_CAMPUS_THEME`,
+`VITE_ENABLE_CAMPUS_TERRITORY`, `VITE_ENABLE_CAMPUS_SUPABASE`, `VITE_ENABLE_QA_LAB=false`.
+**`VITE_ENABLE_PIP` 이 빠져 있어 운영에서 PiP 자동 열기가 꺼져 있습니다.**
 
-### GitHub
+---
 
-용도:
+## 8. 배포
 
-- 원격 저장소
-- main 브랜치 배포 트리거
-- PR 기반 협업
+| 항목 | 값 |
+|---|---|
+| 호스팅 | Vercel |
+| 운영 | https://upright-now.vercel.app |
+| 저장소 | https://github.com/suhyunkim1105-hash/upright-now |
+| 라우팅 | `vercel.json` — 모든 경로를 `/index.html` 로 rewrite (SPA) |
+| 서버 함수 | `api/ai-report.ts` (`maxDuration` 15초) |
+| 빌드 | `tsc -b --force && vite build` |
 
-주의:
-
-- 로컬 커밋은 push 전까지 GitHub에 저장되지 않습니다.
-- worktree의 미커밋 파일은 다른 계정으로 자동 이전되지 않습니다.
-
-## 7. 환경변수 목록
-
-| 이름 | 위치 | 용도 | 값 기록 여부 |
-| --- | --- | --- | --- |
-| `VITE_SUPABASE_URL` | client/Vercel | Supabase 프로젝트 URL | 실제 값 기록 금지 |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | client/Vercel | Supabase publishable key | 실제 값 기록 금지 |
-| `VITE_SUPABASE_ANON_KEY` | client/Vercel | 구버전 호환 anon key | 실제 값 기록 금지 |
-| `VITE_ENABLE_CAMERA` | client | 실제 카메라 감지 on/off | `true` 또는 `false` |
-| `VITE_ENABLE_FRIEND_ROOM` | client | 친구 방 on/off | `true` 또는 `false` |
-| `VITE_ENABLE_REALTIME` | client | Supabase Realtime on/off | `true` 또는 `false` |
-| `VITE_ENABLE_PIP` | client | PIP 미니 위젯 on/off | `true` 또는 `false` |
-| `VITE_ENABLE_CAMPUS_THEME` | client | 학교 테마 색상 on/off | `true` 또는 `false` |
-| `VITE_ENABLE_CAMPUS_TERRITORY` | client | 캠퍼스 라우트와 영토전 on/off | `true` 또는 `false` |
-| `VITE_ENABLE_CAMPUS_SUPABASE` | client | 캠퍼스 저장소 Supabase 사용 | `true` 또는 `false` |
-| `VITE_ENABLE_AI_REPORT` | client | AI 회고 UI 노출 | `true` 또는 `false` |
-| `AI_REPORT_ENABLED` | server | AI 회고 서버 함수 활성화 | `true` 또는 `false` |
-| `AI_REPORT_MOCK` | local server | Vite dev에서 mock 회고 사용 | 선택 |
-| `GEMINI_API_KEY` | server | Gemini API 호출 | 실제 값 기록 금지 |
-| `LANGFUSE_PUBLIC_KEY` | server | AI 관찰성 public key | 실제 값 기록 금지 |
-| `LANGFUSE_SECRET_KEY` | server | AI 관찰성 secret key | 실제 값 기록 금지 |
-| `LANGFUSE_BASE_URL` | server | Langfuse endpoint | 실제 값 기록 금지 |
-| `VITE_ENABLE_QA_LAB` | client | QA Lab 라우트 on/off | 운영 기본 false 권장 |
-
-## 8. 배포 구조
-
-```text
-GitHub main
-  → Vercel project
-  → production deployment
-  → Supabase project selected by Vercel env vars
-```
-
-배포 시 확인:
-
-1. Vercel Project Settings의 Environment Variables에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`가 들어 있는지 확인합니다.
-2. 환경변수 변경 후 redeploy합니다.
-3. Supabase Authentication URL Configuration의 Site URL을 현재 production URL로 설정합니다.
-4. Redirect URLs에 production URL, `/campus`, 필요한 preview/local URL을 추가합니다.
-5. Supabase Email Template은 기본 `{{ .ConfirmationURL }}` 링크를 사용하는지 확인합니다.
-
-## 9. 새 환경에서 실행·빌드·테스트
+### 배포 명령
 
 ```bash
-npm install
-cp .env.example .env.local
-npm run dev
-npm run typecheck
-npm run test
-npm run build
+npx vercel deploy
 ```
 
-로컬 실행 주소는 Vite가 출력하는 값을 따릅니다. Supabase 인증을 로컬에서 테스트하려면 해당 로컬 주소도 Supabase Redirect URLs에 추가해야 합니다.
+**반드시 클라우드 빌드를 씁니다.** Vercel 환경변수가 sensitive 라 `vercel pull` 은
+`[SENSITIVE]` 플레이스홀더만 받습니다. 로컬 prebuilt 를 올리면 깨진 번들이 배포됩니다.
+`.vercelignore` 가 로컬 개인 파일 업로드를 막습니다.
+
+### 빌드 산출물에서 확인이 필요한 것
+
+`public/fonts/` 의 Zarafa 시절 잔재(Gowun·IBMPlex·Pretendard, 4.2MB)는
+참조 없음을 확인하고 삭제했습니다(2026-08-09). 아래는 남은 것입니다.
+
+| 경로 | 크기 | 상태 |
+|---|---|---|
+| `public/mediapipe/` | **41.3 MB** | 코드가 CDN 을 쓰므로 **참조되지 않음** |
+| `public/assets/` | 16.9 MB | 캐릭터·괴물·상점·스트레칭 — 실제 사용 |
+| `public/fonts/wanted-sans/` | 2.2 MB | 실제 사용 (subset 이라 실제 전송은 100~300KB) |
+
+`public/` 은 그대로 `dist/` 로 복사되므로, 위 41.3MB 가 배포마다 함께 나갑니다.
+**지우기 전에 결정이 필요합니다** — MediaPipe 로컬 사본은 CDN 장애 대비
+폴백으로 쓸 수 있습니다. 쓸 거면 `lib/mediapipe/loader.ts` 를 로컬 우선으로 바꾸고,
+안 쓸 거면 지웁니다. 지금은 **둘 다 아닌 상태**입니다.
+
+---
+
+## 9. 테스트 구조
+
+| 종류 | 도구 | 규모 | 특이사항 |
+|---|---|---|---|
+| 단위·컴포넌트 | Vitest + jsdom | 67 파일 / 526개 | `fileParallelism: false` (§10) |
+| E2E | Playwright chromium | 13 스펙 / 97개 | dev 서버 3대 자동 기동 |
+| 접근성 | axe-core (E2E 안) | — | |
+| 프롬프트 회귀 | promptfoo | 고정 집계 케이스 | `npm run ai:eval` |
+| 에셋 무결성 | `tools/verify-approved-assets.mjs` | 112 검사 | `npm run assets:verify` |
+
+E2E 는 서버 3대를 씁니다.
+
+| 포트 | 플래그 | 검사 |
+|---|---|---|
+| 5283 | 캠퍼스 OFF | 기존 화면 회귀 + OFF 회귀 |
+| 5284 | 캠퍼스 ON (mock) | 캠퍼스 테마·영토전 |
+| 5285 | 카메라 ON | 카메라 진단 (별도 project) |
+
+`room-live.spec.ts` 는 `.env.local` 에 Supabase 값이 없으면 자동으로 건너뜁니다.
+
+---
+
+## 10. 알아 둘 함정
+
+1. **Vitest 워커.** 이 개발 머신에서 병렬 워커가 죽으면서 수집 파일 수가 매번
+   달라졌는데도 종료 코드가 0 이었습니다. `fileParallelism: false` 로 순차 실행하고,
+   `scripts/run-tests.mjs` 가 수집 개수와 디스크 spec 개수를 대조해 다르면 실패시킵니다.
+   더 빠른 머신으로 옮겨도 **이 가드는 남겨 두세요.**
+2. **PostgREST 스키마 캐시.** 직접 RPC 목록 반영이 늦을 수 있습니다. 앱은
+   `is_room_member` 를 직접 호출하지 않고 `cleanup_stale_members` 내부 게이트를 씁니다.
+3. **Realtime RLS.** 자체 스크립트로 검증할 때는 `realtime.setAuth(token)` 이 필요합니다.
+   표준 앱 클라이언트는 자동입니다.
+4. **기린 싱크 event_id.** 두 회복 uuid 의 XOR 파생 id 를 씁니다. 원본 id 를 재사용하면
+   중복 차단과 충돌합니다.
+5. **PiP 는 사용자 제스처 안에서.** `openPip()` 를 click 핸들러 밖에서 부르면 차단됩니다.
+6. **Wanted Sans 가변 축은 400~1000.** `font-weight: 300` 은 조용히 400 으로 잘립니다.

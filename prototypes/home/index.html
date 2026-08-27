@@ -1,0 +1,4354 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280">
+<title>Deskfit — 메인</title>
+<link rel="icon" href="../landing/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../landing/assets/favicon.ico" sizes="48x48">
+
+<link rel="stylesheet" href="../../public/fonts/wanted-sans/WantedSansVariable.css">
+<style>
+/* ==================================================================
+   Deskfit 메인 — 클레이
+
+   **왜 이 화면이 있는가.** 온보딩을 마치면 월드로 바로 들어갔었습니다.
+   그래서 두 가지가 무너졌습니다.
+
+   1) 저장. 진행은 이 기기의 localStorage 에만 남는데, 그 사실을 말하는
+      화면이 없었습니다. 마이페이지 **저장** 칸이 그 답입니다.
+   2) 정리. 마이페이지·옷장·회고·랭킹전이 전부 월드 안 NPC 뒤에
+      있었습니다. **월드는 앉는 곳, 여기는 보는 곳** 으로 나눕니다.
+
+   **앉는 길은 두 갈래입니다.**
+     · 비공개방 — 초대 코드를 아는 사람만 들어옵니다. 만들기 다섯 단계 ·
+       코드 발급 · 대기실 · 세션 · 마침까지가 이 파일 안에 다 있습니다.
+     · 월드 — 독립된 온라인 서버입니다. 방이 아니라 장소이고, 접속한
+       사람이 같은 캠퍼스를 걸어 다닙니다.
+
+   ------------------------------------------------------------------
+   재질 — 클레이모피즘
+
+   우리 캐릭터와 월드 소품이 전부 점토로 빚은 물건입니다. UI 만 종이를
+   오려 붙인 것이면 한 화면에서 두 재질이 싸웁니다. 그래서 판·버튼·칩을
+   전부 점토로 바꿨습니다.
+
+   클레이 그림자는 **세 겹**입니다.
+     ① inset 밝은 — 위에서 들어온 빛이 만드는 윗면
+     ② inset 어두운 — 아래쪽으로 말려 들어가는 그늘
+     ③ 바깥 — 바닥에 지는 그림자
+
+   그늘은 순검정이 아니라 **청록을 섞은 어두운 값**입니다. 순검정 그늘은
+   점토가 아니라 플라스틱이 됩니다.
+
+   **두께에 계단을 둡니다.** 전부 부풀리면 무엇이 중요한지 사라지므로,
+   화면 하나에서 가장 두꺼운 것은 주 CTA 하나뿐입니다.
+
+     --clay-hero   주 CTA 하나 (방 만들기 · 지금 시작하기 · 들어가기)
+     --clay        담는 판 · 입구 판
+     --clay-sm     칩 · 작은 버튼 · 자리 타일
+     --clay-in     파인 것 (입력칸 · 트랙 · 빈 자리 · 휠 · 탭 홈)
+     평면          본문 · 표의 줄 · 구분선 · 보조 통계
+
+   ------------------------------------------------------------------
+   MVP — 문을 안 잠급니다
+
+   학교 인증도, 자세 기준 10초도 **안 거치고** 모든 화면을 볼 수 있어야
+   합니다. 발표에서 화면 하나를 보여 주려고 카메라를 켜고 10초를 앉을 수는
+   없습니다. 두 가지로 풉니다.
+
+     · 레일 아래 **모든 화면** — 이 파일이 그릴 수 있는 상태를 전부 모은
+       목록입니다. 눌러서 바로 그 화면으로 갑니다.
+     · 대기실에서 기준이 없으면 시작 버튼은 그대로 잠그되(세션이 판정을
+       못 하는 것은 사실이므로), **기준 없이 둘러보기**를 옆에 둡니다.
+
+   색·서체·여백·모서리는 온보딩과 **같은 값** 입니다. 자간은 0 입니다 —
+   DESIGN.md §2. 음수 자간은 이 화면에 한 곳도 없습니다.
+   ================================================================== */
+
+:root {
+  --teal-50:  #EFFBF9;
+  --teal-100: #CFF2ED;
+  --teal-200: #ADEBE2;
+  --teal-300: #8AE5D9;
+  --teal-400: #56DCCA;
+  --teal:     #2DD4BF;
+  --teal-600: #12A592;
+  --teal-700: #0D7769;
+  --teal-800: #0C5A4F;
+  --on-teal:  #17201E;
+
+  /* 배경이 흰색에서 옅은 민트로 갔습니다. 클레이는 **부푼 것**을 말하는
+     재질이라 바닥이 흰색이면 흰 판이 바닥에 녹아 붙습니다. 크림으로 안
+     간 이유는 DESIGN.md §1 그대로 — 크림 위에서 픽셀 캐릭터가 누렇게
+     보입니다. 민트는 청록 계열이라 캐릭터 색을 안 건드립니다. */
+  --bg:        #EDF5F3;
+  --bg-2:      #E3EFEC;
+  /* 순백을 씁니다 → 안 씁니다. 클레이의 규칙 하나가 "면은 파스텔,
+     순백 금지" 인데, 흰 판은 빛을 다 튕겨서 위쪽 안그림자(흰색)가
+     보이지 않습니다 — 재질의 절반이 사라집니다. 민트를 아주 옅게
+     섞으면 같은 밝기에서 안그림자가 살아납니다. */
+  --paper:     #FBFDFC;
+  --surface-2: #F3F8F7;
+  --surface-3: #E9F2EF;
+
+  --ink:       #17201E;
+  --ink-2:     #5C6663;   /* 민트 배경 5.41 */
+  --ink-3:     #656E6C;   /* 민트 배경 4.72 · surface-3 4.60 · teal-50 4.96 — 쓰이는 모든 면에서 AA */
+  --line:      #DFE9E6;
+  --line-2:    #D2E0DC;
+
+  /* 월드 판만 어둡습니다. 방과 월드를 같은 색으로 두면 두 입구가 한
+     덩어리로 읽혀서, 어느 쪽이 온라인 서버인지 구분이 안 됩니다. */
+  --night:     #17201E;
+  --night-2:   #202B29;
+  --on-night:  #F4F7F6;
+
+  --good-50:  #EAF7EF;
+  --good-700: #1B7A45;
+  --warn-50:  #FFF6E8;
+  --warn-700: #7A5417;
+  --bad-700:  #A8352A;
+
+  --sp-xs:   4px;
+  --sp-sm:   8px;
+  --sp-md:  12px;
+  --sp-lg:  16px;
+  --sp-xl:  24px;
+  --sp-2xl: 40px;
+  --sp-3xl: 64px;
+
+  /* ---- 글자 크기 ----
+     여백은 8단으로 잠갔는데 타이포는 안 잠가서 한때 19종이 됐습니다.
+     DESIGN.md §2 가 정한 셋(제목 26 · 본문 15 · 보조 13)을 뼈대로 삼고
+     여덟 단으로 접습니다. 여백과 같은 이유로 **중간을 고를 수 없게**
+     성기게 둡니다. */
+  --fs-2xs: 11px;   /* 배지 · 순위 옆 레벨 */
+  --fs-xs:  12px;   /* 줄 안 부연 · 칩 · 안내문 */
+  --fs-sm:  13px;   /* 보조 (DESIGN.md) */
+  --fs-md:  14px;   /* 표의 줄 · 판 부제 */
+  --fs:     15px;   /* 본문 (DESIGN.md) */
+  --fs-lg:  17px;   /* 작은 제목 */
+  --fs-xl:  20px;   /* 카드 제목 · 코드 */
+  --fs-2xl: 26px;   /* 제목 (DESIGN.md) */
+  --fs-3xl: 30px;   /* 수치 */
+
+  /* ---- 모서리 ----
+     클레이는 각이 없습니다. 점토는 손으로 눌러 만드는 것이라 모서리가
+     늘 조금 뭉개져 있습니다. 그래서 전 단계를 한 칸씩 키웠습니다.
+     그래도 **모양이 뜻을 나릅니다** — 알약이면 누르는 것, 26 이면 담는
+     판, 14 면 글자를 받는 것. */
+  --r-pill: 999px;
+
+  /* ---- 아랫입술 (시안 2) ----
+     두올링고 버튼을 실측하면 흐린 그림자가 아예 없고 border-bottom 4px
+     만 있습니다. 누를 수 있다는 말을 blur 로 하면 애매하고, 두께로 하면
+     분명합니다. 여기서는 border 대신 **흐림 0 인 box-shadow** 로 깝니다 —
+     테두리는 칸 크기를 바꾸므로 누를 때 글자가 밀립니다.
+
+     클레이의 안그림자와 같이 씁니다. 안그림자는 물건이 부풀었다고,
+     입술은 바닥에서 떠 있다고 말합니다 — 둘은 다른 말이라 안 부딪칩니다.
+     누르면 입술이 접히고 그만큼 내려앉습니다(높이 총합은 그대로). */
+  --lip-lg: 6px;
+  --lip:    4px;
+  --lip-sm: 3px;
+  --r-xl:    30px;   /* 히어로 판 · 레일 · 위저드 무대 */
+  --r-lg:    22px;   /* 담는 판 — 카드 · 입구 판 · 자리 타일 */
+  --r-md:    14px;   /* 글자를 받는 것 — 입력칸 · 아이콘 판 */
+  --r-sm:    10px;   /* 칩 */
+
+  /* ---- 클레이 ---- */
+  /* 아래 안그림자가 .10 이었습니다. 클레이 규격은 .22 — 절반 이하로
+     깔아 두면 위쪽 흰 안그림자만 남아서 판이 부푼 게 아니라 그냥
+     밝습니다. 화면 전체가 납작해 보이던 이유가 이 한 값입니다.
+     바깥 그림자도 색을 청록 쪽으로 돌립니다 — 순검정 그늘은 점토가
+     아니라 플라스틱입니다. */
+  --clay:
+    inset 0 3px 7px rgba(255,255,255,.70),
+    inset 0 -7px 13px rgba(13,60,52,.20),
+    0 12px 26px rgba(16,74,66,.13),
+    0 2px 5px rgba(16,74,66,.07);
+  --clay-lift:
+    inset 0 3px 7px rgba(255,255,255,.78),
+    inset 0 -7px 13px rgba(13,60,52,.19),
+    0 20px 40px rgba(16,74,66,.17),
+    0 3px 7px rgba(16,74,66,.08);
+  /* 누르면 빛과 그늘이 뒤집힙니다. 위가 어두워지고 아래가 밝아지면서
+     물건이 안으로 들어갑니다. */
+  --clay-press:
+    inset 0 4px 9px rgba(13,60,52,.16),
+    inset 0 -2px 5px rgba(255,255,255,.55),
+    0 2px 5px rgba(23,32,30,.09);
+
+  --clay-sm:
+    inset 0 2px 5px rgba(255,255,255,.68),
+    inset 0 -4px 8px rgba(13,60,52,.17),
+    0 6px 14px rgba(16,74,66,.12);
+  --clay-sm-lift:
+    inset 0 2px 5px rgba(255,255,255,.76),
+    inset 0 -4px 8px rgba(13,60,52,.16),
+    0 11px 22px rgba(16,74,66,.15);
+
+  /* 파인 것. 안으로만 그늘이 있고 바깥 그림자가 없어야 **홈**으로
+     읽힙니다. 바깥 그림자를 조금이라도 남기면 솟은 것처럼 보입니다. */
+  --clay-in:
+    inset 0 4px 9px rgba(13,60,52,.13),
+    inset 0 -2px 4px rgba(255,255,255,.80);
+  --clay-in-deep:
+    inset 0 6px 14px rgba(13,60,52,.17),
+    inset 0 -2px 5px rgba(255,255,255,.75);
+
+  /* 청록 위. 안쪽 하이라이트를 6px 까지 올리고 아래 그늘을 청록으로
+     진하게 깔았습니다 — 청록 위에서 검정 그늘은 때가 탄 것처럼 보입니다.
+     바깥 확산은 두 겹인데, 가까운 것이 물건을 바닥에 붙이고 먼 것이 떠
+     있는 높이를 만듭니다. */
+  --clay-hero:
+    inset 0 6px 10px rgba(255,255,255,.60),
+    inset 0 -10px 16px rgba(11,86,76,.32),
+    inset 0 -1px 0 rgba(11,86,76,.20),
+    0 6px 10px rgba(13,119,105,.18),
+    0 22px 34px -8px rgba(13,119,105,.38),
+    0 40px 60px -22px rgba(23,32,30,.26);
+  --clay-hero-lift:
+    inset 0 6px 10px rgba(255,255,255,.66),
+    inset 0 -10px 16px rgba(11,86,76,.30),
+    inset 0 -1px 0 rgba(11,86,76,.20),
+    0 8px 12px rgba(13,119,105,.18),
+    0 30px 44px -8px rgba(13,119,105,.40),
+    0 54px 74px -24px rgba(23,32,30,.28);
+  --clay-hero-press:
+    inset 0 8px 14px rgba(11,86,76,.38),
+    inset 0 -4px 8px rgba(255,255,255,.36),
+    0 2px 5px rgba(13,119,105,.18);
+
+  /* 먹 위. 흰 하이라이트를 그대로 쓰면 먼지가 앉은 것처럼 보여서
+     청록을 섞은 밝은 값으로 올립니다. */
+  --clay-night:
+    inset 0 3px 7px rgba(173,235,226,.14),
+    inset 0 -7px 13px rgba(0,0,0,.36),
+    0 14px 30px rgba(9,20,18,.26),
+    0 3px 8px rgba(9,20,18,.16);
+  --clay-night-lift:
+    inset 0 3px 7px rgba(173,235,226,.17),
+    inset 0 -7px 13px rgba(0,0,0,.34),
+    0 22px 40px rgba(9,20,18,.30),
+    0 4px 10px rgba(9,20,18,.18);
+
+  /* ---- 동작 ----
+     ① 반응은 **누르는 순간**입니다. 떼는 순간이 아닙니다.
+     ② 전환은 스프링. 감쇠비 1.0 이 기본이고, **손이 밀어낸 동작에만**
+        0.8 을 씁니다.
+     ③ 들어온 길로 나갑니다 — 아래에서 올라온 것은 아래로 내려갑니다. */
+  --ease:    cubic-bezier(.16, 1, .3, 1);
+  --ease-in: cubic-bezier(.4, 0, 1, 1);
+  --spring:  cubic-bezier(.34, 1.56, .64, 1);
+  --settle:  cubic-bezier(.22, 1, .36, 1);
+
+  --t-quick:  120ms;
+  --t-press:   90ms;
+  --t-hover:  180ms;
+  --t-view:   340ms;
+  --spring-t: 420ms;
+
+  /* 초점 링. 면마다 달라집니다 — 아래 컨테이너들이 자기 값으로 덮습니다.
+     커스텀 속성이 상속되므로 안에 든 것이 자동으로 따라옵니다.
+     하나로 고정하면 청록 판 위 2.92, 먹 판 위 3.06 으로 비텍스트 UI
+     기준 3:1 을 못 넘거나 겨우 걸칩니다. */
+  --focus: var(--teal-700);   /* 흰 위 5.44 */
+}
+
+* { box-sizing: border-box; }
+
+/* **`hidden` 이 이깁니다.** 이 파일은 화면을 `hidden` 으로 감추는데,
+   `.view`·`.veil`·`.screens`·`.wizard` 가 전부 `display` 를 자기 값으로
+   덮습니다. 규칙 하나가 없으면 감춘 화면이 그대로 남아 서로 겹치고,
+   덮개는 안 보이는 채로 아래 버튼의 클릭을 가로챕니다 — 화면은 멀쩡해
+   보이는데 메뉴가 안 눌립니다. */
+[hidden] { display: none !important; }
+
+html { height: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Wanted Sans Variable', 'Wanted Sans', 'Pretendard Variable',
+               -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  font-size: var(--fs);
+  font-weight: 500;
+  line-height: 1.62;
+  letter-spacing: 0;
+  /* 한글은 어절 안에서 끊으면 안 됩니다 — "봐요" 가 "봐 / 요" 로 갈리면
+     읽는 사람이 한 박자 멈춥니다. 영어 긴 토큰은 아래 overflow-wrap 이
+     받습니다. */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 배경 덩어리 셋. 클레이는 바닥이 평평하면 판이 어디서 떠 있는지 안
+   보입니다. 색을 아주 옅게 깔아 **빛이 어디서 오는지**만 말합니다.
+   고정 배치이고 애니메이션이 없으므로 GPU 비용이 없습니다. */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background:
+    radial-gradient(760px 560px at 12% -6%,  rgba(45,212,191,.20), transparent 62%),
+    radial-gradient(680px 520px at 96% 12%,  rgba(138,229,217,.22), transparent 60%),
+    radial-gradient(900px 700px at 62% 108%, rgba(18,165,146,.14), transparent 64%);
+}
+
+h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: 0; }
+button { background: none; border: 0; cursor: pointer; }
+img { display: block; max-width: 100%; }
+b, strong { font-weight: 700; }
+
+/* 숫자는 전부 고정폭. 세로로 쌓인 수치가 자리마다 흔들리면 표가 아니라
+   흩어진 글자가 됩니다. */
+.tnum, .mono, .val, .count, .codeval { font-variant-numeric: tabular-nums; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+:focus:not(:focus-visible) { outline: none; }
+
+.skip {
+  position: fixed; top: 10px; left: 10px; z-index: 200;
+  padding: 10px 18px; border-radius: var(--r-pill);
+  background: var(--paper); color: var(--teal-700);
+  font-size: var(--fs-sm); font-weight: 700;
+  box-shadow: var(--clay-sm);
+  transform: translateY(-160%);
+  transition: transform var(--t-hover) var(--ease);
+}
+.skip:focus-visible { transform: translateY(0); }
+
+.spacer { flex: 1; }
+.sr {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ==================================================================
+   틀 — 왼쪽 레일 · 오른쪽 본문
+   ================================================================== */
+.app {
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  min-height: 100dvh;
+}
+/* 위저드가 덮으면 뒤가 한 걸음 물러섭니다. 덮개를 깔면서 뒤를 그대로
+   두면 두 화면이 같은 높이에서 겹칩니다. */
+.app.covered { transition: transform var(--spring-t) var(--ease), filter var(--spring-t) var(--ease); }
+.app.covered { transform: scale(.988); filter: saturate(.9) brightness(.99); }
+
+.rail { padding: 18px 0 18px 18px; }
+.rail-in {
+  position: sticky; top: 18px;
+  height: calc(100dvh - 36px);
+  display: flex; flex-direction: column; gap: var(--sp-lg);
+  padding: var(--sp-xl) var(--sp-lg) var(--sp-lg);
+  border-radius: var(--r-xl);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 var(--sp-sm); }
+/* 심볼은 랜딩에서 걷어냈습니다. 여기만 남겨 두면 깨진 이미지 상자가
+   일곱 화면 전부의 왼쪽 위에 뜹니다 — 실제로 그러고 있었습니다.
+   워드마크 하나로 갑니다. */
+.brand b { font-size: var(--fs-lg); font-weight: 800; }
+
+/* ---- 내 캐릭터 ----
+   점토로 구운 캐릭터가 접시 위에 놓여 있습니다. 접시는 파여 있고
+   (--clay-in) 캐릭터는 그 안에서 솟습니다 — 이 두 방향이 붙어야
+   "안에 놓인 것"으로 읽힙니다. 접시 하나에만 두 방향을 씁니다. */
+.me {
+  display: grid; grid-template-columns: 62px minmax(0, 1fr);
+  align-items: center; gap: var(--sp-md);
+  width: 100%; padding: 10px 12px;
+  border-radius: var(--r-lg);
+  text-align: left;
+  background: var(--surface-2);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
+}
+.me:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-2px); }
+.me:active { box-shadow: var(--clay-press); transform: translateY(0); }
+
+.dish {
+  position: relative;
+  width: 62px; height: 62px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--teal-100), var(--teal-50));
+  box-shadow: var(--clay-in);
+}
+.dish img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+/* 픽셀 캐릭터는 정수배로만 키웁니다 — 캔버스는 원본 32×48 이고 CSS 가
+   키웁니다. 보간을 끄지 않으면 픽셀이 죽처럼 뭉갭니다. */
+.dish canvas {
+  position: absolute; left: 50%; top: 52%;
+  width: 32px; height: 48px;
+  transform: translate(-50%, -50%) scale(1.05);
+  image-rendering: pixelated;
+}
+/* 접시 안쪽 그늘. 캐릭터가 접시 벽에 닿는 곳을 어둡게 해서 안에 놓인
+   것으로 만듭니다. */
+.dish::after {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  box-shadow: inset 0 -6px 12px rgba(13,60,52,.18), inset 0 3px 6px rgba(255,255,255,.42);
+}
+
+.me .who { display: grid; gap: 1px; min-width: 0; }
+.me .nm { font-size: var(--fs); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me .sub { font-size: var(--fs-xs); color: var(--ink-3); }
+.me .school { font-size: var(--fs-2xs); color: var(--teal-700); font-weight: 700; }
+
+/* ---- 메뉴 ----
+   지금 있는 칸만 솟습니다. 파인 홈 안에서 그 칸이 흰 판이 되어 올라오고
+   왼쪽에 청록 눈금이 섭니다 — 색으로만 말하지 않으므로 색을 못 보는
+   사람도 어느 칸에 있는지 압니다. */
+.nav {
+  display: grid; gap: 4px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+}
+.navitem {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 12px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-md); font-weight: 700;
+  color: var(--ink-2);
+  transition: background var(--t-hover) var(--ease), color var(--t-hover) var(--ease),
+              box-shadow var(--t-hover) var(--ease), transform var(--t-press) var(--ease);
+}
+.navitem svg { flex: none; opacity: .8; }
+.navitem:hover { color: var(--ink); background: rgba(255,255,255,.62); }
+.navitem:active { transform: scale(.98); }
+.navitem[aria-current='page'] {
+  color: var(--teal-800);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+}
+.navitem[aria-current='page'] svg { opacity: 1; color: var(--teal-600); }
+.navitem[aria-current='page']::before {
+  content: ''; position: absolute; left: 3px; top: 50%;
+  width: 3px; height: 18px; margin-top: -9px;
+  border-radius: 2px; background: var(--teal);
+}
+
+/* 레일 가운데가 통째로 비어 있었습니다. **오늘** 한 줄을 그 자리에
+   앉히려 했는데, `margin-top: auto` 를 여기 걸어서 오늘이 바닥까지
+   밀려나고 빈 자리는 메뉴와 오늘 사이로 옮겨 갔을 뿐이었습니다 —
+   400px 가 여전히 아무 말도 안 합니다.
+
+   auto 는 **맨 아래 덩어리**가 가져야 합니다(.railfoot). 오늘은 메뉴
+   바로 아래 붙어서 "메뉴 → 오늘 진행 → 바닥 도구" 로 읽힙니다. */
+.railtoday {
+  display: grid; gap: 8px;
+  padding: 14px 15px;
+  border-radius: var(--r-lg);
+  background: var(--teal-50);
+  box-shadow: var(--clay-in);
+}
+.railtoday-top { display: flex; align-items: baseline; gap: var(--sp-sm); }
+.railtoday-top b { font-size: var(--fs-sm); font-weight: 800; }
+.railtoday-top span { margin-left: auto; font-size: var(--fs-xs); font-weight: 700; color: var(--teal-700); }
+.railtoday p { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.6; }
+.railtoday .goalbar-track { height: 10px; }
+
+/* 바닥 덩어리가 auto 를 가집니다 — 위 셋(브랜드·나·메뉴·오늘)은
+   차례로 붙고, 남는 높이는 전부 여기 위에 한 번에 모입니다. */
+.railfoot { margin-top: auto; padding-top: var(--sp-md); display: grid; gap: var(--sp-sm); }
+
+/* 모든 화면 — MVP 동안만 있는 문입니다. 발표에서 화면 하나를 보여
+   주려고 카메라를 켜고 10초를 앉을 수는 없습니다. */
+.railbtn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm); font-weight: 700;
+  color: var(--teal-800);
+  background: var(--teal-50);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-press) var(--ease);
+}
+.railbtn:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-2px); }
+.railbtn:active { box-shadow: var(--clay-press); transform: translateY(0); }
+.railbtn kbd {
+  margin-left: auto;
+  padding: 1px 7px; border-radius: 6px;
+  font: inherit; font-size: var(--fs-2xs); font-weight: 700;
+  color: var(--teal-700); background: rgba(255,255,255,.8);
+  box-shadow: inset 0 -2px 3px rgba(13,60,52,.12), inset 0 1px 2px rgba(255,255,255,.9);
+}
+
+.railnote {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 var(--sp-sm);
+  font-size: var(--fs-2xs); font-weight: 600; color: var(--ink-3);
+}
+.railnote svg { flex: none; color: var(--teal-600); }
+
+/* ==================================================================
+   본문
+   ================================================================== */
+.main { min-width: 0; padding: var(--sp-xl) var(--sp-xl) var(--sp-3xl) var(--sp-xl); }
+.main-in { max-width: 1080px; margin: 0 auto; }
+
+.topbar {
+  display: flex; align-items: baseline; gap: var(--sp-md);
+  margin-bottom: var(--sp-xl);
+  padding: 0 var(--sp-xs);
+}
+.topbar h1 {
+  font-size: var(--fs-2xl); font-weight: 800; letter-spacing: 0;
+  line-height: 1.3;
+}
+.topbar h1:focus { outline: none; }
+.topbar .sub { font-size: var(--fs-md); color: var(--ink-3); font-weight: 600; }
+
+.iconbtn {
+  display: grid; place-items: center;
+  width: 38px; height: 38px; flex: none;
+  border-radius: var(--r-md);
+  color: var(--ink-2);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-press) var(--ease),
+              color var(--t-hover) var(--ease);
+}
+.iconbtn:hover { color: var(--teal-700); box-shadow: var(--clay-sm-lift); transform: translateY(-2px); }
+.iconbtn:active { box-shadow: var(--clay-press); transform: translateY(0); }
+
+/* 화면 전환. 아래에서 한 걸음 올라오면서 자리를 잡습니다 — 위에서
+   내려오면 방금 누른 메뉴에서 멀어지는 방향이라 어디서 왔는지가 안
+   보입니다. */
+.view { display: grid; gap: var(--sp-lg); }
+.view > * { animation: settle var(--t-view) var(--settle) backwards; }
+.view > *:nth-child(2) { animation-delay: 55ms; }
+.view > *:nth-child(3) { animation-delay: 110ms; }
+.view > *:nth-child(4) { animation-delay: 165ms; }
+@keyframes settle {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.hint {
+  margin-top: var(--sp-sm);
+  padding: 0 var(--sp-xs);
+  font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.85;
+}
+.hint b { color: var(--ink-2); font-weight: 700; }
+
+/* ==================================================================
+   공통 조각 — 판 · 버튼 · 칩
+   ================================================================== */
+.card {
+  padding: var(--sp-xl);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.card.pad-sm { padding: var(--sp-lg); }
+
+.cardhead {
+  display: flex; align-items: center; gap: var(--sp-sm);
+  margin-bottom: var(--sp-lg);
+}
+.cardhead h2 { font-size: var(--fs-lg); font-weight: 800; letter-spacing: 0; }
+.cardhead .count { font-size: var(--fs-sm); font-weight: 700; color: var(--ink-3); }
+.cardhead .demo {
+  padding: 3px 10px; border-radius: var(--r-pill);
+  font-size: var(--fs-2xs); font-weight: 700;
+  color: var(--warn-700); background: var(--warn-50);
+  box-shadow: var(--clay-sm);
+}
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-lg); align-items: start; }
+.split-wide { grid-template-columns: 1.35fr 1fr; }
+.split-pet   { grid-template-columns: .8fr 1.2fr; }
+
+/* ---- 버튼 ----
+   점토 버튼은 **누르는 순간** 안으로 들어갑니다. 떼는 순간이 아닙니다.
+   그림자가 뒤집히고 2px 내려앉으면 손끝에 눌린 느낌이 납니다. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 12px 20px;
+  /* 알약에서 타일로. 시안 2 의 전제는 "우리는 게임이다" 이고, 게임 UI
+     에서 알약은 상태 표시(배지)이지 누르는 것이 아닙니다. */
+  border-radius: var(--r-md);
+  font-size: var(--fs-md); font-weight: 700;
+  white-space: nowrap;
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-press) var(--ease),
+              background var(--t-hover) var(--ease), color var(--t-hover) var(--ease);
+}
+.btn svg { flex: none; }
+.btn:disabled { cursor: not-allowed; }
+
+.btn-sm { padding: 8px 15px; font-size: var(--fs-sm); }
+.btn-lg { padding: 15px 28px; font-size: var(--fs-lg); }
+
+/* 주 CTA. 화면에서 가장 두꺼운 것 하나입니다. */
+.btn-teal {
+  color: #06312B; background: var(--teal);
+  /* 입술을 그림자 목록 **맨 앞**에 둡니다 — 뒤에 두면 클레이의 바깥
+     확산이 위에 깔려서 입술이 뿌옇게 번집니다. */
+  box-shadow: 0 var(--lip-lg) 0 var(--teal-700), var(--clay-hero);
+}
+.btn-teal:hover:not(:disabled) { background: var(--teal-400);
+  box-shadow: 0 var(--lip-lg) 0 var(--teal-700), var(--clay-hero-lift); transform: translateY(-3px); }
+/* 누르면 입술이 6 → 2 로 접히고 딱 그만큼(4px) 내려앉습니다.
+   합이 일정해서 아래 칸이 안 밀립니다. */
+.btn-teal:active:not(:disabled) { background: var(--teal-600);
+  box-shadow: 0 2px 0 var(--teal-800), var(--clay-hero-press); transform: translateY(4px); }
+.btn-teal:disabled {
+  color: #6E7B78; background: var(--surface-3);
+  box-shadow: var(--clay-in);
+  transform: none;
+}
+
+.btn-dark {
+  color: #F4F7F6; background: var(--night);
+  box-shadow:
+    0 var(--lip) 0 #0A100F,
+    inset 0 3px 6px rgba(173,235,226,.16),
+    inset 0 -5px 10px rgba(0,0,0,.40),
+    0 10px 20px rgba(9,20,18,.24);
+  --focus: var(--teal-300);
+}
+.btn-dark:hover { background: var(--night-2); transform: translateY(-3px); box-shadow:
+    0 var(--lip) 0 #0A100F,
+    inset 0 3px 6px rgba(173,235,226,.20), inset 0 -5px 10px rgba(0,0,0,.38),
+    0 16px 30px rgba(9,20,18,.28); }
+.btn-dark:active { transform: translateY(3px); box-shadow:
+    0 1px 0 #0A100F,
+    inset 0 6px 12px rgba(0,0,0,.44), inset 0 -2px 5px rgba(173,235,226,.14),
+    0 2px 5px rgba(9,20,18,.20); }
+
+/* 입술 색은 면보다 두 단 어두운 값입니다. 한 단이면 안 보이고,
+   세 단이면 테두리를 그은 것으로 읽힙니다. */
+.btn-light {
+  color: var(--teal-800); background: var(--paper);
+  box-shadow: 0 var(--lip-sm) 0 var(--line-2), var(--clay-sm);
+}
+.btn-light:hover { box-shadow: 0 var(--lip-sm) 0 var(--line-2), var(--clay-sm-lift); transform: translateY(-2px); }
+.btn-light:active { box-shadow: 0 1px 0 var(--line-2), var(--clay-press); transform: translateY(2px); }
+
+.btn-ghost {
+  color: var(--ink-2); background: var(--surface-2);
+  box-shadow: 0 var(--lip-sm) 0 var(--line-2), var(--clay-sm);
+}
+.btn-ghost:hover { color: var(--ink); box-shadow: 0 var(--lip-sm) 0 var(--line-2), var(--clay-sm-lift); transform: translateY(-2px); }
+.btn-ghost:active { box-shadow: 0 1px 0 var(--line-2), var(--clay-press); transform: translateY(2px); }
+
+/* 파인 버튼. "지금 하는 일에서 물러나는 쪽" 이라 솟지 않습니다 —
+   나가기 · 그만두기가 이것을 씁니다. */
+.btn-line {
+  color: var(--ink-2); background: var(--surface-3);
+  box-shadow: var(--clay-in);
+}
+.btn-line:hover { color: var(--ink); background: var(--surface-2); }
+.btn-line:active { box-shadow: var(--clay-in-deep); }
+
+.btnrow { display: flex; gap: var(--sp-sm); flex-wrap: wrap; }
+
+/* ---- 칩 ---- */
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 11px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-2xs); font-weight: 700;
+  white-space: nowrap;
+}
+.tag-good { color: var(--good-700); background: var(--good-50); box-shadow: var(--clay-sm); }
+.tag-idle { color: var(--ink-3); background: var(--surface-3); box-shadow: var(--clay-in); }
+.tag-warn { color: var(--warn-700); background: var(--warn-50); box-shadow: var(--clay-sm); }
+.tag-teal { color: var(--teal-800); background: var(--teal-50); box-shadow: var(--clay-sm); }
+.tag-outline { color: var(--ink-3); background: var(--surface-2); box-shadow: var(--clay-in); }
+
+/* ---- 입력칸 ----
+   글자를 받는 것은 **파여 있습니다.** 솟은 것은 누르는 것이고, 파인
+   것은 담는 것입니다. 이 한 규칙이면 화면에서 무엇이 무엇인지
+   설명하지 않아도 됩니다. */
+.field {
+  width: 100%;
+  padding: 13px 16px;
+  border: 0; border-radius: var(--r-md);
+  background: var(--surface-3);
+  color: var(--ink);
+  font-size: var(--fs); font-weight: 600;
+  box-shadow: var(--clay-in);
+  transition: box-shadow var(--t-hover) var(--ease), background var(--t-hover) var(--ease);
+}
+.field::placeholder { color: #8B9491; font-weight: 500; }
+.field:focus { background: var(--surface-2); box-shadow: var(--clay-in-deep); }
+
+/* ---- 표의 줄 ----
+   여기는 평면입니다. 줄마다 부풀리면 표가 아니라 단추 스무 개가 됩니다. */
+.rows { display: grid; }
+.row {
+  display: flex; align-items: center; gap: var(--sp-md);
+  padding: 13px 2px;
+  font-size: var(--fs-md);
+  border-bottom: 1px solid var(--line);
+}
+.row:last-child { border-bottom: 0; }
+.row .lb { color: var(--ink-2); font-weight: 600; }
+.row .lb em { display: block; font-style: normal; font-size: var(--fs-xs); color: var(--ink-3); font-weight: 500; }
+.row .val { margin-left: auto; font-weight: 700; text-align: right; }
+.row .chev { color: var(--ink-3); flex: none; }
+.row.tap { cursor: default; border-radius: var(--r-sm); }
+
+.note {
+  margin-top: var(--sp-lg);
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--teal-50);
+  box-shadow: var(--clay-in);
+  font-size: var(--fs-sm); line-height: 1.75; color: var(--ink-2);
+}
+.note b { color: var(--teal-800); }
+.note-warn { background: var(--warn-50); }
+.note-warn b { color: var(--warn-700); }
+
+/* ---- 수치 판 ----
+   숫자는 부풀리지 않습니다. 부푼 것은 누르는 것이라는 규칙을 여기서
+   깨면 화면 전체가 흔들립니다. 대신 **파인 홈**에 앉힙니다. */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--sp-md); }
+.stat {
+  display: grid; gap: 2px;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+}
+.stat u { text-decoration: none; font-size: var(--fs-xs); font-weight: 700; color: var(--ink-3); }
+.stat b {
+  font-size: var(--fs-3xl); font-weight: 800; line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.stat b span { font-size: var(--fs-md); font-weight: 700; color: var(--ink-3); margin-left: 3px; }
+
+.empty {
+  display: grid; justify-items: center; gap: 10px;
+  padding: var(--sp-2xl) var(--sp-xl);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  box-shadow: var(--clay-in);
+  text-align: center;
+}
+.empty-fig {
+  display: grid; place-items: center;
+  width: 54px; height: 54px; margin-bottom: 2px;
+  border-radius: 50%;
+  color: var(--teal-700); background: var(--teal-50);
+  box-shadow: var(--clay-sm);
+}
+.empty .ttl { font-size: var(--fs-lg); font-weight: 800; }
+.empty p { max-width: 42ch; font-size: var(--fs-sm); color: var(--ink-3); }
+.empty .btn { margin-top: var(--sp-sm); }
+
+/* 값이 바뀐 순간을 한 번 표시합니다. */
+.bump { animation: bump 340ms var(--spring); }
+@keyframes bump {
+  0%   { transform: scale(1); }
+  38%  { transform: scale(1.09); }
+  100% { transform: scale(1); }
+}
+
+/* ==================================================================
+   세션 시작
+   ================================================================== */
+/* 두 입구는 **색으로 갈립니다.** 방은 청록, 월드는 먹. 같은 색으로 두면
+   한 덩어리로 읽혀서 어느 쪽이 온라인 서버인지 구분이 안 됩니다. */
+.gate {
+  position: relative;
+  display: flex; align-items: center; gap: var(--sp-xl);
+  padding: var(--sp-xl) var(--sp-xl);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  cursor: pointer;
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
+}
+.gate .gtext { display: grid; gap: 6px; min-width: 0; z-index: 1; }
+.gate .gact  { margin-left: auto; display: flex; align-items: center; gap: var(--sp-sm); z-index: 1; }
+.gate h2 { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: 0; line-height: 1.25; }
+
+/* 아이브로우와 부제는 제목과 **크기로** 갈립니다. 셋이 다 본문 크기면
+   위계가 없어지고, 그때 판은 글자 세 줄이 됩니다. */
+.gkind {
+  font-size: var(--fs-xs); font-weight: 800;
+  opacity: .72;
+}
+.gsub { font-size: var(--fs-md); font-weight: 600; max-width: 48ch; opacity: .88; }
+
+.gate-teal {
+  background-color: #2DD4BF;
+  background-image:
+    radial-gradient(520px 300px at 88% -30%, rgba(255,255,255,.36), transparent 62%),
+    radial-gradient(420px 260px at 6% 120%, rgba(11,86,76,.24), transparent 60%);
+  color: var(--on-teal);
+  box-shadow: var(--clay-hero);
+  --focus: #17201E;   /* 청록 위 7.04 */
+}
+.gate-teal:hover { box-shadow: var(--clay-hero-lift); transform: translateY(-3px); }
+.gate-teal:active { box-shadow: var(--clay-hero-press); transform: translateY(1px); }
+
+.gate-night {
+  background-color: #17201E;
+  background-image:
+    radial-gradient(460px 280px at 92% -20%, rgba(45,212,191,.24), transparent 60%),
+    radial-gradient(380px 240px at 4% 130%, rgba(45,212,191,.10), transparent 58%);
+  color: var(--on-night);
+  box-shadow: var(--clay-night);
+  --focus: var(--teal-300);   /* 먹 위 11.33 */
+}
+.gate-night:hover { box-shadow: var(--clay-night-lift); transform: translateY(-3px); }
+.gate-night:active { transform: translateY(1px); }
+
+/* 히어로 판. 오른쪽에 점토 캐릭터가 접시째 놓입니다 — 이 화면에서
+   유일하게 그림이 판 밖으로 나가는 곳입니다. */
+.gate-hero { min-height: 224px; padding-right: 250px; }
+.gate-hero .gtext { gap: 10px; }
+.gate-hero h2 { font-size: 34px; }
+.gate-hero .gact { position: absolute; left: var(--sp-xl); bottom: var(--sp-xl); margin: 0; }
+.gate-hero .gtext { align-self: start; padding-bottom: 62px; }
+
+.gate-figure {
+  position: absolute; right: -14px; bottom: -18px;
+  width: 250px; height: 250px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255,255,255,.22);
+  box-shadow:
+    inset 0 8px 16px rgba(255,255,255,.40),
+    inset 0 -10px 20px rgba(11,86,76,.24),
+    0 18px 36px rgba(11,86,76,.26);
+  transition: transform var(--spring-t) var(--ease);
+}
+.gate:hover .gate-figure { transform: translateY(-6px) rotate(-2deg); }
+.gate-figure img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 42%; }
+.gate-figure canvas {
+  position: absolute; left: 50%; top: 50%;
+  width: 96px; height: 144px;
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+}
+
+.startrow { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--sp-lg); align-items: stretch; }
+.startrow .gate-night { min-height: 178px; align-items: flex-end; }
+.startrow .gate-night .gtext { align-self: flex-start; }
+.startrow .gate-night .gact { position: absolute; right: var(--sp-xl); bottom: var(--sp-xl); }
+
+/* 캠퍼스 사진 한 장이 먹 판 안에서 흐려집니다. 월드가 **장소**라는 것을
+   글자로 말하는 대신 보여 주는 쪽입니다. */
+.gate-still {
+  position: absolute; inset: 0;
+  opacity: .30;
+  -webkit-mask-image: linear-gradient(105deg, transparent 24%, #000 92%);
+  mask-image: linear-gradient(105deg, transparent 24%, #000 92%);
+}
+.gate-still img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ---- 코드로 참여 ----
+   초대받은 사람이 이 화면에서 처음 누르는 곳입니다. 팝오버 뒤에 숨겨
+   두면 코드를 들고 온 사람이 "어디에 넣지" 부터 찾아야 합니다. */
+.joincard {
+  display: grid; gap: var(--sp-md); align-content: space-between;
+  padding: var(--sp-xl);
+  border-radius: var(--r-xl);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.joincard h2 { font-size: var(--fs-lg); font-weight: 800; }
+.joincard p { font-size: var(--fs-sm); color: var(--ink-3); }
+.joinrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-sm); }
+.joinrow .field {
+  font-size: var(--fs-xl); font-weight: 800;
+  letter-spacing: 0; text-align: center;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+.codemsg { font-size: var(--fs-xs); color: var(--ink-3); min-height: 18px; }
+.codemsg[data-bad='true'] { color: var(--bad-700); font-weight: 700; }
+
+/* ---- 오늘 칸 ---- */
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-lg); }
+.quicktile {
+  display: grid; gap: 3px;
+  padding: 18px 20px;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  text-align: left;
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
+}
+.quicktile:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-2px); }
+.quicktile:active { box-shadow: var(--clay-press); transform: translateY(0); }
+.quicktile u { text-decoration: none; font-size: var(--fs-xs); font-weight: 700; color: var(--ink-3); }
+.quicktile b { font-size: var(--fs-2xl); font-weight: 800; font-variant-numeric: tabular-nums; }
+.quicktile b span { font-size: var(--fs-md); color: var(--ink-3); margin-left: 3px; }
+.quicktile .qfig {
+  position: absolute; right: 16px; top: 16px;
+  color: var(--teal-600); opacity: .5;
+}
+.quicktile { position: relative; }
+
+/* ==================================================================
+   대기실 — 비공개방의 얼굴
+
+   이 화면이 초대의 전부입니다. 코드를 만든 사람은 여기서 코드를 옮겨
+   적고, 초대받은 사람은 여기로 들어옵니다. 그래서 화면의 절반을
+   **코드 하나**에 씁니다.
+
+   문을 안 잠급니다. 학교 인증도 자세 기준도 안 물어봅니다. 친구가
+   코드를 보냈는데 카메라부터 10초 맞추라고 하면 그 사람은 안 들어옵니다.
+   기준은 방 안에서 원할 때 잡습니다.
+   ================================================================== */
+.lobby { display: grid; grid-template-columns: minmax(0, 1.5fr) 340px; gap: var(--sp-lg); align-items: start; }
+
+.roomhead {
+  display: flex; align-items: center; gap: var(--sp-md); flex-wrap: wrap;
+  margin-bottom: var(--sp-lg);
+}
+.roomhead h2 { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: 0; }
+.roomchips { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---- 초대 코드 ----
+   여섯 자를 여섯 칸에 나눠 앉힙니다. 한 덩어리로 두면 전화로 불러 줄 때
+   어디까지 읽었는지 놓칩니다. 칸은 **파여 있고** 글자가 그 안에
+   눌러 찍힌 것처럼 보입니다 — 코드는 누르는 것이 아니라 읽는 것입니다. */
+.invite {
+  padding: var(--sp-xl);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(420px 260px at 90% -30%, rgba(255,255,255,.55), transparent 58%),
+    var(--teal-50);
+  box-shadow: var(--clay);
+}
+.invite-head { display: flex; align-items: baseline; gap: var(--sp-sm); margin-bottom: var(--sp-lg); }
+.invite-head b { font-size: var(--fs-lg); font-weight: 800; }
+.invite-head span { font-size: var(--fs-sm); color: var(--ink-3); }
+
+.codetiles { display: flex; gap: 10px; justify-content: center; margin-bottom: var(--sp-lg); }
+.codetiles i {
+  display: grid; place-items: center;
+  width: 62px; height: 78px;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  box-shadow: var(--clay-in-deep);
+  font-style: normal;
+  font-size: 34px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--teal-800);
+}
+/* 코드가 굳는 동안 뒷자리가 계속 굴러갑니다. 굳은 자리는 색이 진해집니다. */
+.codetiles i[data-rolling='true'] { color: var(--ink-3); opacity: .55; }
+
+.invite-acts { display: flex; gap: var(--sp-sm); justify-content: center; }
+.invite-foot {
+  margin-top: var(--sp-lg);
+  font-size: var(--fs-xs); color: var(--ink-3); text-align: center; line-height: 1.7;
+}
+
+/* ---- 자리 ----
+   Zoom 격자입니다. 비공개방이 "자리가 있는 방" 이라는 것을 여기서
+   봅니다. 앉은 자리는 솟고 빈 자리는 파입니다 — 채워야 할 곳이
+   어디인지가 재질로 보입니다. */
+.seats {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--sp-md);
+}
+.seat {
+  position: relative;
+  display: grid; justify-items: center; gap: 6px;
+  padding: 16px 10px 14px;
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
+  animation: settle var(--t-view) var(--settle) backwards;
+}
+button.seat { cursor: pointer; }
+button.seat:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-3px); }
+button.seat:active { box-shadow: var(--clay-press); transform: translateY(0); }
+
+.seat-plate {
+  position: relative;
+  width: 68px; height: 68px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--teal-100), var(--teal-50));
+  box-shadow: var(--clay-in);
+}
+.seat-plate img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.seat-plate canvas {
+  position: absolute; left: 50%; top: 54%;
+  width: 32px; height: 48px;
+  transform: translate(-50%, -50%) scale(1.25);
+  image-rendering: pixelated;
+}
+
+/* 점토 렌더는 스튜디오 배경(연한 크림)째 들어옵니다. 종마다 그 크림 값이
+   조금씩 달라서(240,232,226 · 233,223,215 · 233,233,233 · 245,248,245)
+   접시 색을 하나로 맞출 수가 없습니다. 그래서 맞추는 대신 **가장자리를
+   지웁니다** — 접시 안쪽만 남고 테두리는 접시 색으로 녹습니다. */
+.dish img, .seat-plate img, .puck-plate img,
+.podium img, .done-fig img, .gate-figure img {
+  -webkit-mask-image: radial-gradient(circle at 50% 46%, #000 56%, rgba(0,0,0,.4) 80%, transparent 96%);
+  mask-image: radial-gradient(circle at 50% 46%, #000 56%, rgba(0,0,0,.4) 80%, transparent 96%);
+}
+.seat-name { font-size: var(--fs-md); font-weight: 700; }
+.seat-lv {
+  position: absolute; left: 10px; top: 10px;
+  padding: 2px 8px; border-radius: var(--r-pill);
+  font-size: var(--fs-2xs); font-weight: 800;
+  color: var(--teal-800); background: var(--teal-50);
+  box-shadow: var(--clay-sm);
+  font-variant-numeric: tabular-nums;
+}
+.seat.self { background: linear-gradient(180deg, #FFFFFF, var(--teal-50)); }
+.seat.self .seat-name::after { content: ' (나)'; color: var(--ink-3); font-weight: 600; }
+
+.seat-empty {
+  display: grid; justify-items: center; align-content: center; gap: 6px;
+  min-height: 150px;
+  padding: 16px 10px;
+  border-radius: var(--r-lg);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in-deep);
+  color: var(--ink-3);
+  font-size: var(--fs-xs); font-weight: 700;
+  animation: settle var(--t-view) var(--settle) backwards;
+}
+.seat-empty .ring {
+  display: grid; place-items: center;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: 2px dashed var(--teal-200);
+  color: var(--teal-600);
+}
+
+/* ---- 곁판 ---- */
+.side { display: grid; gap: var(--sp-md); }
+.side h3 { font-size: var(--fs-lg); font-weight: 800; }
+
+/* 스위치. 트랙은 파이고 손잡이는 솟습니다. */
+.setrow {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; gap: var(--sp-md);
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.setrow:last-of-type { border-bottom: 0; }
+.setrow .k { font-size: var(--fs-md); font-weight: 700; }
+.setrow .k small { display: block; font-size: var(--fs-xs); font-weight: 500; color: var(--ink-3); line-height: 1.55; }
+
+.switch {
+  position: relative;
+  width: 50px; height: 30px; flex: none;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+  transition: background var(--t-hover) var(--ease), box-shadow var(--t-hover) var(--ease);
+}
+.switch span {
+  position: absolute; left: 4px; top: 4px;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 3px 6px rgba(13,60,52,.24), inset 0 2px 3px rgba(255,255,255,.9),
+              inset 0 -2px 4px rgba(13,60,52,.12);
+  transition: transform var(--spring-t) var(--spring);
+}
+.switch[aria-checked='true'] { background: var(--teal); box-shadow: inset 0 3px 6px rgba(11,86,76,.28), inset 0 -2px 4px rgba(255,255,255,.35); }
+.switch[aria-checked='true'] span { transform: translateX(20px); }
+
+/* 준비 발판. 시작 버튼이 이 화면의 유일한 주 CTA 라 여기만 두껍습니다. */
+.startbox { display: grid; gap: var(--sp-sm); }
+.startbox .btn-teal { width: 100%; }
+.lobby-status {
+  font-size: var(--fs-xs); color: var(--ink-3); text-align: center; line-height: 1.6;
+  min-height: 20px;
+}
+.lobby-status[data-blocked='true'] { color: var(--warn-700); font-weight: 700; }
+
+/* MVP 문. 시작은 막되 **보는 길은 열어 둡니다** — 기준이 없으면 세션이
+   판정을 못 하는 것은 사실이지만, 화면을 못 보는 것과는 다른 문제입니다. */
+.bypass {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-xs); font-weight: 700;
+  color: var(--teal-700); background: var(--teal-50);
+  box-shadow: var(--clay-in);
+  transition: background var(--t-hover) var(--ease);
+}
+.bypass:hover { background: var(--teal-100); }
+
+/* 목표 막대 */
+.goalbar { display: grid; gap: 7px; }
+.goalbar-top { display: flex; align-items: baseline; gap: var(--sp-sm); font-size: var(--fs-md); }
+.goalbar-top b { font-weight: 700; }
+.goalbar-top span { margin-left: auto; font-weight: 800; font-variant-numeric: tabular-nums; }
+.goalbar-track {
+  height: 14px; border-radius: var(--r-pill);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+  overflow: hidden;
+}
+.goalbar-track i {
+  display: block; height: 100%;
+  width: calc(var(--w, 0) * 100%);
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--teal-400), var(--teal));
+  box-shadow: inset 0 2px 3px rgba(255,255,255,.55), inset 0 -3px 5px rgba(11,86,76,.28);
+  transition: width var(--spring-t) var(--ease);
+}
+.goalbar p { font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.7; }
+
+/* ==================================================================
+   세션 — 함께 앉아 있는 동안
+
+   화면에서 움직이는 것은 **남은 시간 하나**입니다. 자리 타일도 카메라
+   미리보기도 그 옆에 있는 것이지 번갈아 눈을 끄는 것이 아닙니다.
+   ================================================================== */
+.sess { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-lg); align-items: start; }
+
+.dial {
+  display: grid; justify-items: center; gap: var(--sp-md);
+  padding: var(--sp-2xl) var(--sp-xl) var(--sp-xl);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(520px 320px at 50% -20%, rgba(255,255,255,.95), transparent 66%),
+    var(--teal-50);
+  box-shadow: var(--clay);
+}
+.dial-ring { position: relative; width: 236px; height: 236px; }
+/* 시계는 파인 홈 안에서 돕니다. 홈이 없으면 남은 길이가 안 보입니다. */
+.dial-ring::before {
+  content: ''; position: absolute; inset: 0;
+  border-radius: 50%;
+  box-shadow: var(--clay-in-deep);
+}
+.dial-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.dial-ring .track { stroke: rgba(13,60,52,.09); }
+.dial-ring .head {
+  stroke: var(--teal);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke var(--t-view) var(--ease);
+}
+.sess[data-phase='rest'] .dial-ring .head { stroke: #E9A23B; }
+.sess[data-phase='rest'] .dial { background: radial-gradient(520px 320px at 50% -20%, rgba(255,255,255,.95), transparent 66%), var(--warn-50); }
+
+.dial-face {
+  position: absolute; inset: 0;
+  display: grid; place-content: center; justify-items: center; gap: 2px;
+}
+.dial-time { font-size: 46px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.dial-phase { font-size: var(--fs-sm); font-weight: 700; color: var(--teal-700); }
+.sess[data-phase='rest'] .dial-phase { color: var(--warn-700); }
+.dial-of { font-size: var(--fs-sm); color: var(--ink-3); text-align: center; }
+
+/* 참가자 줄. 세션 중에는 이름과 상태만 있으면 됩니다 — 자리 격자를
+   그대로 두면 대기실과 같은 화면으로 보입니다. */
+.pucks { display: flex; gap: var(--sp-md); flex-wrap: wrap; justify-content: center; }
+.puck {
+  position: relative;
+  display: grid; justify-items: center; gap: 4px;
+  width: 84px;
+}
+.puck-plate {
+  position: relative;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--teal-100), var(--teal-50));
+  box-shadow: var(--clay-sm);
+}
+.puck-plate img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 30%; }
+.puck-plate canvas {
+  position: absolute; left: 50%; top: 54%;
+  width: 32px; height: 48px;
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+}
+.puck[data-talking='true'] .puck-plate { box-shadow: var(--clay-sm), 0 0 0 3px var(--teal-300); }
+.puck span { font-size: var(--fs-xs); font-weight: 700; text-align: center; }
+.puck em { font-style: normal; font-size: var(--fs-2xs); color: var(--ink-3); }
+
+/* 카메라 미리보기. 이 제품의 카메라는 **자세를 보는 장치**이고 얼굴을
+   띄우는 장치가 아닙니다. 그래서 남에게 안 보이고 나만 봅니다. */
+.pip {
+  padding: var(--sp-lg);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.pip-screen {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-md);
+  background: linear-gradient(165deg, var(--night-2), var(--night));
+  box-shadow: inset 0 6px 14px rgba(0,0,0,.5), inset 0 -2px 5px rgba(173,235,226,.10);
+  display: grid; place-items: center;
+  color: rgba(244,247,246,.5);
+  font-size: var(--fs-xs); font-weight: 700;
+  text-align: center;
+  overflow: hidden;
+}
+.pip-screen svg { opacity: .5; }
+.pip-head { display: flex; align-items: center; gap: var(--sp-sm); margin-bottom: var(--sp-md); }
+.pip-head b { font-size: var(--fs-md); font-weight: 800; }
+.pip-foot { margin-top: var(--sp-md); font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.65; }
+
+/* 조작 발판. 둥근 점토 단추 넷이 홈에 박혀 있습니다. */
+.sessbar {
+  display: flex; align-items: center; justify-content: center; gap: var(--sp-xl);
+  padding: var(--sp-lg) var(--sp-xl);
+  border-radius: var(--r-pill);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.roundbtn { display: grid; justify-items: center; gap: 6px; }
+.roundbtn i {
+  display: grid; place-items: center;
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-press) var(--ease),
+              background var(--t-hover) var(--ease), color var(--t-hover) var(--ease);
+}
+.roundbtn:hover i { box-shadow: var(--clay-sm-lift); transform: translateY(-3px); color: var(--ink); }
+.roundbtn:active i { box-shadow: var(--clay-press); transform: translateY(0); }
+.roundbtn span { font-size: var(--fs-2xs); font-weight: 700; color: var(--ink-3); }
+.roundbtn[aria-pressed='true'] i { color: #06312B; background: var(--teal); box-shadow: var(--clay-hero); }
+.roundbtn.leave i { color: #fff; background: #C0392B; box-shadow:
+    inset 0 3px 6px rgba(255,255,255,.30), inset 0 -5px 10px rgba(120,25,15,.45),
+    0 10px 20px rgba(120,25,15,.26); }
+
+/* ---- 마침 ---- */
+.done { display: grid; justify-items: center; gap: var(--sp-lg); text-align: center; }
+.done-card {
+  display: grid; justify-items: center; gap: var(--sp-md);
+  width: 100%;
+  padding: var(--sp-3xl) var(--sp-xl) var(--sp-2xl);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(560px 340px at 50% -20%, rgba(255,255,255,.95), transparent 68%),
+    var(--teal-50);
+  box-shadow: var(--clay);
+}
+.done-fig {
+  width: 132px; height: 132px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(160deg, var(--teal-100), var(--teal-50));
+  box-shadow: var(--clay-in);
+  position: relative;
+}
+.done-fig img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 32%; }
+.done-fig canvas {
+  position: absolute; left: 50%; top: 52%;
+  width: 64px; height: 96px;
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+}
+.done h2 { font-size: var(--fs-2xl); font-weight: 800; }
+.done-big { font-size: 56px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.done-sub { font-size: var(--fs-md); color: var(--ink-2); max-width: 44ch; }
+.done .stats { width: 100%; }
+
+/* ==================================================================
+   캐릭터
+   ================================================================== */
+/* 무대. 캐릭터가 점토 좌대 위에 서 있고, 아래에 접지 그림자가 있습니다.
+   그림자가 없으면 캐릭터가 공중에 떠 있는 스티커로 보입니다. */
+.stage {
+  display: grid; justify-items: center; gap: var(--sp-lg);
+  padding: var(--sp-2xl) var(--sp-xl) var(--sp-xl);
+}
+.podium {
+  position: relative;
+  width: 190px; height: 190px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(165deg, var(--teal-100), var(--teal-50));
+  box-shadow: var(--clay-in-deep);
+}
+.podium img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 36%; }
+.podium canvas {
+  position: absolute; left: 50%; top: 52%;
+  width: 96px; height: 144px;
+  transform: translate(-50%, -50%);
+  image-rendering: pixelated;
+  animation: breathe 7s ease-in-out infinite;
+}
+/* 숨쉬기. transform 하나만 움직이므로 합성 단계에서 끝납니다 —
+   무한 반복은 GPU 속성만 (DESIGN.md §7). */
+@keyframes breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -53%) scale(1.03); }
+}
+.stage .nm { font-size: var(--fs-xl); font-weight: 800; }
+.stage .sp { font-size: var(--fs-sm); color: var(--ink-3); }
+
+/* 옷장 칸. 입은 칸은 솟고 빈 칸은 파입니다. */
+.wear { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-md); }
+.slot {
+  display: grid; gap: 3px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  text-align: left;
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease),
+              background var(--t-hover) var(--ease);
+}
+.slot u { text-decoration: none; font-size: var(--fs-2xs); font-weight: 700; color: var(--ink-3); }
+.slot b { font-size: var(--fs-md); font-weight: 700; color: var(--ink-3); }
+.slot.on { background: var(--paper); box-shadow: var(--clay-sm); }
+.slot.on b { color: var(--ink); }
+.slot:hover { transform: translateY(-2px); box-shadow: var(--clay-sm-lift); background: var(--paper); }
+.slot:active { transform: translateY(0); box-shadow: var(--clay-press); }
+
+/* ==================================================================
+   랭킹전
+   ================================================================== */
+/* 단상 셋. 여기는 부풀립니다 — 랭킹전에서 클레이를 적극적으로 쓰는
+   자리를 네 곳으로 못 박았고(단상 · 우리 학교 · 선택된 기간 · 주 CTA)
+   그 첫째입니다. */
+.podiums { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-md); align-items: end; }
+.pod {
+  display: grid; justify-items: center; gap: 6px;
+  padding: var(--sp-lg) var(--sp-md);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.pod[data-rank='1'] { padding-top: var(--sp-2xl); background: linear-gradient(180deg, #FFFFFF, var(--teal-50)); }
+.pod .medal {
+  display: grid; place-items: center;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  font-size: var(--fs-lg); font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--teal-800); background: var(--teal-100);
+  box-shadow: var(--clay-sm);
+}
+.pod[data-rank='1'] .medal { color: #06312B; background: var(--teal); box-shadow: var(--clay-hero); }
+.pod .un { font-size: var(--fs-md); font-weight: 800; }
+.pod .hr { font-size: var(--fs-sm); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+
+.lg { display: grid; }
+.lg li {
+  display: flex; align-items: center; gap: var(--sp-md);
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-md);
+}
+.lg li + li { margin-top: 4px; }
+.lg .rk { width: 26px; font-weight: 800; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.lg .un { font-weight: 700; }
+.lg .hr { margin-left: auto; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* 우리 학교 줄만 솟습니다. */
+.lg li.mine {
+  background: var(--teal-50);
+  box-shadow: var(--clay-sm);
+}
+.lg li.mine .rk, .lg li.mine .un, .lg li.mine .hr { color: var(--teal-800); }
+
+/* 기간 탭 — 선택된 칸만 솟습니다. */
+.seg {
+  display: inline-flex; gap: 3px;
+  padding: 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+}
+.seg button {
+  padding: 9px 17px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm); font-weight: 700;
+  color: var(--ink-3);
+  transition: color var(--t-hover) var(--ease), background var(--t-hover) var(--ease),
+              box-shadow var(--t-hover) var(--ease);
+}
+.seg button:hover { color: var(--ink-2); }
+.seg button[aria-selected='true'] {
+  color: var(--teal-800);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+}
+
+/* ==================================================================
+   마이페이지
+   ================================================================== */
+.week { display: flex; align-items: flex-end; gap: var(--sp-sm); height: 168px; }
+.bar { flex: 1; display: grid; justify-items: center; gap: 8px; height: 100%; grid-template-rows: 1fr auto; }
+.fillwrap {
+  display: flex; align-items: flex-end;
+  width: 100%; height: 100%;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+  overflow: hidden;
+}
+.fill {
+  width: 100%;
+  height: calc(var(--h, 0) * 100%);
+  min-height: 6px;
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, var(--teal-300), var(--teal));
+  box-shadow: inset 0 3px 5px rgba(255,255,255,.55), inset 0 -4px 7px rgba(11,86,76,.25);
+  animation: grow var(--spring-t) var(--ease) backwards;
+}
+@keyframes grow { from { height: 0; } }
+.bar .d { font-size: var(--fs-xs); font-weight: 700; color: var(--ink-3); }
+.bar.today .fill { background: linear-gradient(180deg, var(--teal), var(--teal-600)); }
+.bar.today .d { color: var(--teal-700); }
+
+.save {
+  display: flex; align-items: center; gap: var(--sp-md);
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  box-shadow: var(--clay-in);
+}
+.save .ic {
+  display: grid; place-items: center;
+  width: 44px; height: 44px; flex: none;
+  border-radius: var(--r-md);
+  color: var(--teal-700); background: var(--paper);
+  box-shadow: var(--clay-sm);
+}
+.save .tt { display: grid; gap: 1px; }
+.save .tt b { font-size: var(--fs-md); font-weight: 800; }
+.save .tt span { font-size: var(--fs-xs); color: var(--ink-3); }
+
+.skel { display: grid; gap: 10px; }
+.skel i {
+  display: block; height: 16px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+}
+.skel.tall i:first-child { height: 26px; width: 40%; }
+
+/* ==================================================================
+   방 만들기 위저드
+   ================================================================== */
+.wizard {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  transform: translateY(100%);
+  transition: transform var(--spring-t) var(--ease);
+}
+.wizard::before {
+  content: ''; position: absolute; inset: 0; z-index: -1;
+  background:
+    radial-gradient(700px 520px at 14% -8%, rgba(45,212,191,.22), transparent 62%),
+    radial-gradient(620px 480px at 92% 8%, rgba(138,229,217,.24), transparent 60%);
+}
+.wizard.up { transform: none; }
+
+.wiz-nav {
+  display: flex; align-items: center; gap: var(--sp-md);
+  padding: var(--sp-lg) var(--sp-xl);
+}
+.wiz-back {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 9px 15px 9px 11px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm); font-weight: 700; color: var(--ink-2);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  transition: opacity var(--t-hover) var(--ease), transform var(--t-press) var(--ease),
+              box-shadow var(--t-hover) var(--ease);
+}
+.wiz-back:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-2px); }
+.wiz-back[data-hidden='true'] { opacity: 0; pointer-events: none; }
+.wiz-title { font-size: var(--fs-md); font-weight: 800; }
+
+/* 진행 막대. **방금 채워진 칸만** 자랍니다 — 전부 다시 칠하면 지나온
+   단계까지 매 걸음 새로 그려져서 어디가 바뀌었는지가 안 보입니다. */
+.wiz-track {
+  margin-left: auto;
+  display: flex; gap: 5px;
+  padding: 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+}
+.wiz-track i {
+  display: block; width: 26px; height: 7px;
+  border-radius: var(--r-pill);
+  background: rgba(13,60,52,.10);
+  transition: background var(--t-view) var(--ease);
+}
+.wiz-track i[data-fill='true'] {
+  background: var(--teal);
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.5), inset 0 -2px 3px rgba(11,86,76,.3);
+}
+.wiz-track i.grew { animation: grewx 380ms var(--spring); }
+@keyframes grewx { from { transform: scaleX(.2); transform-origin: left; } }
+
+/* 짧은 장이 위에 붙어서 아래 600px 가 통째로 비었습니다. 마법사는
+   한 번에 한 질문만 하는 화면이라 그 질문이 화면 가운데 있어야 합니다.
+
+   grid + place-content 로 가운데에 두되, 내용이 화면보다 길어지면
+   place-content:center 가 위쪽을 잘라 먹으므로 safe 를 붙입니다 —
+   넘칠 때는 위에서부터 흐르고 스크롤이 됩니다. */
+.wiz-scroll {
+  flex: 1; overflow-y: auto; padding: var(--sp-xl) var(--sp-xl) 130px;
+  display: grid; place-content: safe center;
+}
+.wiz-stage { width: min(720px, 100%); margin: 0 auto; display: grid; gap: var(--sp-lg); }
+.wiz-stage > * { animation: settle var(--t-view) var(--settle) backwards; }
+.wiz-stage > *:nth-child(2) { animation-delay: 60ms; }
+.wiz-stage > *:nth-child(3) { animation-delay: 120ms; }
+/* 들어온 길로 나갑니다 — 앞으로 갈 때는 왼쪽으로 빠지고, 뒤로 갈 때는
+   오른쪽으로 빠집니다. */
+.wiz-stage.leaving > * { animation: leaveL 200ms var(--ease-in) forwards; }
+.wiz-stage.leaving.to-back > * { animation: leaveR 200ms var(--ease-in) forwards; }
+.wiz-stage.back > * { animation: settleR var(--t-view) var(--settle) backwards; }
+@keyframes leaveL { to { opacity: 0; transform: translateX(-22px); } }
+@keyframes leaveR { to { opacity: 0; transform: translateX(22px); } }
+@keyframes settleR { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+
+.wiz-lede { display: grid; gap: 7px; padding-top: var(--sp-md); }
+.wiz-lede h3 { font-size: var(--fs-2xl); font-weight: 800; letter-spacing: 0; }
+.wiz-lede p { font-size: var(--fs-md); color: var(--ink-2); max-width: 54ch; }
+
+.wiz-bar {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: var(--sp-lg) var(--sp-xl) var(--sp-xl);
+  background: linear-gradient(180deg, rgba(237,245,243,0), rgba(237,245,243,.92) 42%);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.wiz-bar-inner {
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: center; gap: var(--sp-md);
+}
+.wiz-hint { font-size: var(--fs-xs); color: var(--ink-3); }
+.wiz-bar .btn-teal { margin-left: auto; min-width: 180px; }
+.wiz-go-label { transition: opacity var(--t-quick) var(--ease); }
+.wiz-go-label.swapping { opacity: 0; }
+
+/* 1단계 — 방 종류 */
+.pick-grid { display: grid; gap: var(--sp-md); }
+.pick {
+  display: grid; grid-template-columns: 52px minmax(0, 1fr) 26px;
+  align-items: start; gap: var(--sp-md);
+  padding: var(--sp-lg);
+  border-radius: var(--r-lg);
+  text-align: left;
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease),
+              background var(--t-hover) var(--ease);
+}
+.pick:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-3px); }
+.pick:active { box-shadow: var(--clay-press); transform: translateY(0); }
+.pick[aria-pressed='true'] {
+  background: linear-gradient(180deg, #FFFFFF, var(--teal-50));
+  box-shadow: var(--clay-lift), 0 0 0 2px var(--teal-300);
+}
+.pick-fig {
+  display: grid; place-items: center;
+  width: 52px; height: 52px;
+  border-radius: var(--r-md);
+  color: var(--teal-700); background: var(--teal-50);
+  box-shadow: var(--clay-in);
+}
+.pick[aria-pressed='true'] .pick-fig { color: #06312B; background: var(--teal); box-shadow: var(--clay-sm); }
+.pick-text { display: grid; gap: 5px; }
+.pick-text b { font-size: var(--fs-lg); font-weight: 800; }
+.pick-text > span { font-size: var(--fs-sm); color: var(--ink-2); }
+.pick-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 3px; }
+.pick-check {
+  display: grid; place-items: center;
+  width: 26px; height: 26px; margin-top: 12px;
+  border-radius: 50%;
+  color: transparent; background: var(--surface-3);
+  box-shadow: var(--clay-in);
+  transition: color var(--t-hover) var(--ease), background var(--t-hover) var(--ease);
+}
+.pick[aria-pressed='true'] .pick-check { color: #06312B; background: var(--teal); box-shadow: var(--clay-sm); }
+
+/* 2단계 — 자리 */
+.seatslider {
+  padding: var(--sp-xl);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.seatslider-head { display: flex; align-items: baseline; gap: var(--sp-md); margin-bottom: var(--sp-lg); }
+.seatslider-head b { font-size: var(--fs-3xl); font-weight: 800; font-variant-numeric: tabular-nums; display: inline-block; }
+.seatslider-head span { font-size: var(--fs-sm); color: var(--ink-3); }
+.seatslider-rail { position: relative; height: 34px; }
+.seatslider-track {
+  position: absolute; left: 0; right: 0; top: 11px;
+  height: 12px; border-radius: var(--r-pill);
+  background: var(--surface-3);
+  box-shadow: var(--clay-in);
+  overflow: hidden;
+  display: block;
+}
+.seatslider-fill {
+  display: block; height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--teal-400), var(--teal));
+  box-shadow: inset 0 2px 3px rgba(255,255,255,.5), inset 0 -3px 5px rgba(11,86,76,.28);
+  transition: width var(--spring-t) var(--spring);
+}
+.seatslider-ticks {
+  position: absolute; left: 11px; right: 11px; top: 15px;
+  display: flex; justify-content: space-between;
+}
+.seatslider-ticks i {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(13,60,52,.20);
+  transition: background var(--t-hover) var(--ease), opacity var(--t-hover) var(--ease);
+}
+.seatslider-ticks i[data-passed='true'] { background: rgba(255,255,255,.75); }
+.seatslider-ticks i[data-current='true'] { opacity: 0; }
+.seatslider-thumb {
+  position: absolute; top: 2px;
+  width: 30px; height: 30px; margin-left: -15px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 5px 12px rgba(13,60,52,.28), inset 0 3px 4px rgba(255,255,255,.95),
+              inset 0 -4px 7px rgba(13,60,52,.16);
+  transition: left var(--spring-t) var(--spring);
+  pointer-events: none;
+}
+.seatslider-rail input[type='range'] {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; margin: 0;
+  opacity: 0; cursor: pointer;
+}
+.seatslider-ends { display: flex; justify-content: space-between; margin-top: var(--sp-sm); font-size: var(--fs-xs); color: var(--ink-3); }
+
+.preview {
+  padding: var(--sp-xl);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  box-shadow: var(--clay-in);
+}
+.preview-head { display: flex; align-items: baseline; gap: var(--sp-sm); margin-bottom: var(--sp-md); }
+.preview-head b { font-size: var(--fs-md); font-weight: 800; }
+.preview-head span { margin-left: auto; font-size: var(--fs-sm); color: var(--ink-3); }
+.preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pv-tile {
+  position: relative;
+  display: grid; place-items: center;
+  height: 82px;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  animation: settle 260ms var(--settle) backwards;
+}
+.pv-tile canvas { width: 32px; height: 48px; image-rendering: pixelated; }
+.pv-tile.empty { background: var(--surface-3); box-shadow: var(--clay-in); }
+.pv-tile-me {
+  position: absolute; right: 6px; top: 6px;
+  padding: 1px 7px; border-radius: var(--r-pill);
+  font-size: var(--fs-2xs); font-weight: 800;
+  color: var(--teal-800); background: var(--teal-50);
+}
+.preview .goalbar { margin-top: var(--sp-lg); }
+
+/* 3단계 — 시간. 휠은 **파인 홈** 안에서 굴러갑니다. */
+.dials { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--sp-md); }
+.dialcol { display: grid; gap: var(--sp-sm); }
+.dial-label { font-size: var(--fs-sm); font-weight: 700; color: var(--ink-2); }
+.wheelbox {
+  position: relative;
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  box-shadow: var(--clay-in);
+  overflow: hidden;
+}
+.wheel-rail {
+  position: absolute; left: 12px; right: 12px; top: 50%;
+  height: 44px; margin-top: -22px;
+  border-radius: var(--r-md);
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  pointer-events: none;
+}
+/* 홈(.wheel-rail)은 절대배치라 뒤에 오는 목록보다 **나중에 칠해집니다.**
+   z-index 를 안 주면 흰 홈이 고른 값을 덮어서, 가운데 칸만 빈 채로
+   보입니다 — 고른 값이 화면에서 사라지는 것이라 조용한 고장입니다. */
+.wheel { position: relative; z-index: 1; height: 220px; overflow-y: auto; scroll-snap-type: y mandatory; }
+.wheel::-webkit-scrollbar { width: 0; }
+.wheel-list { padding: 88px 0; }
+.wheel-list li {
+  height: 44px;
+  display: grid; place-items: center;
+  scroll-snap-align: center;
+  font-size: var(--fs-md); font-weight: 600; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: color var(--t-hover) var(--ease), font-size var(--t-hover) var(--ease);
+}
+.wheel-list li[data-on='true'] { color: var(--ink); font-size: var(--fs-xl); font-weight: 800; }
+
+.dial-sum {
+  display: grid; gap: 8px;
+  padding: var(--sp-xl);
+  border-radius: var(--r-lg);
+  background: var(--teal-50);
+  box-shadow: var(--clay-in);
+  animation: settle 260ms var(--settle) backwards;
+}
+.dial-sum-big { font-size: var(--fs-2xl); font-weight: 800; line-height: 1.35; }
+.dial-sum p { font-size: var(--fs-sm); color: var(--ink-2); }
+
+/* 4단계 — 모드 */
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-md); }
+.mode {
+  display: grid; gap: 7px;
+  padding: var(--sp-lg);
+  border-radius: var(--r-lg);
+  text-align: left;
+  background: var(--paper);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease),
+              background var(--t-hover) var(--ease);
+}
+.mode:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-3px); }
+.mode:active { box-shadow: var(--clay-press); transform: translateY(0); }
+.mode[aria-pressed='true'] {
+  background: linear-gradient(180deg, #FFFFFF, var(--teal-50));
+  box-shadow: var(--clay-lift), 0 0 0 2px var(--teal-300);
+}
+.mode-fig {
+  display: grid; place-items: center;
+  width: 42px; height: 42px;
+  border-radius: var(--r-md);
+  color: var(--teal-700); background: var(--teal-50);
+  box-shadow: var(--clay-in);
+}
+.mode[aria-pressed='true'] .mode-fig { color: #06312B; background: var(--teal); box-shadow: var(--clay-sm); }
+.mode b { font-size: var(--fs-md); font-weight: 800; }
+.mode > span { font-size: var(--fs-sm); color: var(--ink-2); }
+.mode-flags { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* 5단계 — 확인 */
+.summary {
+  padding: var(--sp-lg) var(--sp-xl);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.rowlist li {
+  display: flex; align-items: center; gap: var(--sp-md);
+  padding: 13px 0;
+  font-size: var(--fs-md); font-weight: 600; color: var(--ink-2);
+  border-bottom: 1px solid var(--line);
+}
+.rowlist li:last-child { border-bottom: 0; }
+.rowlist label { font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.rowlist .field { max-width: 320px; margin-left: auto; }
+.rowlist .val { margin-left: auto; font-weight: 800; color: var(--ink); }
+
+.switchrow {
+  display: grid; grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center; gap: var(--sp-md);
+  padding: var(--sp-lg);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  box-shadow: var(--clay);
+}
+.switchrow-fig {
+  display: grid; place-items: center;
+  width: 46px; height: 46px;
+  border-radius: var(--r-md);
+  color: var(--teal-700); background: var(--teal-50);
+  box-shadow: var(--clay-in);
+}
+.switchrow-text { display: grid; gap: 2px; }
+.switchrow-text b { font-size: var(--fs-md); font-weight: 800; }
+.switchrow-text span { font-size: var(--fs-xs); color: var(--ink-3); }
+
+/* 코드 발급 — 흐름의 정점입니다. */
+.minting { display: grid; justify-items: center; gap: var(--sp-md); padding-top: var(--sp-2xl); text-align: center; }
+.mint-ring { position: relative; width: 104px; height: 104px; }
+.mint-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.mint-ring .track { stroke: rgba(13,60,52,.10); }
+.mint-ring .head {
+  stroke: var(--teal); stroke-linecap: round;
+  stroke-dasharray: 289; stroke-dashoffset: 289;
+  animation: mintring 1.15s var(--ease) forwards;
+}
+@keyframes mintring { to { stroke-dashoffset: 0; } }
+.mint-core {
+  position: absolute; inset: 16px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  color: #06312B; background: var(--teal);
+  box-shadow: var(--clay-hero);
+  animation: popin 420ms var(--spring) .95s backwards;
+}
+@keyframes popin { from { opacity: 0; transform: scale(.4); } }
+.mint-code {
+  padding: 14px 26px;
+  border-radius: var(--r-lg);
+  font-size: 40px; font-weight: 800; letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--teal-800); background: var(--paper);
+  box-shadow: var(--clay-in-deep);
+}
+.mint-code.copyable { cursor: pointer; }
+.mint-code.copyable:hover { background: var(--teal-50); }
+.mint-code.copied { animation: bump 340ms var(--spring); }
+.minting h3 { font-size: var(--fs-xl); font-weight: 800; }
+.minting p { font-size: var(--fs-sm); color: var(--ink-3); }
+
+/* ==================================================================
+   덮개 · 알림 · 모든 화면
+   ================================================================== */
+.veil {
+  position: fixed; inset: 0; z-index: 120;
+  display: grid; place-items: center;
+  padding: var(--sp-xl);
+  background: rgba(23,32,30,.42);
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  animation: fade 180ms var(--ease);
+}
+@keyframes fade { from { opacity: 0; } }
+.sheet {
+  width: min(420px, 100%);
+  display: grid; gap: var(--sp-md);
+  padding: var(--sp-xl);
+  border-radius: var(--r-xl);
+  background: var(--paper);
+  box-shadow: var(--clay), 0 40px 80px rgba(9,20,18,.34);
+  animation: settle 300ms var(--spring);
+}
+.sheet h3 { font-size: var(--fs-xl); font-weight: 800; }
+.sheet p { font-size: var(--fs-md); color: var(--ink-2); }
+.sheet-act { display: flex; gap: var(--sp-sm); justify-content: flex-end; margin-top: var(--sp-sm); }
+
+.toast {
+  position: fixed; left: 50%; bottom: 34px; z-index: 160;
+  padding: 13px 22px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-md); font-weight: 700;
+  color: var(--on-night); background: var(--night);
+  box-shadow: var(--clay-night), 0 22px 44px rgba(9,20,18,.3);
+  opacity: 0; transform: translate(-50%, 14px);
+  pointer-events: none;
+}
+.toast.on {
+  opacity: 1; transform: translate(-50%, 0);
+  transition: opacity var(--t-quick) var(--ease), transform var(--spring-t) var(--spring);
+}
+.toast.off {
+  opacity: 0; transform: translate(-50%, -6px);
+  transition: opacity var(--t-quick) var(--ease), transform var(--t-quick) var(--ease);
+}
+
+/* 떠나기 전에 무엇을 기다리는지 말합니다. 월드는 카메라를 켜고 판정
+   모델을 내려받으므로 빈 화면이 몇 초씩 남습니다. */
+.leaving {
+  position: fixed; inset: 0; z-index: 200;
+  display: grid; place-items: center;
+  background: var(--bg);
+  animation: fade 160ms var(--ease);
+}
+.leaving .lv { display: grid; justify-items: center; gap: var(--sp-sm); }
+.leaving .lv i {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 4px solid var(--teal-100); border-top-color: var(--teal);
+  animation: spin .9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.leaving .lv b { font-size: var(--fs-lg); font-weight: 800; }
+.leaving .lv span { font-size: var(--fs-sm); color: var(--ink-3); }
+
+/* ---- 모든 화면 ----
+   MVP 동안만 있는 문입니다. 서버와 인증이 붙으면 지웁니다. */
+.screens {
+  position: fixed; inset: 0; z-index: 140;
+  display: grid; place-items: start center;
+  padding: var(--sp-2xl) var(--sp-xl);
+  overflow-y: auto;
+  background: rgba(23,32,30,.44);
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  animation: fade 180ms var(--ease);
+}
+.screens-in {
+  width: min(920px, 100%);
+  display: grid; gap: var(--sp-lg);
+  padding: var(--sp-xl);
+  border-radius: var(--r-xl);
+  background: var(--paper);
+  box-shadow: var(--clay), 0 48px 90px rgba(9,20,18,.36);
+  animation: settle 320ms var(--spring);
+}
+.screens-head { display: flex; align-items: center; gap: var(--sp-md); }
+.screens-head h2 { font-size: var(--fs-xl); font-weight: 800; }
+.screens-head p { font-size: var(--fs-sm); color: var(--ink-3); }
+.screens-group { display: grid; gap: var(--sp-sm); }
+.screens-group h3 {
+  font-size: var(--fs-xs); font-weight: 800; color: var(--teal-700);
+}
+.screens-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--sp-sm); }
+.screens-grid button {
+  display: grid; gap: 2px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  text-align: left;
+  background: var(--surface-2);
+  box-shadow: var(--clay-sm);
+  transition: box-shadow var(--t-hover) var(--ease), transform var(--t-hover) var(--ease);
+}
+.screens-grid button:hover { box-shadow: var(--clay-sm-lift); transform: translateY(-2px); }
+.screens-grid button:active { box-shadow: var(--clay-press); transform: translateY(0); }
+.screens-grid b { font-size: var(--fs-md); font-weight: 700; }
+.screens-grid span { font-size: var(--fs-2xs); color: var(--ink-3); }
+
+/* ==================================================================
+   덜 움직이기
+   전환·튐·회전은 다 끕니다. 상태가 바뀌는 것은 그대로 보입니다 —
+   움직임을 줄이는 것이지 정보를 줄이는 것이 아닙니다.
+   ================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .gate:hover, .btn:hover, .navitem:hover, .seat:hover, .pick:hover, .mode:hover,
+  .quicktile:hover, .iconbtn:hover, .me:hover, .railbtn:hover { transform: none; }
+}
+
+/* 1280 은 가장 낮은 지원 화면입니다. 레일을 한 칸 줄이고 곁판을
+   본문 아래로 내립니다 — 가로가 넘치면 그건 언제나 버그입니다. */
+@media (max-width: 1340px) {
+  .app { grid-template-columns: 232px minmax(0, 1fr); }
+  .gate-hero { padding-right: 210px; }
+  .gate-figure { width: 210px; height: 210px; }
+  .lobby { grid-template-columns: minmax(0, 1fr) 300px; }
+  .sess { grid-template-columns: minmax(0, 1fr) 268px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- 레일 메뉴 넷을 매번 지나야 본문에 닿습니다. 키보드로 오는 사람에게는
+     그 넷이 매 화면 반복되는 통행세입니다. -->
+<a class="skip" href="#viewTitle">본문으로 건너뛰기</a>
+
+<div class="app" id="app">
+
+  <!-- ================= 왼쪽 레일 ================= -->
+  <nav class="rail" aria-label="주 메뉴">
+   <div class="rail-in">
+    <div class="brand">
+      <b>Deskfit</b>
+    </div>
+
+    <button class="me" type="button" data-nav="my">
+      <span class="dish" id="railDish"></span>
+      <span class="who">
+        <span class="nm" id="railName">익명의 기린</span>
+        <span class="sub" id="railSub">거북이 · 코인 0</span>
+        <span class="school" id="railSchool">명지대학교</span>
+      </span>
+    </button>
+
+    <div class="nav">
+      <button class="navitem" type="button" data-nav="start" aria-current="page">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4Z"/>
+        </svg>
+        세션 시작
+      </button>
+      <button class="navitem" type="button" data-nav="char">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.4 14.5 16 10 4 20"/>
+          <rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/>
+        </svg>
+        캐릭터
+      </button>
+      <button class="navitem" type="button" data-nav="league">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+          <path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+          <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+          <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+        </svg>
+        랭킹전
+      </button>
+      <button class="navitem" type="button" data-nav="my">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        마이페이지
+      </button>
+    </div>
+
+    <div class="railtoday">
+      <div class="railtoday-top"><b>오늘</b><span class="tnum" id="railTodayVal">0 / 60분</span></div>
+      <div class="goalbar-track"><i id="railTodayFill" style="--w:0"></i></div>
+      <p id="railTodayNote">한 세션만 채우면 오늘이 남아요</p>
+    </div>
+
+    <div class="railfoot">
+      <button class="railbtn" type="button" id="openScreens">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/>
+        </svg>
+        모든 화면
+        <kbd>?</kbd>
+      </button>
+      <p class="railnote">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
+        </svg>
+        카메라는 내 기기에서만 돌아가요
+      </p>
+    </div>
+   </div>
+  </nav>
+
+  <!-- ================= 오른쪽 ================= -->
+  <main class="main">
+   <div class="main-in">
+    <div class="topbar">
+      <h1 id="viewTitle" tabindex="-1">세션 시작</h1>
+      <span class="sub" id="viewSub">혼자 앉든 같이 앉든, 여기서 시작해요</span>
+      <span class="spacer"></span>
+      <button class="iconbtn" type="button" data-nav="my" aria-label="마이페이지">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ---------- 세션 시작 ----------
+         두 갈래가 한 화면에 있습니다. 비공개방은 자리가 있는 방,
+         월드는 장소입니다. 색으로 갈라 두 입구가 한 덩어리로 안 읽히게
+         합니다. -->
+    <section class="view" id="v-start">
+      <div class="gate gate-teal gate-hero" data-primary="wizard">
+        <div class="gtext">
+          <span class="gkind">초대 코드로 여는 방</span>
+          <h2>방 만들기</h2>
+          <p class="gsub">코드를 아는 사람만 들어와요. 혼자 시작해도 되고,
+            앉는 중에 사람을 더 부를 수도 있어요.</p>
+        </div>
+        <div class="gact">
+          <button class="btn btn-dark" type="button" data-go="wizard">
+            시작하기
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+        <span class="gate-figure" id="heroFigure" aria-hidden="true"></span>
+      </div>
+
+      <div class="startrow">
+        <div class="gate gate-night" data-primary="world">
+          <span class="gate-still" aria-hidden="true">
+            <img src="../landing/assets/still-campus.webp" alt="" width="640" height="360" loading="lazy">
+          </span>
+          <div class="gtext">
+            <span class="gkind">우리 학교 전체와</span>
+            <h2>월드 입장</h2>
+            <p class="gsub">방이 아니라 장소예요. 접속한 사람이 같은 캠퍼스를 걸어 다녀요.</p>
+          </div>
+          <div class="gact">
+            <button class="btn btn-teal" type="button" data-go="world">
+              들어가기
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 초대받은 사람이 이 화면에서 처음 누르는 곳입니다. 팝오버 뒤에
+             숨겨 두면 코드를 들고 온 사람이 "어디에 넣지" 부터 찾습니다. -->
+        <div class="joincard">
+          <div>
+            <h2>초대 코드로 참여</h2>
+            <p>친구가 보낸 여섯 자를 넣어요. 학교 인증은 필요 없어요.</p>
+          </div>
+          <div>
+            <label class="sr" for="joincode">초대 코드</label>
+            <div class="joinrow">
+              <input class="field" type="text" id="joincode" placeholder="4F2K9A"
+                     maxlength="6" autocomplete="off" spellcheck="false"
+                     aria-describedby="codepopMsg">
+              <button class="btn btn-light" type="button" id="joinGo">참여</button>
+            </div>
+            <p class="codemsg" id="codepopMsg" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick">
+        <button class="quicktile" type="button" data-nav="my" data-my-tab="log">
+          <u>오늘 앉은 시간</u>
+          <b id="qToday">0<span>분</span></b>
+          <span class="qfig" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+            </svg>
+          </span>
+        </button>
+        <button class="quicktile" type="button" data-nav="my" data-my-tab="log">
+          <u>연속 출석</u>
+          <b id="qStreak">0<span>일</span></b>
+          <span class="qfig" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2c1.5 4 5 5.5 5 9a5 5 0 0 1-10 0c0-1.4.6-2.6 1.4-3.6"/>
+            </svg>
+          </span>
+        </button>
+        <button class="quicktile" type="button" data-nav="char">
+          <u>가진 코인</u>
+          <b id="qCoin">0</b>
+          <span class="qfig" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/><path d="M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 .9-3 2s1.3 2 3 2 3 .9 3 2-1.3 2-3 2a3 3 0 0 1-3-1.5"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ---------- 대기실 (비공개방 · 초대) ---------- -->
+    <section class="view" id="v-lobby" hidden>
+      <div class="lobby">
+        <div>
+          <div class="roomhead">
+            <h2 id="lobbyRoom">자료구조 3장</h2>
+            <span class="roomchips" id="lobbyChips"></span>
+          </div>
+
+          <div class="invite">
+            <div class="invite-head">
+              <b>초대 코드</b>
+              <span>코드를 아는 사람만 들어와요</span>
+            </div>
+            <div class="codetiles" id="lobbyCode" role="img" aria-label="초대 코드"></div>
+            <div class="invite-acts">
+              <button class="btn btn-light btn-sm" type="button" id="lobbyCopy">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect width="14" height="14" x="8" y="8" rx="2"/>
+                  <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>
+                </svg>
+                코드 복사
+              </button>
+              <button class="btn btn-light btn-sm" type="button" id="lobbyLink">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>
+                </svg>
+                초대 링크 복사
+              </button>
+            </div>
+            <p class="invite-foot">
+              I·L·O·0·1 은 서로 헷갈려서 코드에 안 씁니다 · 세션이 시작된 뒤에도 초대할 수 있어요
+            </p>
+          </div>
+
+          <div class="cardhead" style="margin-top:var(--sp-xl)">
+            <h2>지금 방에 있는 사람</h2>
+            <span class="spacer"></span>
+            <span class="count" id="lobbySeatCount">1 / 4</span>
+          </div>
+          <div class="seats" id="lobbyGallery"></div>
+        </div>
+
+        <aside class="side" aria-label="들어가기 전에">
+          <div class="card pad-sm">
+            <h3>들어가기 전에</h3>
+            <div class="setrow">
+              <span class="k" id="k-mic">마이크 켜기
+                <small>같이 앉는 자리라 기본은 켜짐이에요</small></span>
+              <button class="switch" type="button" role="switch" aria-checked="true"
+                      aria-labelledby="k-mic" data-act="mic"><span></span></button>
+            </div>
+            <div class="setrow">
+              <span class="k" id="k-cam">자세 보기 켜기
+                <small>영상은 어디로도 안 나가요. 이 브라우저 안에서만 봐요</small></span>
+              <button class="switch" type="button" role="switch" aria-checked="false"
+                      aria-labelledby="k-cam" data-act="cam"><span></span></button>
+            </div>
+            <div class="setrow">
+              <span class="k">내 자세 기준
+                <small id="lobbyBase">아직 안 잡았어요</small></span>
+              <span class="tag tag-idle" id="lobbyBaseTag">미확인</span>
+            </div>
+            <div class="btnrow" style="margin-top:var(--sp-md)">
+              <button class="btn btn-ghost btn-sm" type="button" data-go="recal">기준 잡으러 가기</button>
+            </div>
+          </div>
+
+          <div class="card pad-sm">
+            <div class="goalbar">
+              <div class="goalbar-top"><b>함께 채울 시간</b><span id="lobbyGoal">100분</span></div>
+              <div class="goalbar-track"><i id="lobbyGoalFill" style="--w:.4"></i></div>
+              <p id="lobbyGoalNote">자리가 각자 앉으면 채워져요. 한 사람이 빠져도
+                남은 사람 시간은 그대로 쌓여요.</p>
+            </div>
+          </div>
+
+          <div class="startbox">
+            <button class="btn btn-teal btn-lg" type="button" id="lobbyStart">지금 시작하기</button>
+            <span class="lobby-status" id="lobbyStatus"></span>
+            <button class="bypass" type="button" id="lobbyBypass" hidden data-go="preview-session">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              기준 없이 세션 화면 둘러보기
+            </button>
+            <button class="btn btn-line btn-sm" type="button" data-go="leave-lobby">방에서 나가기</button>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ---------- 세션 ---------- -->
+    <section class="view" id="v-sess" hidden>
+      <div class="sess" id="sessRoot" data-phase="focus">
+        <div style="display:grid;gap:var(--sp-lg)">
+          <div class="dial">
+            <div class="dial-ring">
+              <svg viewBox="0 0 236 236" aria-hidden="true">
+                <circle class="track" cx="118" cy="118" r="106" fill="none" stroke-width="14"/>
+                <circle class="head" id="sessArc" cx="118" cy="118" r="106" fill="none" stroke-width="14"
+                        stroke-dasharray="666" stroke-dashoffset="0"/>
+              </svg>
+              <div class="dial-face">
+                <span class="dial-phase" id="sessPhase">집중</span>
+                <span class="dial-time tnum" id="sessTime" role="timer" aria-live="off">25:00</span>
+              </div>
+            </div>
+            <p class="dial-of" id="sessOf">자료구조 3장 · 4자리 중 3명이 앉아 있어요</p>
+          </div>
+          <div class="pucks" id="sessPucks"></div>
+          <div class="sessbar">
+            <button class="roundbtn" type="button" id="sessMic" aria-pressed="true">
+              <i id="sessMicIco"></i><span id="sessMicLab">마이크 켜짐</span>
+            </button>
+            <button class="roundbtn" type="button" id="sessCam" aria-pressed="false">
+              <i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/>
+              </svg></i><span>자세 보기</span>
+            </button>
+            <button class="roundbtn" type="button" id="sessRest">
+              <i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 4v16"/><path d="M14 4v16"/>
+              </svg></i><span id="sessRestLab">회복 휴식</span>
+            </button>
+            <button class="roundbtn leave" type="button" id="sessLeave">
+              <i><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15 4.5h3.5a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H15"/>
+                <path d="M10.5 8 14.5 12l-4 4"/><path d="M14.5 12H4"/>
+              </svg></i><span>끝내기</span>
+            </button>
+          </div>
+        </div>
+
+        <aside class="side" aria-label="내 화면">
+          <div class="pip">
+            <div class="pip-head">
+              <b>내 자세</b><span class="spacer"></span>
+              <span class="tag tag-good" id="pipTag">좋아요</span>
+            </div>
+            <div class="pip-screen" id="pipScreen">
+              <span>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/>
+                </svg><br>자세 보기가 꺼져 있어요
+              </span>
+            </div>
+            <p class="pip-foot">이 화면은 나만 봐요. 영상도 좌표도 어떤 서버로도
+              보내지 않아요 — 판정은 이 브라우저 안에서 끝나요.</p>
+          </div>
+
+          <div class="card pad-sm">
+            <div class="cardhead"><h2>이번 세션</h2></div>
+            <div class="rows" id="sessRows"></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ---------- 마침 ---------- -->
+    <section class="view" id="v-done" hidden>
+      <div class="done">
+        <div class="done-card">
+          <span class="done-fig" id="doneFig" aria-hidden="true"></span>
+          <h2>오늘의 집중을 마쳤어요</h2>
+          <p class="done-big tnum" id="doneBig">0분</p>
+          <p class="done-sub" id="doneSub"></p>
+        </div>
+        <div class="stats" id="doneStats"></div>
+        <div class="btnrow" style="justify-content:center">
+          <button class="btn btn-teal" type="button" data-go="again">한 번 더 앉기</button>
+          <button class="btn btn-ghost" type="button" data-nav="my" data-my-tab="log">기록 보기</button>
+          <button class="btn btn-line" type="button" data-go="home">메인으로</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 캐릭터 ---------- -->
+    <section class="view" id="v-char" hidden>
+      <div class="split split-pet">
+        <div class="card">
+          <div class="stage">
+            <span class="podium" id="charPodium"></span>
+            <div style="text-align:center">
+              <div class="nm" id="petName">익명의 기린</div>
+              <div class="sp" id="petLine">알에서 나온 첫 캐릭터예요</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="cardhead">
+            <h2>옷장</h2><span class="spacer"></span>
+            <span class="count tnum" id="coinCount">코인 0</span>
+          </div>
+          <div id="wearWrap"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 랭킹전 ---------- -->
+    <section class="view" id="v-league" hidden>
+      <div class="gate gate-teal" style="cursor:default">
+        <div class="gtext">
+          <span class="gkind">이번 시즌</span>
+          <h2>가을 시즌</h2>
+          <p class="gsub">학교끼리 앉은 시간을 겨룹니다. 시즌이 끝나면 순위가
+            초기화되고, 다음 시즌이 열려요.</p>
+        </div>
+        <div class="gact">
+          <div style="text-align:right">
+            <div style="font-size:var(--fs-xs);opacity:.72;font-weight:700">남은 날</div>
+            <div class="tnum" style="font-size:var(--fs-3xl);font-weight:800">23일</div>
+          </div>
+        </div>
+      </div>
+      <div class="podiums" id="leaguePods"></div>
+      <div class="split">
+        <div class="card">
+          <div class="cardhead"><h2>학교 순위</h2></div>
+          <ul class="lg" id="leagueList"></ul>
+        </div>
+        <div class="card">
+          <div class="cardhead"><h2>내 기여</h2></div>
+          <div class="rows" id="myLeague"></div>
+          <div class="note">
+            <b>자세에는 점수를 안 매겨요.</b> 순위에 들어가는 것은 앉은
+            시간과 회복 횟수뿐이에요.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ---------- 마이페이지 ---------- -->
+    <section class="view" id="v-my" hidden>
+      <div>
+        <div class="seg" role="tablist" aria-label="마이페이지">
+          <button type="button" role="tab" aria-selected="true"  data-my="info">내 정보</button>
+          <button type="button" role="tab" aria-selected="false" data-my="log">기록</button>
+          <button type="button" role="tab" aria-selected="false" data-my="base">자세 기준</button>
+          <button type="button" role="tab" aria-selected="false" data-my="save">저장</button>
+          <button type="button" role="tab" aria-selected="false" data-my="set">설정</button>
+        </div>
+      </div>
+      <div id="myPane"></div>
+    </section>
+
+    <!-- 화면마다 다른 조작 안내. 문구는 VIEWS 가 들고 있습니다 -->
+    <p class="hint" id="viewHint" hidden></p>
+   </div>
+  </main>
+</div>
+
+<!-- ================= 방 만들기 위저드 ================= -->
+<section class="wizard" id="wizard" role="dialog" aria-modal="true" aria-label="방 만들기" hidden>
+  <nav class="wiz-nav">
+    <button class="wiz-back" type="button" id="wizBack" data-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 6-6 6 6 6"/></svg>
+      이전
+    </button>
+    <b class="wiz-title">방 만들기</b>
+    <span class="wiz-track" id="wizTrack" role="progressbar"
+          aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-label="방 만들기 진행">
+      <i></i><i></i><i></i><i></i><i></i>
+    </span>
+    <button class="iconbtn" type="button" id="wizClose" aria-label="방 만들기 그만두기">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </svg>
+    </button>
+  </nav>
+
+  <div class="wiz-scroll" id="wizScroll"><div class="wiz-stage" id="wizStage"></div></div>
+
+  <footer class="wiz-bar">
+    <div class="wiz-bar-inner">
+      <span class="wiz-hint" id="wizHint" hidden></span>
+      <button class="btn btn-teal btn-lg" type="button" id="wizGo" data-act="next">
+        <span class="wiz-go-label" id="wizGoLabel">다음</span>
+        <span id="wizGoArrow" hidden aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>
+          </svg>
+        </span>
+      </button>
+    </div>
+  </footer>
+</section>
+
+<!-- 되돌릴 수 없는 것을 하기 전에 한 번 묻습니다. -->
+<div class="veil" id="veil" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="askTitle">
+    <h3 id="askTitle">그만둘까요?</h3>
+    <p id="askBody"></p>
+    <div class="sheet-act">
+      <button class="btn btn-ghost" type="button" id="askNo">계속 쓰기</button>
+      <button class="btn btn-dark" type="button" id="askYes">그만두기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 모든 화면 (MVP) ================= -->
+<div class="screens" id="screens" hidden>
+  <div class="screens-in" role="dialog" aria-modal="true" aria-labelledby="screensTitle">
+    <div class="screens-head">
+      <div>
+        <h2 id="screensTitle">모든 화면</h2>
+        <p>학교 인증도 자세 기준 10초도 없이 바로 갑니다. MVP 동안만 있는 문이에요.</p>
+      </div>
+      <span class="spacer"></span>
+      <button class="iconbtn" type="button" id="screensClose" aria-label="닫기">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+        </svg>
+      </button>
+    </div>
+    <div id="screensBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+
+/* ==================================================================
+   저장 — 월드가 쓰는 것을 그대로 읽습니다
+
+   **키를 새로 만들지 않습니다.** 이 화면은 월드의 기록을 보여 주는
+   곳이지 따로 쌓는 곳이 아닙니다.
+   ================================================================== */
+const K = {
+  room:     'girin.room',
+  sessions: 'girin.sessions',
+  baseline: 'girin.baseline',
+  reward:   'girin.reward',
+};
+
+const read = (k, d) => {
+  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }
+  catch { return d; }
+};
+
+const ROOM = Object.assign({
+  /* 기본 이름이 "익명의 기린" 인데 기본 종은 거북이였습니다 — 첫 화면에
+     거북이 그림 옆에 기린이라고 적혀 있었습니다. 종을 따라가는 이름으로
+     바꿉니다. 월드 기본값도 기린입니다. */
+  nickname: '익명의 기린', school: '명지대학교', schoolVerifiedAt: '',
+  character: '기린', owned: [], worn: {}, coins: 0,
+  bgm: 'on', sfxOn: 'on', sayOn: 'on', chatOn: 'on', camPeek: 'on',
+}, read(K.room, {}));
+
+const BASELINE = read(K.baseline, null);
+const REWARD   = read(K.reward, null);
+
+const REAL_SESSIONS = read(K.sessions, []);
+const IS_DEMO = !Array.isArray(REAL_SESSIONS) || REAL_SESSIONS.length === 0;
+
+const dayKey = (t) => {
+  const d = new Date(t);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0')
+       + '-' + String(d.getDate()).padStart(2, '0');
+};
+
+function demoSessions() {
+  const D = 86400000, now = Date.now();
+  const plan = [
+    [6, 42, 'library', 3], [6, 25, 'mainhall', 1], [5, 61, 'library', 4],
+    [3, 38, 'mainhall', 2], [3, 52, 'library', 3], [2, 74, 'library', 5],
+    [0, 46, 'mainhall', 2],
+  ];
+  return plan.map(([ago, min, zone, recov]) => {
+    const at = now - ago * D - 3600000, ms = min * 60000;
+    return { date: dayKey(at), at, zone, minutes: min, seatedMs: ms, recoveries: recov,
+      goodMs: Math.round(ms * .72), warnMs: Math.round(ms * .2), badMs: Math.round(ms * .08) };
+  }).sort((a, b) => a.at - b.at);
+}
+
+const SESSIONS = IS_DEMO ? demoSessions() : REAL_SESSIONS;
+const ZONE_KO = { library: '도서관', mainhall: '본관', union: '학생회관', dorm: '기숙사', campus: '캠퍼스', room: '비공개방' };
+
+/* 월드의 myStats 와 **같은 셈**입니다. 다른 값을 내면 같은 기록이 두
+   화면에서 다르게 보입니다. */
+function stats() {
+  const sum = (k) => SESSIONS.reduce((a, r) => a + (r[k] || 0), 0);
+  const good = sum('goodMs'), warn = sum('warnMs'), bad = sum('badMs');
+  const judged = good + warn + bad;
+  const byZone = {};
+  for (const r of SESSIONS) {
+    const z = r.zone || 'campus';
+    byZone[z] = (byZone[z] || 0) + (r.minutes || 0);
+  }
+  const week = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = dayKey(Date.now() - i * 86400000);
+    week.push({ d, min: SESSIONS.filter((r) => r.date === d).reduce((a, r) => a + (r.minutes || 0), 0) });
+  }
+  /* 오늘이 아직 비어 있는 것은 안 끊습니다 — 아침에 열었다고 연속이
+     사라지면 사람이 제품을 원망합니다. */
+  let streak = 0;
+  for (let i = 0; i < 400; i++) {
+    const d = dayKey(Date.now() - i * 86400000);
+    if (SESSIONS.some((r) => r.date === d)) streak++;
+    else if (i > 0) break;
+  }
+  return {
+    count: SESSIONS.length, total: sum('minutes'), recov: sum('recoveries'),
+    goodMs: good, warnMs: warn, badMs: bad, judged,
+    goodPct: judged > 0 ? Math.round((good / judged) * 100) : 0,
+    byZone, week, streak,
+    today: week[week.length - 1].min,
+    lastAt: SESSIONS.length ? SESSIONS[SESSIONS.length - 1].at : 0,
+  };
+}
+const S = stats();
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const icon = (path, size, w) =>
+  '<svg width="' + (size || 20) + '" height="' + (size || 20) + '" viewBox="0 0 24 24" fill="none" '
+  + 'stroke="currentColor" stroke-width="' + (w || 2) + '" stroke-linecap="round" '
+  + 'stroke-linejoin="round" aria-hidden="true">' + path + '</svg>';
+
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/** 값이 바뀐 순간을 한 번 표시합니다. 같은 표시가 연달아 걸리면
+    애니메이션이 안 다시 도므로 한 프레임 떼었다 붙입니다. */
+function bump(el, ms) {
+  if (!el || REDUCED) return;
+  el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  clearTimeout(el.__bump);
+  el.__bump = setTimeout(() => el.classList.remove('bump'), ms || 340);
+}
+
+/* ==================================================================
+   캐릭터 그리기
+
+   같은 캐릭터를 두 벌 갖고 있습니다.
+
+     · 점토로 구운 3D 렌더 (webp) — 네 종만 있습니다
+     · 픽셀 시트 (128×48, 32×48 네 컷) — 여덟 종 다 있습니다
+
+   **있으면 점토를 씁니다.** 이 화면의 재질이 점토인데 주인공만 픽셀이면
+   화면에서 캐릭터가 UI 보다 납작해 보입니다. 없는 넷은 픽셀로 두되
+   접시(파인 원) 안에 앉혀서 같은 자리에 놓인 것으로 만듭니다.
+
+   픽셀은 **정수배로만** 키웁니다 — 캔버스는 원본 크기이고 CSS 가 키웁니다.
+   ================================================================== */
+/* 넷뿐입니다. 랜딩 카드도 온보딩 알도 월드 명단도 이미 넷이고, 여기만
+   여덟이면 이 화면에서 고른 종이 월드에 없습니다. 아래 CLAY_3D 가
+   그림을 가진 종을 넷으로 적어 둔 것과도 이제 같아졌습니다 — 넷과
+   여덟이 어긋나 있으면 나머지 넷은 그림 없이 이름만 나옵니다. */
+const SPECIES = {
+  '거북이': { id: 'turtle',  line: '느려도 끝까지 가요' },
+  '기린':   { id: 'giraffe', line: '목이 길어서 그만큼 더 신경 써요' },
+  '펭귄':   { id: 'penguin', line: '허리 펴고 서는 건 원래 잘해요' },
+  '개구리': { id: 'frog',    line: '한 번에 멀리 가는 대신 자주 멈춰요' },
+};
+const CLAY_3D = { turtle: 1, giraffe: 1, penguin: 1, frog: 1 };
+const SHEET = '../openworld/assets/characters/';
+
+function drawPet(canvas, speciesKo) {
+  if (!canvas) return;
+  const sp = SPECIES[speciesKo || ROOM.character] || SPECIES['거북이'];
+  const g = canvas.getContext('2d');
+  g.imageSmoothingEnabled = false;
+  const img = new Image();
+  img.onload = () => { g.clearRect(0, 0, 32, 48); g.drawImage(img, 0, 0, 32, 48, 0, 0, 32, 48); };
+  img.src = SHEET + sp.id + '.png';
+}
+/** 방금 붙인 캔버스들을 한 번에 채웁니다. */
+function drawPets(root) {
+  root.querySelectorAll('canvas[data-sp]').forEach((c) => drawPet(c, c.dataset.sp));
+}
+
+/** 접시 안에 들어갈 알맹이 하나. 점토 렌더가 있으면 그림, 없으면 픽셀. */
+function petFigure(speciesKo) {
+  const sp = SPECIES[speciesKo] || SPECIES['거북이'];
+  if (CLAY_3D[sp.id]) {
+    return '<img src="../landing/assets/char-' + sp.id + '-3d.webp" alt="" loading="lazy" '
+         + 'width="232" height="288">';
+  }
+  return '<canvas width="32" height="48" data-sp="' + esc(speciesKo) + '"></canvas>';
+}
+function fillPet(el, speciesKo) {
+  if (!el) return;
+  el.innerHTML = petFigure(speciesKo || ROOM.character);
+  drawPets(el);
+}
+
+/* ==================================================================
+   화면
+   ================================================================== */
+/* t 제목 · s 부제 · h 바닥 도움말(HTML, <b> 만 씁니다)
+ *
+ * h 는 **그 화면에서만 참인 것**을 적습니다. 어디서나 참인 말은 안 읽히고,
+ * 자리만 차지하다가 결국 아무도 안 봅니다. 없으면 띠가 통째로 숨습니다. */
+const VIEWS = {
+  start:  { t: '세션 시작',  s: '혼자 앉든 같이 앉든, 여기서 시작해요',
+            h: '<b>방 만들기</b>는 코드를 아는 사람만 · <b>월드 입장</b>은 우리 학교 전체와 같이 앉아요<br>판을 눌러도 들어가요 · 자판만 쓸 때는 <b>Tab</b> 으로 옮기고 <b>Enter</b>' },
+  lobby:  { t: '대기실',     s: '코드를 나눠 주고, 자리가 차기를 기다려요',
+            h: '문을 안 잠가요 — <b>학교 인증도 자세 기준도</b> 안 물어봐요. 기준은 방 안에서 원할 때 잡아요<br>자리 타일을 누르면 그 사람의 준비 상태가 바뀌어요 (시연용)' },
+  sess:   { t: '집중 세션',  s: '같이 앉아 있는 중이에요',
+            h: '내 자세 화면은 <b>나만</b> 봐요 · 영상도 좌표도 어떤 서버로도 안 나가요' },
+  done:   { t: '세션 끝',    s: '오늘 앉은 것을 정리했어요',
+            h: '세는 건 <b>앉은 시간과 회복 횟수</b>뿐이에요 · 자세에는 점수를 안 매겨요' },
+  char:   { t: '캐릭터',     s: '가진 옷으로 갈아입어요' },
+  league: { t: '랭킹전',     s: '학교끼리 앉은 시간을 겨뤄요',
+            h: '순위는 <b>앉은 시간과 회복 횟수</b>로만 매겨져요 · 자세에는 점수를 안 매겨요<br>시즌이 끝나면 순위가 초기화되고 다음 시즌이 열려요' },
+  my:     { t: '마이페이지', s: '기록 · 자세 기준 · 저장 · 설정',
+            h: '기록은 <b>이 기기에만</b> 남아요 · 다른 기기에서는 안 보여요<br>옮기려면 <b>저장</b> 탭에서 파일로 내려받으세요' },
+};
+
+function show(key) {
+  for (const k of Object.keys(VIEWS)) {
+    const el = $('v-' + k);
+    if (el) el.hidden = (k !== key);
+  }
+  /* 대기실·세션·마침은 레일에 없습니다 — 방을 만든 뒤에만 들어가는
+     곳이라, 메뉴에 두면 아무 방도 없는 사람이 빈 대기실에 들어갑니다. */
+  document.querySelectorAll('.navitem').forEach((b) => {
+    if (b.dataset.nav === key) b.setAttribute('aria-current', 'page');
+    else b.removeAttribute('aria-current');
+  });
+  $('viewTitle').textContent = VIEWS[key].t;
+  $('viewSub').textContent = VIEWS[key].s;
+  /* 도움말 문구는 이 파일 안의 상수라 innerHTML 이 안전합니다 — 사용자가
+     넣은 값이 여기로 들어오는 길은 없습니다. */
+  const hint = $('viewHint');
+  hint.innerHTML = VIEWS[key].h || '';
+  hint.hidden = !VIEWS[key].h;
+  /* 세션에서 나가면 시계를 멈춥니다. 안 멈추면 마이페이지를 보는 중에
+     시간이 다 되어 화면이 제멋대로 마침으로 넘어갑니다. */
+  if (key !== 'sess') stopSession();
+  const v = $('v-' + key);
+  if (v) v.querySelectorAll(':scope > *').forEach((c) => {
+    c.style.animation = 'none'; void c.offsetWidth; c.style.animation = '';
+  });
+  window.scrollTo(0, 0);
+}
+
+let toastT = 0, toastT2 = 0;
+function toast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.remove('off');
+  /* 같은 토스트가 연달아 뜨면 애니메이션이 안 다시 돕니다. 한 프레임
+     떼었다가 다시 붙입니다. */
+  el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+  clearTimeout(toastT); clearTimeout(toastT2);
+  toastT = setTimeout(() => {
+    el.classList.remove('on'); el.classList.add('off');
+    toastT2 = setTimeout(() => el.classList.remove('off'), 240);
+  }, 2200);
+}
+
+document.addEventListener('click', (e) => {
+  /* 판 아무 데나 누르면 주 동작. 안쪽 컨트롤을 누른 것이면 그쪽이
+     먼저이므로 여기서는 아무 일도 안 합니다. */
+  const gate = e.target.closest('#v-start .gate[data-primary]');
+  if (gate && !e.target.closest('button, input, label')) {
+    act(gate.dataset.primary); return;
+  }
+  const nav = e.target.closest('[data-nav]');
+  if (nav) {
+    show(nav.dataset.nav);
+    /* 오늘 칸은 마이페이지 안 기록 탭까지 데려갑니다 — 마이페이지 첫
+       칸에 떨어뜨리면 방금 본 숫자를 다시 찾아야 합니다. */
+    if (nav.dataset.myTab) {
+      document.querySelectorAll('[data-my]').forEach((b) =>
+        b.setAttribute('aria-selected', String(b.dataset.my === nav.dataset.myTab)));
+      paintMy(nav.dataset.myTab);
+    }
+    return;
+  }
+  const go = e.target.closest('[data-go]');
+  if (go) { act(go.dataset.go); return; }
+  const my = e.target.closest('[data-my]');
+  if (my) {
+    my.parentElement.querySelectorAll('button')
+      .forEach((b) => b.setAttribute('aria-selected', String(b === my)));
+    paintMy(my.dataset.my);
+  }
+});
+
+/** 되돌릴 수 없는 것 앞에서 한 번 묻습니다. 예/아니오가 아니라 **무엇이
+    일어나는지**를 버튼에 적습니다 — 제품이 말하는 쪽입니다. */
+let askYes = null;
+function ask({ title, body, yes, onYes }) {
+  $('askTitle').textContent = title;
+  $('askBody').textContent = body;
+  $('askYes').textContent = yes;
+  askYes = onYes;
+  $('veil').hidden = false;
+  $('askNo').focus();
+}
+function askClose() { $('veil').hidden = true; askYes = null; }
+$('askNo').addEventListener('click', askClose);
+$('askYes').addEventListener('click', () => { const f = askYes; askClose(); if (f) f(); });
+$('veil').addEventListener('click', (e) => { if (e.target === $('veil')) askClose(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('veil').hidden) askClose();
+});
+
+/** 떠나기 전에 무엇을 기다리는지 말합니다. 월드는 카메라를 켜고 판정
+    모델을 내려받으므로, 빈 화면이 몇 초씩 남습니다. */
+function leaveTo(url, title, sub) {
+  const el = document.createElement('div');
+  el.className = 'leaving';
+  el.innerHTML = '<div class="lv"><i></i><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div>';
+  document.body.appendChild(el);
+  setTimeout(() => { location.href = url; }, 60);
+}
+
+function act(what) {
+  switch (what) {
+    case 'wizard':      openWizard(); break;
+    case 'world':
+      leaveTo('../campus3d/index.html', '월드로 들어가는 중이에요',
+              '카메라를 켜고 자세 판정을 준비해요. 몇 초 걸릴 수 있어요');
+      break;
+    case 'recal':
+      leaveTo('../onboarding/index.html#cal', '자세 기준 화면으로 가요',
+              '10초 동안 평소처럼 앉은 모습을 읽어요');
+      break;
+    case 'export':      exportSave(); break;
+    case 'import':      importSave(); break;
+    case 'leave-lobby':
+      ask({
+        title: '방에서 나갈까요?',
+        body: '초대 코드 ' + W.code + ' 는 사라져요. 다시 만들면 새 코드가 나와요.',
+        yes: '나가기',
+        onYes: () => show('start'),
+      });
+      break;
+    /* MVP — 기준 없이 세션 **화면**만 봅니다. 판정은 안 돕니다. */
+    case 'preview-session': startSession(true); break;
+    case 'again':       show('lobby'); renderLobby(); break;
+    case 'home':        show('start'); break;
+
+    case 'shop':        toast('상점 — 월드 학생회관의 상점 창을 여기로 옮깁니다'); break;
+    case 'undress':     toast('전부 벗기 — 옷장 저장이 붙으면 동작해요'); break;
+    default: toast('아직 안 이어진 곳이에요');
+  }
+}
+
+/** 내보내기 — 이 기기의 키 넷을 **읽은 그대로** 담습니다. 서버가 없는
+    동안의 유일한 백업이라, 나중에 불러오기가 같은 모양을 기대할 수
+    있어야 합니다. */
+function exportSave() {
+  const dump = {};
+  for (const k of Object.values(K)) {
+    const v = localStorage.getItem(k);
+    if (v !== null) dump[k] = v;
+  }
+  const blob = new Blob([JSON.stringify({ app: 'deskfit', at: Date.now(), data: dump }, null, 2)],
+                        { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'deskfit-' + dayKey(Date.now()) + '.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast('저장 파일을 내려받았어요');
+}
+
+/** 불러오기 — 내보내기의 짝입니다. 백업을 받아 두라고 해 놓고 되돌릴
+    길이 없으면 그건 백업이 아닙니다.
+
+    **한동안 이 함수가 `<style>` 안에 들어 있었습니다.** CSS 는 모르는
+    것을 조용히 버리므로 에러도 경고도 없었고, 저장 탭의 불러오기 버튼만
+    아무 반응이 없었습니다. 지금은 스크립트 안에 있습니다.
+
+    **덮어쓰기는 되돌릴 수 없습니다.** 지금 기기에 있는 것을 통째로
+    바꾸므로 반드시 묻고, 무엇이 몇 개 들어오는지를 먼저 보여 줍니다. */
+function importSave() {
+  const f = document.createElement('input');
+  f.type = 'file'; f.accept = 'application/json,.json';
+  f.addEventListener('change', () => {
+    const file = f.files && f.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let dump;
+      try { dump = JSON.parse(r.result); }
+      catch { toast('읽을 수 없는 파일이에요. Deskfit 에서 내보낸 파일인지 봐 주세요'); return; }
+      if (!dump || dump.app !== 'deskfit' || !dump.data) {
+        toast('Deskfit 저장 파일이 아니에요'); return;
+      }
+      const keys = Object.keys(dump.data).filter((k) => Object.values(K).includes(k));
+      if (!keys.length) { toast('안에 들어 있는 게 없어요'); return; }
+
+      let count = 0;
+      try { count = (JSON.parse(dump.data[K.sessions] || '[]') || []).length; } catch { /* 옛 형식 */ }
+      const at = dump.at
+        ? new Date(dump.at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'numeric', day: 'numeric' })
+        : '날짜 모름';
+
+      ask({
+        title: '이 파일로 바꿀까요?',
+        body: at + ' 에 내보낸 파일이고 세션 ' + count + '개가 들어 있어요. '
+            + '지금 이 기기에 있는 기록은 사라지고 되돌릴 수 없어요.',
+        yes: '바꾸기',
+        onYes: () => {
+          try {
+            for (const k of keys) localStorage.setItem(k, dump.data[k]);
+          } catch { toast('저장 공간이 모자라요'); return; }
+          /* 페이지를 다시 엽니다. 화면에 그려진 값이 전부 시작할 때 읽은
+             것이라, 다시 안 읽으면 새 기록 위에 옛 화면이 남습니다. */
+          leaveTo(location.pathname + location.search, '기록을 불러왔어요', '화면을 다시 그릴게요');
+        },
+      });
+    };
+    r.readAsText(file);
+  });
+  f.click();
+}
+
+/* ==================================================================
+   방 만들기 위저드
+   room-flow 의 상태·단계·문구·규칙을 그대로 옮겼습니다. 칠만 점토로
+   바꿨습니다 — 흐름을 같이 바꾸면 무엇이 좋아졌는지 알 수 없습니다.
+   ================================================================== */
+const W = {
+  visibility: null,
+  roomName: '자료구조 3장',
+  seats: 4,
+  focusMin: 25,
+  restMin: 5,
+  mode: 'library',
+  persistent: false,
+  code: '------',
+  mic: true,
+  cam: false,
+};
+
+const MODES = {
+  library: { name: '도서관', desc: '소리를 내지 않아요. 앉은 채로 하는 동작만 안내해요.',
+    tts: false, posture: '앉아서',
+    icon: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>' },
+  home: { name: '내 공간', desc: '부드러운 음성으로 알려요. 일어나서 하는 동작까지 안내해요.',
+    tts: true, posture: '일어나서',
+    icon: '<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/>' },
+  team: { name: '팀플', desc: '함께 쉬는 시간을 맞춰요. 앉는 동작과 서는 동작을 섞어요.',
+    tts: true, posture: '섞어서',
+    icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>' },
+  custom: { name: '내 모드', desc: '소리와 동작 목록을 직접 정한 설정을 그대로 씁니다.',
+    tts: false, posture: '내가 정함',
+    icon: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M4.9 4.9 7 7"/><path d="m17 17 2.1 2.1"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="M4.9 19.1 7 17"/><path d="M17 7l2.1-2.1"/>' },
+};
+
+const IC = {
+  lock:  '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18Z"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  pin:   '<path d="M12 17v5"/><path d="M9 10.76V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4.76a2 2 0 0 0 .55 1.37l1.9 2A2 2 0 0 1 17 17H7a2 2 0 0 1-1.45-2.87l1.9-2A2 2 0 0 0 9 10.76Z"/>',
+  disk:  '<path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"/><path d="M7 3v4a1 1 0 0 0 1 1h7"/>',
+  chev:  '<path d="m10 6 6 6-6 6"/>',
+  chart: '<path d="M4 20V10"/><path d="M12 20V4"/><path d="M20 20v-6"/>',
+  shirt: '<path d="M20.4 14.5 16 10 4 20"/><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/>',
+  seat:  '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/>',
+  mic:   '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/>',
+  micOff:'<path d="m2 2 20 20"/><path d="M15 9V5a3 3 0 0 0-5.7-1.3"/><path d="M9 9v2a3 3 0 0 0 4.6 2.5"/><path d="M5 11a7 7 0 0 0 10.8 5.9"/><path d="M19 11a7 7 0 0 1-.6 2.8"/><path d="M12 18v4"/>',
+  plus:  '<path d="M12 5v14"/><path d="M5 12h14"/>',
+};
+
+/* ---- 1단계: 방 종류 ---- */
+function pickCard(id, iconPath, label, desc, metas) {
+  const on = W.visibility === id;
+  return '<button class="pick" type="button" data-vis="' + id + '" aria-pressed="' + on + '">'
+    + '<span class="pick-fig">' + icon(iconPath, 22) + '</span>'
+    + '<span class="pick-text"><b>' + label + '</b><span>' + desc + '</span>'
+    + '<span class="pick-meta">'
+    + metas.map((m) => '<span class="tag tag-outline">' + m + '</span>').join('')
+    + '</span></span>'
+    + '<span class="pick-check">' + icon(IC.check, 13, 3) + '</span></button>';
+}
+
+function stepRoomKind() {
+  return {
+    stage:
+      '<div class="wiz-lede"><h3>어떤 방으로 만들까요?</h3>'
+      + '<p>방을 만들면 초대 코드가 나와요. 혼자 시작해도 나중에 사람을 부를 수 있어요.</p></div>'
+      + '<div class="pick-grid">'
+      + pickCard('private', IC.lock, '비공개방',
+          '초대 코드를 아는 사람만 들어와요. 혼자 시작해도 돼요.',
+          ['코드로만 입장', '자유 채팅', '학교 인증 없이'])
+      + pickCard('public', IC.globe, '공개 방',
+          '같은 학교로 설정한 사람에게만 목록에 보여요. 코드 없이 들어옵니다.',
+          [esc(ROOM.school.replace(/학교$/, '')) + ' 안에서만', '응원 문구만'])
+      + '</div>',
+    bar: W.visibility
+      ? { label: '다음', act: 'next' }
+      : { label: '다음', act: 'next', disabled: true, hint: '방 종류를 골라 주세요' },
+  };
+}
+
+/* ---- 2단계: 자리 ---- */
+function seatNote(n) {
+  if (n === 1) return '나만 앉는 방이에요';
+  if (n === 2) return '한 명을 부를 수 있어요';
+  if (n <= 4) return '작은 스터디에 맞아요';
+  if (n <= 6) return '한 화면에 다 보이는 크기예요';
+  return '공개 방으로 열기 좋은 크기예요';
+}
+
+/* 엄지 반지름 15px 만큼 양 끝을 안으로 들입니다. 안 그러면 1명과 10명에서
+   엄지가 트랙 밖으로 삐져나갑니다. */
+const seatPos = (n) => {
+  const pct = (n - 1) / 9;
+  return 'calc(15px + ' + (pct * 100) + '% - ' + (pct * 30) + 'px)';
+};
+
+function seatSlider() {
+  const n = W.seats;
+  let ticks = '';
+  for (let i = 1; i <= 10; i++) ticks += '<i data-passed="' + (i < n) + '" data-current="' + (i === n) + '"></i>';
+  return '<div class="seatslider">'
+    + '<div class="seatslider-head"><b id="seatCount">' + n + '명</b>'
+    + '<span id="seatNote">' + seatNote(n) + '</span></div>'
+    + '<div class="seatslider-rail">'
+    + '<span class="seatslider-track"><span class="seatslider-fill" id="seatFill" style="width:' + seatPos(n) + '"></span></span>'
+    + '<span class="seatslider-ticks" id="seatTicks">' + ticks + '</span>'
+    + '<span class="seatslider-thumb" id="seatThumb" style="left:' + seatPos(n) + '"></span>'
+    + '<input type="range" min="1" max="10" step="1" value="' + n + '" id="seatRange" '
+    + 'aria-label="방에 열어 둘 자리 수" aria-valuetext="' + n + '명" /></div>'
+    + '<div class="seatslider-ends"><span>1명</span><span>10명</span></div></div>';
+}
+
+/* 자리 미리보기 = Zoom 격자. 비공개방이 "자리가 있는 방" 이라는 것을
+   여기서 처음 봅니다. 채우는 얼굴은 우리 캐릭터를 씁니다. */
+const FILL_SP = ['펭귄', '햄스터', '백조'];
+
+function seatPreview() {
+  const seats = W.seats, shown = Math.min(seats, 6);
+  let tiles = '';
+  for (let i = 0; i < shown; i++) {
+    const delay = ' style="animation-delay:' + (i * 35) + 'ms"';
+    if (i === 0) {
+      tiles += '<span class="pv-tile"' + delay + '>'
+        + '<canvas width="32" height="48" data-sp="' + esc(ROOM.character) + '"></canvas>'
+        + '<span class="pv-tile-me">나</span></span>';
+    } else if (i < 3) {
+      tiles += '<span class="pv-tile"' + delay + '>'
+        + '<canvas width="32" height="48" data-sp="' + FILL_SP[i - 1] + '"></canvas></span>';
+    } else {
+      tiles += '<span class="pv-tile empty"' + delay + '></span>';
+    }
+  }
+  const goal = seats * W.focusMin;
+  const more = seats > 6
+    ? '<p style="margin:var(--sp-sm) 0 0;font-size:var(--fs-xs);color:var(--ink-3)">화면에는 여섯 자리까지 보이고, 나머지는 넘겨서 봅니다.</p>'
+    : '';
+  return '<div class="preview">'
+    + '<div class="preview-head"><b>방 미리보기</b><span>' + seats + '자리</span></div>'
+    + '<div class="preview-grid">' + tiles + '</div>' + more
+    + '<div class="goalbar"><div class="goalbar-top"><b>함께 채울 시간</b><span>' + goal + '분</span></div>'
+    + '<div class="goalbar-track"><i style="--w:' + Math.min(1, goal / 250).toFixed(3) + '"></i></div>'
+    + '<p>' + seats + '자리가 각자 ' + W.focusMin + '분씩 앉으면 채워집니다. '
+    + '한 사람이 빠져도 남은 사람 시간은 그대로 쌓여요.</p></div></div>';
+}
+
+function stepSeats() {
+  return {
+    stage:
+      '<div class="wiz-lede"><h3>몇 자리를 열어 둘까요?</h3>'
+      + '<p>고른 만큼 방에 자리가 생기고, 그 자리들이 함께 채울 시간이 이 방의 목표가 돼요.</p></div>'
+      + seatSlider() + seatPreview(),
+    bar: { label: '다음', act: 'next' },
+  };
+}
+
+/* ---- 3단계: 시간 ---- */
+function focusOptions() {
+  const out = [];
+  for (let m = 5; m <= 120; m += 5) out.push(m);
+  return out;
+}
+function wheelCol(label, key, options, current) {
+  const lid = 'wheelLbl-' + key;
+  return '<div class="dialcol"><span class="dial-label" id="' + lid + '">' + label + '</span>'
+    + '<div class="wheelbox"><span class="wheel-rail" aria-hidden="true"></span>'
+    + '<div class="wheel" data-wheel="' + key + '">'
+    + '<ul class="wheel-list" tabindex="0" role="listbox" aria-labelledby="' + lid + '">'
+    + options.map((o) => '<li role="option" data-val="' + o + '" data-on="' + (o === current) + '" '
+        + 'aria-selected="' + (o === current) + '">' + o + '분</li>').join('')
+    + '</ul></div></div></div>';
+}
+function timeSummary() {
+  return '<div class="dial-sum">'
+    + '<span class="dial-sum-big">' + W.focusMin + '분 앉고<br>' + W.restMin + '분 회복</span>'
+    + '<p>' + W.seats + '자리가 다 차면 이 방의 목표는 ' + (W.seats * W.focusMin)
+    + '분이 돼요. 회복 휴식은 5분과 10분 둘 중 하나예요.</p></div>';
+}
+function stepTime() {
+  return {
+    stage:
+      '<div class="wiz-lede"><h3>얼마나 앉아 있을까요?</h3>'
+      + '<p>계획한 시간의 80%를 넘기면 완주로 인정해요. 10분을 넘기면 출석이 남아요.</p></div>'
+      + '<div class="dials">' + wheelCol('집중', 'focus', focusOptions(), W.focusMin)
+      + wheelCol('회복 휴식', 'rest', [5, 10], W.restMin) + '</div>'
+      + timeSummary(),
+    bar: { label: '다음', act: 'next' },
+  };
+}
+
+/* ---- 4단계: 모드 ---- */
+function modeCell(id) {
+  const m = MODES[id];
+  return '<button class="mode" type="button" data-mode="' + id + '" aria-pressed="' + (W.mode === id) + '">'
+    + '<span class="mode-fig">' + icon(m.icon, 18) + '</span>'
+    + '<b>' + esc(m.name) + '</b><span>' + esc(m.desc) + '</span>'
+    + '<span class="mode-flags">'
+    + '<span class="tag ' + (m.tts ? 'tag-good' : 'tag-idle') + '">' + (m.tts ? '음성 안내' : '무음') + '</span>'
+    + '<span class="tag tag-outline">' + esc(m.posture) + '</span>'
+    + '</span></button>';
+}
+function stepMode() {
+  return {
+    stage:
+      '<div class="wiz-lede"><h3>어디에서 하나요?</h3>'
+      + '<p>소리를 낼지, 스트레칭을 앉아서 할지 일어나서 할지가 달라져요. '
+      + '자세 판정 기준과 경험치는 모드와 상관없이 같아요.</p></div>'
+      + '<div class="mode-grid">' + Object.keys(MODES).map(modeCell).join('') + '</div>',
+    bar: { label: '다음', act: 'next' },
+  };
+}
+
+/* ---- 5단계: 확인 ---- */
+function stepConfirm() {
+  const m = MODES[W.mode];
+  return {
+    stage:
+      '<div class="wiz-lede"><h3>이대로 열까요?</h3>'
+      + '<p>방 이름은 지금 바꿀 수 있어요. 상시방으로 두면 세션이 끝나도 방이 안 사라져요.</p></div>'
+      + '<div class="summary"><ul class="rowlist">'
+      + '<li><label for="roomname">방 이름</label>'
+      + '<input id="roomname" class="field" value="' + esc(W.roomName) + '" maxlength="20" placeholder="무엇을 하는 방인가요" /></li>'
+      + '<li>방 종류 <span class="val">' + (W.visibility === 'public' ? '공개 방' : '비공개방') + '</span></li>'
+      + '<li>자리 <span class="val">' + (W.seats === 1 ? '혼자' : W.seats + '자리') + '</span></li>'
+      + '<li>시간 <span class="val mono">' + W.focusMin + '분 + ' + W.restMin + '분</span></li>'
+      + '<li>모드 <span class="val">' + m.name + '</span></li>'
+      + '<li>함께 채울 시간 <span class="val mono">' + (W.seats * W.focusMin) + '분</span></li>'
+      + '</ul></div>'
+      + '<div class="switchrow"><span class="switchrow-fig">' + icon(IC.pin, 19) + '</span>'
+      + '<span class="switchrow-text"><b>상시방으로 만들기</b>'
+      + '<span>한 사람이 최대 3개까지. 지금 ' + (W.persistent ? 1 : 0) + ' / 3 개.</span></span>'
+      + '<button class="switch" type="button" role="switch" data-act="persist" '
+      + 'aria-checked="' + W.persistent + '" aria-label="상시방으로 만들기"><span></span></button></div>',
+    bar: { label: '방 만들기', act: 'create', arrow: true },
+  };
+}
+
+const STEPS = [stepRoomKind, stepSeats, stepTime, stepMode, stepConfirm];
+const TOTAL = STEPS.length;
+
+/* ---- 렌더 ---- */
+const wizard = $('wizard'), wizStage = $('wizStage'), wizScroll = $('wizScroll');
+const wizGo = $('wizGo'), wizGoLabel = $('wizGoLabel'), wizGoArrow = $('wizGoArrow');
+const wizHint = $('wizHint'), wizBack = $('wizBack');
+const trackCells = Array.from($('wizTrack').children);
+
+let stepIndex = 0, goingBack = false, minting = false, stageBusy = false, labelTimer = 0;
+
+/* 나가는 애니메이션이 끝나고 눈이 한 번 쉬기까지. CSS 의 .leaving 과 맞춥니다. */
+const STAGE_OUT_MS = 200;
+
+/** 진행 막대. **방금 채워진 칸만** 자랍니다 — 전부 다시 칠하면 지나온
+    단계까지 매 걸음 새로 그려져서, 어디가 바뀌었는지가 안 보입니다. */
+function markTrack() {
+  trackCells.forEach((c, i) => {
+    const was = c.getAttribute('data-fill') === 'true';
+    const now = i <= stepIndex;
+    c.setAttribute('data-fill', String(now));
+    c.classList.remove('grew');
+    if (now && !was && !REDUCED) { void c.offsetWidth; c.classList.add('grew'); }
+  });
+  $('wizTrack').setAttribute('aria-valuenow', String(stepIndex + 1));
+}
+
+function paintBar(spec) {
+  if (!spec) return;
+  wizGo.setAttribute('data-act', spec.act);
+  wizGo.disabled = !!spec.disabled;
+  wizGoArrow.hidden = !spec.arrow;
+  if (spec.hint) { wizHint.textContent = spec.hint; wizHint.hidden = false; }
+  else wizHint.hidden = true;
+
+  if (wizGoLabel.textContent === spec.label) return;
+  if (REDUCED) { wizGoLabel.textContent = spec.label; return; }
+  /* 글자가 바뀔 때만 짧게 교차합니다. 매 단계 깜빡이면 더 산만합니다. */
+  clearTimeout(labelTimer);
+  wizGoLabel.classList.add('swapping');
+  labelTimer = setTimeout(() => {
+    wizGoLabel.textContent = spec.label;
+    wizGoLabel.classList.remove('swapping');
+  }, 120);
+}
+
+function paintStep() {
+  const view = STEPS[stepIndex]();
+  markTrack();
+  wizBack.setAttribute('data-hidden', String(stepIndex === 0));
+
+  wizStage.classList.remove('leaving', 'to-back');
+  wizStage.classList.toggle('back', goingBack);
+  wizStage.innerHTML = view.stage;
+  paintBar(view.bar);
+  wizScroll.scrollTop = 0;
+  goingBack = false;
+  stageBusy = false;
+
+  drawPets(wizStage);
+  bindWheels();
+  bindSeatSlider();
+  const nameInput = $('roomname');
+  if (nameInput) nameInput.addEventListener('input', () => { W.roomName = nameInput.value || '이름 없는 방'; });
+}
+
+let stageTimer = 0;
+
+function renderWizard(immediate) {
+  if (minting) return;
+  const hasContent = wizStage.childElementCount > 0;
+  if (immediate || !hasContent || REDUCED) { clearTimeout(stageTimer); paintStep(); return; }
+  /* 이미 넘어가는 중이면 **기다리게 하지 않고** 지금 그립니다. 나가는
+     동작을 끝까지 보여 주는 것보다 손을 따라가는 게 먼저입니다. */
+  if (stageBusy) { clearTimeout(stageTimer); paintStep(); return; }
+  stageBusy = true;
+
+  /* 진행 막대와 뒤로 버튼이 먼저 움직입니다 — "지금 넘어가는 중" 이라는
+     신호가 내용보다 앞서야 기다림이 설명됩니다. */
+  markTrack();
+  wizBack.setAttribute('data-hidden', String(stepIndex === 0));
+
+  wizStage.classList.remove('back');
+  wizStage.classList.add('leaving');
+  if (goingBack) wizStage.classList.add('to-back');
+  stageTimer = setTimeout(paintStep, STAGE_OUT_MS);
+}
+
+/* ---- 자리 슬라이더 ---- */
+function bindSeatSlider() {
+  const range = $('seatRange');
+  if (!range) return;
+  const count = $('seatCount'), note = $('seatNote'), fill = $('seatFill'), thumb = $('seatThumb');
+  const ticks = $('seatTicks').children;
+
+  range.addEventListener('input', () => {
+    const n = Number(range.value);
+    if (n === W.seats) return;          // 같은 칸을 다시 짚은 것은 변화가 아닙니다
+    W.seats = n;
+    count.textContent = n + '명';
+    /* 손이 민 값이라 튐(감쇠 0.8)을 씁니다. transition 이라 드래그 중에
+       끊기고 다시 잡힙니다 — 키프레임이면 매 칸마다 처음부터 다시 돕니다. */
+    if (!REDUCED) {
+      count.classList.add('bump');
+      clearTimeout(count.__t);
+      count.__t = setTimeout(() => count.classList.remove('bump'), 140);
+    }
+    note.textContent = seatNote(n);
+    fill.style.width = seatPos(n);
+    thumb.style.left = seatPos(n);
+    range.setAttribute('aria-valuetext', n + '명');
+    for (let i = 0; i < ticks.length; i++) {
+      ticks[i].setAttribute('data-passed', String(i + 1 < n));
+      ticks[i].setAttribute('data-current', String(i + 1 === n));
+    }
+    /* 미리보기만 갈아 끼웁니다. 무대를 다시 그리면 슬라이더가 손에서
+       사라지고 카드가 전부 다시 날아 들어옵니다. */
+    const old = wizStage.querySelector('.preview');
+    if (!old) return;
+    const holder = document.createElement('div');
+    holder.innerHTML = seatPreview();
+    const fresh = holder.firstElementChild;
+    old.replaceWith(fresh);
+    drawPets(fresh);
+  });
+}
+
+/* ---- 시간 휠 ---- */
+function bindWheels() {
+  document.querySelectorAll('[data-wheel]').forEach((wheel) => {
+    const key = wheel.getAttribute('data-wheel');
+    const active = wheel.querySelector('[data-on="true"]');
+    if (active) wheel.scrollTop = active.offsetTop - wheel.clientHeight / 2 + active.clientHeight / 2;
+
+    let raf = 0;
+    wheel.addEventListener('scroll', () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const mid = wheel.scrollTop + wheel.clientHeight / 2;
+        let best = null, bestDist = Infinity;
+        wheel.querySelectorAll('li').forEach((li) => {
+          const d = Math.abs(li.offsetTop + li.clientHeight / 2 - mid);
+          if (d < bestDist) { bestDist = d; best = li; }
+        });
+        if (!best) return;
+        wheel.querySelectorAll('li').forEach((li) => {
+          const on = (li === best);
+          li.setAttribute('data-on', String(on));
+          li.setAttribute('aria-selected', String(on));
+        });
+        const val = Number(best.getAttribute('data-val'));
+        if (key === 'focus') W.focusMin = val; else W.restMin = val;
+        swapSummary();
+      });
+    }, { passive: true });
+
+    /* 줄을 눌러도 골라집니다. 휠만 두면 마우스 사용자가 굴려야만 고를 수
+       있어서, 5분에서 120분까지 가는 데 스물세 번을 굴립니다. */
+    wheel.addEventListener('click', (e) => {
+      const li = e.target.closest('li');
+      if (li) li.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' });
+    });
+  });
+}
+
+/* 휠을 돌리는 중에 무대를 다시 그리면 스크롤이 튑니다. 요약만 갈아 끼웁니다. */
+function swapSummary() {
+  const old = wizStage.querySelector('.dial-sum');
+  if (!old) return;
+  const holder = document.createElement('div');
+  holder.innerHTML = timeSummary();
+  const fresh = holder.firstElementChild;
+  fresh.style.animation = 'none';
+  old.replaceWith(fresh);
+}
+
+/* ---- 열기와 닫기 ---- */
+let closeTimer = 0;
+
+function openWizard() {
+  /* 닫히는 중이었으면 예약된 비우기를 취소합니다. 안 그러면 방금 그린
+     1단계가 400ms 뒤에 지워지고 창이 숨습니다. */
+  clearTimeout(closeTimer);
+  stepIndex = 0; goingBack = false; minting = false;
+  W.visibility = null;
+  wizGo.hidden = false;
+  wizGoLabel.classList.remove('swapping');
+  wizard.hidden = false;
+  renderWizard(true);
+  /* 다음 프레임에 클래스를 붙여야 시작 위치에서 스프링이 걸립니다. */
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    wizard.classList.add('up');
+    $('app').classList.add('covered');
+  }));
+  setTimeout(() => {
+    const first = wizStage.querySelector('button');
+    if (first) first.focus();
+  }, REDUCED ? 20 : 260);
+}
+
+function closeWizard(instant) {
+  if (wizard.hidden) return;
+  $('app').classList.remove('covered');
+  wizard.classList.remove('up');
+  stageBusy = false;
+  /* 무대를 비웁니다. 남겨 두면 다음에 열 때 이전 단계가 한 프레임 보입니다. */
+  const clear = () => {
+    wizard.hidden = true;
+    wizStage.innerHTML = '';
+    wizStage.classList.remove('leaving', 'to-back', 'back');
+  };
+  clearTimeout(closeTimer);
+  if (instant || REDUCED) clear(); else closeTimer = setTimeout(clear, 520);
+}
+
+/** 1단계에서는 버릴 것이 없으니 바로 닫습니다. 그 뒤로는 채운 것이
+    있으므로 묻습니다 — 되돌리기가 없는 자리입니다. */
+function tryCloseWizard() {
+  if (minting) { closeWizard(); return; }
+  if (stepIndex === 0 && !W.visibility) { closeWizard(); return; }
+  ask({
+    title: '방 만들기를 그만둘까요?',
+    body: '여기까지 고른 것은 저장되지 않아요. 다시 열면 처음부터 시작해요.',
+    yes: '그만두기',
+    onYes: () => closeWizard(),
+  });
+}
+$('wizClose').addEventListener('click', tryCloseWizard);
+wizBack.addEventListener('click', () => {
+  if (stepIndex === 0) { tryCloseWizard(); return; }
+  goingBack = true; stepIndex -= 1; renderWizard();
+});
+document.addEventListener('keydown', (e) => {
+  if (!wizard.hidden && e.key === 'Escape' && $('veil').hidden) tryCloseWizard();
+});
+
+/* ---- 코드 발급 ----
+   I·L·O·0·1 은 서로 헷갈려서 뺐습니다. 전화로 불러 주는 코드라
+   "일인지 엘인지" 를 되묻게 만들면 안 됩니다. */
+/* **L 이 들어 있었습니다.** 문자표는 I·O·0·1 만 빼고 있었는데 화면 문구와
+   참여 검사는 L 도 안 쓴다고 말하고 있었습니다. 그래서 L 이 든 코드가
+   발급되면 그 방에는 아무도 못 들어왔습니다 — 발급하는 쪽과 받는 쪽이
+   서로 다른 표를 보고 있었던 것입니다. 표를 하나로 맞춥니다. */
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+
+function mintCode() {
+  if (minting) return;
+  minting = true;
+  /* 바를 먼저 잠급니다. innerHTML 을 갈아 끼우는 사이에도 버튼은 살아
+     있으므로, 그 틈에 한 번 더 눌리면 코드가 두 번 발급됩니다. */
+  wizGo.disabled = true; wizGo.hidden = true; wizHint.hidden = true;
+
+  let target = '';
+  for (let i = 0; i < 6; i++) target += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+  W.code = target;
+
+  wizBack.setAttribute('data-hidden', 'true');
+  stepIndex = TOTAL - 1; markTrack();
+
+  wizStage.classList.remove('back');
+  wizStage.innerHTML =
+    '<div class="minting"><span class="mint-ring" aria-hidden="true">'
+    + '<svg viewBox="0 0 104 104"><circle class="track" cx="52" cy="52" r="46" fill="none" stroke-width="4"/>'
+    + '<circle class="head" cx="52" cy="52" r="46" fill="none" stroke-width="4"/></svg>'
+    + '<span class="mint-core">' + icon(IC.check, 24, 3) + '</span></span>'
+    + '<span class="mint-code" id="mintCode" aria-live="polite">------</span>'
+    + '<h3>' + esc(W.roomName) + ' 방이 열렸어요</h3>'
+    + '<p>이 코드를 아는 사람이 들어올 수 있어요.</p></div>';
+
+  const out = $('mintCode');
+
+  /* 흐름의 정점입니다. 여기서 자동으로 넘겨 버리면 코드를 못 외운 사람은
+     되돌아갈 곳이 없습니다. 다 굳은 뒤에는 사용자가 넘깁니다. */
+  function offerCode() {
+    wizGo.hidden = false; wizGo.disabled = false; wizGoArrow.hidden = false;
+    wizGo.setAttribute('data-act', 'enter-lobby');
+    wizGoLabel.textContent = '대기실로';
+    wizHint.hidden = false;
+    wizHint.textContent = '코드를 눌러 복사할 수 있어요';
+    out.setAttribute('role', 'button');
+    out.setAttribute('tabindex', '0');
+    out.setAttribute('title', '눌러서 복사');
+    out.classList.add('copyable');
+  }
+
+  if (REDUCED) { out.textContent = target; offerCode(); return; }
+
+  /* 앞자리부터 하나씩 굳고 뒷자리는 계속 굴러갑니다. */
+  let locked = 0;
+  const scramble = setInterval(() => {
+    let shown = target.slice(0, locked);
+    for (let i = locked; i < 6; i++) shown += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
+    out.textContent = shown;
+  }, 45);
+  const lock = setInterval(() => {
+    locked += 1;
+    if (locked < 6) return;
+    clearInterval(lock); clearInterval(scramble);
+    out.textContent = target;
+    setTimeout(offerCode, 260);   // 마지막 자리가 굳는 것을 보고 나서
+  }, 190);
+}
+
+function finishMint() {
+  minting = false;
+  show('lobby');
+  renderLobby();
+  closeWizard();
+}
+
+/* ---- 위저드 안 클릭 ---- */
+wizard.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act], [data-vis], [data-mode]');
+  if (!t) return;
+
+  if (t.hasAttribute('data-vis')) {
+    W.visibility = t.getAttribute('data-vis');
+    /* 선택 표시와 바만 갱신합니다. 무대를 다시 그리면 카드가 다시 날아옵니다. */
+    wizStage.querySelectorAll('[data-vis]').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-vis') === W.visibility)));
+    paintBar(STEPS[stepIndex]().bar);
+    return;
+  }
+  if (t.hasAttribute('data-mode')) {
+    W.mode = t.getAttribute('data-mode');
+    wizStage.querySelectorAll('[data-mode]').forEach((b) =>
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-mode') === W.mode)));
+    return;
+  }
+
+  const a = t.getAttribute('data-act');
+  if (a === 'next' && stepIndex < TOTAL - 1) {
+    goingBack = false; stepIndex += 1; renderWizard();
+  } else if (a === 'persist') {
+    W.persistent = !W.persistent;
+    t.setAttribute('aria-checked', String(W.persistent));
+    const note = t.parentElement.querySelector('.switchrow-text span');
+    if (note) note.textContent = '한 사람이 최대 3개까지. 지금 ' + (W.persistent ? 1 : 0) + ' / 3 개.';
+  } else if (a === 'create') {
+    /* 코드를 만드는 동안 "방 만들기" 가 계속 눌립니다. 성격 급한 사람은
+       반응이 없어 보이는 1초 사이에 두세 번 누릅니다. */
+    if (minting) return;
+    t.disabled = true;
+    mintCode();
+  } else if (a === 'enter-lobby') {
+    finishMint();
+  }
+});
+
+/* 코드를 눌러 복사합니다. 외우게 만들지 않습니다. */
+function copyCode(text, say) {
+  if (!text || text.indexOf('-') === 0) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => say('코드를 복사했어요'),
+      () => say('복사하지 못했어요. 코드를 직접 적어 주세요'));
+  } else say('이 브라우저에서는 복사를 지원하지 않아요');
+}
+wizard.addEventListener('click', (e) => {
+  const code = e.target.closest('.mint-code.copyable');
+  if (!code) return;
+  copyCode(code.textContent.trim(), (m) => {
+    wizHint.textContent = m;
+    code.classList.add('copied');
+    setTimeout(() => code.classList.remove('copied'), 900);
+  });
+});
+wizard.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const code = e.target.closest('.mint-code.copyable');
+  if (!code) return;
+  e.preventDefault(); code.click();
+});
+
+/* ==================================================================
+   대기실
+   ================================================================== */
+/* 시연용 가짜 참가자. 실제 서비스에서는 서버가 줍니다. 이 배열이 화면에
+   닿는 경로는 renderLobby 와 renderPucks 두 곳뿐입니다. */
+const DEMO_MEMBERS = [
+  { n: '나',   sp: null,     lv: 7, ready: true },
+  { n: '수현', sp: '펭귄',   lv: 5, ready: false },
+  { n: '연우', sp: '햄스터', lv: 9, ready: true },
+  { n: '태윤', sp: '알파카', lv: 4, ready: false },
+  { n: '지호', sp: '백조',   lv: 6, ready: true },
+  { n: '서윤', sp: '개구리', lv: 3, ready: true },
+];
+
+/* 여럿 있는 화면은 ?demo=1 로 켭니다. **방금 만든 방에는 방장 혼자
+   있습니다** — 자리 수는 앉을 수 있는 한도이지 앉아 있는 사람 수가
+   아닙니다. 전에는 자리 수만큼 시연용 참가자를 채워서, 아무도 안 불렀는데
+   이미 앉아 있었습니다. */
+let demoRoom = new URLSearchParams(location.search).get('demo') === '1';
+
+const baseAxes = () => (BASELINE && BASELINE.features ? Object.keys(BASELINE.features).length : 0);
+const joinedCount = () => (demoRoom ? Math.min(W.seats, DEMO_MEMBERS.length) : 1);
+
+/** 코드 여섯 자를 여섯 칸에 나눠 앉힙니다. **칸 사이에 공백을 넣지
+    않습니다** — textContent 가 곧 코드여야 검사와 복사가 같은 값을 봅니다. */
+function paintCode(text) {
+  const el = $('lobbyCode');
+  el.innerHTML = text.split('').map((c) => '<i>' + esc(c) + '</i>').join('');
+  /* 읽어 주는 쪽에는 한 자씩 띄어 줍니다. "4F2K9A" 를 통째로 읽으면
+     단어처럼 발음돼서 받아 적을 수가 없습니다. */
+  el.setAttribute('aria-label', '초대 코드 ' + text.split('').join(' '));
+}
+
+function renderLobby() {
+  $('lobbyRoom').textContent = W.roomName;
+  paintCode(W.code);
+
+  const kind = W.visibility === 'public' ? '공개 방' : '비공개방';
+  $('lobbyChips').innerHTML =
+    '<span class="tag tag-teal">' + kind + '</span>'
+    + '<span class="tag tag-outline">' + W.seats + '자리</span>'
+    + '<span class="tag tag-outline">' + W.focusMin + '분 + ' + W.restMin + '분</span>'
+    + '<span class="tag tag-outline">' + MODES[W.mode].name + '</span>';
+
+  const axes = baseAxes();
+  const tag = $('lobbyBaseTag');
+  if (axes) {
+    $('lobbyBase').textContent = axes + '개 축으로 잡아 뒀어요';
+    tag.textContent = '확인됨'; tag.className = 'tag tag-good';
+  } else {
+    $('lobbyBase').textContent = '아직 안 잡았어요. 방 안에서 잡아도 돼요';
+    tag.textContent = '미확인'; tag.className = 'tag tag-idle';
+  }
+
+  const seats = Math.min(W.seats, 10);
+  const joined = joinedCount();
+  $('lobbySeatCount').textContent = joined + ' / ' + W.seats;
+
+  let html = '';
+  for (let i = 0; i < joined; i++) {
+    const p = DEMO_MEMBERS[i];
+    const sp = i === 0 ? ROOM.character : p.sp;
+    const nm = i === 0 ? ROOM.nickname : p.n;
+    /* 내 줄의 레벨은 저장된 것을 씁니다. 시연 배열의 7 을 그대로 띄우면
+       한 번도 안 앉은 사람이 Lv.7 로 보입니다. */
+    const lv = i === 0 ? (REWARD && REWARD.level ? REWARD.level : null) : p.lv;
+    /* 나는 못 누릅니다 — 내 준비 상태는 기준을 잡아야 바뀌는 것이지
+       눌러서 바뀌는 것이 아닙니다. */
+    const el = i === 0 ? 'div' : 'button';
+    const attr = i === 0 ? '' : ' type="button"';
+    html += '<' + el + attr + ' class="seat' + (i === 0 ? ' self' : '') + '" data-who="' + esc(p.n) + '"'
+      + ' style="animation-delay:' + (i * 40) + 'ms">'
+      + (lv ? '<span class="seat-lv">Lv.' + lv + '</span>' : '')
+      + '<span class="seat-plate">' + petFigure(sp) + '</span>'
+      + '<span class="seat-name">' + esc(nm) + '</span>'
+      + '<span class="tag ' + (p.ready ? 'tag-good' : 'tag-idle') + '">'
+      + (p.ready ? '준비 완료' : '기준 확인 중') + '</span></' + el + '>';
+  }
+  for (let j = joined; j < seats; j++) {
+    html += '<div class="seat-empty" style="animation-delay:' + (j * 40) + 'ms">'
+      + '<span class="ring">' + icon(IC.plus, 20, 2.4) + '</span>빈 자리</div>';
+  }
+
+  const gal = $('lobbyGallery');
+  gal.innerHTML = html;
+  drawPets(gal);
+
+  const goal = W.seats * W.focusMin;
+  $('lobbyGoal').textContent = goal + '분';
+  $('lobbyGoalFill').style.setProperty('--w', Math.min(1, goal / 250).toFixed(3));
+  $('lobbyGoalNote').textContent = W.seats + '자리가 각자 ' + W.focusMin
+    + '분씩 앉으면 채워져요. 한 사람이 빠져도 남은 사람 시간은 그대로 쌓여요.';
+
+  /* ---- 시작 정책 ----
+       · 방장 혼자        → 바로 시작할 수 있습니다
+       · 참가자가 있으면  → 전원 준비 완료 후에만 방장이 시작합니다 */
+  const others = DEMO_MEMBERS.slice(1, joined);
+  const waiting = others.filter((p) => !p.ready);
+  const btn = $('lobbyStart'), status = $('lobbyStatus'), bypass = $('lobbyBypass');
+
+  /* **내 기준이 먼저입니다.** 남을 기다리는 것보다 앞에 옵니다 — 남이
+     다 준비돼도 내 기준이 없으면 이 방은 판정을 못 합니다.
+
+     그래도 **화면을 못 보는 것과는 다른 문제**라, 잠근 자리 바로 밑에
+     둘러보는 문을 둡니다. MVP 동안만 있는 문입니다. */
+  if (!axes) {
+    btn.disabled = true;
+    btn.textContent = '지금 시작하기';
+    status.textContent = '내 자세 기준을 먼저 잡아 주세요';
+    status.setAttribute('data-blocked', 'true');
+    bypass.hidden = false;
+  } else if (joined <= 1) {
+    btn.disabled = false;
+    btn.textContent = '지금 시작하기';
+    /* 초대 코드 칸이 이미 같은 말을 합니다. 발판에서 한 번 더 하면
+       읽을 것만 늘어납니다. */
+    status.textContent = '';
+    status.removeAttribute('data-blocked');
+    bypass.hidden = true;
+  } else if (waiting.length === 0) {
+    btn.disabled = false;
+    btn.textContent = '모두 준비됐어요 · 시작하기';
+    status.textContent = others.length + '명이 함께 앉아요';
+    status.removeAttribute('data-blocked');
+    bypass.hidden = true;
+  } else {
+    btn.disabled = true;
+    btn.textContent = '지금 시작하기';
+    status.textContent = waiting.map((p) => p.n).join(', ') + ' 님이 자세 기준을 확인하고 있어요';
+    status.setAttribute('data-blocked', 'true');
+    bypass.hidden = true;
+  }
+}
+
+$('lobbyCopy').addEventListener('click', () => copyCode(W.code, toast));
+$('lobbyLink').addEventListener('click', () => {
+  const url = location.origin + location.pathname + '?join=' + W.code;
+  copyCode(url, () => toast('초대 링크를 복사했어요'));
+});
+
+/* 시연용 — 실제로는 서버가 준비 상태를 보냅니다. 타일을 눌러 준비 완료로
+   바꿀 수 있게 해서, 막힌 상태와 풀린 상태를 둘 다 보여 줍니다. */
+$('lobbyGallery').addEventListener('click', (e) => {
+  const tile = e.target.closest('button.seat');
+  if (!tile) return;
+  const who = DEMO_MEMBERS.find((p) => p.n === tile.dataset.who);
+  if (!who) return;
+  who.ready = !who.ready;
+  renderLobby();
+  const fresh = $('lobbyGallery').querySelector('.seat[data-who="' + who.n + '"] .tag');
+  bump(fresh);
+});
+
+/* 대기실 스위치 둘. 목소리는 **켜져 있는 것이 기본**입니다 — 같이 앉는
+   자리에서 아무도 말을 못 하면 혼자 앉는 것과 같습니다. 카메라는 다릅니다.
+   이 제품의 카메라는 자세를 보는 장치이고 얼굴을 띄우는 장치가 아닙니다. */
+document.querySelectorAll('#v-lobby .switch').forEach((sw) => {
+  sw.addEventListener('click', () => {
+    const on = sw.getAttribute('aria-checked') !== 'true';
+    sw.setAttribute('aria-checked', String(on));
+    if (sw.dataset.act === 'mic') W.mic = on; else W.cam = on;
+  });
+});
+
+$('lobbyStart').addEventListener('click', function () {
+  if (this.disabled) return;
+  startSession(false);
+});
+
+/* ---- 코드로 참여 ----
+   서버가 없으므로 **형식만** 검사합니다. 그래도 검사를 붙이는 이유는,
+   지금 없는 것과 나중에 틀린 것이 사람에게 같은 화면으로 보이면 안 되기
+   때문입니다 — 여섯 자를 안 채웠다는 말은 지금도 사실입니다. */
+(function joinByCode() {
+  const input = $('joincode'), msg = $('codepopMsg'), go = $('joinGo');
+  const say = (m, bad) => { msg.textContent = m; msg.dataset.bad = String(!!bad); };
+
+  input.addEventListener('input', () => {
+    input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    if (msg.textContent) say('', false);
+  });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go.click(); });
+
+  go.addEventListener('click', () => {
+    const v = input.value.trim();
+    if (v.length < 6) { say('여섯 자를 다 넣어 주세요', true); input.focus(); return; }
+    /* 코드 문자표에 없는 글자는 애초에 발급되지 않습니다 — I·L·O·0·1 은
+       서로 헷갈려서 뺀 글자라, 들어왔다면 잘못 읽은 것입니다. */
+    if (/[ILO01]/.test(v)) { say('I·L·O·0·1 은 코드에 안 쓰여요. 다시 봐 주세요', true); input.focus(); return; }
+    say('방을 찾는 중이에요…', false);
+    go.disabled = true;
+    setTimeout(() => {
+      go.disabled = false;
+      /* 서버가 없으니 **초대받은 쪽의 화면**을 대신 보여 줍니다. 아무 일도
+         안 일어나면 이 버튼이 무엇을 하는 것인지 볼 수가 없습니다. */
+      say('', false);
+      input.value = '';
+      W.code = v; W.visibility = 'private'; demoRoom = true;
+      show('lobby'); renderLobby();
+      toast('시연 — 그 코드의 방에 들어온 화면이에요');
+    }, 700);
+  });
+})();
+
+/* ==================================================================
+   세션 — 함께 앉아 있는 동안
+
+   시계는 실제로 갑니다. 화면 하나를 보여 주려고 25분을 앉을 수는
+   없으므로 **모든 화면**에서 집중·휴식·마침으로 바로 갈 수 있습니다.
+   ================================================================== */
+const SESS = { phase: 'focus', left: 0, total: 0, timer: 0, recov: 0, preview: false };
+const CIRC = 2 * Math.PI * 106;
+
+const mmss = (s) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+
+function renderPucks() {
+  const joined = joinedCount();
+  let html = '';
+  for (let i = 0; i < joined; i++) {
+    const p = DEMO_MEMBERS[i];
+    const sp = i === 0 ? ROOM.character : p.sp;
+    const nm = i === 0 ? ROOM.nickname : p.n;
+    html += '<span class="puck" data-talking="' + (i === 1) + '">'
+      + '<span class="puck-plate">' + petFigure(sp) + '</span>'
+      + '<span>' + esc(nm) + '</span>'
+      + '<em>' + (i === 0 ? '나' : (SESS.phase === 'rest' ? '쉬는 중' : '앉는 중')) + '</em></span>';
+  }
+  const el = $('sessPucks');
+  el.innerHTML = html;
+  drawPets(el);
+}
+
+function paintSessRows() {
+  $('sessRows').innerHTML =
+    '<div class="row"><span class="lb">방</span><span class="val">' + esc(W.roomName) + '</span></div>'
+    + '<div class="row"><span class="lb">모드</span><span class="val">' + MODES[W.mode].name + '</span></div>'
+    + '<div class="row"><span class="lb">계획</span><span class="val tnum">' + W.focusMin + '분 + ' + W.restMin + '분</span></div>'
+    + '<div class="row"><span class="lb">자세 회복</span><span class="val tnum" id="sessRecov">' + SESS.recov + '번</span></div>';
+}
+
+function paintSessArc() {
+  const done = SESS.total > 0 ? 1 - SESS.left / SESS.total : 0;
+  $('sessArc').setAttribute('stroke-dasharray', String(CIRC));
+  $('sessArc').setAttribute('stroke-dashoffset', String((CIRC * done).toFixed(1)));
+  $('sessTime').textContent = mmss(SESS.left);
+}
+
+function setPhase(phase) {
+  SESS.phase = phase;
+  SESS.total = (phase === 'focus' ? W.focusMin : W.restMin) * 60;
+  SESS.left = SESS.total;
+  $('sessRoot').setAttribute('data-phase', phase);
+  $('sessPhase').textContent = phase === 'focus' ? '집중' : '회복 휴식';
+  $('sessRestLab').textContent = phase === 'focus' ? '회복 휴식' : '집중으로';
+  paintSessArc();
+  /* 같이 앉은 사람 줄도 같이 바뀝니다 — 다 쉬는 중인데 "앉는 중" 이라고
+     적혀 있으면 화면이 거짓말을 합니다. */
+  if ($('sessPucks').childElementCount) renderPucks();
+}
+
+function tick() {
+  if (SESS.left > 0) { SESS.left -= 1; paintSessArc(); return; }
+  /* 집중이 끝나면 회복으로, 회복이 끝나면 마칩니다. 자동으로 한 세트를
+     더 돌리지 않습니다 — 앉는 것을 그만두는 자리는 사람이 정합니다. */
+  if (SESS.phase === 'focus') { setPhase('rest'); return; }
+  endSession();
+}
+
+function startSession(preview) {
+  SESS.preview = !!preview;
+  SESS.recov = preview ? 0 : 2;
+  show('sess');
+  renderPucks();
+  paintSessRows();
+  setPhase('focus');
+  const joined = joinedCount();
+  $('sessOf').textContent = W.roomName + ' · ' + W.seats + '자리 중 ' + joined + '명이 앉아 있어요'
+    + (preview ? ' · 자세 기준이 없어 판정은 안 돌아요' : '');
+  paintCam();
+  paintMic();
+  clearInterval(SESS.timer);
+  SESS.timer = setInterval(tick, 1000);
+}
+
+function stopSession() { clearInterval(SESS.timer); SESS.timer = 0; }
+
+function endSession() {
+  stopSession();
+  const ran = Math.max(1, Math.round((SESS.total - SESS.left) / 60));
+  const minutes = SESS.phase === 'focus' ? ran : W.focusMin;
+  renderDone(minutes, joinedCount() - 1, SESS.recov);
+  show('done');
+}
+
+/* 카메라 미리보기. 켜져 있어도 **화면에 실제 영상은 안 띄웁니다** —
+   이 프로토타입에는 판정 파이프라인이 없고, 없는 것을 있는 것처럼
+   그리면 다음 사람이 그것을 기준으로 만듭니다. */
+function paintCam() {
+  const on = W.cam;
+  $('sessCam').setAttribute('aria-pressed', String(on));
+  const tag = $('pipTag');
+  tag.textContent = on ? '좋아요' : '꺼짐';
+  tag.className = on ? 'tag tag-good' : 'tag tag-idle';
+  $('pipScreen').innerHTML = on
+    ? '<span>' + icon('<path d="M12 3v4"/><path d="M8 21h8"/><circle cx="12" cy="12" r="3"/>', 28, 2)
+      + '<br>자세를 보는 중이에요<br>영상은 이 브라우저 안에만 있어요</span>'
+    : '<span>' + icon(IC.seat, 28, 2) + '<br>자세 보기가 꺼져 있어요</span>';
+}
+function paintMic() {
+  $('sessMic').setAttribute('aria-pressed', String(W.mic));
+  $('sessMicIco').innerHTML = icon(W.mic ? IC.mic : IC.micOff, 22, 2);
+  $('sessMicLab').textContent = W.mic ? '마이크 켜짐' : '마이크 꺼짐';
+}
+
+$('sessMic').addEventListener('click', () => { W.mic = !W.mic; paintMic(); });
+$('sessCam').addEventListener('click', () => { W.cam = !W.cam; paintCam(); });
+$('sessRest').addEventListener('click', () => setPhase(SESS.phase === 'focus' ? 'rest' : 'focus'));
+$('sessLeave').addEventListener('click', () => {
+  ask({
+    title: '세션을 끝낼까요?',
+    body: '지금까지 앉은 시간은 기록에 남아요. 방은 그대로 있어서 다시 들어올 수 있어요.',
+    yes: '끝내기',
+    onYes: endSession,
+  });
+});
+
+/* ---- 마침 ---- */
+function renderDone(minutes, mates, recov) {
+  fillPet($('doneFig'), ROOM.character);
+  $('doneBig').textContent = minutes + '분';
+  $('doneSub').textContent = mates > 0
+    ? mates + '명과 같이 앉았어요. 오늘 앉은 시간은 ' + (S.today + minutes) + '분이에요.'
+    : '혼자 앉았어요. 오늘 앉은 시간은 ' + (S.today + minutes) + '분이에요.';
+  $('doneStats').innerHTML =
+    '<div class="stat"><u>집중</u><b>' + minutes + '<span>분</span></b></div>'
+    + '<div class="stat"><u>함께한 사람</u><b>' + mates + '<span>명</span></b></div>'
+    + '<div class="stat"><u>자세 회복</u><b>' + recov + '<span>번</span></b></div>'
+    + '<div class="stat"><u>받은 코인</u><b>' + (minutes + recov * 5) + '</b></div>';
+}
+
+/* ==================================================================
+   그리기 — 레일 · 캐릭터 · 랭킹전
+   ================================================================== */
+function paintRail() {
+  $('railName').textContent = ROOM.nickname;
+  const lv = REWARD && REWARD.level ? 'Lv.' + REWARD.level + ' · ' : '';
+  $('railSub').textContent = lv + ROOM.character + ' · 코인 ' + (ROOM.coins || 0);
+  $('railSchool').textContent = ROOM.school + (ROOM.schoolVerifiedAt ? '' : ' · 미인증');
+  fillPet($('railDish'), ROOM.character);
+  fillPet($('heroFigure'), ROOM.character);
+  /* 하루 60분. 근거가 있는 값이 아니라 **눈금**입니다 — 오늘이 얼마나
+     남았는지를 재려면 자가 하나 있어야 하고, 그 자가 25분(한 세션)의
+     배수여야 "두 번 더" 로 셈이 됩니다. */
+  const GOAL = 60;
+  $('railTodayVal').textContent = S.today + ' / ' + GOAL + '분';
+  $('railTodayFill').style.setProperty('--w', Math.min(1, S.today / GOAL).toFixed(3));
+  $('railTodayNote').textContent = S.today >= GOAL
+    ? '오늘 몫은 다 채웠어요'
+    : (S.today === 0 ? '한 세션만 채우면 오늘이 남아요' : GOAL - S.today + '분 더 앉으면 오늘 몫이 차요');
+
+  $('qToday').innerHTML = S.today + '<span>분</span>';
+  $('qStreak').innerHTML = S.streak + '<span>일</span>';
+  $('qCoin').textContent = ROOM.coins || 0;
+}
+
+const SLOTS = [['top', '상의'], ['bottom', '하의'], ['shoes', '신발'], ['hat', '모자'], ['bag', '가방'], ['face', '얼굴']];
+const ITEM_KO = {
+  'top-varsity': '과잠', 'top-hoodie': '후드티', 'top-shirt': '셔츠', 'top-tee': '반팔티',
+  'bot-jeans': '청바지', 'bot-slacks': '슬랙스', 'bot-shorts': '반바지', 'bot-trainer': '트레이닝복',
+  'sho-sneaker': '운동화', 'sho-dress': '구두', 'sho-slipper': '삼선 슬리퍼',
+  'hat-cap': '볼캡', 'hat-grad': '학사모', 'bag-backpack': '백팩', 'fac-sun': '선글라스',
+};
+
+function paintChar() {
+  fillPet($('charPodium'), ROOM.character);
+  const sp = SPECIES[ROOM.character] || SPECIES['거북이'];
+  $('petName').textContent = ROOM.nickname;
+  $('petLine').textContent = ROOM.character + ' · ' + sp.line;
+  $('coinCount').textContent = '코인 ' + (ROOM.coins || 0);
+
+  const owned = Array.isArray(ROOM.owned) ? ROOM.owned.length : 0;
+  const worn = SLOTS.filter(([c]) => ROOM.worn && ROOM.worn[c]).length;
+
+  /* 가진 옷이 하나도 없으면 빈 칸 여섯을 보여 주지 않습니다. 채울 수
+     없는 칸 여섯은 "내가 뭘 놓쳤나" 로 읽히지, 살 것으로 안 읽힙니다. */
+  if (owned === 0 && worn === 0) {
+    $('wearWrap').innerHTML = '<div class="empty">'
+      + '<span class="empty-fig">' + icon(IC.shirt, 22, 2) + '</span>'
+      + '<div class="ttl">아직 가진 옷이 없어요</div>'
+      + '<p>코인은 앉은 시간과 회복 횟수로 쌓여요. 학생회관 상점에서 옷으로 바꿉니다.</p>'
+      + '<button class="btn btn-teal" type="button" data-go="world">학생회관 가기</button></div>';
+    return;
+  }
+
+  $('wearWrap').innerHTML =
+    '<div class="wear">' + SLOTS.map(([cat, ko]) => {
+      const id = ROOM.worn && ROOM.worn[cat];
+      return '<button class="slot' + (id ? ' on' : '') + '" type="button" data-go="shop">'
+        + '<u>' + ko + '</u><b>' + (id ? esc(ITEM_KO[id] || id) : '비어 있음') + '</b></button>';
+    }).join('') + '</div>'
+    + '<div class="btnrow" style="margin-top:var(--sp-lg)">'
+    + '<button class="btn btn-ghost btn-sm" type="button" data-go="shop">상점 열기</button>'
+    + (worn ? '<button class="btn btn-line btn-sm" type="button" data-go="undress">전부 벗기</button>' : '')
+    + '</div>'
+    + '<div class="note">옷은 <b>학생회관 상점</b>에서 코인으로 삽니다. 코인은 앉은 '
+    + '시간과 회복 횟수로 쌓여요. 여기서는 가진 것을 갈아입기만 해요.</div>';
+}
+
+const LEAGUE = [
+  { n: '한빛대', h: 12480 }, { n: '서령대', h: 11930 }, { n: '아라대', h: 11210 },
+  { n: '미리내대', h: 10660 }, { n: '두루대', h: 9870 },
+];
+function paintLeague() {
+  const mine = ROOM.school.replace(/학교$/, '');
+  const list = LEAGUE.slice();
+  const idx = list.findIndex((r) => r.n === mine);
+  /* 내 학교 줄만 단위가 다릅니다. 다른 학교는 학교 전체가 쌓은 시간이고
+     이 줄은 아직 나 혼자 앉은 분이라, 같은 '시간' 으로 적으면 우리 학교가
+     백 배 뒤진 것처럼 읽힙니다. */
+  if (idx < 0) list.push({ n: mine, min: S.total, extra: true });
+
+  $('leaguePods').innerHTML = LEAGUE.slice(0, 3).map((r, i) => {
+    const order = [1, 0, 2][i];   // 2위 · 1위 · 3위 순으로 놓아 가운데가 1위
+    return '<div class="pod" data-rank="' + (order + 1) + '" style="order:' + i + '">'
+      + '<span class="medal tnum">' + (order + 1) + '</span>'
+      + '<span class="un">' + esc(LEAGUE[order].n) + '</span>'
+      + '<span class="hr">' + LEAGUE[order].h.toLocaleString() + '시간</span></div>';
+  }).join('');
+
+  $('leagueList').innerHTML = list.map((r, i) =>
+    '<li class="' + ((r.extra || r.n === mine) ? 'mine' : '') + '">'
+    + '<span class="rk tnum">' + (r.extra ? '—' : i + 1) + '</span>'
+    + '<span class="un">' + esc(r.n) + '</span>'
+    + '<span class="hr tnum">' + (r.extra ? r.min + '분 (나)' : r.h.toLocaleString() + '시간') + '</span></li>').join('');
+
+  $('myLeague').innerHTML =
+    '<div class="row"><span class="lb">내 학교</span><span class="val">' + esc(ROOM.school) + '</span></div>'
+    + '<div class="row"><span class="lb">이번 시즌 앉은 시간</span><span class="val">' + S.total + '분</span></div>'
+    + '<div class="row"><span class="lb">회복</span><span class="val">' + S.recov + '번</span></div>'
+    + '<div class="row"><span class="lb">연속 출석</span><span class="val">' + S.streak + '일</span></div>';
+}
+
+/* ==================================================================
+   마이페이지 — 다섯 칸
+
+   월드 안에 흩어져 있던 것을 여기로 모았습니다. 회고는 **숫자만**
+   보여 줍니다. 해석 문장은 자세에 점수를 매기는 것과 같아서 넣지
+   않습니다.
+   ================================================================== */
+const chev = icon(IC.chev, 15, 2.2).replace('<svg', '<svg class="chev"');
+
+const MY = {
+  info: () => `
+    <div class="split">
+      <div class="card">
+        <div class="cardhead"><h2>내 정보</h2></div>
+        <div class="rows">
+          <div class="row tap"><span class="lb">닉네임</span>
+            <span class="val">${esc(ROOM.nickname)}</span>${chev}</div>
+          <div class="row tap"><span class="lb">학교
+            <em>${ROOM.schoolVerifiedAt ? esc(ROOM.schoolVerifiedAt) + ' 인증됨' : '미인증 — 인증 없이도 다 쓸 수 있어요'}</em></span>
+            <span class="val">${esc(ROOM.school)}</span>${chev}</div>
+          <div class="row"><span class="lb">캐릭터 <em>알에서 나온 첫 캐릭터</em></span>
+            <span class="val">${esc(ROOM.character)}</span></div>
+          <div class="row"><span class="lb">레벨</span>
+            <span class="val tnum">${REWARD && REWARD.level ? 'Lv.' + REWARD.level : '—'}</span></div>
+        </div>
+        <div class="btnrow" style="margin-top:var(--sp-lg)">
+          <button class="btn btn-ghost btn-sm" type="button" data-go="verify">학교 인증하기</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead"><h2>코인</h2></div>
+        <div class="stats">
+          <div class="stat"><u>가진 코인</u><b>${ROOM.coins || 0}</b></div>
+          <div class="stat"><u>연속 출석</u><b>${S.streak}<span>일</span></b></div>
+        </div>
+        <div class="note">
+          코인은 <b>앉은 시간과 회복 횟수</b>로 쌓여요. 쓰는 곳은 학생회관
+          상점이에요. 자세가 좋다고 더 주지 않아요.
+        </div>
+      </div>
+    </div>`,
+
+  log: () => {
+    const max = Math.max(1, ...S.week.map((w) => w.min));
+    const today = dayKey(Date.now());
+    const DAY = ['일', '월', '화', '수', '목', '금', '토'];
+    const bars = S.week.map((w) => {
+      const d = new Date(w.d + 'T00:00');
+      return `<div class="bar${w.d === today ? ' today' : ''}">
+        <span class="fillwrap"><span class="fill" style="--h:${(w.min / max).toFixed(3)}" title="${w.min}분"></span></span>
+        <span class="d">${DAY[d.getDay()]}</span></div>`;
+    }).join('');
+
+    const zs = Object.entries(S.byZone).sort((a, b) => b[1] - a[1]);
+    const zoneRows = zs.length
+      ? zs.map(([z, m]) => `<div class="row"><span class="lb">${ZONE_KO[z] || z}</span><span class="val">${m}분</span></div>`).join('')
+      : '<div class="row"><span class="lb">아직 없어요</span></div>';
+
+    const sessList = !S.count
+      ? `<div class="empty">
+          <span class="empty-fig">${icon(IC.chart, 22, 2)}</span>
+          <div class="ttl">아직 앉은 기록이 없어요</div>
+          <p>도서관이나 본관에서 한 세션만 채우면 여기에 쌓여요.</p>
+          <button class="btn btn-teal" type="button" data-go="world">월드 입장</button></div>`
+      : '<div class="rows">' + SESSIONS.slice().reverse().slice(0, 12).map((r) => {
+          const d = new Date(r.at);
+          const when = (d.getMonth() + 1) + '월 ' + d.getDate() + '일 '
+                     + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+          return `<div class="row"><span class="lb">${when} <em>${ZONE_KO[r.zone] || '캠퍼스'}</em></span>
+            <span class="val">${r.minutes || 0}분 · 회복 ${r.recoveries || 0}</span></div>`;
+        }).join('') + '</div>';
+
+    return `
+      <div class="stats">
+        <div class="stat"><u>세션</u><b>${S.count}</b></div>
+        <div class="stat"><u>앉은 시간</u><b>${S.total}<span>분</span></b></div>
+        <div class="stat"><u>회복</u><b>${S.recov}<span>번</span></b></div>
+        <div class="stat"><u>연속 출석</u><b>${S.streak}<span>일</span></b></div>
+      </div>
+      <div class="split split-wide">
+        <div class="card">
+          <div class="cardhead"><h2>최근 이레</h2><span class="spacer"></span>
+            <span class="count">${S.week.reduce((a, w) => a + w.min, 0)}분</span></div>
+          <div class="week">${bars}</div>
+        </div>
+        <div class="card">
+          <div class="cardhead"><h2>어디서 앉았나</h2></div>
+          <div class="rows">${zoneRows}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead"><h2>세션 기록</h2>
+          ${IS_DEMO ? '<span class="demo">예시 · 아직 내 기록이 없어요</span>' : ''}
+          <span class="spacer"></span><span class="count">${S.count}개</span></div>
+        ${sessList}
+        <div class="note">세는 건 앉은 시간·회복 횟수·판정이 돈 시간뿐이에요.
+          <b>자세에 점수나 등급을 매기지 않아요</b> — 목이 긴 사람이 유리한
+          게임이 되지 않게 하려는 것이고, 여기 있는 숫자는 전부 이 기기
+          안에만 있어요.</div>
+      </div>`;
+  },
+
+  base: () => {
+    const axes = baseAxes();
+    const at = BASELINE && BASELINE.createdAt
+      ? new Date(BASELINE.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })
+      : '—';
+    const rows = axes ? `
+      <div class="row"><span class="lb">잡은 날</span><span class="val">${at}</span></div>
+      <div class="row"><span class="lb">쓰는 축</span><span class="val tnum">${axes}개</span></div>
+      <div class="row"><span class="lb">표본</span><span class="val tnum">${BASELINE.sampleCount || 0}프레임</span></div>
+      <div class="row"><span class="lb">어깨 폭 중앙값</span>
+        <span class="val tnum">${BASELINE.shoulderWidthMedian ? BASELINE.shoulderWidthMedian.toFixed(3) : '—'}</span></div>`
+      : '<div class="row"><span class="lb">기준</span><span class="val">아직 안 잡았어요</span></div>';
+    return `
+      <div class="split">
+        <div class="card">
+          <div class="cardhead"><h2>내 자세 기준</h2></div>
+          <div class="rows">${rows}</div>
+          <div class="btnrow" style="margin-top:var(--sp-lg)">
+            <button class="btn btn-ghost btn-sm" type="button" data-go="recal">기준 다시 잡기</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="cardhead"><h2>기준이 하는 일</h2></div>
+          <p style="font-size:var(--fs-md);line-height:1.75;color:var(--ink-2);max-width:60ch">
+            세션을 시작하면 <b>평소처럼 앉은 모습</b>을 10초 동안 읽어요.
+            이 기준이 세션 내내 쓰여요 — 기준이 있어야 “평소보다 앞으로
+            나왔다”를 판단할 수 있어요.</p>
+          <div class="note">자리나 조명이 크게 바뀌면 다시 잡아 주세요.
+            기준도 <b>이 기기에만</b> 있고 어디로도 보내지 않아요.</div>
+        </div>
+      </div>`;
+  },
+
+  save: () => {
+    const n = SESSIONS.length;
+    const title = IS_DEMO ? '아직 저장된 기록이 없어요' : '이 기기에 저장돼 있어요';
+    const sub = IS_DEMO
+      ? '세션을 한 번 마치면 여기에 쌓여요'
+      : '세션 ' + n + '개 · 마지막 저장 ' + new Date(S.lastAt).toLocaleString('ko-KR',
+          { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const keys = Object.values(K).map((k) => {
+      const raw = localStorage.getItem(k);
+      const kb = raw ? (raw.length / 1024).toFixed(1) + ' KB' : '없음';
+      return `<div class="row"><span class="lb">${k}</span><span class="val tnum">${kb}</span></div>`;
+    }).join('');
+    return `
+      <div class="card">
+        <div class="cardhead"><h2>저장 상태</h2></div>
+        <div class="save">
+          <span class="ic" aria-hidden="true">${icon(IC.disk, 20, 2.2)}</span>
+          <span class="tt"><b>${title}</b><span>${sub}</span></span>
+          <span style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-line btn-sm" type="button" data-go="import">불러오기</button>
+            <button class="btn btn-line btn-sm" type="button" data-go="export">내보내기</button>
+          </span>
+        </div>
+        <div class="note note-warn">
+          <b>지금은 이 브라우저에만 남아요.</b> 다른 기기나 시크릿 창에서
+          열면 처음부터 시작해요. 브라우저 기록을 지우면 같이 지워집니다 —
+          중요한 기록은 내보내기로 파일을 받아 두세요.
+        </div>
+      </div>
+      <div class="card">
+        <div class="cardhead"><h2>무엇이 저장돼 있나</h2></div>
+        <div class="rows">${keys}</div>
+        <div class="note">월드가 쓰는 것과 <b>같은 칸</b>이에요. 이 화면은 따로
+          쌓지 않고 월드가 남긴 것을 읽기만 해요 — 두 군데에 쌓으면 곧
+          둘이 갈라져요.</div>
+      </div>`;
+  },
+
+  set: () => {
+    const SET = [
+      ['camPeek', '세션 중 웹캠 화면', '앉으면 작게 줄어들어요'],
+      ['sayOn',   '자세 말풍선',       '캐릭터 머리 위에 떠요'],
+      ['chatOn',  '남의 말 보이기',    '숨겨도 입력줄은 남아요'],
+      ['bgm',     '배경 음악',         ''],
+      ['sfxOn',   '효과음',            ''],
+    ];
+    return `
+      <div class="split">
+        <div class="card">
+          <div class="cardhead"><h2>설정</h2></div>
+          <div class="rows">${SET.map(([k, ko, sub]) => `
+            <div class="row"><span class="lb">${ko}${sub ? ' <em>' + sub + '</em>' : ''}</span>
+              <span class="val">${ROOM[k] === 'off' ? '꺼짐' : '켜짐'}</span></div>`).join('')}
+          </div>
+          <div class="note">지금은 월드 안에서만 바꿀 수 있어요. 여기서 바꾸는
+            것은 옷장 저장과 함께 붙일게요.</div>
+        </div>
+        <div class="card">
+          <div class="cardhead"><h2>개인정보</h2></div>
+          <div class="rows">
+            <div class="row"><span class="lb">카메라 영상</span><span class="val">기기 밖으로 안 나감</span></div>
+            <div class="row"><span class="lb">랜드마크 좌표</span><span class="val">기기 밖으로 안 나감</span></div>
+            <div class="row"><span class="lb">자세 기준</span><span class="val">이 브라우저에만</span></div>
+            <div class="row"><span class="lb">세션 기록</span><span class="val">이 브라우저에만</span></div>
+          </div>
+          <div class="note"><b>분석은 브라우저 안에서 끝납니다.</b> 영상도
+            프레임도 좌표도 어떤 서버로도 보내지 않아요. 서버로 가는 것은
+            닉네임·학교·랭킹 숫자뿐이에요.</div>
+        </div>
+      </div>`;
+  },
+};
+
+/** 마이페이지 칸을 그립니다.
+
+    **기다릴 것이 없으면 기다리게 하지 않습니다.** 여기 값은 전부 시작할
+    때 읽어 둔 것이라 지금 당장 그릴 수 있습니다. 뼈대는 지우지 않고
+    `load` 를 받는 형태로 남깁니다 — 서버가 붙어 **정말 기다리는 구간**이
+    생기면 그때 이 자리가 씁니다. */
+function paintMy(tab, load) {
+  const key = tab || 'info';
+  const pane = $('myPane');
+
+  const draw = () => {
+    pane.innerHTML = '<div class="view" style="padding:0">' + MY[key]() + '</div>';
+    pane.querySelectorAll('.view > *').forEach((c, i) => {
+      c.style.animation = 'settle var(--t-view) var(--settle) backwards';
+      c.style.animationDelay = (i * 60) + 'ms';
+    });
+  };
+
+  if (!load) { draw(); return; }
+  pane.innerHTML = '<div class="card"><div class="skel tall"><i></i><i></i><i></i></div></div>';
+  Promise.resolve(load).then(draw);
+}
+
+/* ==================================================================
+   모든 화면 — MVP 동안만 있는 문
+
+   이 파일이 그릴 수 있는 상태를 전부 모았습니다. 학교 인증도 자세 기준
+   10초도 안 거치고 바로 갑니다. 서버와 인증이 붙으면 이 블록을 지웁니다.
+   ================================================================== */
+const SCREENS = [
+  ['들어가는 곳', [
+    ['start',        '세션 시작',        '두 입구 · 코드로 참여'],
+    ['world-note',   '월드로 떠나는 중',  '기다림을 설명하는 화면'],
+  ]],
+  ['방 만들기', [
+    ['wiz-1', '1 · 방 종류',   '비공개방 / 공개 방'],
+    ['wiz-2', '2 · 자리',      '슬라이더 · 미리보기'],
+    ['wiz-3', '3 · 시간',      '집중 · 회복 휠'],
+    ['wiz-4', '4 · 모드',      '도서관 / 내 공간 / 팀플'],
+    ['wiz-5', '5 · 확인',      '요약 · 상시방'],
+    ['wiz-code', '코드 발급',  '여섯 자가 굳는 순간'],
+  ]],
+  ['비공개방 (초대)', [
+    ['lobby-solo',   '대기실 · 혼자',      '방금 만든 방'],
+    ['lobby-crowd',  '대기실 · 여럿',      '기다리는 사람이 있는 상태'],
+    ['lobby-ready',  '대기실 · 모두 준비',  '시작 버튼이 열린 상태'],
+    ['lobby-nobase', '대기실 · 기준 없음',  '잠긴 상태 + 둘러보기 문'],
+    ['sess-focus',   '세션 · 집중',        '시계가 도는 중'],
+    ['sess-rest',    '세션 · 회복 휴식',    '색이 바뀐 상태'],
+    ['sess-cam',     '세션 · 자세 보기 켬', '내 화면만 바뀜'],
+    ['done',         '세션 끝',            '오늘의 정리'],
+  ]],
+  ['그 밖', [
+    ['char',    '캐릭터',          '옷장'],
+    ['char-empty', '캐릭터 · 빈 옷장', '가진 옷이 없을 때'],
+    ['league',  '랭킹전',          '단상 · 순위'],
+    ['my-info', '마이페이지 · 내 정보', ''],
+    ['my-log',  '마이페이지 · 기록',    '주간 막대 · 세션 목록'],
+    ['my-base', '마이페이지 · 자세 기준', ''],
+    ['my-save', '마이페이지 · 저장',    '내보내기 · 불러오기'],
+    ['my-set',  '마이페이지 · 설정',    '개인정보'],
+  ]],
+];
+
+function openScreens() {
+  $('screensBody').innerHTML = SCREENS.map(([group, items]) =>
+    '<div class="screens-group" style="margin-bottom:var(--sp-lg)"><h3>' + group + '</h3>'
+    + '<div class="screens-grid">' + items.map(([id, ttl, sub]) =>
+        '<button type="button" data-screen="' + id + '"><b>' + ttl + '</b>'
+        + (sub ? '<span>' + sub + '</span>' : '') + '</button>').join('')
+    + '</div></div>').join('');
+  $('screens').hidden = false;
+  $('screensClose').focus();
+}
+function closeScreens() { $('screens').hidden = true; }
+
+$('openScreens').addEventListener('click', openScreens);
+$('screensClose').addEventListener('click', closeScreens);
+$('screens').addEventListener('click', (e) => { if (e.target === $('screens')) closeScreens(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('screens').hidden) { closeScreens(); return; }
+  /* 물음표 하나로 열립니다. 입력칸 안에서는 안 됩니다 — 코드를 치다가
+     화면 목록이 열리면 방금 친 것이 어디로 갔는지 모르게 됩니다. */
+  if (e.key === '?' && !/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) {
+    if ($('screens').hidden) openScreens();
+  }
+});
+
+/** 화면 하나를 만들어 보여 줍니다. 상태를 먼저 세우고 그 다음에
+    그립니다 — 반대로 하면 이전 화면의 값으로 한 프레임이 그려집니다. */
+function goScreen(id) {
+  closeScreens();
+  stopSession();
+
+  const wiz = (n) => {
+    W.visibility = W.visibility || 'private';
+    closeWizard(true);
+    openWizard();
+    stepIndex = n - 1;
+    renderWizard(true);
+  };
+
+  switch (id) {
+    case 'start':  closeWizard(true); show('start'); break;
+    case 'world-note':
+      closeWizard(true);
+      /* 진짜로 떠나지는 않습니다 — 화면만 보여 주고 2초 뒤에 걷습니다. */
+      { const el = document.createElement('div');
+        el.className = 'leaving';
+        el.innerHTML = '<div class="lv"><i></i><b>월드로 들어가는 중이에요</b>'
+          + '<span>카메라를 켜고 자세 판정을 준비해요. 몇 초 걸릴 수 있어요</span></div>';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 2000); }
+      break;
+
+    case 'wiz-1': W.visibility = null; wiz(1); break;
+    case 'wiz-2': wiz(2); break;
+    case 'wiz-3': wiz(3); break;
+    case 'wiz-4': wiz(4); break;
+    case 'wiz-5': wiz(5); break;
+    case 'wiz-code':
+      W.visibility = W.visibility || 'private';
+      closeWizard(true); openWizard(); minting = false; mintCode();
+      break;
+
+    case 'lobby-solo':
+      closeWizard(true); demoRoom = false;
+      if (W.code === '------') W.code = 'H4T2QM';
+      show('lobby'); renderLobby(); break;
+    case 'lobby-crowd':
+      closeWizard(true); demoRoom = true;
+      DEMO_MEMBERS[1].ready = false; DEMO_MEMBERS[3].ready = false;
+      if (W.code === '------') W.code = 'H4T2QM';
+      show('lobby'); renderLobby(); break;
+    case 'lobby-ready':
+      closeWizard(true); demoRoom = true;
+      DEMO_MEMBERS.forEach((p) => { p.ready = true; });
+      if (W.code === '------') W.code = 'H4T2QM';
+      show('lobby'); renderLobby(); break;
+    case 'lobby-nobase':
+      closeWizard(true); demoRoom = false;
+      if (W.code === '------') W.code = 'H4T2QM';
+      show('lobby'); renderLobby();
+      /* 기준이 있는 기기에서도 잠긴 화면을 볼 수 있어야 합니다. */
+      $('lobbyStart').disabled = true;
+      $('lobbyStatus').textContent = '내 자세 기준을 먼저 잡아 주세요';
+      $('lobbyStatus').setAttribute('data-blocked', 'true');
+      $('lobbyBypass').hidden = false;
+      $('lobbyBaseTag').textContent = '미확인';
+      $('lobbyBaseTag').className = 'tag tag-idle';
+      $('lobbyBase').textContent = '아직 안 잡았어요. 방 안에서 잡아도 돼요';
+      break;
+
+    case 'sess-focus': closeWizard(true); W.cam = false; startSession(false); paintMic(); break;
+    case 'sess-rest':  closeWizard(true); W.cam = false; startSession(false); setPhase('rest'); paintMic(); break;
+    case 'sess-cam':   closeWizard(true); W.cam = true;  startSession(false); paintMic(); break;
+    case 'done':
+      closeWizard(true);
+      renderDone(W.focusMin, Math.max(0, joinedCount() - 1), 3);
+      show('done'); break;
+
+    case 'char':       closeWizard(true); paintChar(); show('char'); break;
+    case 'char-empty':
+      closeWizard(true); paintChar(); show('char');
+      $('wearWrap').innerHTML = '<div class="empty">'
+        + '<span class="empty-fig">' + icon(IC.shirt, 22, 2) + '</span>'
+        + '<div class="ttl">아직 가진 옷이 없어요</div>'
+        + '<p>코인은 앉은 시간과 회복 횟수로 쌓여요. 학생회관 상점에서 옷으로 바꿉니다.</p>'
+        + '<button class="btn btn-teal" type="button" data-go="world">학생회관 가기</button></div>';
+      break;
+    case 'league':     closeWizard(true); show('league'); break;
+    default:
+      if (id.indexOf('my-') === 0) {
+        const tab = id.slice(3);
+        closeWizard(true); show('my');
+        document.querySelectorAll('[data-my]').forEach((b) =>
+          b.setAttribute('aria-selected', String(b.dataset.my === tab)));
+        paintMy(tab);
+      }
+  }
+}
+
+$('screens').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-screen]');
+  if (b) goScreen(b.dataset.screen);
+});
+
+/* ---- 시작 ---- */
+paintRail();
+paintChar();
+paintLeague();
+paintMy('info');
+paintMic();
+show('start');
+
+/* 초대 링크로 들어오면 코드가 채워진 채로 시작합니다. 링크를 눌러
+   들어온 사람에게 "코드를 넣으세요" 라고 다시 묻지 않습니다. */
+(function fromLink() {
+  const j = new URLSearchParams(location.search).get('join');
+  if (!j) return;
+  const v = j.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+  if (v.length !== 6) return;
+  $('joincode').value = v;
+  $('codepopMsg').textContent = '링크에서 코드를 받아 왔어요. 참여를 눌러 주세요';
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,897 @@
+<title>Deskfit — 캠퍼스 조감도</title>
+
+<style>
+  :root {
+    --bg: #FBF7F5;
+    --panel: rgba(255, 255, 255, .94);
+    --line: #EFE6E2;
+    --ink: #2A2320;
+    --ink-2: #6B5F5A;
+    --ink-3: #9A8E88;
+    --tint: #FF6B52;
+    /* 흰 바탕 위 코랄 글자는 500 이 AA 미달이라 700 을 씁니다 */
+    --tint-ink: #C2412C;
+    --on-tint: #2A2320;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(130% 100% at 50% 44%, #FFFFFF 0%, #FBF7F5 56%, #F2E9E5 100%);
+    color: var(--ink); overflow: hidden;
+    font: 14px/1.6 "Wanted Sans Variable", -apple-system, "Segoe UI",
+          "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #scene { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  /* 건물 이름표. 3D 안에 글자를 넣지 않고 DOM 으로 띄웁니다 —
+     각도가 바뀌어도 똑바로 읽히고 확대해도 안 흐려집니다. */
+  .tag {
+    position: fixed; z-index: 3; pointer-events: none;
+    transform: translate(-50%, -100%);
+    opacity: 0; transition: opacity .25s ease;
+    text-align: center; white-space: nowrap;
+  }
+  .tag.show { opacity: 1; }
+  .tag .card {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 6px 13px 7px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 26px rgba(78, 47, 38, .16);
+    border-top: 2px solid var(--accent, var(--tint));
+  }
+  .tag b { display: block; font-size: 13px; font-weight: 700; letter-spacing: -.01em; }
+  .tag u {
+    display: block; text-decoration: none; margin-top: 1px;
+    font-size: 10.5px; color: var(--ink-2);
+  }
+  .tag .stem {
+    display: block; width: 1px; height: 16px; margin: 0 auto;
+    background: linear-gradient(var(--line), rgba(160,178,208,.05));
+  }
+  .tag .dot {
+    display: block; width: 6px; height: 6px; margin: 0 auto;
+    border-radius: 50%; background: var(--accent, var(--tint));
+    box-shadow: 0 0 0 4px rgba(255, 107, 82, .18);
+  }
+  .tag.hot .card { border-color: rgba(222, 236, 141, .5); }
+  .tag.hot b { color: var(--tint-ink); }
+
+  #mark {
+    position: fixed; left: 26px; top: 22px; z-index: 4;
+    display: flex; align-items: center; gap: 9px; pointer-events: none;
+  }
+  #mark i {
+    width: 24px; height: 24px; border-radius: 7px; flex: none;
+    background: var(--tint); color: var(--on-tint);
+    display: grid; place-items: center;
+    font: 900 14px/1 sans-serif; font-style: normal;
+  }
+  #mark b { font-size: 15px; font-weight: 800; letter-spacing: -.01em; }
+  #mark span { font-size: 11px; color: var(--ink-3); letter-spacing: .16em; margin-left: 2px; }
+
+  #tools {
+    position: fixed; right: 22px; bottom: 20px; z-index: 4;
+    display: flex; gap: 8px; align-items: center;
+  }
+  #tools span { font-size: 11.5px; color: var(--ink-3); margin-right: 6px; }
+  #tools button {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--ink-2); font: inherit; font-size: 12px;
+    padding: 7px 13px; cursor: pointer; backdrop-filter: blur(6px);
+    transition: color .16s ease, border-color .16s ease;
+  }
+  #tools button:hover { color: var(--ink); border-color: rgba(160, 178, 208, .36); }
+  #tools button:focus-visible { outline: 2px solid var(--tint); outline-offset: 3px; }
+  #tools button.primary {
+    background: var(--tint); border-color: var(--tint); color: var(--on-tint); font-weight: 700;
+  }
+  #tools button.primary:hover { filter: brightness(1.06); color: var(--on-tint); }
+
+  #loading {
+    position: fixed; inset: 0; z-index: 9; display: grid; place-items: center;
+    background: var(--bg); color: var(--ink-3); font-size: 13px;
+    transition: opacity .55s ease;
+  }
+  #loading.gone { opacity: 0; pointer-events: none; }
+</style>
+
+<div id="scene"></div>
+<div id="mark"><i>D</i><b>Deskfit</b><span>CAMPUS MAP</span></div>
+<div id="tools">
+  <span>드래그 회전 · 휠 확대</span>
+  <button type="button" id="reset">처음 각도</button>
+  <button type="button" id="save" class="primary">PNG 로 저장</button>
+</div>
+<div id="loading">캠퍼스를 세우는 중…</div>
+
+<script type="module">
+/* ==================================================================
+   Deskfit 조감도
+
+   랜딩에 얹을 **지도 한 장**입니다. 페이지가 아니라 그림입니다.
+
+   배치는 게임 맵(index.html)의 좌표를 그대로 씁니다 — 따로 그리면
+   나중에 실제 위치와 어긋나고, 그러면 지도가 거짓말을 합니다.
+
+   레퍼런스(KayKit)에서 가져온 것은 색이 아니라 **형태의 구분**입니다.
+   저 지도에서 성과 마을과 사막 요새가 한눈에 구별되는 이유는 지붕이
+   각각 원뿔·박공·돔이기 때문입니다. 색만 다르면 같은 상자로 보입니다.
+   그래서 건물을 **부위 조립식**으로 짰습니다 — 동을 여러 개 붙이고,
+   동마다 지붕 모양을 다르게 줍니다.
+   ================================================================== */
+
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js';
+
+const MAP_W = 58, MAP_H = 46;
+const PLAZA = { x: 29.5, y: 26, r: 9.4 };   // 캠퍼스의 주인공
+
+function rnd(x, y, s = 0) {
+  let h = (x * 374761393 + y * 668265263 + s * 2246822519) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+/* ================== 건물 ==================
+   part = { x, z, w, d, floors, roof, tint }
+   좌표는 건물 원점(footprint 좌상단) 기준입니다.
+
+   지붕 모양이 곧 그 건물의 성격입니다.
+     hip    네 방향으로 흐르는 모임지붕 — 무겁고 관공서 같은 본관
+     gable  박공 — 길게 뻗는 열람실
+     dome   돔 — 강당이 있는 학생회관
+     spire  첨탑 — 본관 시계탑
+     flat   평지붕 — 기숙사 슬래브, 유리 아트리움
+*/
+const BUILDINGS = [
+  {
+    key: 'mainhall', name: '본관', sub: '집중 공간 · 강의동',
+    x: 2, y: 16, accent: '#7FA6D8',
+    /* ㄷ자. 가운데 시계탑을 세우고 양옆으로 강의동 날개를 뻗습니다.
+       한국 대학 본관의 전형이고, 실루엣만으로 "여기가 중심"이 됩니다. */
+    parts: [
+      { x: 0,   z: 0, w: 4,   d: 9, floors: 6, fh: 1.15, roof: 'hip',
+        wall: 0xF1F3F7, band: 0x6E8CA8, cap: 0x3C5C82 },
+      { x: 4.2, z: 0, w: 5.6, d: 6, floors: 9, fh: 1.15, roof: 'spire',
+        wall: 0xF6F8FB, band: 0x6E8CA8, cap: 0x2F4E74 },
+      { x: 10,  z: 0, w: 4,   d: 9, floors: 6, fh: 1.15, roof: 'hip',
+        wall: 0xF1F3F7, band: 0x6E8CA8, cap: 0x3C5C82 },
+    ],
+  },
+  {
+    key: 'library', name: '도서관', sub: '집중 공간 · 열람실',
+    x: 41, y: 15, accent: '#6FC4BB',
+    /* 긴 박공 열람동 + 앞으로 튀어나온 유리 아트리움 + 서고탑.
+       박공이 길게 누워 있어 "책이 늘어선 곳"으로 읽힙니다. */
+    parts: [
+      { x: 0,   z: 0,   w: 13, d: 5,   floors: 5, fh: 1.3,  roof: 'gable',
+        wall: 0xF3EAD8, band: 0x6487A4, cap: 0x3E8D82 },
+      /* 원형 유리 열람실. 오래된 도서관의 로툰다입니다 — 학생회관 돔이
+         불투명 초록인 것과 달리 여기는 유리라 성격이 갈립니다. */
+      { x: 3.2, z: 5.2, w: 6.4, d: 6.4, floors: 3, fh: 1.5, roof: 'rotunda',
+        shape: 'round', wall: 0xEFE6D2, band: 0x4E7595, cap: 0x8FC6D8 },
+      { x: 10.4, z: 6.2, w: 3.6, d: 3.6, floors: 8, fh: 1.15, roof: 'hip',
+        wall: 0xEFE2CB, band: 0x6487A4, cap: 0x33756C },
+    ],
+    portico: { x: 3.2, z: 11.8, w: 6.4, cols: 5 },
+  },
+  {
+    key: 'dorm', name: '기숙사', sub: '스폰 · 미니룸',
+    x: 23, y: 2, accent: '#E0876B',
+    /* ㄱ자 슬래브. 길게 누운 동과 짧은 날개가 만나면 안뜰이 생기고,
+       그 자체로 기숙사처럼 보입니다. */
+    parts: [
+      { x: 0,   z: 0,   w: 11,  d: 3.6, floors: 8, fh: 1.05, roof: 'tanks',
+        wall: 0xF7F0E2, band: 0x7E93A5, cap: 0xD07A4C },
+      { x: 0,   z: 3.7, w: 3.6, d: 4.6, floors: 8, fh: 1.05, roof: 'hip',
+        wall: 0xF7F0E2, band: 0x7E93A5, cap: 0xD07A4C },
+      /* 모서리 계단탑. 원뿔 하나로 기숙사 실루엣이 생깁니다 — 슬래브
+         두 개만 있으면 사무동과 구별이 안 됩니다. */
+      { x: 8.6, z: 3.9, w: 2.6, d: 2.6, floors: 9, fh: 1.05, roof: 'cone',
+        shape: 'round', wall: 0xF2E9D8, band: 0x7E93A5, cap: 0xB8603A },
+    ],
+  },
+  {
+    key: 'union', name: '학생회관', sub: '상점 · 명예의 전당',
+    x: 20, y: 33, accent: '#8FD3A6',
+    /* 낮고 넓은 본채 위에 강당 돔. 돔은 이 캠퍼스에서 유일한 곡면이라
+       멀리서도 "저기가 모이는 곳"으로 읽힙니다. */
+    parts: [
+      { x: 0,   z: 0,   w: 16, d: 4.2, floors: 3, fh: 1.3, roof: 'flat',
+        wall: 0xF8FAFC, band: 0x7DA0B8, cap: 0x5CB177 },
+      { x: 4.6, z: 4.3, w: 7,  d: 4.4, floors: 2, fh: 1.5, roof: 'dome',
+        wall: 0xF2F6F9, band: 0x7DA0B8, cap: 0x6FC98A },
+      { x: 0,   z: 4.3, w: 4,  d: 3.4, floors: 2, fh: 1.3, roof: 'flat',
+        wall: 0xF0F3F6, band: 0x7DA0B8, cap: 0x7ECB95 },
+      { x: 12,  z: 4.3, w: 4,  d: 3.4, floors: 2, fh: 1.3, roof: 'flat',
+        wall: 0xF0F3F6, band: 0x7DA0B8, cap: 0x6FA57F },
+    ],
+  },
+];
+
+/* 포장면 — 게임의 fillOver 와 같은 사각형 */
+const PAVED = [
+  [27, 10, 5, 12], [27, 30, 5, 12], [8, 24, 13, 4], [38, 24, 13, 4],
+  [16, 30, 5, 14], [16, 41, 16, 3],
+];
+const POND = { x: 4, y: 34, w: 12, h: 7 };
+const FIELD = { x: 41, y: 34, w: 13, h: 8 };
+
+/* ================== 바닥 텍스처 ==================
+   광장의 방사 무늬, 트랙 선, 물가가 흐려지는 가장자리는 상자로는
+   만들 수 없습니다. 큰 캔버스 한 장에 그려서 입힙니다. */
+const PX = 40;
+function groundTexture() {
+  const c = document.createElement('canvas');
+  c.width = MAP_W * PX; c.height = MAP_H * PX;
+  const g = c.getContext('2d');
+
+  g.fillStyle = '#71BC79'; g.fillRect(0, 0, c.width, c.height);
+  for (let i = 0; i < 2200; i++) {
+    const x = rnd(i, 1, 3) * c.width, y = rnd(i, 2, 5) * c.height;
+    g.fillStyle = rnd(i, 4, 9) < 0.5 ? 'rgba(92,170,104,.28)' : 'rgba(132,204,134,.24)';
+    g.beginPath(); g.arc(x, y, 14 + rnd(i, 3, 7) * 50, 0, 7); g.fill();
+  }
+
+  const round = (x, y, w, h, r, fill) => {
+    g.fillStyle = fill;
+    g.beginPath(); g.roundRect(x * PX, y * PX, w * PX, h * PX, r); g.fill();
+  };
+  PAVED.forEach(([x, y, w, h]) => round(x, y, w, h, 30, '#D2D1DD'));
+
+  /* ---- 광장 ----
+     캠퍼스의 주인공입니다. 원 하나로는 주차장처럼 보이므로 세 겹으로
+     짭니다 — 바깥 산책 띠, 중간 방사 포장, 안쪽 원형 무대. */
+  const cx = PLAZA.x * PX, cy = PLAZA.y * PX, R = PLAZA.r * PX;
+  g.fillStyle = '#CDCCDA'; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+  g.fillStyle = '#DCDBE6'; g.beginPath(); g.arc(cx, cy, R * 0.82, 0, 7); g.fill();
+
+  /* 방사 포장 — 24 갈래. 광장이 "중심"이라는 걸 무늬가 말해 줍니다 */
+  g.save(); g.translate(cx, cy);
+  for (let i = 0; i < 24; i++) {
+    g.rotate(Math.PI * 2 / 24);
+    g.fillStyle = i % 2 ? 'rgba(178,176,196,.55)' : 'rgba(200,198,214,.5)';
+    g.beginPath();
+    g.moveTo(0, 0);
+    g.arc(0, 0, R * 0.78, -0.06, 0.06);
+    g.closePath(); g.fill();
+  }
+  g.restore();
+
+  g.fillStyle = '#C6C4D4'; g.beginPath(); g.arc(cx, cy, R * 0.4, 0, 7); g.fill();
+  g.fillStyle = '#E4E3EC'; g.beginPath(); g.arc(cx, cy, R * 0.33, 0, 7); g.fill();
+  g.strokeStyle = 'rgba(150,148,172,.8)'; g.lineWidth = 4;
+  [0.52, 0.64, 0.9].forEach((k) => {
+    g.beginPath(); g.arc(cx, cy, R * k, 0, 7); g.stroke();
+  });
+
+  /* 광장 네 귀퉁이 잔디 쐐기 — 원과 사각형 사이를 메웁니다 */
+  g.fillStyle = 'rgba(112,186,120,.9)';
+  for (let i = 0; i < 4; i++) {
+    const a = Math.PI / 4 + i * Math.PI / 2;
+    g.save(); g.translate(cx + Math.cos(a) * R * 0.71, cy + Math.sin(a) * R * 0.71);
+    g.rotate(a);
+    g.beginPath(); g.ellipse(0, 0, R * 0.2, R * 0.11, 0, 0, 7); g.fill();
+    g.restore();
+  }
+
+  /* ---- 운동장 ---- 광장보다 작고 구석에 둡니다 */
+  const fx = FIELD.x * PX, fy = FIELD.y * PX, fw = FIELD.w * PX, fh = FIELD.h * PX;
+  g.fillStyle = '#B0553E';
+  g.beginPath(); g.roundRect(fx, fy, fw, fh, fh / 2); g.fill();
+  g.lineWidth = 3; g.strokeStyle = 'rgba(255,255,255,.38)';
+  for (let k = 1; k <= 3; k++) {
+    const q = k * 10;
+    g.beginPath(); g.roundRect(fx + q, fy + q, fw - q * 2, fh - q * 2, (fh - q * 2) / 2); g.stroke();
+  }
+  g.fillStyle = '#5FAE6A';
+  g.beginPath(); g.roundRect(fx + 44, fy + 44, fw - 88, fh - 88, 16); g.fill();
+
+  /* ---- 호수 ---- */
+  const qx = POND.x * PX, qy = POND.y * PX, qw = POND.w * PX, qh = POND.h * PX;
+  g.fillStyle = '#A6BCA0';
+  g.beginPath(); g.roundRect(qx - 22, qy - 22, qw + 44, qh + 44, 100); g.fill();
+  const grad = g.createLinearGradient(qx, qy, qx, qy + qh);
+  grad.addColorStop(0, '#57ACD2'); grad.addColorStop(1, '#2F7EA9');
+  g.fillStyle = grad;
+  g.beginPath(); g.roundRect(qx, qy, qw, qh, 76); g.fill();
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/* ================== 씬 ================== */
+const host = document.getElementById('scene');
+const renderer = new THREE.WebGLRenderer({
+  antialias: true, alpha: false, preserveDrawingBuffer: true,
+});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.22;
+/* 캔버스는 기본 검정으로 지워집니다. 페이지가 밝아졌으니 지우는 색도
+   맞춰야 합니다 — 안 그러면 밝은 화면 위에 검은 판이 놓입니다.
+   투명(alpha)이 아니라 불투명 색을 쓰는 이유는 PNG 로 저장할 때
+   배경이 뚫려 나가지 않게 하기 위해서입니다. */
+renderer.setClearColor(0xFBF7F5, 1);
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 500);
+const HOME = { yaw: Math.PI * 0.24, pitch: 0.64, zoom: 1 };
+const view = { ...HOME };
+const CENTER = { x: MAP_W / 2, z: MAP_H / 2 + 1 };
+
+function layout() {
+  renderer.setSize(innerWidth, innerHeight);
+  const span = 48 / view.zoom, aspect = innerWidth / innerHeight;
+  camera.left = -span * aspect / 2; camera.right = span * aspect / 2;
+  camera.top = span / 2; camera.bottom = -span / 2;
+  camera.updateProjectionMatrix();
+}
+function placeCamera() {
+  const r = 150;
+  camera.position.set(
+    CENTER.x + Math.sin(view.yaw) * Math.cos(view.pitch) * r,
+    Math.sin(view.pitch) * r,
+    CENTER.z + Math.cos(view.yaw) * Math.cos(view.pitch) * r,
+  );
+  camera.lookAt(CENTER.x, 2, CENTER.z);
+}
+addEventListener('resize', () => { layout(); placeCamera(); });
+layout();
+
+scene.add(new THREE.HemisphereLight(0xF0F6FF, 0x4E5A44, 1.08));
+const sun = new THREE.DirectionalLight(0xFFF8E8, 3.1);
+sun.position.set(-48, 62, 32);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+const sc = sun.shadow.camera;
+sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60; sc.near = 1; sc.far = 250;
+sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
+sun.target.position.set(CENTER.x, 0, CENTER.z);
+scene.add(sun, sun.target);
+/* 반대편에서 오는 약한 채움광 — 그늘이 새까매지지 않게 */
+const fill = new THREE.DirectionalLight(0x9FC0E8, 0.45);
+fill.position.set(52, 28, -28);
+scene.add(fill);
+
+const world = new THREE.Group();
+scene.add(world);
+const mat = (c, r = 0.9, m = 0) =>
+  new THREE.MeshStandardMaterial({ color: c, roughness: r, metalness: m });
+
+/* ---------------- 지반 ---------------- */
+const PAD = 2, SLAB = 3.2;
+const slab = new THREE.Mesh(
+  new THREE.BoxGeometry(MAP_W + PAD * 2, SLAB, MAP_H + PAD * 2), mat(0x5E7154, 0.98));
+slab.position.set(MAP_W / 2, -SLAB / 2, MAP_H / 2);
+slab.receiveShadow = true;
+world.add(slab);
+const soil = new THREE.Mesh(
+  new THREE.BoxGeometry(MAP_W + PAD * 2 + 0.1, 0.5, MAP_H + PAD * 2 + 0.1), mat(0x6E5C40, 1));
+soil.position.set(MAP_W / 2, -0.3, MAP_H / 2);
+world.add(soil);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(MAP_W, MAP_H),
+  new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 0.96 }));
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(MAP_W / 2, 0.02, MAP_H / 2);
+ground.receiveShadow = true;
+world.add(ground);
+
+/* ================== 지붕 ==================
+   모양마다 다른 지오메트리를 씁니다. 이게 건물의 성격을 만듭니다. */
+function hipRoof(w, d, h, color) {
+  /* 4각뿔 절두체 — 위가 좁아 네 방향으로 흐르는 모임지붕 */
+  const g = new THREE.CylinderGeometry(0.42, 0.707, h, 4);
+  g.rotateY(Math.PI / 4);
+  const m = new THREE.Mesh(g, mat(color, 0.88));
+  m.scale.set(w, 1, d);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function gableRoof(w, d, h, color) {
+  /* 삼각 프리즘. 마룻대가 길이 방향으로 눕습니다 */
+  const shape = new THREE.Shape();
+  shape.moveTo(-w / 2, 0); shape.lineTo(w / 2, 0); shape.lineTo(0, h); shape.closePath();
+  const g = new THREE.ExtrudeGeometry(shape, { depth: d, bevelEnabled: false });
+  g.translate(0, 0, -d / 2);
+  const m = new THREE.Mesh(g, mat(color, 0.88));
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function domeRoof(w, d, h, color) {
+  const g = new THREE.SphereGeometry(0.5, 26, 14, 0, Math.PI * 2, 0, Math.PI / 2);
+  const m = new THREE.Mesh(g, mat(color, 0.62, 0.12));
+  m.scale.set(w, h * 2, d);
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+function flatRoof(w, d, color) {
+  const g = new THREE.Group();
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.35, d + 0.4), mat(color, 0.92));
+  cap.position.y = 0.17; cap.castShadow = true; cap.receiveShadow = true;
+  const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.6, 0.55, d + 0.6), mat(color, 0.9));
+  rim.position.y = 0.42;
+  const inner = new THREE.Mesh(new THREE.BoxGeometry(w - 0.3, 0.6, d - 0.3), mat(0x9AA398, 0.96));
+  inner.position.y = 0.45;
+  g.add(cap, rim, inner);
+  for (let i = 0; i < 2; i++) {
+    const uw = 0.9 + rnd(i, w, 3) * 1.1, ud = 0.8 + rnd(i, d, 5) * 0.9;
+    const unit = new THREE.Mesh(
+      new THREE.BoxGeometry(uw, 0.6 + rnd(i, 7, 9) * 0.5, ud), mat(0x9AA3A9, 0.9));
+    unit.position.set((rnd(i, 11, 2) - 0.5) * (w - uw - 1.2), 1.0,
+                      (rnd(i, 13, 4) - 0.5) * (d - ud - 1.2));
+    unit.castShadow = true;
+    g.add(unit);
+  }
+  return g;
+}
+
+/* ================== 동 하나 ================== */
+const pickable = [];
+function makePart(p, owner) {
+  const g = new THREE.Group();
+  const H = p.floors * p.fh;
+  const baseH = p.fh * 1.45;
+  /* 네모난 동과 둥근 동을 같은 코드로 만듭니다. 도서관 열람실과
+     기숙사 계단탑은 원통이라야 성격이 살아납니다. */
+  const round = p.shape === 'round';
+  const boxOf = (w, h, d) => round
+    ? new THREE.CylinderGeometry(w / 2, w / 2, h, 22)
+    : new THREE.BoxGeometry(w, h, d);
+
+  const base = new THREE.Mesh(boxOf(p.w, baseH, p.d), mat(p.wall, 0.88));
+  base.position.y = baseH / 2;
+  base.castShadow = true; base.receiveShadow = true;
+  g.add(base);
+
+  /* 1층 유리 로비 */
+  const lobby = new THREE.Mesh(
+    boxOf(p.w + 0.04, baseH * 0.48, p.d + 0.04), mat(0x33475A, 0.34, 0.14));
+  lobby.position.y = baseH * 0.42;
+  g.add(lobby);
+
+  const bodyH = H - baseH;
+  const body = new THREE.Mesh(boxOf(p.w, bodyH, p.d), mat(p.wall, 0.9));
+  body.position.y = baseH + bodyH / 2;
+  body.castShadow = true; body.receiveShadow = true;
+  g.add(body);
+
+  /* 층마다 도는 창문 띠. 얇게 — 두꺼우면 건물이 통째로 어두워집니다. */
+  const bandMat = mat(p.band, 0.28, 0.22);
+  for (let f = 1; f < p.floors; f++) {
+    const y = baseH + (f - 0.5) * p.fh;
+    if (y > H - p.fh * 0.3) break;
+    const band = new THREE.Mesh(
+      boxOf(p.w + 0.05, p.fh * 0.34, p.d + 0.05), bandMat);
+    band.position.y = y;
+    g.add(band);
+  }
+
+  /* 지붕 — 여기가 건물의 얼굴입니다 */
+  let roof = null;
+  if (p.roof === 'hip') { roof = hipRoof(p.w + 0.55, p.d + 0.55, Math.max(1.3, Math.min(p.w, p.d) * 0.34), p.cap); roof.position.y = H + 0.08; }
+  else if (p.roof === 'gable') {
+    /* 짧은 변으로 삼각형 단면을 세우고 긴 변 방향으로 밀어냅니다.
+       반대로 하면 지붕이 건물 밖으로 한참 튀어나옵니다. */
+    roof = gableRoof(p.d + 0.7, p.w + 0.7, p.d * 0.62, p.cap);
+    roof.position.y = H; roof.rotation.y = Math.PI / 2;
+  }
+  else if (p.roof === 'dome') {
+    roof = domeRoof(p.w * 0.94, p.d * 1.04, Math.min(p.w, p.d) * 0.62, p.cap);
+    roof.position.y = H;
+    /* 돔 아래 드럼 — 곧바로 얹으면 지붕이 아니라 물체가 놓인 것처럼 보입니다 */
+    const drum = new THREE.Mesh(
+      new THREE.CylinderGeometry(p.d * 0.5, p.d * 0.52, 0.9, 24), mat(p.wall, 0.9));
+    drum.position.y = H - 0.35; drum.castShadow = true; g.add(drum);
+  }
+  else if (p.roof === 'glass') {
+    roof = new THREE.Mesh(
+      new THREE.BoxGeometry(p.w + 0.3, 0.3, p.d + 0.3),
+      new THREE.MeshStandardMaterial({
+        color: 0xA8CEE2, roughness: 0.12, metalness: 0.35,
+        transparent: true, opacity: 0.85,
+      }));
+    roof.position.y = H + 0.15; roof.castShadow = true;
+  }
+  else if (p.roof === 'spire') {
+    roof = new THREE.Group();
+    const hat = hipRoof(p.w + 0.9, p.d + 0.9, 2.0, p.cap);
+    hat.position.y = 1.0;
+    const drum = new THREE.Mesh(
+      new THREE.CylinderGeometry(1.15, 1.25, 2.2, 8), mat(p.wall, 0.86));
+    drum.position.y = 3.1; drum.castShadow = true;
+    /* 시계판 — 라임. 브랜드색이 캠퍼스에서 가장 높은 곳에 한 번만 나옵니다 */
+    const face = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.72, 0.72, 2.4, 12),
+      new THREE.MeshStandardMaterial({
+        color: 0xFF6B52, roughness: 0.4, emissive: 0xFF6B52, emissiveIntensity: 0.4 }));
+    face.rotation.x = Math.PI / 2; face.position.y = 3.1;
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(1.5, 2.6, 8), mat(p.cap, 0.84));
+    cone.position.y = 5.5; cone.castShadow = true;
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6), mat(0xE8EDF2, 0.5, 0.6));
+    pin.position.y = 7.4;
+    roof.add(hat, drum, face, cone, pin);
+    roof.position.y = H;
+  }
+  else if (p.roof === 'cone') {
+    /* 계단탑 원뿔 — 기숙사의 표식 */
+    roof = new THREE.Group();
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(p.w * 0.66, p.w * 1.05, 14), mat(p.cap, 0.86));
+    cone.position.y = p.w * 0.52; cone.castShadow = true;
+    const eave = new THREE.Mesh(
+      new THREE.CylinderGeometry(p.w * 0.66, p.w * 0.66, 0.22, 16), mat(p.cap, 0.9));
+    roof.add(eave, cone);
+    roof.position.y = H;
+  }
+  else if (p.roof === 'rotunda') {
+    /* 원형 유리 돔 — 도서관의 표식. 오래된 열람실의 로툰다입니다. */
+    roof = new THREE.Group();
+    const ring = new THREE.Mesh(
+      new THREE.CylinderGeometry(p.w * 0.53, p.w * 0.55, 0.6, 24), mat(0xE8E1CE, 0.9));
+    ring.position.y = 0.3; ring.castShadow = true;
+    const glass = new THREE.Mesh(
+      new THREE.SphereGeometry(p.w * 0.5, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2),
+      new THREE.MeshStandardMaterial({
+        color: 0x9FD3E4, roughness: 0.1, metalness: 0.42,
+        transparent: true, opacity: 0.72,
+      }));
+    glass.position.y = 0.6; glass.castShadow = true;
+    /* 유리 돔의 살 — 격자가 없으면 비눗방울로 보입니다 */
+    for (let i = 0; i < 8; i++) {
+      const rib = new THREE.Mesh(
+        new THREE.TorusGeometry(p.w * 0.5, 0.055, 6, 20, Math.PI),
+        mat(0xC8CFD4, 0.5, 0.4));
+      rib.position.y = 0.6; rib.rotation.y = (i / 8) * Math.PI;
+      roof.add(rib);
+    }
+    const lantern = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.42, 0.5, 0.8, 12), mat(p.cap, 0.7, 0.2));
+    lantern.position.y = p.w * 0.5 + 0.9; lantern.castShadow = true;
+    const finial = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.9, 12), mat(p.cap, 0.72, 0.25));
+    finial.position.y = p.w * 0.5 + 1.7;
+    roof.add(ring, glass, lantern, finial);
+    roof.position.y = H;
+  }
+  else if (p.roof === 'tanks') {
+    /* 옥상 물탱크와 초록 데크 — 기숙사 옥상의 실제 풍경입니다 */
+    roof = flatRoof(p.w, p.d, p.cap);
+    const deck = new THREE.Mesh(
+      new THREE.BoxGeometry(p.w - 1.2, 0.12, p.d - 1.2), mat(0x6CA96F, 0.96));
+    deck.position.y = 0.52;
+    roof.add(deck);
+    for (let i = 0; i < 3; i++) {
+      const tank = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.5, 0.5, 1.3, 12), mat(0xBFC7CC, 0.6, 0.3));
+      tank.position.set(-p.w / 2 + 1.8 + i * 2.2, 1.2, 0);
+      tank.castShadow = true;
+      roof.add(tank);
+    }
+    roof.position.y = H;
+  }
+  else { roof = flatRoof(p.w, p.d, p.cap); roof.position.y = H; }
+  if (roof) g.add(roof);
+
+  g.position.set(p.x + p.w / 2, 0, p.z + p.d / 2);
+  base.userData.owner = owner; body.userData.owner = owner;
+  pickable.push(base, body);
+  owner.bodies.push(base, body);
+  return { group: g, top: H };
+}
+
+BUILDINGS.forEach((b) => {
+  const g = new THREE.Group();
+  b.bodies = [];
+  let top = 0;
+  b.parts.forEach((p) => {
+    const r = makePart(p, b);
+    g.add(r.group);
+    top = Math.max(top, r.top + (p.roof === 'spire' ? 8.4 : p.roof === 'dome' ? 2.6 : 1.6));
+  });
+  b.tall = top;
+  /* 이름표를 달 위치 — 동 전체의 가운데 */
+  const xs = b.parts.map((p) => p.x + p.w / 2), zs = b.parts.map((p) => p.z + p.d / 2);
+  b.cx = b.x + xs.reduce((a, v) => a + v, 0) / xs.length;
+  b.cz = b.y + zs.reduce((a, v) => a + v, 0) / zs.length;
+  /* 포르티코 — 기둥 줄. 도서관 정면이라는 신호입니다. */
+  if (b.portico) {
+    const pc = b.portico;
+    for (let i = 0; i < pc.cols; i++) {
+      const col = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.26, 0.3, 3.4, 12), mat(0xF0EADC, 0.9));
+      col.position.set(pc.x + (i + 0.5) * (pc.w / pc.cols), 1.7, pc.z);
+      col.castShadow = true;
+      g.add(col);
+    }
+    const lintel = new THREE.Mesh(
+      new THREE.BoxGeometry(pc.w + 0.8, 0.6, 1.3), mat(0xE6DECB, 0.9));
+    lintel.position.set(pc.x + pc.w / 2, 3.7, pc.z);
+    lintel.castShadow = true;
+    const ped = new THREE.Mesh(
+      new THREE.BoxGeometry(pc.w + 1.4, 0.3, 2.4), mat(0xDDD8CB, 0.94));
+    ped.position.set(pc.x + pc.w / 2, 0.15, pc.z);
+    g.add(lintel, ped);
+  }
+  g.position.set(b.x, 0.03, b.y);
+  world.add(g);
+});
+
+/* ================== 광장 조형 ==================
+   가운데에 기린 조형물을 세웁니다. 광장이 주인공이라면 그 한가운데에
+   무엇이 있는지가 지도의 초점이 됩니다. 서비스 이름이 곧 그것입니다. */
+{
+  const g = new THREE.Group();
+  const stone = mat(0xD9D8E2, 0.94);
+  [[3.6, 0.45], [2.7, 0.45], [1.9, 0.45]].forEach(([r, h], i) => {
+    const step = new THREE.Mesh(new THREE.CylinderGeometry(r, r + 0.18, h, 28), stone);
+    step.position.y = i * h + h / 2;
+    step.castShadow = true; step.receiveShadow = true;
+    g.add(step);
+  });
+  const plinth = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 1.2, 20), mat(0xC3C2CF, 0.92));
+  plinth.position.y = 1.95; plinth.castShadow = true;
+  g.add(plinth);
+
+  /* ---- 기린 조형물 ----
+     광장이 주인공이면 그 한가운데 무엇이 있는지가 지도의 초점이고,
+     서비스 이름이 곧 그것입니다. 그래서 덩어리로 두지 않고 다리·목·
+     뿔·꼬리까지 세웁니다 — 실루엣이 모호하면 아무 동물도 아닙니다. */
+  const S = 1.42;                       // 전보다 조금 크게
+  const gold = mat(0xFF6B52, 0.42, 0.26);
+  const dark = mat(0xA8B85C, 0.5, 0.2);  // 반점·발굽
+  const giraffe = new THREE.Group();
+
+  const put = (mesh, x, y, z, rz = 0, rx = 0) => {
+    mesh.position.set(x, y, z); mesh.rotation.z = rz; mesh.rotation.x = rx;
+    mesh.castShadow = true; giraffe.add(mesh); return mesh;
+  };
+
+  /* 몸통 — 어깨가 엉덩이보다 높은 것이 기린의 특징입니다 */
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.46, 1.35, 6, 14), gold);
+  torso.rotation.z = Math.PI / 2;
+  put(torso, 0, 2.55, 0);
+  const withers = new THREE.Mesh(new THREE.SphereGeometry(0.5, 14, 10), gold);
+  withers.scale.set(1, 0.9, 0.92);
+  put(withers, 0.62, 2.78, 0);
+
+  /* 다리 넷 — 앞뒤로 벌려야 서 있는 것으로 보입니다 */
+  [[0.62, -0.3], [0.62, 0.3], [-0.66, -0.3], [-0.66, 0.3]].forEach(([dx, dz]) => {
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.095, 2.1, 8), gold), dx, 1.35, dz);
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.2, 8), dark), dx, 0.32, dz);
+  });
+
+  /* 목 — 이 서비스가 재는 부위입니다. 곧게 세웁니다. */
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.34, 2.5, 10), gold);
+  put(neck, 1.02, 3.95, 0, -0.24);
+  /* 갈기 */
+  for (let i = 0; i < 6; i++) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.22, 0.34), dark);
+    put(m, 0.85 + i * 0.1, 3.1 + i * 0.42, 0, -0.24);
+  }
+
+  /* 머리 — 주둥이가 앞으로 나와야 기린이 됩니다 */
+  const head = new THREE.Mesh(new THREE.CapsuleGeometry(0.21, 0.34, 5, 12), gold);
+  put(head, 1.62, 5.25, 0, -1.15);
+  const muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 9), dark);
+  muzzle.scale.set(1.25, 0.85, 0.85);
+  put(muzzle, 2.02, 5.36, 0);
+  /* 뿔(오시콘) 둘 — 기린의 결정적 표식 */
+  [-0.16, 0.16].forEach((dz) => {
+    put(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.06, 0.34, 6), gold), 1.48, 5.62, dz);
+    put(new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), dark), 1.48, 5.8, dz);
+  });
+  /* 귀 */
+  [-0.26, 0.26].forEach((dz) => {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), gold);
+    ear.scale.set(0.55, 0.9, 1.5);
+    put(ear, 1.4, 5.4, dz);
+  });
+
+  /* 꼬리 */
+  put(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.035, 1.0, 6), gold), -0.86, 2.25, 0, 0.3);
+  put(new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 6), dark), -0.99, 1.72, 0);
+
+  /* 반점 — 몇 개만. 많으면 저 크기에서 얼룩으로 뭉칩니다. */
+  const SPOTS = [[0.3, 2.85, 0.42], [-0.25, 2.8, 0.44], [0.05, 2.4, -0.46],
+                 [-0.5, 2.6, -0.4], [0.95, 3.6, 0.28], [1.15, 4.3, -0.26],
+                 [0.85, 3.1, -0.3], [1.3, 4.75, 0.22]];
+  SPOTS.forEach(([x, y, z]) => {
+    const sp = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 6), dark);
+    sp.scale.set(1, 0.9, 0.5);
+    sp.position.set(x, y, z);
+    giraffe.add(sp);
+  });
+
+  giraffe.scale.setScalar(S);
+  giraffe.position.y = 2.55;
+  giraffe.rotation.y = -0.55;   // 광장 진입로 쪽을 봅니다
+  g.add(giraffe);
+
+  g.position.set(PLAZA.x, 0.05, PLAZA.y);
+  world.add(g);
+}
+
+/* 광장을 두르는 가로등 — 조형물을 향해 시선을 모읍니다 */
+for (let i = 0; i < 12; i++) {
+  const a = (i / 12) * Math.PI * 2;
+  const r = PLAZA.r * 0.86;
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 3.4, 6), mat(0xB9BEC6, 0.7, 0.3));
+  pole.position.set(PLAZA.x + Math.cos(a) * r, 1.7, PLAZA.y + Math.sin(a) * r);
+  pole.castShadow = true;
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8),
+    new THREE.MeshStandardMaterial({ color: 0xFFF6D8, emissive: 0xFFE9A8, emissiveIntensity: 0.6 }));
+  bulb.position.copy(pole.position); bulb.position.y = 3.5;
+  world.add(pole, bulb);
+}
+
+/* ================== 나무 ==================
+   조감도는 길 안내가 아니라 인상입니다. 대로 양옆에만 줄을 세우고,
+   나머지는 가장자리에 덩어리로 둡니다 — 빽빽하면 건물이 묻힙니다. */
+function free(x, y, pad = 1.6) {
+  for (const b of BUILDINGS)
+    for (const p of b.parts) {
+      const px = b.x + p.x, py = b.y + p.z;
+      if (x > px - pad && x < px + p.w + pad && y > py - pad && y < py + p.d + pad) return false;
+    }
+  for (const [px, py, pw, ph] of PAVED)
+    if (x > px - 1 && x < px + pw + 1 && y > py - 1 && y < py + ph + 1) return false;
+  if (Math.hypot(x - PLAZA.x, y - PLAZA.y) < PLAZA.r + 1.4) return false;
+  if (x > POND.x - 2.4 && x < POND.x + POND.w + 2.4 &&
+      y > POND.y - 2.4 && y < POND.y + POND.h + 2.4) return false;
+  if (x > FIELD.x - 2 && x < FIELD.x + FIELD.w + 2 &&
+      y > FIELD.y - 2 && y < FIELD.y + FIELD.h + 2) return false;
+  return x > 1 && y > 1 && x < MAP_W - 1 && y < MAP_H - 1;
+}
+const spots = [];
+/* 가로수 — 네 대로 */
+[[26.2, 12, 20], [32.4, 12, 20], [26.2, 32, 40], [32.4, 32, 40]].forEach(([x, y0, y1]) => {
+  for (let y = y0; y <= y1; y += 3) spots.push({ x, y, s: 1.05, kind: 'pine' });
+});
+[[9, 20, 22.4], [9, 20, 28.6], [39, 50, 22.4], [39, 50, 28.6]].forEach(([x0, x1, y]) => {
+  for (let x = x0; x <= x1; x += 3) spots.push({ x, y, s: 1, kind: 'pine' });
+});
+/* 가장자리 덩어리 — 260 그루면 충분합니다 */
+for (let i = 0; i < 620 && spots.length < 186; i++) {
+  const x = rnd(i, 1, 21) * MAP_W, y = rnd(i, 2, 23) * MAP_H;
+  const edge = x < 9 || x > MAP_W - 9 || y < 8 || y > MAP_H - 8;
+  if (!edge || !free(x, y)) continue;
+  spots.push({ x, y, s: 0.85 + rnd(i, 3, 25) * 0.7,
+               kind: rnd(i, 4, 27) < 0.18 ? 'autumn' : 'green' });
+}
+
+const trunkGeo = new THREE.CylinderGeometry(0.13, 0.2, 1.6, 6);
+const blobGeo = new THREE.IcosahedronGeometry(1, 0);
+const coneGeo = new THREE.ConeGeometry(0.95, 3.4, 7);
+const N = spots.length;
+const trunks = new THREE.InstancedMesh(trunkGeo, mat(0x6A4B32, 0.98), N);
+const green = new THREE.InstancedMesh(blobGeo, mat(0x4CA85F, 0.94), N);
+const autumn = new THREE.InstancedMesh(blobGeo, mat(0xD8813E, 0.94), N);
+const pines = new THREE.InstancedMesh(coneGeo, mat(0x3C8A55, 0.94), N);
+[trunks, green, autumn, pines].forEach((m) => { m.castShadow = true; m.receiveShadow = true; });
+
+const dummy = new THREE.Object3D();
+let tn = 0, gn = 0, an = 0, pn = 0;
+spots.forEach((s, i) => {
+  dummy.position.set(s.x, 0.8 * s.s, s.y);
+  dummy.scale.setScalar(s.s);
+  dummy.rotation.set(0, rnd(i, 31, 3) * 6.28, 0);
+  dummy.updateMatrix();
+  trunks.setMatrixAt(tn++, dummy.matrix);
+  if (s.kind === 'pine') {
+    dummy.position.y = 2.6 * s.s; dummy.scale.setScalar(s.s * 0.92);
+    dummy.updateMatrix(); pines.setMatrixAt(pn++, dummy.matrix); return;
+  }
+  dummy.position.y = 1.9 * s.s;
+  dummy.scale.set(s.s * 1.15, s.s, s.s * 1.15);
+  dummy.updateMatrix();
+  if (s.kind === 'autumn') autumn.setMatrixAt(an++, dummy.matrix);
+  else green.setMatrixAt(gn++, dummy.matrix);
+});
+trunks.count = tn; green.count = gn; autumn.count = an; pines.count = pn;
+world.add(trunks, green, autumn, pines);
+
+/* ================== 이름표 ================== */
+const tags = BUILDINGS.map((b) => {
+  const el = document.createElement('div');
+  el.className = 'tag';
+  el.style.setProperty('--accent', b.accent);
+  el.innerHTML = '<div class="card"><b></b><u></u></div><span class="stem"></span><span class="dot"></span>';
+  el.querySelector('b').textContent = b.name;
+  el.querySelector('u').textContent = b.sub;
+  document.body.appendChild(el);
+  return { el, b };
+});
+const v = new THREE.Vector3();
+function syncTags() {
+  for (const { el, b } of tags) {
+    v.set(b.cx, b.tall + 1.6, b.cz).project(camera);
+    el.style.left = ((v.x * 0.5 + 0.5) * innerWidth) + 'px';
+    el.style.top = ((-v.y * 0.5 + 0.5) * innerHeight) + 'px';
+    el.classList.toggle('show', v.z < 1);
+    el.classList.toggle('hot', hovered === b);
+  }
+}
+
+/* ================== 조작 ================== */
+let dragging = false, lastX = 0, lastY = 0, idle = true, idleT = 0, sway = 0;
+const el = renderer.domElement;
+el.style.cursor = 'grab';
+const pointer = new THREE.Vector2(2, 2);
+
+el.addEventListener('pointerdown', (e) => {
+  dragging = true; idle = false; idleT = 0;
+  lastX = e.clientX; lastY = e.clientY;
+  el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing';
+});
+el.addEventListener('pointermove', (e) => {
+  const r = el.getBoundingClientRect();
+  pointer.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  pointer.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  if (!dragging) return;
+  view.yaw -= (e.clientX - lastX) * 0.006;
+  view.pitch = Math.max(0.2, Math.min(1.42, view.pitch + (e.clientY - lastY) * 0.004));
+  lastX = e.clientX; lastY = e.clientY;
+  placeCamera();
+});
+el.addEventListener('pointerup', () => { dragging = false; idleT = 0; el.style.cursor = 'grab'; });
+el.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  view.zoom = Math.max(0.55, Math.min(2.6, view.zoom * (e.deltaY > 0 ? 0.92 : 1.08)));
+  idle = false; idleT = 0; layout(); placeCamera();
+}, { passive: false });
+
+document.getElementById('reset').addEventListener('click', () => {
+  Object.assign(view, HOME); sway = 0; idle = true; layout(); placeCamera();
+});
+document.getElementById('save').addEventListener('click', () => {
+  renderer.render(scene, camera);
+  const a = document.createElement('a');
+  a.download = 'girin-campus-map.png';
+  a.href = renderer.domElement.toDataURL('image/png');
+  a.click();
+});
+
+const ray = new THREE.Raycaster();
+let hovered = null;
+function pick() {
+  if (pointer.x > 1.5) return;
+  ray.setFromCamera(pointer, camera);
+  const hit = ray.intersectObjects(pickable, false)[0];
+  const next = hit ? hit.object.userData.owner : null;
+  if (next === hovered) return;
+  if (hovered) hovered.bodies.forEach((m) => m.material.emissive.setHex(0x000000));
+  hovered = next;
+  if (hovered) hovered.bodies.forEach((m) => m.material.emissive.setHex(0x2A3418));
+  el.style.cursor = hovered ? 'pointer' : (dragging ? 'grabbing' : 'grab');
+}
+
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let t0 = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - t0) / 1000); t0 = now;
+  if (!dragging) { idleT += dt; if (idleT > 3.5) idle = true; }
+  if (idle && !reduce) {
+    /* 한 바퀴 돌리지 않고 기준 각도 주위를 오갑니다. 계속 돌면 어느
+       순간 구도가 반드시 망가지는데, 유입용 이미지는 그 순간에도
+       누군가의 첫인상이 됩니다. */
+    sway += dt;
+    view.yaw = HOME.yaw + Math.sin(sway * 0.34) * 0.15;
+    view.pitch = HOME.pitch + Math.sin(sway * 0.22) * 0.04;
+    placeCamera();
+  }
+  pick(); syncTags();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+placeCamera();
+renderer.render(scene, camera);
+document.getElementById('loading').classList.add('gone');
+requestAnimationFrame(frame);
+</script>

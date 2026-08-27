@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>카메라 사용 고지 — Deskfit</title>
+<meta name="robots" content="index, follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦒</text></svg>">
+<link rel="stylesheet" href="../../../upright-now/public/fonts/wanted-sans/WantedSansVariable.css">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body>
+<a class="skip" href="#doc">본문으로 건너뛰기</a>
+
+<header class="lg-head">
+  <a class="brand" href="../index.html">Deskfit</a>
+  <a class="back" href="../index.html">← 랜딩으로</a>
+</header>
+
+<div class="lg-wrap">
+  <nav class="lg-side" aria-label="문서 목록">
+    <span class="lbl">정책과 고지</span>
+    <a href="privacy.html">개인정보처리방침</a><a href="terms.html">서비스 이용약관</a><a href="camera.html" aria-current="page">카메라 사용 고지</a><a href="security.html">보안 정책 및 취약점 신고</a><a href="accessibility.html">접근성 고지</a><a href="licenses.html">오픈소스 라이선스 고지</a><a href="support.html">서비스 상태 및 문의</a>
+  </nav>
+
+  <main class="lg-doc" id="doc">
+    <h1>카메라 사용 고지</h1>
+<div class="tw"><table>
+<tbody><tr><td>서비스명</td><td>Deskfit</td></tr><tr><td>문서 버전</td><td>1.0</td></tr><tr><td>작성일</td><td>2026년 8월 17일</td></tr></tbody>
+</table></div>
+<p>웹캠을 쓰는 서비스라면 이 한 장이 가장 중요하다고 생각했습니다.</p>
+<p><strong>언제 켜지고, 무엇을 보고, 어디로 가지 않는지</strong>를 여기 다 적었습니다.</p>
+<hr>
+<h2>한 줄 요약</h2>
+<p><strong>영상은 이 브라우저 밖으로 나가지 않습니다.</strong></p>
+<p>분석은 이 기기 안에서 끝나고, 프레임은 분석 직후 버려집니다.</p>
+<p>서버로 가는 건 "몇 분 앉았는가" 같은 숫자뿐입니다.</p>
+<hr>
+<h2>1. 언제 켜지나요</h2>
+<div class="tw"><table>
+<thead><tr><th>시점</th><th>카메라 상태</th></tr></thead>
+<tbody><tr><td>랜딩 페이지를 볼 때</td><td><strong>꺼짐</strong> — 권한을 요청조차 하지 않습니다</td></tr><tr><td>온보딩에서 캐릭터를 고를 때</td><td><strong>꺼짐</strong></td></tr><tr><td>캠퍼스(월드)에 들어갈 때</td><td><strong>켜짐</strong> — 브라우저가 권한을 물어봅니다</td></tr><tr><td>캠퍼스를 걸어 다닐 때</td><td>켜진 상태 유지</td></tr><tr><td>세션을 끝낼 때</td><td><strong>꺼짐</strong></td></tr><tr><td>탭을 닫을 때</td><td><strong>꺼짐</strong></td></tr></tbody>
+</table></div>
+<p>카메라는 <strong>세션에 속합니다.</strong> 자리에 앉고 일어나는 것과 무관하게,</p>
+<p>캠퍼스에 들어와 있는 동안 계속 켜져 있습니다.</p>
+<p>자리에 앉으면 화면 구석에 작은 카메라 창(PIP)이 뜨는데, 이건 **표시 방식이</p>
+<p>바뀌는 것**일 뿐 카메라가 그때 켜지는 게 아닙니다.</p>
+<p>브라우저 탭에 표시되는 <strong>카메라 사용 중 표시등</strong>으로 언제든 확인하실 수 있습니다.</p>
+<hr>
+<h2>2. 무엇을 보나요</h2>
+<p>들어오면 <strong>10초 동안 지금 앉은 모습을 기준으로 등록</strong>합니다.</p>
+<p>그다음부터는 그 기준과 지금 자세의 <strong>차이</strong>만 봅니다.</p>
+<p>구체적으로는 어깨와 머리의 상대적 위치·거리 몇 가지를 계산해</p>
+<p>아래 세 가지 중 하나로 셉니다.</p>
+<div class="tw"><table>
+<thead><tr><th>상태</th><th>뜻</th></tr></thead>
+<tbody><tr><td>좋음</td><td>등록한 기준과 비슷함</td></tr><tr><td>주의</td><td>기준에서 조금 벗어남</td></tr><tr><td>나쁨</td><td>기준에서 많이 벗어남</td></tr></tbody>
+</table></div>
+<p><strong>이건 자세에 매기는 점수가 아닙니다.</strong> 정상/비정상도, 좋은 자세/나쁜 자세도</p>
+<p>아닙니다. 사람마다 몸도 책상도 다르기 때문에, 우리는 "당신의 평소와</p>
+<p>얼마나 다른가"만 셉니다.</p>
+<h3>보지 않는 것</h3>
+<ul>
+<li>얼굴을 알아보지 않습니다 (얼굴 인식·신원 확인 기능이 없습니다)</li>
+<li>표정·감정을 읽지 않습니다</li>
+<li>화면에 무엇이 떠 있는지 보지 않습니다</li>
+<li>소리를 듣지 않습니다 (마이크 권한을 요청하지 않습니다)</li>
+<li>주변 사람이나 방 안의 물건을 식별하지 않습니다</li>
+</ul>
+<hr>
+<h2>3. 어디로 가나요 — 아무 데도 가지 않습니다</h2>
+<p>```</p>
+<p>웹캠 → 브라우저 메모리 → 자세 계산 → 상태(좋음/주의/나쁨) 카운트 → 프레임 폐기</p>
+<p>↓</p>
+<p>화면 표시 (내 기기)</p>
+<p>↓</p>
+<p>세션 끝: 숫자 요약만 서버로</p>
+<p>```</p>
+<p><strong>서버로 전송되지 않는 것</strong></p>
+<ul>
+<li>영상·사진·스냅샷·녹화 파일</li>
+<li>자세 좌표(랜드마크) 원본</li>
+<li>내 평소 자세 기준값</li>
+<li>얼굴 이미지나 그로부터 만든 어떤 값</li>
+</ul>
+<p><strong>세션이 끝날 때 서버로 가는 것 (전부)</strong></p>
+<div class="tw"><table>
+<thead><tr><th>항목</th><th>예</th></tr></thead>
+<tbody><tr><td>세션 ID</td><td>임의 문자열</td></tr><tr><td>앉은 시간(분)</td><td>42</td></tr><tr><td>캠퍼스 체류 시간(분)</td><td>55</td></tr><tr><td>회복 횟수</td><td>3</td></tr><tr><td>시작·종료 시각</td><td>2026-08-17T14:02:00Z</td></tr><tr><td>학교 (선택했다면)</td><td>명지대학교</td></tr></tbody>
+</table></div>
+<p>이 목록이 전부입니다. 서버 저장을 켜지 않으면 이것조차 나가지 않고,</p>
+<p>기록은 이 브라우저 안에만 남습니다.</p>
+<hr>
+<h2>4. 판정 모델은 어디서 도나요</h2>
+<p>자세 계산에는 Google의 <strong>MediaPipe Pose Landmarker</strong>를 씁니다.</p>
+<ul>
+<li>모델 파일을 <strong>처음 한 번 내려받은 뒤</strong>, 계산은 <strong>브라우저 안에서</strong> 실행됩니다.</li>
+<li>계산을 위해 영상을 Google이나 다른 곳으로 보내지 않습니다.</li>
+<li>모델 파일을 받을 때 Google 서버에 IP 주소가 남는 것은,</li>
+</ul>
+<p>일반적인 웹페이지에서 이미지를 불러올 때와 같습니다.</p>
+<hr>
+<h2>5. 다른 사람에게 보이나요</h2>
+<p><strong>보이지 않습니다.</strong></p>
+<p>같은 캠퍼스에 있는 이용자에게 보이는 것은 <strong>닉네임·캐릭터·캠퍼스 안 위치</strong>뿐입니다.</p>
+<p>카메라 화면이나 자세 상태는 누구에게도 공유되지 않습니다.</p>
+<p>화상 통화나 캠 공유 기능 자체가 없습니다.</p>
+<hr>
+<h2>6. 끄고 싶을 때</h2>
+<div class="tw"><table>
+<thead><tr><th>원하는 것</th><th>방법</th></tr></thead>
+<tbody><tr><td>지금 당장 끄기</td><td>세션을 종료하면 카메라가 함께 꺼집니다</td></tr><tr><td>아예 권한 회수</td><td>브라우저 주소창의 자물쇠 아이콘 → 카메라 → 차단</td></tr><tr><td>카메라 없이 이용</td><td>권한을 거부해도 캠퍼스는 걸어 다닐 수 있습니다. 자세 감지와 그에 따른 코인만 동작하지 않습니다</td></tr><tr><td>기록까지 지우기</td><td>설정 → 전체 데이터 초기화</td></tr></tbody>
+</table></div>
+<hr>
+<h2>7. 확인하고 싶다면</h2>
+<p>말로만 약속하는 것보다 직접 보시는 게 확실합니다.</p>
+<ul>
+<li><strong>네트워크 탭</strong> — 브라우저 개발자 도구(F12) → Network에서 세션 중 오가는</li>
+</ul>
+<p>요청을 전부 볼 수 있습니다. 영상 업로드가 없다는 걸 직접 확인하실 수 있습니다.</p>
+<ul>
+<li><strong>오프라인 테스트</strong> — 모델을 한 번 받은 뒤 인터넷을 끊어도 자세 감지는</li>
+</ul>
+<p>계속 동작합니다. 계산이 기기 안에서 돈다는 뜻입니다.</p>
+<hr>
+<h2>8. 의료 목적이 아닙니다</h2>
+<p>Deskfit은 의료기기가 아니며 진단·치료를 하지 않습니다.</p>
+<p>감지 결과는 참고 정보이며, 통증이나 불편함이 있다면 의료 전문가와 상담하세요.</p>
+<p>자세한 내용은 <a href="terms.html">이용약관 제9조</a>를 봐 주세요.</p>
+<hr>
+<h2>문의</h2>
+<p>카메라 처리에 대해 궁금한 점이 있으면 언제든 물어봐 주세요.</p>
+<p><strong>uniker.monkeys@gmail.com</strong></p>
+    <footer class="lg-foot">
+      <p>이 문서에 대해 궁금한 점이 있으면 <a href="mailto:uniker.monkeys@gmail.com">uniker.monkeys@gmail.com</a> 로 알려 주세요.</p>
+      <p class="copy">© Monkeyz. All rights reserved.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

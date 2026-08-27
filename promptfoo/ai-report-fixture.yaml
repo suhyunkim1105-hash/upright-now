@@ -1,4 +1,4 @@
-description: UpRight Now AI 세션 회고 계약 평가
+description: Deskfit AI 세션 회고 계약 평가
 prompts:
   - file://ai-report-prompt.txt
 providers:

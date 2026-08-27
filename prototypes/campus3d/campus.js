@@ -533,15 +533,25 @@ export function lampPost(g, x, z, h = 4.2) {
   cyl(p, .13, .18, h, 12, met, 0, h / 2 + .5, 0);
   /* 등 — 사각 초롱 둘. 전 판은 원뿔이 너무 작아 **기둥만** 보였습니다 */
   [-1, 1].forEach((s) => {
-    /* 팔은 90° 만 도는 토막입니다. 열넷이면 6.4° 마다 한 마디인데 팔 굵기가
-       7.5cm 라 그 차이가 화면에 안 나옵니다. 여덟이면 11°, 그래도 곡선입니다.
-       가로등이 스물여덟 개, 팔이 쉰여섯이라 마디 하나가 값이 셉니다. */
-    const arm = new THREE.Mesh(new THREE.TorusGeometry(.62, .075, 6, 8, Math.PI / 2), met);
-    arm.position.set(0, h + .18, 0);
-    arm.rotation.z = s > 0 ? Math.PI / 2 : 0;
-    arm.rotation.y = s > 0 ? Math.PI : 0;
+    /* ── 팔 ──
+       90°짜리 토막입니다. 열넷이면 6.4°마다 한 마디인데 팔 굵기가
+       7.5cm 라 그 차이가 화면에 안 나옵니다. 열이면 9°, 그래도 곡선입니다.
+
+       **한쪽 팔이 기둥에 안 닿아 있었습니다.** 원인은 두 번 돌린 것
+       입니다 — z 로 90° 돌리고 y 로 180° 를 또 돌리니, 한쪽은 호의 양
+       끝이 기둥과 등 자리에 맞는데 다른 쪽은 통째로 어긋나서 등만
+       공중에 뜨고 팔은 반대편 허공을 그렸습니다.
+
+       기하를 먼저 맞추고 **거울로만** 뒤집습니다. 토러스의 호는
+       (R,0)~(0,R) 이므로 중심을 등 높이에 두면 한 끝이 등(R, y)에,
+       다른 끝이 기둥(0, y+R)에 정확히 붙습니다. 반대쪽은 y 로 180°
+       — 회전이라 안팎이 안 뒤집힙니다(scale.x=-1 은 뒤집힙니다). */
+    const LY = h + .10;                       // 등이 매달리는 높이
+    const arm = new THREE.Mesh(new THREE.TorusGeometry(.62, .075, 6, 10, Math.PI / 2), met);
+    arm.position.set(0, LY, 0);
+    arm.rotation.y = s > 0 ? 0 : Math.PI;
     p.add(arm);
-    const L = new THREE.Group(); L.position.set(s * .62, h + .1, 0); p.add(L);
+    const L = new THREE.Group(); L.position.set(s * .62, LY, 0); p.add(L);
     const lamp = new THREE.Mesh(new THREE.CylinderGeometry(.34, .2, .52, 4),
       M(0xFFF2CE, .3, { emissive: 0xFFD98A, emissiveIntensity: .75 }));
     lamp.rotation.y = Math.PI / 4; lamp.position.y = -.3; L.add(lamp);

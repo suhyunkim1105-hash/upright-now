@@ -187,11 +187,6 @@ addEventListener('unhandledrejection', function (e) {
   /* 오른쪽 아래에 두었더니 "내 자세" 카드와 상태 칸을 정확히 덮었습니다
      (#stack 이 top 16 에서 아래로 500 가까이 내려옵니다). 왼쪽은 비어
      있으므로 그리로 옮깁니다. */
-  #help{position:absolute;left:16px;bottom:56px;width:230px;padding:12px 14px;display:none}
-  #help.on{display:block}
-  #help h4{margin:0 0 8px;font-size:11px;font-weight:800;color:var(--tx2);letter-spacing:.03em}
-  #help .r{display:flex;align-items:center;gap:7px;padding:3px 0;font-size:11.5px;color:var(--tx2)}
-  #help .r span{margin-left:auto;color:var(--tx)}
 
   /* ── 위 가운데 · 나 ── */
   #idbar{position:absolute;left:50%;top:16px;transform:translateX(-50%);display:flex;
@@ -338,6 +333,18 @@ addEventListener('unhandledrejection', function (e) {
   /* 잠긴 것을 **어디서** 여는지. 전에는 title 툴팁에만 있었는데, 비활성
      단추에 마우스를 올려 보는 사람은 없습니다 — 자물쇠만 잔뜩 보였습니다. */
   .hint{margin:7px 0 0;font-size:10.5px;line-height:1.5;color:var(--ink2);opacity:.85}
+  /* 단축키 설정 — 왼쪽 할 일, 오른쪽 키. 키는 누를 수 있는 것이므로
+     단추처럼 보여야 하고, 바꾼 것은 한눈에 갈려야 합니다. */
+  .keyset{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-top:2px}
+  .kr{display:flex;align-items:center;gap:10px;min-width:0}
+  .kr>span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:12.5px;font-weight:700;color:var(--ink2)}
+  .kr button{flex:none;min-width:74px;padding:7px 10px;border:0;border-radius:11px;cursor:pointer;
+    font:800 12px/1 var(--ff);color:var(--ink);background:rgba(34,42,51,.05);
+    box-shadow:inset 0 0 0 1.5px var(--pl)}
+  .kr button:hover{background:rgba(34,42,51,.09)}
+  .kr button.on{color:var(--acc2);box-shadow:inset 0 0 0 1.8px var(--acc2)}
+  .kr button.grab{color:#fff;background:var(--acc2);box-shadow:none;min-width:104px}
   #panel input.nick{width:100%;border:1.5px solid var(--pl);border-radius:11px;padding:9px 12px;
     font:700 14px var(--ff);color:var(--ink);background:rgba(34,42,51,.03);outline:none}
   #panel input.nick:focus{border-color:var(--acc2);background:#fff}
@@ -762,7 +769,6 @@ addEventListener('unhandledrejection', function (e) {
   @keyframes loadWalk{to{transform:translateY(-6px) rotate(1deg)}}@keyframes loadFill{to{width:96%}}
 
   @media (max-width:860px){
-    #help,#foot .fps{display:none}
     #stack{width:130px;right:12px;top:12px;gap:8px}
     #pip .fr{height:90px}
     #chat{width:min(260px,50vw);bottom:88px}
@@ -806,16 +812,14 @@ addEventListener('unhandledrejection', function (e) {
 </svg>
 <canvas id="cv"></canvas>
 <div class="hud">
-  <div id="zone" class="g"><i class="dot"></i><div><b>캠퍼스</b><span class="sub">중앙 광장</span></div></div>
   <div id="tags"></div>
 
-  <!-- 오른쪽 한 기둥 — 지도 · 얼굴 · 접속. 따로 떠다니지 않게 한 줄로 세웁니다 -->
+  <!-- 오른쪽 한 기둥 — 마이페이지 · 얼굴 · 접속.
+       **미니맵은 뺐습니다.** 늘 떠 있을 만큼 자주 보는 것이 아니고,
+       M 을 누르면 같은 그림이 크게 열립니다. 화면 구석을 상시로 먹는
+       것은 그만한 값을 해야 합니다. -->
   <div id="stack">
     <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false"><span class="my-mark">MY</span><b>마이페이지</b><small>기록 · 코인 · 설정</small></button>
-    <div id="mini" class="g">
-      <div class="ghead">지도<span class="sp">M</span></div>
-      <div class="wrap"><canvas width="316" height="316"></canvas><span class="n">N</span></div>
-    </div>
     <div id="pip" class="g">
       <div class="ghead">내 자세</div>
       <div class="fr"><canvas width="316" height="240"></canvas>
@@ -863,33 +867,19 @@ addEventListener('unhandledrejection', function (e) {
       <button type="button" role="tab" data-chat-channel="school" aria-selected="false">내 학교</button>
     </div><input maxlength="60" placeholder="전체 채팅 — Enter 로 보내기"></div></div>
 
-  <!-- 아래 한 줄 — 늘 켜져 있던 종·옷 고르는 줄은 옷장 창으로 들어갔습니다 -->
+  <!-- 아래 한 줄.
+       **옷장**은 뺐습니다 — 옷은 동아리 상점에서 사고 입습니다. 바에
+       두면 같은 일을 두 곳에서 하게 되고, 바는 늘 켜져 있는 자리라
+       가장 비쌉니다. 단축키 C 는 그대로 두었습니다.
+       **도움**도 뺐습니다 — 키 안내는 마이페이지 → 설정 → 단축키로
+       옮겼고, 거기서는 읽을 뿐 아니라 바꿀 수 있습니다. -->
   <div id="dock" class="g">
     <button data-do="map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4Z"/><path d="M9 4v13M15 6.5v13"/></svg><em>지도</em></button>
     <button data-do="emo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg><em>표현</em></button>
     <button data-do="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M20 12a7.5 7.5 0 0 1-10.9 6.7L4 20l1.4-4.3A7.5 7.5 0 1 1 20 12Z"/></svg><em>채팅</em></button>
-    <div class="sep"></div>
-    <button data-do="wear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M9 3.5 12 6l3-2.5 5 3-2 3.5-1.6-.8V20H7.6V9.2L6 10 4 6.5l5-3Z"/></svg><em>옷장</em></button>
     <button data-do="view"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.8"/></svg><em>시점</em></button>
-    <button data-do="help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .9-1 1.6v.4"/><path d="M12 16.6h.01"/></svg><em>도움</em></button>
   </div>
 
-  <div id="help" class="g">
-    <h4>조작</h4>
-    <div class="r"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>걷기</span></div>
-    <div class="r"><kbd>Shift</kbd><span>뛰기</span></div>
-    <div class="r"><kbd>E</kbd><span>말 걸기 · 들어가기</span></div>
-    <div class="r"><kbd>Tab</kbd><span>1인칭 · 3인칭</span></div>
-    <div class="r"><kbd>M</kbd><span>지도</span></div>
-    <div class="r"><kbd>G</kbd><span>감정표현</span></div>
-    <div class="r"><kbd>C</kbd><span>옷장</span></div>
-    <div class="r"><kbd>Enter</kbd><span>채팅</span></div>
-    <div class="r"><kbd>Z</kbd><kbd>X</kbd><span>시점 좌우로 돌리기</span></div>
-    <div class="r"><kbd>드래그</kbd><span>시점 돌리기</span></div>
-    <div class="r"><kbd>휠</kbd><span>멀리 · 가까이</span></div>
-    <div class="r"><kbd>클릭</kbd><span>그 자리로 걸어가기</span></div>
-    <div class="r"><kbd>Esc</kbd><span>닫기</span></div>
-  </div>
 
   <div id="xhair" aria-hidden="true"></div>
   <div id="gcur" class="on" aria-hidden="true">
@@ -916,7 +906,6 @@ addEventListener('unhandledrejection', function (e) {
       <circle cx="14" cy="14" r="2.6" fill="#7DEBDD" stroke="#0E6F63" stroke-width="1"/>
     </svg>
   </div>
-  <div id="foot" class="g"><span class="md">3인칭</span><span class="fps">–</span></div>
 
   <div id="map"><div class="box">
     <div class="cap"><b>기린캠퍼스</b><i></i><span>누르거나 앞의 <b>숫자</b>를 치면 그 앞으로 · <kbd>M</kbd> 닫기</span></div>
@@ -1653,11 +1642,23 @@ function freeSpotNear(G, x0, z0) {
 /* ══════ 6. 조작 ══════ */
 const key = Object.create(null);
 let first = false, mapOn = false, panelOn = false, dlgOn = false;
+/* 어떤 동작의 키인가 — ui.js 의 표 하나만 봅니다(그 파일 머리말 참고).
+   `e.code === 'KeyM'` 처럼 박아 두면 설정에서 바꿔도 안 먹습니다. */
+const isKey = (e, id) => {
+  const a = UI.KEY_ACTS.find((k) => k.id === id);
+  if (!a) return false;
+  const bound = UI.keyOf(id);
+  /* 기본값을 그대로 쓰는 동안에는 보조키(방향키·오른쪽 Shift·쉼표)도
+     같이 받습니다. 사람이 직접 바꾼 뒤에는 그 키 하나만 받습니다 —
+     안 그러면 설정에 없는 키가 계속 들어서 "안 바뀐다" 로 보입니다. */
+  if (e.code === bound) return true;
+  return bound === a.def && a.alt === e.code;
+};
 addEventListener('keydown', (e) => {
   if (chatting) return;
   if (gameOpen()) return;
   if (e.code === 'Enter') { e.preventDefault(); if (emoOn) toggleEmo(false); openChat(); return; }
-  if (e.code === 'KeyG') { e.preventDefault(); toggleEmo(); return; }
+  if (isKey(e, 'emo')) { e.preventDefault(); toggleEmo(); return; }
   if (mapOn && /^Digit[0-9]$/.test(e.code)) {
     e.preventDefault();
     const i = (+e.code.slice(5) + 9) % 10;             // 1..9,0 → 0..9
@@ -1667,29 +1668,47 @@ addEventListener('keydown', (e) => {
   if (/^Digit[1-8]$/.test(e.code)) { e.preventDefault(); doEmote(EMOTES[+e.code.slice(5) - 1].k); toggleEmo(false); return; }
   if (e.code === 'Escape') {
     if (emoOn) { e.preventDefault(); toggleEmo(false); return; } e.preventDefault(); if (panelOn) closePanel(); else if (dlgOn) closeDlg(); else if (mapOn) toggleMap(); return; }
-  if (panelOn) { if (e.code === 'KeyE' || e.code === 'Enter') { e.preventDefault(); closePanel(); } return; }
-  if (e.code === 'Tab') { e.preventDefault(); toggleView(); return; }
-  if (e.code === 'KeyM') { e.preventDefault(); toggleMap(); return; }
+  if (panelOn) { if (isKey(e, 'act') || e.code === 'Enter') { e.preventDefault(); closePanel(); } return; }
+  if (isKey(e, 'view')) { e.preventDefault(); toggleView(); return; }
+  if (isKey(e, 'map')) { e.preventDefault(); toggleMap(); return; }
   /* 시점을 키로도 돌립니다. 끌기만 되면 걷다가 손을 떼고 끌어야 해서
      한 손으로는 방향을 못 바꿉니다 — "움직이기 힘들다" 의 절반입니다. */
   /* e.repeat 을 거릅니다 — 누르고 있으면 운영체제가 초당 서른 번을
      보내서 초당 16 라디안으로 화면이 팽팽 돌았습니다. 25번 반복이
      예전엔 13.75 라디안(두 바퀴 반), 지금은 0.55 입니다. */
-  if (e.code === 'KeyZ' || e.code === 'Comma') { if (!e.repeat) turnCam(-1); return; }
-  if (e.code === 'KeyX' || e.code === 'Period') { if (!e.repeat) turnCam(1); return; }
-  if (e.code === 'KeyC') { e.preventDefault(); openWardrobe(); return; }
-  if (e.code === 'KeyH' || e.code === 'Slash') { e.preventDefault(); toggleHelp(); return; }
+  if (isKey(e, 'camL')) { if (!e.repeat) turnCam(-1); return; }
+  if (isKey(e, 'camR')) { if (!e.repeat) turnCam(1); return; }
+  if (isKey(e, 'wear')) { e.preventDefault(); openWardrobe(); return; }
   if (PLACE.on) {
-    if (e.code === 'KeyE' || e.code === 'Space') { e.preventDefault(); stopPlace(true); return; }
+    if (isKey(e, 'act')) { e.preventDefault(); stopPlace(true); return; }
     if (e.code === 'KeyR') { e.preventDefault(); PLACE.ry = (PLACE.ry + Math.PI / 2) % TAU; return; }
     if (e.code === 'Escape') { e.preventDefault(); stopPlace(false); return; }
   }
-  if (e.code === 'KeyE' || e.code === 'Space') { e.preventDefault(); interact(); return; }
+  if (isKey(e, 'act')) { e.preventDefault(); interact(); return; }
   key[e.code] = true;
 });
+/* 눌려 있나 — isKey 의 짝. 걷기처럼 **누르고 있는 동안** 도는 것은
+   keydown 한 번이 아니라 매 프레임 이 표를 봅니다. */
+function down(id) {
+  const a = UI.KEY_ACTS.find((k) => k.id === id);
+  if (!a) return false;
+  const bound = UI.keyOf(id);
+  if (key[bound]) return true;
+  return bound === a.def && !!a.alt && !!key[a.alt];
+}
 addEventListener('keyup', (e) => { key[e.code] = false; });
 addEventListener('blur', () => { for (const k in key) key[k] = false; });
 
+/* ── 3인칭 시점의 아래 한계 ──
+   카메라 높이는 `P.y + 1.2 + sin(camPitch) * d` 입니다. pitch 하한이
+   -1.48 이라 마우스를 끝까지 올리면 sin 이 -1 에 가까워져 카메라가
+   플레이어보다 11칸 **아래**로 내려갔습니다 — 땅을 뚫고 지하에서
+   세계의 밑면을 보게 됩니다. 바닥은 한 겹짜리 판이라 뒷면이 뚫려
+   있고, 그 밑에는 아무것도 없습니다.
+
+   -0.10 이면 지평선보다 아주 살짝 아래까지만 내려갑니다(눈높이보다
+   조금 밑에서 올려다보는 각). 그 아래는 볼 이유가 없습니다. */
+const TP_PITCH_MIN = -.10;
 let yaw = -Math.PI * .75, pitch = .55, dist = 11.5, camD = 11.5, drag = null;
 /* 1인칭은 입력 목표와 실제 눈을 분리합니다. 마우스의 한 프레임 튐을 그대로
    카메라에 쓰지 않고 짧게 따라가므로 멀미를 만드는 미세한 떨림이 줄어듭니다. */
@@ -1727,7 +1746,7 @@ cv.addEventListener('pointermove', (e) => {
   if (!first && drag && document.pointerLockElement === cv) {
     camHold = performance.now() + 1400;
     yaw -= e.movementX * .0075;
-    pitch = clamp(pitch + e.movementY * .005, -1.48, 1.48);
+    pitch = clamp(pitch + e.movementY * .005, TP_PITCH_MIN, 1.48);
     turned += Math.abs(e.movementX) * .0075;
     if (room) clampRoomYaw();
     return;
@@ -1736,7 +1755,8 @@ cv.addEventListener('pointermove', (e) => {
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   camHold = performance.now() + 1400;
   yaw -= dx * (first ? .005 : .0075);
-  pitch = first ? clamp(pitch + dy * .004, -1.52, 1.52) : clamp(pitch + dy * .004, -1.48, 1.48);
+  pitch = first ? clamp(pitch + dy * .004, -1.52, 1.52)
+                : clamp(pitch + dy * .004, TP_PITCH_MIN, 1.48);
   if (!first) clampRoomYaw();
   turned += Math.abs(dx) * .006;
   drag = { x: e.clientX, y: e.clientY };
@@ -1877,7 +1897,13 @@ function uiOpen() { return panelOn || dlgOn || mapOn; }
 /* 잠금은 1인칭이면 늘 켭니다 — 창이 열려도 풀지 않습니다.
    풀면 그 순간 커서가 화면 한복판에 튀어나오고, 다시 잠그려면
    화면을 눌러야 합니다. 그 왕복을 없애는 것이 이 작업의 목적입니다. */
-function wantLock() { return first && !room; }
+/* 1인칭이면 **실내에서도** 잠급니다.
+   전에는 `first && !room` 이라 건물에 들어가는 순간 잠금이 풀렸습니다.
+   그러면 브라우저가 커서를 되돌리면서 "ESC 를 눌러 마우스 커서 표시"
+   안내를 띄우고, 나올 때 또 한 번 — 1인칭으로 드나들 때마다 그 안내가
+   두 번씩 떴습니다. 방에 네 벽과 천장이 생긴 뒤로는(room.js nearShell)
+   실내에서 돌아봐도 터진 상자가 안 보이므로 풀 이유가 없습니다. */
+function wantLock() { return first; }
 
 /* CUR.live 는 **마우스가 커서를 움직이는가** 입니다(잠금 중 창이 열린 때).
    커서 자체는 잠기지 않았을 때도 늘 보입니다 — 그때는 실제 포인터
@@ -1962,7 +1988,6 @@ function toggleView() {
   player.visible = !first; blob.visible = !first;
   pitch = first ? 0 : .58;
   fpYaw = yaw; fpPitch = pitch; fpBob = 0;
-  $('#foot .md').textContent = first ? '1인칭' : '3인칭';
   dockOn('view', first);
   syncRoomShell();
   syncLock();
@@ -1986,7 +2011,7 @@ cv.addEventListener('touchend', (e) => { for (const t of e.changedTouches)
   if (stick && t.identifier === stick.id) stick = null; }, { passive: true });
 
 /* ══════ 7. 창 · 대화 · 알림 ══════ */
-const elPrompt = $('#prompt'), elZone = $('#zone'), elToast = $('#toast'),
+const elPrompt = $('#prompt'), elToast = $('#toast'),
       elPanel = $('#panel'), elDlg = $('#dlg'), elPost = $('#post'), elBub = $('#bub');
 let toastT = 0;
 function toast(a, b) {
@@ -1994,10 +2019,10 @@ function toast(a, b) {
   elToast.querySelector('span').textContent = b || '';
   elToast.classList.add('on'); toastT = 1.9;
 }
-function setZone(a, b) {
-  elZone.querySelector('b').textContent = a;
-  elZone.querySelector('.sub').textContent = b || '';
-}
+/* 왼쪽 위 자리 칩을 걷어냈습니다. 부르는 곳이 여럿이라 함수는 남기고
+   속만 비웁니다 — 지우면 호출부를 다 따라다녀야 하고, 나중에 자리
+   이름을 다시 보여 줄 때 붙일 곳이 여기입니다. */
+function setZone() {}
 /* 상점에서 고른 카테고리는 다시 그릴 때만 유지하면 됩니다. 저장까지 하면
    다음 날 들어와도 어제 보던 '신발'부터 열려 오히려 첫 화면이 어색합니다. */
 const SHOP_CAT = { wear: 'top', furn: 'seat' };
@@ -3131,7 +3156,12 @@ function enterRoom(portal) {
   applySky(true);
   const sp = freeSpotNear(rec.grid, 0, rec.size.d / 2 - 3.4);
   P.x = sp.x; P.z = sp.z; P.dir = Math.PI; P.sp = 0;
-  yaw = -Math.PI * .75; pitch = .64; dist = 10.6; camD = dist;
+  /* 1인칭으로 들어왔으면 **1인칭 그대로** 둡니다. pitch 를 0.64 로
+     덮으면 문을 넘는 순간 바닥을 내려다보게 되고, 사람은 그걸 "시점이
+     튀었다" 로 느낍니다. 3인칭일 때만 방에 맞는 각으로 잡습니다. */
+  yaw = -Math.PI * .75;
+  if (first) { pitch = 0; fpYaw = yaw; fpPitch = 0; fpBob = 0; }
+  else { pitch = .64; dist = 10.6; camD = dist; }
   P.back = portal;
   buildIndoor(rec.key);
   mountRide();                        // 실내에서는 내립니다
@@ -3139,6 +3169,7 @@ function enterRoom(portal) {
   sndZone(rec.key); BGM.setZone(rec.key);
   const nm = ROOM_NAME[rec.key];
   setZone(nm[0], nm[1]); toast(nm[0], nm[1]);
+  syncLock();
   tutDone('enter');
 }
 function leaveRoom() {
@@ -3152,12 +3183,16 @@ function leaveRoom() {
   applySky(false);
   const b = BUILDINGS.find((x) => x.zone === p.zone);
   P.x = p.x + Math.sin(b.ry) * 2.8; P.z = p.z + Math.cos(b.ry) * 2.8;
-  P.dir = b.ry; yaw = b.ry + Math.PI; pitch = .55; dist = 11.5; camD = dist; P.sp = 0;
+  P.dir = b.ry; yaw = b.ry + Math.PI; P.sp = 0;
+  /* 들어갈 때와 같은 규칙 — 1인칭이면 각을 안 건드립니다 */
+  if (first) { pitch = 0; fpYaw = yaw; fpPitch = 0; fpBob = 0; }
+  else { pitch = .55; dist = 11.5; camD = dist; }
   inNPC.forEach((n) => n.el.remove()); inRoot.clear(); inNPC = [];
   mountRide();                        // 밖에 나오면 다시 탑니다
   net?.setZone('campus');
   setZone('캠퍼스', '중앙 광장'); toast('캠퍼스', p.name + ' 앞');
   sndZone('campus'); BGM.setZone('campus');
+  syncLock();
 }
 
 /* ══════ 10. 지도 ══════ */
@@ -3674,17 +3709,11 @@ elDock.addEventListener('click', (e) => {
   else if (k === 'chat') openChat();
   else if (k === 'wear') { if (panelOn && panelSpot?.panel === 'wardrobe') closePanel(); else openWardrobe(); }
   else if (k === 'view') toggleView();
-  else if (k === 'help') toggleHelp();
 });
 elMyQuick.addEventListener('click', () => {
   if (panelOn && panelSpot?.panel === 'mypage') closePanel();
   else openPanel({ tag: 'MY', title: '마이페이지', panel: 'mypage' });
 });
-let helpOn = false;
-function toggleHelp(v) {
-  helpOn = v === undefined ? !helpOn : v;
-  $('#help').classList.toggle('on', helpOn); dockOn('help', helpOn);
-}
 
 /* ══════ 13. 얼굴 창 ══════ */
 const elPip = $('#pip');
@@ -3726,48 +3755,8 @@ function rebuildMe() {
 /* ══════ 14. 미니맵 ══════ */
 /* 큰 지도와 **같은 그림**을 축척만 줄여 씁니다. 둘이 다르게 생기면
    지도를 볼 때마다 머릿속에서 다시 맞춰야 합니다. */
-const mm = $('#mini canvas'), mx = mm.getContext('2d');
-const MS = 158, MC = MS / 2, MMS = (MC - 6) / CAMPUS.HALF;
-function drawMini() {
-  mx.setTransform(2, 0, 0, 2, 0, 0);
-  mx.clearRect(0, 0, MS, MS);
-  if (!room) {
-    const sea = mx.createLinearGradient(0, 0, 0, MS);
-    sea.addColorStop(0, MAPC.sea); sea.addColorStop(1, MAPC.seaDeep);
-    mx.fillStyle = sea; mx.fillRect(0, 0, MS, MS);
-    if (MAPSHOT.img?.complete) {
-      mx.drawImage(MAPSHOT.img, 0, 0, MS, MS);
-      mx.fillStyle = 'rgba(255,255,255,.8)';
-      NPC.forEach((n) => { const [u, v] = mapUV(n.rig.position.x, n.rig.position.z);
-        mx.beginPath(); mx.arc(u * MS, v * MS, 1.8, 0, TAU); mx.fill(); });
-      const [u, v] = mapUV(P.x, P.z);
-      mapMe(mx, u * MS, v * MS, P.dir + Math.PI * .25, 3.6);
-    } else {
-      mx.save(); mx.translate(MC, MC);
-      drawIsland(mx, MMS, false);
-      drawBlocks(mx, MMS, false);
-      mapMe(mx, P.x * MMS, P.z * MMS, P.dir, 3.6);
-      mx.restore();
-    }
-  } else {
-    const G = room.grid, k = Math.min((MS - 26) / G.w, (MS - 26) / G.d);
-    mx.fillStyle = '#2A323D'; mx.fillRect(0, 0, MS, MS);
-    mx.save(); mx.translate(MC, MC);
-    mx.fillStyle = '#F5EEE0';
-    mx.beginPath(); mx.roundRect(-G.w * k / 2, -G.d * k / 2, G.w * k, G.d * k, 4); mx.fill();
-    mx.fillStyle = '#CFC2A8';
-    for (let j = 0; j < G.nz; j++) for (let i = 0; i < G.nx; i++)
-      if (G.cells[j * G.nx + i])
-        mx.fillRect(-G.w * k / 2 + i * CELL * k, -G.d * k / 2 + j * CELL * k, CELL * k + .5, CELL * k + .5);
-    mx.fillStyle = 'rgba(53,224,198,.32)';
-    spotsHere().forEach((s) => { mx.beginPath(); mx.arc(s.x * k, s.z * k, Math.max(3, s.r * k), 0, TAU); mx.fill(); });
-    mx.strokeStyle = '#F5EEE0'; mx.lineWidth = 3;
-    mx.beginPath(); mx.moveTo(-1.2 * k, G.d * k / 2); mx.lineTo(1.2 * k, G.d * k / 2); mx.stroke();
-    mapMe(mx, P.x * k, P.z * k, P.dir, 3.2);
-    mx.restore();
-  }
-}
-
+/* 미니맵을 걷어냈습니다(HUD 주석 참고). 큰 지도(drawMap)는 그대로이고,
+   그 그림을 그리던 함수만 여기서 사라집니다. */
 /* ══════ 15. 한 판 ══════ */
 /* ══════ 후처리 ══════
    ?ao=0 으로 끄고 켜서 눈으로 비교할 수 있게 해 둡니다. 껐을 때는
@@ -3937,7 +3926,6 @@ if (new URLSearchParams(location.search).get('lab') === '1') {
   catch (e) { console.warn('색 실험실을 못 켰습니다', e); }
 }
 
-const elFps = $('#foot .fps');
 let last = performance.now(), acc = 0, frames = 0, T = 0, quality = 1, fpsNow = 0, pipT = 0;
 let fpsT0 = performance.now();
 /* 그림자를 스스로 껐는지. 껐다고 말만 하고 되돌릴 자리가 없으면 그건 거짓말입니다 */
@@ -3985,14 +3973,15 @@ function tick(now) {
   /* ── 걷기 ── */
   let ix = 0, iz = 0;
   if (!panelOn && !mapOn) {
-    if (key.KeyW || key.ArrowUp) iz += 1;
-    if (key.KeyS || key.ArrowDown) iz -= 1;
-    if (key.KeyA || key.ArrowLeft) ix -= 1;
-    if (key.KeyD || key.ArrowRight) ix += 1;
+    /* 걷기도 설정표를 봅니다. 여기만 박아 두면 W 를 바꿔도 안 걷습니다. */
+    if (down('fwd')) iz += 1;
+    if (down('back')) iz -= 1;
+    if (down('left')) ix -= 1;
+    if (down('right')) ix += 1;
     if (stick) { ix += stick.dx; iz -= stick.dy; }
   }
   let mag = Math.hypot(ix, iz);
-  const run = (key.ShiftLeft || key.ShiftRight) ? 1.75 : 1;
+  const run = down('run') ? 1.75 : 1;
   if (mag > .06) { goTo = null; goPath = null; goEnd = null; }   // 키를 잡으면 자동 걷기는 그만둡니다
   if (goTo && !SESS.on && !CSIT.on) {
     const dx = goTo.x - P.x, dz = goTo.z - P.z, d = Math.hypot(dx, dz);
@@ -4380,7 +4369,13 @@ function tick(now) {
     camD += (want - camD) * Math.min(1, dt * (want < camD ? 14 : 5));
     const d = camD;
     const h = Math.sin(camPitch) * d, r = Math.cos(camPitch) * d;
-    cam.position.lerp(v3.set(P.x + sx * r, P.y + 1.2 + h, P.z + sz * r), 1 - Math.pow(.0009, dt));
+    /* 각을 묶어도 경사·계단 위에서는 카메라가 뒤쪽 낮은 땅에 박힐 수
+       있습니다. 마지막에 **그 자리의 땅 높이**로 한 번 더 받칩니다 —
+       각은 사람이 정하지만 바닥 아래는 어떤 각으로도 안 됩니다. */
+    const camX = P.x + sx * r, camZ = P.z + sz * r;
+    const floor = groundAt(camX, camZ, P.y + 1.2 + h) + .55;
+    cam.position.lerp(v3.set(camX, Math.max(P.y + 1.2 + h, floor), camZ),
+                      1 - Math.pow(.0009, dt));
     cam.lookAt(P.x, P.y + 1.35, P.z);
   }
   aimSun(P.x, P.z);
@@ -4489,7 +4484,6 @@ function tick(now) {
   });
 
   if (toastT > 0) { toastT -= dt; if (toastT <= 0) elToast.classList.remove('on'); }
-  drawMini();
   if (mapOn) drawMap();
 
   /* ── 오른쪽 미리보기 ──
@@ -4516,7 +4510,6 @@ function tick(now) {
     fpsNow = f;
     /* fps 만 적으면 느릴 때 무엇이 느린지 모릅니다. 드로우콜을 같이
        적으면 "물체를 더 뿌려도 되는가" 를 걸으면서 판단할 수 있습니다. */
-    elFps.textContent = f + ' fps · ' + renderer.info.render.calls + ' call';
     /* 화질을 세 단계로 내립니다. 해상도만 내려도 안 되면 **그림자를 끕니다** —
        이 화면에서 제일 비싼 것이 2048짜리 그림자 지도입니다.
        느려지면 걷는 속도까지 같이 느려지므로 프레임을 지키는 게 먼저입니다. */

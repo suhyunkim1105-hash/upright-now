@@ -26,7 +26,53 @@ const DEF = {
   owned: [0],                 // 가진 옷 번호
   seenTutorial: false,
   links: { spotify: '', calendar: '' },   // 사람이 손으로 붙여 넣는 바깥 주소
+  keys: null,                 // 바꾼 단축키만 { 이름: KeyCode }. 안 바꿨으면 null
 };
+
+/* ── 단축키 ──
+   전에는 keydown 안에 `e.code === 'KeyM'` 처럼 코드가 박혀 있었고,
+   안내는 화면 구석의 도움 창에 **글자로만** 적혀 있었습니다. 둘이 따로
+   있으니 하나를 고치면 다른 하나가 거짓말을 합니다.
+
+   여기 표 하나로 모으고, 판정도 안내도 설정 화면도 이것만 봅니다.
+   바꾼 것만 SAVE.keys 에 담습니다 — 전부 저장하면 나중에 기본값을
+   고쳐도 옛 저장본이 옛 키를 붙들고 있습니다. */
+export const KEY_ACTS = [
+  { id: 'fwd',   ko: '앞으로',        def: 'KeyW', alt: 'ArrowUp' },
+  { id: 'back',  ko: '뒤로',          def: 'KeyS', alt: 'ArrowDown' },
+  { id: 'left',  ko: '왼쪽',          def: 'KeyA', alt: 'ArrowLeft' },
+  { id: 'right', ko: '오른쪽',        def: 'KeyD', alt: 'ArrowRight' },
+  { id: 'run',   ko: '뛰기',          def: 'ShiftLeft', alt: 'ShiftRight' },
+  { id: 'act',   ko: '말 걸기 · 들어가기', def: 'KeyE', alt: 'Space' },
+  { id: 'view',  ko: '1인칭 · 3인칭',  def: 'Tab' },
+  { id: 'map',   ko: '지도',          def: 'KeyM' },
+  { id: 'emo',   ko: '감정표현',      def: 'KeyG' },
+  { id: 'wear',  ko: '옷장',          def: 'KeyC' },
+  { id: 'camL',  ko: '시점 왼쪽',     def: 'KeyZ', alt: 'Comma' },
+  { id: 'camR',  ko: '시점 오른쪽',   def: 'KeyX', alt: 'Period' },
+];
+/* Enter(채팅) · Esc(닫기) · 숫자(빠른 이동)는 못 바꿉니다 — 창을 여닫는
+   키까지 바꿀 수 있으면 잘못 묶었을 때 되돌릴 길이 사라집니다. */
+export const KEY_FIXED = [
+  ['Enter', '채팅'], ['Esc', '닫기'], ['1~9 · 0', '지도에서 빠른 이동'],
+  ['드래그', '시점 돌리기'], ['휠', '멀리 · 가까이'], ['클릭', '그 자리로 걸어가기'],
+];
+/** 지금 걸린 키 — 기본값 위에 바꾼 것만 얹습니다 */
+export function keyOf(id) {
+  const a = KEY_ACTS.find((k) => k.id === id);
+  if (!a) return '';
+  return (SAVE.keys && SAVE.keys[id]) || a.def;
+}
+/** 사람이 읽는 이름. KeyW → W, ShiftLeft → Shift */
+export function keyLabel(code) {
+  if (!code) return '—';
+  return code
+    .replace(/^Key/, '').replace(/^Digit/, '')
+    .replace(/^Arrow(\w+)/, (m, d) => ({ Up: '↑', Down: '↓', Left: '←', Right: '→' }[d] || d))
+    .replace(/^(Shift|Control|Alt|Meta)(Left|Right)$/, '$1')
+    .replace('Comma', ',').replace('Period', '.').replace('Space', 'Space')
+    .replace('Backquote', '`').replace('Minus', '-').replace('Equal', '=');
+}
 export const SAVE = load();
 function load() {
   let s;
@@ -1608,6 +1654,23 @@ export function mypage(ctx) {
       + '<div class="note"><b>Spotify 집중 재생</b><br>아래 플레이어에서 로그인한 Spotify 계정으로 바로 재생할 수 있어요.</div>'
       + '<iframe title="Spotify 집중 플레이리스트" style="width:100%;height:152px;border:0;border-radius:16px;margin-top:10px" allow="autoplay;clipboard-write;encrypted-media;fullscreen;picture-in-picture" loading="lazy" src="https://open.spotify.com/embed/playlist/37i9dQZF1DWZeKCadgRdKQ?utm_source=generator"></iframe>'
       + '<div class="note">장소 따라를 고르면 시설에 맞는 곡이 자동으로 바뀝니다. 내장 곡은 전부 CC0이며 만든 사람은 단추에 손을 올리면 나옵니다.</div>'
+      + lbl('key', '단축키')
+      /* 화면 구석의 도움 창을 여기로 옮겼습니다. 거기서는 **읽기만**
+         됐는데, 조작이 안 맞는 사람은 읽어도 소용이 없습니다.
+         누르면 그 자리에서 새 키를 받습니다. */
+      + '<div class="keyset">'
+      + KEY_ACTS.map((a) => {
+        const cur = keyOf(a.id);
+        const moved = !!(SAVE.keys && SAVE.keys[a.id]);
+        return `<div class="kr"><span>${esc(a.ko)}</span>
+          <button data-key="${a.id}" class="${moved ? 'on' : ''}"
+            title="${moved ? '기본값은 ' + esc(keyLabel(a.def)) : '기본값'}">${esc(keyLabel(cur))}</button></div>`;
+      }).join('')
+      + '</div>'
+      + `<div class="wr"><button data-do="keyreset">기본값으로 되돌리기</button></div>`
+      + '<div class="note">누르면 그 자리에서 새 키를 받습니다. Esc 로 그만둡니다. '
+      + KEY_FIXED.map(([k, v]) => `<b>${esc(k)}</b> ${esc(v)}`).join(' · ')
+      + ' 는 못 바꿉니다 — 창을 여닫는 키까지 바꿀 수 있으면 잘못 묶었을 때 되돌릴 길이 없습니다.</div>'
       + lbl('key', '기록')
       + '<div class="wr"><button data-do="wipe">이 기기 기록 전체 지우기</button></div>'
       + '<div class="note">지우면 되돌릴 수 없습니다 — 되돌릴 열쇠(이메일·비밀번호)를 애초에 안 받습니다. 서버 기록까지 지우려면 <b>ikmc554@mju.ac.kr</b> 로 ID 를 알려 주세요.</div>'
@@ -1623,11 +1686,45 @@ export function mypage(ctx) {
         }
         const school = e.target.closest('button[data-school]');
         if (school) { ctx.onSchool?.(school.dataset.school, again); return; }
+        const kb = e.target.closest('button[data-key]');
+        if (kb) { grabKey(kb, again); return; }
         const b = e.target.closest('button[data-do]'); if (!b) return;
+        if (b.dataset.do === 'keyreset') { SAVE.keys = null; save(); again(); return; }
         ctx.onDo(b.dataset.do, again);
       };
     },
   };
+}
+
+/* 키 하나를 받습니다.
+   창이 열려 있는 동안 월드의 keydown 은 대부분의 키를 삼키므로
+   **잡기 단계(capture)** 에서 먼저 받고 거기서 끊습니다. 안 그러면
+   M 을 누르는 순간 지도가 열리면서 설정이 뒤로 사라집니다. */
+function grabKey(btn, again) {
+  const id = btn.dataset.key;
+  const was = btn.textContent;
+  btn.textContent = '키를 누르세요';
+  btn.classList.add('grab');
+  const done = () => {
+    window.removeEventListener('keydown', onKey, true);
+    btn.classList.remove('grab');
+  };
+  const onKey = (e) => {
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (e.code === 'Escape') { done(); btn.textContent = was; return; }
+    /* 같은 키를 두 곳에 묶으면 둘 다 돕니다 — 막고 알려 줍니다 */
+    const taken = KEY_ACTS.find((a) => a.id !== id && keyOf(a.id) === e.code);
+    if (taken) { btn.textContent = taken.ko + ' 가 쓰는 키'; setTimeout(() => { btn.textContent = was; }, 1100); return; }
+    done();
+    const def = KEY_ACTS.find((a) => a.id === id).def;
+    SAVE.keys = SAVE.keys || {};
+    /* 기본값으로 되돌린 것은 표에서 지웁니다 — 남겨 두면 나중에
+       기본값을 고쳐도 옛 저장본이 옛 키를 붙들고 있습니다. */
+    if (e.code === def) delete SAVE.keys[id]; else SAVE.keys[id] = e.code;
+    if (!Object.keys(SAVE.keys).length) SAVE.keys = null;
+    save(); again();
+  };
+  window.addEventListener('keydown', onKey, true);
 }
 
 /** 안내 — 처음 온 사람이 읽는 일곱 칸 */

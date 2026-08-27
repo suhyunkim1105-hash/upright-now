@@ -499,25 +499,28 @@ const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) =>
 
 const MY_SCHOOL = '명지대학교';
 
+/* 실제 지원 대학 이름으로 바꿨습니다 — 목록은 shared/school-auth.js 의
+   SCHOOLS 와 같은 이름을 씁니다(가상 학교 이름 대신 실제 학교, 순위는
+   여전히 예시 수치입니다). */
 const WEEK = [
-  { name: '한빛대학교',   min: 282, was: 1 },
-  { name: '아라대학교',   min: 268, was: 3 },
-  { name: '새봄대학교',   min: 251, was: 2 },
-  { name: '가람대학교',   min: 238, was: 4 },
-  { name: '미리내대학교', min: 224, was: 6 },
-  { name: '다온대학교',   min: 215, was: 5 },
+  { name: '서울대학교',   min: 282, was: 1 },
+  { name: '연세대학교',   min: 268, was: 3 },
+  { name: '고려대학교',   min: 251, was: 2 },
+  { name: '한양대학교',   min: 238, was: 4 },
+  { name: '성균관대학교', min: 224, was: 6 },
+  { name: '중앙대학교',   min: 215, was: 5 },
   { name: '명지대학교',   min: 206, was: 9 },
 ];
 /* 누적은 같은 학교들의 다른 줄 세우기입니다 — 주간에서 앞선 학교가
    누적에서도 앞서면 탭이 있을 이유가 없습니다. */
 const ALL = [
-  { name: '아라대학교',   min: 4126, was: 1 },
-  { name: '한빛대학교',   min: 4011, was: 2 },
-  { name: '가람대학교',   min: 3894, was: 4 },
-  { name: '새봄대학교',   min: 3720, was: 3 },
+  { name: '연세대학교',   min: 4126, was: 1 },
+  { name: '서울대학교',   min: 4011, was: 2 },
+  { name: '한양대학교',   min: 3894, was: 4 },
+  { name: '고려대학교',   min: 3720, was: 3 },
   { name: '명지대학교',   min: 3402, was: 7 },
-  { name: '다온대학교',   min: 3288, was: 5 },
-  { name: '미리내대학교', min: 3140, was: 6 },
+  { name: '중앙대학교',   min: 3288, was: 5 },
+  { name: '성균관대학교', min: 3140, was: 6 },
 ];
 
 const hm = (m) => Math.floor(m / 60) + '시간 ' + (m % 60) + '분';
@@ -539,7 +542,7 @@ function hue(name) {
   return 174 + ((h % 53) - 26);
 }
 
-function emblem(name) {
+function shieldEmblem(name) {
   const t = esc(sym(name));
   const H = hue(name);
   const face = 'hsl(' + H + ' 46% 92%)';
@@ -553,6 +556,29 @@ function emblem(name) {
     + '<text x="15" y="19.4" text-anchor="middle" fill="' + ink + '" '
     + 'font-family="Wanted Sans Variable, Wanted Sans, sans-serif" font-size="11.5" font-weight="800">'
     + t + '</text></svg>';
+}
+
+/* 학교 CI(로고) 파일을 마련한 학교만 이 표에 슬러그를 올려 둡니다.
+   shared/school-auth.js 의 도메인 앞부분과 같은 이름을 씁니다 — 학교
+   하나를 어디서나 같은 슬러그로 찾기 위해서입니다.
+
+   실제 로고 파일은 허가받았거나 자유이용 범위(CI)인 것만 여기 걸어
+   두세요 — assets/logos/<슬러그>.png. 파일이 없거나 아직 안 올렸으면
+   <img> 가 못 불러오는 순간(onerror) 지금까지 쓰던 가상 엠블럼으로
+   조용히 돌아갑니다. 화면이 깨진 이미지 아이콘을 보여 주는 일은 없습니다. */
+const SCHOOL_LOGO_SLUG = {
+  '서울대학교': 'snu', '연세대학교': 'yonsei', '고려대학교': 'korea',
+  '한양대학교': 'hanyang', '성균관대학교': 'skku', '중앙대학교': 'cau',
+  '경희대학교': 'khu', '명지대학교': 'mju', '서강대학교': 'sogang',
+  '이화여자대학교': 'ewha', '건국대학교': 'konkuk', '단국대학교': 'dankook',
+  '인하대학교': 'inha', 'KAIST': 'kaist', 'POSTECH': 'postech',
+};
+
+function emblem(name) {
+  const slug = SCHOOL_LOGO_SLUG[name];
+  if (!slug) return shieldEmblem(name);
+  return '<img class="emb" src="assets/logos/' + slug + '.png" alt="' + esc(name) + ' 로고" '
+    + 'onerror="this.outerHTML=this.dataset.fallback" data-fallback="' + esc(shieldEmblem(name)) + '">';
 }
 
 const UP = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>';

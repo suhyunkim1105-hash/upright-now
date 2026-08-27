@@ -2433,6 +2433,7 @@ function panelFor(s) {
           else if (b.dataset.cslot) { SAVE.look[b.dataset.cslot] = +b.dataset.c; }
           else if (b.dataset.snd) { sndToggle(); again(); return; }
           else if (b.dataset.shadow) { setShadows(!renderer.shadowMap.enabled); again(); return; }
+          else if (b.dataset.exit) { location.href = '../deskfit/index.html'; return; }
           else return;
           UI.save(); rebuildMe(); net?.setLook(curSpecies, myLook(), myNick()); again();
         };
@@ -3792,6 +3793,7 @@ function wardrobeHTML() {
     + `<button data-snd="1" class="${SND.on ? 'on' : ''}">장소 소리 ${SND.on ? '켬' : '끔'}</button>`
     + `<button data-shadow="1" class="${renderer.shadowMap.enabled ? 'on' : ''}"
         title="느린 기기에서는 저절로 꺼집니다">그림자 ${renderer.shadowMap.enabled ? '켬' : '끔'}</button>`
+    + `<button data-exit="1">메인으로 나가기</button>`
     + '</div>';
 }
 /* 그림자를 켜고 끄는 자리 한 곳. 재질을 다시 컴파일해야 해서 잠깐

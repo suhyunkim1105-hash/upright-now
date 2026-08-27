@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowDown,
   ArrowUpRight,
@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { CharacterViewport } from '@/components/character/CharacterViewport'
 import { ROUTES } from '@/constants/routes'
+import { POLICIES } from '@/content/policies'
 import './landing.css'
 
 const steps = [
@@ -340,7 +341,17 @@ export function Landing() {
           </Reveal>
         </section>
       </main>
-      <footer className="landing-footer"><span>© 2026 Upright Now</span><span>개인 기준 대비 변화를 돕는 비의료적 집중 루틴</span></footer>
+      <footer className="landing-footer">
+        <span>© 2026 Upright Now</span>
+        <nav className="landing-footer__links" aria-label="정책과 고지">
+          {POLICIES.map((policy) => (
+            <Link key={policy.slug} to={`/policies/${policy.slug}`}>
+              {policy.title}
+            </Link>
+          ))}
+        </nav>
+        <span>개인 기준 대비 변화를 돕는 비의료적 집중 루틴</span>
+      </footer>
     </div>
   )
 }

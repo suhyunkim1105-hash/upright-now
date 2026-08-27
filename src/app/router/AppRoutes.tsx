@@ -19,6 +19,7 @@ import { Room } from '@/app/routes/Room'
 import { Campus } from '@/app/routes/Campus'
 import { CampusMap } from '@/app/routes/CampusMap'
 import { CampusHistory } from '@/app/routes/CampusHistory'
+import { PolicyDoc } from '@/app/routes/PolicyDoc'
 import { featureFlags } from '@/lib/feature-flags/flags'
 
 /** 라우트 — docs/04_IA.md §1 */
@@ -49,6 +50,8 @@ export function AppRoutes() {
       <Route path="/room/:roomCode" element={<Room />} />
 
       <Route path="/settings" element={<Settings />} />
+
+      <Route path="/policies/:slug" element={<PolicyDoc />} />
 
       {/*
         캠퍼스 영토전 — 플래그가 꺼진 빌드에서는 라우트 자체를 등록하지 않습니다.

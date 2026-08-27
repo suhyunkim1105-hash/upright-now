@@ -178,10 +178,20 @@ test('기상청 키는 서버 환경변수이며 APIHub 승인 오류도 정확�
 })
 
 test('지도 전체 클릭 이동·큰 핵심 건물·막히지 않은 본관 문을 유지한다', () => {
-  assert.match(world, /function drawClayCampus\(g\)/, '3D 클레이 지도 렌더가 없습니다')
-  assert.match(world, /const w = clayWorld\(px, py\)/, '지도 빈 곳 좌표를 월드 좌표로 바꾸지 않습니다')
-  assert.match(world, /if \(!hitCampus\(x,z\)\) \{ at=\{x,z\}; break; \}/,
+  /* 지도 바탕이 캔버스 도형에서 **생성한 캠퍼스 그림**으로 바뀌었습니다.
+     검사의 뜻은 그대로입니다 — 아무 데나 눌러 갈 수 있고, 막힌 곳을
+     누르면 가까운 빈 자리를 찾는다. 옛 판의 함수 이름(drawClayCampus ·
+     clayWorld)을 그대로 물고 있어서 구현이 바뀌자 뜻과 상관없이
+     깨졌습니다. 이름이 아니라 **하는 일**을 겁니다. */
+  assert.match(world, /class="mo"/, '지도 그림 판이 없습니다')
+  assert.match(world, /campus-map-v2-\d+\.webp/, '지도 그림을 안 씁니다')
+  assert.match(world, /function mapWorld\(u, v\)/, '지도 좌표를 월드 좌표로 바꾸지 않습니다')
+  assert.match(world, /if \(!hitCampus\(x, z\)\) \{ at = \{ x, z \}; break; \}/,
     '지도에서 막힌 곳을 눌렀을 때 가까운 빈 자리를 찾지 않습니다')
+  /* 마커 일곱이 다 있고 번호는 숫자키와 같은 표(PLACES)에서 나옵니다 */
+  for (const k of ['mainhall', 'library', 'union', 'arcade', 'clubshop', 'dorm', 'plaza'])
+    assert.match(world, new RegExp(`\{ k: '${k}',`), `지도 마커에 ${k} 가 없습니다`)
+  assert.match(world, /PLACES\.indexOf\(pl\) \+ 1/, '마커 번호를 숫자키와 다른 곳에서 셉니다')
   assert.match(world, /\{ key: 'field', name: '운동장'/)
   assert.match(world, /\{ key: 'lake', name: '호수'/)
   assert.match(plan, /enter:\s*'arcade'[^\n]*?s:\s*3\.0/)

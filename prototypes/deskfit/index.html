@@ -678,7 +678,10 @@ button:active, [data-hot]:active {
         </span>
         <b id="leaveAskTitle" style="display: block; margin-top: 16px; font-weight: 820; font-size: 19px; line-height: 1.35;
                   font-family: inherit; letter-spacing: -.02em; color: #191F28;">녹음 중이에요. 나갈까요?</b>
-        <p style="margin: 10px 0 0; font-weight: 600; font-size: 14px; line-height: 1.6; font-family: inherit; color: #4E5968;">
+        <!-- 이 문구는 열릴 때 다시 씁니다. 노션이 켜져 있으면 파일이
+             안 내려오고 노션에 회의록이 생기므로, 한쪽만 적어 두면
+             둘 중 한 번은 거짓말이 됩니다. -->
+        <p data-leave-what style="margin: 10px 0 0; font-weight: 600; font-size: 14px; line-height: 1.6; font-family: inherit; color: #4E5968;">
           나가면 녹음이 끝나고 소리 파일과 회의록 틀이 이 기기에 내려와요.<br>카메라와 마이크도 함께 꺼져요.</p>
         <div style="margin-top: 22px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
           <button data-leave-stay style="padding: 15px 0; border: 0; border-radius: 18px; cursor: pointer;
@@ -3667,6 +3670,13 @@ button:active, [data-hot]:active {
 <script src="../shared/supabase.js"></script>
 <script src="../shared/account.js"></script>
 <script src="../shared/room.js"></script>
+<!-- notion-rec.js 는 ES 모듈이고 이 파일의 본문은 고전 스크립트입니다.
+     한 줄짜리 껍데기로 window 에 올려 씁니다. 모듈은 defer 라 아래 본문보다
+     늦게 돕니다 — 그래서 쓰는 쪽은 반드시 window.NotionRec?. 로 겁니다. -->
+<script type="module">
+  import * as N from '../shared/notion-rec.js';
+  window.NotionRec = N;
+</script>
 
 <script>
 const first = "Main";
@@ -4471,9 +4481,20 @@ function recording() { return !!(HW.rec && HW.rec.state === 'recording'); }
     show('Done', 'back');
   };
 
+  const what = ask.querySelector('[data-leave-what]');
+  async function sayWhere() {
+    if (!what) return;
+    const N = window.NotionRec;
+    const toNotion = !!(N && await N.isConfigured());
+    what.innerHTML = toNotion
+      ? '나가면 녹음이 끝나고 <b>노션에 회의록이 만들어져요.</b><br>카메라와 마이크도 함께 꺼져요.'
+      : '나가면 녹음이 끝나고 소리 파일과 회의록 틀이 이 기기에 내려와요.<br>카메라와 마이크도 함께 꺼져요.';
+  }
+
   exit.addEventListener('click', () => {
     if (recording()) {                // 값이 남는 경우에만 묻습니다
       ask.hidden = false;
+      sayWhere();                     // 답을 기다리지 않습니다 — 기본 문구가 이미 있습니다
       ask.querySelector('[data-leave-stay]').focus();
       return;
     }
@@ -5247,6 +5268,7 @@ const HW = {
   rec: null,        // MediaRecorder
   chunks: [],
   recAt: 0,
+  recCap: 0,        // 25분 한도 타이머
   audioCtx: null,
   analyser: null,
   levelRaf: 0,
@@ -5341,22 +5363,38 @@ function micMeter(barEl) {
 
 /* ---------------- 녹음 ----------------
    소리만 담습니다. 영상은 담지 않습니다. */
+/* 24kbps 모노 · 25분. 사람 말을 전사하는 데는 이만하면 되고, Vercel 함수의
+   요청 본문 4.5MB 가 실제 한도라 24kbps(3KB/s)면 약 25분입니다. 64kbps 로
+   올리면 9분에서 끊깁니다. */
+const REC_BPS = 24000;
+const REC_MAX_SEC = 25 * 60;
+
 function recStart() {
   if (!HW.mic) { toast('마이크를 먼저 켜 주세요'); return false; }
-  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+  /* **AAC 를 먼저 고릅니다.** 전에는 audio/webm 이 맨 앞이라 크롬에서 항상
+     그게 걸렸는데, 노션은 WebM 을 안 받습니다 — 올려도 전사가 통째로
+     실패합니다. 크롬 151 부터 audio/mp4(AAC)를 네이티브로 녹음하므로
+     변환 없이 그걸 씁니다. WebM 은 그마저 안 되는 브라우저용입니다. */
+  const types = ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
   const type = types.find((t) => MediaRecorder.isTypeSupported(t)) || '';
   try {
-    HW.rec = new MediaRecorder(HW.mic, type ? { mimeType: type } : undefined);
+    HW.rec = new MediaRecorder(HW.mic, type ? { mimeType: type, audioBitsPerSecond: REC_BPS } : undefined);
   } catch { toast('이 브라우저는 녹음을 못 합니다'); return false; }
   HW.chunks = [];
   HW.recAt = Date.now();
   HW.rec.ondataavailable = (e) => { if (e.data && e.data.size) HW.chunks.push(e.data); };
   HW.rec.onstop = () => {
+    clearInterval(HW.recCap); HW.recCap = 0;
     const blob = new Blob(HW.chunks, { type: HW.rec.mimeType || 'audio/webm' });
     const min = Math.max(1, Math.round((Date.now() - HW.recAt) / 60000));
     saveRecording(blob, min);
   };
-  HW.rec.start(1000);
+  HW.rec.start(4000);          // 4초마다 덩어리 — 중간에 끊겨도 앞부분은 남습니다
+  /* 한도에서 스스로 멈춥니다. 넘겨서 보내면 서버가 413 을 주고 그때까지
+     녹음한 것이 통째로 사라집니다. */
+  HW.recCap = setInterval(() => {
+    if ((Date.now() - HW.recAt) / 1000 >= REC_MAX_SEC) { recStop(); toast('25분이 차서 녹음을 마쳤어요'); }
+  }, 1000);
   return true;
 }
 
@@ -5364,10 +5402,32 @@ function recStop() {
   if (HW.rec && HW.rec.state !== 'inactive') HW.rec.stop();
 }
 
-/** 녹음 파일과, 노션에 그대로 붙일 회의록 틀을 함께 내립니다.
-    말을 글로 옮기는 일과 요약은 서버가 필요해서 아직 없습니다 —
+/** 녹음이 끝나면 갈 곳은 둘입니다.
+
+    노션이 켜져 있으면 **노션으로 보냅니다** — 전사도 요약도 노션 AI 가
+    합니다. 안 켜져 있으면 전처럼 파일과 회의록 틀을 이 기기에 내립니다.
+    "켜져 있다" 는 서버에 토큰이 꽂혀 있다는 뜻이고, 없으면 /api 가 404 나
+    { configured: false } 를 줍니다 — 그건 고장이 아니라 안 켜진 것입니다.
+
+    형식도 봅니다. 아주 옛 브라우저에서 WebM 으로 담겼으면 올려 봐야
+    전사가 실패하므로, 그때는 묻지 않고 로컬로 내립니다. */
+async function saveRecording(blob, min) {
+  const N = window.NotionRec;
+  if (N && N.notionTakes(blob.type) && await N.isConfigured()) {
+    toast('노션으로 보내는 중이에요…');
+    const title = (document.querySelector('#s-Room [data-room-title]') || {}).textContent || '집중 세션';
+    const r = await N.sendToNotion(blob, title.trim());
+    if (r.ok) { toast('노션에 회의록을 만들었어요'); return; }
+    /* 못 올렸으면 **버리지 않고** 로컬로 내립니다. 녹음은 다시 못 합니다. */
+    toast(r.message + ' 파일로 내릴게요');
+  }
+  dropRecording(blob, min);
+}
+
+/** 이 기기에 내리기 — 소리 파일과, 노션에 그대로 붙일 회의록 틀.
+    말을 글로 옮기는 일과 요약은 서버가 필요해서 여기서는 안 합니다 —
     없는 것을 있는 척하지 않고, 사람이 채울 자리를 비워 둡니다. */
-function saveRecording(blob, min) {
+function dropRecording(blob, min) {
   const stamp = new Date();
   const pad = (n) => String(n).padStart(2, '0');
   const day = stamp.getFullYear() + '-' + pad(stamp.getMonth() + 1) + '-' + pad(stamp.getDate());
@@ -5381,7 +5441,10 @@ function saveRecording(blob, min) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   };
 
-  drop(blob, base + '.webm');
+  /* 확장자가 '.webm' 으로 박혀 있었습니다. 이제 AAC 로 담기므로
+     내용과 이름이 어긋납니다 — 실제 형식에서 냅니다. */
+  const ext = /mp4|m4a/.test(blob.type) ? 'm4a' : 'webm';
+  drop(blob, base + '.' + ext);
 
   const title = (document.querySelector('#s-Room [data-room-title]') || {}).textContent || '집중 세션';
   const md = [
@@ -5389,7 +5452,7 @@ function saveRecording(blob, min) {
     '',
     '- 날짜: ' + day,
     '- 길이: 약 ' + min + '분',
-    '- 녹음 파일: ' + base + '.webm',
+    '- 녹음 파일: ' + base + '.' + ext,
     '',
     '## 정리',
     '',

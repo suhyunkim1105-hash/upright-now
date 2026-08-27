@@ -8,7 +8,7 @@
 
 
 import { createRecorder, canRecord, isConfigured,
-  notionStatus, notionConnect, notionDisconnect } from './notion-rec.js';
+  notionStatus, notionConnect, notionDisconnect } from '../shared/notion-rec.js';
 
 const KEY = 'girin3d.save';
 const DEF = {

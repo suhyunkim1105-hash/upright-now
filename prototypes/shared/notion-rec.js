@@ -1,6 +1,11 @@
 /* ══════════════════════════════════════════════════════════
    비공개 세션 녹음 → 노션 AI 회의록.
 
+   **두 화면이 함께 씁니다** — 메인(deskfit)의 비공개 세션과 월드
+   (campus3d). 그래서 shared/ 에 있습니다. 월드는 모듈이라 import 로
+   받고, 메인은 고전 스크립트라 한 줄짜리 모듈 껍데기로 window 에
+   올려 씁니다(deskfit/index.html 의 <script type="module"> 참고).
+
    이 파일이 하는 일은 셋뿐입니다 — 마이크를 열고, 소리를 모으고,
    `/api/notion-meeting` 으로 한 번 보냅니다. 전사도 요약도 노션이
    합니다. 여기서는 소리를 **저장하지도 분석하지도** 않습니다.
@@ -91,6 +96,40 @@ export function isConfigured() {
   return asked;
 }
 
+/** 다 담긴 소리를 노션으로 보냅니다.
+
+    createRecorder 를 안 쓰고 **올리는 일만** 필요한 쪽이 있습니다 —
+    메인 화면(deskfit)의 비공개 세션은 이미 자기 마이크 스트림을 열어
+    레벨 미터까지 그리고 있어서, 여기서 getUserMedia 를 또 부르면
+    권한창이 두 번 뜨고 스트림이 둘이 됩니다. 그래서 보내는 길만
+    따로 냅니다 — 올리는 코드는 이 함수 하나입니다.
+
+    @returns {{ok: boolean, result?: object, message?: string}} */
+export async function sendToNotion(blob, title) {
+  const type = (blob.type || MIME_FALLBACK).split(';')[0];
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: {
+        'Content-Type': type,
+        'X-Session-Title': encodeURIComponent(title || '비공개 세션'),
+        ...(await bearer()),
+      },
+      body: blob,
+    });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok || j.error) return { ok: false, message: j.message || '노션에 못 올렸어요.' };
+    return { ok: true, result: j };
+  } catch {
+    return { ok: false, message: '보내는 중에 끊겼어요.' };
+  }
+}
+
+/** 노션이 받는 형식인가. WebM 이면 전사가 통째로 실패하므로 미리 거릅니다. */
+export function notionTakes(mime) {
+  return /audio\/(mp4|mpeg|m4a|wav|ogg)/.test(String(mime || ''));
+}
+
 /**
  * @param {object} opt
  *   onState(s)  idle · asking · recording · sending · done · failed
@@ -160,28 +199,9 @@ export function createRecorder(opt = {}) {
       return;
     }
     set('sending');
-    try {
-      const r = await fetch(API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': type,
-          'X-Session-Title': encodeURIComponent(title || '비공개 세션'),
-          ...(await bearer()),
-        },
-        body: blob,
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || j.error) {
-        set('failed');
-        opt.onError?.(j.message || '노션에 못 올렸어요.');
-        return;
-      }
-      set('done');
-      opt.onDone?.(j);
-    } catch {
-      set('failed');
-      opt.onError?.('보내는 중에 끊겼어요.');
-    }
+    const r = await sendToNotion(blob, title);
+    if (r.ok) { set('done'); opt.onDone?.(r.result); }
+    else { set('failed'); opt.onError?.(r.message); }
   }
 
   return {

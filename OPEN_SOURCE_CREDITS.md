@@ -18,3 +18,60 @@
 원본 저장소의 이미지, 스프라이트, Cocos Creator 프리팹, UI는 포함하지 않습니다. 현재 서비스의 동물 데이터, 화면, 점수, 애니메이션, 입력 잠금, 모바일 대응은 이 프로젝트에서 별도로 구현했습니다.
 
 MIT License 전문은 각 원본 저장소의 `LICENSE` 또는 README에서 확인할 수 있습니다.
+
+## 3D 월드(campus3d) — 통째로 쓰는 오픈 소스
+
+이 셋은 패턴 차용이 아니라 **코드를 그대로** 들여온 것입니다.
+
+### 물리 엔진 — 동물 합치기(수박게임 방식)
+
+- 원본: [liabru/matter-js](https://github.com/liabru/matter-js) 0.20.0
+- 라이선스: MIT License
+- 파일: `prototypes/campus3d/vendor/matter.min.js` (npm `matter-js` 배포 빌드 그대로)
+- 게임 규칙(동물 여덟 단계, 합치기 점수, 선 넘김 판정)은 이 프로젝트가 작성
+
+### 2048 규칙
+
+- 원본: [winsonwq/2048term](https://github.com/winsonwq/2048term) (npm `2048@0.2.2`)
+- 저작권: Wang Qiu
+- 라이선스: MIT License
+- 파일: `prototypes/campus3d/vendor/2048-logic.js` — `row_calc.js`·`table_calc.js` 를
+  ESM 으로 감쌌을 뿐 **규칙 코드는 한 줄도 고치지 않았습니다.** 원본에 mocha 시험 포함
+
+### Phaser — 동물 러너
+
+- 원본: [phaserjs/phaser](https://github.com/phaserjs/phaser)
+- 라이선스: MIT License
+- 파일: `prototypes/openworld/vendor/phaser.esm.min.js` (러너를 열 때만 동적 import)
+
+### 욕설 필터
+
+- 원본: [Tanat05/korcen.ts](https://github.com/Tanat05/korcen.ts)
+- 라이선스: Apache License 2.0
+- 파일: `prototypes/shared/korcen.js` — 3D 월드 채팅도 같은 사전을 씁니다
+
+### 픽셀 글꼴 — 갈무리(Galmuri)
+
+- 원본: [quiple/galmuri](https://github.com/quiple/galmuri)
+- 라이선스: SIL Open Font License 1.1 — 원문은 `prototypes/shared/fonts/Galmuri-OFL.md`
+- 파일: `prototypes/shared/fonts/Galmuri{7,9,11}.woff2`
+  (2D 오픈월드가 쓰던 `prototypes/openworld/assets/fonts/` 사본과 같은 파일)
+- 쓰는 곳: 픽셀 랜딩(`prototypes/landing-pixel`)·아이소메트릭 월드(`prototypes/campusiso`)
+- **크기는 설계 단위의 정수배로만 씁니다** — 7은 8px, 9는 10px, 11은 12px 과 그 배수.
+  사이 크기를 쓰면 획이 뭉개져서 갈무리를 쓰는 뜻이 없어집니다.
+
+### 배경음악 열 곡 — CC0
+
+- 파일: `prototypes/openworld/assets/audio/*.ogg` (2D 월드와 3D 월드가 **같은 파일**을 씁니다)
+- 라이선스: CC0 1.0 (Public Domain Dedication) — freesound.org
+- 만든 사람: LightMister · SondreDrakensson · Erokia · szegvari · Leszek_Szary ·
+  michorvath · Rolly-SFX · pinkinblue · Hakren
+- 3D 월드에서 부르는 곳: `prototypes/campus3d/music.js` (장소별 기본 곡은 2D 와 같은 배정)
+
+### 자세 판정 — MediaPipe Tasks Vision
+
+- 원본: [google-ai-edge/mediapipe](https://github.com/google-ai-edge/mediapipe) tasks-vision 0.10.35
+- 라이선스: Apache License 2.0
+- 파일: `prototypes/shared/posture.js` 가 CDN 에서 wasm 과 모델을 받습니다
+  (pose_landmarker_full · face_landmarker, 둘 다 Apache 2.0)
+- **영상은 서버로 가지 않습니다.** 모델을 한 번 받은 뒤로는 전부 브라우저 안에서 돕니다.

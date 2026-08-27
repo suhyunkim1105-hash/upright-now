@@ -21,6 +21,10 @@ import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSy
 function copyDir(src, dst, onHtml) {
   mkdirSync(dst, { recursive: true });
   for (const e of readdirSync(src, { withFileTypes: true })) {
+    /* `_` 로 시작하는 것은 검수용입니다 — 월드를 걸어 다니며 찍는
+       하네스(_walk.html), 경계상자 계측기(_probe.html), 방 검사
+       실행기(_diag.mjs). 제품 화면이 아니므로 배포본에 안 넣습니다. */
+    if (e.name.startsWith('_')) continue;
     if (e.isDirectory()) copyDir(`${src}/${e.name}`, `${dst}/${e.name}`, onHtml);
     else if (onHtml && e.name.endsWith('.html')) {
       writeFileSync(`${dst}/${e.name}`, onHtml(readFileSync(`${src}/${e.name}`, 'utf8')));
@@ -49,7 +53,7 @@ const fixFonts = (html) => html.replaceAll('../../public/fonts/', '/fonts/');
    보내는데 이 목록에 없어서, 배포본에서만 마지막 한 걸음이 404 였습니다 —
    바로 위 주석이 shared 로 한 번 겪은 것과 같은 자리입니다. 화면을 새로
    만들면 여기에 한 줄을 같이 더해야 합니다. */
-const FOLDERS = ['landing', 'onboarding', 'deskfit', 'lobby', 'mypage', 'league', 'room', 'home', 'openworld', 'room-flow', 'shared'];
+const FOLDERS = ['landing', 'onboarding', 'deskfit', 'campus3d', 'lobby', 'mypage', 'league', 'room', 'home', 'openworld', 'room-flow', 'shared'];
 
 for (const name of FOLDERS) {
   copyDir(`prototypes/${name}`, `dist/prototypes/${name}`, fixFonts);
@@ -95,6 +99,7 @@ writeFileSync('dist/demo.html', `<!doctype html>
   <li><a href="/">랜딩</a><br><small>여기서 시작합니다 — CTA 가 온보딩으로 이어집니다</small></li>
   <li><a href="/prototypes/onboarding/index.html">온보딩</a><br><small>알 고르기 · 학교 인증 · 기준 잡기 → 끝나면 앱 셸</small></li>
   <li><a href="/prototypes/deskfit/index.html">메인</a><br><small>세션 · <b>월드 입장</b> · 비공개 세션 · AI 리포트 · 랭킹전 · 마이페이지</small></li>
+  <li><a href="/prototypes/campus3d/index.html">3D 월드맵</a><br><small>메인의 월드 입장 단추가 여는 최신 클레이 캠퍼스</small></li>
   <li><a href="/prototypes/home/index.html">메인 (옛 판본)</a><br><small>deskfit 이 이것을 대신합니다. 비교용으로만 둡니다</small></li>
   <li><a href="/prototypes/room-flow/index.html">앱 셸 (옛 판본)</a><br><small>라임 시절. 방 만들기 마법사를 메인으로 옮길 때 참고합니다</small></li>
 </ul>

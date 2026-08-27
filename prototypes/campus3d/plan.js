@@ -26,7 +26,7 @@
      정문이 남쪽(z +110), 본관이 북쪽(z -46). 그 사이가 축입니다.
    ══════════════════════════════════════════════════════════ */
 import * as THREE from 'three';
-import { M } from './parts.js';
+import { M, sign } from './parts.js';
 import * as KIT from './kit.js';
 
 /* 부지 — 원이 아니라 네모입니다. 가로가 더 긴 것도 실제 캠퍼스의 성질입니다. */
@@ -64,14 +64,21 @@ let _s = 20260825;
 const rnd = () => (_s = (_s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
 
 export const PAL = {
-  lawn: 0x6FC85E, lawnDark: 0x63BC53, lawnLight: 0x7BD168,
-  road: 0xD9D3C4, roadEdge: 0xF4EEDF, walk: 0xEDE3CC,
+  /* 잔디는 세 파일이 각자 들고 있습니다(plan·campus·grounds). 셋이
+     같은 값이어야 합니다 — 부지 잔디·중심 원판·바깥 잔디가 서로
+     맞닿아 있어서, 하나만 고치면 경계에 띠가 보입니다. */
+  lawn: 0x80BC62, lawnDark: 0x75B356, lawnLight: 0x8BC36F,
+  /* campus.js PAL 과 **같은 가족**(38° 따뜻한 중성)이어야 합니다.
+     한쪽만 고치면 광장과 길이 맞닿는 자리에 색 띠가 생깁니다. */
+  road: 0xCFC7BA, roadEdge: 0xE6E1D6, walk: 0xD8D1C5,
   track: 0xC9705A, turf: 0x5FB765, turfLine: 0xF2F7F0,
   court: 0x4E9E7A, courtLine: 0xF2F7F0, clay: 0xC08A62,
-  water: 0x67C6E8, waterDeep: 0x3FA7CE, sand: 0xE8D8B0,
+  water: 0x73B9D3, waterDeep: 0x4F9ABA, sand: 0xE8D8B0,
   lotDark: 0x8E9490, lotLine: 0xF0F0EA,
-  stone: 0xEDE6D4, stoneDark: 0xD4CAB2,
-  trunk: 0x8E5A33, leaf: 0x53B84E, leafDeep: 0x3C9440, leafWarm: 0x74C25C,
+  stone: 0xE0D9CC, stoneDark: 0xC9BFB0,
+  /* 잎을 잔디와 같은 계열(100~108°)로 당깁니다. 115° 에 있으면 잔디만
+     따뜻하고 나무만 차가워서, 심은 것이 한 정원으로 안 보입니다. */
+  trunk: 0x8E5A33, leaf: 0x63B855, leafDeep: 0x4A9440, leafWarm: 0x86C566,
 };
 
 /* ══════════════════════════════════════════════════════════
@@ -121,7 +128,7 @@ export const BUILDINGS = [
      깊이 9칸이고 캐릭터가 한 칸이니, 월드로 옮기면 50 남짓입니다 —
      84 는 그 1.7 배라 광장 한 변이 통째로 벽이 됐습니다.
      본관 2.0(56×19) · 도서관 2.2(33×22) · 학생회관 2.2(31×21). */
-  { n: '본관',     enter: 'mainHall', x: 0, z: -42, face: 'S', s: 2.0, w: 28, d: 9.4, front: 2.2 },
+  { n: '본관',     enter: 'mainHall', x: 0, z: -42, face: 'S', s: 1.85, w: 28, d: 9.4, front: 2.2 },
   { n: '도서관',   enter: 'library',  x: -40, z: -6, face: 'E', s: 2.2, w: 15, d: 10, front: 1.9 },
   { n: '학생회관', enter: 'union',    x:  40, z: -6, face: 'W', s: 2.2, w: 14, d: 9.4, front: 1.9 },
 
@@ -145,8 +152,8 @@ export const BUILDINGS = [
   /* ══ 예술 · 생활 지구 — 동쪽 안뜰 43×46, 서쪽으로 엽니다 ══ */
   { n: '예술디자인대학', kind: 'atrium',  x: 104, z: -34, face: 'S', w: 46, d: 12, h: 13 },
   { n: '박물관',         kind: 'library', x: 130, z:  -4, face: 'W', w: 44, d: 12, h: 12 },
-  { n: '미니게임관',  enter: 'arcade', x:  90, z: 24, face: 'N', s: 2.2, w: 8.4, d: 5.6, front: 1.9 },
-  { n: '동아리 상점', enter: 'shop',   x: 116, z: 24, face: 'N', s: 2.2, w: 8.0, d: 5.2, front: 1.8 },
+  { n: '미니게임관',  enter: 'arcade', x:  88, z: 30, face: 'N', s: 3.0, w: 8.4, d: 5.6, front: 2.2 },
+  { n: '동아리 상점', enter: 'shop',   x: 118, z: 30, face: 'N', s: 3.0, w: 8.0, d: 5.2, front: 2.2 },
 
   /* ══ 대로변 — 광장에서 밀려난 둘이 여기로 ══
      대로가 정문에서 광장까지 96칸입니다. 그 중간을 잡아 주는 것이
@@ -160,7 +167,7 @@ export const BUILDINGS = [
      들어가는 기숙사(공용동)가 마당 입구를 지킵니다 */
   { n: '제1기숙사', kind: 'hall_res', x: 112, z: -104, face: 'S', w: 44, d: 12, h: 21 },
   { n: '제2기숙사', kind: 'hall_res', x: 112, z: -74, face: 'S', w: 44, d: 12, h: 21 },
-  { n: '기숙사',    enter: 'dorm', x: 84, z: -89, face: 'E', s: 1.6, w: 8.2, d: 5.4, front: 1.9 },
+  { n: '기숙사',    enter: 'dorm', x: 36, z: -62, face: 'S', s: 2.7, w: 8.2, d: 5.4, front: 2.2 },
   { n: '평화의전당', kind: 'hall',  x:  52, z: 96, face: 'W', w: 30, d: 20, h: 16 },
   { n: '입학처',     kind: 'admin', x: -46, z: 100, face: 'E', w: 24, d: 14, h: 11 },
 ];
@@ -439,10 +446,14 @@ function fields(g, solid) {
       /* 관중석 — 긴 쪽 한 면에 세 단 */
       const standM = M(PAL.stone, .84), seatM = M(0x7FA0B8, .8);
       const SL = w * .58;
+      /* 단마다 **땅에서부터** 올립니다. 전 판은 두께 0.35 짜리 판을
+         0.45 · 0.80 높이에 띄워 놓았는데, 각 단의 z 가 서로 달라서
+         밑을 받쳐 주는 것이 없었습니다 — 관중석 두 장이 잔디 위에
+         떠 있는 것으로 보이던 정체입니다. */
       for (let i = 0; i < 3; i++) {
-        const sy = .35 * (i + 1), sd = 1.15;
-        const st = new THREE.Mesh(new THREE.BoxGeometry(SL, .35, sd), i % 2 ? seatM : standM);
-        st.position.set(x, sy - .17 + LAYER.field, z - d / 2 - 2.2 - i * sd);
+        const sh = .35 * (i + 1), sd = 1.15;
+        const st = new THREE.Mesh(new THREE.BoxGeometry(SL, sh, sd), i % 2 ? seatM : standM);
+        st.position.set(x, sh / 2 + LAYER.field, z - d / 2 - 2.2 - i * sd);
         st.castShadow = true; st.receiveShadow = true;
         g.add(st);
       }
@@ -506,18 +517,46 @@ function fields(g, solid) {
         m.castShadow = false; m.receiveShadow = true; g.add(m); return m;
       };
       mk(wob(w / 2 + 3.4, 44, .05, 1.7), M(PAL.sand, .9), LAYER.fieldBase);          // 모래톱
-      mk(wob(w / 2 + .8, 44, .05, 1.7), M(0x8FD8E8, .35), LAYER.field);               // 얕은 물
-      const deep = mk(wob(w / 2 - 3.2, 40, .06, 1.7), M(PAL.waterDeep, .3), LAYER.field + .012);
-      deep.receiveShadow = false;
-      /* 물결 링 — 천천히 도는 밝은 선 둘. index.html 의 시계가 돌립니다 */
-      const rip = new THREE.MeshBasicMaterial({ color: 0xCFF0F8, transparent: true, opacity: .3 });
-      for (const [rr, ph] of [[.32, 0], [.2, 2.1]]) {
-        const ring = new THREE.Mesh(new THREE.RingGeometry(.96, 1, 40), rip);
-        ring.rotation.x = -Math.PI / 2;
-        ring.scale.set(w * rr, d * rr, 1);
-        ring.position.set(x + ph, LAYER.field + .02, z - ph * .5);
-        ring.castShadow = false; g.add(ring);
-      }
+
+      /* ── 물 ──
+         전 판은 얕은 물 한 겹 · 깊은 물 한 겹, 그 위에 **흰 윤곽선 링 둘**
+         이었습니다. 얇은 링은 물결이 아니라 그냥 선으로 보였고(과녁),
+         두 겹 사이 경계도 칼로 자른 자국이었습니다. 물이 아니라 색종이.
+
+         물로 읽히게 하는 것 넷을 넣습니다.
+           ① 깊이 — 겹을 다섯으로 늘리고 색을 사이사이 섞습니다
+           ② 비침 — 물가 두 겹은 반투명. 모래가 비쳐야 얕아 보입니다
+           ③ 반짝임 — 거칠기를 0.14 까지 내려 해가 한 번 물낯에 맺힙니다
+              (평평한 면 + 방향광이면 스페큘러가 실제로 생깁니다)
+           ④ 물결 — 윤곽선이 아니라 **넓고 흐린 띠**. 폭도 중심도 제각각 */
+      const WCOL = [0x9FE0EE, 0x7ECDE5, 0x62B9DA, 0x4CA6CB, 0x3E93BB];
+      WCOL.forEach((c, i) => {
+        const m = mk(wob(w / 2 + .8 - i * (w * .052), 44 - i * 3, .05 + i * .004, 1.7),
+          M(c, .14 + i * .03, i < 2
+            ? { transparent: true, opacity: i ? .92 : .72, metalness: .12 }
+            : { metalness: .10 }),
+          LAYER.field + i * .004);
+        m.receiveShadow = i > 2;
+      });
+      /* 물가 거품선 — 물 겹보다 살짝 넓은 밝은 판을 **밑에** 깔면
+         가장자리 0.35 만 테로 남습니다. 젖은 자리는 늘 밝습니다. */
+      { const foam = new THREE.Mesh(wob(w / 2 + 1.15, 44, .05, 1.7),
+          new THREE.MeshBasicMaterial({ color: 0xF0FBFD, transparent: true,
+            opacity: .55, depthWrite: false }));
+        foam.rotation.x = -Math.PI / 2;
+        foam.position.set(x, LAYER.field - .002, z);
+        foam.castShadow = false; foam.receiveShadow = false; g.add(foam); }
+      /* 물결 — 넓고 흐린 띠 넷. index.html 의 시계가 천천히 돌립니다 */
+      const rip = new THREE.MeshBasicMaterial({ color: 0xE8F7FC, transparent: true,
+        opacity: .17, depthWrite: false });
+      [[.30, .10, 0, 0], [.45, .07, 3.5, -2], [.19, .08, -4, 3], [.37, .05, -1, 5]]
+        .forEach(([rr, wd, ox, oz], i) => {
+          const ring = new THREE.Mesh(new THREE.RingGeometry(1 - wd, 1, 48), rip);
+          ring.rotation.x = -Math.PI / 2;
+          ring.scale.set(w * rr, d * rr, 1);
+          ring.position.set(x + ox, LAYER.field + .026 + i * .002, z + oz);
+          ring.castShadow = false; g.add(ring);
+        });
       /* 바위 — 물가에 셋 */
       const rockM = M(0xB9B4A6, .9);
       [[-.42, .38, 1.2], [.46, .3, .9], [.1, -.5, 1.4]].forEach(([fx, fz, s2]) => {
@@ -534,6 +573,27 @@ function fields(g, solid) {
         leaf.rotation.x = -Math.PI / 2;
         leaf.position.set(x + Math.cos(a) * w * rr2, LAYER.field + .025, z + Math.sin(a) * d * rr2);
         leaf.castShadow = false; g.add(leaf);
+      }
+      /* ── 물가에 앉을 자리 ──
+         캠퍼스에서 제일 예쁜 자리인데 벤치 하나 없었습니다. 걸어가면
+         물을 보고 돌아 나오는 것이 전부라, 사람이 머물 이유가 없습니다.
+         길이 닿는 북쪽 물가(모래톱 바깥 잔디)에 벤치 둘을 물을 보게
+         놓습니다. 사이는 비워 둡니다 — 낚시터 자리가 거기입니다. */
+      { const woodM = M(0xB07A4E, .82), woodD = M(0x8A5C36, .84);
+        const bz = z - d / 2 - 4;
+        for (const bx of [-7, 7]) {
+          const px = x + bx;
+          const seat = new THREE.Mesh(new THREE.BoxGeometry(3.4, .22, .9), woodM);
+          seat.position.set(px, LAYER.field + .74, bz); seat.castShadow = true;
+          seat.receiveShadow = true; g.add(seat);
+          const back = new THREE.Mesh(new THREE.BoxGeometry(3.4, .86, .18), woodM);
+          back.position.set(px, LAYER.field + 1.20, bz - .46); back.castShadow = true; g.add(back);
+          for (const lx of [-1.35, 1.35]) {
+            const leg = new THREE.Mesh(new THREE.BoxGeometry(.22, .62, .8), woodD);
+            leg.position.set(px + lx, LAYER.field + .43, bz); leg.castShadow = true; g.add(leg);
+          }
+          solid(px, bz, 3.6, 1.5, 0);
+        }
       }
       solid(x, z, w * .8, d * .8, 0, false);
     } else if (t === 'amphi') {
@@ -741,7 +801,11 @@ function plantTrees(g, trees, solid) {
    함수는 남깁니다 — 부르는 곳이 여럿이고, 되살릴 일이 생기면
    이 한 줄만 지우면 됩니다. */
 function fence(g, solid) {
-  return;
+  /* 첫 줄이 `return;` 이라 담도 정문도 **하나도 안 서 있었습니다.**
+     그래서 섬 가장자리가 잔디에서 그냥 잘렸고, 빠른 이동의 "정문" 은
+     빈 포장길로 데려갔습니다. 왜 껐는지 적혀 있지 않아 되살립니다 —
+     담 조각은 인스턴스 둘이고 충돌 상자는 반경 20 밖이면 건너뛰므로
+     비용이 문제였을 자리는 아닙니다. */
   const wallM = M(0xE8DFC8, .9), capM = M(0xC9BFA4, .86), brickM = M(0xC98A63, .82);
   const SEG = 5.6, GAP = 9;                      // 정문 폭
   const segs = [];
@@ -791,8 +855,11 @@ function fence(g, solid) {
   }
   const lin = new THREE.Mesh(new THREE.BoxGeometry(GAP * 2 + 5, 1.2, 1.4), capM);
   lin.position.set(0, 8.3, 0); lin.castShadow = true; gg.add(lin);
-  const sign = new THREE.Mesh(new THREE.BoxGeometry(11, 1.6, .3), M(0x9BA6B2, .5));
-  sign.position.set(0, 6.9, .85); sign.castShadow = true; gg.add(sign);
+  /* 학교 이름 — 회색 판만 걸어 두면 "아직 안 만든 간판" 입니다.
+     parts.js 의 sign 은 캔버스에 글자를 굽고 웹폰트가 온 뒤 한 번 더
+     굽습니다. 안팎 두 장 — 나갈 때도 문은 문이어야 합니다. */
+  sign(gg, '기린캠퍼스', 0, 6.9, 1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF');
+  sign(gg, '기린캠퍼스', 0, 6.9, -1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF').rotation.y = Math.PI;
 }
 
 /* ---- 담 밖 — 도시와 산 ---- */

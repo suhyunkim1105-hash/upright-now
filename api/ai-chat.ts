@@ -23,7 +23,7 @@ export const AI_CHAT_MODEL = 'gemini-3.5-flash'
   완벽한 방어가 아니라 **실수와 장난을 막는 문**입니다. 진짜 방어는
   인증이 붙은 뒤에 사용자 단위로 겁니다.
 */
-import { authErrorStatus, requireUser, type AuthedUser } from './require-auth'
+import { authErrorStatus, requireUser, type AuthedUser } from './require-auth.js'
 
 const RATE_WINDOW_MS = 10 * 60_000
 const RATE_MAX = 20

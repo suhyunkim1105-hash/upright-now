@@ -63,6 +63,51 @@ export function playEmotePose(g, k, t) {
   const P = g.userData?.parts; if (!P) return false;
   const E = EMOTE_BY_KEY[k]; if (!E) return false;
   if (t > E.dur) return false;
+  /* 최근 원본 네 캐릭터는 GLB 뼈대를 씁니다. 기존 코드는 절차형 캐릭터의
+     빈 팔·다리 그룹만 돌려서 GLB에서는 이모지만 뜨고 몸이 멈춰 있었습니다.
+     원본 GLB가 공통으로 가진 일곱 뼈를 직접 움직여 같은 여덟 동작을 냅니다. */
+  if (P.glb?.poseNodes) {
+    const N = P.glb.poseNodes;
+    Object.values(N).forEach(({ o, q, p }) => { o.quaternion.copy(q); o.position.copy(p); });
+    g.position.y = 0;
+    const add = (name, x = 0, y = 0, z = 0) => {
+      const o = N[name]?.o; if (!o) return;
+      o.rotateX(x); o.rotateY(y); o.rotateZ(z);
+    };
+    const w = t / E.dur, s = Math.sin, TAU = Math.PI * 2;
+    switch (k) {
+      case 'wave':
+        add('arm.R', -.55 + s(t * 12) * .35, 0, -1.85); add('head', 0, 0, -.08); break;
+      case 'clap': {
+        const q = Math.abs(s(t * 11));
+        add('arm.L', -1.10, -.30 - q * .42, .72); add('arm.R', -1.10, .30 + q * .42, -.72);
+        add('spine', .06, 0, 0); break;
+      }
+      case 'yes': add('head', s(t * 9) * .38, 0, 0); add('spine', s(t * 9) * .06, 0, 0); break;
+      case 'no': add('head', 0, s(t * 10) * .62, 0); add('arm.L', -.7, 0, .65); add('arm.R', -.7, 0, -.65); break;
+      case 'jump': {
+        const h = Math.sin(Math.min(1, w * 1.15) * Math.PI);
+        g.position.y = h * .64; add('leg.L', -h * .75, 0, 0); add('leg.R', -h * .75, 0, 0);
+        add('arm.L', -h * 1.15, 0, h * .72); add('arm.R', -h * 1.15, 0, -h * .72); break;
+      }
+      case 'dance': {
+        const q = s(t * 7);
+        add('root', 0, q * .24, q * .12); add('spine', 0, q * .20, q * .18);
+        add('arm.L', q > 0 ? -2.1 : -.35, 0, .45); add('arm.R', q < 0 ? -2.1 : -.35, 0, -.45);
+        add('leg.L', q * .28, 0, 0); add('leg.R', -q * .28, 0, 0); break;
+      }
+      case 'sad': {
+        const d = Math.min(1, w * 2.5); g.position.y = -d * .16;
+        add('spine', d * .48, 0, 0); add('head', d * .42, 0, 0);
+        add('arm.L', -2.0 * d, 0, .42 * d); add('arm.R', -2.0 * d, 0, -.42 * d);
+        add('leg.L', -1.15 * d, 0, 0); add('leg.R', -1.15 * d, 0, 0); break;
+      }
+      case 'love':
+        add('arm.L', -2.35, -.2, .66); add('arm.R', -2.35, .2, -.66);
+        add('head', -.12, 0, s(t * 6) * .08); g.position.y = Math.abs(s(t * 6)) * .045; break;
+    }
+    return true;
+  }
   const b = g.userData.base.armZ;
   const rest = () => {
     P.legs.forEach((l) => { l.rotation.x = 0; l.rotation.z = 0; });

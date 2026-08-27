@@ -59,16 +59,24 @@ export function prism(p, w, h, d, mat, x, y, z, bevel = .12) {
 /* ---- 창 — 틀 · 유리 · 반사 · 문설주 둘 · 창턱 여섯 조각 ---- */
 export function win(p, C, x, y, z, ry, w, h, style) {
   const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; p.add(g);
-  box(g, w + .26, h + .26, .16, .06, M(C.frame, .5), 0, 0, 0);
-  box(g, w, h, .2, .04, M(C.glass, .18), 0, 0, .04);
-  box(g, w * .5, h * .42, .22, .03, M(C.glassLit, .16), -w * .22, h * .22, .05);
+  /* 둥근 창은 네모 틀을 깔지 않습니다.
+     전에는 style 과 무관하게 사각 틀·사각 유리를 먼저 깔고 그 위에 원통을
+     얹었습니다. 원통이 틀보다 작아서 네모가 그대로 보였고, 그래서 미니게임관의
+     "여섯 중 여기만 동그랗다" 가 화면에서는 성립하지 않았습니다. */
+  const round = style === 'round';
+  if (!round) {
+    box(g, w + .26, h + .26, .16, .06, M(C.frame, .5), 0, 0, 0);
+    box(g, w, h, .2, .04, M(C.glass, .18), 0, 0, .04);
+    box(g, w * .5, h * .42, .22, .03, M(C.glassLit, .16), -w * .22, h * .22, .05);
+  }
   if (style !== 'round') {
     box(g, .07, h, .26, .02, M(C.frame, .5), 0, 0, .06);
     box(g, w, .07, .26, .02, M(C.frame, .5), 0, 0, .06);
   } else {
-    cyl(g, w * .52, w * .52, .16, 22, M(C.frame, .5), 0, 0, .01).rotation.x = Math.PI / 2;
-    cyl(g, w * .42, w * .42, .2, 22, M(C.glass, .18), 0, 0, .05).rotation.x = Math.PI / 2;
-    cyl(g, w * .2, w * .2, .22, 18, M(C.glassLit, .16), -w * .1, w * .1, .07).rotation.x = Math.PI / 2;
+    /* 테두리를 한 단 키워 사각 창과 비슷한 무게로 맞춥니다 */
+    cyl(g, w * .60, w * .60, .18, 24, M(C.frame, .5), 0, 0, 0).rotation.x = Math.PI / 2;
+    cyl(g, w * .48, w * .48, .22, 24, M(C.glass, .18), 0, 0, .05).rotation.x = Math.PI / 2;
+    cyl(g, w * .22, w * .22, .24, 18, M(C.glassLit, .16), -w * .12, w * .12, .08).rotation.x = Math.PI / 2;
   }
   if (style === 'arch') {
     cyl(g, (w + .26) / 2, (w + .26) / 2, .16, 22, M(C.frame, .5), 0, h / 2, 0).rotation.x = Math.PI / 2;
@@ -265,7 +273,15 @@ export function sign(p, text, x, y, z, w, h, bg, fg) {
        기본 글꼴로 구워져 끝까지 그대로 남습니다.
      · 이 재질에는 map 이 있으므로 bake 가 절대 합치지 않습니다. */
   const g = new THREE.Group(); g.position.set(x, y, z); p.add(g);
-  box(g, w, h, .26, .07, M(bg, .5), 0, 0, 0);
+  /* 클레이 간판: 벽에서 분리되는 그림자판 → 크림 프레임 → 색 패널의
+     세 겹입니다. 얇은 색 판 하나였을 때는 정면 외 각도에서 사라졌습니다. */
+  box(g, w + .18, h + .18, .30, .10, M(0xB6C8D3, .72), .05, -.06, -.10);
+  box(g, w + .12, h + .12, .34, .11, M(0xF7FBFC, .48), 0, 0, 0);
+  box(g, w, h, .28, .09, M(bg, .5), 0, 0, .10);
+  [-1, 1].forEach((s) => {
+    box(g, .14, h * .48, .18, .06, M(0xF7FBFC, .5), s * (w / 2 + .11), 0, -.03);
+    cyl(g, .065, .065, .12, 10, M(0xF3C96B, .38), s * (w / 2 - .13), h / 2 - .11, .27).rotation.x = Math.PI / 2;
+  });
   const PX = 150;
   const cw = Math.round((w - .16) * PX), ch = Math.round((h - .16) * PX);
   const c = document.createElement('canvas');
@@ -296,8 +312,81 @@ export function sign(p, text, x, y, z, w, h, bg, fg) {
   tex.anisotropy = 4;
   const pl = new THREE.Mesh(new THREE.PlaneGeometry(w - .16, h - .16),
     new THREE.MeshStandardMaterial({ map: tex, roughness: .5 }));
-  pl.position.z = .15; g.add(pl);
+  pl.position.z = .255; g.add(pl);
   draw();
   if (document.fonts?.ready) document.fonts.ready.then(draw).catch(() => {});
+  return g;
+}
+
+/* ══════════════════════════════════════════════════════════
+   격 — 건물을 "박스에 창을 뚫은 것" 에서 **건축**으로 올리는 부품 셋.
+
+   여섯 채를 다시 그리는 대신 여기에 공통 부품을 두고 필요한 채에만
+   붙입니다. 셋 다 실제 학교 건물이 늘 갖고 있는 것이고, 없으면
+   면이 그냥 끝나서 종이 상자로 보입니다.
+   ══════════════════════════════════════════════════════════ */
+
+/** 처마 아래 이빨 — 덴틸.
+    코니스가 두꺼운 띠 하나면 무게만 있고 격이 없습니다. 그 밑에 작은
+    블록을 촘촘히 두르면 그림자가 잘게 끊겨 **깊이**가 생깁니다.
+    실제로 이 한 줄이 "학교 건물" 과 "상자" 를 가릅니다. */
+export function dentil(p, C, w, d, y, size = .16, gap = .34) {
+  const g = new THREE.Group(); g.position.y = y; p.add(g);
+  const m = M(C.trim, .55);
+  const run = (len, ax) => {
+    const n = Math.max(2, Math.round(len / gap));
+    const step = len / n;
+    for (let i = 0; i < n; i++) {
+      const t = -len / 2 + step * (i + .5);
+      if (ax === 'x') {
+        box(g, size, size * 1.1, size * .8, .02, m, t, 0, d / 2);
+        box(g, size, size * 1.1, size * .8, .02, m, t, 0, -d / 2);
+      } else {
+        box(g, size * .8, size * 1.1, size, .02, m, w / 2, 0, t);
+        box(g, size * .8, size * 1.1, size, .02, m, -w / 2, 0, t);
+      }
+    }
+  };
+  run(w, 'x'); run(d, 'z');
+  return g;
+}
+
+/** 모서리 돌 — 쿼인.
+    벽이 만나는 자리에 돌을 번갈아 물립니다. 큰 면일수록 모서리가
+    허전한데, 이게 있으면 벽이 **끝나는 자리**가 분명해집니다. */
+export function quoins(p, C, w, d, y0, h, n = 6, s = .52) {
+  const g = new THREE.Group(); p.add(g);
+  const m = M(C.wallLight, .5), step = h / n;
+  [-1, 1].forEach((sx) => [-1, 1].forEach((sz) => {
+    for (let i = 0; i < n; i++) {
+      const long = i % 2 === 0;
+      const y = y0 + step * (i + .5);
+      box(g, long ? s * 1.7 : s, step * .82, s, .04, m,
+          sx * (w / 2 - (long ? s * .85 : s * .5) + .06), y, sz * (d / 2 + .02));
+      box(g, s, step * .82, long ? s : s * 1.7, .04, m,
+          sx * (w / 2 + .02), y, sz * (d / 2 - (long ? s * .5 : s * .85) + .06));
+    }
+  }));
+  return g;
+}
+
+/** 난간 — 지붕 가장자리의 짧은 기둥 줄.
+    평지붕이 그냥 끝나면 잘린 상자입니다. 난간이 있으면 위에 사람이
+    올라갈 수 있는 곳이 되고, 실루엣도 하늘과 톱니로 만납니다. */
+export function balustrade(p, C, w, d, y, h = .5, gap = .62) {
+  const g = new THREE.Group(); g.position.y = y; p.add(g);
+  const m = M(C.trim, .55), cap = M(C.wallLight, .5);
+  const run = (len, ax) => {
+    const n = Math.max(2, Math.round(len / gap));
+    const step = len / n;
+    for (let i = 0; i <= n; i++) {
+      const t = -len / 2 + step * i;
+      const put = (x, z) => cyl(g, .07, .09, h, 8, m, x, h / 2, z);
+      if (ax === 'x') { put(t, d / 2); put(t, -d / 2); }
+      else { put(w / 2, t); put(-w / 2, t); }
+    }
+  };
+  run(w, 'x'); run(d, 'z');
+  box(g, w + .22, .13, d + .22, .04, cap, 0, h + .06, 0);
   return g;
 }

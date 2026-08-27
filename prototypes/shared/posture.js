@@ -371,6 +371,8 @@ var POSE = (function () {
     arbiter: arbiter, step: step, median: median, mad: mad,
     Smoother: Smoother,
     PRIMARY: PRIMARY, AUX: AUX,
+    /* 3D 월드 자세 미니게임도 이 엔진과 같은 임계값을 읽습니다. */
+    DIRECTION: DIRECTION, FLOOR: FLOOR, MAD_K: MAD_K, SENS: SENS,
     MIN_SHOULDER_WIDTH: MIN_SHOULDER_WIDTH,
     /* 카메라를 여는 화면은 전부 이 값을 씁니다 — 해상도가 갈리면
        같은 사람이 방마다 다른 그림으로 보입니다. */

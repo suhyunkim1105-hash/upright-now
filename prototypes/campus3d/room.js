@@ -87,6 +87,36 @@ export function shell(g, w, d, h, opt = {}) {
   box(g, .18, .34, d, .04, M(IN.base, .7), -w / 2 + .24, .17, 0);
   box(g, w, .24, .2, .05, M(IN.wallTop, .6), 0, h - .12, -d / 2 + .25);
   box(g, .2, .24, d, .05, M(IN.wallTop, .6), -w / 2 + .25, h - .12, 0);
+
+  /* ── 가까운 쪽 벽 둘과 천장 ──
+     3인칭 실내 카메라는 +x/+z 모서리 **밖에서** 방을 들여다보므로 그쪽
+     벽 두 장을 안 세웠습니다. index.html 의 clampRoomYaw 가 시점을
+     ±60° 로 묶어 뒤를 못 보게 하고 있어서 여태 안 드러났습니다.
+
+     그런데 **Tab 으로 1인칭이 되면 그 잠금이 풀립니다**(clampRoomYaw
+     첫 줄이 first 면 바로 돌아갑니다). 돌아서면 벽 두 장이 없고 천장도
+     없어서 방이 뚜껑 열린 상자가 되고, 천장등은 허공에 매달립니다.
+
+     그래서 나머지 벽과 천장을 따로 만들어 두고 1인칭일 때만 켭니다.
+     bake 가 합쳐 버리면 따로 못 끄므로 noBake, 부딪힘은 방 경계가
+     이미 막고 있으므로 noCollide 입니다. */
+  const near = new THREE.Group();
+  near.name = 'nearShell';
+  near.visible = false;
+  near.userData.noBake = true;
+  near.userData.noCollide = true;
+  g.add(near);
+  const wm = M(opt.wall || IN.wall, .8);
+  box(near, w, h, .34, .06, wm, 0, h / 2, d / 2);
+  box(near, .34, h, d, .06, wm, w / 2, h / 2, 0);
+  box(near, w, .34, .18, .04, M(IN.base, .7), 0, .17, d / 2 - .24);
+  box(near, .18, .34, d, .04, M(IN.base, .7), w / 2 - .24, .17, 0);
+  box(near, w, .24, .2, .05, M(IN.wallTop, .6), 0, h - .12, d / 2 - .25);
+  box(near, .2, .24, d, .05, M(IN.wallTop, .6), w / 2 - .25, h - .12, 0);
+  /* 천장 — 아랫면이 정확히 h 에 오게 둡니다. 천장등의 고정쇠가
+     매다는 높이 +0.72 라, 방마다 그 끝이 이 판 안에 묻힙니다. */
+  box(near, w, .3, d, .06, M(opt.ceil || IN.wallTop, .92), 0, h + .15, 0);
+  near.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
 }
 /* ════════════════════════════════════════════════════════
    창밖 — 하늘색 · 밤 · 날씨.
@@ -136,7 +166,7 @@ export function setOutside(opt) {
   /* 비·눈은 **채도를 먼저 깎고** 밝기를 조금 내립니다. 밝기만 내리면
      파란 하늘이 그냥 어두워져서 흐린 날이 아니라 초저녁으로 보입니다.
      눈은 흐리되 밝습니다 — 쌓인 눈이 빛을 되돌려 주기 때문입니다. */
-  const dull = kind === 'clear' ? 0 : kind === 'cloud' ? .24 : kind === 'snow' ? .3 : .36;
+  const dull = kind === 'clear' ? 0 : kind === 'cloud' ? .16 : kind === 'snow' ? .18 : .22;
   if (dull) _sky.lerp(kind === 'snow' ? PALE : GREY, dull);
   if (kind === 'rain') _sky.multiplyScalar(.9);
   /* 유리 — 밤에는 눌러서 짙은 남색 유리로. 0 까지 내리면 벽에 뚫린
@@ -207,7 +237,9 @@ export function desk(g, x, z, ry, w = 2.2, d = 1.0, h = .78) {
 let SEATREG = null;
 export function seatsBegin() { SEATREG = []; }
 export function seatsTake() { const r = SEATREG || []; SEATREG = null; return r; }
-function regSeat(x, z, ry, kind) { if (SEATREG) SEATREG.push({ x, z, dir: ry, kind }); }
+function regSeat(x, z, ry, kind, extra) {
+  if (SEATREG) SEATREG.push({ x, z, dir: ry, kind, ...(extra || {}) });
+}
 function regSeatLocal(px, pz, pry, lx, lz, kind) {
   if (!SEATREG) return;
   const c = Math.cos(pry), sn = Math.sin(pry);
@@ -235,6 +267,10 @@ export function readTable(g, x, z, ry, w = 5.0) {
 }
 /** 침대 — 틀 · 매트리스 · 이불 · 베개 */
 export function bed(g, x, z, ry) {
+  /* 침대 발치에서 눕기를 시작합니다. 머리는 로컬 -z(베개 쪽)로 향하고,
+     몸 중심은 매트리스 한가운데에 오도록 별도 자리로 등록합니다. */
+  regSeatLocal(x, z, ry, 0, 1.18, 'bed');
+  if (SEATREG?.length) Object.assign(SEATREG[SEATREG.length - 1], { y: .82 });
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   box(p, 1.9, .34, 3.4, .08, M(IN.woodDark, .78), 0, .2, 0);
   box(p, 1.9, .8, .14, .05, M(IN.wood, .74), 0, .6, -1.7);
@@ -262,8 +298,8 @@ export function counter(g, x, z, ry, w = 2.6, col = IN.wood) {
   return p;
 }
 /** 게시판 — 종이 몇 장 */
-export function board(g, x, y, z, w = 2.2, h = 1.5) {
-  const p = new THREE.Group(); p.position.set(x, y, z); g.add(p);
+export function board(g, x, y, z, w = 2.2, h = 1.5, ry = 0) {
+  const p = new THREE.Group(); p.position.set(x, y, z); p.rotation.y = ry; g.add(p);
   box(p, w, h, .14, .05, M(IN.woodDark, .78), 0, 0, 0);
   box(p, w - .2, h - .2, .1, .03, M(0x4E7C52, .82), 0, 0, .05);
   [[-.5,.3,.5,.4],[.4,.32,.44,.36],[-.42,-.3,.42,.4],[.42,-.28,.5,.34]]
@@ -352,19 +388,41 @@ export function vending(g, x, z, ry) {
   return p;
 }
 /** 오락기 — 미니게임관 */
-export function cabinet(g, x, z, ry, col) {
+export function cabinet(g, x, z, ry, col, theme = '') {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
-  box(p, 1.1, 2.0, .9, .1, M(col, .6), 0, 1.0, 0);
+  /* 본체·받침·둥근 측면 장식까지 한 덩어리로 보여 종이 상자가 아니라
+     실제 클레이 오락기처럼 읽히게 합니다. */
+  box(p, 1.22, .16, 1.06, .08, M(0x33435A, .52), 0, .08, 0);
+  box(p, 1.1, 2.0, .9, .13, M(col, .6), 0, 1.0, 0);
+  [-1, 1].forEach((s) => box(p, .11, 1.74, .98, .05, M(0xF6FAFD, .52), s * .56, 1.05, 0));
   const scr = box(p, .82, .66, .1, .04, M(0x1E2630, .25, { emissive: 0x3E6E9E, emissiveIntensity: .55 }),
                   0, 1.42, .42);
   scr.rotation.x = .22;
+  const zf = .485;
+  if (theme === 'runner') {
+    [-.20, 0, .20].forEach((yy) => box(p, .58, .025, .025, .01, M(0xD8EEF8, .45), 0, 1.40 + yy, zf));
+    [0, 1, 2].forEach((i) => cyl(p, .045, .045, .025, 12, M(0xF3D564, .45), -.22 + i * .22, 1.43, zf).rotation.x = Math.PI / 2);
+  } else if (theme === 'memory') {
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sy], i) =>
+      box(p, .22, .21, .025, .055, M([0x65C8B2,0xE98D79,0x8CB9E8,0xB39AE1][i], .52), sx * .15, 1.42 + sy * .15, zf));
+  } else if (theme === 'match3') {
+    for (let yy = -1; yy <= 1; yy++) for (let xx = -1; xx <= 1; xx++)
+      cyl(p, .052, .052, .025, 12, M([0x65C8B2,0xE98D79,0x8CB9E8][(xx + yy + 6) % 3], .5), xx * .18, 1.42 + yy * .17, zf).rotation.x = Math.PI / 2;
+  } else if (theme === 'merge') {
+    [[-.18,1.32,.12],[.14,1.34,.12],[-.05,1.57,.17]].forEach(([xx, yy, rr], i) => {
+      const q = new THREE.Mesh(new THREE.SphereGeometry(rr, 14, 10), M([0xF19B86,0x7FCDBA,0xAFA0E3][i], .55));
+      q.position.set(xx, yy, zf); p.add(q);
+    });
+  }
   box(p, .9, .34, .3, .06, M(0x2A2036, .5), 0, 1.02, .38);          // 조작판
   cyl(p, .05, .05, .22, 8, M(IN.metal, .4), -.2, 1.2, .44);
   const kn = new THREE.Mesh(new THREE.SphereGeometry(.1, 12, 10), M(0xE8483C, .4));
   kn.position.set(-.2, 1.32, .44); kn.castShadow = true; p.add(kn);
   [0, 1, 2].forEach((i) => cyl(p, .06, .06, .06, 10, M(BOOKS[i], .5), .06 + i * .18, 1.14, .46)
     .rotation.x = Math.PI / 2);
-  box(p, 1.16, .2, .96, .05, M(0x2A2036, .5), 0, 2.05, 0);
+  box(p, 1.18, .25, .98, .08, M(0x2A2036, .5), 0, 2.07, 0);
+  box(p, .72, .08, .08, .03, M(col, .45, { emissive: col, emissiveIntensity: .34 }), 0, 2.09, .49);
+  [-.35, .35].forEach((dx) => cyl(p, .055, .055, .035, 12, M(0xF4D06F, .4, { emissive: 0xF4D06F, emissiveIntensity: .4 }), dx, .20, .49).rotation.x = Math.PI / 2);
   return p;
 }
 /** 옷걸이 — 상점 */
@@ -381,14 +439,24 @@ export function rack(g, x, z, ry) {
 /** 알 받침 — 상점 */
 export function eggStand(g, x, z, col) {
   const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
-  cyl(p, .28, .34, .9, 14, M(IN.woodDark, .75), 0, .45, 0);
-  cyl(p, .34, .3, .12, 14, M(IN.woodLight, .6), 0, .96, 0);
-  const e = new THREE.Mesh(new THREE.SphereGeometry(.3, 20, 16), M(col, .55));
-  e.position.y = 1.28; e.scale.set(1, 1.28, 1);
+  /* 받침도 상품 무대처럼 보이게: 넓은 클레이 베이스 + 둥근 둥지 + 빛 테. */
+  cyl(p, .38, .44, .18, 20, M(0xC9D9E4, .58), 0, .09, 0);
+  cyl(p, .31, .36, .72, 18, M(IN.woodLight, .68), 0, .50, 0);
+  cyl(p, .39, .34, .14, 20, M(0xF7EFE1, .72), 0, .90, 0);
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(.34, .035, 8, 28),
+    M(col, .28, { emissive: col, emissiveIntensity: .22 }));
+  halo.rotation.x = Math.PI / 2; halo.position.y = .98; p.add(halo);
+  const e = new THREE.Mesh(new THREE.SphereGeometry(.34, 28, 22), M(col, .66));
+  e.position.y = 1.34; e.scale.set(.96, 1.30, .96);
   e.castShadow = true; e.receiveShadow = true; p.add(e);
-  [[-.1,1.34,.26],[.12,1.2,.24],[0,1.46,.2]].forEach(([dx,dy,dz]) => {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), M(0xFFFFFF, .5));
-    s.position.set(dx, dy, dz); s.scale.z = .3; p.add(s);
+  /* 앞면의 큰 하이라이트와 점무늬가 종별 색을 입체적으로 읽히게 합니다. */
+  [[-.12,1.44,.30,.075],[.13,1.27,.29,.06],[.06,1.58,.23,.045]].forEach(([dx,dy,dz,r]) => {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 9), M(0xFFFFFF, .54));
+    s.position.set(dx, dy, dz); s.scale.z = .26; p.add(s);
+  });
+  [[-.18,1.20,.24,.045],[.18,1.46,.24,.052],[-.02,1.62,.18,.038]].forEach(([dx,dy,dz,r]) => {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), M(0x526578, .22));
+    s.position.set(dx, dy, dz); s.scale.z = .28; p.add(s);
   });
   return p;
 }
@@ -598,6 +666,24 @@ export function doormat(g, x, z, col = 0x4E8C9E) {
   return p;
 }
 
+/** 출구 표지 — 방마다 색이 다른 문틀과 빛나는 화살표를 둡니다.
+    매트만 있으면 낮은 시점에서는 가구에 가려져 출구를 놓치므로,
+    시선 높이에서도 보이는 표식을 문 옆에 한 번 더 세웁니다. */
+export function exitSign(g, x, z, col = 0x4E8C9E) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
+  const frame = M(IN.ink, .48), glow = M(col, .28, { emissive: col, emissiveIntensity: .48 });
+  box(p, 2.7, .16, .18, .04, frame, 0, 2.75, 0);
+  box(p, .16, 2.7, .18, .04, frame, -1.28, 1.42, 0);
+  box(p, .16, 2.7, .18, .04, frame, 1.28, 1.42, 0);
+  box(p, 1.35, .48, .16, .12, glow, 0, 2.43, -.03);
+  /* 문 방향(+z)을 가리키는 삼각 화살표와 짧은 몸통. */
+  const arrow = new THREE.Mesh(new THREE.CylinderGeometry(.20, .20, .08, 3), glow);
+  arrow.position.set(.34, 2.43, -.13); arrow.rotation.set(Math.PI / 2, Math.PI, 0); p.add(arrow);
+  box(p, .50, .12, .10, .04, glow, -.10, 2.43, -.13);
+  p.traverse((o) => { o.userData.noCollide = true; });
+  return p;
+}
+
 
 /** 잡지꽂이 — 도서관 앞쪽 */
 export function mag(g, x, z, ry) {
@@ -634,9 +720,10 @@ export function cafeSet(g, x, z, col = 0x63C47C) {
   cyl(p, .42, .46, .08, 18, M(IN.metalDark, .45), 0, .06, 0);
   [0, 1, 2, 3].forEach((i) => {
     const a = i * Math.PI / 2 + .4, r = 1.24;
-    regSeat(x + Math.cos(a) * r, z + Math.sin(a) * r, Math.atan2(-Math.cos(a), -Math.sin(a)), 'chair');
+    const inward = Math.atan2(-Math.cos(a), -Math.sin(a));
+    regSeat(x + Math.cos(a) * r, z + Math.sin(a) * r, inward, 'chair');
     const c = new THREE.Group(); c.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
-    c.rotation.y = -a + Math.PI / 2; p.add(c);
+    c.rotation.y = inward; p.add(c);
     [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx, sz]) =>
       cyl(c, .05, .06, .46, 8, M(IN.metalDark, .45), sx * .21, .23, sz * .21));
     box(c, .58, .12, .58, .06, M(col, .68), 0, .52, 0);
@@ -979,6 +1066,28 @@ export function aFrame(g, x, z, ry, col = 0x2DD4BF) {
   box(p, .9, .07, .34, .03, M(IN.woodDark, .7), 0, .52, 0);       // 가로대
   return p;
 }
+
+/** 출입문용 안내 키오스크 — 책처럼 접힌 A형 판 대신 한눈에 읽히는 양면 표지판. */
+export function infoKiosk(g, x, z, ry, col = 0x2DD4BF) {
+  const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  cyl(p, .3, .34, .10, 16, M(IN.metalDark, .45), 0, .05, 0);
+  cyl(p, .07, .07, 1.15, 10, M(IN.metal, .4), 0, .62, 0);
+  const frame = M(IN.woodDark, .62), paper = M(0xEAF4FA, .42);
+  box(p, 1.36, 1.48, .18, .08, frame, 0, 1.54, 0);
+  [-1, 1].forEach((side) => {
+    box(p, 1.16, 1.28, .10, .05, paper, 0, 1.54, side * .10);
+    box(p, .94, .28, .11, .05, M(col, .56), 0, 1.96, side * .16);
+    /* 사용법 · 카메라 두 카테고리를 두 장의 카드로 표현합니다. */
+    [-.25, .25].forEach((dy, i) => {
+      box(p, .92, .32, .11, .05, M(i ? 0xCCE1F8 : 0xB7EBE1, .5), 0, 1.54 + dy, side * .16);
+      box(p, .16, .16, .12, .05, M(i ? 0x2A66A6 : 0x12867A, .48),
+        side * -.32, 1.54 + dy, side * .18);
+      box(p, .42, .06, .12, .02, M(IN.ink, .42), side * .12, 1.57 + dy, side * .18);
+      box(p, .3, .05, .12, .02, M(IN.ink, .3), side * .18, 1.48 + dy, side * .18);
+    });
+  });
+  return p;
+}
 /** 벽에 건 줄전구 — 기숙사 */
 export function stringLights(g, x, y, z, w = 4.0, n = 9) {
   const p = new THREE.Group(); p.position.set(x, y, z); g.add(p);
@@ -1175,6 +1284,9 @@ export function roundRug(g, x, z, col = 0x63C47C, inner = 0xF2F8EE, r = 1.1) {
 }
 /** 빈백 — 공을 그냥 놓으면 구슬입니다. 눌러서 앉은 자국을 냅니다 */
 export function beanbag(g, x, z, ry = 0, col = 0x9B7BD4) {
+  /* 빈백은 좌판 중앙보다 등받이 반대쪽으로 살짝 앉아야 몸이 등받이에
+     파묻히지 않습니다. */
+  regSeatLocal(x, z, ry, 0, .14, 'beanbag');
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   const lo = P(col, .86), hi = P(col, .7);
   const b = new THREE.Mesh(new THREE.SphereGeometry(.52, 16, 12), lo);

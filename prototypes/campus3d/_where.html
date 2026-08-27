@@ -1,0 +1,32 @@
+<meta charset="utf-8"><pre id="out">…</pre>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script type="module">
+/* 검수용 — 어떤 자리에 **무엇이** 있는지 (제품 아님).
+   ?at=x,z&r=반경 . 화면에서 정체를 못 맞히는 물건이 나올 때 씁니다. */
+import * as THREE from 'three';
+import { buildCampus } from './campus.js';
+const scene = new THREE.Scene();
+buildCampus(scene);
+scene.updateMatrixWorld(true);
+const q = new URLSearchParams(location.search);
+const [ax, az] = (q.get('at') || '0,0').split(',').map(Number);
+const R = +(q.get('r') || 8);
+const bb = new THREE.Box3(), sz = new THREE.Vector3(), c = new THREE.Vector3();
+const rows = [];
+scene.traverse((o) => {
+  if (!(o.isGroup && o.children.length) && !o.isMesh) return;
+  bb.setFromObject(o); if (!isFinite(bb.min.x)) return;
+  bb.getSize(sz); bb.getCenter(c);
+  if (sz.x > 12 || sz.z > 12) return;
+  if (Math.hypot(c.x - ax, c.z - az) > R) return;
+  /* 부모가 이미 목록에 있으면 자식은 건너뜁니다 */
+  rows.push({ o, s: sz.clone(), c: c.clone(), n: o.children.length,
+              t: o.isGroup ? 'G' : 'M', y0: bb.min.y });
+});
+const set = new Set(rows.map((r) => r.o));
+const keep = rows.filter((r) => { for (let p = r.o.parent; p; p = p.parent) if (set.has(p)) return false; return true; });
+const f = (v) => v.toFixed(2).padStart(7);
+document.getElementById('out').textContent =
+  `(${ax}, ${az}) 반경 ${R} 안 — ${keep.length}개\n` +
+  keep.map((r) => `${r.t}${String(r.n).padStart(3)}  자리${f(r.c.x)},${f(r.c.z)}  밑${f(r.y0)}  크기${f(r.s.x)}×${f(r.s.y)}×${f(r.s.z)}`).join('\n');
+</script>

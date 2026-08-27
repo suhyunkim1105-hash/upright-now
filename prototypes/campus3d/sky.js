@@ -19,18 +19,18 @@
 /* 시각별 하늘 — 2D 판의 SKY 12구간과 같은 자리에 같은 색을 둡니다 */
 const STOPS = [
   /* h,  하늘,      해빛,      해세기, 주변광, 반구광 */
-  [0,  0x0C1226, 0x6E86C8, .10, .17, .12],
-  [4,  0x141E3C, 0x7E94D0, .12, .19, .14],
-  [5.5,0x44548A, 0xE8A87C, .48, .38, .30],
-  [6.5,0x8FB6D8, 0xFFD9A8, 1.05, .58, .54],
-  [8,  0xA9D8EE, 0xFFF0D4, 1.60, .68, .76],
-  [11, 0xBFE4F2, 0xFFF6E4, 1.95, .70, .85],
-  [14, 0xBCE2F0, 0xFFF4DE, 1.90, .70, .84],
-  [16.5,0xCFE2EA, 0xFFE6BC, 1.50, .68, .74],
-  [18, 0xE8B892, 0xFFB877, .92, .58, .54],
-  [19, 0x7E6B98, 0xC97E60, .48, .38, .30],
-  [20.5,0x1E2646, 0x6E86C8, .14, .21, .16],
-  [24, 0x0C1226, 0x6E86C8, .10, .17, .12],
+  [0,  0x344A72, 0x91A9DF, .30, .38, .32],
+  [4,  0x50658D, 0xA6B9E5, .34, .42, .36],
+  [5.5,0xA9C9E2, 0xFFE4D2, .78, .62, .58],
+  [6.5,0xC5E3F2, 0xFFF3E8, 1.28, .72, .72],
+  [8,  0xD0ECF7, 0xFFFDF5, 1.78, .78, .86],
+  [11, 0xCDEAF6, 0xFFFFFF, 2.08, .80, .92],
+  [14, 0xC9E8F5, 0xFFFDF8, 2.02, .80, .90],
+  [16.5,0xD1E7F2, 0xFFF4E7, 1.68, .75, .82],
+  [18, 0xCCDDEA, 0xFFE8D2, 1.16, .66, .66],
+  [19, 0x91A8C8, 0xD7DDF2, .72, .52, .48],
+  [20.5,0x50658A, 0xA1B4E2, .38, .42, .36],
+  [24, 0x344A72, 0x91A9DF, .30, .38, .32],
 ];
 const lerp = (a, b, t) => a + (b - a) * t;
 function mixHex(a, b, t) {
@@ -63,14 +63,115 @@ export function createSky(THREE, ctx) {
   const glass = [];           // 창·가로등 유리 재질
   const rainG = { pts: null, vel: null, n: 0 };
 
+  /* ══ 하늘 돔 ══
+     배경이 **색 하나**였습니다. 캠퍼스가 320칸인데 위를 올려다보면
+     끝까지 같은 하늘색이라, 화면 위쪽 절반이 색지 한 장이었습니다.
+     하늘은 위가 짙고 지평선이 옅습니다 — 그 하나만 있어도 깊이가 생기고,
+     해와 구름이 있으면 시각이 몇 시인지 화면만 보고 압니다.
+
+     한 덩어리(드로우콜 1)이고 카메라를 따라다닙니다. 깊이를 안 쓰므로
+     무엇도 가리지 않고, 안개도 안 받습니다 — 대신 **지평선 색을 안개
+     색과 같게** 잡아 경계가 안 보이게 합니다(다르면 띠가 생깁니다). */
+  const skyU = {
+    uTop:   { value: new THREE.Color(0x8FC4E8) },
+    uHaze:  { value: new THREE.Color(0xCDEAF6) },
+    uSun:   { value: new THREE.Color(0xFFF6E4) },
+    uSunDir: { value: new THREE.Vector3(-.4, .6, .5).normalize() },
+    uNight: { value: 0 },
+    uCloud: { value: .35 },
+  };
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(1, 40, 24),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false,
+      uniforms: skyU,
+      vertexShader: `varying vec3 vD;
+        void main(){ vD = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      /* 구름은 방향 벡터로 자른 값잡음 셋을 겹칩니다. 텍스처가 없으므로
+         메모리도 로딩도 0 이고, 시각에 따라 색만 갈아 끼우면 됩니다. */
+      fragmentShader: `
+        varying vec3 vD;
+        uniform vec3 uTop, uHaze, uSun; uniform vec3 uSunDir;
+        uniform float uNight, uCloud;
+        float h21(vec2 p){ return fract(sin(dot(p, vec2(41.7, 289.1))) * 43758.5453); }
+        float vn(vec2 p){
+          vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+          return mix(mix(h21(i), h21(i+vec2(1,0)), f.x),
+                     mix(h21(i+vec2(0,1)), h21(i+vec2(1,1)), f.x), f.y);
+        }
+        float fbm(vec2 p){ return vn(p)*.55 + vn(p*2.1)*.28 + vn(p*4.3)*.17; }
+        void main(){
+          vec3 d = normalize(vD);
+          float up = clamp(d.y, 0.0, 1.0);
+          /* 지평선에서 천정까지 — 제곱근을 쓰면 아래쪽이 더 넓게 옅습니다.
+             선형으로 섞으면 하늘 한복판에 띠가 보입니다. */
+          vec3 col = mix(uHaze, uTop, sqrt(up));
+          /* 해 — 낮에만. 원반 하나와 그 둘레의 넓은 무리 */
+          float sd = max(dot(d, normalize(uSunDir)), 0.0);
+          float day = 1.0 - uNight;
+          col += uSun * pow(sd, 900.0) * 1.6 * day;
+          col += uSun * pow(sd, 12.0) * .22 * day;
+          /* 구름 — 지평선 가까이는 눌러서 띠가 안 지게 */
+          float band = smoothstep(0.02, 0.26, up);
+          vec2 uv = d.xz / max(d.y, 0.12) * 0.5;
+          float c = fbm(uv * 1.35 + vec2(0.0, 0.0));
+          c = smoothstep(0.44, 0.82, c) * band * uCloud;
+          col = mix(col, mix(vec3(1.0), uTop, 0.18 + uNight * .55), c);
+          gl_FragColor = vec4(col, 1.0);
+          #include <colorspace_fragment>
+        }`,
+    }),
+  );
+  dome.name = 'skyDome';
+  dome.frustumCulled = false;
+  dome.renderOrder = -1000;
+  /* **카메라 far 안쪽**이어야 합니다. 처음에 600 으로 뒀는데 이 화면의
+     카메라는 far 400 이라 돔이 통째로 잘려 나갔고, 하늘은 그대로 배경색
+     한 장이었습니다(깊이 검사를 꺼도 near/far 클리핑은 그대로 걸립니다).
+     깊이를 안 쓰고 맨 먼저 그리므로 크기는 아무 값이나 괜찮습니다 —
+     40 이면 near 0.25 보다 넉넉히 멀고 far 400 보다 넉넉히 가깝습니다. */
+  dome.scale.setScalar(40);
+  dome.userData.noBake = true;
+  /* 카메라를 따라다닙니다. 원점에 두면 캠퍼스 반대편(300칸)까지 걸어갔을
+     때 지평선이 기울어 보입니다. onBeforeRender 는 그리기 직전에 카메라를
+     넘겨주므로 여기서 옮기는 것이 한 프레임도 안 밀립니다. */
+  dome.onBeforeRender = (r, sc, camera) => { dome.position.copy(camera.position); };
+  scene.add(dome);
+  const _sd = new THREE.Vector3();
+  /* 하늘색 하나에서 천정·지평선 두 색을 만듭니다. 시각표(STOPS)를 두 벌로
+     늘리지 않으려는 것입니다 — 늘리면 둘이 갈라집니다. 천정은 그 색을
+     진하게, 지평선은 옅게. 밤에는 차이를 줄입니다(밤하늘은 평평합니다). */
+  const _top = new THREE.Color(), _haze = new THREE.Color();
+  function paintDome(s, indoor) {
+    dome.visible = !indoor;
+    if (indoor) return;
+    _haze.setHex(s.sky);
+    _top.copy(_haze);
+    const k = 1 - s.night * .55;
+    _top.offsetHSL(.02 * k, .26 * k, -.21 * k);
+    skyU.uTop.value.copy(_top);
+    skyU.uHaze.value.copy(_haze);
+    skyU.uSun.value.setHex(s.sun);
+    skyU.uNight.value = s.night;
+    skyU.uCloud.value = weather === 'clear' ? .46 : weather === 'cloud' ? .88 : .96;
+    if (sun) skyU.uSunDir.value.copy(_sd.copy(sun.position).normalize());
+  }
+
   /* ── 빛나는 재질 모으기 ──
      굽기(bake)가 지오메트리는 합쳐도 **재질은 그대로 둡니다.** 그래서
      재질만 붙잡아 두면 밤에 창 전체가 한 번에 켜집니다. 색으로 고릅니다 —
      bld.js 의 유리색과 실내 창의 하늘색이 그것입니다. */
+  /* ⚠ 이 목록은 **색으로** 창을 찾습니다. 창 색을 바꾸면 여기도 같이
+     고쳐야 하고, 안 고치면 아무 에러 없이 밤에 불만 안 켜집니다.
+     실제로 그렇게 되어 있었습니다 — 아래 0xFFF8EA·0xFFE8C0·0xE8F4FF 에
+     "건물 창(bld.js)" 이라고 적혀 있는데, bld.js 의 BASE 는 언제부턴가
+     glass 0x4E8CA8 · glassLit 0x74B5CE 입니다. 그래서 캠퍼스 여섯 채의
+     창이 **한 장도 안 켜졌고**, 밤 캠퍼스가 폐교로 보였습니다. */
   const GLASS_HEX = new Set([
     0x9EDCEB, 0xBFEAF5, 0xCFEFFA, 0xBFE4F2, 0xD8F2FA, 0xA9DDF2, 0x9FD8EE,
     0xFFF2CE,                                     // 가로등 유리(campus.js lampPost)
-    0xFFF8EA, 0xFFE8C0, 0xE8F4FF,                 // 건물 창(bld.js)
+    0xFFF8EA, 0xFFE8C0, 0xE8F4FF,                 // 옛 건물 창 — 남겨 둡니다
+    0x4E8CA8, 0x74B5CE,                           // 건물 창(bld.js BASE.glass · glassLit)
   ]);
   function collect(root) {
     if (!root) return;
@@ -142,6 +243,10 @@ export function createSky(THREE, ctx) {
       scene.background.setHex(s.sky);
       if (weather !== 'clear') scene.background.multiplyScalar(dull * 1.02);
     }
+    /* 돔은 배경 **위에** 그려집니다. 배경색은 돔이 못 덮는 자리(실내)와
+       안개 색의 기준으로 계속 씁니다 — 지평선 색을 돔과 맞추는 근거가
+       그 값이라, 둘을 따로 두면 지평선에 띠가 생깁니다. */
+    paintDome(s, indoor);
     /* 안개 색 = 하늘 색. 다르면 지평선에 띠가 생겨 안개가 아니라
        벽으로 보입니다. 실내에서는 밀도를 거의 0 으로 내립니다 —
        방은 20칸도 안 되는데 밖과 같은 밀도를 쓰면 벽이 뿌예집니다. */
@@ -171,10 +276,20 @@ export function createSky(THREE, ctx) {
     if (hemi.groundColor && base.gnd) {
       hemi.groundColor.setRGB(base.gnd.r * (1 - n * .52), base.gnd.g * (1 - n * .44), base.gnd.b * (1 - n * .14));
     }
+    /* ── 대비 ──
+       시각표(STOPS)의 값 그대로면 주변광이 세서 화면이 평평합니다.
+       점토는 **음영으로** 형태를 말하는 재질이라, 그늘이 얕으면 모든
+       것이 스티커처럼 보입니다. 표는 그대로 두고 여기서 비율만 밉니다 —
+       해를 올리고 주변광을 내립니다. 실내는 창 하나로 버티므로 안 건드립니다.
+
+       KEY 1.16 · AMB 0.68 · 반구광 0.74 는 눈으로 맞춘 값입니다.
+       한 번 밀고 나서 화면에 어두운 값이 하나도 없다는 것을 재고 나서
+       한 단 더 밀었습니다. 더 밀면 그늘이 까맣게 막힙니다. */
+    const KEY = indoor ? 1 : 1.16, AMB = indoor ? 1 : .68;
     sun.color.setHex(s.sun);
-    sun.intensity = (indoor ? s.sunI * .7 : s.sunI) * dull;
-    amb.intensity = s.amb * (indoor ? 1.28 : 1) * (weather === 'clear' ? 1 : 1.08);
-    hemi.intensity = s.hemi * dull;
+    sun.intensity = (indoor ? s.sunI * .7 : s.sunI * KEY) * dull;
+    amb.intensity = s.amb * (indoor ? 1.28 : AMB) * (weather === 'clear' ? 1 : 1.08);
+    hemi.intensity = s.hemi * dull * (indoor ? 1 : .74);
     /* 불 — 밤일수록 창이 밝아집니다. 값이 안 바뀌면 재질을 안 건드립니다 */
     const want = Math.round(s.night * 20) / 20;
     if (want !== lit) {

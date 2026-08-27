@@ -85,14 +85,65 @@ export function loadCharacters(THREE_, GLTFLoader, base = './assets/chars/') {
         g.scene.traverse((o) => {
           if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; }
         });
-        GLB_CACHE.set(sp, { scene: g.scene, clips: g.animations || [] });
+        /* 걷기·달리기 클립의 root 뼈가 좌우 이동과 회전을 이미 들고
+           있습니다. 월드에서도 몸 전체를 이동시키므로 이것까지 더하면
+           한 걸음마다 골반이 좌우로 크게 밀립니다. 다리·팔 동작은 두고
+           root 의 수평 이동과 회전만 첫 프레임에 고정합니다. */
+        const clips = g.animations || [];
+        clips.filter((c) => /^(walk|run)$/i.test(c.name)).forEach((c) => {
+          c.tracks.forEach((tr) => {
+            if (/root\.position$/i.test(tr.name) && tr.values.length >= 3) {
+              const x0 = tr.values[0], z0 = tr.values[2];
+              for (let i = 0; i < tr.values.length; i += 3) {
+                tr.values[i] = x0; tr.values[i + 2] = z0;
+              }
+            } else if (/root\.quaternion$/i.test(tr.name) && tr.values.length >= 4) {
+              const q0 = tr.values.slice(0, 4);
+              for (let i = 0; i < tr.values.length; i += 4)
+                for (let k2 = 0; k2 < 4; k2++) tr.values[i + k2] = q0[k2];
+            }
+            /* 걷기·달리기 클립의 spine 이 좌우로 흔듭니다 — 달리기 8도,
+               걷기 5도. 사람이면 이게 어깨 스윙인데, 우리 넷은 2.6등신이라
+               spine 위에 머리가 통째로 얹혀 있습니다. 그래서 어깨가 아니라
+               **머리가** 좌우로 도리질하는 것으로 보였습니다. 기린이 특히
+               심한 것은 머리가 y 1.07 위에 있어 spine(0.57) 에서 가장 멀기
+               때문입니다 — 같은 8도가 목 끝에서 가장 크게 벌어집니다.
+
+               지우지 않고 줄입니다. 0 으로 만들면 상체가 통나무가 되어
+               다리만 움직이는 인형이 됩니다. 첫 프레임 쪽으로 당겨
+               3분의 1만 남깁니다(달리기 8도 → 2.7도).
+
+               slerp 이 아니라 nlerp 입니다. 이 각도(10도 미만)에서 둘의
+               차이는 소수점 넷째 자리라 안 보이고, 여기는 로더 안이라
+               THREE.Quaternion 을 새로 만들지 않는 쪽이 낫습니다. */
+            if (/spine\.quaternion$/i.test(tr.name) && tr.values.length >= 8) {
+              const KEEP = 1 / 3;
+              const q0 = tr.values.slice(0, 4);
+              for (let i = 4; i < tr.values.length; i += 4) {
+                /* 부호가 뒤집힌 쿼터니언은 같은 회전이지만 그대로 섞으면
+                   먼 쪽으로 돕니다. 먼저 첫 프레임과 같은 반구로 맞춥니다. */
+                let d = 0;
+                for (let k2 = 0; k2 < 4; k2++) d += q0[k2] * tr.values[i + k2];
+                const sgn = d < 0 ? -1 : 1;
+                let n = 0;
+                for (let k2 = 0; k2 < 4; k2++) {
+                  const v = q0[k2] + (sgn * tr.values[i + k2] - q0[k2]) * KEEP;
+                  tr.values[i + k2] = v; n += v * v;
+                }
+                n = Math.sqrt(n) || 1;
+                for (let k2 = 0; k2 < 4; k2++) tr.values[i + k2] /= n;
+              }
+            }
+          });
+        });
+        GLB_CACHE.set(sp, { scene: g.scene, clips });
         res(sp);
       }, undefined, () => res(null));
     })))
     .then((r) => { GLB_READY = GLB_CACHE.size > 0; return r.filter(Boolean); });
 }
 
-function glbChar(parent, species, opt, SkeletonUtils) {
+function glbChar(parent, species, fit, opt, SkeletonUtils) {
   const src = GLB_CACHE.get(species);
   if (!src) return null;
   const g = new THREE.Group();
@@ -103,6 +154,9 @@ function glbChar(parent, species, opt, SkeletonUtils) {
 
   /* 뼈까지 새로 만드는 복제 — clone() 만 쓰면 모두가 한 몸이 됩니다 */
   const body = SkeletonUtils.clone(src.scene);
+  /* 애니메이션의 발 압축 구간에서도 발바닥이 바닥 아래로 사라지지 않게
+     아주 얇은 여유를 둡니다. 원본 네 모델은 발 크기가 달라 4cm만 줍니다. */
+  body.position.y += .04;
   g.add(body);
 
   const mixer = new THREE.AnimationMixer(body);
@@ -119,11 +173,35 @@ function glbChar(parent, species, opt, SkeletonUtils) {
 
   /* 걷기·쉬기가 쓰는 빈 뼈대 — 감정표현 등이 parts 를 만져도 안 터집니다 */
   const dummy = () => { const d = new THREE.Group(); g.add(d); return d; };
+  const poseNodes = {};
+  ['root', 'spine', 'head', 'arm.L', 'arm.R', 'leg.L', 'leg.R'].forEach((n) => {
+    const o = body.getObjectByName(n);
+    if (o) poseNodes[n] = { o, q: o.quaternion.clone(), p: o.position.clone() };
+  });
   g.userData.parts = {
     legs: [dummy(), dummy()], shins: [dummy(), dummy()], arms: [dummy(), dummy()],
     head: dummy(), torso: dummy(), neck: null, eyes: [], wear: {},
-    glb: { mixer, act, cur: 'idle', last: 0 },
+    glb: { mixer, act, cur: 'idle', last: 0, body, bodyY: body.position.y,
+      bodyQ: body.quaternion.clone(), poseNodes },
   };
+  /* 옷은 **안 씌웁니다.** 여기 있던 클레이 옷 한 벌(addGlbWear)을 걷었습니다.
+
+     그 옷은 사람 몸에 맞춰 만든 한 벌을 네 종에 그대로 얹는 것이었습니다.
+     네 몸이 서로 너무 달라 어느 종에서도 옷으로 안 읽혔습니다 — 몸통이
+     통통한 기린·개구리에서는 옷이 통째로 몸 **안에** 들어가 민트색 조각과
+     청바지 다리만 옆구리로 삐져나왔고(뛸 때 몸 옆에 사람 형체가 따라
+     다니던 것이 이것입니다), 등딱지가 있는 거북이·펭귄에서는 등 뒤로
+     뚫고 나왔습니다.
+
+     자리를 손으로 더 맞춰도 안 됩니다. 뼈는 네 종이 다 같은 자리인데
+     (spine 0.57 · head 0.87) 메시는 그렇지 않기 때문입니다 — 기린은 머리가
+     y 1.07 위에 있고 거북이는 몸이 x 로 0.1 밀려 있습니다. 옷이 몸에
+     붙어 보이려면 종마다 옷을 따로 빚어야 합니다. 값을 맞추는 일이
+     아니라 만드는 일이라 여기서 하지 않습니다.
+
+     옷장·상점·서버는 그대로입니다. 무엇을 가졌고 무엇을 입었는지는 계속
+     저장되고, 상점 카드의 옷 그림도 절차형 골조로 따로 그립니다
+     (shopview.js). 월드의 몸에 얹지 않을 뿐입니다. */
   g.userData.base = { armZ: [0, 0] };
   g.userData.seed = Math.random() * 10;
   return g;
@@ -159,7 +237,10 @@ function glbPlay(g, name, t, speed = 1) {
    옷 자체를 지우지는 않습니다 — 옷장·염색·상점이 전부 이 구조에
    매달려 있어서, 지우면 그쪽이 통째로 무너집니다. 대신 **살색으로
    덮고** 모자·안경·가방을 끕니다. 형태는 남되 옷으로 안 보입니다. */
-export const BARE = true;
+/* 옷 가게와 옷장이 실제 기능이 된 뒤에도 이 값이 true라 모든 월드 캐릭터가
+   강제로 기본 맨몸 차림으로 다시 쓰였습니다. 상품 카드의 옷 전용 렌더는
+   shopview.js가 별도로 몸을 숨기므로, 월드 캐릭터까지 숨길 이유가 없습니다. */
+export const BARE = false;
 
 /* ══ 비례 ══
    랜딩 3D 에셋과 나란히 놓고 맞췄습니다.
@@ -227,7 +308,11 @@ const BODY = {
   기린:     { bh: .60, bw: .34, nk: .42, hy: 1.50, hs: .90, ft: .135, ay: .44, ar: .105 },
   펭귄:     { bh: .84, bw: .46, nk: .00, hy: 1.20, hs: 1.12, ft: .185, ay: .54, ar: .155 },
   거북이:   { bh: .68, bw: .43, nk: .04, hy: 1.14, hs: 1.10, ft: .165, ay: .46, ar: .135 },
+  알파카:   { bh: .76, bw: .45, nk: .10, hy: 1.22, hs: .98, ft: .155, ay: .50, ar: .130 },
+  햄스터:   { bh: .70, bw: .48, nk: .00, hy: 1.12, hs: 1.14, ft: .175, ay: .46, ar: .145 },
+  고슴도치: { bh: .74, bw: .47, nk: .00, hy: 1.16, hs: 1.02, ft: .165, ay: .48, ar: .135 },
   개구리:   { bh: .70, bw: .44, nk: .00, hy: 1.14, hs: 1.10, ft: .175, ay: .46, ar: .140 },
+  백조:     { bh: .80, bw: .43, nk: .12, hy: 1.25, hs: 1.00, ft: .170, ay: .52, ar: .145 },
 };
 const bodyOf = (sp) => BODY[sp] || BODY.거북이;
 
@@ -414,6 +499,46 @@ const HEADS = {
         m.quaternion.setFromRotationMatrix(_look); });
     cheeks(h, .3, -.1, .4);
   },
+  알파카(h, C) {
+    ell(h, .45, M(C.skin), 0, -.02, 0, .96, 1.0, .93);
+    [[0,.44,.02,.21],[-.2,.4,.04,.17],[.2,.4,.04,.17],[-.33,.3,0,.14],[.33,.3,0,.14],
+     [0,.4,-.24,.2],[-.2,.34,-.22,.16],[.2,.34,-.22,.16]]
+      .forEach(([x,y,z,r]) => ell(h, r, M(C.wool, .92), x, y, z));
+    [-.4,.4].forEach((x) => ell(h, .12, M(C.wool, .92), x, -.18, .1, .9, 1, .8));
+    [-.3,.3].forEach((x) => { const e = ell(h, .1, M(C.skin), x, .52, -.04, .5, 1.15, .5); e.rotation.z = -x * .8; });
+    ell(h, .5, M(C.snout, .58), 0, -.16, .28, .4, .32, .38);
+    ell(h, .045, M(SK.ink, .3), 0, -.08, .44, 1.3, .7, .6);
+    smile(h, -.22, .42, .08); eyes(h, .11, .40, .072, .20); cheeks(h, .28, -.1, .38);
+  },
+  햄스터(h, C) {
+    ell(h, .48, M(C.skin), 0, .05, 0, 1.0, .92, .93);
+    ell(h, .42, M(C.skin), 0, -.14, .05, 1.06, .72, .88);
+    [-.24,.24].forEach((x) => ell(h, .17, M(C.snout, .5), x, -.16, .3, 1, .82, .55));
+    ell(h, .05, M(SK.ink, .3), 0, 0, .45, 1.2, .8, .6);
+    box(h, .05, .07, .03, .012, M(SK.white, .25), -.028, -.14, .43);
+    box(h, .05, .07, .03, .012, M(SK.white, .25), .028, -.14, .43);
+    smile(h, -.06, .44, .07); eyes(h, .13, .42, .128, .21);
+    [-.3,.3].forEach((x) => { ell(h, .14, M(C.skin), x, .42, -.04, 1, 1, .5); ell(h, .09, M(C.inner, .6), x, .42, 0, 1, 1, .4); });
+    cheeks(h, .33, -.1, .35);
+  },
+  고슴도치(h, C) {
+    ell(h, .46, M(C.skin), 0, -.01, .05, 1, .96, .96);
+    let qi = 0;
+    for (let ring = 0; ring < 4; ring++) {
+      const phi = .32 + ring * .42, n = [5,7,8,7][ring];
+      for (let k = 0; k < n; k++) {
+        const th = Math.PI * (.30 + (k / (n - 1)) * 1.40), r0 = .46;
+        const x = Math.sin(phi) * Math.cos(th) * r0, y = Math.cos(phi) * r0 - .01;
+        const z = Math.sin(phi) * Math.sin(th) * -r0 * .95 + .04;
+        const q = new THREE.Mesh(sphG(.16 - ring * .008, S(12, 7), S(10, 6)), M(qi++ % 2 ? C.quillDark : C.quill, .8));
+        q.position.set(x, y, z); q.scale.set(.56, 1.2, .62); q.lookAt(x * 3, y * 3 + .9, z * 3 - 1.4); q.castShadow = true; h.add(q);
+      }
+    }
+    ell(h, .5, M(C.snout, .55), 0, -.16, .28, .44, .34, .4);
+    ell(h, .06, M(SK.ink, .3), 0, -.07, .46, 1.1, .85, .7);
+    smile(h, -.24, .42, .08); eyes(h, .13, .40, .082, .175);
+    [-.34,.34].forEach((x) => ell(h, .09, M(C.skin), x, .3, .1, .6, .9, .5)); cheeks(h, .28, -.12, .38);
+  },
   개구리(h, C) {
     ell(h, .52, M(C.skin), 0, -.06, 0, 1.1, .82, .95);
     /* 튀어나온 눈 — **눈동자가 앞을 봐야** 합니다. 전 판은 눈동자가
@@ -445,13 +570,27 @@ const HEADS = {
     smile(h, -.15, .52, .07);
     cheeks(h, .26, -.08, .48);
   },
+  백조(h, C) {
+    ell(h, .44, M(C.skin), 0, .04, 0, .98, 1.04, .95);
+    ell(h, .17, M(C.beak, .5), 0, -.13, .46, .7, .4, .9);
+    ell(h, .14, M(C.beakDark, .5), 0, -.18, .45, .6, .26, .8);
+    ell(h, .045, M(SK.ink, .32), 0, -.05, .49, 1.4, .5, .5); eyes(h, .1, .4, .1, .17);
+    [[0,.5,-.06,.12],[-.12,.47,-.14,.1],[.12,.47,-.14,.1]].forEach(([x,y,z,r]) => {
+      const f = ell(h, r, M(C.skin), x, y, z, .6, 1.3, .6); f.rotation.x = -.6;
+    });
+    cheeks(h, .26, -.08, .38, .08);
+  },
 };
 
 /* 종마다 색. 몸은 전부 같습니다 — 그래서 옷 하나면 여덟이 다 입습니다. */
 export const SPECIES = {
   거북이:   { skin: 0x8FD4A0, muzzle: 0xD4F0DA, shell: 0x53A468, shellDark: 0x40855A, belly: 0xF2E2B8 },
   기린:     { skin: 0xF6D9A0, snout: 0xFFEBC6, spot: 0xC98E4E },
+  알파카:   { skin: 0xF0E2CC, snout: 0xFFF6E8, wool: 0xFFFBF2 },
+  햄스터:   { skin: 0xE8B87A, snout: 0xFFF0DC, inner: 0xF4A2A6 },
+  고슴도치: { skin: 0xDDBA92, snout: 0xFFF0DC, quill: 0x9A7450, quillDark: 0x7C5B3C },
   개구리:   { skin: 0x7FC96A, belly: 0xE2F2C8 },
+  백조:     { skin: 0xFFFFFF, beak: 0xF2933C, beakDark: 0xD9761F },
   펭귄:     { skin: 0x3E4A5A, belly: 0xFFFFFF, beak: 0xF2933C, beakDark: 0xD9761F },
 };
 /* 옷 — 몸이 같으니 색만 바꾸면 여덟 종이 다 입습니다.
@@ -805,13 +944,17 @@ function spriteChar(parent, species, opt) {
 
 export function character(parent, species, fit, opt = {}) {
   if (SPRITE_ON) return spriteChar(parent, species, opt);
-  if (GLB_READY && _SkeletonUtils) {
-    const g = glbChar(parent, species, opt, _SkeletonUtils);
-    if (g) return g;                    // 못 받은 종은 아래 손으로 빚는 판으로
-  }
-  if (GLB_READY && _SkeletonUtils) {
-    const g = glbChar(parent, species, opt, _SkeletonUtils);
-    if (g) return g;                    // 못 받은 종은 아래 손으로 빚는 판으로
+  /* 최근 업로드한 네 GLB가 이 프로젝트 캐릭터의 원본입니다.
+     이전 판은 옷을 고르는 순간 원본을 버리고 손으로 빚은 옛 판본으로
+     통째로 갈아 끼웠습니다. 그래서 같은 거북이도 옷장 안팎의 얼굴·비율이
+     달라졌습니다. 원본 네 종은 차림이나 미리보기 여부와 관계없이 반드시
+     최신 GLB를 쓰고, 새 네 종만 아래 절차형 판본을 씁니다. */
+  if (!opt.procedural && GLB_FILE[species] && GLB_READY && _SkeletonUtils) {
+    const g = glbChar(parent, species, fit, opt, _SkeletonUtils);
+    if (g) {
+      g.userData.characterSource = 'latest-glb';
+      return g;
+    }
   }
   /* 짓는 동안만 성기게. 끝나면 반드시 되돌립니다 — 안 되돌리면 그다음에
      세우는 사람이 이유 없이 성기게 나옵니다. */
@@ -833,6 +976,7 @@ function buildChar(parent, species, fit, opt) {
   g.rotation.y = opt.ry || 0;
   g.scale.setScalar(opt.scale || 1);
   parent.add(g);
+  g.userData.characterSource = 'reference-matched-procedural';
 
   const skin = M(C.skin);
   /* ── 염색 ──
@@ -865,10 +1009,10 @@ function buildChar(parent, species, fit, opt) {
   const shortsOn = L.bottomId === 'shorts';
   const shortSleeve = L.topId === 'tee';
   const varsity = L.topId === 'varsity';
-  const vBody = 0xF4EDE0;                       // 과잠 몸판 — 크림
-  const bodyTop = varsity ? M(vBody, .6) : top;
-  /* 밑단과 옷깃은 언제나 같은 색입니다 — 재질을 둘로 만들 이유가 없습니다 */
-  const edge = varsity ? dye('top', M(topC, .55)) : trim;
+  /* 과잠 몸판은 학교 대표색, 테두리는 크림입니다. 전에는 몸판이 항상
+     크림이고 학교색은 얇은 띠에만 들어가 대표색을 바꿔도 거의 안 보였습니다. */
+  const bodyTop = top;
+  const edge = varsity ? M(0xF4EDE0, .55) : trim;
 
   /* ══════════════════════════════════════════════════════════
      몸 — 물방울 하나
@@ -906,6 +1050,27 @@ function buildChar(parent, species, fit, opt) {
     body.scale.z = .92;
     torso.add(body);
 
+    /* 상의와 하의는 종의 몸 위에 아주 얇게 겹치는 별도 껍질입니다.
+       몸 메시 재질을 통째로 옷색으로 바꾸면 얼굴 아래 털까지 사라지고,
+       껍질 없이 재질만 만들어 두면(이전 코드) 저장된 옷이 전혀 안 보입니다. */
+    if (!BARE) {
+      const lower = new THREE.Mesh(lathe([
+        [H * .04, .00], [H * .055, W * .54], [H * .14, W * .92],
+        [H * .30, W * 1.01], [H * .39, W * .94], [H * .40, .00],
+      ]), bot);
+      lower.scale.z = .935; lower.castShadow = true; lower.receiveShadow = true; torso.add(lower);
+      const upper = new THREE.Mesh(lathe([
+        [H * .27, .00], [H * .285, W * .96], [H * .44, W * 1.025],
+        [H * .66, W * .98], [H * .82, W * .77], [H * .90, .00],
+      ]), bodyTop);
+      upper.scale.z = .94; upper.castShadow = true; upper.receiveShadow = true; torso.add(upper);
+      if (varsity) {
+        /* 지퍼와 밑단만 크림으로 남겨 작은 화면에서도 과잠으로 읽힙니다. */
+        box(torso, .055, H * .48, .045, .018, edge, 0, H * .54, W * .93);
+        box(torso, W * 1.36, .055, .045, .018, edge, 0, H * .30, W * .91);
+      }
+    }
+
     /* 배 — 종에 따라 밝은 면이 앞에 있습니다(개구리 · 펭귄 · 거북이) */
     if (C.belly) {
       const b = new THREE.Mesh(sphG(BP.bw * .80, S(22, 11), S(16, 8)), M(C.belly, .72));
@@ -941,7 +1106,8 @@ function buildChar(parent, species, fit, opt) {
     const leg = new THREE.Group();
     leg.position.set(x, TORSO_Y + .04, 0); g.add(leg); parts.legs.push(leg);
     /* 발은 원본에서 전체 높이의 6% 이고 **앞으로 넓게** 퍼집니다 */
-    const foot = ell(leg, BP.ft, C.beak ? M(C.beak, .5) : skin, 0, -.02, .07, 1.15, .55, 1.5);
+    const foot = ell(leg, BP.ft, BARE ? (C.beak ? M(C.beak, .5) : skin) : sho,
+      0, -.02, .07, 1.15, .55, 1.5);
     foot.castShadow = true;
     /* 정강이 자리는 비워 둡니다 — 굽힐 관절이 없지만 걷기가 찾습니다 */
     const shin = new THREE.Group(); leg.add(shin); parts.shins.push(shin);
@@ -955,7 +1121,8 @@ function buildChar(parent, species, fit, opt) {
     g.add(arm); parts.arms.push(arm);
     /* 펭귄은 지느러미라 길고 납작합니다 */
     const fin = species === '펭귄';
-    const a = ell(arm, BP.ar, skin, 0, -.10, 0, .82, fin ? 2.1 : 1.45, fin ? .66 : .92);
+    const a = ell(arm, BP.ar, BARE ? skin : top, 0, -.10, 0,
+      .82, fin ? 2.1 : 1.45, fin ? .66 : .92);
     a.castShadow = true;
   });
   g.userData.base = { armZ: [-.16, .16] };
@@ -1142,9 +1309,6 @@ export function stride(g, t, sp) {
   /* 빠르면 뛰기. 걷기를 빠르게 돌리는 게 아니라 **다른 동작**입니다 —
      상체가 앞으로 기울고 한 걸음마다 몸이 뜹니다. */
   if (P.glb) { glbPlay(g, sp > .72 ? 'run' : 'walk', t, Math.max(.55, Math.min(1.7, sp * 1.25))); return; }
-  /* 빠르면 뛰기. 걷기를 빠르게 돌리는 게 아니라 **다른 동작**입니다 —
-     상체가 앞으로 기울고 한 걸음마다 몸이 뜹니다. */
-  if (P.glb) { glbPlay(g, sp > .72 ? 'run' : 'walk', t, Math.max(.55, Math.min(1.7, sp * 1.25))); return; }
   /* 판 하나는 다리가 없으니 걷는 대신 **들썩입니다**. 완전히 가만히
      미끄러지면 얼음판 위를 밀려가는 것으로 보입니다. */
   if (P.sprite) {
@@ -1166,16 +1330,19 @@ export function stride(g, t, sp) {
   P.arms[1].rotation.x = s * A * .95;
   P.arms[0].rotation.z = b[0] * (1 - k * .3);
   P.arms[1].rotation.z = b[1] * (1 - k * .3);
-  const bob = Math.abs(c) * .06 * k;
+  /* 머리와 몸이 좌우로 흔들리기보다 무게중심이 위아래로 아주 조금만
+     옮겨지게 합니다. 화면에서 가장 크게 보이던 6cm 바운스를 3.5cm로. */
+  const bob = Math.abs(c) * .035 * k;
   P.torso.position.y = TORSO_Y + bob;
   P.torso.rotation.x = k * .11;
-  P.torso.rotation.y = s * .12;
+  /* 방향 전환처럼 보이지 않을 만큼만 체중을 옮깁니다. */
+  P.torso.rotation.y = s * .022;
   P.torso.rotation.z = 0;
   P.head.position.y = HEAD_Y + bob * .8;
   P.head.position.z = 0;
   P.head.rotation.x = -k * .07;
   if (!g.userData.looking) P.head.rotation.y *= .82;
-  P.head.rotation.z = -s * .05;
+  P.head.rotation.z = -s * .009;
   blink(P, t * 1.4 + (g.userData.seed || 0), g.userData.seed || 0);
   if (P.neck) { P.neck.rotation.x = 0; P.neck.position.z = -.005; P.neck.position.y = NECK_Y; }
 }
@@ -1200,8 +1367,6 @@ export function look(g, ax, ay, k = .35) {
 }
 
 export function idle(g, t, seed = 0) {
-  { const P = g.userData.parts;
-    if (P && P.glb) { glbPlay(g, 'idle', t, 1); return; } }
   { const P = g.userData.parts;
     if (P && P.glb) { glbPlay(g, 'idle', t, 1); return; } }
   { const P = g.userData.parts;
@@ -1249,10 +1414,12 @@ export function face(g, state) {
 }
 
 /** 앉기 — 넓적다리를 앞으로, 정강이를 아래로. 의자 높이(.46)에 엉덩이가 옵니다. */
-export function sit(g, on) {
+export function sit(g, on, drop = 0) {
   { const P = g.userData.parts;
     if (P && P.glb) {
-      /* 앉기는 **머무는** 동작이라 되감지 않습니다. 일어설 때만 쉬기로. */
+      /* 일부 최신 GLB에는 sit 클립이 없습니다. 그 경우 예전 코드는
+         그대로 return 해서 의자 위에 서 있었습니다. 클립 유무와 관계없이
+         원본 뼈를 기준 자세로 되돌린 뒤 앉은 골반·다리 각도를 보정합니다. */
       const G = P.glb, a = G.act.sit;
       if (on && a) {
         a.reset().setEffectiveWeight(1).play();
@@ -1263,21 +1430,22 @@ export function sit(g, on) {
         if (a) a.crossFadeTo(G.act.idle, .22, false);
         G.cur = 'idle';
       }
-      return;
-    } }
-  { const P = g.userData.parts;
-    if (P && P.glb) {
-      /* 앉기는 **머무는** 동작이라 되감지 않습니다. 일어설 때만 쉬기로. */
-      const G = P.glb, a = G.act.sit;
-      if (on && a) {
-        a.reset().setEffectiveWeight(1).play();
-        const prev = G.act[G.cur]; if (prev && prev !== a) prev.crossFadeTo(a, .22, false);
-        G.cur = 'sit';
-      } else if (!on && G.act.idle) {
-        G.act.idle.reset().setEffectiveWeight(1).play();
-        if (a) a.crossFadeTo(G.act.idle, .22, false);
-        G.cur = 'idle';
+      const pose = G.poseNodes || {};
+      for (const v of Object.values(pose)) { v.o.quaternion.copy(v.q); v.o.position.copy(v.p); }
+      if (on) {
+        const tilt = (n, x, z = 0) => { const v = pose[n]; if (!v) return; v.o.rotateX(x); v.o.rotateZ(z); };
+        /* 원본 GLB 네 종은 뼈의 로컬 축이 서로 달라 root·spine의 X 회전이
+           기린에서는 화면 왼쪽 기울기로 보였습니다. 상체는 기준 자세를
+           그대로 유지하고 골반 높이와 다리만 접어 좌판에 똑바로 앉힙니다. */
+        tilt('leg.L', -1.18, -.08); tilt('leg.R', -1.18, .08);
+        tilt('arm.L', -.48, -.14); tilt('arm.R', -.48, .14);
+        G.body.position.y = G.bodyY - .31 - drop;
+        const outfit = g.getObjectByName('equipped-clay-outfit'); if (outfit) outfit.position.y = -.31 - drop;
+      } else {
+        G.body.position.y = G.bodyY;
+        const outfit = g.getObjectByName('equipped-clay-outfit'); if (outfit) outfit.position.y = 0;
       }
+      g.userData.sitting = on;
       return;
     } }
   const P = g.userData.parts; if (!P) return;
@@ -1287,9 +1455,44 @@ export function sit(g, on) {
     r.rotation.x = on ? -1.0 : -.1;
     r.rotation.z = on ? (i ? .2 : -.2) : g.userData.base.armZ[i];
   });
-  P.torso.position.y = TORSO_Y; P.torso.rotation.y = 0;
-  P.head.position.y = HEAD_Y; P.head.rotation.y = 0;
+  P.torso.position.y = TORSO_Y - (on ? drop : 0); P.torso.rotation.y = 0;
+  P.head.position.y = HEAD_Y - (on ? drop : 0); P.head.rotation.y = 0;
   g.userData.sitting = on;
+}
+
+/** 침대에 눕기 — 최근 원본 GLB는 통째로 눕혀 얼굴·옷 비율을 보존합니다. */
+export function lie(g, on) {
+  const P = g?.userData?.parts; if (!P) return;
+  if (g.userData.sitting) sit(g, false);
+  if (P.glb) {
+    const G = P.glb;
+    for (const v of Object.values(G.poseNodes || {})) {
+      v.o.quaternion.copy(v.q); v.o.position.copy(v.p);
+    }
+    G.body.quaternion.copy(G.bodyQ);
+    G.body.position.y = G.bodyY;
+    if (on) {
+      G.body.rotateX(-Math.PI / 2);
+      G.body.position.y = G.bodyY + .82;
+    }
+    const outfit = g.getObjectByName('equipped-clay-outfit');
+    if (outfit) {
+      outfit.rotation.set(on ? -Math.PI / 2 : 0, 0, 0);
+      outfit.position.set(0, on ? .82 : 0, 0);
+    }
+  } else if (on) {
+    /* 절차형 네 종도 같은 실루엣이 되도록 머리·몸·팔다리를 한 높이에
+       펼칩니다. 원본 네 GLB가 기본이지만 잠금 해제 캐릭터도 깨지지 않습니다. */
+    const y = .84;
+    P.torso.position.set(P.torso.position.x, y, -.42); P.torso.rotation.x = -Math.PI / 2;
+    P.head.position.set(P.head.position.x, y, -1.15); P.head.rotation.x = -Math.PI / 2;
+    P.legs.forEach((v, i) => { v.position.y = y; v.position.z = .22; v.rotation.x = -Math.PI / 2; v.rotation.z = i ? .04 : -.04; });
+    P.shins.forEach((v) => { v.rotation.x = 0; });
+    P.arms.forEach((v, i) => { v.position.y = y; v.rotation.x = -Math.PI / 2; v.rotation.z = i ? .16 : -.16; });
+  } else {
+    idle(g, 0, 0);
+  }
+  g.userData.lying = on;
 }
 
 /** 무너지는 정도 0~1 — 이 서비스가 실제로 보여 주려는 그림입니다.

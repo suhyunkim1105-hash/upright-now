@@ -10,7 +10,7 @@ import {
   generateAiSessionReport,
   recordAiReportObservation,
 } from './ai-report-service.js'
-import { authErrorStatus, requireUser, type AuthedUser } from './require-auth'
+import { authErrorStatus, requireUser, type AuthedUser } from './require-auth.js'
 
 const MAX_BODY_BYTES = 12_000
 const RATE_LIMIT_WINDOW_MS = 10 * 60_000

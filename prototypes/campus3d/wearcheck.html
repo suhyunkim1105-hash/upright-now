@@ -1,0 +1,96 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>옷이 몸에 붙었는지 본다</title>
+<style>
+  body { margin: 0; background: #F4F1EA; font: 13px system-ui; color: #3A423F; }
+  #out { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 10px; }
+  figure { margin: 0; text-align: center; }
+  figcaption { font-size: 11px; color: #7A857F; margin-top: 3px; }
+</style>
+<body>
+<div id="out"></div>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.min.js" } }
+</script>
+<script type="module">
+/* 옷은 **선 자세**에서는 언제나 멀쩡해 보입니다. 뼈를 안 따라가도
+   그 자리에 그대로 있으니까요. 그래서 반드시 **걷는 중간 프레임**을
+   같이 찍습니다 — 붙었는지 떠 있는지는 그때만 갈립니다.
+
+   ?sp=기린          한 종만
+   ?look=none        옷 다 벗은 상태로 (원본 실루엣 확인용)          */
+import * as THREE from 'three';
+import { GLTFLoader } from './vendor/ext/GLTFLoader.js';
+import * as SkeletonUtils from './vendor/ext/SkeletonUtils.js';
+import { loadCharacters, setSkeletonUtils, character, stride, idle } from './chars.js';
+
+const Q = new URLSearchParams(location.search);
+const SIZE = 260;
+const SPS = Q.get('sp') ? [Q.get('sp')] : ['기린', '거북이', '펭귄', '개구리'];
+const LOOK = Q.get('look') === 'none'
+  ? { topId: 'none', bottomId: 'none', shoesId: 'none', hatId: 'none', glassesId: 'none', bagId: 'none', tint: {} }
+  : { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
+      shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'beanie', hat: 0xE8695A,
+      glassesId: 'none', bagId: 'none', bagC: 0x4A6EA8, tint: {} };
+
+/* 앞·옆 두 방향 × 선 자세·달리는 중간 두 시각 */
+const SHOTS = [['선 앞', 0, 'idle'], ['뛰는 앞 ㉠', 0, 'run', .30], ['뛰는 앞 ㉡', 0, 'run', .62], ['뛰는 옆', Math.PI / 2, 'run', .30]];
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(SIZE, SIZE); renderer.setPixelRatio(1);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xF4F1EA);
+scene.add(new THREE.HemisphereLight(0xFFFFFF, 0x9AA6A0, 2.2));
+const key = new THREE.DirectionalLight(0xFFFFFF, 1.5); key.position.set(-2, 3, 2.4); scene.add(key);
+const cam = new THREE.PerspectiveCamera(26, 1, .05, 40);
+
+setSkeletonUtils(SkeletonUtils);
+await loadCharacters(THREE, GLTFLoader);
+
+const out = document.getElementById('out');
+const shots = [];
+for (const sp of SPS) {
+  for (const [vName, yaw, pose, ph] of SHOTS) {
+    const g = character(scene, sp, JSON.parse(JSON.stringify(LOOK)), { x: 0, z: 0 });
+    /* 믹서는 **지난 호출과의 차**를 쓰므로 두 번 불러 시간을 흘립니다 */
+    if (pose === 'run') { stride(g, 0, 1.4); for (let q = .05; q <= ph; q += .05) stride(g, q, 1.4); } else { idle(g, 0); idle(g, .3); }
+    g.updateMatrixWorld(true);
+    const ty = .95, dist = 5.2;
+    cam.position.set(Math.sin(yaw) * dist, ty + .15, Math.cos(yaw) * dist);
+    cam.lookAt(0, ty, 0); cam.updateProjectionMatrix();
+    renderer.render(scene, cam);
+    const url = renderer.domElement.toDataURL('image/png');
+    shots.push({ name: sp, view: vName, url });
+    const f = document.createElement('figure');
+    const im = new Image(); im.src = url; im.width = SIZE; f.appendChild(im);
+    const c = document.createElement('figcaption'); c.textContent = sp + ' · ' + vName;
+    f.appendChild(c); out.appendChild(f);
+    scene.remove(g);
+  }
+}
+
+window.__sheet = async () => {
+  const cols = SHOTS.length, rows = Math.ceil(shots.length / cols), PAD = 8, CAP = 16;
+  const cv = document.createElement('canvas');
+  cv.width = cols * (SIZE + PAD) + PAD;
+  cv.height = rows * (SIZE + PAD + CAP) + PAD;
+  const x2 = cv.getContext('2d');
+  x2.fillStyle = '#F4F1EA'; x2.fillRect(0, 0, cv.width, cv.height);
+  x2.font = '12px system-ui'; x2.textAlign = 'center';
+  await Promise.all(shots.map((s, i) => new Promise((r) => {
+    const im = new Image();
+    im.onload = () => {
+      const c = i % cols, rw = (i / cols) | 0;
+      const x = PAD + c * (SIZE + PAD), y = PAD + rw * (SIZE + PAD + CAP);
+      x2.drawImage(im, x, y);
+      x2.fillStyle = '#3A423F'; x2.fillText(s.name + ' · ' + s.view, x + SIZE / 2, y + SIZE + 12);
+      r();
+    };
+    im.src = s.url;
+  })));
+  return cv.toDataURL('image/png');
+};
+document.title = '옷 점검 ' + shots.length + '장';
+</script>

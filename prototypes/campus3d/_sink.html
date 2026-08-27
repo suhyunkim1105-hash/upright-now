@@ -1,0 +1,49 @@
+<meta charset="utf-8"><pre id="out">…</pre>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.min.js" } }</script>
+<script type="module">
+/* 검수용 — **바닥에 박힌 것**을 찾습니다 (제품 아님).
+
+   소품 builder 들이 하나같이 y=0 에 세우는데, 실제로 밟는 면은
+   자리마다 다릅니다: 광장 상판 0.38 · 섬 잔디 0.10 · 길 0.126.
+   눈으로는 몇 cm 씩 박힌 것이 잘 안 보이는데, 걸어 보면 벤치가
+   묻혀 있고 화분이 반쯤 잠겨 있습니다. 자리별 바닥 높이를 주고
+   그보다 아래로 내려간 물건을 뽑습니다. */
+import * as THREE from 'three';
+import { buildCampus } from './campus.js';
+const scene = new THREE.Scene();
+const C = buildCampus(scene);
+/* **행렬을 먼저 굳힙니다.** 안 하면 setFromObject 가 부모의 회전·이동을
+   반영하지 않은 경계상자를 돌려줘서, 분수처럼 눕힌 원통이 전부 땅속
+   3m 에 있는 것으로 나옵니다(처음에 1628개가 걸렸던 이유). */
+scene.updateMatrixWorld(true);
+const q = new URLSearchParams(location.search);
+/* 광장은 x ±29 · z -31~30, 그 안은 바닥이 0.38 입니다 */
+const inPlaza = (x, z) => Math.abs(x) < 29.5 && z > -31.5 && z < 30.5;
+const floorAt = (x, z) => (inPlaza(x, z) ? .38 : .10);
+const TOL = +(q.get('tol') || .06);
+
+const rows = [];
+const bb = new THREE.Box3(), sz = new THREE.Vector3(), c = new THREE.Vector3();
+scene.traverse((o) => {
+  if (!o.isMesh || o.userData.noBake === undefined && false) return;
+  if (!o.isMesh) return;
+  bb.setFromObject(o); if (!isFinite(bb.min.x)) return;
+  bb.getSize(sz); bb.getCenter(c);
+  /* 바닥판·잔디·길처럼 넓고 납작한 것은 건너뜁니다 — 그것들이 바닥입니다 */
+  if (sz.y < .2 || sz.x > 14 || sz.z > 14) return;
+  const f = floorAt(c.x, c.z);
+  const sink = f - bb.min.y;
+  if (sink > TOL) {
+    /* 어느 조상이 만든 것인지 — 이름 붙은 가장 가까운 조상까지 올라갑니다 */
+    let who = '', p2 = o;
+    while (p2 && !who) { if (p2.name) who = p2.name; p2 = p2.parent; }
+    rows.push([sink, c.x, c.z, sz.x, sz.y, sz.z, f, who || '(이름없음)']);
+  }
+});
+rows.sort((a, b) => b[0] - a[0]);
+const f1 = (v) => v.toFixed(2).padStart(7);
+document.getElementById('out').textContent =
+  `바닥에 박힌 것 ${rows.length}개 (허용 ${TOL})\n` +
+  rows.slice(0, +(q.get('n') || 40)).map((r) =>
+    `박힘${f1(r[0])}  자리${f1(r[1])},${f1(r[2])}  크기${f1(r[3])}×${f1(r[4])}×${f1(r[5])}  바닥${f1(r[6])}`).join('\n');
+</script>

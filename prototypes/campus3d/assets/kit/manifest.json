@@ -1,0 +1,2117 @@
+[
+ {
+  "kit": "furniture",
+  "file": "furniture-bathroom-mirror.glb",
+  "name": "Bathroom Mirror",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bathroom-sink.glb",
+  "name": "Bathroom Sink",
+  "lic": "CC0",
+  "kb": 40,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bathroom-sink-square.glb",
+  "name": "Bathroom Sink Square",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bear-head-mount.glb",
+  "name": "Bear Head mount",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bed-bunk.glb",
+  "name": "Bed Bunk",
+  "lic": "CC0",
+  "kb": 56,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bed-double.glb",
+  "name": "Bed Double",
+  "lic": "CC0",
+  "kb": 31,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bed-single.glb",
+  "name": "Bed Single",
+  "lic": "CC0",
+  "kb": 27,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bench.glb",
+  "name": "Bench",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bench-cushion.glb",
+  "name": "Bench Cushion",
+  "lic": "CC0",
+  "kb": 23,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bench-cushion-low.glb",
+  "name": "Bench Cushion Low",
+  "lic": "CC0",
+  "kb": 20,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bookcase-closed.glb",
+  "name": "Bookcase Closed",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bookcase-closed-doors.glb",
+  "name": "Bookcase Closed Doors",
+  "lic": "CC0",
+  "kb": 36,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bathroom-cabinet.glb",
+  "name": "Bathroom Cabinet",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bathroom-cabinet-drawe.glb",
+  "name": "Bathroom Cabinet Drawe",
+  "lic": "CC0",
+  "kb": 53,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bookcase-closed-wide.glb",
+  "name": "Bookcase Closed Wide",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bookcase-open.glb",
+  "name": "Bookcase Open",
+  "lic": "CC0",
+  "kb": 31,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-cardboard-box-open.glb",
+  "name": "Cardboard Box Open",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet.glb",
+  "name": "Kitchen Cabinet",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-chair-modern-cushion.glb",
+  "name": "Chair Modern Cushion",
+  "lic": "CC0",
+  "kb": 15,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-cabinet-television.glb",
+  "name": "Cabinet Television",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-cabinet-bed-drawer.glb",
+  "name": "Cabinet Bed Drawer",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet-corner.glb",
+  "name": "Kitchen Cabinet Corner",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bookcase-open-low.glb",
+  "name": "Bookcase Open Low",
+  "lic": "CC0",
+  "kb": 20,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet-corner.glb",
+  "name": "Kitchen Cabinet Corner",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-cardboard-box-closed.glb",
+  "name": "Cardboard Box Closed",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet-drawer.glb",
+  "name": "Kitchen Cabinet Drawer",
+  "lic": "CC0",
+  "kb": 23,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-chair-modern-frame-cush.glb",
+  "name": "Chair Modern Frame Cush",
+  "lic": "CC0",
+  "kb": 35,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-books.glb",
+  "name": "Books",
+  "lic": "CC0",
+  "kb": 15,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-cabinet-bed.glb",
+  "name": "Cabinet Bed",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-ceiling-fan.glb",
+  "name": "Ceiling Fan",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-cabinet-bed-drawer-tabl.glb",
+  "name": "Cabinet Bed Drawer Tabl",
+  "lic": "CC0",
+  "kb": 20,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet.glb",
+  "name": "Kitchen Cabinet",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet-corner.glb",
+  "name": "Kitchen Cabinet Corner",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-cabinet-television-doo.glb",
+  "name": "Cabinet Television Doo",
+  "lic": "CC0",
+  "kb": 25,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-chair-cushion.glb",
+  "name": "Chair Cushion",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-chair-rounded.glb",
+  "name": "Chair Rounded",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet-upper.glb",
+  "name": "Kitchen Cabinet Upper",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-coat-rack-standing.glb",
+  "name": "Coat Rack Standing",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-desk-chair.glb",
+  "name": "Desk Chair",
+  "lic": "CC0",
+  "kb": 40,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-sink.glb",
+  "name": "Kitchen Sink",
+  "lic": "CC0",
+  "kb": 44,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lamp-square-floor.glb",
+  "name": "Lamp Square Floor",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lamp-square-table.glb",
+  "name": "Lamp Square Table",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-computer-screen.glb",
+  "name": "Computer Screen",
+  "lic": "CC0",
+  "kb": 13,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-desk-corner.glb",
+  "name": "Desk Corner",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-doorway-front.glb",
+  "name": "Doorway Front",
+  "lic": "CC0",
+  "kb": 15,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-doorway.glb",
+  "name": "Doorway",
+  "lic": "CC0",
+  "kb": 16,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lamp-square-ceiling.glb",
+  "name": "Lamp Square Ceiling",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-doorway-open.glb",
+  "name": "Doorway Open",
+  "lic": "CC0",
+  "kb": 6,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-cabinet-upperl.glb",
+  "name": "Kitchen Cabinet Upperl",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-fridge-built-in.glb",
+  "name": "Kitchen Fridge Built In",
+  "lic": "CC0",
+  "kb": 32,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-fridge.glb",
+  "name": "Kitchen Fridge",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-chair.glb",
+  "name": "Chair",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-computer-keyboard.glb",
+  "name": "Computer Keyboard",
+  "lic": "CC0",
+  "kb": 8,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-coat-rack.glb",
+  "name": "Coat Rack",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-bar.glb",
+  "name": "Kitchen Bar",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-desk.glb",
+  "name": "Desk",
+  "lic": "CC0",
+  "kb": 23,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lamp-round-floor.glb",
+  "name": "Lamp Round Floor",
+  "lic": "CC0",
+  "kb": 13,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-design-chair.glb",
+  "name": "Lounge Design Chair",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-design-sofa-corn.glb",
+  "name": "Lounge Design Sofa Corn",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-dryer.glb",
+  "name": "Dryer",
+  "lic": "CC0",
+  "kb": 29,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lamp-round-table.glb",
+  "name": "Lamp Round Table",
+  "lic": "CC0",
+  "kb": 13,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-blender.glb",
+  "name": "Kitchen Blender",
+  "lic": "CC0",
+  "kb": 22,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-design-sofa.glb",
+  "name": "Lounge Design Sofa",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lamp-wall.glb",
+  "name": "Lamp Wall",
+  "lic": "CC0",
+  "kb": 10,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-sofa.glb",
+  "name": "Lounge Sofa",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-chair.glb",
+  "name": "Lounge Chair",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-sofa-ottoman.glb",
+  "name": "Lounge Sofa Ottoman",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-paneling.glb",
+  "name": "Paneling",
+  "lic": "CC0",
+  "kb": 7,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-sofa-long.glb",
+  "name": "Lounge Sofa Long",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-microwave.glb",
+  "name": "Kitchen Microwave",
+  "lic": "CC0",
+  "kb": 21,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-fridge-large.glb",
+  "name": "Kitchen Fridge Large",
+  "lic": "CC0",
+  "kb": 38,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-stove-electric.glb",
+  "name": "Kitchen Stove Electric",
+  "lic": "CC0",
+  "kb": 44,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-coffee-machine.glb",
+  "name": "Kitchen Coffee Machine",
+  "lic": "CC0",
+  "kb": 21,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-laptop.glb",
+  "name": "Laptop",
+  "lic": "CC0",
+  "kb": 13,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-fridge-small.glb",
+  "name": "Kitchen Fridge Small",
+  "lic": "CC0",
+  "kb": 18,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-chair.glb",
+  "name": "Lounge Chair",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-hood-large.glb",
+  "name": "Kitchen Hood Large",
+  "lic": "CC0",
+  "kb": 9,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-lounge-sofa-corner.glb",
+  "name": "Lounge Sofa Corner",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-plant-small.glb",
+  "name": "Plant Small",
+  "lic": "CC0",
+  "kb": 16,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-rug-round.glb",
+  "name": "Rug Round",
+  "lic": "CC0",
+  "kb": 21,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-rug-doormat.glb",
+  "name": "Rug Doormat",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-rug-square.glb",
+  "name": "Rug Square",
+  "lic": "CC0",
+  "kb": 7,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-rug-rectangle.glb",
+  "name": "Rug Rectangle",
+  "lic": "CC0",
+  "kb": 7,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-side-table-drawers.glb",
+  "name": "Side Table Drawers",
+  "lic": "CC0",
+  "kb": 29,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-rug-rounded.glb",
+  "name": "Rug Rounded",
+  "lic": "CC0",
+  "kb": 23,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-stairs.glb",
+  "name": "Stairs",
+  "lic": "CC0",
+  "kb": 38,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-potted-plant.glb",
+  "name": "Potted Plant",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-stairs-corner.glb",
+  "name": "Stairs Corner",
+  "lic": "CC0",
+  "kb": 39,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-speaker-small.glb",
+  "name": "Speaker Small",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-stairs-open.glb",
+  "name": "Stairs Open",
+  "lic": "CC0",
+  "kb": 48,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-stairs-open-single.glb",
+  "name": "Stairs Open Single",
+  "lic": "CC0",
+  "kb": 32,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-stool-bar-square.glb",
+  "name": "Stool Bar Square",
+  "lic": "CC0",
+  "kb": 18,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-toaster.glb",
+  "name": "Toaster",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-television-vintage.glb",
+  "name": "Television Vintage",
+  "lic": "CC0",
+  "kb": 38,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-toilet.glb",
+  "name": "Toilet",
+  "lic": "CC0",
+  "kb": 32,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-television.glb",
+  "name": "Television",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-trashcan.glb",
+  "name": "Trashcan",
+  "lic": "CC0",
+  "kb": 13,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-toilet-square.glb",
+  "name": "Toilet Square",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-wall-doorway.glb",
+  "name": "Wall Doorway",
+  "lic": "CC0",
+  "kb": 13,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-side-table.glb",
+  "name": "Side Table",
+  "lic": "CC0",
+  "kb": 16,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-wall-doorway-wide.glb",
+  "name": "Wall Doorway Wide",
+  "lic": "CC0",
+  "kb": 13,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-wall-window.glb",
+  "name": "Wall Window",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-coffee-table.glb",
+  "name": "Coffee Table",
+  "lic": "CC0",
+  "kb": 15,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-table.glb",
+  "name": "Table",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-shower-round.glb",
+  "name": "Shower Round",
+  "lic": "CC0",
+  "kb": 82,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-washer.glb",
+  "name": "Washer",
+  "lic": "CC0",
+  "kb": 57,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-table-coffee-glass.glb",
+  "name": "Table Coffee Glass",
+  "lic": "CC0",
+  "kb": 18,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-table-coffee-square.glb",
+  "name": "Table Coffee Square",
+  "lic": "CC0",
+  "kb": 15,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bathtub.glb",
+  "name": "Bathtub",
+  "lic": "CC0",
+  "kb": 72,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-radio.glb",
+  "name": "Radio",
+  "lic": "CC0",
+  "kb": 48,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-bar-stool.glb",
+  "name": "Bar Stool",
+  "lic": "CC0",
+  "kb": 22,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-round-table.glb",
+  "name": "Round Table",
+  "lic": "CC0",
+  "kb": 11,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-speaker.glb",
+  "name": "Speaker",
+  "lic": "CC0",
+  "kb": 29,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-table-cross-cloth.glb",
+  "name": "Table Cross Cloth",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-table-cross.glb",
+  "name": "Table Cross",
+  "lic": "CC0",
+  "kb": 21,
+  "mats": 1,
+  "tex": 0
+ },
+ {
+  "kit": "furniture",
+  "file": "furniture-kitchen-stove.glb",
+  "name": "Kitchen Stove",
+  "lic": "CC0",
+  "kb": 96,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-wide.glb",
+  "name": "Low Wide",
+  "lic": "CC0",
+  "kb": 17,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-2.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 16,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-3.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-4.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 14,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-5.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-6.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-7.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 16,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-wide-2.glb",
+  "name": "Low Wide",
+  "lic": "CC0",
+  "kb": 12,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-2.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 60,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-3.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 35,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-sign-hospital.glb",
+  "name": "Sign Hospital",
+  "lic": "CC0",
+  "kb": 9,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-4.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 59,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 36,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-8.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-2.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 36,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-low-building-9.glb",
+  "name": "Low Building",
+  "lic": "CC0",
+  "kb": 10,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-3.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-4.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 34,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-5.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 44,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 58,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-5.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-2.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 79,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-skyscraper-6.glb",
+  "name": "Skyscraper",
+  "lic": "CC0",
+  "kb": 86,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-small-building-6.glb",
+  "name": "Small Building",
+  "lic": "CC0",
+  "kb": 43,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-3.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 52,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-4.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 94,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-5.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 81,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "city",
+  "file": "city-large-building-6.glb",
+  "name": "Large Building",
+  "lic": "CC0",
+  "kb": 114,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-sports-car.glb",
+  "name": "Sports Car",
+  "lic": "CC0",
+  "kb": 171,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-car.glb",
+  "name": "Car",
+  "lic": "CC0",
+  "kb": 161,
+  "mats": 6,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-police-car.glb",
+  "name": "Police Car",
+  "lic": "CC0",
+  "kb": 176,
+  "mats": 8,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-sports-car-2.glb",
+  "name": "Sports Car",
+  "lic": "CC0",
+  "kb": 167,
+  "mats": 7,
+  "tex": 0
+ },
+ {
+  "kit": "car",
+  "file": "car-car-2.glb",
+  "name": "Car",
+  "lic": "CC0",
+  "kb": 170,
+  "mats": 7,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-2.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-3.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 26,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-grass.glb",
+  "name": "Grass",
+  "lic": "CC0",
+  "kb": 19,
+  "mats": 2,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-4.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 27,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-5.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 37,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-6.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 56,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-7.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-8.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 78,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-9.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 49,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-10.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 54,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-11.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 22,
+  "mats": 3,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-12.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 66,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "sign",
+  "file": "sign-wooden-sign-13.glb",
+  "name": "Wooden Sign",
+  "lic": "CC0",
+  "kb": 52,
+  "mats": 4,
+  "tex": 0
+ },
+ {
+  "kit": "park",
+  "file": "park-tree.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 30,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-bush.glb",
+  "name": "Bush",
+  "lic": "CC0",
+  "kb": 27,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-tree-large.glb",
+  "name": "Tree Large",
+  "lic": "CC0",
+  "kb": 35,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-bush-large.glb",
+  "name": "Bush Large",
+  "lic": "CC0",
+  "kb": 29,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-street-lantern.glb",
+  "name": "Street Lantern",
+  "lic": "CC0",
+  "kb": 36,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-bench.glb",
+  "name": "Bench",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-trashcan.glb",
+  "name": "Trashcan",
+  "lic": "CC0",
+  "kb": 41,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "park",
+  "file": "park-fountain.glb",
+  "name": "Fountain",
+  "lic": "CC0",
+  "kb": 84,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-streetlight.glb",
+  "name": "Streetlight",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-fire-hydrant.glb",
+  "name": "Fire Hydrant",
+  "lic": "CC0",
+  "kb": 29,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-bench.glb",
+  "name": "Bench",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-traffic-light.glb",
+  "name": "Traffic light",
+  "lic": "CC0",
+  "kb": 51,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-traffic-light-2.glb",
+  "name": "Traffic light",
+  "lic": "CC0",
+  "kb": 45,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "bit",
+  "file": "bit-trafficlight-b.glb",
+  "name": "Trafficlight B",
+  "lic": "CC0",
+  "kb": 56,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-bush.glb",
+  "name": "Bush",
+  "lic": "CC0",
+  "kb": 161,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-bush-with-flowers.glb",
+  "name": "Bush with Flowers",
+  "lic": "CC0",
+  "kb": 791,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2374,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-2.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2329,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-3.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2422,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-4.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2481,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2539,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-2.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2543,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tree-5.glb",
+  "name": "Tree",
+  "lic": "CC0",
+  "kb": 2329,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-3.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2547,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-4.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2562,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-grass.glb",
+  "name": "Grass",
+  "lic": "CC0",
+  "kb": 78,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-grass-wispy.glb",
+  "name": "Grass Wispy",
+  "lic": "CC0",
+  "kb": 95,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-tall-grass.glb",
+  "name": "Tall Grass",
+  "lic": "CC0",
+  "kb": 86,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-grass-wispy-2.glb",
+  "name": "Grass Wispy",
+  "lic": "CC0",
+  "kb": 99,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-2.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-3.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 520,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-4.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-petal-5.glb",
+  "name": "Flower Petal",
+  "lic": "CC0",
+  "kb": 519,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-single.glb",
+  "name": "Flower Single",
+  "lic": "CC0",
+  "kb": 1194,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-group.glb",
+  "name": "Flower Group",
+  "lic": "CC0",
+  "kb": 1213,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-single-2.glb",
+  "name": "Flower Single",
+  "lic": "CC0",
+  "kb": 1209,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-flower-group-2.glb",
+  "name": "Flower Group",
+  "lic": "CC0",
+  "kb": 1253,
+  "mats": 2,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2176,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-dead-tree-5.glb",
+  "name": "Dead Tree",
+  "lic": "CC0",
+  "kb": 2537,
+  "mats": 1,
+  "tex": 2
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-smal.glb",
+  "name": "Rock Path Square Smal",
+  "lic": "CC0",
+  "kb": 828,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-smal-2.glb",
+  "name": "Rock Path Square Smal",
+  "lic": "CC0",
+  "kb": 843,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-smal-3.glb",
+  "name": "Rock Path Square Smal",
+  "lic": "CC0",
+  "kb": 829,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-thin.glb",
+  "name": "Rock Path Square Thin",
+  "lic": "CC0",
+  "kb": 910,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-small.glb",
+  "name": "Rock Path Round Small",
+  "lic": "CC0",
+  "kb": 856,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-small-2.glb",
+  "name": "Rock Path Round Small",
+  "lic": "CC0",
+  "kb": 856,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-thin.glb",
+  "name": "Rock Path Round Thin",
+  "lic": "CC0",
+  "kb": 939,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-small-3.glb",
+  "name": "Rock Path Round Small",
+  "lic": "CC0",
+  "kb": 864,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-round-wide.glb",
+  "name": "Rock Path Round Wide",
+  "lic": "CC0",
+  "kb": 1020,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-path-square-wide.glb",
+  "name": "Rock Path Square Wide",
+  "lic": "CC0",
+  "kb": 941,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-medium.glb",
+  "name": "Rock Medium",
+  "lic": "CC0",
+  "kb": 1036,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-medium-2.glb",
+  "name": "Rock Medium",
+  "lic": "CC0",
+  "kb": 1040,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-rock-medium-3.glb",
+  "name": "Rock Medium",
+  "lic": "CC0",
+  "kb": 1047,
+  "mats": 1,
+  "tex": 1
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-2.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2097,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-3.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2170,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-4.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2208,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-pine-5.glb",
+  "name": "Pine",
+  "lic": "CC0",
+  "kb": 2168,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 2977,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-2.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 2958,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-3.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 3004,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-4.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 3046,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "nat",
+  "file": "nat-twisted-tree-5.glb",
+  "name": "Twisted Tree",
+  "lic": "CC0",
+  "kb": 3017,
+  "mats": 2,
+  "tex": 3
+ },
+ {
+  "kit": "house",
+  "file": "house-house.glb",
+  "name": "House",
+  "lic": "CC0",
+  "kb": 23,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 47,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-2.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 49,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-3.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 46,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-4.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 37,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-5.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 40,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-two-story-house-6.glb",
+  "name": "Two story house",
+  "lic": "CC0",
+  "kb": 24,
+  "mats": 5,
+  "tex": 0
+ },
+ {
+  "kit": "house",
+  "file": "house-house-2.glb",
+  "name": "House",
+  "lic": "CC0",
+  "kb": 28,
+  "mats": 5,
+  "tex": 0
+ }
+]

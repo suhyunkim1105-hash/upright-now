@@ -13,10 +13,34 @@ import { buildSite, approaches, SITE, BUILDINGS as PLAN_B, ryOf, inSite } from '
 import { buildFaculties } from './faculty.js';
 
 export const PAL = {
-  grass: 0x6FC85E, grassDark: 0x57B04A, grassLight: 0x86D46E,
-  soil: 0x8E6238, stone: 0xF2E6CC, stoneDark: 0xDCCBAA, kerb: 0xFFF6E4,
-  path: 0xF0D49A, pathDark: 0xDCB87C,
-  water: 0x67C6E8, waterDeep: 0x3FA7CE,
+  /* 잔디 채도를 한 단 낮췄습니다. 0x6FC85E 는 채도 51% 라 눈높이에서
+     형광으로 보였고, 크림·연파랑으로 짠 나머지 팔레트와 혼자 톤이
+     달랐습니다. 42% 로 내리면 클레이 재질과 같은 계열로 앉습니다. */
+  /* 바닥이 따뜻해졌으니 잔디도 노란 쪽으로 7° 옮깁니다 — 안 옮기면
+     초록만 혼자 찬 계열로 남아 잔디와 포장 경계가 도드라집니다. */
+  grass: 0x80BC62, grassDark: 0x6CA64E, grassLight: 0x91C775,
+  /* ══ 바닥은 **따뜻한 중성**입니다 ══
+     0xE0E8EB 은 색상 196°, 그러니까 파랑입니다. 찬 파랑 바닥 위에
+     지붕 여섯이 색상환을 통째로 돌고 있었습니다(12·25·135·171·217·257°).
+     찬 바닥은 따뜻한 색과 싸우고 찬 색과만 어울리는데, 우리 지붕 중
+     넷이 따뜻한 쪽입니다 — 기숙사 주황이 유난히 튀어 보이던 것도
+     주황이 세서가 아니라 **바닥이 그 반대편**이라서였습니다.
+
+     38° 로 옮깁니다. 따뜻한 중성은 어느 색과도 싸우지 않습니다 —
+     흙·돌·나무가 그 자리에 있고, 그래서 실제 마을이 그렇게 보입니다.
+
+     ══ 그리고 명도를 내립니다 ══
+     한 번 더 재 보니 화면에 **어두운 값이 하나도 없었습니다.**
+     포장 L87 · 벽 L85~95 · 잔디 L60 — 지붕만 빼면 전부 밝은 쪽에
+     몰려 있어서, 눈이 쉴 자리도 건물이 딛고 설 바닥도 없었습니다.
+     "덜 만든 것 같다" 의 정체가 색이 아니라 **명도 구조**였습니다.
+     포장을 L80, 잔디를 L56 으로 내립니다. 여전히 맑은 낮이지만
+     이제 건물이 바닥 위에 **앉아** 있습니다. */
+  soil: 0x8E6F58, stone: 0xD8CFC0, stoneDark: 0xC1B5A4, kerb: 0xE5DED2,
+  path: 0xD3CABB, pathDark: 0xBAAE9C,
+  /* 물이 화면에서 제일 센 색이었습니다(채도 74%). 하늘·잔디·지붕
+     어느 것보다 세면 눈이 물로만 갑니다. 52% 로 내립니다. */
+  water: 0x73B9D3, waterDeep: 0x4F9ABA,
   bronze: 0xC9A05E, bronzeDark: 0xA37E40,
   wood: 0xC08E58, woodDark: 0x8E6238, metal: 0x9BA6B2, metalDark: 0x6E7A88,
   leaf: 0x53B84E, leafDeep: 0x3C9440, trunk: 0x8E5A33,
@@ -50,6 +74,23 @@ const CORE = 40;
    원이면 아무리 넓혀도 섬으로 읽힙니다. HALF 는 미니맵 축척용으로만
    남습니다(부지의 절반 폭). */
 const HALF = SITE.hx;
+
+/* 여섯 시설 현관의 공통 클레이 디자인. 건물 자체의 아치·간판은 각자
+   유지하고, 문 앞 포석·색 띠·양쪽 조명을 한 문법으로 묶어 멀리서도
+   출입구가 읽히게 합니다. 전부 건물 로컬 좌표라 회전한 건물도 맞습니다. */
+function dressEntrance(p, b) {
+  const col = { mainHall: 0x6F99D1, library: 0x54B8A9, dorm: 0xE4A061,
+    union: 0x73C38A, arcade: 0x8C75C8, shop: 0xDF7D6B }[b.key] || PAL.teal;
+  const z = b.d / 2 + .55, y = b.key === 'mainHall' ? 4.25 : 3.15;
+  layBox(p, 5.4, 2.25, .22, M(0xFFF4DE, .78), 0, z + .78);
+  layBox(p, 4.45, 1.72, .23, M(col, .62), 0, z + .78);
+  box(p, 4.8, .18, .34, .08, M(col, .52), 0, y, z + .12);
+  /* 문 옆 등기둥 둘은 뺐습니다.
+     건물마다 배율이 1.85~3.0 이라 이 1.55짜리 기둥이 월드에서는 3~4.6m 가
+     됩니다 — 문 앞에 사람 키보다 큰 기둥 둘이 서서 **문을 좁히고** 있었고,
+     광장에 세운 가로등과 종류가 겹쳐 어느 쪽이 길을 밝히는 것인지도
+     흐려졌습니다. 밝히는 일은 광장 가로등이 맡고, 문 앞에는 현판만 둡니다. */
+}
 
 /* ══════════════════════════════════════════════════════════
    야외 구역 셋 — 운동장 · 호수 · 동아리 거리
@@ -181,16 +222,29 @@ function ground(g) {
      "대학인데 초원 타일 바닥" 이라는 인상의 정체가 이것입니다. 바깥
      잔디(plan.js)는 원판이라 괜찮고, 안쪽은 어차피 광장과 앞마당이
      덮으므로 얼룩이 필요 없습니다. */
-  for (let i = 0; i < 0; i++) {
+  /* 이 고리가 `i < 0` 으로 **꺼져 있었습니다.** 그래서 실제로 걸어
+     다니는 안쪽 잔디는 색 하나짜리 평면이었고, 눈높이에서 운동장과
+     길가가 당구대처럼 보였습니다(바깥 잔디에만 얼룩이 있었습니다).
+
+     네모 상자 대신 넓고 납작한 원판을 씁니다 — 상자는 각이 보여서
+     "잔디에 놓인 매트" 로 읽혔습니다. 색 차이는 아주 얕게 둡니다.
+     무늬가 되면 얼룩이 아니라 무늬라서 더 나쁩니다. */
+  const blot = [M(PAL.grassDark, .88), M(PAL.grassLight, .88)];
+  for (let i = 0; i < 64; i++) {
     const a = rnd() * Math.PI * 2, r = 6 + rnd() * (CORE - 13);
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
     if (Math.hypot(x, z) < PLAZA_R + 2) continue;
     /* 구역 바닥은 구역이 직접 깝니다. 얼룩이 그 밑에 깔리면 판 가장자리
        마다 초록이 삐져나와 판이 잘려 보입니다. */
     if (inZone(x, z, 1.2)) continue;
-    const w = 3 + rnd() * 6;
-    flat(box(g, w, .14, w * (.6 + rnd() * .7), 1.4,
-             M(rnd() < .5 ? PAL.grassDark : PAL.grassLight, .86), x, .04 + i * .0005, z));
+    const w = 5 + rnd() * 13;
+    const m = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 22), blot[i & 1]);
+    m.rotation.x = -Math.PI / 2;
+    m.scale.set(1, .5 + rnd() * .85, 1);
+    m.position.set(x, .105 + i * .0004, z);
+    m.castShadow = false; m.receiveShadow = true;
+    m.userData.noBake = true;
+    g.add(m);
   }
 }
 
@@ -218,10 +272,37 @@ function plaza(g) {
   const { x: X, z0, z1 } = PLAZA, cz = (z0 + z1) / 2, D = z1 - z0;
   flat(box(g, X * 2 + 1.8, .34, D + 1.8, .9, M(PAL.kerb, .7), 0, .14, cz));
   flat(box(g, X * 2, .36, D, .7, M(PAL.stone, .74), 0, .2, cz));
+
+  /* ══ 위계 ══
+     색을 맞춰 놓고도 광장이 "만들다 만 것" 으로 보였습니다. 이유는
+     **한 톤짜리 평면 58×61** 이라서였습니다 — 색이 맞아도 위계가 없으면
+     바닥이 아니라 배경지입니다. 실제 광장에는 늘 셋이 있습니다:
+     둘레를 도는 테, 가운데를 도는 고리, 그리고 그 사이를 재는 줄눈.
+
+     ① 둘레 테 — 안쪽으로 3칸 들여 한 줄. 광장의 끝을 눈으로 말합니다 */
+  const bandM = M(PAL.pathDark, .8), band2 = M(PAL.path, .78);
+  [[X * 2 - 6, D - 6], [X * 2 - 6.9, D - 6.9]].forEach(([w, d], i) => {
+    const m = i ? band2 : bandM, y = .37 + i * .006;
+    flat(box(g, w, .09, .5, .04, m, 0, y, cz - d / 2));
+    flat(box(g, w, .09, .5, .04, m, 0, y, cz + d / 2));
+    flat(box(g, .5, .09, d, .04, m, -w / 2, y, cz));
+    flat(box(g, .5, .09, d, .04, m, w / 2, y, cz));
+  });
+  /* ② 분수 둘레 고리 — 물받이(반지름 9.8) 밖으로 두 겹. 가운데가
+     어디인지 바닥이 먼저 말해 주면 분수는 그 위에 놓이기만 하면 됩니다. */
+  [[11.6, PAL.pathDark], [12.5, PAL.path], [15.2, PAL.pathDark]].forEach(([r, c], i) => {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(r - (i === 2 ? .34 : .5), r, 64),
+      M(c, .8));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(0, .375 + i * .004, 0);
+    ring.castShadow = false; ring.receiveShadow = true; g.add(ring);
+  });
+  /* ③ 줄눈 — 전보다 굵고 촘촘하게. 가로 여덟 · 세로 여섯.
+     줄눈이 없으면 걸어도 걷는 느낌이 안 납니다(발밑이 안 지나갑니다). */
   for (let i = 1; i < 9; i++)
-    flat(box(g, X * 2 - 3.4, .1, .42, .05, M(PAL.stoneDark, .78), 0, .38, z0 + (D / 9) * i));
-  for (const x of [-17, -8.5, 8.5, 17])
-    flat(box(g, .42, .1, D - 3.4, .05, M(PAL.stoneDark, .78), x, .38, cz));
+    flat(box(g, X * 2 - 3.4, .1, .34, .04, M(PAL.stoneDark, .8), 0, .38, z0 + (D / 9) * i));
+  for (const x of [-23, -17, -8.5, 8.5, 17, 23])
+    flat(box(g, .34, .1, D - 3.4, .04, M(PAL.stoneDark, .8), x, .38, cz));
 }
 
 /* 광장 위인지 — 나무 · 소품이 여기 서면 안 됩니다 */
@@ -267,7 +348,9 @@ function ringPath(g, r = 30, w = 4.0) {
    교수님 : "가운데 표지판 날리고 동상에 분수 같이 있는 걸로 작게". */
 export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
   const p = new THREE.Group(); p.position.set(x, 0, z); g.add(p);
-  const wat = M(0xCFEFFA, .12, { transparent: true, opacity: .5 });
+  /* 0xCFEFFA 는 사실상 흰색이라 정오 빛에서 물이 아니라 흰 플라스틱
+     으로 보였습니다. 파랑을 조금 넣고 더 비칩니다. */
+  const wat = M(0xB4E2F2, .1, { transparent: true, opacity: .40 });
   const stone = M(PAL.stone, .72), kerb = M(PAL.kerb, .68);
   const pool = M(PAL.water, .18, { transparent: true, opacity: .86,
     emissive: 0x2A7C9E, emissiveIntensity: .1 });
@@ -279,6 +362,18 @@ export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
   ctx.water.push({ mesh: surf, y: .66, amp: .035, ph: 0 });
   { const t = new THREE.Mesh(new THREE.TorusGeometry(9.2, .2, 8, 72), kerb);
     t.rotation.x = Math.PI / 2; t.position.y = .5; t.castShadow = true; p.add(t); }
+  /* 외곽 화단 포인트 — 기존 원 안에서만 배치해 충돌 반경은 그대로입니다. */
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2, rr = 9.55;
+    /* 화분은 흙을 담는 것이지 콘크리트 링이 아닙니다. 0xD5E3E2 는 찬
+       회색이라 분수 둘레에 배관 뚜껑 여덟 개를 둘러 놓은 것처럼
+       보였습니다. 테라코타로 바꿉니다. */
+    const base = cyl(p, .52, .62, .25, 16, M(0xCE9A72, .68), Math.cos(a) * rr, .64, Math.sin(a) * rr);
+    base.castShadow = true;
+    const shrub = new THREE.Mesh(new THREE.SphereGeometry(.46, 14, 9), M(i % 2 ? 0x75C977 : 0x5EB86A, .62));
+    shrub.position.set(Math.cos(a) * rr, 1.02, Math.sin(a) * rr); shrub.scale.set(1.15, .72, 1.15);
+    shrub.castShadow = true; p.add(shrub);
+  }
 
   /* ── 대 ── */
   cyl(p, 2.3, 3.2, .7, 36, stone, 0, 1.0, 0);
@@ -313,6 +408,16 @@ export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
     j.rotation.z = -Math.cos(a) * .42; j.rotation.x = Math.sin(a) * .42;
     p.add(j);
   }
+  /* 바깥 못에서 가운데 접시로 모이는 방사형 아치 물줄기. */
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(Math.cos(a) * 7.4, 1.05, Math.sin(a) * 7.4),
+      new THREE.Vector3(Math.cos(a) * 5.8, 3.05, Math.sin(a) * 5.8),
+      new THREE.Vector3(Math.cos(a) * 4.5, 2.05, Math.sin(a) * 4.5));
+    const jet = new THREE.Mesh(new THREE.TubeGeometry(curve, 12, .055, 6, false), wat);
+    jet.renderOrder = 4; p.add(jet);
+  }
 
   /* 떨어짐 — 낱 줄기 묶음.
 
@@ -320,17 +425,22 @@ export function fountain(g, x = 0, z = 0, ctx = { water: [] }) {
      면이라 물이 아니라 **유리 항아리**가 됐습니다. 실제 분수의 낙수는
      테두리에서 갈라져 여러 가닥으로 떨어지고, 그 사이로 뒤가 보입니다.
      그 틈이 물로 읽히게 하는 몫입니다. */
+  /* 굵기와 길이를 **가닥마다 다르게** 합니다. 전 판은 서른네 가닥이
+     전부 같은 길이·같은 굵기라, 눈높이에서 보면 물이 아니라 흰 말뚝을
+     빙 둘러 박아 놓은 것으로 보였습니다(케이크 촛불). 길이를 흩고 사이를
+     띄우면 같은 개수로도 갈라져 떨어지는 물이 됩니다. */
   const fall = (r, y, h, n) => {
     for (let i = 0; i < n; i++) {
-      const a = (i / n) * Math.PI * 2;
-      const w2 = .07 + (i % 3) * .022;
-      const c = new THREE.Mesh(new THREE.CylinderGeometry(w2, w2 * 1.5, h, 6), wat);
-      c.position.set(Math.cos(a) * r, y, Math.sin(a) * r);
+      const a = (i / n) * Math.PI * 2 + (i % 2) * .06;
+      const w2 = .05 + (i % 4) * .019;
+      const hh = h * (.62 + ((i * 7) % 5) * .095);
+      const c = new THREE.Mesh(new THREE.CylinderGeometry(w2, w2 * 1.6, hh, 6), wat);
+      c.position.set(Math.cos(a) * r, y + (hh - h) / 2, Math.sin(a) * r);
       p.add(c);
     }
   };
-  fall(2.04, 5.6, 1.5, 22);         // 작은 접시 → 가운데
-  fall(4.38, 2.4, 3.2, 34);         // 가운데 → 못
+  fall(2.04, 5.6, 1.5, 18);         // 작은 접시 → 가운데
+  fall(4.38, 2.4, 3.2, 26);         // 가운데 → 못
 
   /* 부서짐 — 물이 닿는 자리마다 흰 거품 고리 */
   const foamRing = (r, y) => {
@@ -444,14 +554,30 @@ export function lampPost(g, x, z, h = 4.2) {
 }
 /* ---------- 야외 벤치 ---------- */
 export function benchOut(g, x, z, ry) {
+  /* ── 치수 ──
+     전 판은 길이 3.0 · 앉는 면 0.65 · 등받이 꼭대기 1.55 였습니다.
+     이 월드의 캐릭터가 키 1.2 안팎이라 **올라앉아도 등이 안 닿는 의자**
+     였고, 등받이 가로대를 0.3 간격으로 셋 세워 놓으니 위에서 내려다볼 때
+     세로 슬랫 뭉치로 읽혀 벤치가 아니라 **야외 운동기구**처럼 보였습니다.
+
+     실제 공원 벤치의 비율로 다시 잡습니다 — 앉는 면 0.45, 등받이 꼭대기
+     0.95(앉는 면에서 0.5), 길이 2.2. 등받이는 살짝 눕힙니다: 수직이면
+     의자가 아니라 칸막이입니다. 널은 셋에서 **둘**로 — 셋은 촘촘해서
+     판 한 장으로 보입니다. */
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
+  const W = 2.2, LX = W / 2 - .24;
   [-1, 1].forEach((s) => {
-    box(p, .18, .5, .9, .06, M(PAL.metalDark, .5), s * 1.3, .3, .05);
-    box(p, .22, .12, 1.1, .05, M(PAL.metalDark, .5), s * 1.3, .06, .05);
-    box(p, .16, .74, .16, .05, M(PAL.metalDark, .5), s * 1.3, .9, -.34);
+    box(p, .13, .40, .56, .05, M(PAL.metalDark, .5), s * LX, .22, .02);   // 다리
+    box(p, .17, .10, .72, .04, M(PAL.metalDark, .5), s * LX, .05, .02);   // 받침
+    const b = box(p, .11, .56, .12, .04, M(PAL.metalDark, .5), s * LX, .68, -.25);
+    b.rotation.x = -.13;                                                  // 등받이 기둥
   });
-  [0, 1, 2].forEach((i) => box(p, 3.0, .14, .28, .06, M(PAL.wood, .7), 0, .58, -.28 + i * .3));
-  [0, 1, 2].forEach((i) => box(p, 3.0, .26, .13, .05, M(PAL.wood, .7), 0, .82 + i * .3, -.4));
+  [0, 1, 2].forEach((i) =>
+    box(p, W, .08, .16, .035, M(PAL.wood, .7), 0, .45, -.19 + i * .19));  // 앉는 널
+  [0, 1].forEach((i) => {
+    const b = box(p, W, .15, .07, .03, M(PAL.wood, .7), 0, .70 + i * .21, -.28 - i * .03);
+    b.rotation.x = -.13;                                                  // 등받이 널
+  });
   return p;
 }
 
@@ -522,14 +648,21 @@ export function boardOut(g, x, z, ry) {
   const p = new THREE.Group(); p.position.set(x, 0, z); p.rotation.y = ry; g.add(p);
   [-1, 1].forEach((s) => cyl(p, .14, .17, 2.0, 10, M(PAL.woodDark, .74), s * 1.5, 1.0, 0));
   box(p, 3.6, 2.0, .24, .08, M(PAL.woodDark, .76), 0, 2.1, 0);
-  box(p, 3.3, 1.72, .16, .06, M(0x4E7C52, .84), 0, 2.1, .08);
   const cols = [0xFFF8EA, 0xFFE8C0, 0xE8F4FF, 0xFFF0F0];
-  [[-1.0,.42],[.1,.5],[1.05,.4],[-.9,-.44],[.25,-.4],[1.1,-.5]].forEach(([dx, dy], i) => {
-    box(p, .68, .52, .1, .03, M(cols[i % cols.length], .6), dx, 2.1 + dy, .14);
-    [0,1,2].forEach((k) => box(p, .5 - k * .08, .05, .1, .02, M(0x8A9098, .5), dx, 2.24 + dy - k * .12, .17));
+  /* 앞뒤 어느 쪽으로 돌아가도 같은 기능이 읽히는 양면 게시판입니다.
+     뒤에는 검은 나무판만 보여 "막힌 면"처럼 보이던 것을 고칩니다. */
+  [-1, 1].forEach((side) => {
+    box(p, 3.3, 1.72, .16, .06, M(side > 0 ? 0x3E765E : 0x476D82, .84), 0, 2.1, side * .08);
+    [[-1.0,.42],[.1,.5],[1.05,.4],[-.9,-.44],[.25,-.4],[1.1,-.5]].forEach(([dx, dy], i) => {
+      box(p, .68, .52, .1, .03, M(cols[(i + (side < 0 ? 2 : 0)) % cols.length], .6),
+        side * dx, 2.1 + dy, side * .14);
+      [0,1,2].forEach((k) => box(p, .5 - k * .08, .05, .1, .02, M(0x657486, .5),
+        side * dx, 2.24 + dy - k * .12, side * .17));
+    });
   });
   prism(p, 3.9, .5, .5, M(PAL.red, .6), 0, 3.1, 0, .06);
-  box(p, 1.9, .38, .18, .08, M(PAL.gold, .5), 0, 3.28, .12);
+  [-1, 1].forEach((side) => box(p, 2.1, .38, .18, .08,
+    M(side > 0 ? 0xD8EFE9 : 0xDCEAF5, .5), 0, 3.28, side * .12));
   return p;
 }
 
@@ -943,6 +1076,7 @@ export function buildCampus(scene) {
     bg.scale.setScalar(b.s);
     g.add(bg);
     BLD[b.key](bg, { plate: false });
+    dressEntrance(bg, b);
     /* 건물이 놓인 자리에 돌바닥을 깝니다 — 잔디 위에 뜬 것처럼 보이지 않게 */
     const pad = box(g, (b.w + 4) * b.s, .3, (b.d + b.front + 4.5) * b.s, 1.2,
                     M(PAL.stoneDark, .8), 0, .12, 0);
@@ -967,6 +1101,15 @@ export function buildCampus(scene) {
 
   /* --- 광장 한가운데 --- */
   fountain(g, 0, 0, ctx);
+  /* 학교 공지와 공모전 탭을 한 창에 합쳤으므로 실제 게시판도 하나입니다.
+     상호작용 좌표(spots.js)는 남아 있었는데
+     모델만 광장 소품 정리 때 같이 빠져, 허공에서 E를 눌러야 했습니다.
+     분수 북쪽 가장자리에 세우고 판 앞면은 광장 쪽을 봅니다. */
+  /* 게시판도 상판 위입니다 — y=0 에 세우면 다리가 38cm 묻혀 판만
+     떠 있는 것으로 보입니다. */
+  { const bg = new THREE.Group(); bg.position.y = .38; g.add(bg);
+    boardOut(bg, -8.6, 13.2, Math.PI); }
+  solid(-8.6, 13.2, 3.9, .55, Math.PI, false);
   /* 둥근 분수를 **네모로** 막고 있었습니다. 20.6 짜리 정사각형이라
      광장 네 귀퉁이가 통째로 막히고, 대각선으로 가로지르는 길이 전부
      끊겼습니다. 물받이는 반지름 10 인 원인데 막힌 것은 한 변 20.6 이니
@@ -983,11 +1126,77 @@ export function buildCampus(scene) {
     }
   }
 
-  /* 광장 소품 없음 — 벤치 · 가로등 · 화단 · 쓰레기통 · 게시판 · 이정표를
-     전부 걷었습니다. 자리를 하나씩 손보는 것으로는 안 되는 단계입니다:
-     이 물건들은 옛 극좌표 배치(반지름 9.2 · 13.0 · 15.6)에 매여 있어서
-     부지가 네모로 바뀐 지금은 **아무 근거 없는 원**을 그리고 있었습니다.
-     조성 계획을 다시 세운 뒤 길과 건물을 기준으로 다시 놓습니다. */
+  /* ── 광장 소품 ──
+     한동안 비워 두었습니다. 옛 극좌표 배치(반지름 9.2 · 13.0 · 15.6)에
+     매여 있어서, 부지가 네모가 된 뒤로는 아무 근거 없는 원을 그리고
+     있었기 때문입니다. "조성 계획을 다시 세운 뒤 다시 놓는다" 가
+     그때의 약속이었고, 이제 그 계획이 있습니다.
+
+     **광장의 줄눈에 맞춰 놓습니다.** 세로 줄눈이 x ±8.5 · ±17,
+     가로 줄눈이 z0 부터 D/9 마다 하나입니다. 물건이 줄눈 위에 서면
+     아무렇게나 놓인 것으로 안 보이고, 광장이 한 장의 바닥으로 읽힙니다.
+
+     물받이(반지름 10.3)와 게시판(-8.6, 13.2), 그리고 문으로 뻗는
+     길목(x 0 축)은 비웁니다. */
+  {
+    /* ══ ① 소품은 **상판 위**에 섭니다 ══
+       전 판은 전부 y=0 에 세웠습니다. 그런데 광장 상판의 윗면은
+       y = 0.38 입니다(테 0.31 + 돌판 0.38). 그래서 벤치도 가로등도
+       화단도 **38cm 씩 바닥에 박혀** 있었습니다 — 벤치는 앉는 면이
+       포장에서 7cm 뜬 꼴이라 묻힌 것처럼 보였어요.
+       소품 builder 들은 (x, z) 만 받고 늘 y=0 에 세우므로, 올린 그룹
+       하나를 만들어 그 안에 넣습니다. 충돌 상자는 2D 라 그대로입니다. */
+    const DECK = .38;
+    const d = new THREE.Group(); d.position.y = DECK; g.add(d);
+
+    /* ══ ② 사람이 지나는 길을 먼저 비웁니다 ══
+       광장을 가로지르는 동선은 셋입니다.
+         · 남북 축 — 정문에서 들어와 분수를 지나 본관까지. x -11~11
+         · 동서 축 — 도서관 문(x -29)에서 학생회관 문(x +29)까지. z -6~6
+         · 분수 둘레 — 반지름 15 까지는 도는 길
+       전 판은 가로등을 (±22, 0) 에 세웠는데 **거기가 도서관과 학생회관의
+       문 앞**입니다. 문에서 광장으로 나오면 첫 걸음에 기둥이 있었어요.
+       소품은 전부 이 셋의 **바깥**에만 놓습니다. */
+
+    /* 가로등 여덟 — 남북 축의 양옆(x ±14)에 두 줄, 동서 끝에 두 줄.
+       길을 따라 늘어서야 가로등이고, 길 한복판이나 문 앞에 서면
+       장애물입니다. 열둘을 세워 봤더니 광장이 기둥 숲이 됐습니다. */
+    [-20, 20].forEach((z) => [-14, 14].forEach((x) => {
+      lampPost(d, x, z, 4.4); solid(x, z, .9, .9, 0, false);
+    }));
+    /* 동서 축은 문 앞을 비워야 하므로 z ±9 로 물려서 둘만 */
+    [[-24, -9], [-24, 9], [24, -9], [24, 9]].forEach(([x, z]) => {
+      lampPost(d, x, z, 4.4); solid(x, z, .9, .9, 0, false);
+    });
+
+    /* 벤치 넷 — 분수 고리(반지름 15.2) **바깥** 대각선에 하나씩,
+       분수를 바라보게. 반지름 17 이라 고리 무늬를 안 밟습니다.
+       여섯을 놓아 봤더니 앉는 자리가 아니라 울타리로 보여 넷으로
+       줄였습니다. 남쪽은 비웁니다 — 정문에서 들어오는 길입니다. */
+    [[-12, -12], [12, -12], [-12, 12], [12, 12]].forEach(([x, z]) => {
+      const ry = Math.atan2(-x, -z);
+      benchOut(d, x, z, ry);
+      solid(x, z, 2.4, 1.0, ry, false);
+    });
+
+    /* 화단은 뺐습니다 — 흙 원판에 꽃을 꽂아 둔 것이라 가까이서 보면
+       화단이 아니라 **갈색 접시**입니다. 광장에 초록을 넣으려면 화분이
+       아니라 나무여야 하고, 그건 따로 심습니다. */
+
+    /* 산울타리 — 화단과 화단 사이 북쪽 두 자리. 광장의 등을 막아
+       본관 앞마당과 광장을 나눕니다(문 앞은 x ±11 밖입니다). */
+    [-1, 1].forEach((sx) => {
+      hedge(d, sx * 19.5, -28, 8.5, 0, .95);
+      solid(sx * 19.5, -28, 8.5, .9, 0, false);
+    });
+
+    /* 자전거 거치대 둘 — **남쪽 어귀**. 자전거는 캠퍼스에 들어오자마자
+       세우는 것이지 광장을 가로질러 안쪽까지 끌고 가지 않습니다.
+       처음에 북쪽 귀퉁이에 뒀다가 "왜 저기?" 가 되어 옮겼습니다. */
+    [[-26.5, 22], [26.5, 22]].forEach(([x, z]) => {
+      bikeRack(d, x, z, Math.PI / 2, 4); solid(x, z, 1.0, 3.6, Math.PI / 2, false);
+    });
+  }
 
   /* --- 정문 · 야외 구역은 plan.js 가 세웁니다 ---
      여기 있던 것을 전부 걷어냈습니다. 부지를 네모로 다시 짜면서
@@ -1150,6 +1359,61 @@ export function buildCampus(scene) {
 
   /* 진입로 — 건물이 다 선 뒤에 깝니다. 문 자리를 알아야 놓을 수 있습니다. */
   approaches(g, grounds.built, PLAN_B);
+
+  /* ══ 광장 위의 것을 상판으로 올립니다 ══
+     소품 builder 들은 하나같이 **y = 0** 에 세웁니다. 섬 잔디 윗면이
+     0.10, 길이 0.126 이라 거기서는 몇 cm 차이라 안 보이는데, 광장은
+     상판이 **0.38** 이라 그 위에 놓인 것이 전부 38cm 씩 묻힙니다 —
+     벤치는 앉는 면이 포장에서 7cm 뜬 꼴이고, 산울타리와 천막은 밑동이
+     사라집니다. 화면에서 "물건이 바닥에 박혀 있다" 로 보이던 것입니다.
+
+     자리를 하나씩 고치는 대신 여기서 한 번에 잽니다 — 새 소품을 놓는
+     사람이 이 규칙을 몰라도 되게. 조건은 셋입니다:
+       · 그룹일 것        (바닥판·줄눈은 Mesh 로 깔리므로 안 건드립니다)
+       · 광장 안에 있을 것 (경계상자가 통째로 들어와야 합니다)
+       · 밑동이 0.30 아래 (이미 올려 둔 것은 건너뜁니다)
+
+     충돌 상자는 2D 라 영향이 없고, 몇 개를 올렸는지 찍어 둡니다 —
+     숫자가 갑자기 0 이 되면 누가 광장 좌표를 바꾼 것입니다. */
+  {
+    const bb = new THREE.Box3(), DECK = .38;
+    const { x: PX, z0: PZ0, z1: PZ1 } = PLAZA;
+    let lifted = 0;
+    g.updateMatrixWorld(true);
+    /* **직계 자식만 보면 안 됩니다.** 소품은 대개 구역 그룹이나 부지
+       그룹 안에 한 겹 더 들어 있어서, g.children 만 훑으면 하나도 안
+       걸립니다(처음에 그렇게 짰다가 0개였습니다). 트리를 다 훑되
+       발자국이 작은 것만 — 부지나 구역 통짜를 올리면 안 됩니다. */
+    const cand = [];
+    g.traverse((c) => {
+      /* 그룹만 보면 절반을 놓칩니다 — 산울타리·기둥처럼 Mesh 를 바로
+         붙이는 자리가 있습니다. 발자국이 16 이하인 것만 집으므로
+         바닥판(58×61)·줄눈(58 길이)·고리(지름 30)는 안 걸립니다. */
+      if (!(c.isGroup && c.children.length) && !c.isMesh) return;
+      bb.setFromObject(c);
+      if (!isFinite(bb.min.x)) return;
+      if (bb.max.x - bb.min.x > 22 || bb.max.z - bb.min.z > 22) return;
+      /* **납작한 것은 물건이 아니라 바닥입니다.** 잔디 얼룩·러그·줄눈은
+         높이가 10cm 안팎인데, 이걸 같이 올렸더니 얼룩이 포장 위로 올라와
+         광장 한복판에 초록 조각이 흩뿌려졌습니다. 25cm 를 문턱으로 둡니다. */
+      if (bb.max.y - bb.min.y < .25) return;
+      if (bb.min.y > .30 || bb.min.y < -.4) return;
+      const cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
+      if (Math.abs(cx) > PX || cz < PZ0 || cz > PZ1) return;
+      cand.push(c);
+    });
+    /* 조상이 이미 뽑혔으면 자식은 뺍니다 — 두 번 올리면 두 배 뜹니다 */
+    const set = new Set(cand);
+    cand.forEach((c) => {
+      for (let a = c.parent; a; a = a.parent) if (set.has(a)) { set.delete(c); return; }
+    });
+    set.forEach((c) => {
+      bb.setFromObject(c);
+      c.position.y += DECK - bb.min.y;
+      lifted++;
+    });
+    if (lifted) console.log(`광장 소품 ${lifted}개를 상판(y ${DECK})으로 올렸습니다`);
+  }
 
   return { group: g, colliders, portals, water, HALF, CORE, PLAZA_R, SITE,
            swans, lotus, fish, flutter, grounds, faculties: FAC, AXIS };

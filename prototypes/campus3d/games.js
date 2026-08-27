@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════
-   미니게임 넷 — **직접 그리지 않습니다.**
+   미니게임 — 2D 규칙과 검증된 엔진을 이어 씁니다.
 
    전 판은 목 펴기와 달리기를 캔버스에 손으로 그렸습니다. 막대 하나에
    네모 몇 개라 게임이라기보다 시연이었습니다. 그래서 넷 다
@@ -11,13 +11,8 @@
      ③ 동물 러너
         같은 레포의 Phaser 게임(animal-runner-game.mjs)을 그대로 띄웁니다.
         Phaser 는 MIT 이고 vendor/ 에 이미 들어와 있습니다.
-     ④ 2048
-        규칙을 vendor/2048-logic.js 로 가져왔습니다 — winsonwq/2048term,
-        MIT. 원본에 mocha 시험이 붙어 있는 검증된 구현입니다.
-        여기서는 그리기만 합니다.
-
-   ---- 뒤에 붙은 넷(⑥~⑨) 은 사정이 다릅니다 ----
-   기린 목 펴기 · 달리기 시합 100m · 연못 낚시 · 책 정리는 2D 판
+   ---- 뒤에 붙은 게임들은 사정이 다릅니다 ----
+   기린 목 펴기 · 연못 낚시 · 책 정리는 2D 판
    openworld/index.html **안에** 규칙과 그림이 한 덩어리로 들어 있어서,
    import 로 끌어올 모듈이 하나도 없었습니다. 그래서 유일하게 남은 길인
    "그대로 옮겨 적기" 를 했습니다. 어디서 가져왔는지는 각 게임 머리말에
@@ -26,35 +21,36 @@
    ══════════════════════════════════════════════════════════ */
 import * as MEM from '../openworld/animal-find-engine.mjs';
 import * as M3 from '../openworld/animal-match3-engine.mjs';
-import { TableCalc } from './vendor/2048-logic.js';
 
 export const GAMES = {
-  memory: { title: '동물 짝 맞추기', how: '같은 동물 카드 짝을 맞춥니다' },
-  match3: { title: '동물 셋 지우기', how: '옆 칸과 바꿔 같은 동물 셋을 만듭니다' },
-  run:    { title: '동물 러너', how: '↑ 로 뛰어서 장애물을 넘고 동전을 모읍니다' },
-  n2048:  { title: '2048', how: '방향키로 같은 수를 붙여 2048 을 만듭니다' },
-  suika:  { title: '동물 합치기', how: '같은 동물을 붙이면 더 큰 동물이 됩니다 — 수박게임 방식' },
-  /* 열쇠는 2D 판 이름 그대로입니다(giraffeNeck · trackRace · pondFish · bookSort).
+  memory: { title: '동물 짝 맞추기', how: '같은 동물 카드 짝을 맞춥니다', icon: '🃏', tone: 'mint' },
+  match3: { title: '동물 셋 지우기', how: '옆 칸과 바꿔 같은 동물 셋을 만듭니다', icon: '🧩', tone: 'lilac' },
+  run:    { title: '동물 러너', how: '↑ 로 뛰어서 장애물을 넘고 동전을 모읍니다', icon: '🏃', tone: 'sky' },
+  suika:  { title: '동물 합치기', how: '같은 동물을 붙이면 더 큰 동물이 됩니다 — 수박게임 방식', icon: '🫧', tone: 'peach' },
+  /* 열쇠는 2D 판 이름 그대로입니다(giraffeNeck · pondFish · bookSort).
      spots.js 가 어느 판을 보고 적든 같은 이름으로 걸립니다. */
-  giraffeNeck: { title: '기린 목 펴기', how: '두드려서 나무 꼭대기 잎사귀까지 목을 폅니다' },
-  trackRace:   { title: '달리기 시합 100m', how: '← → 를 번갈아 밟아 100m 를 달립니다' },
-  pondFish:    { title: '연못 낚시', how: '찌가 쑥 잠기는 순간 Space 로 챕니다' },
-  bookSort:    { title: '책 정리', how: '청구기호가 작은 책부터 골라 꽂습니다' },
+  giraffeNeck: { title: '기린 목 펴기', how: '두드려서 나무 꼭대기 잎사귀까지 목을 폅니다', icon: '🦒', tone: 'lemon' },
+  pondFish:    { title: '연못 낚시', how: '찌가 쑥 잠기는 순간 Space 로 챕니다', icon: '🎣', tone: 'sky' },
+  bookSort:    { title: '책 정리', how: '청구기호가 작은 책부터 골라 꽂습니다', icon: '📚', tone: 'mint' },
   /* 이 열쇠도 2D 판 이름 그대로입니다 — 2D 는 코인을 'postureRun' 으로
      적습니다. 이름이 갈리면 같은 게임이 두 판에서 다른 것으로 세어집니다. */
-  postureRun:  { title: '거북목 탈출 러너', how: '고개를 살짝 들면 뛰어넘어요 — 자판 Space 도 됩니다' },
+  postureRun:  { title: '거북목 탈출 러너', how: '고개를 살짝 들면 뛰어넘어요 — 자판 Space 도 됩니다', icon: '🐢', tone: 'mint' },
 };
 
 let host = null, raf = 0, keyH = null, done = null, closing = false, teardown = null;
 
 function shell(key) {
   const G = GAMES[key];
+  if (!G) throw new Error(`없는 미니게임: ${key}`);
   host = document.createElement('div');
   host.id = 'game';
+  host.dataset.game = key;
+  host.dataset.tone = G.tone || 'mint';
   host.innerHTML = `
     <div class="gbox">
       <div class="ghead">
-        <div><b>${G.title}</b><span>${G.how}</span></div>
+        <i class="game-badge" aria-hidden="true">${G.icon || '🎮'}</i>
+        <div class="game-copy"><small>MINI GAME</small><b>${G.title}</b><span>${G.how}</span></div>
         <div class="gstat"><em class="score">0</em><i class="tm"></i></div>
         <button class="gx">그만두기 (Esc)</button>
       </div>
@@ -103,7 +99,7 @@ export function openGame(key, onDone, ctx) {
   if (host) close(0);
   closing = false; lastScore = 0; done = onDone; teardown = null;
   const body = shell(key);
-  ({ memory, match3, run, n2048, suika, giraffeNeck, trackRace, pondFish, bookSort,
+  ({ memory, match3, run, suika, giraffeNeck, pondFish, bookSort,
      postureRun })[key](body, ctx);
   const esc = (e) => { if (e.code === 'Escape') { e.preventDefault(); close(lastScore); } };
   addEventListener('keydown', esc);
@@ -239,87 +235,7 @@ function run(body) {
   });
 }
 
-/* ---------- ④ 2048 — 규칙은 vendor/2048-logic.js(MIT) ---------- */
-const T2 = { 2:['#F0E6D8','#5C5348'], 4:['#EEDFC4','#5C5348'], 8:['#F2B279','#FFF8EE'],
-  16:['#F09B63','#FFF8EE'], 32:['#F07E5F','#FFF8EE'], 64:['#EC5F3D','#FFF8EE'],
-  128:['#EDCF72','#FFF8EE'], 256:['#EDCC61','#FFF8EE'], 512:['#EDC850','#FFF8EE'],
-  1024:['#EDC53F','#FFF8EE'], 2048:['#35E0C6','#08251F'] };
-function n2048(body) {
-  body.className = 'gbody';
-  const wrap = document.createElement('div');
-  wrap.style.cssText = 'display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:9px;'
-    + 'background:rgba(34,42,51,.10);border-radius:16px;width:min(360px,74vw)';
-  const hint = document.createElement('div');
-  hint.style.cssText = 'margin-top:11px;font:600 11.5px inherit;color:#5C6672;text-align:center';
-  hint.innerHTML = '방향키 · WASD · 화면을 밀어도 됩니다';
-  body.appendChild(wrap); body.appendChild(hint);
-
-  /* localStorage 를 **감싸서** 읽습니다. 쿠키·사이트 데이터를 막아 둔
-     브라우저에서는 getItem 자체가 던지는데, 그러면 openGame 이 통째로
-     터져서 판이 빈 채로 열리고 Esc 도 안 먹었습니다(Esc 를 다는 줄이
-     이 아래에 있습니다). 기록 하나 때문에 게임이 안 열리면 안 됩니다. */
-  let tb, score, best = +(ls('girin3d.2048', 0) || 0), overed;
-  const empty = () => { const r = []; for (let y = 0; y < 4; y++) r.push([0, 0, 0, 0]); return r; };
-  const spawn = () => {
-    const free = [];
-    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) if (!tb[y][x]) free.push([y, x]);
-    if (!free.length) return false;
-    const [y, x] = free[Math.floor(Math.random() * free.length)];
-    tb[y][x] = Math.random() < .9 ? 2 : 4; return true;
-  };
-  const draw = () => {
-    wrap.innerHTML = '';
-    for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) {
-      const v = tb[y][x], d = document.createElement('div');
-      const [bg, fg] = T2[v] || ['#35E0C6', '#08251F'];
-      d.style.cssText = 'aspect-ratio:1;border-radius:11px;display:grid;place-items:center;'
-        + `font:800 ${v > 999 ? 20 : v > 99 ? 24 : 27}px inherit;`
-        + (v ? `background:${bg};color:${fg};box-shadow:0 2px 0 rgba(34,42,51,.10)`
-             : 'background:rgba(34,42,51,.06)');
-      d.textContent = v || '';
-      wrap.appendChild(d);
-    }
-  };
-  /* 원본 규칙의 방향 이름 — ltr 은 오른쪽으로 밉니다 */
-  const DIR = { ArrowLeft: 'rtl', KeyA: 'rtl', ArrowRight: 'ltr', KeyD: 'ltr',
-                ArrowUp: 'btt', KeyW: 'btt', ArrowDown: 'ttb', KeyS: 'ttb' };
-  const move = (mode) => {
-    if (overed) return;
-    const r = TableCalc.merge(tb.map((row) => row.slice()), mode);
-    if (TableCalc.isSame(tb, r.result)) return;                 // 안 움직이면 한 수가 아닙니다
-    tb = r.result;
-    r.mergedNums.forEach((line) => line.forEach((n) => { score += n; }));
-    spawn(); setScore(score); draw();
-    if (best < score) { best = score; try { localStorage.setItem('girin3d.2048', best); } catch {} }
-    setTime(`최고 ${best}`);
-    if (tb.some((row) => row.some((v) => v >= 2048)))
-      { overed = true; over('2048!', `${score}점`, start); return; }
-    if (!Object.values(DIR).some((m) => !TableCalc.isSame(tb, TableCalc.merge(tb.map((q) => q.slice()), m).result)))
-      { overed = true; over('더 못 움직여요', `${score}점 · 최고 ${best}`, start); }
-  };
-  keyH = (e) => {
-    if (e.type !== 'keydown') return;
-    const m = DIR[e.code]; if (!m) return;
-    e.preventDefault(); move(m);
-  };
-  addEventListener('keydown', keyH);
-  /* 손가락으로 밀기 */
-  let t0 = null;
-  wrap.addEventListener('pointerdown', (e) => { t0 = [e.clientX, e.clientY]; });
-  wrap.addEventListener('pointerup', (e) => {
-    if (!t0) return;
-    const dx = e.clientX - t0[0], dy = e.clientY - t0[1]; t0 = null;
-    if (Math.hypot(dx, dy) < 24) return;
-    move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'ltr' : 'rtl') : (dy > 0 ? 'ttb' : 'btt'));
-  });
-  function start() {
-    tb = empty(); score = 0; overed = false;
-    spawn(); spawn(); setScore(0); setTime(`최고 ${best}`); draw();
-  }
-  start();
-}
-
-
+/* 2048은 미니게임관과 번들에서 완전히 제거했습니다. */
 /* ---------- ⑤ 동물 합치기 — 수박게임 방식 ----------
    물리는 **matter-js**(MIT, npm `matter-js@0.20.0` 그대로 vendor/에)가
    다 합니다. 우리는 과일 대신 우리 동물 여덟을 얹었을 뿐입니다. */
@@ -920,323 +836,7 @@ function giraffeNeck(body) {
   raf = requestAnimationFrame(loop);
 }
 
-/* ---------- ⑦ 달리기 시합 100m ----------
-   2D: startTrackRace / trackRaceTick / racePacerAt / raceRank.
-   빠져 있는 것: 같이 달리는 사람 레인(MP) 과 그것을 접는 RACE_KEEP_MS —
-   3D 판 미니게임에는 통신이 없습니다. 페이서 셋과 '내 최고' 는 그대로입니다. */
-const RACE_M = 100;              // 100m 는 20초 안쪽입니다
-const RACE_TARGET = 18;          // 이 안에 들어오면 성공
-const RACE_LIMIT = 30;           // 한 판의 끝. 안 두면 안 뛰는 판이 안 끝납니다
-const RACE_VMAX = 9.6;           // m/s
-const RACE_GAIN = 0.55;          // 한 걸음이 더해 주는 속도
-const RACE_DECAY = 0.45;         // 초당 잃는 비율
-const RACE_W = 880, RACE_LANE = 44, RACE_TOP = 34;
-const RACE_X0 = 158, RACE_X1 = RACE_W - 42;   // 출발선 · 결승선
-const RACE_SPURT_M = 80;         // 여기서부터 스퍼트
-const RACE_TEMPO = [100, 340];   // 좋은 박자로 치는 걸음 간격(ms)
-/* 페이서 셋. 이름과 종은 이 월드에 사는 것들에서 가져옵니다. */
-const RACE_PACERS = [
-  { nick: '느린거북', sec: 19.6, col: '#5CB177' },
-  { nick: '뒤뚱펭귄', sec: 17.2, col: '#4A7FB5' },
-  { nick: '폴짝개구리', sec: 15.4, col: '#7BB661' },
-];
-/** 페이서는 등속이 아닙니다 — 처음 1.6초를 가속에 씁니다. 등속으로 두면
-    출발선에서 저 혼자 튀어 나갑니다. */
-function racePacerAt(q, t) {
-  const v = RACE_M / q.sec, acc = 1.6;
-  return t < acc ? v * t * t / (2 * acc) : v * (t - acc / 2);
-}
-const raceBest = () => Number(ls('girin.race.best', 0)) || 0;
-
-function trackRace(body) {
-  body.className = 'gbody';
-  const P = pal();
-  const cv = document.createElement('canvas');
-  cv.style.cssText = 'width:100%;display:block';
-  body.appendChild(cv);
-  const row = document.createElement('div');
-  row.style.cssText = 'display:flex;gap:10px;width:100%;max-width:520px';
-  const bL = gbtn('왼발  ←'), bR = gbtn('오른발  →');
-  bL.style.flex = bR.style.flex = '1';
-  row.appendChild(bL); row.appendChild(bR);
-  body.appendChild(row);
-  const say = sayLine(body, '신호를 기다려 주세요.');
-  const note = document.createElement('p');
-  note.style.cssText = 'margin:0;font:600 11px/1.5 inherit;color:var(--ink2);opacity:.75;'
-    + 'text-align:center;max-width:520px';
-  note.textContent = `← → · A D 로 왼발 오른발을 번갈아 밟습니다. 마지막 20m 는 스퍼트 구간이라 `
-    + `한 걸음이 더 나가요. ${RACE_TARGET}초 안이면 성공이고, ${RACE_LIMIT}초를 넘기면 그 판은 거기서 끝나요.`;
-  body.appendChild(note);
-
-  const R = { phase: 'ready', wait: 2.4, t: 0, dist: 0, v: 0, lastFoot: '', lastStepAt: 0,
-              slip: 0, steps: 0, tempo: 0, prints: [], pacers: [], best: 0, time: 0,
-              rank: 0, won: false, done: false, spurt: false, last: 0, overAt: 0, over: false };
-
-  /** 결승선을 나보다 먼저 넘은 레인 수 + 1. 2D 는 페이서와 사람만 셉니다 —
-      '내 최고' 레인은 보여 주기만 하고 순위에는 안 넣습니다(넣으면 혼자
-      달려서 낸 기록이 다음 판의 등수를 깎습니다). */
-  function raceRank() {
-    let ahead = 0;
-    for (const q of R.pacers) if (q.sec < R.t) ahead++;
-    return ahead + 1;
-  }
-  /** 다음에 밟을 발을 단추에도 표시합니다. 화면 안에만 두면 손이 어디를
-      눌러야 하는지 모르고, 단추에만 두면 트랙에서 눈을 떼야 합니다. */
-  function paintFeet() {
-    const next = R.lastFoot === 'left' ? 'right' : R.lastFoot === 'right' ? 'left' : '';
-    for (const [side, el] of [['left', bL], ['right', bR]]) {
-      const on = R.phase === 'run' && (next === '' || next === side);
-      el.style.background = on ? 'var(--ink)' : 'rgba(34,42,51,.08)';
-      el.style.color = on ? 'var(--paper)' : 'var(--ink)';
-      el.style.transform = on ? 'translateY(-2px)' : 'none';
-    }
-  }
-  /** 한 걸음. 같은 발을 두 번 밟으면 안 나갑니다. */
-  function step(foot) {
-    if (R.phase !== 'run') {
-      if (R.phase === 'ready') { say('아직 출발 신호 전이에요. 초록불에 나가 주세요.'); R.slip = 0.22; }
-      return;
-    }
-    if (foot === R.lastFoot) {
-      R.slip = 0.35; R.tempo = 0;
-      say('같은 발이에요. 왼발 오른발 번갈아!');
-      FX.say(RACE_X0 + 120, RACE_TOP + 12, '같은 발!', '#E0483A', 18);
-      paintFeet();
-      return;
-    }
-    const now = performance.now();
-    const gap = R.lastStepAt ? now - R.lastStepAt : 0;
-    /* 박자 — 너무 몰아치거나 늘어지면 그냥 한 걸음, 고르면 1.3배.
-       "빨리" 가 아니라 "고르게" 가 이기게 하는 자리입니다. */
-    const good = gap >= RACE_TEMPO[0] && gap <= RACE_TEMPO[1];
-    R.tempo = good ? Math.min(12, R.tempo + 1) : 0;
-    const spurt = R.dist >= RACE_SPURT_M ? 1.35 : 1;
-    R.v = Math.min(RACE_VMAX, R.v + RACE_GAIN * (good ? 1.3 : 1) * spurt);
-    R.lastFoot = foot; R.lastStepAt = now; R.steps++;
-    /* 발자국 — 조작에 흔적이 없으면 눌러도 아무 일이 없는 것처럼 느껴집니다. */
-    R.prints.push({ d: R.dist, side: foot, t: 0 });
-    if (R.prints.length > 26) R.prints.shift();
-    if (good && R.tempo === 4) FX.say(RACE_X0 + 150, RACE_TOP + 14, '좋은 박자!', P.acc, 18);
-    paintFeet();
-  }
-
-  function finish() {
-    R.phase = 'done'; R.over = true; R.overAt = performance.now();
-    R.time = R.t; R.rank = raceRank();
-    R.done = R.dist >= RACE_M;                       // 못 넘고 끝났으면 기록이 아닙니다
-    R.won = R.done && R.time <= RACE_TARGET;
-    const prev = raceBest();
-    const isBest = R.done && (!prev || R.time < prev);
-    if (isBest) lsSet('girin.race.best', Math.round(R.time * 100) / 100);
-    /* 2D 는 목표 시간 안에 들어와야 코인입니다 — 실패한 판은 0 점입니다. */
-    setScore(R.won ? Math.round(R.dist) : 0);
-    setTime(R.done ? R.time.toFixed(2) + '초' : '시간 초과');
-    paintFeet();
-    if (R.won) {
-      FX.burst(RACE_X1 - 20, RACE_TOP + RACE_LANE / 2, '#FFE9A8', 26, 210);
-      say(isBest ? '개인 최고 기록이에요!' : '목표 안에 들어왔어요.');
-      over(R.time.toFixed(2) + '초 · ' + R.rank + '위',
-           '목표 ' + RACE_TARGET + '초 통과! · ' + R.steps + '걸음', start);
-    } else if (R.done) {
-      say(RACE_TARGET + '초를 넘겼어요(' + R.time.toFixed(2) + '초). 같은 발을 두 번 누르지 않고 고르게 밟으면 훨씬 빨라져요.');
-      over(R.time.toFixed(2) + '초 · ' + R.rank + '위',
-           '목표는 ' + RACE_TARGET + '초예요 · ' + R.steps + '걸음', start);
-    } else {
-      say(RACE_LIMIT + '초 안에 못 들어왔어요. ' + Math.round(R.dist) + 'm 에서 끝났습니다.');
-      over(Math.round(R.dist) + 'm 에서 끝',
-           RACE_LIMIT + '초 안에 못 들어왔어요 · ' + R.steps + '걸음', start);
-    }
-  }
-
-  function loop(now) {
-    raf = requestAnimationFrame(loop);
-    const dt = Math.min(0.05, (now - R.last) / 1000);
-    R.last = now;
-    if (dt <= 0) { draw(); return; }
-    FX.update(dt);
-    for (const p of R.prints) p.t += dt;
-    if (R.phase === 'ready') {
-      R.wait -= dt;
-      setTime(R.wait > 1.0 ? '제자리에' : R.wait > 0 ? '준비' : '출발!');
-      if (R.wait <= 0) {
-        R.phase = 'run'; R.t = 0; R.lastStepAt = 0;
-        say('가세요! 왼발 오른발 번갈아.');
-        paintFeet();
-      }
-    } else if (R.phase === 'run') {
-      R.t += dt;
-      R.v = Math.max(0, R.v - R.v * RACE_DECAY * dt);
-      const was = R.dist;
-      R.dist = Math.min(RACE_M, R.dist + R.v * dt);
-      if (!R.spurt && was < RACE_SPURT_M && R.dist >= RACE_SPURT_M) {
-        R.spurt = true;
-        say('스퍼트! 마지막 20m — 한 걸음이 더 나가요.');
-        FX.say(RACE_W / 2, RACE_TOP + 20, '스퍼트!', '#FFD98A', 26);
-      }
-      if (R.slip > 0) R.slip -= dt;
-      for (const q of R.pacers) q.d = Math.min(RACE_M, racePacerAt(q, R.t));
-      setScore(Math.round(R.dist));
-      setTime(R.t.toFixed(2) + '초 · ' + R.v.toFixed(1) + 'm/s');
-      if (R.dist >= RACE_M || R.t >= RACE_LIMIT) { draw(); return finish(); }
-    }
-    draw();
-  }
-
-  /* 위에서 내려다본 레인. 옆에서 보면 남이 앞선 것이 안 보입니다 —
-     레인을 세로로 쌓아야 "누가 앞에 있나" 가 한눈에 들어옵니다. */
-  function draw() {
-    const lanes = [{ nick: '나', d: R.dist, col: P.acc, me: true }]
-      .concat(R.pacers.map((q) => ({ nick: q.nick, d: q.d, col: q.col })));
-    if (R.best) lanes.splice(1, 0, { nick: '내 최고', col: '#9AA3AE', ghost: true,
-      d: Math.min(RACE_M, racePacerAt({ sec: R.best }, R.t)) });
-    lanes.length = Math.min(6, lanes.length);
-
-    /* 레인 수만큼만 높이를 잡습니다. 여섯 칸을 고정으로 두면 혼자 달릴 때
-       화면 절반이 빈 붉은 판입니다. */
-    const H = RACE_TOP + lanes.length * RACE_LANE + 10;
-    const ratio = RACE_W + ' / ' + H;
-    if (cv.style.aspectRatio !== ratio) cv.style.aspectRatio = ratio;
-    const g = fitCv(cv, RACE_W, H);
-    if (!g) return;
-
-    g.fillStyle = '#C4553F'; g.fillRect(0, 0, RACE_W, H);
-    g.fillStyle = '#8E3A29'; g.fillRect(0, 0, RACE_W, RACE_TOP - 4);
-    g.font = F7(12); g.textBaseline = 'middle';
-    for (let m = 0; m <= RACE_M; m += 10) {
-      const x = RACE_X0 + (RACE_X1 - RACE_X0) * (m / RACE_M);
-      const big = m % 50 === 0;
-      g.fillStyle = big ? '#F4EDE4' : 'rgba(244,237,228,.45)';
-      g.fillRect(x, RACE_TOP - 14, big ? 2 : 1, big ? 10 : 6);
-      if (m % 25 === 0) { g.textAlign = 'center'; g.fillText(m + 'm', x, RACE_TOP - 22); }
-    }
-    /* 스퍼트 구간 — 마지막 20m 가 왜 특별한지 자에 적어 둡니다 */
-    const sx = RACE_X0 + (RACE_X1 - RACE_X0) * (RACE_SPURT_M / RACE_M);
-    g.fillStyle = 'rgba(255,217,138,.9)'; g.fillRect(sx, RACE_TOP - 6, RACE_X1 - sx, 3);
-    g.textAlign = 'left'; g.fillStyle = '#FFD98A'; g.font = F7(11);
-    g.fillText('스퍼트', sx + 6, RACE_TOP - 22);
-
-    for (let i = 0; i < lanes.length; i++) {
-      const L = lanes[i], y = RACE_TOP + i * RACE_LANE, lh = RACE_LANE - 3;
-      g.fillStyle = i % 2 ? '#B84E3A' : '#C4553F'; g.fillRect(0, y, RACE_W, lh);
-      /* 우레탄 알갱이 — 민판이면 붉은 종이가 됩니다 */
-      g.fillStyle = 'rgba(0,0,0,.05)';
-      for (let k = 0; k < 60; k++)
-        g.fillRect(RACE_X0 + ((k * 101 + i * 37) % (RACE_X1 - RACE_X0)), y + 3 + ((k * 7 + i * 3) % (lh - 6)), 2, 2);
-      g.fillStyle = 'rgba(244,237,228,.5)'; g.fillRect(0, y + lh, RACE_W, 1);
-      g.fillStyle = 'rgba(255,217,138,.10)'; g.fillRect(sx, y, RACE_X1 - sx, lh);
-
-      if (L.me) for (const p of R.prints) {
-        const px = RACE_X0 + (RACE_X1 - RACE_X0 - 22) * (p.d / RACE_M);
-        g.fillStyle = 'rgba(42,24,18,' + Math.max(0, 0.3 - p.t * 0.12).toFixed(2) + ')';
-        g.fillRect(px, y + (p.side === 'left' ? 8 : 26), 9, 6);
-      }
-      /* 이름표 — 왼쪽에 붙박이. 레인 위에 띄우면 달리는 동안 글자가
-         같이 움직여서 못 읽습니다. */
-      g.fillStyle = L.me ? 'rgba(12,90,79,.94)' : 'rgba(34,42,51,.8)';
-      g.fillRect(0, y, RACE_X0 - 12, lh);
-      g.fillStyle = L.me ? P.acc : 'rgba(244,237,228,.35)';
-      g.fillRect(0, y, 4, lh);
-      g.fillStyle = L.me ? '#A8FBF0' : '#FFF6F3';
-      g.font = F7(13); g.textAlign = 'left';
-      const nm = String(L.nick);
-      g.fillText(nm.length > 9 ? nm.slice(0, 8) + '…' : nm, 12, y + lh / 2 - 7);
-      g.font = '600 12px ' + P.ff;
-      g.fillStyle = L.me ? 'rgba(168,251,240,.78)' : 'rgba(255,246,243,.62)';
-      g.fillText(Math.round(L.d) + 'm', 12, y + lh / 2 + 11);
-      g.fillStyle = 'rgba(244,237,228,.8)'; g.fillRect(RACE_X0 - 3, y, 2, lh);
-      for (let k = 0; k < 5; k++) {
-        g.fillStyle = k % 2 ? '#2A2320' : '#F4EDE4';
-        g.fillRect(RACE_X1, y + k * 9, 12, 9);
-      }
-
-      const rx = RACE_X0 + (RACE_X1 - RACE_X0 - 22) * (L.d / RACE_M);
-      if (L.ghost) g.globalAlpha = 0.5;
-      const moving = R.phase === 'run' && (L.me ? R.v > 0.4 : L.d > 0 && L.d < RACE_M);
-      const sw = moving ? Math.sin(performance.now() / 62 + i * 2) * 5 : 0;
-      /* 속도선 — 빠를수록 길어집니다. 내 레인에만 답니다. */
-      if (L.me && R.v > 4) {
-        g.fillStyle = 'rgba(255,255,255,' + Math.min(0.4, (R.v - 4) / 14).toFixed(2) + ')';
-        for (let k = 1; k <= 3; k++) g.fillRect(rx - 12 - k * 14, y + 10 + k * 5, 11, 3);
-      }
-      g.fillStyle = 'rgba(24,16,12,.42)'; g.fillRect(rx + 1, y + lh - 8, 24, 5);
-      g.fillStyle = 'rgba(24,16,12,.55)'; g.fillRect(rx - 2, y + 3, 32, 28);
-      g.fillStyle = L.col; g.fillRect(rx + 1, y + 11, 17, 14);
-      g.fillStyle = 'rgba(255,255,255,.24)'; g.fillRect(rx + 1, y + 11, 17, 4);
-      g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(rx + 1, y + 22, 17, 3);
-      g.fillStyle = L.col; g.fillRect(rx + 16, y + 4, 12, 12);
-      g.fillStyle = 'rgba(255,255,255,.24)'; g.fillRect(rx + 16, y + 4, 12, 3);
-      g.fillStyle = L.col;
-      g.fillRect(rx + 18, y - 1, 3, 6); g.fillRect(rx + 24, y - 1, 3, 6);
-      g.fillRect(rx - 4, y + 13, 7, 4);
-      g.fillRect(rx + 15, y + 13 - sw * 0.4, 6, 4);
-      g.fillStyle = 'rgba(24,16,12,.8)'; g.fillRect(rx + 24, y + 8, 3, 3);
-      g.fillStyle = L.col;
-      g.fillRect(rx + 3, y + 24, 6, 7 + sw);
-      g.fillRect(rx + 11, y + 24, 6, 7 - sw);
-      g.fillStyle = 'rgba(24,16,12,.55)';
-      g.fillRect(rx + 3, y + 30 + sw, 6, 3); g.fillRect(rx + 11, y + 30 - sw, 6, 3);
-      g.globalAlpha = 1;
-    }
-
-    FX.draw(g);
-
-    /* 신호등 — 출발 전에는 이것만 봅니다. 제자리에·준비·출발이
-       빨강·노랑·초록이면 글자를 안 읽어도 몸이 압니다. */
-    if (R.phase === 'ready') {
-      const mid = H / 2;
-      g.fillStyle = 'rgba(34,42,51,.82)'; g.fillRect(0, mid - 46, RACE_W, 92);
-      const stepI = R.wait > 1.0 ? 0 : R.wait > 0 ? 1 : 2;
-      const LIGHTS = [['#E0483A', '제자리에'], ['#E0AE3C', '준비'], ['#2E9E5B', '출발!']];
-      LIGHTS.forEach(([col, label], i) => {
-        const cx = RACE_W / 2 - 92 + i * 92;
-        disc(g, cx, mid - 8, 26, i === stepI ? col : 'rgba(255,255,255,.14)');
-        if (i === stepI) disc(g, cx - 7, mid - 15, 10, 'rgba(255,255,255,.45)');
-      });
-      g.fillStyle = '#FFFFFF'; g.textAlign = 'center'; g.font = F8(26);
-      g.fillText(LIGHTS[stepI][1], RACE_W / 2, mid + 34);
-      g.textAlign = 'left';
-    }
-    if (R.slip > 0) {
-      g.fillStyle = 'rgba(224,72,58,' + Math.min(0.34, R.slip).toFixed(2) + ')';
-      g.fillRect(0, 0, RACE_W, H);
-    }
-    g.textBaseline = 'alphabetic';
-    g.setTransform(1, 0, 0, 1, 0, 0);
-  }
-
-  function start() {
-    FX.reset();
-    R.phase = 'ready'; R.wait = 2.4; R.over = false;
-    R.t = 0; R.dist = 0; R.v = 0; R.lastFoot = ''; R.lastStepAt = 0; R.steps = 0;
-    R.slip = 0; R.tempo = 0; R.prints = []; R.spurt = false;
-    R.won = false; R.done = false; R.time = 0; R.rank = 0;
-    R.best = raceBest();
-    /* 페이서 기록을 판마다 조금씩 흔듭니다. 늘 같은 초로 들어오면 두 판만에
-       "저 셋은 그림" 이라는 게 들통납니다. */
-    R.pacers = RACE_PACERS.map((q) => ({ ...q, sec: q.sec + (Math.random() - 0.5) * 1.2, d: 0 }));
-    R.last = performance.now();
-    setScore(0); setTime('제자리에');
-    say(R.best ? '신호를 기다려 주세요. 내 최고 기록은 ' + R.best.toFixed(2) + '초예요.'
-               : '신호를 기다려 주세요.');
-    paintFeet();
-  }
-
-  bL.addEventListener('click', () => step('left'));
-  bR.addEventListener('click', () => step('right'));
-  /* 화살표와 A·D 를 같이 받습니다. 한 키를 누르고 있으면 자동 반복이
-     들어오는데, 같은 발은 안 나가므로 그대로 둡니다. */
-  const kd = (e) => {
-    const L = e.code === 'ArrowLeft' || e.code === 'KeyA';
-    const Rt = e.code === 'ArrowRight' || e.code === 'KeyD';
-    if (!L && !Rt) return;
-    e.preventDefault(); step(L ? 'left' : 'right');
-  };
-  addEventListener('keydown', kd);
-  teardown = () => removeEventListener('keydown', kd);
-  start();
-  raf = requestAnimationFrame(loop);
-}
-
+/* 광장 달리기 시합은 장소·규칙·기록을 모두 제거했습니다. */
 /* ---------- ⑧ 연못 낚시 ----------
    2D: startPondFish / fishPress / pondFishTick / drawPondFish / fishBook.
    등급 경계 · 창 좁아지는 폭 · 가중치 누르기(w^(1-0.55x)) 는 원본 그대로입니다.

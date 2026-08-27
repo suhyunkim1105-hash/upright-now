@@ -30,8 +30,11 @@ const q = new URLSearchParams(location.search);
 const W = +(q.get('w') || 1600), H = +(q.get('h') || 1100);
 const F = +(q.get('f') || 46);
 const cx = +(q.get('cx') || 0), cz = +(q.get('cz') || 0);
-const cam = new THREE.OrthographicCamera(-F * (W / H), F * (W / H), F, -F, .1, 400);
 const d = +(q.get('d') || 120);
+/* far 를 400 으로 못 박았더니 멀리 있는 단과대가 far 면에 잘려 **뒷면만**
+   남았고, 하늘에 거꾸로 매달린 건물처럼 보였습니다. 월드에는 없는
+   현상인데 검수하다 한참 쫓았습니다. 카메라 거리에 맞춰 늘립니다. */
+const cam = new THREE.OrthographicCamera(-F * (W / H), F * (W / H), F, -F, .1, d * 6 + 400);
 cam.position.set(cx + d, d * .86, cz + d); cam.lookAt(cx, 2, cz);
 const r = new THREE.WebGLRenderer({ canvas: document.getElementById('cv'), antialias: true });
 r.setSize(W, H, false); r.setPixelRatio(1);

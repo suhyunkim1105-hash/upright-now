@@ -364,7 +364,11 @@ button:active, [data-hot]:active {
         <span data-seat-count="" style="font-weight: 800; font-size: 13.5px; line-height: 1; font-family: inherit; color: #333D4B; font-variant-numeric: tabular-nums;">3 / 6</span>
       </span>
 
-      <div data-seats style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; gap: 12px;">
+      <!-- 6명까지는 3×2로 꽉 찼지만, 7명이 넘으면 3번째 줄이 앞 두 줄과
+           다른 크기(암묵 auto-rows)로 눌리거나 화면 밖으로 잘렸습니다.
+           grid-auto-rows: 1fr 로 모든 줄을 같은 키로 두고, 넘치면
+           세로로 스크롤(=드래그)해서 나머지를 볼 수 있게 합니다. -->
+      <div data-seats style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 12px; overflow-y: auto;">
 
         <!-- 프로필 사진을 올린 사람 — 사진이 그대로 자리에 앉습니다 -->
           <div aria-label="아직 안 온 자리" style="border-radius: 22px; background: #E9F1FB;
@@ -713,7 +717,11 @@ button:active, [data-hot]:active {
                               inset 0 6px 14px rgba(255,255,255,.1),
                               inset 0 -8px 16px rgba(0,0,0,.4);">
 
-        <div data-tiles style="flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 12px;">
+        <!-- 방에서 정한 자리 수는 여기서 다시 4칸(2×2)으로 굳어 있었습니다 —
+             방에서 7명을 골라도 세션 화면은 늘 나+빈자리 3개만 보였습니다.
+             paintTiles() 가 SEATS.total 만큼 칸을 맞추고, 3열+자동 줄 높이로
+             모두 같은 크기를 유지하며 넘치면 세로로 드래그해서 봅니다. -->
+        <div data-tiles style="flex: 1; min-height: 0; display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 12px; overflow-y: auto;">
           
             <!-- 내 칸. 남들에게 보이는 것은 카메라가 아니라 캐릭터입니다 —
                  자세만 테두리 색으로 갑니다. 판정은 진짜 웹캠이 굴립니다. -->
@@ -4392,6 +4400,9 @@ function startLive(id, root) {
     const name = document.querySelector('#s-Room [data-room-title]');
     const here = root.querySelector('[data-session-room]');
     if (name && here) here.textContent = (name.textContent || '').trim() || '비공개 세션';
+    /* 자리 수도 마찬가지입니다 — 방에서 7명을 골라도 세션 화면은
+       늘 4칸(나+빈자리 3개)이었습니다. */
+    paintTiles(root);
   }
 
   if (id === 'Room') {
@@ -4805,10 +4816,33 @@ Room.onChange(() => {
   if (sess && !sess.hidden) paintTiles(sess);
 });
 
-/** 세션 화면의 타일 넷 — 사람과 자세 색을 같이 그립니다. */
+/** 세션 화면의 빈 자리 한 칸(어두운 테마) — 방 설정 판의 seatEmpty() 와
+   같은 자리이지만 색이 다릅니다. */
+function emptySessionTile() {
+  const d = document.createElement('div');
+  d.setAttribute('aria-label', '아직 안 온 자리');
+  d.style.cssText = 'position: relative; border-radius: 20px; background: rgba(255,255,255,.045);'
+    + 'display: grid; place-items: center; gap: 10px; align-content: center;'
+    + 'box-shadow: inset 0 0 0 2px rgba(255,255,255,.09);';
+  d.innerHTML = '<span style="width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center;'
+    + 'background: rgba(255,255,255,.07); color: rgba(244,248,252,.5);">'
+    + '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"'
+    + ' stroke-linecap="round"><path d="M12 6.5v11M6.5 12h11"/></svg></span>'
+    + '<span style="font-weight: 750; font-size: 12px; line-height: 1; font-family: inherit;'
+    + ' color: rgba(244,248,252,.5);">기다리는 중</span>';
+  return d;
+}
+
+/** 세션 화면의 타일 — 사람과 자세 색을 같이 그립니다. */
 function paintTiles(root) {
   const grid = root.querySelector('[data-tiles]');
   if (!grid) return;
+  /* 방에서 정한 자리 수(SEATS.total)만큼 칸을 맞춥니다. 첫 칸(내 칸)은
+     그대로 두고 뒤쪽 빈 자리만 더하거나 뺍니다 — 내 칸을 지웠다 다시
+     만들면 나중에 붙일 실시간 카메라·자세 판정이 걸릴 자리가 사라집니다. */
+  const total = Math.max(1, SEATS.total);
+  while (grid.children.length < total) grid.appendChild(emptySessionTile());
+  while (grid.children.length > total) grid.removeChild(grid.lastElementChild);
   const snap = Room.snapshot();
   const HUE_ = { good: '#74E294', warning: '#F5C451', bad: '#FF7E6E', idle: '#8A99AB' };
   const cells = [...grid.children];

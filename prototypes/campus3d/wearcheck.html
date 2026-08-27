@@ -27,11 +27,17 @@ import { loadCharacters, setSkeletonUtils, character, stride, idle } from './cha
 const Q = new URLSearchParams(location.search);
 const SIZE = 260;
 const SPS = Q.get('sp') ? [Q.get('sp')] : ['기린', '거북이', '펭귄', '개구리'];
+/* ?wear=varsity,shorts,slippers,grad_cap,sunglasses,tote 처럼 여섯 칸을
+   쉼표로 넘기면 그 조합을 세웁니다. 칸마다 물건이 서넛이라, 한 벌만 보고
+   끝내면 나머지 열둘은 아무도 안 본 채로 나갑니다. */
+const WORN = (Q.get('wear') || '').split(',').filter(Boolean);
+const SLOTS = ['topId', 'bottomId', 'shoesId', 'hatId', 'glassesId', 'bagId'];
 const LOOK = Q.get('look') === 'none'
   ? { topId: 'none', bottomId: 'none', shoesId: 'none', hatId: 'none', glassesId: 'none', bagId: 'none', tint: {} }
   : { topId: 'tee', top: 0x2DD4BF, bottomId: 'jeans', bottom: 0x3E5C82,
       shoesId: 'sneakers', shoes: 0xF2F2F2, hatId: 'cap', hat: 0xE8695A,
       glassesId: 'round', bagId: 'backpack', bagC: 0x4A6EA8, tint: {} };
+WORN.forEach((id, i) => { if (id && SLOTS[i]) LOOK[SLOTS[i]] = id; });
 
 /* 앞·옆 두 방향 × 선 자세·달리는 중간 두 시각 */
 const SHOTS = [['선 앞', 0, 'idle'], ['선 옆', Math.PI / 2, 'idle'], ['뛰는 앞', 0, 'run', .34], ['뛰는 뒤', Math.PI, 'run', .34]];

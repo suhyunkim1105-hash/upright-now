@@ -415,15 +415,32 @@ function prop(bands, look, colorOf) {
     const bh = y1b - y0b, bw = Math.min(r * 1.55, bh * 1.15), bd = bh * .46;
     const cxm = bands.cxAt((t0 + t1) / 2);
     if (look.bagId === 'tote') {
-      /* 에코백은 옆구리에 걸립니다. 어깨끈 하나가 몸을 가로지릅니다. */
-      const sx = cxm + r + bw * .30;
-      const bag = new THREE.Mesh(new THREE.BoxGeometry(bw * .78, bh * .92, bd * .82), bm);
-      bag.position.set(sx, y0b + bh * .30, bands.czAt((t0 + t1) / 2));
+      /* 에코백은 **옆구리에 걸립니다.** 두 가지를 조심합니다.
+
+         굵기는 가방 높이의 최대(r)가 아니라 **가방이 놓인 그 높이**를
+         씁니다. 최대를 쓰면 팔이 벌어진 자리 바깥에 놓여서, 몸이 아니라
+         팔 옆에 떠 있게 됩니다.
+
+         끈은 몸을 가로지르지 않고 **옆구리를 따라 곧게** 올라갑니다.
+         어깨 반대쪽으로 이으면 끈이 몸 속을 지나가다 가슴 한가운데로
+         빠져나와, 어깨에 멘 것이 아니라 가슴에 붙인 막대가 됩니다. */
+      const ty = bands.waist + (bands.shoulder - bands.waist) * .34;
+      const rt = bands.widthAt(ty);
+      const tz = bands.czAt(ty);
+      const tw2 = bw * .66, th2 = bh * .80;
+      /* 안쪽 면을 몸에 **깊이 파묻습니다**(가방 너비의 3분의 1). 겹친 것은
+         안 보이지만 벌어진 것은 보입니다 — 값이 한쪽으로만 틀리는 자리라
+         일부러 안쪽으로 넘깁니다. 이 높이의 굵기는 팔이 벌어진 자리라
+         종마다 크게 달라서, 딱 맞춰 두면 어느 종에서는 반드시 뜹니다. */
+      const sx = bands.cxAt(ty) + rt + tw2 * .5 - tw2 * .34;
+      const bag = new THREE.Mesh(new THREE.BoxGeometry(tw2, th2, bd * .78), bm);
+      bag.position.set(sx, ty * NORM_H, tz);
       g.add(bag);
       const topY = bands.shoulder * NORM_H;
-      const from = new THREE.Vector3(sx, y0b + bh * .74, bands.czAt((t0 + t1) / 2));
-      const to = new THREE.Vector3(cxm - r * .30, topY, bands.czAt(bands.shoulder));
-      const strap = new THREE.Mesh(new THREE.BoxGeometry(bw * .15, from.distanceTo(to), bd * .30), bm);
+      const from = new THREE.Vector3(sx - tw2 * .22, ty * NORM_H + th2 * .42, tz);
+      const to = new THREE.Vector3(bands.cxAt(bands.shoulder) + bands.widthAt(bands.shoulder) * .52,
+        topY, bands.czAt(bands.shoulder));
+      const strap = new THREE.Mesh(new THREE.BoxGeometry(tw2 * .16, from.distanceTo(to), bd * .30), bm);
       strap.position.copy(from).lerp(to, .5);
       strap.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize());
       g.add(strap);
@@ -486,9 +503,10 @@ export function dressSkin(g, body, species, look, colorOf) {
         const tc = cut.trim === 'dark' ? mixHex(c, 0x000000, .16) : cut.trim;
         const tm = M(tc, .54);
         const isVarsity = look.topId === 'varsity';
-        /* 과잠은 밑단 줄, 나머지는 목깃 */
-        const lo = isVarsity ? cut.lo : cut.hi - .13;
-        const hi = isVarsity ? cut.lo + .09 : cut.hi;
+        /* 과잠은 밑단 줄, 나머지는 목깃. 밑단을 바닥에 딱 붙이면 팔에
+           가려서 기린·거북이에서는 안 보입니다 — 한 뼘 올립니다. */
+        const lo = isVarsity ? cut.lo + .05 : cut.hi - .13;
+        const hi = isVarsity ? cut.lo + .16 : cut.hi;
         if (wearMesh(species, src, at(lo), at(hi), tm, THICK_TRIM, 'wear-trim')) mats.push(tm);
       }
       reg('top', look.topId, mats);

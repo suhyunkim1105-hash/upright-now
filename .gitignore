@@ -52,3 +52,6 @@ prototypes/deskfit/assets/logo-*
 prototypes/landing/assets/univ/gachon.png
 prototypes/landing/assets/univ/hanyang.png
 prototypes/landing/assets/univ/myongji.png
+
+# Supabase CLI 캐시 — 실행할 때마다 다시 만듭니다
+supabase/.temp/

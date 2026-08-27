@@ -510,6 +510,7 @@ const WEEK = [
   { name: '성균관대학교', min: 224, was: 6 },
   { name: '중앙대학교',   min: 215, was: 5 },
   { name: '명지대학교',   min: 206, was: 9 },
+  { name: '가천대학교',   min: 197, was: 8 },
 ];
 /* 누적은 같은 학교들의 다른 줄 세우기입니다 — 주간에서 앞선 학교가
    누적에서도 앞서면 탭이 있을 이유가 없습니다. */
@@ -521,6 +522,7 @@ const ALL = [
   { name: '명지대학교',   min: 3402, was: 7 },
   { name: '중앙대학교',   min: 3288, was: 5 },
   { name: '성균관대학교', min: 3140, was: 6 },
+  { name: '가천대학교',   min: 2984, was: 8 },
 ];
 
 const hm = (m) => Math.floor(m / 60) + '시간 ' + (m % 60) + '분';
@@ -572,12 +574,18 @@ const SCHOOL_LOGO_SLUG = {
   '경희대학교': 'khu', '명지대학교': 'mju', '서강대학교': 'sogang',
   '이화여자대학교': 'ewha', '건국대학교': 'konkuk', '단국대학교': 'dankook',
   '인하대학교': 'inha', 'KAIST': 'kaist', 'POSTECH': 'postech',
+  '가천대학교': 'gachon',
 };
+/* 로고 파일 확장자는 학교마다 받은 원본 그대로입니다 — 다시 인코딩해서
+   화질을 잃지 않으려고 통일하지 않았습니다. 새 학교를 추가할 때는
+   실제로 넣은 파일 확장자를 여기 맞춰 적으세요. */
+const SCHOOL_LOGO_EXT = { hanyang: 'svg', gachon: 'jpg' };
 
 function emblem(name) {
   const slug = SCHOOL_LOGO_SLUG[name];
   if (!slug) return shieldEmblem(name);
-  return '<img class="emb" src="assets/logos/' + slug + '.png" alt="' + esc(name) + ' 로고" '
+  const ext = SCHOOL_LOGO_EXT[slug] || 'png';
+  return '<img class="emb" src="assets/logos/' + slug + '.' + ext + '" alt="' + esc(name) + ' 로고" '
     + 'onerror="this.outerHTML=this.dataset.fallback" data-fallback="' + esc(shieldEmblem(name)) + '">';
 }
 

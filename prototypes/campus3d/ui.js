@@ -7,6 +7,9 @@
    ══════════════════════════════════════════════════════════ */
 
 
+import { createRecorder, canRecord, isConfigured,
+  notionStatus, notionConnect, notionDisconnect } from './notion-rec.js';
+
 const KEY = 'girin3d.save';
 const DEF = {
   /* 기본은 기린입니다. 거북이·펭귄은 변환된 메시의 뒤통수에도 눈이 파여
@@ -54,8 +57,8 @@ export const KEY_ACTS = [
 /* Enter(채팅) · Esc(닫기) · 숫자(빠른 이동)는 못 바꿉니다 — 창을 여닫는
    키까지 바꿀 수 있으면 잘못 묶었을 때 되돌릴 길이 사라집니다. */
 export const KEY_FIXED = [
-  ['Enter', '채팅'], ['Esc', '닫기'], ['1~9 · 0', '지도에서 빠른 이동'],
-  ['드래그', '시점 돌리기'], ['휠', '멀리 · 가까이'], ['클릭', '그 자리로 걸어가기'],
+  ['Enter', '채팅'], ['Esc', '닫기'], ['1~9 · 0', '빠른 이동'],
+  ['드래그', '시점 돌리기'], ['휠', '멀리 · 가까이'], ['클릭', '걸어가기'],
 ];
 /** 지금 걸린 키 — 기본값 위에 바꾼 것만 얹습니다 */
 export function keyOf(id) {
@@ -106,14 +109,21 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
    창은 글자 크기가 다릅니다. 네 조각만 두고 전부 여기를 지나가게 합니다.
    글자는 **넣기 전에** esc 를 거칩니다 — 이 조각들은 받은 것을 그대로
    붙입니다(<b> 같은 것을 섞어 쓰는 자리가 있어서요). */
-const pic = (id, big) => `<svg class="pic${big ? ' lg' : ''}"><use href="#pic-${id}"/></svg>`;
+/* viewBox 가 없었습니다. <use> 는 심벌의 좌표계(24×24) 그대로 그리는데
+   CSS 로 22px 을 주면 줄어드는 게 아니라 **잘립니다** — 2px 씩 모서리가
+   깎여 있었고, 마이페이지에서 15px 로 줄이자 8px 이 잘려 시계가 반쪽
+   호가 됐습니다. viewBox 를 달아 진짜로 줄어들게 합니다. 선 굵기는
+   같이 줄어들므로 스타일표에서 크기마다 되올립니다. */
+const pic = (id, big) => `<svg class="pic${big ? ' lg' : ''}" viewBox="0 0 24 24"><use href="#pic-${id}"/></svg>`;
 /* 줄 — 이름과 값 한 쌍. 두 칸짜리 표가 전부 이리로 옵니다.
    tone 은 비워 두면 하늘색으로 받습니다. 아이콘 바탕의 기본색(민트)이
    스타일표에서 칸(.cc) 안쪽에만 걸려 있어서, 줄에 색을 안 주면 그 줄만
    알약 없는 맨 아이콘이 됩니다 — 한 목록 안에서 어떤 줄은 알약이 있고
    어떤 줄은 없어 보입니다. */
+/* id 를 비우면 아이콘 없이 그립니다. 한 목록의 모든 줄이 같은 아이콘이면
+   그건 정보가 아니라 무늬입니다 — "어디서 앉았나" 가 의자 셋이었습니다. */
 const rw = (id, tone, title, sub2, val) =>
-  `<div class="rw"><span class="ic ${tone || 'sky'}">${pic(id)}</span>`
+  `<div class="rw">${id ? `<span class="ic ${tone || 'sky'}">${pic(id)}</span>` : ''}`
   + `<span class="t">${title}${sub2 ? `<em>${sub2}</em>` : ''}</span>`
   + `${val != null && val !== '' ? `<span class="v">${val}</span>` : ''}</div>`;
 /* 칸 — 숫자 하나가 주인공일 때 */
@@ -126,6 +136,9 @@ const cb = (id, tone, name, desc) =>
   + `<b>${name}</b><small>${desc}</small></div>`;
 /* 머리글에도 그림을 답니다 — 글자만 있는 줄은 눈이 그냥 지나갑니다. */
 const lbl = (id, text) => `<div class="lbl">${pic(id)}${text}</div>`;
+/* 구역에 하나만 붙는 딸린 말. 줄마다 설명을 달면 그 설명이 본문이
+   되고, 정작 값이 뒤로 물러납니다 — 구역 머리에 한 줄로 모읍니다. */
+const hlp = (text) => `<div class="hlp">${text}</div>`;
 
 /* ══════════════════════════════════════════════════════════
    시간표 — 칸을 눌러 직접 채웁니다
@@ -739,12 +752,12 @@ export function records() {
 export function studentCard() {
   const total = SAVE.sessions.reduce((a, s) => a + s.sec, 0);
   return {
-    tag: '학생증', title: '기린캠퍼스 학생증',
+    tag: '학생증', title: 'Deskfit 학생증',
     html: `<div class="card-id">
         <div class="ph" id="idph"></div>
         <div class="info">
           <b>${esc(SAVE.nick || SAVE.species)}</b>
-          <span>기린캠퍼스 · 26학번 · ${esc(SAVE.species)}</span>
+          <span>Deskfit · 26학번 · ${esc(SAVE.species)}</span>
           <span>${esc(SAVE.school || '학교 미설정')}</span>
         </div>
       </div>
@@ -1571,26 +1584,64 @@ export function coinPanel(ctx) {
     tag: '코인', title: '코인',
     /* 값표 둘이 표였습니다. 표는 칸이 좁아 "5분 앉기" 가 두 줄로 접히고,
        무엇을 하면 얼마인지가 눈에 안 들어왔습니다. 줄로 폅니다 —
-       왼쪽은 무엇을 하는지, 오른쪽은 얼마인지. */
+       왼쪽은 무엇을 하는지, 오른쪽은 얼마인지.
+
+       버는 쪽과 쓰는 쪽을 **두 칸으로 갈라** 나란히 둡니다. 한 줄로
+       쌓으면 "어디에 쓰나" 가 화면 밖으로 밀려나서, 코인을 왜 모으는지가
+       스크롤 뒤에 숨습니다. 좁은 창에서는 .mp2 가 한 칸으로 접혀
+       예전 순서 그대로 흐릅니다. */
     html: coinbar(ctx.coins, ctx.server)
-      + `<div class="cg two">${cc('chart', '', d, '오늘 받은 코인')}`
+      + '<div class="mp2"><section>'
+      + lbl('coin', '버는 법')
+      /* 딸린 말을 뺐습니다. 하루 상한은 숫자 안에 넣으면(140/300) 문장이
+         필요 없고, "세션당 몇 번" 같은 조건은 막혔을 때 토스트가 그 자리에서
+         말합니다 — 설명을 미리 읽히려고 쓴 줄이 제일 먼저 안 읽힙니다. */
+      + `<div class="cg two">${cc('chart', '', d + '/300', '오늘')}`
       + `${cc('cal', 'sky', run + '일', '연속 출석')}</div>`
-      + `<div class="mtr"><i style="width:${Math.min(100, Math.round((d / 300) * 100))}%"></i></div>`
-      + rw('key', 'peach', '하루 상한', '상한에 닿으면 그날은 더 안 들어와요', '300코인')
-      + lbl('coin', '어떻게 버나')
-      + rw('seat', 'lemon', '앉기', '5분 10 · 15분 30 · 30분 40 · 50분 60', '10~60코인')
-      + rw('run', 'lemon', '회복', '한 번에 5코인 · 세션당 다섯 번까지', '5코인')
-      + rw('ticket', 'lemon', '미니게임', '게임별 하루 한 번', '10코인')
-      + rw('cal', 'lemon', '연속 출석', '3 · 7 · 14 · 30 · 60일에', '5~100코인')
-      + '<div class="note"><b>앉은 시간이 아니라 판정이 돈 시간으로 셉니다.</b> 카메라를 가려 두거나 자리를 비운 동안은 안 세요 — 그래야 코인이 실제로 앉은 값이 됩니다.</div>'
-      + lbl('shirt', '어디에 쓰나')
-      + rw('shirt', 'lilac', '옷', '상의 · 하의 · 신발 · 모자 · 안경 · 가방')
-      + rw('sofa', 'lilac', '가구', '기숙사 방에 놓습니다')
-      + rw('egg', 'lilac', '알', '아직 없는 종이 깨어납니다', '40코인'),
+      + `<div class="mtr" style="margin:2px 0 10px"><i style="width:${Math.min(100, Math.round((d / 300) * 100))}%"></i></div>`
+      + rw('seat', 'lemon', '앉기', '', '10~60코인')
+      + rw('run', 'lemon', '회복', '', '5코인')
+      + rw('ticket', 'lemon', '미니게임', '', '10코인')
+      + rw('cal', 'lemon', '연속 출석', '', '5~100코인')
+      + '</section><section>'
+      + lbl('shirt', '쓰는 곳')
+      + rw('shirt', 'lilac', '옷')
+      + rw('sofa', 'lilac', '가구')
+      + rw('egg', 'lilac', '알', '', '40코인')
+      + '</section></div>',
   };
 }
 
-/** 마이페이지 — 내 정보 · 자세 기준 · 설정 */
+/* ── 마이페이지의 조각 ──
+   여기만 쓰는 것이라 창 옆에 둡니다. */
+const MP_TABS = [['me', 'user', '내 정보'], ['coin', 'coin', '코인'],
+  ['cal', 'cam', '자세 기준'], ['set', 'key', '설정']];
+/* 스위치 — "장소 소리 켬 / 장소 소리 끔" 두 알약이던 것.
+   알약 둘은 **어느 쪽이 지금 상태인지** 를 글자로 읽어야 압니다.
+   스위치는 손잡이 위치만 봐도 됩니다(색까지 같이 바뀌므로 색을 못
+   가리는 사람도 위치로 읽습니다). */
+const tgl = (act, on, name, desc) =>
+  `<button class="tgl${on ? ' on' : ''}" data-do="${act}" aria-pressed="${on}">`
+  + `<span class="t">${name}${desc ? `<em>${desc}</em>` : ''}</span><span class="sw2"></span></button>`;
+/* 한 자리 안의 칸 — 다섯 중 하나. 알약 다섯을 흩어 놓으면 다섯 개의
+   서로 다른 단추로 보이는데, 실은 하나의 값입니다. */
+const seg = (opts) => `<div class="seg" role="group">${opts.map(([act, label, on]) =>
+  `<button data-do="${act}" class="${on ? 'on' : ''}" aria-pressed="${!!on}">${label}</button>`).join('')}</div>`;
+const hex6 = (c) => '#' + Number(c).toString(16).padStart(6, '0');
+/* 학교 열 개는 접어 둡니다. 늘 펴 두면 마이페이지 첫 화면이 "학교 고르는
+   화면" 처럼 보이는데, 학교는 한 번 고르고 거의 안 바꿉니다.
+   창을 다시 그려도 살아남아야 해서 창 밖에 둡니다. */
+let schoolOpen = false;
+/* 보고 있는 탭도 창 밖에 둡니다. 안에 두면 소리를 껐다 켤 때마다
+   창이 다시 그려지면서 첫 탭으로 돌아갑니다 — 설정에서 스위치를
+   누르면 내 정보로 튕겨 나가는 것으로 보입니다. */
+let mpTab = 'me';
+/* 노션 연결 상태 — 창 밖에 둡니다. 창을 다시 그릴 때마다 물어보면
+   설정에서 스위치 하나 누를 때마다 왕복이 한 번씩 붙습니다.
+   null 은 "아직 안 물어봄" 이고, 끊은 뒤에는 null 로 돌려 다시 묻습니다. */
+let notionState = null;
+
+/** 마이페이지 — 내 정보 · 코인 · 자세 기준 · 설정 */
 export function mypage(ctx) {
   const total = SAVE.sessions.reduce((a, s2) => a + s2.sec, 0);
   const judged = SAVE.sessions.reduce((a, s2) => a + (s2.judged || s2.sec), 0);
@@ -1603,61 +1654,109 @@ export function mypage(ctx) {
      기준선 하나 때문에 창이 안 열리면 안 되므로 없는 것으로 봅니다. */
   const base = (ctx.baseline && ctx.baseline.features
     && Object.keys(ctx.baseline.features).length) ? ctx.baseline : null;
+  const pane = (id) => `<div data-pane="${id}" role="tabpanel"${id === mpTab ? '' : ' style="display:none"'}>`;
+  const myschool = (ctx.schools || []).find((q) => q.name === ctx.school);
+  const music = ctx.music || {};
+  const pick = ctx.bgmPick || 'auto';
   return {
     tag: '마이페이지', title: '내 기록',
-    html: `<div class="wr">
-        <button data-tab="me" class="on">내 정보</button>
-        <button data-tab="coin">코인</button>
-        <button data-tab="cal">자세 기준</button>
-        <button data-tab="set">설정</button></div>
-      <div data-pane="me">`
-      + `<div class="cg two">${cc('clock', '', mshort(total), '앉은 시간')}`
-      + `${cc('cam', 'sky', mshort(judged), '판정이 돈 시간')}</div>`
-      + `<div class="cg">${cc('seat', '', SAVE.sessions.length, '세션')}`
-      + `${cc('run', 'peach', bad, '회복')}${cc('coin', 'lemon', ctx.coins, '코인')}</div>`
-      + lbl('map', '어디서 앉았나')
+    /* 폭을 엽니다. 창 하나에 탭 넷이 들어 있는데 470 으로 두면 넷 다
+       한 줄로 쌓여서, 오른쪽 절반이 빈 채로 세로만 길어집니다. */
+    wide: true,
+    html: '<div class="mp">'
+      + `<div class="mtab" role="tablist">${MP_TABS.map(([id, ic, nm]) =>
+        `<button data-tab="${id}" role="tab" aria-selected="${id === mpTab}"${id === mpTab ? ' class="on"' : ''}>${pic(ic)}${nm}</button>`).join('')}</div>`
+
+      /* ── 내 정보 ── 숫자 다섯을 한 줄에 세우고, 그 아래를 둘로 가릅니다.
+         왼쪽은 지나온 것, 오른쪽은 나를 정하는 것. */
+      + pane('me')
+      + `<div class="cg row5">${cc('clock', '', mshort(total), '앉은 시간')}`
+      + `${cc('cam', 'sky', mshort(judged), '판정 시간')}`
+      + `${cc('seat', '', SAVE.sessions.length, '세션')}`
+      + `${cc('run', 'peach', bad, '회복')}`
+      + `${cc('coin', 'lemon', ctx.coins, '코인')}</div>`
+      + '<div class="mp2"><section>'
+      + lbl('map', '앉은 곳')
       + (Object.keys(zones).length
         ? Object.entries(zones).sort((a, b) => b[1] - a[1]).map(([z, v]) =>
-          rw('seat', '', ROOM_LABEL[z] || esc(z), '', mshort(v))).join('')
-        : rw('seat', 'lilac', '아직 앉은 자리가 없어요', '도서관이나 본관 자리에서 E'))
+          rw(null, '', ROOM_LABEL[z] || esc(z), '', mshort(v))).join('')
+        : hlp('도서관 의자 앞에서 E'))
+      + '</section><section>'
       + lbl('user', '내 학교')
-      + `<div class="wr school-pick">${(ctx.schools || []).map((q) =>
-          `<button type="button" data-school="${esc(q.name)}" class="${q.name === ctx.school ? 'on' : ''}"
-            style="--school:#${Number(q.c).toString(16).padStart(6, '0')}">${esc(q.name.replace('대학교', '대'))}</button>`).join('')}</div>`
-      + '<div class="note">학교를 바꾸면 공지 · 학식 · 학교 채팅과 과잠 대표색이 함께 바뀝니다.</div>'
-      + `<div class="wr"><button data-do="retro">세션 회고 열기</button></div>
-      </div>
-      <div data-pane="coin" style="display:none">${coinPanel({ coins: ctx.coins, server: ctx.server }).html}</div>
-      <div data-pane="cal" style="display:none">`
+      /* 열 개를 늘 펴 두던 자리입니다. 지금 무엇인지가 알약 열 개
+         가운데 하나의 색으로만 보였는데, 그건 읽는 게 아니라 찾는
+         것입니다. 지금 학교를 한 줄로 먼저 말하고, 바꿀 때만 폅니다. */
+      + `<button class="tgl" data-do="schoolopen" aria-expanded="${schoolOpen}">`
+      + `<span class="dot" style="background:${myschool ? hex6(myschool.c) : 'var(--clay3)'}"></span>`
+      + `<span class="t">${myschool ? esc(myschool.name) : '아직 안 골랐어요'}</span>`
+      + `<span class="cue">${schoolOpen ? '접기' : '바꾸기'}</span></button>`
+      + (schoolOpen
+        ? `<div class="pickgrid">${(ctx.schools || []).map((q) =>
+          `<button type="button" data-school="${esc(q.name)}" class="${q.name === ctx.school ? 'on' : ''}">`
+          + `<span class="dot" style="background:${hex6(q.c)}"></span>${esc(q.name.replace('대학교', '대'))}</button>`).join('')}</div>`
+        : '')
+      + '<div class="wr"><button data-do="retro">세션 회고</button></div>'
+      + '</section></div>'
+      + '</div>'
+
+      + pane('coin') + coinPanel({ coins: ctx.coins, server: ctx.server }).html + '</div>'
+
+      /* ── 자세 기준 ── 왼쪽에 지금 기준, 오른쪽에 "이게 무엇인지".
+         줄글 한 문단을 note 에 넣어 두면 아무도 안 읽습니다. */
+      + pane('cal') + '<div class="mp2"><section>'
+      + lbl('cam', '지금 기준')
       + (base
         ? `<div class="cg two">${cc('chart', '', Object.keys(base.features).length, '쓰는 축')}`
           + `${cc('cam', 'sky', base.sampleCount, '표본')}</div>`
-          + rw('clock', 'lilac', '기준 잡은 때', esc(new Date(base.createdAt).toLocaleString('ko-KR')))
-        : rw('cam', 'lilac', '아직 기준이 없어요',
-          '자리에 앉으면 10초 동안 지금 앉은 모습을 기준으로 잡습니다'))
-      + '<div class="note">정답 자세와 비교하지 않습니다. <b>10초 전의 나</b>와만 비교해요. 의자를 바꾸거나 책상 높이가 달라졌으면 기준을 다시 잡는 게 낫습니다.</div>'
-      + `<div class="wr"><button data-do="recal">기준 다시 잡기</button>
-        <button data-do="tour">처음 안내 다시 보기</button></div>
-      </div>
-      <div data-pane="set" style="display:none">`
+          + rw('clock', 'lilac', '잡은 때', '', esc(new Date(base.createdAt)
+            .toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })))
+        : hlp('앉으면 10초 동안 잡습니다'))
+      + '<div class="wr"><button data-do="recal">기준 다시 잡기</button>'
+      + '<button data-do="tour">안내 다시 보기</button></div>'
+      + '</section><section>'
+      + lbl('chart', '하는 일')
+      + `<div class="cg two">${cb('user', 'sky', '10초 전의 나', '정답 자세와 안 겨룹니다')}`
+      + `${cb('cam', 'lilac', '기기 안에서만', '영상도 좌표도 안 나갑니다')}</div>`
+      + '</section></div></div>'
+
+      /* ── 설정 ── 알약 서른둘이 있던 탭입니다. 켬·끔은 스위치로,
+         음량 다섯은 한 자리 안의 칸으로, 곡 열 개는 고르는 상자로. */
+      + pane('set')
+      + '<div class="mp2"><section>'
       + lbl('bell', '소리')
-      + `<div class="wr"><button data-do="snd" class="${ctx.snd ? 'on' : ''}">장소 소리 ${ctx.snd ? '켬' : '끔'}</button>
-          <button data-do="bgm" class="${ctx.bgm ? 'on' : ''}">배경음악 ${ctx.bgm ? '켬' : '끔'}</button></div>`
+      + tgl('snd', ctx.snd, '장소 소리')
+      + tgl('bgm', ctx.bgm, '배경음악')
       + lbl('chart', '음량')
-      + `<div class="wr">${[0, .25, .45, .7, 1].map((v) =>
-          `<button data-do="vol:${v}" class="${Math.abs((ctx.bgmVol ?? .45) - v) < .01 ? 'on' : ''}">${
-            v === 0 ? '없음' : Math.round(v * 100) + '%'}</button>`).join('')}</div>`
-      + lbl('music', '시설별 집중 ASMR · 음악')
-      + `<div class="wr"><button data-do="bgm:auto" class="${ctx.bgmPick === 'auto' ? 'on' : ''}">장소 따라</button>${
-          Object.entries(ctx.music || {}).map(([id, m]) =>
-            `<button data-do="bgm:${id}" class="${ctx.bgmPick === id ? 'on' : ''}" title="${esc(m.by)}">${esc(m.name)}</button>`).join('')}</div>`
-      + '<div class="note"><b>Spotify 집중 재생</b><br>아래 플레이어에서 로그인한 Spotify 계정으로 바로 재생할 수 있어요.</div>'
-      + '<iframe title="Spotify 집중 플레이리스트" style="width:100%;height:152px;border:0;border-radius:16px;margin-top:10px" allow="autoplay;clipboard-write;encrypted-media;fullscreen;picture-in-picture" loading="lazy" src="https://open.spotify.com/embed/playlist/37i9dQZF1DWZeKCadgRdKQ?utm_source=generator"></iframe>'
-      + '<div class="note">장소 따라를 고르면 시설에 맞는 곡이 자동으로 바뀝니다. 내장 곡은 전부 CC0이며 만든 사람은 단추에 손을 올리면 나옵니다.</div>'
+      + seg([0, .25, .45, .7, 1].map((v) => [`vol:${v}`,
+        v === 0 ? '없음' : Math.round(v * 100) + '%',
+        Math.abs((ctx.bgmVol ?? .45) - v) < .01]))
+      /* 서버에 OAuth 가 안 꽂혀 있으면 이 구역 자체가 없습니다 */
+      + (notionState?.configured
+        ? lbl('board', '노션')
+          + (notionState.connected
+            ? `<button class="rw" data-do="notionoff"><span class="ic sky">${pic('board')}</span>`
+              + `<span class="t">${esc(notionState.workspace || '연결됨')}</span>`
+              + '<span class="v">끊기</span></button>'
+            : `<button class="rw" data-do="notionon"><span class="ic sky">${pic('board')}</span>`
+              + '<span class="t">내 노션에 저장</span><span class="v">연결</span></button>')
+        : '')
+      + '</section><section>'
+      + lbl('music', '집중 음악')
+      /* 곡 열 개가 알약 열 개였습니다. 고르는 것이 하나인데 단추가
+         열이면, 화면의 절반이 "안 고른 곡" 으로 채워집니다.
+         고른 곡이 무엇인지는 상자가 이미 말하므로 줄을 따로 안 둡니다. */
+      + '<select class="mpick" data-pick aria-label="집중 음악 고르기">'
+      + `<option value="auto"${pick === 'auto' ? ' selected' : ''}>장소 따라 자동</option>`
+      + Object.entries(music).map(([id, m]) =>
+        `<option value="${esc(id)}"${pick === id ? ' selected' : ''}>${esc(m.name)} · ${esc(m.by)}</option>`).join('')
+      + '</select>'
+      + '<iframe title="Spotify 집중 플레이리스트" style="width:100%;height:152px;border:0;border-radius:14px" allow="autoplay;clipboard-write;encrypted-media;fullscreen;picture-in-picture" loading="lazy" src="https://open.spotify.com/embed/playlist/37i9dQZF1DWZeKCadgRdKQ?utm_source=generator"></iframe>'
+      + '</section></div>'
       + lbl('key', '단축키')
       /* 화면 구석의 도움 창을 여기로 옮겼습니다. 거기서는 **읽기만**
          됐는데, 조작이 안 맞는 사람은 읽어도 소용이 없습니다.
-         누르면 그 자리에서 새 키를 받습니다. */
+         "누르면 새 키를 받습니다" 라고 미리 적어 두던 줄은 뺐습니다 —
+         누른 단추가 그 자리에서 "누르세요 · Esc 취소" 로 바뀝니다. */
       + '<div class="keyset">'
       + KEY_ACTS.map((a) => {
         const cur = keyOf(a.id);
@@ -1667,28 +1766,54 @@ export function mypage(ctx) {
             title="${moved ? '기본값은 ' + esc(keyLabel(a.def)) : '기본값'}">${esc(keyLabel(cur))}</button></div>`;
       }).join('')
       + '</div>'
-      + `<div class="wr"><button data-do="keyreset">기본값으로 되돌리기</button></div>`
-      + '<div class="note">누르면 그 자리에서 새 키를 받습니다. Esc 로 그만둡니다. '
-      + KEY_FIXED.map(([k, v]) => `<b>${esc(k)}</b> ${esc(v)}`).join(' · ')
-      + ' 는 못 바꿉니다 — 창을 여닫는 키까지 바꿀 수 있으면 잘못 묶었을 때 되돌릴 길이 없습니다.</div>'
-      + lbl('key', '기록')
-      + '<div class="wr"><button data-do="wipe">이 기기 기록 전체 지우기</button></div>'
-      + '<div class="note">지우면 되돌릴 수 없습니다 — 되돌릴 열쇠(이메일·비밀번호)를 애초에 안 받습니다. 서버 기록까지 지우려면 <b>ikmc554@mju.ac.kr</b> 로 ID 를 알려 주세요.</div>'
+      + '<div class="wr"><button data-do="keyreset">기본값으로</button></div>'
+      /* 못 바꾸는 키를 한 줄 문장으로 잇던 자리입니다 — 여섯 쌍을 가운뎃점
+         으로 이으면 어디까지가 키이고 어디부터가 뜻인지 눈으로 못 끊습니다.
+         바꾸는 키와 **같은 격자**에 놓고 단추만 뗍니다. */
+      + lbl('key', '못 바꾸는 키')
+      + `<div class="keyset">${KEY_FIXED.map(([k, v]) =>
+        `<div class="kr fixed"><span>${esc(v)}</span><b>${esc(k)}</b></div>`).join('')}</div>`
+      + '<div class="danger">'
+      + lbl('clock', '기록 지우기')
+      + '<div class="wr"><button class="warn" data-do="wipe">이 기기에서 지우기</button></div>'
+      + hlp('서버 기록은 ikmc554@mju.ac.kr')
+      + '</div>'
+      + '</div>'
       + '</div>',
     on(root, again) {
-      root.querySelector('.bd').onclick = (e) => {
+      const bd = root.querySelector('.bd');
+      /* 한 번만 묻습니다. 안 꽂혀 있으면 다시 그릴 것도 없습니다. */
+      if (notionState === null) {
+        notionState = {};
+        notionStatus().then((v) => { notionState = v; if (v.configured) again(); });
+      }
+      /* 곡 고르기는 누르는 게 아니라 고르는 것이라 change 로 받습니다 */
+      const sel = bd.querySelector('select[data-pick]');
+      if (sel) sel.onchange = () => ctx.onDo('bgm:' + sel.value, again);
+      bd.onclick = (e) => {
         const t = e.target.closest('button[data-tab]');
         if (t) {
-          root.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === t));
+          mpTab = t.dataset.tab;
+          root.querySelectorAll('[data-tab]').forEach((x) =>
+            { x.classList.toggle('on', x === t); x.setAttribute('aria-selected', String(x === t)); });
           root.querySelectorAll('[data-pane]').forEach((x) =>
             { x.style.display = x.dataset.pane === t.dataset.tab ? '' : 'none'; });
           return;
         }
         const school = e.target.closest('button[data-school]');
-        if (school) { ctx.onSchool?.(school.dataset.school, again); return; }
+        if (school) { schoolOpen = false; ctx.onSchool?.(school.dataset.school, again); return; }
         const kb = e.target.closest('button[data-key]');
         if (kb) { grabKey(kb, again); return; }
         const b = e.target.closest('button[data-do]'); if (!b) return;
+        /* 창 안에서 끝나는 둘은 여기서 받습니다 — 밖으로 넘기면
+           월드가 마이페이지의 접힘 상태까지 알아야 합니다. */
+        if (b.dataset.do === 'schoolopen') { schoolOpen = !schoolOpen; again(); return; }
+        /* 노션 승인 화면으로 나갔다가 ?notion=ok 로 돌아옵니다 */
+        if (b.dataset.do === 'notionon') { notionConnect(); return; }
+        if (b.dataset.do === 'notionoff') {
+          notionDisconnect().then(() => { notionState = null; again(); });
+          return;
+        }
         if (b.dataset.do === 'keyreset') { SAVE.keys = null; save(); again(); return; }
         ctx.onDo(b.dataset.do, again);
       };
@@ -1703,7 +1828,7 @@ export function mypage(ctx) {
 function grabKey(btn, again) {
   const id = btn.dataset.key;
   const was = btn.textContent;
-  btn.textContent = '키를 누르세요';
+  btn.textContent = '누르세요 · Esc 취소';
   btn.classList.add('grab');
   const done = () => {
     window.removeEventListener('keydown', onKey, true);
@@ -1870,6 +1995,23 @@ export const INVITE = {
 };
 
 /** 정문 — 초대 코드를 만들고 건네는 자리 */
+/* ── 비공개 세션 녹음 ──
+   창은 다시 그려져도 녹음은 안 끊겨야 하므로 창 밖에 둡니다.
+   시계는 여기서 DOM 을 바로 고칩니다 — 1초마다 창을 통째로 다시 그리면
+   그 사이 누르던 것이 사라집니다. */
+let REC = null, recSec = 0, recMsg = '', recDone = null, recOn = false, recReady = null;
+const mmss = (n) => `${String((n / 60) | 0).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+function recorder(again) {
+  if (REC) return REC;
+  REC = createRecorder({
+    onState: (st) => { recOn = st === 'recording'; if (st !== 'recording') again(); },
+    onTime: (n) => { recSec = n; const e = document.querySelector('.rectime'); if (e) e.textContent = mmss(n); },
+    onDone: (j) => { recDone = j; recMsg = ''; again(); },
+    onError: (m) => { recMsg = m; again(); },
+  });
+  return REC;
+}
+
 export function invitePanel(ctx) {
   const code = INVITE.mine({ nickname: ctx.nick, school: ctx.school, species: ctx.species });
   const url = (() => {
@@ -1900,10 +2042,25 @@ export function invitePanel(ctx) {
         + `<span class="t">${esc(c)}<em>${v.nickname ? esc(v.nickname) : '별명 없음'}</em></span>`
         + '<span class="v">지우기 ✕</span></button>').join('')
       : rw('user', 'lilac', '아직 없어요', '친구가 불러 준 여섯 자리를 위에 넣어 보세요'))
-    + '<div class="note">코드는 <b>이 기기에만</b> 남습니다. 별명 · 학교 · 종만 들어 있고, 자세 기록은 들어가지 않습니다.</div>';
+    + '<div class="note">코드는 <b>이 기기에만</b> 남습니다. 별명 · 학교 · 종만 들어 있고, 자세 기록은 들어가지 않습니다.</div>'
+    /* 토큰이 안 꽂혀 있으면 이 구역 자체가 없습니다. 눌러도 아무 일이
+       없는 단추를 띄우는 것이 제일 나쁩니다. */
+    + (recReady === true && canRecord()
+      ? lbl('board', '회의 녹음')
+        /* 남의 목소리를 받아 바깥으로 보내는 기능이라 이 한 줄은 못 뺍니다 */
+        + '<div class="hlp">소리만 노션으로 갑니다. 카메라와 자세 기록은 안 나가요.</div>'
+        + `<div class="wr"><button data-inv="rec">${recOn ? '멈추고 노션에 올리기' : '녹음 시작'}</button></div>`
+        + (recOn ? `<div class="recbar"><i></i><span class="rectime">${mmss(recSec)}</span> 녹음 중 · 25분까지</div>` : '')
+        + (recDone ? `<a class="rw" href="${esc(recDone.url)}" target="_blank" rel="noopener">`
+          + `<span class="ic sky">${pic('board')}</span>`
+          + '<span class="t">노션에서 열기</span><span class="v">전사 중</span></a>' : '')
+        + (recMsg ? `<p class="invmsg">${esc(recMsg)}</p>` : '')
+      : '');
   return {
-    tag: '정문', title: '기린캠퍼스 정문', html,
+    tag: '정문', title: 'Deskfit 정문', html,
     on(root, again) {
+      /* 서버에 토큰이 꽂혀 있는지는 한 번만 묻고, 답이 오면 다시 그립니다 */
+      if (recReady === null) { recReady = false; isConfigured().then((v) => { if (v) { recReady = true; again(); } }); }
       const msg = root.querySelector('.invmsg');
       const inp = root.querySelector('.invin');
       if (inp) inp.onkeydown = (e) => { e.stopPropagation(); if (e.key === 'Enter') root.querySelector('[data-inv="add"]').click(); };
@@ -1922,6 +2079,12 @@ export function invitePanel(ctx) {
         if (k === 'copy') copy(code, '코드를 복사했어요');
         else if (k === 'link') copy(url, '초대 링크를 복사했어요');
         else if (k === 'new') { INVITE.revoke(code); SAVE.invite = null; save(); again(); }
+        else if (k === 'rec') {
+          const R = recorder(again);
+          if (recOn) { R.stop(); return; }
+          recDone = null; recMsg = ''; recSec = 0;
+          R.start('비공개 세션').then(() => again());
+        }
         else if (k === 'add') {
           const v = (inp.value || '').toUpperCase().trim();
           if (!INVITE.valid(v)) { msg.textContent = '여섯 자리를 정확히 넣어 주세요 (0·O·1·I 는 안 씁니다)'; return; }
@@ -1977,7 +2140,7 @@ export function tour(ctx) {
       <button data-go="${last ? 'done' : i + 1}" class="on">${last ? '시작하기' : '다음'}</button>
     </div>`;
   return {
-    tag: '처음 안내', title: '기린캠퍼스', html,
+    tag: '처음 안내', title: 'Deskfit', html,
     on(root, again) {
       root.querySelector('.bd').onclick = (e) => {
         const b = e.target.closest('button[data-go]'); if (!b || b.disabled) return;

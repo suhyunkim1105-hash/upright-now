@@ -1189,13 +1189,13 @@ button:active, [data-hot]:active {
                        background: rgba(251,253,255,.8); color: #0B6156; outline: none;
                        font-weight: 800; font-size: 15px; line-height: 1; font-family: inherit;
                        box-shadow: inset 0 3px 6px rgba(255,255,255,.9), inset 0 -4px 7px rgba(18,134,122,.16);">느긋한거북</span>
-          <span style="display: block; margin-top: 20px; font-weight: 800; font-size: 18px; line-height: 1.45;
-                       color: #263140; font-family: inherit;">명지대학교 · 디지털콘텐츠디자인학과</span>
-          <span style="display: block; margin-top: 9px; font-weight: 800; font-size: 16px; line-height: 1.45;
-                       color: #4E5968; font-family: inherit; font-variant-numeric: tabular-nums;">3학년 · 60221008</span>
+          <span data-profile-field="school" style="display: block; margin-top: 20px; font-weight: 800; font-size: 18px; line-height: 1.45;
+                       color: #263140; font-family: inherit;">학교 미설정</span>
+          <span data-profile-field="schoolEmail" style="display: block; margin-top: 9px; font-weight: 800; font-size: 16px; line-height: 1.45;
+                       color: #4E5968; font-family: inherit; font-variant-numeric: tabular-nums;"></span>
         </div>
 
-        <div style="margin-top: 46px; display: flex; align-items: center; gap: 8px;">
+        <div data-verified-badge="" style="margin-top: 46px; display: flex; align-items: center; gap: 8px;">
           <span style="display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
                        background: #0B6156; color: #E4F5F0;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
@@ -4358,11 +4358,34 @@ function startLive(id, root) {
   if (id === 'Lg1' || id === 'Lg2' || id === 'Lg3' || id === 'Lg7') paintLeague(root);
 
   /* 프로필 — 고친 이름과 닉네임이 남아 있어야 고칠 수 있다는 말이 참이 됩니다 */
-  const prof = PROFILE.read();
+  /* 온보딩(girin.room)이 기본값입니다. 온보딩이 적은 닉네임·학교·이메일이
+     학생증의 바탕이 되고, 카드에서 직접 고친 것(girin.profile)이 그 위를
+     덮습니다 — 안 그러면 온보딩에서 정한 이름이 "서지우" 견본 밑에 숨습니다. */
+  let onb = {};
+  try { onb = JSON.parse(localStorage.getItem('girin.room') || '{}') || {}; } catch { onb = {}; }
+  let sg = {};
+  try { sg = JSON.parse(localStorage.getItem('girin.signup') || '{}') || {}; } catch { sg = {}; }
+  const SPECIES_KO = { turtle: '거북이', giraffe: '기린', penguin: '펭귄', frog: '개구리' };
+  const prof = Object.assign({
+    name: onb.nickname || '',
+    nick: SPECIES_KO[sg.species] || '',
+    school: onb.school || '',
+    schoolEmail: onb.schoolEmail || '',
+  }, PROFILE.read());
   root.querySelectorAll('[data-profile-field]').forEach((el) => {
     const k = el.dataset.profileField;
     if (k && prof[k]) el.textContent = prof[k];
   });
+  /* 인증 배지 — 인증한 적 없으면 배지를 접습니다. 완료 도장이 기본으로
+     찍혀 있으면 인증이라는 말 자체가 장식이 됩니다. */
+  root.querySelectorAll('[data-verified-badge]').forEach((el) => {
+    el.style.display = onb.schoolVerifiedAt ? '' : 'none';
+  });
+  /* 카드 아바타 — 온보딩에서 깬 알의 종을 씁니다 */
+  if (sg.species && SPECIES_KO[sg.species]) {
+    root.querySelectorAll('[data-lift] img[src*="/turtle.webp"], [data-lift] img[src="./assets/turtle.webp"]')
+      .forEach((im) => { im.src = './assets/' + sg.species + '.webp'; });
+  }
 
   /* 세션 목록 + 아무것도 없을 때 */
   const box = root.querySelector('[data-log]');

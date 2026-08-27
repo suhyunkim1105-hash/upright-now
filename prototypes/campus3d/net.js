@@ -292,12 +292,21 @@ export function createNet(opts) {
          길찾기는 없습니다 — net.js 는 지도를 모릅니다. 그래서
          고리를 한가운데로만 잡아 둡니다. 봇을 건물 사이로 보낼 거면
          index.html 에서 길을 받아 와야 합니다. */
-      const cx = (r() * 2 - 1) * 12, cz = (r() * 2 - 1) * 12;
-      const rad = 7 + r() * 8, legs = 3 + Math.floor(r() * 2), a0 = r() * Math.PI * 2;
+      /* 고리 중심을 원점 주변 아무 데나 뽑았더니 다리(leg)가 분수
+         한복판을 지났습니다 — 충돌을 모르는 봇이 분수를 **뚫고** 걸어서
+         외곽에서 보면 물 위를 걷는 이상한 애들이 됐습니다. 중심을 분수
+         밖 고리(14~20)에 두고, 점이 분수 안(11)으로 들어오면 밖으로
+         밀어냅니다. 곧은 다리도 반지름 11 원과는 안 만납니다. */
+      const ca = r() * Math.PI * 2, cd = 14 + r() * 6;
+      const cx = Math.sin(ca) * cd, cz = Math.cos(ca) * cd;
+      const rad = 5 + r() * 4, legs = 3 + Math.floor(r() * 2), a0 = r() * Math.PI * 2;
       const route = [];
       for (let k = 0; k < legs; k++) {
         const a = a0 + (k / legs) * Math.PI * 2, rr = rad * (.7 + r() * .6);
-        route.push({ x: clampR(cx + Math.sin(a) * rr), z: clampR(cz + Math.cos(a) * rr) });
+        let px = clampR(cx + Math.sin(a) * rr), pz = clampR(cz + Math.cos(a) * rr);
+        const d0 = Math.hypot(px, pz);
+        if (d0 < 11) { const s = d0 ? 11 / d0 : 1; px *= s; pz = d0 ? pz * s : 11; }
+        route.push({ x: px, z: pz });
       }
       out.push({ p, route, leg: 1 % route.length,
         x: route[0].x, z: route[0].z, dir: 0, moving: false,

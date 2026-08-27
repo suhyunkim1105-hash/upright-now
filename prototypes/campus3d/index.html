@@ -90,6 +90,15 @@ addEventListener('unhandledrejection', function (e) {
   #myquick b{font:850 11.5px/18px var(--ff);letter-spacing:-.01em}#myquick small{font:700 9px/13px var(--ff);color:var(--tx3)}
   #myquick:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(56,85,118,.18),inset 0 2px 0 #fff}
   #myquick.on{background:#DDF7F2;color:#116F65;box-shadow:inset 0 3px 8px rgba(42,132,120,.13)}
+  /* 메인으로 — MY 카드와 같은 문법의 납작한 알약. 눈에는 띄되 MY 보다
+     한 급 조용하게 둡니다(나가기는 자주 누르는 단추가 아닙니다). */
+  #exitmain{order:-1;width:100%;min-height:34px;border:1px solid rgba(76,112,151,.14);border-radius:14px;
+    padding:7px 12px;pointer-events:auto;cursor:pointer;background:rgba(248,252,255,.88);color:var(--tx2);
+    display:flex;align-items:center;gap:8px;text-align:left;
+    box-shadow:0 7px 18px rgba(56,85,118,.12),inset 0 2px 0 #fff;transition:transform .14s,box-shadow .14s;z-index:5}
+  #exitmain svg{width:15px;height:15px;flex:none}
+  #exitmain b{font:800 11px/1 var(--ff);letter-spacing:-.01em}
+  #exitmain:hover{transform:translateY(-2px);color:#116F65;box-shadow:0 10px 24px rgba(56,85,118,.16),inset 0 2px 0 #fff}
   .ghead{display:flex;align-items:center;gap:6px;padding:0 2px 7px;font-size:10.5px;
     font-weight:800;color:var(--tx2);letter-spacing:.02em}
   .ghead .sp{margin-left:auto;font-weight:700;color:var(--tx3)}
@@ -1289,6 +1298,10 @@ addEventListener('unhandledrejection', function (e) {
        것은 그만한 값을 해야 합니다. -->
   <div id="stack">
     <button id="myquick" aria-label="마이페이지 열기" aria-pressed="false"><span class="my-mark">MY</span><b>마이페이지</b><small>기록 · 코인 · 설정</small></button>
+    <!-- 메인으로 — 월드는 메인의 한 입구입니다. 들어온 문이 늘 보여야
+         "여기서 나가면 어디지" 를 아무도 안 물어봅니다. 옷장 설정에도
+         같은 단추가 있지만, 접힌 단추는 급할 때 못 찾습니다. -->
+    <button id="exitmain" aria-label="메인 페이지로 나가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><b>메인으로 나가기</b></button>
     <div id="pip" class="g">
       <div class="ghead">내 자세</div>
       <div class="fr"><canvas width="316" height="240"></canvas>
@@ -2540,6 +2553,8 @@ function panelFor(s) {
     case 'notice-out': return campusBoardView();
     case 'retro': return UI.retro({ last: SAVE.sessions[SAVE.sessions.length - 1] });
     case 'guide': return UI.guide();
+    case 'roomguide': return UI.roomGuide({
+      room: room?.key, name: guideNpc?.d.name || '', role: guideNpc?.d.role || '' });
     case 'privacy': return UI.privacy();
     case 'dorm-info': return UI.dormInfo({
       tab: dormInfoTab,
@@ -2693,6 +2708,8 @@ function panelFor(s) {
   }
 }
 let panelSpot = null, redrawPanel = () => {};
+/* 지금 안내 창을 연 실내 NPC — 창을 닫을 때 다시 걷게 하려고 잡아 둡니다 */
+let guideNpc = null;
 /* 상점의 3D 상품 그림. shopview.js 는 하나의 WebGL 속판을 나눠 쓰고,
    화면에 들어온 카드만 한 번 그립니다. 카테고리를 바꿀 때 떠난 카드의
    손잡이만 접어 월드 렌더러와 웹캠에 불필요한 일을 남기지 않습니다. */
@@ -2773,6 +2790,8 @@ function openPanel(s) {
 function closePanel() {
   clearThumbs();
   delete elPanel.dataset.store;
+  /* 안내 NPC 창을 닫으면 그 사람도 다시 걷습니다 */
+  if (guideNpc) { guideNpc.paused = false; guideNpc.faceMe = false; guideNpc.wait = .8; guideNpc = null; }
   elPanel.classList.remove('on', 'compact', 'medium', 'wide', 'shop'); panelOn = false; panelSpot = null; redrawPanel = () => {}; syncLock();
   elTut.style.display = '';
   dockOn('wear', false);
@@ -2784,7 +2803,6 @@ elPanel.querySelector('.pclose').addEventListener('click', closePanel);
 let dlgWho = null, dlgTimer = 0;
 function openDlg(n) {
   clearTimeout(dlgTimer);
-  dlgWho = n;
   /* 처음 만나는 사람에게는 한 번만 5코인 — 2D 판의 `once:npc_…` 규칙입니다.
      캠퍼스를 한 바퀴 돌 이유가 되고, 두 번째부터는 안 줍니다. */
   SAVE.metNpc = SAVE.metNpc || [];
@@ -2792,6 +2810,16 @@ function openDlg(n) {
     SAVE.metNpc.push(n.d.name); UI.save();
     grantCoins(5, josa(n.d.name, '과', '와') + ' 처음 인사했어요');
   }
+  /* 실내 안내 NPC — 말풍선 대신 **클레이 안내 창**을 엽니다. 이 사람들의
+     일이 "이 건물에서 뭘 할 수 있나" 를 말하는 것이라, 한 줄씩 넘기는
+     말풍선보다 카드 서너 장이 한눈에 맞습니다(수현 피드백). */
+  if (room && inNPC.includes(n) && UI.ROOM_GUIDE[room.key]) {
+    n.paused = true; n.faceMe = true;
+    guideNpc = n;
+    openPanel({ tag: n.d.role || '안내', title: josa(n.d.name, '이', '가') + ' 알려줘요', panel: 'roomguide' });
+    return;
+  }
+  dlgWho = n;
   /* 말 걸면 **그 자리에 멈춥니다.** 전에는 걷던 사람이 그대로 걸어가 버려서
      창이 열리자마자 상대가 화면 밖으로 사라졌습니다. */
   n.paused = true;
@@ -3906,7 +3934,9 @@ const TUT = [
   { k: 'enter', t: '건물 문 앞에서 E 를 눌러 들어가 보세요', p: '도서관과 본관이 이 서비스의 본체입니다.' },
   { k: 'sit', t: '열람석 앞에서 E — 앉으면 세션이 시작됩니다', p: '목이 무너지면 캐릭터도 같이 굽습니다.' },
 ];
-let tutStep = SAVE.seenTutorial ? TUT.length : 0;
+/* 힌트 스트립은 접습니다 — 처음 안내(투어)와 동시에 떠서 첫 화면에
+   안내가 둘이었습니다. 조작 설명은 투어 둘째 장으로 옮겼습니다. */
+let tutStep = TUT.length;
 /* 처음 안내 — 넉 장짜리 창은 배선만 있고 **여는 곳이 없었습니다.**
    첫 진입에 한 번 자동으로 열고, 본 사람은 다시 안 봅니다. */
 let tourStep = 0;
@@ -4069,6 +4099,8 @@ function myNick() { return (SAVE.nick || '').trim() || curSpecies; }
 /* ── 아래 한 줄 ── */
 const elDock = $('#dock');
 const elMyQuick = $('#myquick');
+/* 메인으로 — 옷장 설정의 data-exit 와 같은 목적지입니다 */
+$('#exitmain')?.addEventListener('click', () => { location.href = '../deskfit/index.html'; });
 /* 이 함수는 모듈 평가 중(elDock 이 아직 TDZ 일 때)에도 불릴 수 있으므로
    문서에서 바로 찾습니다. */
 function dockOn(k, on) {
@@ -5151,6 +5183,7 @@ window.__game = (k) => openGame(k, () => {}, { posture: PZ });
 window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.error } : null);
 window.__scene = scene;
 window.__renderer = renderer;
+window.__npcs = () => NPC.map((n) => ({ name: n.d.name, x: +n.rig.position.x.toFixed(1), z: +n.rig.position.z.toFixed(1), indoor: !!n.d.indoor }));
 window.__ride = () => rideId;
 window.__seats = () => (room ? room.seats : []);
 window.__hitRoom = (x, z) => (room ? hitGrid(room.grid, x, z) : true);

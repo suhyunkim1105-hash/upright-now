@@ -1103,8 +1103,11 @@ export function buildCampus(scene) {
       solid(scx, scz, 5.4 * b.s, sd, b.ry, false); }
     /* 들어가는 곳 — 문 앞 */
     const dd = (b.d / 2 + b.front) * b.s;
+    /* r 2.6 → 3.4 — 지도에서 건물을 눌러 온 도착점이 문 반경보다 0.8
+       바깥이라, 도착 안내가 뜨고도 E 가 안 먹어 한 걸음을 더 걸어야
+       했습니다. 도착점이 반경 안에 들어오게 반경을 넓힙니다. */
     portals.push({ x: b.x + Math.sin(b.ry) * dd, z: b.z + Math.cos(b.ry) * dd,
-                   r: 2.6, zone: b.zone, name: b.name, sub: b.sub });
+                   r: 3.4, zone: b.zone, name: b.name, sub: b.sub });
     /* 건물마다 길을 뻗지 않습니다 — 앞마당 돌바닥(pad)이 이미 "여기가
        입구" 를 말하고, 그 사이는 그냥 잔디입니다. 어디로든 걸어갑니다. */
   });

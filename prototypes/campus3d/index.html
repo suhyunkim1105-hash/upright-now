@@ -3979,7 +3979,33 @@ function rebuildMe() {
    ?ao=0 으로 끄고 켜서 눈으로 비교할 수 있게 해 둡니다. 껐을 때는
    사슬을 아예 안 만듭니다 — 만들어 두고 안 쓰면 화면 크기의 버퍼가
    그냥 메모리에 남습니다. */
-const AO_ON = new URLSearchParams(location.search).get('ao') !== '0';
+/* ── 소프트웨어 렌더러에서는 AO 를 안 켭니다 ──
+   N8AO 는 표본을 흩뿌린 뒤 디노이즈로 문지릅니다. GPU 에서는 그 문지르기가
+   먹어서 접촉 그늘만 남는데, **소프트웨어 래스터라이저(SwiftShader ·
+   llvmpipe)에서는 안 먹습니다** — 흩뿌린 표본이 그대로 남아 잔디 · 포장 ·
+   벽까지 화면 전체가 모래알이 됩니다. 재 봤습니다: 같은 화면을 PNG 로
+   받으면 383KB(켬) 대 327KB(끔)이고, 눈으로는 비교가 안 될 만큼 다릅니다.
+
+   느린 기기라 후처리를 아끼자는 것이 아닙니다. **그 기기에서는 AO 가
+   그림을 더 나쁘게 만들기 때문**입니다. 헤드리스 · 원격 데스크톱 ·
+   그래픽 드라이버가 없는 노트북에서 여는 사람이 이 화면을 봅니다.
+   ?ao=1 로 강제로 켤 수 있게 남겨 둡니다. */
+function softwareGPU() {
+  try {
+    const c = document.createElement('canvas');
+    const gl = c.getContext('webgl2') || c.getContext('webgl');
+    if (!gl) return true;
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const who = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    return /swiftshader|llvmpipe|software|basic render|microsoft basic/i.test(who);
+  } catch { return false; }
+}
+/* ?ao=0 은 예전대로 **후처리 사슬 전체**를 끕니다(블룸·비네트·색·SMAA 까지).
+   소프트웨어 렌더러에서 빼야 하는 것은 그 전부가 아니라 AO 패스 하나뿐이라
+   스위치를 둘로 나눕니다. ?ao=1 이면 소프트웨어에서도 굳이 켭니다. */
+const AO_Q = new URLSearchParams(location.search).get('ao');
+const AO_ON = AO_Q !== '0';
+const AO_PASS = AO_Q === '1' ? true : !softwareGPU();
 /* ?fx=0 이면 후처리 마무리(글로우·비네트·결)를 안 겁니다. AO 는 따로
    ?ao=0 입니다 — 둘은 값이 다르고, 느릴 때 끄는 순서도 다릅니다. */
 const FX_ON = new URLSearchParams(location.search).get('fx') !== '0';
@@ -4027,7 +4053,10 @@ if (AO_ON) {
        클레이 토큰이 쓰는 규칙과 같은 이유입니다. */
     n8ao.configuration.color = new THREE.Color(0x526F7D);
     n8ao.configuration.halfRes = false;     // 윤곽을 반해상도로 늘려 생기던 번짐 제거
-    composer.addPass(n8ao);
+    /* 사슬에는 항상 만들어 두되, 소프트웨어 렌더러에서는 **걸지 않습니다.**
+       (위 softwareGPU 주석 참고 — 거기서는 디노이즈가 안 먹어 화면이
+       통째로 모래알이 됩니다.) 나머지 마무리는 그대로 갑니다. */
+    if (AO_PASS) composer.addPass(n8ao);
 
     /* ══ 마무리 — 사진처럼 보이게 하는 네 가지 ══
 

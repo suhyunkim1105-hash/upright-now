@@ -13,7 +13,7 @@ const DIR = path.dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]
    주소를 가리킵니다.**
 
    마크다운에는 `{{CONTACT}}` 만 씁니다. 실제 값은 여기 한 줄입니다. */
-const CONTACT = process.env.DESKFIT_CONTACT || 'ikmc554@mju.ac.kr';
+const CONTACT = process.env.DESKFIT_CONTACT || 'uniker.monkeys@gmail.com';
 const DOCS = [
   ['privacy', '개인정보처리방침'],
   ['terms', '서비스 이용약관'],
@@ -138,7 +138,7 @@ function page(slug, title, body) {
     <h1>${title}</h1>
 ${body}
     <footer class="lg-foot">
-      <p>이 문서에 대해 궁금한 점이 있으면 <a href="mailto:ikmc554@mju.ac.kr">ikmc554@mju.ac.kr</a> 로 알려 주세요.</p>
+      <p>이 문서에 대해 궁금한 점이 있으면 <a href="mailto:${CONTACT}">${CONTACT}</a> 로 알려 주세요.</p>
       <p class="copy">© Monkeyz. All rights reserved.</p>
     </footer>
   </main>

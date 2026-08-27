@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { cafeteria, tour, wearShop } from '../prototypes/campus3d/ui.js'
+import { cafeteria, tour, wearShop, calendarEmbed, calendarOpenLink } from '../prototypes/campus3d/ui.js'
 import { SPOTS } from '../prototypes/campus3d/spots.js'
 import { INDOOR } from '../prototypes/campus3d/npcs.js'
 
@@ -175,6 +175,22 @@ test('기상청 키는 서버 환경변수이며 APIHub 승인 오류도 정확�
   assert.match(weatherApi, /kma_sfctm2\.php/)
   assert.match(weatherApi, /종관기상관측\(ASOS\) API 활용신청이 필요합니다/)
   assert.doesNotMatch(weatherApi, /authKey:\s*['"][^'"]+['"]/, 'API 키가 소스에 들어갔습니다')
+})
+
+test('기숙사 일정 관리는 cid 개인 캘린더를 읽고 Google 본 화면으로 연다', () => {
+  const link = 'https://calendar.google.com/calendar/u/0?cid=c3VoeXVua2ltMTEwNUBnbWFpbC5jb20'
+  assert.equal(calendarEmbed(link),
+    'https://calendar.google.com/calendar/embed?ctz=Asia%2FSeoul&mode=AGENDA&src=suhyunkim1105%40gmail.com')
+  assert.equal(calendarOpenLink(link), link)
+  const ui = readFileSync('prototypes/campus3d/ui.js', 'utf8')
+  assert.match(ui, /Google Calendar에서 직접 열기/)
+  assert.match(ui, /loading="eager"/)
+  assert.match(ui, /다시 불러오기/)
+  assert.match(ui, /12000/)
+  assert.doesNotMatch(ui, /\.catch\(\(\) => fail\(/,
+    '첫 네트워크 probe 실패만으로 캘린더를 제거합니다')
+  assert.doesNotMatch(ui, /href="\$\{esc\(src\)\}" target="_blank"/,
+    '새 탭에서도 차단되는 embed 주소를 다시 열고 있습니다')
 })
 
 test('지도 전체 클릭 이동·큰 핵심 건물·막히지 않은 본관 문을 유지한다', () => {
@@ -352,10 +368,17 @@ test('기숙사는 작은 안내·일정 창, 창가 날씨, 빈백 앉기와 �
 
 test('동아리 상점 가구 구역은 독립 쇼룸이며 출입문과 다른 상점을 침범하지 않는다', () => {
   const shop = rooms.slice(rooms.indexOf('shop(g) {'))
-  assert.match(shop, /R\.rug\(g, -8\.4, 4\.1, 7\.0, 4\.7/)
-  assert.match(shop, /R\.sofa\(g, -10\.35, 4\.15/)
-  assert.match(shop, /R\.lowTable\(g, -8\.35, 4\.15/)
-  assert.match(shop, /R\.displayTable\(g, -6\.55, 2\.05/)
+  const room = readFileSync('prototypes/campus3d/room.js', 'utf8')
+  const showroom = room.slice(room.indexOf('export function furnitureShowroom'), room.indexOf('/** 긴 벤치'))
+  assert.match(shop, /R\.furnitureShowroom\(g, -8\.4, 4\.15, 0\)/)
+  assert.doesNotMatch(shop, /R\.sofa\(g, -10\.35, 4\.15/)
+  assert.doesNotMatch(shop, /R\.lowTable\(g, -8\.35, 4\.15/)
+  assert.doesNotMatch(shop, /R\.displayTable\(g, -6\.55, 2\.05/)
+  assert.match(showroom, /p\.name = 'furnitureShowroom'/)
+  assert.match(showroom, /소재 라이브러리 벽/)
+  assert.match(showroom, /sampleSofa\(/)
+  assert.match(showroom, /수납 코너/)
+  assert.doesNotMatch(showroom, /regSeat/, '판매용 진열 가구가 앉기 기능을 가로챕니다')
   assert.doesNotMatch(shop, /R\.rug\(g, 0, 3\.3, 18\.8/,
     '가구 구역이 출입문과 다른 상점을 가로지르는 옛 대형 러그입니다')
   const furniture = SPOTS.shop.find((s) => s.panel === 'furn-shop')
@@ -364,4 +387,26 @@ test('동아리 상점 가구 구역은 독립 쇼룸이며 출입문과 다른 
   assert.deepEqual([furniture.x, furniture.z, furniture.r], [-8.2, 3.55, 2.75])
   for (const other of [wear, egg])
     assert.ok(Math.hypot(furniture.x - other.x, furniture.z - other.z) >= furniture.r + other.r + 1.3)
+})
+
+test('짝 맞추기·셋 지우기·러너의 커서는 게임보다 위에서 함께 동기화된다', () => {
+  assert.match(world, /#gcur\{position:fixed;[^}]*z-index:400/)
+  assert.match(world, /document\.body\.appendChild\(curEl\(\)\)/)
+  assert.match(world, /addEventListener\('campus:game-state'/)
+  assert.match(world, /classList\.remove\('look', 'press'\)/)
+  assert.match(world, /function uiOpen\(\) \{ return panelOn \|\| dlgOn \|\| mapOn \|\| gameOpen\(\); \}/)
+  assert.match(games, /function announceGameState\(open\)/)
+  assert.match(games, /announceGameState\(true\)/)
+  assert.match(games, /announceGameState\(false\)/)
+})
+
+test('동물 러너는 누락된 외부 런타임 없이 로컬 Canvas 엔진으로 열린다', () => {
+  const runner = readFileSync('prototypes/openworld/animal-runner-game.mjs', 'utf8')
+  const engine = readFileSync('prototypes/openworld/animal-runner-engine.mjs', 'utf8')
+  assert.match(games, /import\('\.\.\/openworld\/animal-runner-game\.mjs'\)/)
+  assert.match(runner, /export function mountAnimalRunner/)
+  assert.match(runner, /document\.createElement\('canvas'\)/)
+  assert.doesNotMatch(runner, /Phaser|phaser/)
+  assert.match(engine, /export const RUNNER_CONFIG/)
+  assert.match(engine, /export function createRunnerState/)
 })

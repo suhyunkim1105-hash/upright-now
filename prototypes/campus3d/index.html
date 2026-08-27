@@ -146,7 +146,7 @@ addEventListener('unhandledrejection', function (e) {
   /* 게임 안 커서 — 잠금을 유지한 채 창을 조작합니다.
      pointer-events:none 이라야 자기 밑의 버튼을 가리지 않습니다. */
   /* 자체 커서 — 잠겨 있든 아니든 늘 이것만 보입니다 */
-  #gcur{position:absolute;left:0;top:0;z-index:400;pointer-events:none;opacity:0;
+  #gcur{position:fixed;left:0;top:0;z-index:400;pointer-events:none;opacity:0;
     /* 테가 없으니 그림자가 바탕에서 떼어 놓는 몫을 혼자 합니다 */
     filter:drop-shadow(0 2px 6px rgba(10,40,36,.55)) drop-shadow(0 0 1px rgba(10,40,36,.5));
     transition:opacity .12s}
@@ -937,6 +937,155 @@ addEventListener('unhandledrejection', function (e) {
      경우가 있었습니다(헤드리스 검사에서 재현). 말은 보이는 게 먼저입니다. */
   #chatlog b{font-weight:800;color:var(--acc);flex:none}
   #chatlog.sys div b{color:var(--warn)}
+  /* ── 기숙사 노트북 · 흰색 주간 시간표 ──
+     카드 일곱 개를 세로로 쌓던 판을 없애고, 실제 일정 앱처럼 시간과
+     요일이 한눈에 교차하는 흰 격자를 씁니다. 편집 기능은 같은 저장소를
+     그대로 써서 기존 수업도 사라지지 않습니다. */
+  #panel:has(.schedule-surface){background:#fff}
+  #panel:has(.schedule-surface) .ph{background:#fff;border-bottom-color:#EDF1F5}
+  #panel:has(.schedule-surface) .bd{background:#fff;padding-top:13px}
+  .schedule-surface{background:#fff;color:#1D2939}
+  .schedule-surface .schedule-tabs{padding:5px;border:1px solid #E7EDF3;border-radius:17px;background:#F7F9FC}
+  .schedule-surface .schedule-tabs button{background:transparent;box-shadow:none;border-radius:12px;color:#7B8798}
+  .schedule-surface .schedule-tabs button.on{background:#fff;color:#172333;box-shadow:0 6px 15px rgba(58,78,101,.10),inset 0 1px 0 #fff}
+  .tt-app{overflow:hidden;border:1px solid #E5EBF1;border-radius:20px;background:#fff;
+    box-shadow:0 18px 38px -30px rgba(35,55,78,.38)}
+  .tt-toolbar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:15px;
+    min-height:68px;padding:13px 15px;border-bottom:1px solid #E9EEF3;background:#fff}
+  .tt-heading{display:flex;flex-direction:column;gap:2px;min-width:112px}
+  .tt-heading small{font:800 8.5px/1.2 var(--ff);letter-spacing:.12em;color:#98A4B3}
+  .tt-heading strong{font:850 18px/1.25 var(--ff);letter-spacing:-.025em;color:#192536}
+  .tt-status{min-width:0;padding:8px 12px;border-left:1px solid #EDF1F4}
+  .tt-status b,.tt-status small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tt-status b{font:800 11.5px/1.35 var(--ff);color:#344155}
+  .tt-status small{margin-top:2px;font:600 9.5px/1.35 var(--ff);color:#8B97A7}
+  .tt-add{border:0;border-radius:12px;padding:10px 12px;background:#17212F;color:#fff;
+    box-shadow:0 7px 14px rgba(25,35,50,.16);font:800 10.5px/1 var(--ff);cursor:pointer}
+  .tt-grid-scroll{overflow:auto;background:#fff;scrollbar-width:thin;scrollbar-color:#CAD5E1 transparent}
+  table.tt.tt-week{width:100%;min-width:575px;border-collapse:collapse;border-spacing:0;table-layout:fixed;font-size:11px}
+  table.tt.tt-week th,table.tt.tt-week td{border-right:1px solid #EDF1F4;border-bottom:1px solid #EDF1F4}
+  table.tt.tt-week tr>*:last-child{border-right:0}
+  table.tt.tt-week thead th{height:43px;padding:6px;background:#FBFCFD;text-align:center;color:#253247}
+  table.tt.tt-week thead th:first-child{width:58px;color:#98A4B3}
+  table.tt.tt-week thead b,table.tt.tt-week thead span{display:block}
+  table.tt.tt-week thead b{font:850 11px/1.2 var(--ff)}
+  table.tt.tt-week thead span{margin-top:2px;font:650 8.5px/1.1 var(--ff);color:#A0AAB7}
+  table.tt.tt-week tbody th{width:58px;padding:0 8px;background:#FBFCFD;text-align:right;vertical-align:top}
+  table.tt.tt-week tbody th time{display:block;padding-top:11px;font:800 10px/1 var(--ff);color:#536174}
+  table.tt.tt-week tbody th i{display:block;margin-top:4px;font:650 8px/1 var(--ff);font-style:normal;color:#A2ACB8}
+  table.tt.tt-week td{height:67px;padding:5px;background:#fff;vertical-align:top}
+  .tt-app button.tt{width:100%;height:100%;min-height:55px;margin:0;border:0;border-radius:10px;padding:7px 8px;
+    text-align:left;font-family:var(--ff);cursor:pointer;transition:transform .13s,box-shadow .13s,background .13s}
+  .tt-app button.tt.empty{display:grid;place-items:center;background:transparent;color:#C4CDD7;box-shadow:none}
+  .tt-app button.tt.empty span{display:grid;place-items:center;width:24px;height:24px;border-radius:9px;
+    opacity:0;background:#F1F5F8;font-size:15px;transition:opacity .13s,transform .13s}
+  .tt-app button.tt.empty:hover span,.tt-app button.tt.empty:focus-visible span{opacity:1;transform:scale(1.04)}
+  .tt-app button.tt.on{display:flex;flex-direction:column;align-items:flex-start;background:color-mix(in srgb,var(--tt-color) 26%,#fff);
+    color:#253044;box-shadow:inset 3px 0 0 var(--tt-color),0 3px 8px color-mix(in srgb,var(--tt-color) 13%,transparent)}
+  .tt-app button.tt.on:hover{transform:translateY(-1px);box-shadow:inset 3px 0 0 var(--tt-color),0 7px 13px color-mix(in srgb,var(--tt-color) 20%,transparent)}
+  .tt-app button.tt.on b{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:850 10.5px/1.25 var(--ff)}
+  .tt-app button.tt.on i{display:block;margin-top:3px;font:700 8.5px/1.25 var(--ff);font-style:normal;color:#657186}
+  .tt-app button.tt.on small{display:block;margin-top:auto;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 8px/1.2 var(--ff);color:#7C8797}
+  .tt-editor{margin:14px;padding:15px;border:1px solid #E7ECF2;border-radius:16px;background:#FAFBFD;
+    box-shadow:inset 0 1px 0 #fff}
+  .tt-editor-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:11px}
+  .tt-editor-head b{font:850 14px/1.2 var(--ff);color:#253247}
+  .tt-editor-head span{font:650 9px/1.3 var(--ff);color:#98A4B3}
+  .tt-editor .lbl{margin-top:11px;color:#647186}
+  .tt-editor .nick,.tt-editor select{background:#fff;border-color:#E0E7EE;box-shadow:none}
+  .tt-editor .wr button{box-shadow:none;border:1px solid #E0E7EE;background:#fff}
+  .tt-editor .wr button.on{border-color:#17212F;background:#17212F;color:#fff}
+  @media(max-width:680px){
+    .tt-toolbar{grid-template-columns:1fr auto}.tt-status{display:none}.tt-heading strong{font-size:16px}
+    .tt-add{padding:10px}.tt-editor-head span{display:none}
+  }
+  .card-id{border:0;background:linear-gradient(135deg,var(--mint),var(--sky));
+    box-shadow:var(--clayUp);border-radius:22px;padding:16px}
+  .card-id .ph{box-shadow:var(--clayUp2)}
+
+  /* ── 지도 ── */
+  #map{position:absolute;inset:0;display:none;place-items:center;
+    background:rgba(75,111,132,.28);backdrop-filter:blur(7px);pointer-events:auto}
+  #map.on{display:grid}
+  #map .box{padding:15px;border-radius:30px;background:linear-gradient(145deg,rgba(250,254,255,.98),rgba(226,243,249,.98));border:1px solid rgba(112,169,195,.24);
+    box-shadow:18px 22px 48px rgba(54,91,116,.25),-9px -9px 25px rgba(255,255,255,.76),inset 2px 2px 0 rgba(255,255,255,.9);backdrop-filter:blur(18px)}
+  #map canvas{display:block;border:1px solid rgba(106,164,190,.25);border-radius:23px;width:min(680px,86vmin);height:min(680px,86vmin);
+    box-shadow:inset 4px 5px 13px rgba(87,133,155,.14),0 10px 22px rgba(72,111,133,.16);cursor:pointer}
+  #map .cap{display:flex;align-items:center;gap:9px;margin:2px 6px 11px;min-height:34px}
+  #map .cap:before{content:'M';display:grid;place-items:center;width:31px;height:31px;border-radius:11px;background:linear-gradient(145deg,#7CE0D0,#52BED0);color:#fff;font-size:12px;font-weight:900;box-shadow:var(--clayUp2)}
+  #map .cap b{font-size:17px;font-weight:850;letter-spacing:-.025em;color:var(--tx)}
+  #map .cap i{font-style:normal;font-size:11px;color:var(--tx2);padding:5px 9px;border-radius:99px;background:rgba(255,255,255,.56)}
+  #map .cap span{margin-left:auto;font-size:10.5px;color:var(--tx2)}
+  #map .lg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:11px 6px 2px;font-size:10.5px;color:var(--tx2)}
+  #map .lg span{display:flex;align-items:center;gap:5px}
+  #map .lg i{width:9px;height:9px;border-radius:3px;display:block}
+
+  /* ── 자세 세션 ── */
+  #post{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);width:min(430px,92vw);
+    padding:14px 16px 13px;display:none}
+  #post.on{display:block}
+  #post .row{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+  #post .st{padding:3px 10px;border-radius:99px;font-size:10.5px;font-weight:800;
+    background:rgba(116,226,148,.20);color:var(--ok);transition:.25s}
+  #post .st.warn{background:rgba(245,196,81,.20);color:var(--warn)}
+  #post .st.bad{background:rgba(255,126,110,.20);color:var(--bad)}
+  #post .nm{font-size:12.5px;font-weight:700;flex:1}
+  #post .tm{font-size:11.5px;color:var(--tx2);font-variant-numeric:tabular-nums}
+  #post .bar{height:7px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+  #post .bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--ok);
+    transition:width .22s,background .25s}
+  #post .hint{margin-top:9px;font-size:10.5px;color:var(--tx2);line-height:1.55}
+  #post .hint em{font-style:normal;color:var(--tx3)}
+  #post button{margin-top:10px;border:0;background:var(--acc);color:#08251F;border-radius:99px;
+    padding:7px 15px;font:800 11.5px/1 var(--ff);cursor:pointer;pointer-events:auto}
+
+  /* ── 튜토리얼 ── */
+  #tut{position:absolute;left:50%;top:62px;transform:translateX(-50%);width:min(420px,92vw);
+    padding:13px 16px;display:none;pointer-events:auto}
+  #tut.on{display:block}
+  #tut .step{display:flex;align-items:center;gap:10px}
+  #tut .n{width:22px;height:22px;border-radius:8px;background:var(--acc);color:#08251F;
+    font:800 11px/22px var(--ff);text-align:center;flex:none}
+  #tut b{font-size:13.5px;font-weight:800;flex:1;letter-spacing:-.01em}
+  #tut .skip{border:0;background:transparent;color:var(--tx3);font:700 11px/1 var(--ff);
+    cursor:pointer;padding:4px}
+  #tut .skip:hover{color:var(--tx)}
+  #tut p{margin:7px 0 0 32px;font-size:11.5px;color:var(--tx2);line-height:1.55}
+  #tut .dots{display:flex;gap:4px;margin:10px 0 0 32px}
+  #tut .dots i{width:18px;height:3px;border-radius:2px;background:rgba(255,255,255,.16)}
+  #tut .dots i.on{background:var(--acc)}
+
+  /* ── 감정표현 바퀴 ── */
+  #emo{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:300px;height:300px;
+    display:none;pointer-events:auto}
+  #emo.on{display:block;animation:pop .18s cubic-bezier(.2,.9,.3,1)}
+  @keyframes pop{from{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+  #emo button{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:20px;
+    border:1px solid var(--ln);background:var(--gl2);box-shadow:var(--sh);backdrop-filter:blur(14px);
+    cursor:pointer;font-size:24px;line-height:1;display:grid;place-items:center;transition:.12s}
+  #emo button:hover{transform:scale(1.12);background:var(--acc);border-color:transparent}
+  #emo button i{position:absolute;bottom:-17px;font-style:normal;font-size:10px;font-weight:800;
+    color:var(--tx);text-shadow:0 1px 4px rgba(6,10,17,.7)}
+  #emo .hub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:84px;height:84px;
+    border-radius:50%;background:var(--gl2);border:1px solid var(--ln);backdrop-filter:blur(14px);
+    color:var(--tx);display:grid;place-items:center;font:800 11px/1.4 var(--ff);text-align:center}
+  #emo .hub em{font-style:normal;display:block;font-size:9.5px;color:var(--tx3);font-weight:700}
+
+  /* ── 채팅 ── */
+  #chat{position:absolute;left:16px;bottom:18px;width:min(340px,58vw);pointer-events:none}
+  #chatlog{max-height:150px;overflow:hidden;display:flex;flex-direction:column;
+    justify-content:flex-end;gap:4px}
+  /* 채팅 줄에는 유리(backdrop-filter)를 쓰지 않습니다. 줄마다 합성 레이어가
+     하나씩 생기는데, WebGL 화면 위에서는 아예 안 그려지는 경우가 있었습니다
+     (헤드리스 검사에서 재현). 대신 배경을 조금 더 진하게 깔았습니다. */
+  #chatlog div{display:flex;gap:7px;align-items:baseline;background:rgba(19,23,30,.86);
+    border:1px solid var(--ln2);border-radius:11px;padding:5px 10px;font-size:12px;color:var(--tx);
+    align-self:flex-start;max-width:100%;opacity:1;box-shadow:0 2px 8px rgba(6,10,17,.24)}
+  /* 채팅 줄에는 **등장 효과를 넣지 않습니다.** @keyframes 도 transition 도
+     써 봤는데, 갓 만든 요소에서는 opacity 0 에 멈춘 채 아예 안 보이는
+     경우가 있었습니다(헤드리스 검사에서 재현). 말은 보이는 게 먼저입니다. */
+  #chatlog b{font-weight:800;color:var(--acc);flex:none}
+  #chatlog.sys div b{color:var(--warn)}
   #chatchannels{display:none;width:100%;gap:6px;pointer-events:auto}
   #chatin.on #chatchannels{display:flex}
   #chatchannels button{border:0;border-radius:99px;padding:7px 11px;background:rgba(19,23,30,.88);
@@ -997,32 +1146,96 @@ addEventListener('unhandledrejection', function (e) {
   @media(max-width:620px){#game .ghead{align-items:flex-start;flex-wrap:wrap}#game .gstat{margin-left:0}.game-copy{flex:1}.ghead .gx{margin-left:auto}}
 
   /* ── 첫 화면 ── */
-  #load{position:fixed;inset:0;display:grid;place-items:center;background:
-    radial-gradient(circle at 20% 14%,rgba(255,255,255,.98) 0 8%,transparent 34%),
-    radial-gradient(circle at 82% 78%,rgba(191,238,231,.52),transparent 35%),
-    linear-gradient(145deg,#F6FBFF,#E9F6FB 52%,#E6F5F1);color:#2A4055;
-    font-size:14.5px;font-weight:800;z-index:9;transition:.45s;padding:24px}
+  /* ── 로딩 ──
+     세 번째 판입니다. 첫 판은 흰 카드, 둘째 판은 평평한 잔디 타원이었고,
+     이제 **떠 있는 클레이 섬**입니다 — M 지도의 디오라마와 같은 문법:
+     잔디 윗판 밑에 흙(크림색) 옆면이 보여야 "섬" 으로 읽힙니다.
+     섬이 통째로 천천히 떠오르내리고, 그림자는 반대로 숨을 쉽니다.
+     구름 셋이 뒤에서 흘러가면 하늘이 정지화면이 아니게 됩니다. */
+  #load{position:fixed;inset:0;display:grid;place-items:center;z-index:9;transition:.55s;
+    overflow:hidden;color:#2A4055;background:
+      radial-gradient(circle at 18% 10%,rgba(255,255,255,.85),transparent 32%),
+      radial-gradient(circle at 84% 20%,rgba(255,255,255,.5),transparent 28%),
+      linear-gradient(180deg,#BFE3F7 0%,#DDF1F8 52%,#EEF9F1 100%)}
   #load.gone{opacity:0;pointer-events:none}
-  .load-card{width:min(500px,90vw);padding:28px 32px 26px;border:1px solid rgba(105,142,177,.13);border-radius:32px;
-    background:rgba(250,253,255,.88);box-shadow:0 24px 70px rgba(70,104,137,.16),inset 0 2px 0 #fff;text-align:center;backdrop-filter:blur(16px)}
-  .load-brand{display:flex;justify-content:center;align-items:center;gap:9px;font:950 26px/1 var(--ff);letter-spacing:-.04em}
-  .load-brand::before{content:'';width:12px;height:12px;border-radius:5px;background:linear-gradient(145deg,#57DCC7,#7BBFEF);box-shadow:0 4px 10px rgba(66,161,166,.24)}
-  .load-brand i{font:800 9px/1 var(--ff);letter-spacing:.08em;color:#6F879E;background:#E6EFF7;padding:6px 8px;border-radius:99px}
-  .load-pets{height:132px;display:flex;align-items:flex-end;justify-content:center;gap:3px;margin:18px 0 12px;overflow:visible}
-  .load-pets img{width:94px;height:126px;object-fit:contain;filter:drop-shadow(0 9px 7px rgba(65,86,112,.14));transform-origin:50% 100%;animation:loadWalk 1.35s ease-in-out infinite alternate}
-  .load-pets img:nth-child(2){animation-delay:-.35s}.load-pets img:nth-child(3){animation-delay:-.7s}.load-pets img:nth-child(4){animation-delay:-1.05s}
-  #load strong{display:block;font-size:15px;margin-top:8px;letter-spacing:-.015em}#load small{display:block;margin-top:6px;color:#8497AA;font-size:10.5px;font-weight:650}
-  .load-track{height:8px;border-radius:99px;background:#DDE8F2;box-shadow:inset 0 2px 5px rgba(67,90,118,.12);overflow:hidden;margin-top:20px}
-  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;background:linear-gradient(90deg,#51D8C4,#79BDEB);animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
-  /* 지도·감정표현·채팅·세션·게임도 상점과 같은 밝은 클레이 표면으로 통일. */
-  #post,#tut,#emo .hub,#game .gbox,#chatin{background:var(--clay);border:0;box-shadow:var(--clayUp);color:var(--cInk)}
-  #post,#tut,#game .gbox{border-radius:24px}
-  #emo button{background:var(--clay2);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
-  #chatlog div{background:rgba(249,252,255,.94);border:0;box-shadow:var(--clayUp2);color:var(--cInk)}
-  #chatchannels button{background:var(--clay2);color:var(--cInk2);box-shadow:var(--clayUp2)}
-  #chatin input{background:var(--clay3);border:0;box-shadow:var(--clayIn);color:var(--cInk)}
-  #game{background:rgba(92,122,143,.24);backdrop-filter:blur(8px)}
-  @keyframes loadWalk{to{transform:translateY(-6px) rotate(1deg)}}@keyframes loadFill{to{width:96%}}
+  /* 구름 — 알약 하나에 혹 둘. 셋이 서로 다른 높이 · 속도로 흐릅니다 */
+  .ld-cloud{position:absolute;height:26px;width:92px;border-radius:99px;
+    background:rgba(255,255,255,.9);filter:blur(.4px);
+    box-shadow:0 6px 14px rgba(120,160,190,.12);animation:ldDrift linear infinite}
+  .ld-cloud::before,.ld-cloud::after{content:'';position:absolute;border-radius:50%;
+    background:inherit;box-shadow:none}
+  .ld-cloud::before{width:38px;height:38px;left:16px;top:-16px}
+  .ld-cloud::after{width:26px;height:26px;right:18px;top:-10px}
+  .ld-cloud.c1{top:12%;animation-duration:46s;transform:scale(1.15)}
+  .ld-cloud.c2{top:26%;animation-duration:64s;animation-delay:-30s;opacity:.75;transform:scale(.85)}
+  .ld-cloud.c3{top:7%;animation-duration:78s;animation-delay:-55s;opacity:.6;transform:scale(.65)}
+  @keyframes ldDrift{from{left:-140px}to{left:calc(100% + 60px)}}
+  .load-in{position:relative;display:flex;flex-direction:column;align-items:center;
+    text-align:center;padding:0 24px;transform:translateY(-2vh)}
+  .load-brand{display:flex;align-items:center;gap:9px;font:950 15px/1 var(--ff);
+    letter-spacing:-.02em;color:#42607A}
+  .load-brand::before{content:'';width:10px;height:10px;border-radius:5px;
+    background:linear-gradient(145deg,#57DCC7,#7BBFEF);box-shadow:0 4px 10px rgba(66,161,166,.28)}
+  .load-brand i{font:800 8px/1 var(--ff);letter-spacing:.1em;color:#5E7890;
+    background:rgba(255,255,255,.75);padding:5px 8px;border-radius:99px;
+    box-shadow:inset 0 0 0 1px rgba(105,142,177,.14)}
+  .load-title{margin:10px 0 0;font:900 27px/1.2 var(--ff);letter-spacing:-.035em;color:#1E3345}
+  /* ── 떠 있는 섬 ── */
+  .load-isle{position:relative;width:min(520px,92vw);height:252px;margin:6px 0 0}
+  .isle-shadow{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);
+    width:62%;height:30px;border-radius:50%;
+    background:radial-gradient(50% 50% at 50% 50%,rgba(74,110,92,.28),rgba(74,110,92,0) 72%);
+    animation:isleShadow 3.4s ease-in-out infinite alternate}
+  .isle-float{position:absolute;inset:0;animation:isleFloat 3.4s ease-in-out infinite alternate}
+  /* 잔디 윗판 + 흙 옆면 — 타원 두 장을 세로로 어긋 놓으면 아래 초승달만큼이
+     두께가 됩니다. 흙 밑에 어두운 입술 한 줄을 더 깔아 바닥을 닫습니다. */
+  .isle-top,.isle-side,.isle-lip{position:absolute;left:50%;transform:translateX(-50%);
+    border-radius:50%}
+  .isle-top{bottom:40px;width:100%;height:104px;z-index:1;
+    background:radial-gradient(58% 62% at 50% 36%,#BFE7A9 0 46%,#9ED98E 74%,#83C97F 100%);
+    box-shadow:inset 0 -8px 14px rgba(74,140,86,.22)}
+  .isle-side{bottom:22px;width:96%;height:100px;
+    background:linear-gradient(180deg,#EBDCB4 26%,#DCC391 62%,#C8AB77 100%)}
+  .isle-lip{bottom:16px;width:84%;height:88px;background:#B29566}
+  /* 섬 위 소품 — 나무 둘과 덤불. 캐릭터가 서는 가운데는 비웁니다 */
+  .isle-tree{position:absolute;z-index:2;width:14px;height:26px;border-radius:5px;
+    background:#A97443}
+  .isle-tree::before{content:'';position:absolute;left:50%;top:-34px;transform:translateX(-50%);
+    width:52px;height:50px;border-radius:50%;
+    background:radial-gradient(circle at 38% 30%,#8FD98A,#5FBB66 78%);
+    box-shadow:0 6px 10px -4px rgba(60,110,70,.4)}
+  .isle-tree.t1{left:7%;bottom:96px}
+  .isle-tree.t2{right:6%;bottom:104px;transform:scale(.82)}
+  .isle-bush{position:absolute;z-index:2;width:34px;height:22px;border-radius:99px;
+    background:radial-gradient(circle at 40% 30%,#A5E093,#74C578 80%)}
+  .isle-bush.b1{left:19%;bottom:74px}
+  .isle-bush.b2{right:17%;bottom:66px;transform:scale(.8)}
+  .load-stage{position:absolute;left:0;right:0;bottom:86px;z-index:3;
+    display:flex;align-items:flex-end;justify-content:center;gap:8px}
+  .load-stage img{position:relative;width:100px;height:136px;object-fit:contain;
+    transform-origin:50% 100%;
+    filter:drop-shadow(0 9px 5px rgba(58,92,74,.24));
+    animation:loadPop .5s cubic-bezier(.34,1.5,.5,1) backwards, loadBob 1.5s ease-in-out .5s infinite alternate}
+  .load-stage img:nth-child(1){animation-delay:.05s,.55s}
+  .load-stage img:nth-child(2){animation-delay:.15s,.95s}
+  .load-stage img:nth-child(3){animation-delay:.25s,.72s}
+  .load-stage img:nth-child(4){animation-delay:.35s,1.2s}
+  #load strong{display:block;margin-top:20px;font-size:14.5px;font-weight:800;letter-spacing:-.015em}
+  #load small{display:block;margin-top:7px;color:#7B90A4;font-size:11px;font-weight:650}
+  /* 진행 줄 — 흰 클레이 홈 안에 민트 살. 끝의 반짝 점이 살아 있음을 말합니다 */
+  .load-track{position:relative;width:min(260px,64vw);height:9px;border-radius:99px;margin-top:16px;
+    background:rgba(255,255,255,.85);
+    box-shadow:inset 0 2px 5px rgba(67,90,118,.18),0 1px 0 rgba(255,255,255,.8)}
+  .load-track span{display:block;height:100%;width:12%;border-radius:inherit;
+    background:linear-gradient(90deg,#51D8C4,#79BDEB);
+    box-shadow:0 0 10px rgba(87,220,199,.55);
+    animation:loadFill 2.2s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes loadPop{from{opacity:0;transform:translateY(16px) scale(.82)}}
+  @keyframes loadBob{to{transform:translateY(-7px)}}
+  @keyframes loadFill{to{width:96%}}
+  @keyframes isleFloat{from{transform:translateY(0)}to{transform:translateY(-11px)}}
+  @keyframes isleShadow{from{transform:translateX(-50%) scale(1);opacity:1}
+    to{transform:translateX(-50%) scale(.88);opacity:.6}}
 
   @media (max-width:860px){
     #stack{width:130px;right:12px;top:12px;gap:8px}
@@ -1172,13 +1385,24 @@ addEventListener('unhandledrejection', function (e) {
     <canvas width="1240" height="1240" class="off"></canvas>
   </div></div>
 </div>
-<div id="load"><div class="load-card">
+<div id="load">
+  <i class="ld-cloud c1" aria-hidden="true"></i><i class="ld-cloud c2" aria-hidden="true"></i><i class="ld-cloud c3" aria-hidden="true"></i>
+  <div class="load-in">
   <div class="load-brand">DESKFIT <i>3D CAMPUS</i></div>
-  <div class="load-pets" aria-hidden="true">
-    <img src="../landing/assets/char-turtle-cut.webp" alt=""><img src="../landing/assets/char-giraffe-cut.webp" alt="">
-    <img src="../landing/assets/char-penguin-cut.webp" alt=""><img src="../landing/assets/char-frog-cut.webp" alt="">
+  <h1 class="load-title">기린캠퍼스로 가는 중</h1>
+  <div class="load-isle" aria-hidden="true">
+    <span class="isle-shadow"></span>
+    <div class="isle-float">
+      <i class="isle-lip"></i><i class="isle-side"></i><i class="isle-top"></i>
+      <i class="isle-tree t1"></i><i class="isle-tree t2"></i>
+      <i class="isle-bush b1"></i><i class="isle-bush b2"></i>
+      <div class="load-stage">
+        <img src="../landing/assets/char-turtle-cut.webp" alt=""><img src="../landing/assets/char-giraffe-cut.webp" alt="">
+        <img src="../landing/assets/char-penguin-cut.webp" alt=""><img src="../landing/assets/char-frog-cut.webp" alt="">
+      </div>
+    </div>
   </div>
-  <strong>캠퍼스 친구들을 부르는 중</strong><small>캐릭터 · 건물 · 교실을 선명하게 준비하고 있어요</small>
+  <strong>캠퍼스 친구들을 부르는 중</strong><small>캐릭터 · 건물 · 교실을 준비하고 있어요</small>
   <div class="load-track"><span></span></div>
 </div></div>
 <script type="importmap">
@@ -2136,7 +2360,7 @@ cv.addEventListener('wheel', (e) => { e.preventDefault();
    그리고 잠겨 있는 동안에는 화면 가운데에 조준점을 그립니다 — 커서가
    사라진 채로 무엇을 겨누는지 모르면 그것대로 답답합니다. */
 /* 창이 열려 있으면 마우스는 시점이 아니라 **커서**를 움직입니다 */
-function uiOpen() { return panelOn || dlgOn || mapOn; }
+function uiOpen() { return panelOn || dlgOn || mapOn || gameOpen(); }
 /* 잠금은 1인칭이면 늘 켭니다 — 창이 열려도 풀지 않습니다.
    풀면 그 순간 커서가 화면 한복판에 튀어나오고, 다시 잠그려면
    화면을 눌러야 합니다. 그 왕복을 없애는 것이 이 작업의 목적입니다. */
@@ -2154,6 +2378,27 @@ function wantLock() { return first; }
    목적이라, 두 경우가 같은 그림을 씁니다. */
 const CUR = { x: 0, y: 0, live: false, hot: false };
 const curEl = () => $('#gcur');
+/* #game은 body 바로 아래 z-index 12로 열립니다. 커서가 .hud(z-index 2)
+   안에 남아 있으면 자기 z-index가 400이어도 부모의 층을 넘지 못해 게임
+   뒤로 숨습니다. body의 마지막 자식으로 옮겨 짝 맞추기·셋 지우기에서도
+   같은 청록 커서가 항상 가장 위에 보이게 합니다. */
+document.body.appendChild(curEl());
+/* openGame 은 디버그 진입(window.__game), NPC/부스 진입 등 여러 경로에서
+   호출됩니다. 어느 경로든 게임이 열리면 커서를 body의 마지막 층으로
+   다시 올리고, 카메라 드래그 중 남은 look 상태를 지운 뒤 잠금/좌표를
+   재동기화합니다. 짝 맞추기와 셋 지우기는 이 한 경로를 함께 씁니다. */
+addEventListener('campus:game-state', (e) => {
+  const el = curEl();
+  document.body.appendChild(el);
+  el.classList.remove('look', 'press');
+  if (e.detail?.open) {
+    CUR.x = innerWidth / 2;
+    CUR.y = innerHeight / 2;
+    curPaint();
+    el.classList.add('on');
+  }
+  requestAnimationFrame(syncLock);
+});
 function curPaint() {
   curEl().style.transform = `translate(${CUR.x}px, ${CUR.y}px)`;
 }
@@ -2303,6 +2548,11 @@ function panelFor(s) {
     case 'mypage': return UI.mypage({
       coins: SAVE.coins, server: !!(SRV && SRV.configured), snd: SND.on, bgm: BGM.on, bgmVol: BGM.vol, bgmPick: BGM.pick, music: MUSIC,
       schools: SCHOOLS, school: SAVE.school,
+      nick: SAVE.nick || '', species: curSpecies,
+      onNick: (v) => {
+        SAVE.nick = v.trim().slice(0, 10); UI.save(); idbarPaint();
+        net?.setLook(curSpecies, myLook(), myNick());
+      },
       baseline: (() => { try { return JSON.parse(localStorage.getItem('girin.baseline') || 'null'); } catch (_) { return null; } })(),
       onSchool: (school, again) => { chooseSchool(school); again(); },
       onDo: (k, again) => {
@@ -2437,14 +2687,6 @@ function panelFor(s) {
           else return;
           UI.save(); rebuildMe(); net?.setLook(curSpecies, myLook(), myNick()); again();
         };
-        const nk = root.querySelector('input.nick');
-        if (nk) {
-          nk.onkeydown = (e) => e.stopPropagation();
-          nk.oninput = () => {
-            SAVE.nick = nk.value.trim().slice(0, 10); UI.save(); idbarPaint();
-            net?.setLook(curSpecies, myLook(), myNick());
-          };
-        }
       },
     };
     default: return UI.stub(s.tag, s.title, s.body);
@@ -2695,7 +2937,10 @@ const schoolColor = (n) => {
   return q ? '#' + q.c.toString(16).padStart(6, '0') : null;
 };
 function fameView() {
-  if (!(SRV && SRV.configured)) fameState = 'unconfigured';
+  /* 서버 정리(8/26)에서 랭킹 RPC 와 마이그레이션이 빠졌습니다. 함수가
+     없는데 부르면 창을 짓다 터져서 명예의 전당이 아예 안 열립니다 —
+     붙기 전까지는 '아직 없음' 으로 정직하게 보여 줍니다. */
+  if (!(SRV && SRV.configured && typeof SRV.schoolRanking === 'function')) fameState = 'unconfigured';
   else if (fameState === 'idle') {
     fameState = 'loading';
     SRV.schoolRanking().then((r) => {
@@ -3351,6 +3596,7 @@ function interact() {
       /* 러너 하나만 자세를 조작으로 씁니다. 카메라를 못 켜도 그 게임은
          자판으로 그대로 돌아갑니다 — 조작을 카메라 뒤에 잠그지 않습니다. */
       openGame(spot.game, (score) => {
+        requestAnimationFrame(syncLock);
         if (score <= 0) return;
         /* 2D 판 규칙 그대로 — 클리어 10코인, 게임별 하루 한 번 */
         const today = new Date().toISOString().slice(0, 10);
@@ -3364,6 +3610,7 @@ function interact() {
         }
         UI.save();
       }, { posture: PZ });
+      syncLock();
       return;
     }
     if (spot.seat) startSession(spot); else openPanel(spot);
@@ -3443,13 +3690,16 @@ function leaveRoom() {
 /* 전 판의 지도는 초록 원에 네모 몇 개라 **지도로 읽히지 않았습니다**.
    지도가 지도로 보이려면 셋이 필요합니다 — 바다와 뭍의 경계, 길의 위계,
    그리고 글자가 배경에 묻히지 않는 이름표. 아래는 그 셋을 지킵니다. */
-/* 이름표 — 어두운 알약 위에 흰 글씨. 어떤 배경 위에서도 읽힙니다 */
+/* 이름표 — 검은 알약 대신 흰 클레이 칩. 밝은 지도와 같은 UI 문법입니다. */
 function mapLabel(g, text, x, y, fs = 12) {
-  g.font = `800 ${fs}px "Wanted Sans Variable",sans-serif`;
+  g.font = `850 ${fs}px "Wanted Sans Variable",sans-serif`;
   const w = g.measureText(text).width + fs * 1.1, h = fs * 1.75;
-  g.fillStyle = 'rgba(20,28,38,.82)';
+  g.fillStyle = 'rgba(65,105,125,.16)';
+  g.beginPath(); g.roundRect(x - w / 2 + 1.5, y - h / 2 + 2.5, w, h, h / 2); g.fill();
+  g.fillStyle = 'rgba(250,253,255,.95)';
   g.beginPath(); g.roundRect(x - w / 2, y - h / 2, w, h, h / 2); g.fill();
-  g.fillStyle = '#FFFFFF'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.strokeStyle='rgba(78,132,158,.28)';g.lineWidth=1;g.stroke();
+  g.fillStyle = '#304A5D'; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.fillText(text, x, y + .5);
 }
 /* 나 — 점 하나와 시야 부채꼴 */
@@ -3734,9 +3984,8 @@ const LOOK_SLOTS = [['top', '상의', 'topId', 'top'], ['bottom', '하의', 'bot
 const LOOK_PAL = [0x2DD4BF, 0xE8695A, 0xF2C14E, 0x9B7BD4, 0xF7F4EC, 0x63C47C, 0x5B84C4, 0x3A4150];
 function wardrobeHTML() {
   const L = myLook();
-  return '<div class="lbl">이름</div>'
-    + `<input class="nick" maxlength="10" placeholder="${curSpecies}" value="${(SAVE.nick || '').replace(/"/g, '')}">`
-    + '<div class="lbl">종</div><div class="wr sp">'
+  /* 이름 칸은 마이페이지(내 정보)로 옮겼습니다 — 옷장은 입는 것만. */
+  return '<div class="lbl">종</div><div class="wr sp">'
     + SPEC.map((n) => {
       const own = SAVE.ownedSp.includes(n);
       return `<button data-sp="${n}" class="${n === curSpecies ? 'on' : ''}" ${own ? '' : 'disabled'}
@@ -4903,6 +5152,10 @@ window.__net = () => (net ? { mode: net.mode, peers: net.peers.size, error: net.
 window.__scene = scene;
 window.__renderer = renderer;
 window.__ride = () => rideId;
+window.__seats = () => (room ? room.seats : []);
+window.__hitRoom = (x, z) => (room ? hitGrid(room.grid, x, z) : true);
+window.__spin = () => ({ yaw:+yaw.toFixed(3), dir:+P.dir.toFixed(3), rigY:+playerRig.rotation.y.toFixed(3),
+  sp:+P.sp.toFixed(2), x:+P.x.toFixed(2), z:+P.z.toFixed(2), goTo: !!goTo, ride: rideId, first, moved:+P.moved.toFixed(1) });
 window.__setCam = (y, pi, d) => { yaw = y; pitch = camPitch = pi; dist = camD = d; camHold = performance.now() + 9e5; };
 window.__setRide = (id) => setRide(id);
 window.__path = (tx, tz) => { const q = findPath(P.x, P.z, tx, tz); return q ? q.length : null; };

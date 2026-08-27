@@ -28,6 +28,7 @@
 import * as THREE from 'three';
 import { M, sign } from './parts.js';
 import * as KIT from './kit.js';
+import { mergeGeometries } from './vendor/BufferGeometryUtils.js';
 
 /* 부지 — 원이 아니라 네모입니다. 가로가 더 긴 것도 실제 캠퍼스의 성질입니다. */
 export const SITE = { w: 320, d: 260, hx: 160, hz: 130 };
@@ -326,6 +327,10 @@ function ground(g) {
      멀어질수록 흐려지는 일은 안개가 이미 합니다 — 색으로 또 하면
      두 번 합니다. */
   const out = new THREE.Mesh(new THREE.CircleGeometry(340, 72), M(PAL.lawn, .92));
+  out.name = 'outerLawn';               // 지도를 찍을 때 이 판만 잠깐 끕니다
+  /* bake 가 이 판을 다른 초록과 한 덩이로 구우면 이름이 사라져서
+     지도 찍을 때 못 끕니다 — 굽지 않고 홀로 둡니다(드로우콜 +1). */
+  out.userData.noBake = true;
   out.rotation.x = -Math.PI / 2;
   out.position.y = LAYER.lawn - .012;
   out.castShadow = false; out.receiveShadow = true;
@@ -342,16 +347,35 @@ function ground(g) {
      대비는 아주 낮게. 세면 얼룩이 무늬가 됩니다. */
   const a = M(PAL.lawnDark, .9), b = M(PAL.lawnLight, .9);
   /* 얼룩을 부지 밖까지 뿌립니다 — 경계선 위에 걸쳐야 선이 지워집니다 */
+  /* 부지 **밖**에 떨어진 얼룩은 바깥 잔디와 한 묶음으로 둡니다 —
+     지도를 찍을 때 outerLawn 과 같이 꺼야 섬의 흙단이 보입니다.
+     bake 를 거치면 이름이 사라지므로 여기서 **직접 네 덩이로 굽습니다**
+     (안 어두운 · 안 밝은 · 밖 어두운 · 밖 밝은). 190 장이 4 장이 되니
+     드로우콜로도 이득입니다. 경계에 **걸친** 얼룩은 부지 쪽에 남습니다. */
+  const bins = { inA: [], inB: [], outA: [], outB: [] };
+  const _q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
   for (let i = 0; i < 190; i++) {
     const x = (rnd() - .5) * SITE.w * 1.7, z = (rnd() - .5) * SITE.d * 1.9;
     const w = 10 + rnd() * 26;
-    const m = new THREE.Mesh(new THREE.CircleGeometry(w / 2, 20), rnd() < .5 ? a : b);
-    m.rotation.x = -Math.PI / 2;
-    m.scale.set(1, .5 + rnd() * .9, 1);
-    m.position.set(x, LAYER.blot + i * LAYER.blotStep, z);
-    m.castShadow = false; m.receiveShadow = true;
-    g.add(m);
+    const dark = rnd() < .5;
+    const geo = new THREE.CircleGeometry(w / 2, 20);
+    geo.applyMatrix4(new THREE.Matrix4().compose(
+      new THREE.Vector3(x, LAYER.blot + i * LAYER.blotStep, z), _q,
+      new THREE.Vector3(1, .5 + rnd() * .9, 1)));
+    const outside = Math.abs(x) - w / 2 > SITE.w / 2 || Math.abs(z) - w / 2 > SITE.d / 2;
+    bins[(outside ? 'out' : 'in') + (dark ? 'A' : 'B')].push(geo);
   }
+  const outerPatch = new THREE.Group();
+  outerPatch.name = 'outerPatch';
+  outerPatch.userData.noBake = true;
+  g.add(outerPatch);
+  Object.entries(bins).forEach(([k, list]) => {
+    if (!list.length) return;
+    const m = new THREE.Mesh(mergeGeometries(list), k.endsWith('A') ? a : b);
+    m.castShadow = false; m.receiveShadow = true;
+    list.forEach((q2) => q2.dispose());
+    (k.startsWith('out') ? outerPatch : g).add(m);
+  });
 }
 
 /* ---- 길 ----

@@ -75,6 +75,8 @@ const BOT_SAY_MIN = 20;        // 초 — 이보다 자주 떠들면 사람이 �
 /* 씨앗은 아무 숫자나 괜찮습니다. **안 바뀌는 것** 만 중요합니다 —
    Math.random 으로 두면 새로고침마다 종과 옷이 뒤바뀌어서, 이웃이
    아니라 슬롯머신처럼 보입니다. */
+/* 흉내 이웃을 세울 것인가. 제출본은 false 입니다 — 위 startBots 참고 */
+const BOTS_ON = false;
 const BOT_SEED = 20260822;
 const BOT_NICKS = ['느린거북', '목긴기린', '삼층창가', '알파카부탁',
                    '점심먼저', '광장한바퀴', '자세교정중', '도서관붙박이'];
@@ -367,6 +369,13 @@ export function createNet(opts) {
     }
   }
   function startBots() {
+    /* 2026-08-27 — 봇을 세우지 않습니다.
+       "설정이 없는 사람이 열면 캠퍼스가 폐교로 보인다" 는 이유로 넣은
+       것인데, 제출본에서는 **그 폐교가 사실**입니다. 서버에 아무도
+       없는데 이웃 다섯이 걸어 다니면 화면이 거짓말을 합니다.
+       봇을 되살리려면 이 한 줄만 지우면 됩니다 — 아래 장치는 그대로
+       두었습니다(2D 판의 LocalTransport 와 짝이 맞아야 해서요). */
+    if (!BOTS_ON) return;
     if (bots || botTimer || dead || botBroken) return;
     try { bots = makeBots(); } catch { botBroken = true; return; }
     botLast = performance.now();
@@ -393,7 +402,7 @@ export function createNet(opts) {
     fellBack = true; syncBots();
     /* 방 안이라 봇이 하나도 없어도 'local' 입니다. 이 값은 "사람이 있나"
        가 아니라 "진짜 서버에 붙었나" 를 말합니다. */
-    N.mode = botBroken ? 'offline' : 'local';
+    N.mode = (botBroken || !BOTS_ON) ? 'offline' : 'local';
     opts.onMode?.(N.mode);
   }
 

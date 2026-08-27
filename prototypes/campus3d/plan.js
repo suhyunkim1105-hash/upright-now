@@ -858,8 +858,8 @@ function fence(g, solid) {
   /* 학교 이름 — 회색 판만 걸어 두면 "아직 안 만든 간판" 입니다.
      parts.js 의 sign 은 캔버스에 글자를 굽고 웹폰트가 온 뒤 한 번 더
      굽습니다. 안팎 두 장 — 나갈 때도 문은 문이어야 합니다. */
-  sign(gg, '기린캠퍼스', 0, 6.9, 1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF');
-  sign(gg, '기린캠퍼스', 0, 6.9, -1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF').rotation.y = Math.PI;
+  sign(gg, 'Deskfit', 0, 6.9, 1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF');
+  sign(gg, 'Deskfit', 0, 6.9, -1.0, 9.6, 1.7, '#3F6BA8', '#FFFFFF').rotation.y = Math.PI;
 }
 
 /* ---- 담 밖 — 도시와 산 ---- */

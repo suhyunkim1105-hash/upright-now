@@ -9,7 +9,7 @@ import { M, box, cyl, prism, win, door, archPortal, apron, column, tree, bush, p
          steps, reveal, dentil, quoins, balustrade } from './parts.js';
 
 /* ══════════════════════════════════════════════════════════
-   기린캠퍼스 건물 여섯 채 — 아이소메트릭 아이콘.
+   Deskfit 건물 여섯 채 — 아이소메트릭 아이콘.
    같은 부품(parts.js)을 같은 규칙으로 쓰되 조합과 색만 다릅니다.
    나란히 놨을 때 한 캠퍼스로 읽혀야 합니다.
    ══════════════════════════════════════════════════════════ */

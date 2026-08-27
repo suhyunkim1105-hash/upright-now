@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>기린캠퍼스 3D</title>
+<title>Deskfit 3D</title>
 <script>
 /* 부팅 중에 터지면 로딩막이 안 걷힙니다. 그때 콘솔에는 한 줄만 남고
    어디서 났는지는 안 보였습니다 — 모듈 평가 중의 오류는 나중에 붙인
@@ -412,9 +412,12 @@ addEventListener('unhandledrejection', function (e) {
     padding:12px 14px;color:var(--cInk3);margin-top:14px}
 
   /* 픽토그램 — 스물두 개가 한 벌이라 굵기를 여기서 한 번만 정합니다 */
-  .pic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;
+  /* 굵기는 viewBox 안(24 단위)의 값이라 화면 굵기 = stroke-width × 크기/24
+     입니다. 22px 에서 1.70px 이 되도록 1.85 로 둡니다 — 잘려 있던 시절과
+     같은 굵기입니다. 작게 쓰는 자리는 저마다 되올립니다. */
+  .pic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.85;
     stroke-linecap:round;stroke-linejoin:round}
-  .pic.lg{width:28px;height:28px;stroke-width:1.6}
+  .pic.lg{width:28px;height:28px;stroke-width:1.4}
 
   /* 칸 — 줄글 대신 이걸 씁니다 */
   .cg{display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:10px;margin:4px 0 6px}
@@ -463,6 +466,218 @@ addEventListener('unhandledrejection', function (e) {
   .mtr{height:11px;border-radius:99px;background:var(--clay3);box-shadow:var(--clayIn);overflow:hidden}
   .mtr i{display:block;height:100%;border-radius:99px;background:var(--mintD);
     box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5)}
+
+  /* ══ 마이페이지 ══
+     넷으로 나뉜 창인데 폭이 470 이었습니다. 1440 화면에서 오른쪽 절반이
+     통째로 비어 있고, 대신 세로로 한참 굴려야 단축키가 나왔습니다.
+     920 으로 열고 두 칸으로 폅니다.
+
+     단추도 줄입니다. 설정 한 탭에 알약이 서른둘이었는데, 많은 게 아니라
+     **단추가 아닌 것까지 단추로 만든 것**이 문제였습니다. 켬·끔은
+     스위치 하나로, 다섯 중 하나는 한 자리 안의 칸으로, 곡 열 개는
+     고르는 상자 하나로 바뀝니다. 서른둘이 여섯이 됩니다. */
+
+  /* 탭 — 알약 넷이 아니라, 눌린 자리 위에 솟은 홈 하나 */
+  .mtab{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px;
+    border-radius:22px;background:var(--clay2);box-shadow:var(--clayIn);margin:0 0 18px}
+  .mtab button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;
+    border:0;border-radius:16px;background:transparent;color:var(--cInk2);cursor:pointer;
+    font:800 13.5px var(--ff);letter-spacing:-.01em;
+    transition:color .15s,background .15s,box-shadow .15s,transform .12s}
+  /* 고르지 않은 탭도 --cInk3 이면 3:1 이라 못 읽습니다. 눌린 자리 위에
+     솟았는지로 이미 갈리므로, 색은 읽히는 쪽으로 올립니다. */
+  .mtab button .pic{width:18px;height:18px;stroke-width:2.4}
+  .mtab button:hover{color:var(--cInk)}
+  .mtab button:active{transform:scale(.96)}
+  .mtab button.on{background:var(--clay);color:var(--cInk);box-shadow:var(--clayUp2);cursor:default}
+
+  .mp2{display:grid;grid-template-columns:1fr;gap:0 28px;align-items:start}
+  #panel.wide .mp2{grid-template-columns:1fr 1fr}
+  .mp2>section{min-width:0}
+  .cg.row5{grid-template-columns:repeat(auto-fit,minmax(148px,1fr))}
+
+  /* 스위치 — 켬·끔은 알약 둘이 아니라 하나입니다 */
+  .tgl{display:flex;align-items:center;gap:11px;width:100%;padding:11px 13px;border-radius:17px;
+    background:var(--clay2);box-shadow:var(--clayUp2);border:0;margin-bottom:7px;cursor:pointer;
+    text-align:left;font:800 13.5px var(--ff);color:var(--cInk);letter-spacing:-.01em;
+    transition:transform .12s,box-shadow .12s}
+  .tgl:hover{transform:translateY(-1px)}
+  .tgl:active{transform:none;box-shadow:var(--clayIn)}
+  .tgl .t{flex:1;min-width:0}
+  .tgl .t em{display:block;font-style:normal;font-size:10.5px;font-weight:700;
+    color:var(--cInk3);margin-top:3px;letter-spacing:0;line-height:1.45}
+  .tgl .sw2{flex:none;position:relative;width:46px;height:26px;border-radius:99px;
+    background:var(--clay3);box-shadow:var(--clayIn);transition:background .18s}
+  .tgl .sw2::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;
+    border-radius:50%;background:var(--clay);box-shadow:var(--clayUp2);
+    transition:transform .2s cubic-bezier(.2,.9,.3,1)}
+  .tgl.on .sw2{background:var(--mint)}
+  .tgl.on .sw2::after{transform:translateX(20px)}
+  .tgl .cue{flex:none;font-size:11.5px;font-weight:800;color:var(--cInk3)}
+  .tgl .dot{flex:none;width:15px;height:15px;border-radius:50%;
+    box-shadow:inset 0 -2.5px 0 rgba(0,0,0,.16),0 0 0 3px var(--clay)}
+
+  /* 한 자리 안의 칸 — 다섯 중 하나 고르는 것은 알약 다섯이 아닙니다 */
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:5px;
+    border-radius:17px;background:var(--clay2);box-shadow:var(--clayIn);margin-bottom:7px}
+  .seg button{border:0;border-radius:12px;background:transparent;min-height:36px;cursor:pointer;
+    font:800 12px var(--ff);color:var(--cInk2);
+    transition:color .15s,background .15s,box-shadow .15s}
+  .seg button:hover:not(.on){color:var(--cInk)}
+  .seg button.on{background:var(--clay);color:var(--cInk);box-shadow:var(--clayUp2);cursor:default}
+
+  /* 학교 — 평소엔 접혀 있고 바꿀 때만 펴집니다 */
+  .pickgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 7px}
+  .pickgrid button{display:flex;align-items:center;gap:9px;min-height:44px;padding:0 13px;
+    border:0;border-radius:14px;background:var(--clay2);box-shadow:var(--clayUp2);cursor:pointer;
+    text-align:left;font:800 12.5px var(--ff);color:var(--cInk2);
+    transition:transform .12s,box-shadow .12s,color .15s}
+  .pickgrid button:hover{transform:translateY(-1px);color:var(--cInk)}
+  .pickgrid button:active{transform:none;box-shadow:var(--clayIn)}
+  .pickgrid button.on{background:var(--clay3);box-shadow:var(--clayIn);color:var(--cInk)}
+  .pickgrid .dot{flex:none;width:12px;height:12px;border-radius:50%;
+    box-shadow:inset 0 -2px 0 rgba(0,0,0,.16)}
+
+  #panel select.mpick{width:100%;margin-bottom:7px;font-size:13px;cursor:pointer}
+
+  /* 단축키 — 세 칸으로 펴면 이름과 키가 290px 씩 벌어져 어느 키가 어느
+     줄의 것인지 눈으로 이어야 했습니다. 쌍마다 면을 깔아 묶습니다.
+     이 부품은 종이 시절 토큰(--ink · --pl · --acc2)에 남아 있어서
+     찰흙 판에서만 겉돌았습니다 — 여기서 같이 옮깁니다. */
+  .keyset{gap:7px 14px}
+  #panel.wide .keyset{grid-template-columns:repeat(3,1fr)}
+  .kr{background:var(--clay2);box-shadow:var(--clayUp2);border-radius:17px;
+    padding:6px 6px 6px 14px;gap:8px}
+  .kr>span{color:var(--cInk2)}
+  .kr button{min-width:78px;padding:8px 10px;background:var(--clay);color:var(--cInk);
+    box-shadow:var(--clayUp2);transition:transform .12s,box-shadow .12s,background .15s,color .15s}
+  .kr button:hover{background:var(--clay);transform:translateY(-1px)}
+  .kr button:active{transform:none;box-shadow:var(--clayIn)}
+  .kr button.on{background:var(--mint);color:var(--mintD);box-shadow:var(--clayIn)}
+  .kr button.grab{background:var(--mintD);color:#fff;box-shadow:var(--clayIn);min-width:104px}
+
+  /* 이 창의 조작은 키보드로도 돕니다 — 단축키를 다시 묶는 자리라
+     특히 그렇습니다. 어디에 있는지 보이게 합니다. */
+  .mtab button:focus-visible,.seg button:focus-visible,.tgl:focus-visible,
+  .pickgrid button:focus-visible,.kr button:focus-visible,#panel select.mpick:focus-visible{
+    outline:3px solid var(--mintD);outline-offset:2px}
+
+  /* 되돌릴 수 없는 자리는 눈으로 갈라 둡니다 */
+  .danger{margin-top:22px;padding:6px 16px 14px;border-radius:22px;
+    background:#FCEFEC;box-shadow:var(--clayIn)}
+  .danger .lbl{color:var(--peachD)}
+  .danger .lbl::after{background:rgba(183,88,68,.22)}
+  .danger .note{background:transparent;box-shadow:none;padding:10px 0 0;margin-top:2px;color:#8C5646}
+  .wr button.warn{background:var(--peach);color:var(--peachD)}
+
+  @media (prefers-reduced-motion:reduce){
+    .tgl,.tgl .sw2,.tgl .sw2::after,.mtab button,.seg button,.pickgrid button{transition:none}
+  }
+
+  /* ══ 마이페이지 활자 ══
+     한 번은 반대로 갔습니다. 굵기가 전부 800 이던 것을 고치려고 Carbon
+     productive 타입셋(12/14 · 굵기 600 하나)을 그대로 얹었는데, 그러자
+     **카테고리가 안 보였습니다.** 12px 400 회색은 영문에선 이름표로
+     읽히지만 한글에선 그냥 흐린 글자입니다.
+
+     이 창은 문서가 아니라 묶음 넷짜리 서랍입니다. "무엇에 대한
+     묶음인가" 를 먼저 읽어야 하므로 카테고리가 제일 굵어야 합니다.
+     크기와 굵기를 **같이** 써서 다섯 단으로 세웁니다.
+
+       숫자      22 / 700   카드 하나에 값 하나
+       카테고리  15 / 700   구역 이름 — 가장 먼저 읽히는 것
+       줄 제목   14 / 600
+       값 · 본문 14 / 500
+       캡션      12 / 500
+
+     선은 안 씁니다. 굵기로 이미 갈리는데 카테고리마다 가로줄까지
+     그으면 묶음 수만큼 화면이 잘립니다. 사이는 여백이 벌립니다.
+     자간도 뗐습니다 — 한글은 벌리면 낱자가 흩어집니다.
+     흐린 회색(--cInk3)도 뺐습니다. 12px 에서 대비가 3:1 이라 못 읽습니다. */
+  .mp{
+    --t-cat:700 15px/20px var(--ff);
+    --t-head:600 14px/19px var(--ff);
+    --t-body:500 14px/19px var(--ff);
+    --t-cap:500 12px/16px var(--ff);
+  }
+  .mp .lbl{font:var(--t-cat);letter-spacing:-.012em;color:var(--cInk);margin:26px 0 10px;gap:0}
+  .mp .lbl>.pic{display:none}
+  .mp .lbl::after{display:none}
+  .mp section>.lbl:first-child,.mp .danger>.lbl:first-child{margin-top:0}
+  .mp .hlp{font:var(--t-cap);color:var(--cInk2);margin:-2px 0 10px}
+  .mp .hlp b{font-weight:700}
+
+  .mp .cg{gap:8px;margin:0 0 4px}
+  .mp .cc{padding:13px;border-radius:16px;gap:7px}
+  .mp .cc .ic{width:28px;height:28px;border-radius:9px}
+  .mp .cc .ic .pic{width:16px;height:16px;stroke-width:2.6}
+  .mp .cc .big{font:700 22px/26px var(--ff);letter-spacing:-.02em;
+    color:var(--cInk);font-variant-numeric:tabular-nums}
+  .mp .cc b{font:var(--t-head);letter-spacing:0;color:var(--cInk)}
+  .mp .cc small{font:var(--t-cap);color:var(--cInk2)}
+
+  .mp .rw{padding:9px 13px;margin-bottom:6px;border-radius:14px;gap:10px;
+    font:var(--t-body);letter-spacing:0}
+  .mp .rw .ic{width:26px;height:26px;border-radius:9px}
+  .mp .rw .ic .pic{width:16px;height:16px;stroke-width:2.7}
+  .mp .rw span.t{font:var(--t-head);letter-spacing:0;color:var(--cInk)}
+  .mp .rw span.t em{font:var(--t-cap);margin-top:2px;color:var(--cInk2)}
+  .mp .rw span.v{font:var(--t-body);letter-spacing:0;color:var(--cInk2);
+    font-variant-numeric:tabular-nums}
+
+  /* 단추 — 폭이 920 이라 알약이 왼쪽에 옹기종기 붙으면 오른쪽이 비어
+     "덜 만든 화면" 으로 보입니다. 한 칸 안의 단추는 그 칸을 똑같이
+     나눠 갖고, 높이도 손이 가는 크기(40~44)로 올립니다. */
+  .mp .mtab{margin-bottom:22px;padding:6px;border-radius:24px}
+  .mp .mtab button{min-height:44px;border-radius:18px;
+    font:var(--t-cat);letter-spacing:-.012em}
+  .mp .seg button{min-height:36px;font:var(--t-body);letter-spacing:0}
+  .mp .seg button.on{font:var(--t-head);letter-spacing:0}
+  .mp .wr button{min-height:40px;padding:0 16px;border-radius:13px;
+    font:var(--t-head);letter-spacing:0}
+  .mp .mp2 .wr{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+  .mp .danger .wr button{width:100%}
+  /* 단축키 격자 밑의 되돌리기 — 격자와 같은 리듬을 쓰되 **오른쪽 끝**
+     칸에 둡니다. 왼쪽 첫 칸에 두면 폭이 키 줄과 같아서 다섯 번째 키 줄로
+     읽혔습니다. 끝에 있으면 목록을 다 본 뒤의 동작으로 읽힙니다. */
+  .mp .keyset+.wr{display:grid;grid-template-columns:repeat(3,1fr);gap:0 24px;margin-top:8px}
+  .mp .keyset+.wr button{grid-column:3}
+  .mp .tgl{min-height:44px;padding:9px 13px;border-radius:16px;
+    font:var(--t-head);letter-spacing:0}
+  .mp .tgl .cue{font:var(--t-cap);color:var(--cInk2)}
+  .mp .pickgrid button{min-height:40px;border-radius:13px;
+    font:var(--t-body);letter-spacing:0}
+  .mp .kr{padding:4px 4px 4px 13px;border-radius:15px}
+  .mp .kr>span{font:var(--t-body);letter-spacing:0;color:var(--cInk)}
+  .mp .kr button{min-height:32px;min-width:86px;padding:0 10px;border-radius:11px;
+    font:var(--t-head);letter-spacing:0}
+  .mp select.mpick{min-height:40px;padding:0 13px;border-radius:13px;
+    font:var(--t-body);letter-spacing:0}
+  .mp .danger{margin-top:26px;padding:15px 16px}
+
+  /* 녹음 중 표시 — 소리를 받는 동안은 화면에 계속 보여야 합니다.
+     같은 자리에 있는 사람이 "지금 녹음 중인가" 를 물어보게 만들면 안 됩니다. */
+  .recbar{display:flex;align-items:center;gap:9px;margin:8px 0 0;padding:10px 13px;
+    border-radius:14px;background:#FBE9E6;box-shadow:var(--clayIn);
+    font:600 13px var(--ff);color:#A24A38}
+  .recbar i{flex:none;width:9px;height:9px;border-radius:50%;background:#D8442C;
+    animation:recpulse 1.4s ease-in-out infinite}
+  .recbar .rectime{font-variant-numeric:tabular-nums;font-weight:700}
+  @keyframes recpulse{0%,100%{opacity:1}50%{opacity:.25}}
+  @media (prefers-reduced-motion:reduce){.recbar i{animation:none}}
+  #panel .hlp{font:500 12px/16px var(--ff);color:var(--cInk2);margin:0 0 10px}
+
+  /* 못 바꾸는 키 — 바꾸는 키와 같은 격자에 놓되 단추를 뗍니다.
+     눌려 들어간 면이라 "이건 고정" 이 손 대기 전에 읽힙니다. */
+  .mp .kr.fixed{background:transparent;box-shadow:none;padding:2px 0 2px 2px}
+  .mp .kr.fixed>span{color:var(--cInk2)}
+  .mp .kr.fixed b{flex:none;min-width:86px;padding:7px 10px;border-radius:11px;text-align:center;
+    background:var(--clay2);box-shadow:var(--clayIn);color:var(--cInk2);
+    font:var(--t-head);letter-spacing:0}
+
+  /* 딸린 말은 이제 드물고 짧습니다. 남은 것은 끝줄에 한 글자만
+     떨어지지 않게 합니다. */
+  .mp .hlp{text-wrap:pretty;max-width:52ch}
 
   /* 기존 부품도 같은 재질로 */
   .kv{border-bottom:0;background:var(--clay2);box-shadow:var(--clayUp2);border-radius:15px;
@@ -525,9 +740,6 @@ addEventListener('unhandledrejection', function (e) {
     background:rgba(73,96,128,.16);filter:blur(5px);z-index:-1}
   .wear-chip{position:absolute;left:8px;top:8px;z-index:2;padding:4px 7px;border-radius:99px;
     background:rgba(250,253,255,.9);box-shadow:var(--clayUp2);color:#6C7E93;font:900 8px/1 var(--ff);font-style:normal;letter-spacing:.08em}
-  .school-pick button{position:relative;padding-left:25px}
-  .school-pick button::before{content:'';position:absolute;left:9px;top:50%;width:9px;height:9px;border-radius:50%;
-    background:var(--school);transform:translateY(-50%);box-shadow:inset 0 1px 0 rgba(255,255,255,.55)}
   .wear-gallery{display:grid;grid-template-columns:minmax(0,1fr) 210px;gap:14px;align-items:start}
   .wear-preview-card{position:sticky;top:0;display:flex;flex-direction:column;gap:7px;padding:12px;
     border-radius:22px;background:var(--clay2);box-shadow:var(--clay);color:var(--cInk)}
@@ -578,6 +790,11 @@ addEventListener('unhandledrejection', function (e) {
   @media(max-width:760px){.fame-wall{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px}.fame-frame,.fame-frame.top1,.fame-frame.top2,.fame-frame.top3{grid-column:span 1;grid-row:auto;margin-top:0;transform:none}}
   @media(max-width:680px){
     #panel.wide,#panel.medium,#panel.shop{width:min(94vw,520px)}
+    /* 창이 520 으로 줄면 두 칸은 한 칸당 230 이라 값이 이름 위로
+       접힙니다. 폭이 줄었으니 칸도 같이 접습니다. */
+    #panel.wide .mp2{grid-template-columns:1fr}
+    #panel.wide .keyset{grid-template-columns:1fr 1fr}
+    .mtab{grid-template-columns:repeat(2,1fr)}
     #panel .pclose{right:14px;top:14px;width:40px;height:40px}
     .shop-layout{display:block}
     .shop-tabs{position:static;display:flex;flex-direction:row;overflow:auto;margin-bottom:13px;padding:2px 2px 7px;background:none}
@@ -908,7 +1125,7 @@ addEventListener('unhandledrejection', function (e) {
   </div>
 
   <div id="map"><div class="box">
-    <div class="cap"><b>기린캠퍼스</b><i></i><span>누르거나 앞의 <b>숫자</b>를 치면 그 앞으로 · <kbd>M</kbd> 닫기</span></div>
+    <div class="cap"><b>Deskfit</b><i></i><span>누르거나 앞의 <b>숫자</b>를 치면 그 앞으로 · <kbd>M</kbd> 닫기</span></div>
     <canvas width="1240" height="1240"></canvas>
     <div class="lg">
       <span><i style="background:#E8483C"></i>나</span>
@@ -3537,7 +3754,7 @@ let tutStep = SAVE.seenTutorial ? TUT.length : 0;
 /* 처음 안내 — 넉 장짜리 창은 배선만 있고 **여는 곳이 없었습니다.**
    첫 진입에 한 번 자동으로 열고, 본 사람은 다시 안 봅니다. */
 let tourStep = 0;
-function openTour(i) { tourStep = i | 0; openPanel({ tag: '처음 안내', title: '기린캠퍼스', panel: 'tour' }); }
+function openTour(i) { tourStep = i | 0; openPanel({ tag: '처음 안내', title: 'Deskfit', panel: 'tour' }); }
 let moved0 = 0, turned = 0;
 const elTut = $('#tut');
 elTut.querySelector('.skip').addEventListener('click', () => { tutStep = TUT.length; paintTut(); SAVE.seenTutorial = true; UI.save(); });
@@ -4282,7 +4499,14 @@ function tick(now) {
   /* ── 지나다니는 사람 ── */
   if (room) NPC.forEach((n) => { n.el.style.display = 'none'; });
   if (!room) NPC.forEach((n, idx) => {
-    const R = n.d.route, tgt = R[n.leg];
+    const R = n.d.route, wp = R[n.leg];
+    /* 길목(DOOR)은 넷이 나눠 씁니다. 좌표가 **같은 점** 이라 둘이 같은
+       길목으로 향하면 정확히 겹쳐 서고, 이름표도 포개집니다 —
+       정문에서 하연과 도윤이 한 몸으로 보였습니다.
+       사람마다 고정된 작은 어긋남을 줘서 같은 자리를 겨누지 않게 합니다.
+       걸음은 그대로이고 서는 자리만 한 걸음씩 다릅니다. */
+    const off = n.off || (n.off = [Math.cos(idx * 2.4) * 1.15, Math.sin(idx * 2.4) * 1.15]);
+    const tgt = [wp[0] + off[0], wp[1] + off[1]];
     const dx = tgt[0] - n.rig.position.x, dz = tgt[1] - n.rig.position.z;
     const d = Math.hypot(dx, dz);
     if (n.paused) {
@@ -4570,10 +4794,28 @@ NPC.forEach((n) => n.rig.position.set(n.d.route[n.leg][0], 0, n.d.route[n.leg][1
 aimSun(P.x, P.z);
 requestAnimationFrame(tick);
 if (!SAVE.seenTour) setTimeout(() => { if (!panelOn && !SAVE.seenTour) openTour(0); }, 1400);
-toast('기린캠퍼스', '중앙 광장');
+toast('Deskfit', '중앙 광장');
 
 idbarPaint();
 checkStreak();
+
+/* 노션 승인 화면에서 돌아온 자리. 서버가 ?notion=… 을 붙여 보냅니다.
+   주소는 바로 지웁니다 — 남겨 두면 새로고침할 때마다 같은 토스트가
+   뜨고, 승인 결과가 주소창에 붙어 다닙니다. */
+{
+  const q = new URLSearchParams(location.search).get('notion');
+  if (q) {
+    const say = {
+      ok: ['노션에 연결했어요', '이제 회의록이 내 워크스페이스에 쌓입니다'],
+      denied: ['연결을 취소했어요', ''],
+      'bad-state': ['승인이 만료됐어요', '설정에서 다시 눌러 주세요'],
+      'token-failed': ['노션이 토큰을 안 줬어요', '통합 설정의 Redirect URI 를 확인해 주세요'],
+    }[q] || ['노션 연결에 실패했어요', ''];
+    toast(say[0], say[1]);
+    const u = new URL(location.href); u.searchParams.delete('notion');
+    history.replaceState(null, '', u.pathname + u.search + u.hash);
+  }
+}
 if (SAVE.hour !== undefined && SAVE.hour !== null) { SKY.setHour(SAVE.hour); setClockHour(SAVE.hour); }
 pullWeather();
 setInterval(pullWeather, 1800000);
@@ -4685,7 +4927,26 @@ window.__view = () => toggleView();
 window.__map = () => toggleMap();
 window.__room = () => (room ? room.key : null);
 window.__k = (v) => { SESS.k = SESS.want = v; SESS.demo = false; };
-window.__sit = () => { const s = spotsHere().find((q) => q.seat); if (s) startSession(s); };
+/* 앉을 자리는 SPOTS 에 없습니다 — 방을 지을 때 가구가 등록합니다
+   (room.js 의 regSeat → room.seats). 옛 판은 spotsHere() 만 뒤져서
+   도서관에서 불러도 **조용히 아무 일도 안 했습니다.** 자리로 옮긴 뒤
+   실제 E 와 같은 길(interact)을 지나가게 합니다. */
+window.__sit = () => {
+  const seats = (room && room.seats) || [];
+  const q = seats.find((s) => s.kind === 'chair') || seats[0];
+  /* 옮기고 **바로** interact() 를 부르면 안 됩니다. 어느 구역 앞인지는
+     그리는 루프가 프레임마다 다시 잡는 값이라, 같은 틱에 부르면 옮기기
+     전 자리의 구역이 그대로 걸려 세션 대신 엉뚱한 창이 열립니다. */
+  if (q) { P.x = q.x; P.z = q.z; P.sp = 0; return { ...q, via: 'seat' }; }
+  const s = spotsHere().find((x) => x.seat);
+  if (s) { startSession(s); return { ...s.seat, via: 'spot' }; }
+  return null;
+};
+window.__seats = () => ((room && room.seats) || []).map((s) => s.kind);
+window.__act = () => interact();
+window.__near = () => { const q = nearSeat(); return q ? { ...q, d: Math.hypot(P.x - q.x, P.z - q.z) } : null; };
+window.__why = () => ({ panelOn, dlgOn, sess: SESS.on, csit: CSIT.on, spot: spot ? spot.title : null, room: room && room.key, px: +P.x.toFixed(2), pz: +P.z.toFixed(2) });
+window.__spot = () => (spot ? spot.title : null);
 window.__talk = () => { const n = (room ? inNPC : NPC)[0]; if (n) openDlg(n); };
 window.__panel = (t) => { const s = spotsHere().find((q) => q.title === t); if (s) openPanel(s); };
 window.__emo = (k) => doEmote(k);

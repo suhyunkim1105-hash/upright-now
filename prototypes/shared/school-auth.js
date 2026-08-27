@@ -109,6 +109,7 @@
     'kaist.ac.kr': 'KAIST', 'postech.ac.kr': 'POSTECH', 'cau.ac.kr': '중앙대학교',
     'khu.ac.kr': '경희대학교', 'ewha.ac.kr': '이화여자대학교', 'sogang.ac.kr': '서강대학교',
     'konkuk.ac.kr': '건국대학교', 'dankook.ac.kr': '단국대학교', 'inha.ac.kr': '인하대학교',
+    'gachon.ac.kr': '가천대학교',
   };
   /* .ac.kr 밖의 주소만 따로 셉니다 — 판정에 쓰는 것은 이쪽입니다. */
   const EXTRA_DOMAINS = Object.fromEntries(

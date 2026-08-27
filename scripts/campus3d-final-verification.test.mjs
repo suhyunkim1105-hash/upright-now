@@ -36,16 +36,16 @@ test('옷 가게의 모든 카테고리 상품이 공유 WebGL의 3D 클레이 �
     for (const [id] of items.filter(([id]) => id !== 'none'))
       assert.match(out, new RegExp(`data-wear-art="${id}"`), `${slot}/${id} 미리보기`)
   }
-  assert.match(world, /querySelectorAll\('button\[data-buy\] \.th'\)/, '옷 3D 렌더 대상 연결')
+  assert.match(world, /querySelectorAll\('button\[data-try\] \.th\[data-wear-art\]'\)/, '옷 3D 렌더 대상 연결')
   assert.match(world, /itemThumb\(el, 'wear'/, '공유 WebGL 옷 조형 렌더')
   assert.match(world, /species: curSpecies/, '뽑아 선택한 캐릭터 입어보기')
   assert.match(shopview, /procedural:\s*true/, 'GLB 골조에서 분리할 수 없는 상품 카드가 다시 빈 칸이 됩니다')
   assert.match(shopview, /dataset\.renderState = ok \? 'ready' : 'error'/,
     '3D 상품 카드 렌더 성공 여부를 검수할 수 없습니다')
-  assert.match(world, /tryOn\(WEAR_TRY\)\?\.focus\(null\)/,
+  assert.match(world, /try: \{ look: triedLook\(\) \}, focus: null/,
     '옆 미리보기가 상품 부위만 확대해 원본 캐릭터 얼굴·전신을 자릅니다')
-  assert.match(world, /try: WEAR_TRY, focus: null/,
-    '상점을 다시 열면 옆 원본 캐릭터가 전신 대신 잘린 상태로 시작합니다')
+  assert.match(world, /spin: 'sway'/,
+    '미리보기가 계속 돌아 절반은 등을 보입니다 — 좌우로만 흔들어야 합니다')
 })
 
 test('상점 제목은 고정되고 본문만 스크롤되어 카테고리와 겹치지 않는다', () => {
@@ -81,7 +81,7 @@ test('최근 원본 GLB 네 캐릭터만 월드 NPC와 알 상점에 노출한�
   assert.match(world, /const SPEC = \['거북이', '기린', '펭귄', '개구리'\]/)
   assert.match(world, /allSp: SPEC/)
   assert.match(world, /dressPreview\(stage, \{/)
-  assert.match(world, /wearPreviewHandle\?\.tryOn\(WEAR_TRY\)/)
+  assert.match(world, /spin: 'sway', w: 210, h: 260/)
 })
 
 test('자연스러운 1인칭 감쇠와 NPC 월드·사람 충돌을 유지한다', () => {
@@ -106,7 +106,7 @@ test('과잠은 선택 학교 대표색으로 실제 캐릭터에도 렌더된�
     rides: [], ownedRide: [], onCategory() {}, onBuy() {},
   }).html
   assert.match(out, /data-wear-art="varsity"/, '과잠 3D 카드')
-  assert.match(world, /color: b\.dataset\.buy === 'varsity' \? sc\?\.c : undefined/,
+  assert.match(world, /color: b\.dataset\.try === 'varsity' \? sc\?\.c : undefined/,
     '과잠 3D 카드에 학교 대표색을 전달하지 않습니다')
   assert.match(chars, /export const BARE = false/, '월드 캐릭터 옷 렌더가 강제로 꺼져 있습니다')
   assert.match(chars, /const bodyTop = top;/, '과잠 몸판이 저장된 대표색 재질을 쓰지 않습니다')
@@ -263,16 +263,16 @@ test('표현 여덟 개가 각각 별도 캐릭터 모션을 가진다', () => {
   }
 })
 
-test('최신 GLB 캐릭터도 실제 옷과 앉은 자세를 적용한다', () => {
-  assert.match(chars, /addGlbWear\(g, species, fit\)/, 'GLB 캐릭터에 착용 레이어가 연결되지 않았습니다')
+test('GLB 몸에는 옷을 얹지 않고, 옷은 상점 카드와 미리보기가 그린다', () => {
+  /* 사람 몸 기준 클레이 옷 한 벌을 네 종에 얹던 addGlbWear 는 걷어냈다 —
+     종마다 체형이 달라 옷이 몸을 뚫었다. 소유·착용 데이터와 상점 카드
+     렌더는 그대로 살아 있어야 한다. */
+  assert.doesNotMatch(chars, /addGlbWear\(g, species, fit\)/, '걷어낸 GLB 착용 레이어가 되살아났습니다')
   assert.match(chars, /equipped-clay-outfit/, '착용한 옷의 3D 그룹이 없습니다')
-  for (const species of ['거북이', '기린', '펭귄', '개구리'])
-    assert.match(chars, new RegExp(`'${species}':\\s*\\{ top:`), `${species} 원본 체형별 옷 맞춤값이 없습니다`)
+  assert.match(world, /dressPreview\(stage, \{/, '입어보기 미리보기가 없습니다')
   assert.doesNotMatch(chars, /wide, \.68, \.68/,
     '원본 체형을 무시한 큰 구형 상의가 다시 캐릭터 몸을 덮습니다')
-  assert.match(chars, /if \(L\.glassesId && L\.glassesId !== 'none'\)/,
-    '원본 네 캐릭터의 안경 착용 경로가 없습니다')
-  assert.match(chars, /g\.userData\.outfitAudit/, '플레이어·NPC 착용 상태를 교차 검수할 정보가 없습니다')
+  /* 안경도 GLB 몸에는 안 얹는다(239행 주석) — 경로가 되살아나면 그때 다시 검사 */
   assert.match(chars, /G\.body\.position\.y = G\.bodyY - \.31/, '앉을 때 몸을 좌판 높이로 내리지 않습니다')
   assert.match(chars, /tilt\('leg\.L', -1\.18/, '앉을 때 다리를 굽히지 않습니다')
 })
@@ -324,7 +324,7 @@ test('앉은 GLB 상체는 기울이지 않고 다리만 접는다', () => {
 test('학생회관 라운지·식당과 학교 설정 안내를 분리한다', () => {
   const union = rooms.slice(rooms.indexOf('union(g) {'), rooms.indexOf('arcade(g) {'))
   assert.doesNotMatch(union, /R\.window3\(g, 9\.6,/, '식당 메뉴판 뒤에 겹친 창이 남았습니다')
-  assert.match(union, /\[\[8\.2, \.8, 0xF2C14E\], \[8\.2, 5\.2, 0xE8935A\]\]/)
+  assert.match(union, /\[\[8\.2, \.8, 0xF2C14E\], \[8\.2, 5\.2, 0xE8935A\]/)
   assert.doesNotMatch(union, /\[-8\.2, (?:1\.0|5\.6),/, '라운지와 겹치던 왼쪽 식탁이 남았습니다')
   assert.match(readFileSync('prototypes/campus3d/room.js', 'utf8'), /const inward = Math\.atan2\(-Math\.cos\(a\), -Math\.sin\(a\)\);[\s\S]*?c\.rotation\.y = inward/)
   const empty = cafeteria({ school: '', data: undefined }).html

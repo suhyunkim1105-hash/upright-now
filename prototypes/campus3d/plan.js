@@ -1070,6 +1070,9 @@ function props(g, built, solid, avoid) {
       for (let i = 0; i < n; i++) {
         if (rnd() < .42) continue;                  // 빈 칸이 있어야 주차장입니다
         const cx = f.x - f.w / 2 + (f.w / n) * (i + .5);
+        /* 정문 마당은 비웁니다 — 끝 칸 차가 정문 기둥에 반쯤 파묻혀
+           "기둥에 박은 트럭" 으로 보였습니다(수현 캡처). */
+        if (Math.hypot(cx, cz - 124) < 16) { ci++; continue; }
         push(cars, KIT.PROPS.car[ci++ % KIT.PROPS.car.length],
              { x: cx, z: cz, ry: rnd() < .5 ? 0 : Math.PI, s: 1, tone: ci % 6 });
         solid(cx, cz, 2.2, 4.4);

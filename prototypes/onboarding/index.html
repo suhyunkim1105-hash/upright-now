@@ -3060,9 +3060,31 @@ function calGuideState(ok) {
   if (g) g.classList.toggle('off', !ok);
 }
 
+/* 온보딩은 여기서 끝나지만 닉네임·학교는 `girin.signup` 이라는 온보딩
+   전용 자리에만 있습니다. 홈·오픈월드는 `girin.room` 을 보고, 마이페이지
+   학생증 카드는 별도로 `girin.profile` 을 봅니다(deskfit 의 PROFILE 객체) —
+   두 곳 다 옮겨 적지 않으면 온보딩에서 정한 닉네임과 학교가 한쪽에서만
+   보이거나, 마이페이지에 그대로 "느긋한거북 · 명지대학교" 로 남습니다. */
+function commitProfileToRoom() {
+  let room = {};
+  try { room = JSON.parse(localStorage.getItem('girin.room') || '{}') || {}; } catch (e) { room = {}; }
+  if (S.nick) room.nickname = S.nick;
+  if (S.school) room.school = S.school;
+  if (S.email) room.schoolEmail = S.email;
+  if (S.verified) room.schoolVerifiedAt = room.schoolVerifiedAt || new Date().toISOString();
+  try { localStorage.setItem('girin.room', JSON.stringify(room)); } catch (e) { /* 무시 */ }
+
+  let profile = {};
+  try { profile = JSON.parse(localStorage.getItem('girin.profile') || '{}') || {}; } catch (e) { profile = {}; }
+  if (S.nick) { profile.nick = S.nick; profile.name = S.nick; }
+  if (S.school) profile.school = S.school;
+  try { localStorage.setItem('girin.profile', JSON.stringify(profile)); } catch (e) { /* 무시 */ }
+}
+
 $('enter').addEventListener('click', () => {
   const btn = $('enter');
   busy(btn, true);
+  commitProfileToRoom();
   /* 메인으로 넘깁니다. 월드로 바로 보내면 두 가지가 무너집니다 — 진행이
      이 기기에만 남는다는 사실을 말할 화면이 없고, 마이페이지·옷장·회고·
      랭킹전이 전부 월드 안 NPC 뒤에 숨습니다. 월드는 메인의 한 입구입니다. */

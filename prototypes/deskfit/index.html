@@ -4108,6 +4108,12 @@ document.querySelectorAll('[data-dots]').forEach((row) => {
         : 'inset 0 4px 8px rgba(62,84,118,.2)';
     });
     if (out) out.textContent = n + '명';
+    /* 점만 칠하고 끝나면 "지금 방에 있는 사람" 칸(왼쪽)은 그대로
+       SEATS.total(기본 6) 을 봅니다 — 오른쪽에서 자리 수를 바꿔도
+       왼쪽 칸이 안 늘고 안 줄었습니다. 같이 갱신하고 다시 그립니다. */
+    SEATS.total = n;
+    const room = document.getElementById('s-Room');
+    if (room) paintSeats(room);
   };
   cells.forEach((c, i) => {
     c.style.cursor = 'pointer';
